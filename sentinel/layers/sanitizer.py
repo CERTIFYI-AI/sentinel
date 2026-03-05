@@ -151,7 +151,7 @@ def _detect_pii_presidio(
     """Presidio-based PII detection (full mode)."""
     if _analyzer_engine is None:
         return _detect_pii_regex(text, entity_types)
-    results_raw = _analyzer_engine.analyze(  # type: ignore[attr-defined]        logger.info("Loaded embedding model: %s (dim=%d)", model_name, dim)
+    results_raw = _analyzer_engine.analyze(  # type: ignore[attr-defined]
         text=text, entities=entity_types, language="en",
     )
     return [
@@ -162,11 +162,11 @@ def _detect_pii_presidio(
 def _compute_injection_score(text: str) -> float:
     """Cosine similarity against injection seed embeddings."""
     if _injection_embeddings is not None and _embedding_model is not None:
-        query_emb = _embedding_model.encode(  # type: ignore[attr-defined]        logger.info("Loaded embedding model: %s (dim=%d)", model_name, dim)
+        query_emb = _embedding_model.encode(  # type: ignore[attr-defined]
             [text], convert_to_numpy=True, normalize_embeddings=True,
         ).astype(np.float32)
         sims = np.dot(_injection_embeddings, query_emb.T).flatten()
-        return float(np.max(sims))
+        emb = _embedding_model.encode(  # type: ignore[attr-defined]
 
     # Keyword fallback
     text_lower = text.lower()
