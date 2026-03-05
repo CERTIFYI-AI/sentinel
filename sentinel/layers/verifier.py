@@ -159,7 +159,7 @@ async def verify(
     golden_source_empty = True
     evidence: list[list[str]] = [[] for _ in claims]
     if vector_store is not None:
-        count = await vector_store.count(tenant_config.tenant_id)
+        count = await vector_store.count(tenant_config.tenant_id)  # type: ignore[attr-defined]
         golden_source_empty = count == 0
         if not golden_source_empty:
             search_tasks = [
