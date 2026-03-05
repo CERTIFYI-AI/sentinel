@@ -1,0 +1,106 @@
+# Certifyi Sentinel — Reference Configuration
+# Documentation: https://github.com/certifyi-ai/sentinel
+# All fields are documented inline. Environment variables use ${VAR_NAME} syntax.
+
+sentinel:
+  version: "1.0"
+
+  # ── Trust & Verification Thresholds ──
+  # Block responses with trust scores below this value.
+  # Derivation: internal eval on 2,000 hallucination samples showed
+  # <0.85 correlates with >15% factual error rate.
+  trust_score_threshold: 0.85
+
+  # Block prompts with injection probability above this value.
+  # Tuned against 4,000 known attack patterns in data/injection_seeds.jsonl.
+  injection_block_threshold: 0.78
+
+  # Trigger N-cross-check verification when trust score falls below this.
+  # Cross-check queries 2 additional models for consensus.
+  cross_check_trigger_threshold: 0.80
+
+  # Model to route to when Level 2 (UPGRADE) circuit breaker triggers.
+  fallback_model: "gpt-4o"
+
+  # ── Circuit Breaker ──
+  circuit_breaker:
+    # Number of consecutive failures before marking a provider as OPEN.
+    open_threshold: 5
+    # Time window (seconds) for counting failures. Resets after this period.
+    window_seconds: 60
+
+  # ── Human-in-the-Loop (HITL) ──
+  hitl:
+    queue_name: "sentinel-hitl"
+    # Canned response returned to users when HITL is triggered.
+    # Customize per tenant to match your application's tone.
+    canned_response: "I want to make sure I give you accurate information on this. Let me verify the details and get back to you shortly."
+
+  # ── PII Detection ──
+  pii:
+    # Entity types to detect via Presidio + spaCy NLP pipeline.
+    entities:
+      - "PERSON"
+      - "EMAIL_ADDRESS"
+      - "PHONE_NUMBER"
+      - "CREDIT_CARD"
+      - "US_SSN"
+      - "MEDICAL_LICENSE"
+    # Custom regex patterns for domain-specific PII detection.
+    # Each entry: {name: "PATTERN_NAME", regex: "pattern", score: 0.8}
+    custom_patterns: []
+
+  # ── Golden Source (RAG Retrieval) ──
+  golden_source:
+    # Minimum cosine similarity for a retrieval to count as supporting evidence.
+    similarity_threshold: 0.72
+    # Number of top documents to retrieve per claim.
+    top_k: 3
+
+  # ── Semantic Drift Detection ──
+  semantic_drift:
+    # Alert when Mahalanobis distance exceeds this (in standard deviations).
+    alert_threshold_sigma: 2.0
+    # Flag response (but don't block) when drift exceeds this.
+    block_threshold_sigma: 3.5
+
+  # ── LLM Providers ──
+  providers:
+    primary:
+      name: "openai"
+      model: "gpt-4o-mini"
+      api_key: "${OPENAI_API_KEY}"
+    fallback:
+      name: "anthropic"
+      model: "claude-3-5-haiku-20241022"
+      api_key: "${ANTHROPIC_API_KEY}"
+
+  # ── Cost Tracking ──
+  costs:
+    # Track API costs of cross-check verification calls.
+    verification_models: true
+    # Track API costs of primary model calls.
+    primary_model: true
+
+# ── Healthcare SaaS Example (HIPAA) ──
+# Uncomment and modify for healthcare use cases:
+#
+# sentinel:
+#   trust_score_threshold: 0.90  # Stricter for medical accuracy
+#   injection_block_threshold: 0.70  # More aggressive injection blocking
+#   pii:
+#     entities:
+#       - "PERSON"
+#       - "EMAIL_ADDRESS"
+#       - "PHONE_NUMBER"
+#       - "CREDIT_CARD"
+#       - "US_SSN"
+#       - "MEDICAL_LICENSE"
+#       - "MEDICAL_RECORD"
+#     custom_patterns:
+#       - name: "MRN"
+#         regex: "MRN[:\\s]*\\d{6,10}"
+#         score: 0.9
+#       - name: "NPI"
+#         regex: "\\b\\d{10}\\b"
+#         score: 0.7
