@@ -1,229 +1,187 @@
 # Guardrails Reference
 
-Sentinel ships with six built-in guardrails that form the verification pipeline. Each guardrail runs independently and produces a score between 0.0 and 1.0.
+> **Level:** 30-minute deep dive. Read this before tuning detection thresholds or writing custom rules.
 
-## Pipeline Overview
-
-```
-Request -> [Prompt Injection] -> [Toxicity] -> [PII Detection] -> [Factuality] -> [Hallucination] -> [Bias] -> Verdict
-```
-
-Guardrails can run in parallel (`GUARDRAIL_PARALLEL=true`) or sequentially. In fail-fast mode, the pipeline stops at the first `BLOCK` violation.
+Sentinel ships with two guardrail layers that operate at different points in the request lifecycle. The **governance pipeline** (`sentinel/layers/sanitizer.py` + `sentinel/rules.py`) inspects requests *before* they reach the LLM. The **verification pipeline** (`sentinel/layers/verifier.py`) inspects responses *after* they return.
 
 ---
 
-## 1. Toxicity Detection
+## Governance Pipeline (Pre-LLM)
 
-**Type**: Local classifier model
-**Model**: `unitary/toxic-bert` (default)
-**Latency**: ~30-80ms
-**Memory**: ~800MB
+Every inbound request passes through two stages in order: the **sanitizer** and the **policy engine**.
 
-Detects harmful, offensive, or inappropriate content across categories:
-- Hate speech
-- Harassment
-- Self-harm content
-- Sexual content
-- Violence
-- Threat
+### Stage 1 — Sanitizer (`sentinel/layers/sanitizer.py`)
 
-**Score interpretation**: Higher = more toxic. A score of 0.0 means no toxicity detected.
+The sanitizer runs two independent checks on the raw prompt text:
 
-**Configuration**:
-```yaml
-guardrail: toxicity
-threshold: 0.3        # Scores above this trigger the action
-config:
-  categories: [hate_speech, harassment, violence]
-```
+#### Prompt-Injection Detection
 
----
+| Mode | Condition | Method |
+|------|-----------|--------|
+| **Embedding** | `sentence-transformers` installed | Cosine similarity against seed embeddings in `data/injection_seeds.jsonl` |
+| **Keyword fallback** | Library missing | Keyword hit-ratio against the same seed file |
 
-## 2. Factuality Check
+The sanitizer computes an `injection_score` between 0.0 and 1.0. If the score exceeds `INJECTION_BLOCK_THRESHOLD` (default `0.85`), the request is blocked immediately with a `SanitizationResult(blocked=True)` and never reaches the LLM.
 
-**Type**: LLM-as-judge
-**Model**: Configurable (default: `gpt-4o-mini`)
-**Latency**: ~200-500ms
-**Cost**: LLM API call per check
+#### PII Redaction
 
-Verifies factual accuracy by having a second LLM evaluate the response. Optionally uses RAG context as reference material.
+If injection passes, the sanitizer detects and redacts PII:
 
-**Score interpretation**: Higher = more factual. A score of 1.0 means fully verified.
+| Mode | Condition | Entities |
+|------|-----------|----------|
+| **Full** | `spaCy` + `presidio` installed | All Presidio-supported entity types |
+| **Regex fallback** | Libraries missing | `EMAIL_ADDRESS`, `PHONE_NUMBER`, `US_SSN`, `CREDIT_CARD`, `IP_ADDRESS` |
 
-**Configuration**:
-```yaml
-guardrail: factuality
-threshold: 0.7        # Scores below this trigger the action
-config:
-  reference_sources: true
-  model: gpt-4o
-```
+Detected spans are replaced with typed tokens (`[REDACTED_EMAIL_ADDRESS_1]`) and the original-to-token mapping is encrypted with the tenant's Fernet key. The encrypted map travels with the request so responses can be de-redacted later.
 
----
+Configure which entity types to detect per tenant via `TenantConfig.pii_entity_types`.
 
-## 3. PII Detection
+### Stage 2 — Policy Engine (`sentinel/rules.py`)
 
-**Type**: Regex + NER hybrid
-**Model**: Built-in patterns + spaCy NER
-**Latency**: ~5-20ms
-**Memory**: Minimal
+After sanitization, the policy engine evaluates the request against a chain of `Rule` instances. Each rule receives the full prompt text and a context dict, and returns either `None` (pass) or a `PolicyViolation`.
 
-Detects personally identifiable information using regex patterns for structured data (emails, SSNs, credit cards) and NER for names and addresses.
+#### Built-in Rules
 
-**Supported entities**:
-- Email addresses
-- Phone numbers
-- Social Security Numbers
-- Credit card numbers
-- Physical addresses
-- Person names
-- IP addresses
+| Rule ID | Class | Severity | What It Does |
+|---------|-------|----------|--------------|
+| `builtin.prompt_injection` | `PromptInjectionRule` | CRITICAL | Keyword scan for phrases like "ignore previous instructions" |
+| `builtin.pii_detection` | `PIIDetectionRule` | HIGH | Regex patterns for email, phone, SSN, credit card |
+| `builtin.blocked_topic` | `BlockedTopicRule` | HIGH | Case-insensitive substring match against a configurable topic list |
+| `builtin.max_token_guard` | `MaxTokenGuardRule` | MEDIUM | Blocks requests exceeding 50 000 characters |
 
-**Score interpretation**: 0.0 = no PII found, 1.0 = PII detected.
+Rules run sequentially. The engine collects all violations, then determines a final action:
 
-**Configuration**:
-```yaml
-guardrail: pii_detection
-threshold: 0.0        # Any PII triggers action
-config:
-  entities: [email, phone, ssn, credit_card]
-  redaction_char: "*"
-```
+| Condition | Action |
+|-----------|--------|
+| No violations | `ALLOW` |
+| `strict_mode=True` OR any CRITICAL violation | `BLOCK` |
+| Highest severity is HIGH | `FLAG` |
+| Otherwise | `ALLOW` |
 
----
+#### Custom Rules
 
-## 4. Hallucination Detection
-
-**Type**: LLM-as-judge
-**Model**: Configurable (default: `gpt-4o-mini`)
-**Latency**: ~200-500ms
-**Cost**: LLM API call per check
-
-Detects fabricated claims, invented citations, false statistics, and unsupported assertions.
-
-**Score interpretation**: Higher = more hallucinated. A score of 0.0 means no hallucination detected.
-
-**Configuration**:
-```yaml
-guardrail: hallucination
-threshold: 0.5
-config:
-  check_citations: true
-  check_statistics: true
-  check_entities: true
-```
-
----
-
-## 5. Bias Detection
-
-**Type**: Local classifier
-**Model**: Custom fine-tuned model
-**Latency**: ~30-60ms
-**Memory**: ~400MB
-
-Detects biased or discriminatory content across protected attributes.
-
-**Protected attributes**:
-- Gender
-- Race/ethnicity
-- Age
-- Disability
-- Religion
-- Sexual orientation
-- Nationality
-
-**Score interpretation**: Higher = more biased.
-
-**Configuration**:
-```yaml
-guardrail: bias
-threshold: 0.3
-config:
-  protected_attributes: [gender, race, age, disability]
-```
-
----
-
-## 6. Prompt Injection Detection
-
-**Type**: Local classifier
-**Model**: Custom trained classifier
-**Latency**: ~10-30ms
-**Memory**: ~200MB
-
-Detects prompt injection, jailbreak attempts, and prompt leaking in user inputs.
-
-**Detection patterns**:
-- Instruction override attempts
-- Role-play exploits
-- Encoding-based bypasses
-- Context manipulation
-- System prompt extraction
-
-**Score interpretation**: Higher = more likely injection.
-
-**Configuration**:
-```yaml
-guardrail: prompt_injection
-threshold: 0.5
-config:
-  check_input: true
-  check_output: false
-```
-
----
-
-## Writing Custom Guardrails
-
-Create a new guardrail by implementing the `BaseGuardrail` interface:
+Subclass `Rule` and register it with the engine:
 
 ```python
-# sentinel/guardrails/custom_guardrail.py
-from sentinel.guardrails.base import BaseGuardrail, GuardrailResult
+from sentinel.rules import Rule, PolicyEngine
+from sentinel.models import PolicyViolation, Severity
 
-class CustomGuardrail(BaseGuardrail):
-    name = "custom_check"
-    description = "My custom guardrail"
+class CompetitorMentionRule(Rule):
+    rule_id = "custom.competitor_mention"
+    rule_name = "Competitor Mention"
+    severity = Severity.MEDIUM
 
-    async def initialize(self) -> None:
-        """Load models or resources."""
-        pass
+    async def evaluate(self, text, context):
+        if "competitor-name" in text.lower():
+            return PolicyViolation(
+                rule_id=self.rule_id,
+                rule_name=self.rule_name,
+                severity=self.severity,
+                message="Competitor mentioned in prompt",
+                details={"matched": "competitor-name"},
+            )
+        return None
 
-    async def check(
-        self,
-        prompt: str,
-        response: str,
-        context: dict | None = None
-    ) -> GuardrailResult:
-        """Run the guardrail check."""
-        score = 0.0  # Your logic here
-        return GuardrailResult(
-            guardrail=self.name,
-            passed=score < self.threshold,
-            score=score,
-            details="Check passed"
-        )
+# Register for the request phase, response phase, or both
+engine.register_rule(CompetitorMentionRule(), phase="request")
 ```
 
-Register it in `sentinel/proxy.py`:
+---
 
-```python
-from sentinel.guardrails.custom_guardrail import CustomGuardrail
+## Verification Pipeline (Post-LLM)
 
-PIPELINE = [
-    # ... existing guardrails ...
-    CustomGuardrail(threshold=0.5),
-]
+The verification pipeline in `sentinel/layers/verifier.py` runs a five-step process on every LLM response.
+
+### Step 1 — Claim Extraction
+
+A cheap LLM call (`gpt-4o-mini`, temperature 0) extracts atomic factual claims from the response as a JSON array. Opinions, questions, and hedged statements are excluded.
+
+### Step 2 — RAG Retrieval
+
+Each claim is searched against the tenant's golden-source vector store (pgvector). The top 3 results per claim are kept, filtered by `GOLDEN_SOURCE_SIMILARITY_THRESHOLD`. If the golden source is empty, fact-checking is skipped and the RAG score defaults to `0.5`.
+
+### Step 3 — NLI Scoring
+
+Claim–evidence pairs are scored with a cross-encoder NLI model (default: `cross-encoder/nli-deberta-v3-base`). Each pair produces probabilities for CONTRADICTION, ENTAILMENT, and NEUTRAL. The highest entailment score per claim is kept. The `rag_entailment_score` is the mean entailment confidence across all claims.
+
+### Step 4 — N-Cross-Check (Conditional)
+
+Triggered only when `rag_entailment_score < CROSS_CHECK_TRIGGER_THRESHOLD`. Two independent models (`gpt-4o-mini` and `claude-3-haiku`) answer the same prompt, and their responses are compared via cosine similarity of sentence embeddings. The resulting `cross_check_agreement` score defaults to `0.75` when not triggered.
+
+### Step 5 — Semantic Drift
+
+Reserved for future use. Currently returns a fixed score of `0.75`.
+
+### Trust Score Formula
+
+```
+trust_score = 0.40 * rag_entailment
+            + 0.30 * cross_check_agreement
+            + 0.15 * pii_factor
+            + 0.15 * semantic_drift
 ```
 
-## Performance Summary
+| Signal | Weight | Range | Notes |
+|--------|--------|-------|-------|
+| `rag_entailment` | 0.40 | 0.0–1.0 | Mean NLI entailment; 0.5 if golden source empty |
+| `cross_check_agreement` | 0.30 | 0.0–1.0 | Cosine similarity of two independent model responses |
+| `pii_factor` | 0.15 | 0 or 1 | 1.0 if PII-clean, 0.0 if PII leaked |
+| `semantic_drift` | 0.15 | 0.0–1.0 | Fixed 0.75 (placeholder) |
 
-| Guardrail | Type | Avg Latency | Memory | Cost |
-|-----------|------|-------------|--------|------|
-| Toxicity | Local model | 50ms | 800MB | Free |
-| Factuality | LLM judge | 350ms | Minimal | API call |
-| PII Detection | Regex+NER | 12ms | Minimal | Free |
-| Hallucination | LLM judge | 350ms | Minimal | API call |
-| Bias | Local model | 45ms | 400MB | Free |
-| Prompt Injection | Local model | 20ms | 200MB | Free |
+The final `VerificationResult` includes the trust score, per-claim NLI labels, and flags indicating whether the cross-check was triggered and whether the golden source was empty.
+
+---
+
+## Configuration Reference
+
+All thresholds are set via environment variables or `SentinelSettings`:
+
+| Variable | Default | Used By |
+|----------|---------|---------|
+| `INJECTION_BLOCK_THRESHOLD` | `0.85` | Sanitizer — blocks above this score |
+| `GOLDEN_SOURCE_SIMILARITY_THRESHOLD` | `0.7` | Verifier — filters RAG results |
+| `CROSS_CHECK_TRIGGER_THRESHOLD` | `0.6` | Verifier — triggers N-cross-check below this |
+| `NLI_MODEL` | `cross-encoder/nli-deberta-v3-base` | Verifier — NLI cross-encoder |
+| `EMBEDDING_MODEL` | `all-MiniLM-L6-v2` | Sanitizer + Verifier — sentence embeddings |
+| `SPACY_MODEL` | `en_core_web_sm` | Sanitizer — Presidio NLP backend |
+
+---
+
+## ML Model Requirements
+
+| Model | Size | Used For | Fallback |
+|-------|------|----------|----------|
+| `all-MiniLM-L6-v2` | ~80 MB | Injection embeddings, RAG search, cross-check similarity | Keyword hit-ratio (sanitizer), no similarity filter (verifier) |
+| `cross-encoder/nli-deberta-v3-base` | ~800 MB | NLI claim scoring | All claims return NEUTRAL with 0.5 confidence |
+| `en_core_web_sm` | ~12 MB | spaCy NER for Presidio | Regex patterns for 5 entity types |
+| `unitary/toxic-bert` | ~440 MB | Toxicity classification (rules engine) | Not loaded if unavailable |
+
+All ML inference runs in a `ThreadPoolExecutor(max_workers=2)` to avoid blocking the async event loop.
+
+---
+
+## Pipeline Flow Summary
+
+```
+Request in
+  │
+  ├─ Sanitizer
+  │   ├─ Injection detection  →  score > 0.85?  →  BLOCK
+  │   └─ PII redaction         →  [REDACTED_*] tokens
+  │
+  ├─ Policy Engine
+  │   ├─ PromptInjectionRule   →  CRITICAL
+  │   ├─ PIIDetectionRule      →  HIGH
+  │   ├─ BlockedTopicRule      →  HIGH
+  │   └─ MaxTokenGuardRule     →  MEDIUM
+  │   └─ Action: ALLOW / FLAG / BLOCK
+  │
+  ├─ LLM Provider (forwarded)
+  │
+  └─ Verifier
+      ├─ Claim extraction      →  gpt-4o-mini
+      ├─ RAG retrieval         →  pgvector top-3
+      ├─ NLI scoring           →  cross-encoder
+      ├─ N-cross-check         →  conditional
+      └─ Trust score           →  0.0 – 1.0
+```
