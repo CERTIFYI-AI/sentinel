@@ -193,3 +193,25 @@ async def complete_job(job_id: str, review: dict[str, Any]) -> None:
             _memory_jobs[job_id]["updated_at"] = datetime.now(tz=timezone.utc).isoformat()
 
     logger.info("HITL job %s completed", job_id)
+
+
+class HitlQueue:
+    """Wrapper class for HITL queue operations.
+
+    Provides an OOP interface for dependency injection.
+    """
+
+    async def enqueue(self, job: dict[str, Any]) -> str:
+        """Submit a job for human review."""
+        return await submit_job(job)
+
+    async def get(self, job_id: str) -> dict[str, Any] | None:
+        """Get job status."""
+        return await get_job(job_id)
+
+    async def complete(
+        self, job_id: str, review: dict[str, Any]
+    ) -> None:
+        """Complete a job with review data."""
+        await complete_job(job_id, review)
+

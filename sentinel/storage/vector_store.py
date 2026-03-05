@@ -222,3 +222,49 @@ async def count(tenant_id: str, db: asyncpg.Connection) -> int:
         tenant_id,
     )
     return int(row["cnt"]) if row else 0
+
+
+class VectorStore:
+    """Wrapper class for vector store operations.
+
+    Provides an OOP interface around the module-level async functions
+    for use in dependency injection and testing.
+    """
+
+    def __init__(self, model_name: str = "all-MiniLM-L6-v2") -> None:
+        self.model_name = model_name
+
+    async def ingest(
+        self,
+        tenant_id: str,
+        doc_id: str,
+        content: str,
+        db: "asyncpg.Connection",
+        chunk_size: int = 512,
+        source_url: str = "",
+    ) -> int:
+        """Ingest a document into the vector store."""
+        return await ingest(
+            tenant_id=tenant_id,
+            doc_id=doc_id,
+            content=content,
+            db=db,
+            chunk_size=chunk_size,
+            source_url=source_url,
+        )
+
+    async def search(
+        self,
+        tenant_id: str,
+        query: str,
+        db: "asyncpg.Connection",
+        top_k: int = 5,
+    ) -> list[SearchResult]:
+        """Search the vector store."""
+        return await search(
+            tenant_id=tenant_id,
+            query=query,
+            db=db,
+            top_k=top_k,
+        )
+

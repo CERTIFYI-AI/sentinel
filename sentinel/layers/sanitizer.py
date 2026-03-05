@@ -109,7 +109,7 @@ def _load_injection_seeds(embedding_model_name: str) -> None:
         from sentence_transformers import SentenceTransformer
 
         _embedding_model = SentenceTransformer(embedding_model_name)
-        _injection_embeddings = _embedding_model.encode(
+        _injection_embeddings = _embedding_model.encode(  # type: ignore[union-attr]
             texts, convert_to_numpy=True, normalize_embeddings=True,
         ).astype(np.float32)
         logger.info(
@@ -151,7 +151,7 @@ def _detect_pii_presidio(
     """Presidio-based PII detection (full mode)."""
     if _analyzer_engine is None:
         return _detect_pii_regex(text, entity_types)
-    results_raw = _analyzer_engine.analyze(  # type: ignore[union-attr]
+    results_raw = _analyzer_engine.analyze(  # type: ignore[attr-defined]        logger.info("Loaded embedding model: %s (dim=%d)", model_name, dim)
         text=text, entities=entity_types, language="en",
     )
     return [
@@ -162,7 +162,7 @@ def _detect_pii_presidio(
 def _compute_injection_score(text: str) -> float:
     """Cosine similarity against injection seed embeddings."""
     if _injection_embeddings is not None and _embedding_model is not None:
-        query_emb = _embedding_model.encode(  # type: ignore[union-attr]
+        query_emb = _embedding_model.encode(  # type: ignore[attr-defined]        logger.info("Loaded embedding model: %s (dim=%d)", model_name, dim)
             [text], convert_to_numpy=True, normalize_embeddings=True,
         ).astype(np.float32)
         sims = np.dot(_injection_embeddings, query_emb.T).flatten()

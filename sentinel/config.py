@@ -113,3 +113,41 @@ def load_settings() -> SentinelSettings:
     settings = SentinelSettings()  # type: ignore[call-arg]
     settings.log_summary()
     return settings
+
+
+# -- Aliases used by other modules --------------------------
+SentinelConfig = SentinelSettings
+load_config = load_settings
+
+
+class PolicyConfig(BaseSettings):
+    """Policy engine configuration."""
+    model_config = SettingsConfigDict(env_prefix="SENTINEL_POLICY_", extra="ignore")
+    max_prompt_length: int = Field(default=10000, ge=100)
+    blocked_topics: list[str] = Field(default_factory=list)
+    content_policy_enabled: bool = True
+
+
+class AuditConfig(BaseSettings):
+    """Audit logging configuration."""
+    model_config = SettingsConfigDict(env_prefix="SENTINEL_AUDIT_", extra="ignore")
+    enabled: bool = True
+    retention_days: int = Field(default=180, ge=1)
+    export_format: str = "csv"
+
+
+class FactCheckConfig(BaseSettings):
+    """Fact-checking configuration."""
+    model_config = SettingsConfigDict(env_prefix="SENTINEL_FACTCHECK_", extra="ignore")
+    enabled: bool = True
+    min_confidence: float = Field(default=0.7, ge=0.0, le=1.0)
+    max_claims_per_response: int = Field(default=20, ge=1)
+
+
+class DashboardConfig(BaseSettings):
+    """Dashboard configuration."""
+    model_config = SettingsConfigDict(env_prefix="SENTINEL_DASHBOARD_", extra="ignore")
+    enabled: bool = True
+    refresh_interval_seconds: int = Field(default=5, ge=1)
+    max_audit_entries: int = Field(default=500, ge=10)
+
