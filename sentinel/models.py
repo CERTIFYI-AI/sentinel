@@ -307,6 +307,7 @@ class PolicyAction(enum.StrEnum):
     WARN = "warn"
     BLOCK = "block"
     REVIEW = "review"
+    FLAG = "flag"
 
 
 class PolicyViolation(BaseModel):
@@ -334,6 +335,11 @@ class AuditEventType(enum.StrEnum):
     POLICY_CHECK = "policy_check"
     INTERVENTION = "intervention"
     ERROR = "error"
+    REQUEST_RECEIVED = "request_received"
+    POLICY_EVALUATED = "policy_evaluated"
+    ERROR_OCCURRED = "error_occurred"
+    FACT_CHECK_RUN = "fact_check_run"
+    RESPONSE_SENT = "response_sent"
 
 
 class AuditEvent(BaseModel):
