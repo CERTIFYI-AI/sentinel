@@ -1,202 +1,258 @@
-"""Data models for Certifyi Sentinel.
+"""Domain models for Certifyi Sentinel.
 
-Pydantic models representing requests, responses, audit events,
-policy evaluation results, and fact-check outcomes.
+Every data structure that crosses a boundary (API, DB, WebSocket)
+is defined here as a Pydantic v2 BaseModel with full validation.
 """
 
 from __future__ import annotations
 
-import uuid
+import enum
 from datetime import datetime
-from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
+from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field
-
-
-# ---------------------------------------------------------------------------
-# Enums
-# ---------------------------------------------------------------------------
-
-class PolicyAction(str, Enum):
-    """Action taken by the policy engine."""
-
-    ALLOW = "allow"
-    BLOCK = "block"
-    MODIFY = "modify"
-    FLAG = "flag"
-    REVIEW = "review"
+from pydantic import BaseModel, ConfigDict, Field
 
 
-class Severity(str, Enum):
-    """Severity levels for policy violations."""
-
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
-    CRITICAL = "critical"
+# ── Enums ─────────────────────────────────────────
 
 
-class FactCheckVerdict(str, Enum):
-    """Verdict for a fact-check claim."""
+class InterventionLevel(enum.IntEnum):
+    """Escalation levels in the circuit-breaker cascade."""
 
-    SUPPORTED = "supported"
-    REFUTED = "refuted"
-    UNCERTAIN = "uncertain"
-    UNVERIFIABLE = "unverifiable"
-
-
-class AuditEventType(str, Enum):
-    """Types of audit events."""
-
-    REQUEST_RECEIVED = "request_received"
-    POLICY_EVALUATED = "policy_evaluated"
-    FACT_CHECK_RUN = "fact_check_run"
-    RESPONSE_SENT = "response_sent"
-    ERROR_OCCURRED = "error_occurred"
-    PLUGIN_EXECUTED = "plugin_executed"
+    NONE = 0
+    REGENERATE = 1
+    UPGRADE = 2
+    HITL = 3
 
 
-# ---------------------------------------------------------------------------
-# Request / Response
-# ---------------------------------------------------------------------------
-
-class LLMMessage(BaseModel):
-    """A single message in a conversation."""
-
-    role: str = Field(..., description="Message role: system, user, or assistant")
-    content: str = Field(..., description="Message content")
-    name: Optional[str] = Field(None, description="Optional speaker name")
+# ── Sanitizer ─────────────────────────────────────
 
 
-class LLMRequest(BaseModel):
-    """Incoming request to the Sentinel proxy."""
+class SanitizationResult(BaseModel):
+    """Output of the sanitizer layer."""
 
-    request_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    model_config = ConfigDict(frozen=True)
+
+    sanitized_text: str = Field(description="Prompt after PII redaction")
+    blocked: bool = Field(default=False, description="True if blocked")
+    block_reason: str | None = Field(default=None)
+    injection_score: float = Field(
+        default=0.0, ge=0.0, le=1.0,
+        description="Cosine similarity to known injection seeds",
+    )
+    pii_detected: list[str] = Field(
+        default_factory=list,
+        description="Entity types found, e.g. ['EMAIL_ADDRESS']",
+    )
+    redaction_map_encrypted: bytes | None = Field(
+        default=None, description="Fernet-encrypted {token: original}",
+    )
+
+
+# ── Verifier ──────────────────────────────────────
+
+
+class ClaimScore(BaseModel):
+    """NLI score for a single factual claim."""
+
+    claim: str
+    label: str = Field(description="ENTAILMENT | CONTRADICTION | NEUTRAL")
+    confidence: float = Field(ge=0.0, le=1.0)
+    sources: list[str] = Field(
+        default_factory=list, description="doc_ids used as evidence",
+    )
+
+
+class VerificationResult(BaseModel):
+    """Output of the verifier layer."""
+
+    trust_score: float = Field(ge=0.0, le=1.0)
+    claims: list[ClaimScore] = Field(default_factory=list)
+    rag_entailment_score: float = Field(default=0.5, ge=0.0, le=1.0)
+    cross_check_agreement: float = Field(default=0.75, ge=0.0, le=1.0)
+    semantic_drift_score: float = Field(default=0.75, ge=0.0, le=1.0)
+    cross_check_triggered: bool = Field(default=False)
+    golden_source_empty: bool = Field(default=False)
+
+
+# ── Circuit Breaker ───────────────────────────────
+
+
+class CircuitBreakerResult(BaseModel):
+    """Decision from the circuit-breaker cascade."""
+
+    intervention: InterventionLevel
+    final_response: str
+    trust_score: float = Field(ge=0.0, le=1.0)
+    attempts: int = Field(default=1, ge=1)
+    cost_usd: float = Field(default=0.0, ge=0.0)
+    provider_used: str = Field(default="")
+
+
+# ── Audit ─────────────────────────────────────────
+
+
+class AuditEntry(BaseModel):
+    """A single immutable row in the audit hash chain."""
+
+    entry_id: UUID = Field(default_factory=uuid4)
+    tenant_id: str
+    request_id: str
     timestamp: datetime = Field(default_factory=datetime.utcnow)
-    provider: str = Field("", description="Target LLM provider name")
-    model: str = Field("", description="Target model identifier")
-    messages: List[LLMMessage] = Field(default_factory=list)
-    temperature: float = Field(0.7, ge=0.0, le=2.0)
-    max_tokens: Optional[int] = Field(None, ge=1)
-    stream: bool = False
-    metadata: Dict[str, Any] = Field(default_factory=dict)
-    user_id: Optional[str] = None
-    session_id: Optional[str] = None
+    prompt_hash: str = Field(description="SHA-256 of original prompt")
+    response_hash: str = Field(description="SHA-256 of delivered response")
+    trust_score: float = Field(ge=0.0, le=1.0)
+    intervention: int
+    cost_usd: float = Field(default=0.0, ge=0.0)
+    latency_ms: float = Field(default=0.0, ge=0.0)
+    prev_hash: str
+    entry_hash: str
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
-class LLMResponse(BaseModel):
-    """Response from the upstream LLM provider."""
+class IntegrityReport(BaseModel):
+    """Result of an audit-chain integrity verification."""
 
-    request_id: str = ""
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
-    provider: str = ""
-    model: str = ""
-    content: str = ""
-    finish_reason: Optional[str] = None
-    usage: Dict[str, int] = Field(default_factory=dict)
-    latency_ms: float = 0.0
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    intact: bool
+    entries_checked: int = 0
+    broken_at: list[str] = Field(default_factory=list)
 
 
-# ---------------------------------------------------------------------------
-# Policy
-# ---------------------------------------------------------------------------
-
-class PolicyViolation(BaseModel):
-    """A single policy violation detected."""
-
-    rule_id: str
-    rule_name: str
-    severity: Severity
-    message: str
-    details: Dict[str, Any] = Field(default_factory=dict)
+# ── HITL ──────────────────────────────────────────
 
 
-class PolicyResult(BaseModel):
-    """Result of policy evaluation on a request or response."""
+class HitlJob(BaseModel):
+    """A job queued for human-in-the-loop review."""
 
-    action: PolicyAction = PolicyAction.ALLOW
-    violations: List[PolicyViolation] = Field(default_factory=list)
-    modified_content: Optional[str] = None
-    evaluation_ms: float = 0.0
-    rules_evaluated: int = 0
-    metadata: Dict[str, Any] = Field(default_factory=dict)
-
-
-# ---------------------------------------------------------------------------
-# Fact-Checking
-# ---------------------------------------------------------------------------
-
-class Claim(BaseModel):
-    """A single factual claim extracted from text."""
-
-    claim_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    text: str
-    source_span: Optional[str] = None
+    job_id: str = Field(default_factory=lambda: str(uuid4()))
+    tenant_id: str
+    request_id: str
+    prompt: str
+    responses: list[str] = Field(default_factory=list)
+    scores: list[float] = Field(default_factory=list)
+    status: str = Field(default="pending")
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
-class ClaimResult(BaseModel):
-    """Result of checking a single claim."""
+class HitlReview(BaseModel):
+    """Human reviewer submission for a HITL job."""
 
-    claim_id: str
-    verdict: FactCheckVerdict
-    confidence: float = Field(0.0, ge=0.0, le=1.0)
-    evidence: List[str] = Field(default_factory=list)
-    sources: List[str] = Field(default_factory=list)
+    approved_response: str
+    reviewer_note: str = ""
+    reviewer_id: str = ""
 
 
-class FactCheckResult(BaseModel):
-    """Aggregated fact-check result for a response."""
-
-    request_id: str = ""
-    claims: List[ClaimResult] = Field(default_factory=list)
-    overall_score: float = Field(0.0, ge=0.0, le=1.0)
-    check_ms: float = 0.0
+# ── Metrics & Health ──────────────────────────────
 
 
-# ---------------------------------------------------------------------------
-# Audit
-# ---------------------------------------------------------------------------
+class TrustMetricsSummary(BaseModel):
+    """Aggregated metrics pushed over WebSocket."""
 
-class AuditEvent(BaseModel):
-    """An audit log entry."""
-
-    event_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    event_type: AuditEventType
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
-    request_id: Optional[str] = None
-    user_id: Optional[str] = None
-    session_id: Optional[str] = None
-    data: Dict[str, Any] = Field(default_factory=dict)
-    policy_result: Optional[PolicyResult] = None
-    fact_check_result: Optional[FactCheckResult] = None
-    error: Optional[str] = None
+    avg_trust_score: float = 0.0
+    requests_per_minute: float = 0.0
+    intervention_rate: float = 0.0
+    error_rate: float = 0.0
+    p50_latency_ms: float = 0.0
+    p95_latency_ms: float = 0.0
+    active_providers: int = 0
 
 
-# ---------------------------------------------------------------------------
-# Dashboard / Stats
-# ---------------------------------------------------------------------------
+class ProviderHealth(BaseModel):
+    """Circuit-breaker state for one provider."""
 
-class RequestStats(BaseModel):
-    """Aggregated statistics for the dashboard."""
+    provider_id: str
+    state: str = Field(description="CLOSED | OPEN | HALF_OPEN")
+    failure_count: int = 0
+    last_failure_at: datetime | None = None
+    success_rate: float = Field(default=1.0, ge=0.0, le=1.0)
 
+
+class CostReport(BaseModel):
+    """Accumulated cost-per-truth metrics."""
+
+    total_cost_usd: float = 0.0
     total_requests: int = 0
-    blocked_requests: int = 0
-    flagged_requests: int = 0
-    avg_latency_ms: float = 0.0
-    fact_checks_run: int = 0
-    policy_violations: int = 0
-    period_start: Optional[datetime] = None
-    period_end: Optional[datetime] = None
+    avg_cost_per_request: float = 0.0
+    cost_by_intervention: dict[str, float] = Field(
+        default_factory=dict,
+    )
 
 
-class HealthStatus(BaseModel):
-    """System health status."""
+# ── WebSocket ─────────────────────────────────────
 
-    status: str = "healthy"
-    version: str = ""
-    uptime_seconds: float = 0.0
-    providers_connected: int = 0
-    plugins_loaded: int = 0
-    audit_backend_ok: bool = True
+
+class WebSocketMessage(BaseModel):
+    """Discriminated message for WebSocket channels."""
+
+    type: str = Field(description="metrics | audit | error")
+    payload: dict[str, Any] = Field(default_factory=dict)
+
+
+# ── Pipeline ──────────────────────────────────────
+
+
+class PipelineRequest(BaseModel):
+    """Internal representation of a chat completion request."""
+
+    model: str = "gpt-4o"
+    messages: list[dict[str, str]]
+    stream: bool = False
+    temperature: float = Field(default=0.7, ge=0.0, le=2.0)
+    max_tokens: int | None = None
+
+
+class PipelineResponse(BaseModel):
+    """Internal representation of a processed response."""
+
+    content: str
+    model: str
+    trust_score: float = Field(ge=0.0, le=1.0)
+    intervention: InterventionLevel
+    cost_usd: float = 0.0
+    latency_ms: float = 0.0
+
+
+# ── Golden Source ─────────────────────────────────
+
+
+class GoldenSourceDocument(BaseModel):
+    """A document to be ingested into the vector store."""
+
+    doc_id: str
+    source_url: str | None = None
+    content: str = Field(min_length=1)
+    chunk_size: int = Field(default=512, ge=64)
+
+
+# ── Tenant ────────────────────────────────────────
+
+
+class TenantConfig(BaseModel):
+    """Per-tenant configuration overrides."""
+
+    tenant_id: str
+    trust_score_block_threshold: float = Field(
+        default=0.85, ge=0.0, le=1.0,
+    )
+    injection_block_threshold: float = Field(
+        default=0.78, ge=0.0, le=1.0,
+    )
+    primary_model: str = "gpt-4o"
+    fallback_model: str = "gpt-4o"
+    pii_entity_types: list[str] = Field(
+        default_factory=lambda: [
+            "EMAIL_ADDRESS", "PHONE_NUMBER", "US_SSN",
+            "CREDIT_CARD", "IP_ADDRESS",
+        ],
+    )
+    custom_pii_patterns: list[str] = Field(default_factory=list)
+    hitl_canned_response: str | None = None
+
+
+class APIKeyPayload(BaseModel):
+    """JWT claims for API authentication."""
+
+    tenant_id: str
+    key_id: str
+    scopes: list[str] = Field(default_factory=lambda: ["read", "write"])

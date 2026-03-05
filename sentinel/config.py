@@ -1,222 +1,115 @@
 """Configuration management for Certifyi Sentinel.
 
-Handles loading, validation, and access to all configuration
-settings from environment variables, YAML files, and defaults.
+Uses pydantic-settings to load from environment variables with
+sentinel.yaml as a file-based override. Validates all settings at
+startup and logs a redacted summary.
 """
 
 from __future__ import annotations
 
-import os
-from dataclasses import dataclass, field
+import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-import yaml
+from pydantic import Field, PostgresDsn, RedisDsn, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
+logger = logging.getLogger(__name__)
 
-@dataclass
-class ProxyConfig:
-    """Configuration for the LLM proxy layer."""
-
-    host: str = "0.0.0.0"
-    port: int = 8080
-    workers: int = 4
-    timeout: int = 30
-    max_retries: int = 3
-    allowed_origins: List[str] = field(default_factory=lambda: ["*"])
-    rate_limit_rpm: int = 60
-    rate_limit_burst: int = 10
+_CONFIG_DIR = Path(__file__).resolve().parent.parent / "configs"
 
 
-@dataclass
-class LLMProviderConfig:
-    """Configuration for an upstream LLM provider."""
+class SentinelSettings(BaseSettings):
+    """Central configuration validated at startup.
 
-    name: str = ""
-    api_base: str = ""
-    api_key: str = ""
-    model: str = ""
-    max_tokens: int = 4096
-    temperature: float = 0.0
-    timeout: int = 30
-    enabled: bool = True
-
-
-@dataclass
-class PolicyConfig:
-    """Configuration for the policy/rules engine."""
-
-    rules_dir: str = "rules/"
-    default_action: str = "allow"
-    strict_mode: bool = False
-    custom_rules: List[Dict[str, Any]] = field(default_factory=list)
-    blocked_topics: List[str] = field(default_factory=list)
-    pii_detection: bool = True
-    toxicity_threshold: float = 0.7
-
-
-@dataclass
-class FactCheckConfig:
-    """Configuration for the fact-checking module."""
-
-    enabled: bool = True
-    provider: str = "internal"
-    confidence_threshold: float = 0.8
-    cache_ttl: int = 3600
-    max_claims_per_request: int = 10
-    external_api_url: str = ""
-    external_api_key: str = ""
-
-
-@dataclass
-class AuditConfig:
-    """Configuration for audit logging and traceability."""
-
-    enabled: bool = True
-    log_level: str = "INFO"
-    log_format: str = "json"
-    storage_backend: str = "sqlite"
-    storage_path: str = "data/audit.db"
-    retention_days: int = 90
-    include_request_body: bool = True
-    include_response_body: bool = True
-    redact_pii: bool = True
-
-
-@dataclass
-class DashboardConfig:
-    """Configuration for the monitoring dashboard."""
-
-    enabled: bool = True
-    host: str = "0.0.0.0"
-    port: int = 8081
-    auth_enabled: bool = True
-    secret_key: str = ""
-    session_ttl: int = 3600
-
-
-@dataclass
-class PluginConfig:
-    """Configuration for the plugin system."""
-
-    enabled: bool = True
-    plugins_dir: str = "plugins/"
-    auto_discover: bool = True
-    allowed_plugins: List[str] = field(default_factory=list)
-    blocked_plugins: List[str] = field(default_factory=list)
-
-
-@dataclass
-class SentinelConfig:
-    """Root configuration for Certifyi Sentinel."""
-
-    app_name: str = "certifyi-sentinel"
-    environment: str = "development"
-    debug: bool = False
-    log_level: str = "INFO"
-
-    proxy: ProxyConfig = field(default_factory=ProxyConfig)
-    providers: List[LLMProviderConfig] = field(default_factory=list)
-    policy: PolicyConfig = field(default_factory=PolicyConfig)
-    fact_check: FactCheckConfig = field(default_factory=FactCheckConfig)
-    audit: AuditConfig = field(default_factory=AuditConfig)
-    dashboard: DashboardConfig = field(default_factory=DashboardConfig)
-    plugins: PluginConfig = field(default_factory=PluginConfig)
-
-
-def _deep_merge(base: Dict, override: Dict) -> Dict:
-    """Deep merge two dictionaries."""
-    result = base.copy()
-    for key, value in override.items():
-        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
-            result[key] = _deep_merge(result[key], value)
-        else:
-            result[key] = value
-    return result
-
-
-def _apply_env_overrides(config_dict: Dict[str, Any]) -> Dict[str, Any]:
-    """Apply environment variable overrides.
-
-    Environment variables follow the pattern:
-    SENTINEL_<SECTION>_<KEY>=value
-    e.g. SENTINEL_PROXY_PORT=9090
+    Loads from env vars first, then sentinel.yaml override file.
+    Every field has a safe default except DATABASE_URL and SECRET_KEY,
+    which must be provided or the app will refuse to start.
     """
-    prefix = "SENTINEL_"
-    for env_key, env_value in os.environ.items():
-        if not env_key.startswith(prefix):
-            continue
-        parts = env_key[len(prefix):].lower().split("_", 1)
-        if len(parts) == 2:
-            section, key = parts
-            if section in config_dict and isinstance(config_dict[section], dict):
-                config_dict[section][key] = env_value
-        elif len(parts) == 1:
-            config_dict[parts[0]] = env_value
-    return config_dict
 
-
-def _dict_to_config(data: Dict[str, Any]) -> SentinelConfig:
-    """Convert a dictionary to a SentinelConfig instance."""
-    proxy = ProxyConfig(**data.get("proxy", {}))
-    providers = [
-        LLMProviderConfig(**p) for p in data.get("providers", [])
-    ]
-    policy = PolicyConfig(**data.get("policy", {}))
-    fact_check = FactCheckConfig(**data.get("fact_check", {}))
-    audit = AuditConfig(**data.get("audit", {}))
-    dashboard = DashboardConfig(**data.get("dashboard", {}))
-    plugins = PluginConfig(**data.get("plugins", {}))
-
-    return SentinelConfig(
-        app_name=data.get("app_name", "certifyi-sentinel"),
-        environment=data.get("environment", "development"),
-        debug=data.get("debug", False),
-        log_level=data.get("log_level", "INFO"),
-        proxy=proxy,
-        providers=providers,
-        policy=policy,
-        fact_check=fact_check,
-        audit=audit,
-        dashboard=dashboard,
-        plugins=plugins,
+    model_config = SettingsConfigDict(
+        env_prefix="SENTINEL_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
     )
 
+    # --- core ---
+    version: str = Field(default="0.2.0", alias="SENTINEL_VERSION")
+    database_url: PostgresDsn = Field(
+        ..., description="asyncpg connection string for PostgreSQL"
+    )
+    redis_url: RedisDsn | None = Field(
+        default=None,
+        description="Redis URL. Falls back to in-memory if absent.",
+    )
+    secret_key: str = Field(
+        ..., min_length=32, description="Secret for JWT signing"
+    )
 
-def load_config(
-    config_path: Optional[str] = None,
-    overrides: Optional[Dict[str, Any]] = None,
-) -> SentinelConfig:
-    """Load configuration from file, env vars, and overrides.
+    # --- trust thresholds ---
+    trust_score_block_threshold: float = Field(
+        default=0.85, ge=0.0, le=1.0
+    )
+    injection_block_threshold: float = Field(
+        default=0.78, ge=0.0, le=1.0
+    )
+    cross_check_trigger_threshold: float = Field(
+        default=0.80, ge=0.0, le=1.0
+    )
+    golden_source_similarity_threshold: float = Field(
+        default=0.72, ge=0.0, le=1.0
+    )
 
-    Priority (highest to lowest):
-    1. Explicit overrides dict
-    2. Environment variables (SENTINEL_*)
-    3. Config file (YAML)
-    4. Defaults
+    # --- models ---
+    fallback_model: str = "gpt-4o"
+    spacy_model: str = "en_core_web_lg"
+    embedding_model: str = "all-MiniLM-L6-v2"
+    nli_model: str = "cross-encoder/nli-deberta-v3-large"
+    max_nli_batch_size: int = Field(default=32, ge=1)
 
-    Args:
-        config_path: Path to a YAML configuration file.
-        overrides: Dictionary of override values.
+    # --- circuit breaker ---
+    cb_open_threshold: int = Field(default=5, ge=1)
+    cb_window_seconds: int = Field(default=60, ge=10)
+    cb_reset_seconds: int = Field(default=300, ge=30)
 
-    Returns:
-        Fully resolved SentinelConfig instance.
-    """
-    config_dict: Dict[str, Any] = {}
+    # --- HITL ---
+    hitl_queue_name: str = "sentinel-hitl"
+    hitl_canned_response: str = (
+        "I want to make sure I give you accurate information "
+        "on this. Let me verify the details and get back to "
+        "you shortly."
+    )
 
-    # Load from file
-    if config_path is None:
-        config_path = os.environ.get("SENTINEL_CONFIG_PATH")
-    if config_path and Path(config_path).exists():
-        with open(config_path, "r") as fh:
-            file_config = yaml.safe_load(fh) or {}
-        config_dict = _deep_merge(config_dict, file_config)
+    # --- server ---
+    host: str = "0.0.0.0"
+    port: int = 8000
+    allowed_origins: list[str] = Field(default_factory=lambda: ["*"])
+    rate_limit_rpm: int = Field(default=60, ge=1)
 
-    # Apply env overrides
-    config_dict = _apply_env_overrides(config_dict)
+    @model_validator(mode="after")
+    def _warn_degraded_modes(self) -> "SentinelSettings":
+        """Emit actionable warnings when optional services are absent."""
+        if self.redis_url is None:
+            logger.warning(
+                "REDIS_URL not configured. Circuit breaker running "
+                "in-memory mode. State will be lost on process "
+                "restart. Set REDIS_URL for production."
+            )
+        return self
 
-    # Apply explicit overrides
-    if overrides:
-        config_dict = _deep_merge(config_dict, overrides)
+    def log_summary(self) -> None:
+        """Log redacted config summary at startup."""
+        safe: dict[str, Any] = {
+            k: ("***" if "secret" in k or "key" in k else v)
+            for k, v in self.model_dump().items()
+        }
+        for key, val in sorted(safe.items()):
+            logger.info("config: %s = %s", key, val)
 
-    return _dict_to_config(config_dict)
+
+def load_settings() -> SentinelSettings:
+    """Build and validate settings, fail-fast on bad config."""
+    settings = SentinelSettings()  # type: ignore[call-arg]
+    settings.log_summary()
+    return settings
