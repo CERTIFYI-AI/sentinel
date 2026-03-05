@@ -1,369 +1,273 @@
 # API Reference
 
-Sentinel exposes a RESTful API for AI governance middleware operations. All endpoints are served at `http://localhost:8000` by default.
+> **Level**: Reference. Bookmark this page and consult it when integrating with Sentinel.
+
+Sentinel is an OpenAI-compatible proxy. All endpoints are served at `http://localhost:8000` by default (configurable via `SENTINEL_HOST` and `SENTINEL_PORT`).
 
 ## Authentication
 
-All API requests (except `/health` and `/auth/login`) require a Bearer token:
+All API requests (except `GET /health`) require a Bearer token in the `Authorization` header:
 
 ```
 Authorization: Bearer <jwt_token>
 ```
 
-### Obtain Token
+Tokens are JWTs signed with `SENTINEL_SECRET_KEY` using HS256. The JWT payload follows the `APIKeyPayload` model:
 
-```http
-POST /auth/login
-Content-Type: application/json
-
-{
-  "email": "admin@example.com",
-  "password": "your-password"
-}
-```
-
-**Response** `200 OK`:
 ```json
 {
-  "access_token": "eyJ...",
-  "token_type": "bearer",
-  "expires_in": 3600
+  "tenant_id": "tenant_abc",
+  "key_id": "key_001",
+  "scopes": ["read", "write"]
 }
 ```
 
 ---
 
-## Core Endpoints
+## Chat Completions
 
-### Verify LLM Response
+The primary endpoint. Drop-in replacement for the OpenAI Chat Completions API.
 
-The primary endpoint. Runs an LLM response through the configured guardrail pipeline.
+### `POST /v1/chat/completions`
 
-```http
-POST /api/v1/verify
-Content-Type: application/json
-Authorization: Bearer <token>
-```
+Sentinel intercepts the request, runs it through the governance pipeline (sanitizer, policy engine, fact-checker), forwards it to the upstream LLM provider, verifies the response, and returns the result with additional Sentinel metadata.
 
-**Request Body**:
+**Request Body** (OpenAI-compatible):
+
 ```json
 {
-  "prompt": "What medications interact with warfarin?",
-  "response": "Aspirin, ibuprofen, and certain antibiotics can interact with warfarin.",
   "model": "gpt-4o",
-  "context": {
-    "user_id": "usr_123",
-    "session_id": "sess_456",
-    "domain": "healthcare"
-  },
-  "policy_ids": ["pol_medical_safety", "pol_factuality"]
-}
-```
-
-**Response** `200 OK`:
-```json
-{
-  "request_id": "req_abc123",
-  "verdict": "PASS",
-  "confidence": 0.94,
-  "guardrail_results": [
-    {
-      "guardrail": "toxicity",
-      "passed": true,
-      "score": 0.02,
-      "latency_ms": 45
-    },
-    {
-      "guardrail": "factuality",
-      "passed": true,
-      "score": 0.91,
-      "latency_ms": 320
-    },
-    {
-      "guardrail": "pii_detection",
-      "passed": true,
-      "score": 0.0,
-      "latency_ms": 12
-    }
+  "messages": [
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": "What medications interact with warfarin?"}
   ],
-  "policy_evaluation": {
-    "policies_checked": 2,
-    "policies_passed": 2,
-    "violations": []
-  },
-  "total_latency_ms": 412,
-  "timestamp": "2024-01-15T10:30:00Z"
-}
-```
-
-**Response with violations** `200 OK`:
-```json
-{
-  "request_id": "req_def456",
-  "verdict": "FAIL",
-  "confidence": 0.87,
-  "guardrail_results": [
-    {
-      "guardrail": "toxicity",
-      "passed": false,
-      "score": 0.82,
-      "latency_ms": 38,
-      "details": "High toxicity detected in response"
-    }
-  ],
-  "policy_evaluation": {
-    "policies_checked": 1,
-    "policies_passed": 0,
-    "violations": [
-      {
-        "policy_id": "pol_safe_content",
-        "rule": "toxicity_threshold",
-        "message": "Toxicity score 0.82 exceeds threshold 0.3"
-      }
-    ]
-  },
-  "suggested_action": "BLOCK",
-  "total_latency_ms": 156,
-  "timestamp": "2024-01-15T10:31:00Z"
-}
-```
-
----
-
-### Batch Verify
-
-```http
-POST /api/v1/verify/batch
-Content-Type: application/json
-Authorization: Bearer <token>
-```
-
-**Request Body**:
-```json
-{
-  "requests": [
-    {
-      "prompt": "...",
-      "response": "...",
-      "model": "gpt-4o"
-    }
-  ],
-  "policy_ids": ["pol_default"]
-}
-```
-
-**Response** `200 OK`:
-```json
-{
-  "batch_id": "batch_789",
-  "results": [],
-  "summary": {
-    "total": 10,
-    "passed": 8,
-    "failed": 2
+  "temperature": 0.7,
+  "max_tokens": 1024,
+  "stream": false,
+  "provider": "openai",
+  "metadata": {
+    "session_id": "sess_456"
   }
 }
 ```
 
----
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `model` | string | No | Model name (defaults to provider config) |
+| `messages` | array | Yes | Array of `{role, content}` message objects |
+| `temperature` | float | No | Sampling temperature, 0.0-2.0 (default: 0.7) |
+| `max_tokens` | int | No | Maximum tokens in the response |
+| `stream` | bool | No | Enable streaming via SSE (default: false) |
+| `provider` | string | No | Provider name. If omitted, uses the first enabled provider |
+| `metadata` | object | No | Arbitrary metadata passed through to audit logs |
 
-## Policy Management
+**Response** `200 OK`:
 
-### List Policies
-
-```http
-GET /api/v1/policies
-Authorization: Bearer <token>
-```
-
-**Query Parameters**:
-- `page` (int): Page number (default: 1)
-- `per_page` (int): Items per page (default: 20)
-- `domain` (string): Filter by domain
-- `active` (bool): Filter by active status
-
-### Create Policy
-
-```http
-POST /api/v1/policies
-Content-Type: application/json
-Authorization: Bearer <token>
-```
-
-**Request Body**:
 ```json
 {
-  "name": "Financial Compliance",
-  "domain": "finance",
-  "rules": [
+  "id": "chatcmpl-abc123",
+  "object": "chat.completion",
+  "choices": [
     {
-      "guardrail": "factuality",
-      "threshold": 0.9,
-      "action": "BLOCK"
-    },
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Several medications can interact with warfarin..."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 42,
+    "completion_tokens": 156,
+    "total_tokens": 198
+  },
+  "sentinel_request_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "sentinel_fact_check": {
+    "claims": [
+      {
+        "claim": {"text": "Aspirin interacts with warfarin", "claim_id": "..."},
+        "verdict": "supported",
+        "confidence": 0.94,
+        "evidence": ["doc_pharma_001"]
+      }
+    ],
+    "overall_verdict": "supported",
+    "trust_score": 0.91
+  }
+}
+```
+
+**Response** `403 Forbidden` (policy blocked):
+
+```json
+{
+  "error": "Request blocked by policy",
+  "violations": [
     {
-      "guardrail": "pii_detection",
-      "threshold": 0.0,
-      "action": "REDACT"
+      "rule_id": "injection_detection",
+      "description": "Prompt injection detected",
+      "severity": "critical",
+      "action": "block"
     }
   ]
 }
 ```
 
-### Update Policy
-
-```http
-PUT /api/v1/policies/{policy_id}
-```
-
-### Delete Policy
-
-```http
-DELETE /api/v1/policies/{policy_id}
-```
-
----
-
-## Guardrails
-
-### List Available Guardrails
-
-```http
-GET /api/v1/guardrails
-Authorization: Bearer <token>
-```
-
-Returns all registered guardrails with their type, description, and default thresholds.
-
----
-
-## Audit Logs
-
-### Query Audit Logs
-
-```http
-GET /api/v1/audit
-Authorization: Bearer <token>
-```
-
-**Query Parameters**:
-- `start` (datetime): Start timestamp
-- `end` (datetime): End timestamp
-- `verdict` (string): Filter by verdict (PASS/FAIL/ERROR)
-- `policy_id` (string): Filter by policy
-- `page` (int): Page number
-- `per_page` (int): Items per page
-
-### Get Single Audit Entry
-
-```http
-GET /api/v1/audit/{request_id}
-```
-
-### Verify Audit Log Integrity
-
-```http
-POST /api/v1/audit/verify
-```
-
-Verifies the hash chain integrity of audit logs.
-
----
-
-## Dashboard Data
-
-### Get Dashboard Summary
-
-```http
-GET /api/v1/dashboard/summary?period=24h
-Authorization: Bearer <token>
-```
-
-### Get Guardrail Stats
-
-```http
-GET /api/v1/dashboard/guardrails
-Authorization: Bearer <token>
-```
-
----
-
-## Health & System
-
-### Health Check
-
-```http
-GET /health
-```
-
-No authentication required.
-
-### Detailed Health
-
-```http
-GET /health/detailed
-Authorization: Bearer <token>
-```
-
----
-
-## Error Responses
-
-All errors follow a consistent format:
+**Response** `502 Bad Gateway` (upstream provider failure):
 
 ```json
 {
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Invalid request body",
-    "details": []
+  "detail": "Connection refused: upstream provider unavailable"
+}
+```
+
+---
+
+## Health
+
+### `GET /health`
+
+No authentication required. Returns system health status.
+
+**Response** `200 OK`:
+
+```json
+{
+  "status": "healthy",
+  "version": "0.2.0",
+  "uptime_seconds": 3621.4,
+  "providers_connected": 2,
+  "audit_backend_ok": true
+}
+```
+
+---
+
+## Dashboard
+
+All dashboard endpoints are under the `/dashboard` prefix.
+
+### `GET /dashboard/`
+
+Returns an HTML dashboard page with links to API endpoints.
+
+### `GET /dashboard/stats`
+
+Returns request statistics for a configurable time window.
+
+**Query Parameters**:
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `hours` | int (1-720) | `24` | Look-back window in hours |
+
+**Response** `200 OK`:
+
+```json
+{
+  "total_requests": 1547,
+  "requests_per_minute": 2.3,
+  "avg_latency_ms": 412.5,
+  "error_rate": 0.02
+}
+```
+
+### `GET /dashboard/events`
+
+Query audit events with optional filters.
+
+**Query Parameters**:
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `request_id` | string | None | Filter by request ID |
+| `event_type` | string | None | Filter by event type (see below) |
+| `limit` | int (1-1000) | `50` | Maximum number of events to return |
+
+**Event Types**: `request_received`, `policy_evaluated`, `fact_check_run`, `response_sent`, `error_occurred`
+
+**Response** `200 OK`:
+
+```json
+[
+  {
+    "event_id": "evt_123",
+    "event_type": "request_received",
+    "tenant_id": "tenant_abc",
+    "request_id": "req_456",
+    "timestamp": "2025-03-05T10:30:00Z",
+    "data": {"model": "gpt-4o", "provider": "openai"}
   }
+]
+```
+
+### `GET /dashboard/events/{request_id}`
+
+Returns all audit events for a specific request. Returns `404` if the request ID is not found.
+
+---
+
+## WebSocket
+
+### `WS /ws/metrics`
+
+Real-time metrics stream. Pushes `WebSocketMessage` objects:
+
+```json
+{
+  "type": "metrics",
+  "payload": {
+    "avg_trust_score": 0.89,
+    "requests_per_minute": 12.3,
+    "intervention_rate": 0.04,
+    "error_rate": 0.01,
+    "p50_latency_ms": 280.0,
+    "p95_latency_ms": 890.0,
+    "active_providers": 2
+  }
+}
+```
+
+---
+
+## Error Format
+
+All error responses follow a consistent structure:
+
+```json
+{
+  "detail": "Human-readable error message"
+}
+```
+
+For policy violations, the format is:
+
+```json
+{
+  "error": "Request blocked by policy",
+  "violations": [{"rule_id": "...", "description": "...", "severity": "...", "action": "..."}]
 }
 ```
 
 ### HTTP Status Codes
 
-| Code | Description |
-|------|-------------|
-| 200 | Success |
-| 201 | Created |
-| 400 | Bad Request |
-| 401 | Unauthorized |
-| 403 | Forbidden |
-| 404 | Not Found |
-| 422 | Validation Error |
-| 429 | Rate Limited |
-| 500 | Internal Server Error |
+| Code | Meaning |
+|---|---|
+| `200` | Success |
+| `403` | Request blocked by policy |
+| `404` | Resource not found |
+| `422` | Request validation error |
+| `429` | Rate limit exceeded |
+| `502` | Upstream provider error |
+| `503` | All providers unavailable or audit backend down |
 
 ## Rate Limiting
 
-Default: 60 requests/minute per API key. Rate limit headers included in all responses:
+Default: 60 requests per minute per tenant (configurable via `SENTINEL_RATE_LIMIT_RPM`). When Redis is configured, rate limiting is shared across instances. Without Redis, limits are per-instance.
 
-```
-X-RateLimit-Limit: 60
-X-RateLimit-Remaining: 45
-X-RateLimit-Reset: 1705312800
-```
+## Related Documentation
 
-## Python SDK
-
-```python
-from sentinel import SentinelClient
-
-client = SentinelClient(
-    base_url="http://localhost:8000",
-    api_key="your-api-key"
-)
-
-result = client.verify(
-    prompt="What is aspirin used for?",
-    response="Aspirin is used for pain relief and blood thinning.",
-    model="gpt-4o",
-    policy_ids=["pol_medical_safety"]
-)
-
-if result.verdict == "PASS":
-    print("Response is safe")
-else:
-    print(f"Blocked: {result.violations}")
-```
+- [SDK Guide](sdk-guide.md) -- Python client for the API
+- [Error Codes Reference](reference/error-codes.md) -- full list of error codes
+- [Configuration](configuration.md) -- server and provider settings
