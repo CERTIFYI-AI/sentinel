@@ -279,6 +279,7 @@ class LLMRequest(BaseModel):
     max_tokens: int | None = None
     tenant_id: str = ""
     request_id: str = Field(default_factory=lambda: str(uuid4()))
+    provider: str = ""
 
 
 class LLMResponse(BaseModel):
@@ -350,6 +351,11 @@ class AuditEvent(BaseModel):
     request_id: str
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     data: dict[str, Any] = Field(default_factory=dict)
+    user_id: str = ""
+    session_id: str = ""
+    policy_result: dict[str, Any] | None = None
+    fact_check_result: dict[str, Any] | None = None
+    error: str | None = None
 
 
 class AuditEntryInput(BaseModel):
@@ -373,10 +379,12 @@ class FactCheckVerdict(enum.StrEnum):
     SUPPORTED = "supported"
     REFUTED = "refuted"
     INCONCLUSIVE = "inconclusive"
+    UNCERTAIN = "uncertain"
 
 
 class Claim(BaseModel):
     """A factual claim extracted from text."""
+    claim_id: str = Field(default_factory=lambda: str(uuid4()))
     text: str
     source_span: str = ""
 
