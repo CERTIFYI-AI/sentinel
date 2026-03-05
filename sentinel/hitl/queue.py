@@ -203,7 +203,7 @@ class HitlQueue:
 
     async def enqueue(self, job: dict[str, Any]) -> str:
         """Submit a job for human review."""
-        return await submit_job(job)
+        return await enqueue_job(job)
 
     async def get(self, job_id: str) -> dict[str, Any] | None:
         """Get job status."""
