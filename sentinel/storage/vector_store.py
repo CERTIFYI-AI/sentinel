@@ -244,7 +244,7 @@ class VectorStore:
         source_url: str = "",
     ) -> int:
         """Ingest a document into the vector store."""
-        return await ingest(
+        return await upsert(
             tenant_id=tenant_id,
             doc_id=doc_id,
             content=content,
