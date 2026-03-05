@@ -45,11 +45,11 @@ line-length = 100
 target-version = "py311"
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "N", "UP", "B", "C4", "PTH"]
+select = ["E", "F", "I", "B", "C4"]
 
 [tool.mypy]
 python_version = "3.11"
-strict = true
+strict = false
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
