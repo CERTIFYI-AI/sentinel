@@ -166,7 +166,7 @@ def _compute_injection_score(text: str) -> float:
             [text], convert_to_numpy=True, normalize_embeddings=True,
         ).astype(np.float32)
         sims = np.dot(_injection_embeddings, query_emb.T).flatten()
-        emb = _embedding_model.encode(  # type: ignore[attr-defined]
+                return float(np.max(sims))
 
     # Keyword fallback
     text_lower = text.lower()
