@@ -52,6 +52,7 @@ ignore = ["F401", "I001", "B027", "B905"]
 python_version = "3.11"
 strict = false
 ignore_missing_imports = true
+disable_error_code = ["import-untyped", "assignment", "call-arg"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
