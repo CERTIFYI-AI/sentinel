@@ -1,307 +1,194 @@
 # SDK & Integration Guide
 
-Sentinel provides a Python SDK and supports integration via REST API with any language.
+Sentinel provides a Python SDK client (`sentinel.sdk.SentinelClient`) for interacting with a running Sentinel proxy instance. Since Sentinel implements the OpenAI Chat Completions API, any language that can make HTTP requests can integrate.
 
 ## Python SDK
 
 ### Installation
 
 ```bash
-pip install sentinel-ai
+pip install -e "."
 # Or from source
-pip install -e ".[sdk]"
+git clone https://github.com/CERTIFYI-AI/sentinel.git
+cd sentinel && pip install -e ".[dev]"
 ```
 
 ### Quick Start
 
 ```python
-from sentinel import SentinelClient
-
-client = SentinelClient(
-    base_url="http://localhost:8000",
-    api_key="your-api-key"
-)
-
-# Simple verification
-result = client.verify(
-    prompt="What causes headaches?",
-    response="Headaches can be caused by stress, dehydration, or tension.",
-    model="gpt-4o"
-)
-
-print(result.verdict)          # "PASS" or "FAIL"
-print(result.confidence)       # 0.94
-print(result.total_latency_ms) # 287
-```
-
-### Async Client
-
-```python
-from sentinel import AsyncSentinelClient
 import asyncio
+from sentinel.sdk import SentinelClient
 
 async def main():
-    client = AsyncSentinelClient(
+    async with SentinelClient(
         base_url="http://localhost:8000",
-        api_key="your-api-key"
-    )
+        api_key="your-api-key",
+        timeout=30,
+    ) as client:
+        # Health check
+        health = await client.health()
+        print(f"Status: {health.status}, Version: {health.version}")
 
-    result = await client.verify(
-        prompt="Tell me about Python",
-        response="Python is a programming language.",
-        model="gpt-4o"
-    )
-    print(result.verdict)
+        # Chat completion (OpenAI-compatible)
+        result = await client.chat(
+            messages=[
+                {"role": "user", "content": "What is aspirin used for?"}
+            ],
+            model="gpt-4o",
+            temperature=0.7,
+        )
+        print(result["choices"][0]["message"]["content"])
+        print(f"Trust score: {result.get('sentinel_fact_check', {}).get('trust_score')}")
 
 asyncio.run(main())
 ```
 
-### With Policies
+### SentinelClient API
+
+#### Constructor
 
 ```python
-result = client.verify(
-    prompt="Is this medication safe?",
-    response="Consult your doctor before taking any medication.",
-    model="gpt-4o",
-    policy_ids=["pol_medical_safety", "pol_factuality"],
-    context={
-        "user_id": "usr_123",
-        "domain": "healthcare"
-    }
+SentinelClient(
+    base_url: str = "http://localhost:8080",
+    api_key: Optional[str] = None,
+    timeout: int = 30,
 )
-
-if result.verdict == "FAIL":
-    for violation in result.policy_evaluation.violations:
-        print(f"Policy: {violation.policy_id}")
-        print(f"Rule: {violation.rule}")
-        print(f"Message: {violation.message}")
 ```
 
-### Batch Verification
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `base_url` | str | `http://localhost:8080` | Sentinel proxy URL |
+| `api_key` | str or None | None | Bearer token for authentication |
+| `timeout` | int | 30 | Request timeout in seconds |
+
+#### `chat()`
+
+Send a chat completion request through Sentinel.
 
 ```python
-results = client.verify_batch(
-    requests=[
-        {"prompt": "Q1", "response": "A1", "model": "gpt-4o"},
-        {"prompt": "Q2", "response": "A2", "model": "gpt-4o"},
-    ],
-    policy_ids=["pol_default"]
-)
-
-print(f"Passed: {results.summary.passed}/{results.summary.total}")
+async def chat(
+    messages: List[Dict[str, str]],
+    model: str = "",
+    provider: str = "",
+    temperature: float = 0.7,
+    max_tokens: Optional[int] = None,
+    metadata: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]
 ```
 
-### Error Handling
+Returns the full OpenAI-compatible response dict, plus `sentinel_request_id` and (if fact-checking is enabled) `sentinel_fact_check`.
+
+#### `health()`
+
+Check Sentinel system health.
 
 ```python
-from sentinel.exceptions import (
-    SentinelError,
-    AuthenticationError,
-    RateLimitError,
-    ValidationError
-)
-
-try:
-    result = client.verify(
-        prompt="test",
-        response="test",
-        model="gpt-4o"
-    )
-except AuthenticationError:
-    print("Invalid API key")
-except RateLimitError as e:
-    print(f"Rate limited. Retry after {e.retry_after}s")
-except ValidationError as e:
-    print(f"Invalid request: {e.details}")
-except SentinelError as e:
-    print(f"Sentinel error: {e}")
+async def health() -> HealthStatus
 ```
 
----
+Returns a `HealthStatus` object with `status`, `version`, `uptime_seconds`, and `checks`.
 
-## Framework Integrations
+#### `get_stats()`
 
-### OpenAI Integration
+Get dashboard statistics.
 
 ```python
-import openai
-from sentinel import SentinelClient
-
-sentinel = SentinelClient(base_url="http://localhost:8000", api_key="key")
-
-def safe_chat(prompt: str) -> str:
-    response = openai.chat.completions.create(
-        model="gpt-4o",
-        messages=[{"role": "user", "content": prompt}]
-    )
-    text = response.choices[0].message.content
-
-    result = sentinel.verify(
-        prompt=prompt,
-        response=text,
-        model="gpt-4o"
-    )
-
-    if result.verdict == "PASS":
-        return text
-    return "Response blocked by safety policy."
+async def get_stats(hours: int = 24) -> Dict[str, Any]
 ```
 
-### LangChain Integration
+#### `get_events()`
+
+Query audit events.
 
 ```python
-from langchain.callbacks import BaseCallbackHandler
-from sentinel import SentinelClient
-
-class SentinelCallback(BaseCallbackHandler):
-    def __init__(self):
-        self.client = SentinelClient(
-            base_url="http://localhost:8000",
-            api_key="key"
-        )
-
-    def on_llm_end(self, response, **kwargs):
-        text = response.generations[0][0].text
-        result = self.client.verify(
-            prompt=kwargs.get("prompts", [""])[0],
-            response=text,
-            model="gpt-4o"
-        )
-        if result.verdict == "FAIL":
-            raise ValueError(f"Response blocked: {result.policy_evaluation.violations}")
+async def get_events(
+    request_id: Optional[str] = None,
+    event_type: Optional[str] = None,
+    limit: int = 50,
+) -> List[Dict[str, Any]]
 ```
 
-### FastAPI Middleware
+#### Context Manager
+
+`SentinelClient` supports `async with` for automatic cleanup:
 
 ```python
-from fastapi import FastAPI, Request, Response
-from sentinel import AsyncSentinelClient
-
-app = FastAPI()
-sentinel = AsyncSentinelClient(base_url="http://localhost:8000", api_key="key")
-
-@app.middleware("http")
-async def sentinel_middleware(request: Request, call_next):
-    response = await call_next(request)
-
-    if request.url.path.startswith("/api/chat"):
-        body = await response.body()
-        result = await sentinel.verify(
-            prompt=request.state.prompt,
-            response=body.decode(),
-            model="gpt-4o"
-        )
-        if result.verdict == "FAIL":
-            return Response(
-                content="Response blocked by policy",
-                status_code=422
-            )
-    return response
+async with SentinelClient(base_url="http://localhost:8000") as client:
+    result = await client.chat(messages=[...])
+# Connection automatically closed
 ```
 
----
+## REST API Integration (Any Language)
 
-## REST API (Any Language)
+Sentinel is a standard HTTP API. Any language can integrate by pointing OpenAI-compatible requests at Sentinel:
 
-### cURL
+### curl
 
 ```bash
-# Login
-TOKEN=$(curl -s -X POST http://localhost:8000/auth/login \
+curl -X POST http://localhost:8000/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@sentinel.local","password":"admin"}' \
-  | jq -r '.access_token')
-
-# Verify
-curl -X POST http://localhost:8000/api/v1/verify \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{
-    "prompt": "What is AI?",
-    "response": "AI is artificial intelligence.",
-    "model": "gpt-4o"
+    "model": "gpt-4o",
+    "messages": [{"role": "user", "content": "Hello"}]
   }'
 ```
 
-### JavaScript/TypeScript
+### JavaScript / TypeScript
 
-```typescript
-const response = await fetch('http://localhost:8000/api/v1/verify', {
+```javascript
+const response = await fetch('http://localhost:8000/v1/chat/completions', {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer YOUR_TOKEN',
   },
   body: JSON.stringify({
-    prompt: 'What is AI?',
-    response: 'AI is artificial intelligence.',
-    model: 'gpt-4o'
-  })
+    model: 'gpt-4o',
+    messages: [{ role: 'user', content: 'Hello' }],
+  }),
 });
-
-const result = await response.json();
-console.log(result.verdict);
+const data = await response.json();
+console.log(data.choices[0].message.content);
+console.log('Trust score:', data.sentinel_fact_check?.trust_score);
 ```
 
-### Go
+### OpenAI Python SDK (Drop-in)
 
-```go
-type VerifyRequest struct {
-    Prompt   string `json:"prompt"`
-    Response string `json:"response"`
-    Model    string `json:"model"`
-}
+Point the OpenAI SDK at Sentinel by changing `base_url`:
 
-req := VerifyRequest{
-    Prompt:   "What is AI?",
-    Response: "AI is artificial intelligence.",
-    Model:    "gpt-4o",
-}
-
-body, _ := json.Marshal(req)
-httpReq, _ := http.NewRequest("POST", "http://localhost:8000/api/v1/verify", bytes.NewBuffer(body))
-httpReq.Header.Set("Authorization", "Bearer "+token)
-httpReq.Header.Set("Content-Type", "application/json")
-
-client := &http.Client{}
-resp, _ := client.Do(httpReq)
-```
-
----
-
-## Webhook Integration
-
-Configure webhooks to receive real-time alerts on policy violations:
-
-```bash
-# .env
-WEBHOOK_URL=https://your-app.com/sentinel/webhook
-WEBHOOK_SECRET=your-hmac-secret
-ALERT_ON_VIOLATION=true
-```
-
-Webhook payload:
-```json
-{
-  "event": "policy_violation",
-  "request_id": "req_abc123",
-  "timestamp": "2024-01-15T10:30:00Z",
-  "violations": [
-    {
-      "policy_id": "pol_safe_content",
-      "guardrail": "toxicity",
-      "score": 0.82
-    }
-  ]
-}
-```
-
-Verify webhook signature:
 ```python
-import hmac
-import hashlib
+from openai import OpenAI
 
-def verify_webhook(payload: bytes, signature: str, secret: str) -> bool:
-    expected = hmac.new(secret.encode(), payload, hashlib.sha256).hexdigest()
-    return hmac.compare_digest(f"sha256={expected}", signature)
+client = OpenAI(
+    base_url="http://localhost:8000/v1",
+    api_key="your-sentinel-token",
+)
+
+response = client.chat.completions.create(
+    model="gpt-4o",
+    messages=[{"role": "user", "content": "What is the capital of France?"}],
+)
+print(response.choices[0].message.content)
 ```
+
+## WebSocket Integration
+
+Connect to `ws://localhost:8000/ws/metrics` for real-time metrics:
+
+```python
+import websockets
+import json
+
+async with websockets.connect("ws://localhost:8000/ws/metrics") as ws:
+    async for message in ws:
+        data = json.loads(message)
+        if data["type"] == "metrics":
+            print(f"Trust score avg: {data['payload']['avg_trust_score']}")
+```
+
+## Related Documentation
+
+- [API Reference](api-reference.md) -- full endpoint documentation
+- [Getting Started](getting-started.md) -- setup and first request
+- [Configuration](configuration.md) -- provider and threshold settings
