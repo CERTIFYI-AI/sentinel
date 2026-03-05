@@ -1,0 +1,13 @@
+# Default owners for everything in the repo
+* @CERTIFYI-AI/engineering
+
+# Sentinel core
+sentinel/ @CERTIFYI-AI/engineering
+
+# Dashboard
+dashboard/ @CERTIFYI-AI/engineering
+
+# CI/CD and infrastructure
+.github/ @CERTIFYI-AI/engineering
+Dockerfile @CERTIFYI-AI/engineering
+docker-compose.yml @CERTIFYI-AI/engineering
