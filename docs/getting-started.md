@@ -1,16 +1,16 @@
-# Getting Started with Sentinel
+# Getting Started
 
 Get Sentinel running in under 5 minutes.
 
 ## What is Sentinel?
 
-Sentinel is a real-time AI reliability and governance middleware. It sits between your LLM and your users, verifying every response against configurable safety guardrails and compliance policies before delivery.
+Sentinel is a real-time AI reliability and governance middleware. It sits between your LLM and your users as a transparent proxy, verifying every response against golden-source documents and producing a tamper-proof audit trail for ISO 42001 and EU AI Act compliance.
 
 ## Prerequisites
 
 - Python 3.11+
-- PostgreSQL 15+ (or SQLite for quick testing)
-- Redis 7+
+- PostgreSQL 15+ with pgvector extension (or SQLite for development)
+- Redis 7+ (optional but recommended for production)
 - An OpenAI API key (or compatible LLM provider)
 
 ## Installation
@@ -21,12 +21,11 @@ Sentinel is a real-time AI reliability and governance middleware. It sits betwee
 git clone https://github.com/CERTIFYI-AI/sentinel.git
 cd sentinel
 cp .env.example .env
-# Edit .env with your OPENAI_API_KEY
-
-docker-compose up -d
+# Edit .env with your settings (see Required Settings below)
+docker compose up -d
 ```
 
-Sentinel API will be available at `http://localhost:8000` and the dashboard at `http://localhost:3000`.
+Sentinel will be available at `http://localhost:8000`.
 
 ### Option 2: Local Development
 
@@ -40,139 +39,131 @@ pip install -e ".[dev]"
 
 cp .env.example .env
 # Edit .env with your settings
-
-alembic upgrade head
-python -m sentinel.scripts.seed_policies
-uvicorn sentinel.main:app --reload --port 8000
 ```
 
-## Your First Verification
+## Required Settings
 
-### 1. Get an Auth Token
+Edit your `.env` file and set these two required values:
 
 ```bash
-curl -X POST http://localhost:8000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email": "admin@sentinel.local", "password": "admin"}'
+# PostgreSQL connection string (required)
+SENTINEL_DATABASE_URL=postgresql+asyncpg://sentinel:password@localhost:5432/sentinel
+
+# JWT signing secret -- min 32 characters (required)
+SENTINEL_SECRET_KEY=$(openssl rand -hex 32)
 ```
 
-Save the `access_token` from the response.
-
-### 2. Verify an LLM Response
+Optional but recommended for production:
 
 ```bash
-curl -X POST http://localhost:8000/api/v1/verify \
-  -H "Authorization: Bearer YOUR_TOKEN" \
+SENTINEL_REDIS_URL=redis://localhost:6379/0
+```
+
+See [Configuration](configuration.md) for the full list of settings.
+
+## Starting the Server
+
+```bash
+# Using the Makefile
+make run
+
+# Or directly with uvicorn
+uvicorn sentinel.proxy:create_app --factory --reload --port 8000
+```
+
+Check the server is running:
+
+```bash
+curl http://localhost:8000/health
+```
+
+Expected response:
+
+```json
+{
+  "status": "healthy",
+  "version": "0.2.0",
+  "uptime_seconds": 2.1,
+  "providers_connected": 1,
+  "audit_backend_ok": true
+}
+```
+
+## Your First Request
+
+Sentinel is a drop-in replacement for the OpenAI API. Point your existing code at Sentinel instead of OpenAI:
+
+```bash
+curl -X POST http://localhost:8000/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "prompt": "What is the capital of France?",
-    "response": "The capital of France is Paris.",
-    "model": "gpt-4o"
+    "model": "gpt-4o",
+    "messages": [
+      {"role": "user", "content": "What is the capital of France?"}
+    ]
   }'
 ```
 
-### 3. Review the Result
-
-The response includes:
-- **verdict**: `PASS` or `FAIL`
-- **guardrail_results**: Individual scores for each guardrail
-- **policy_evaluation**: Which policies were checked and any violations
-- **total_latency_ms**: End-to-end processing time
+Sentinel will:
+1. Sanitize the prompt (PII detection, injection detection)
+2. Evaluate pre-request policies
+3. Forward to the upstream LLM provider
+4. Fact-check the response against the Golden Source
+5. Run post-response policy checks
+6. Log everything to the tamper-evident audit trail
+7. Return the response with a `sentinel_request_id` and `sentinel_fact_check` field
 
 ## Using the Python SDK
 
 ```python
-from sentinel import SentinelClient
-
-client = SentinelClient(
-    base_url="http://localhost:8000",
-    api_key="your-api-key"
-)
-
-# Verify a response
-result = client.verify(
-    prompt="Is ibuprofen safe with blood thinners?",
-    response="You should consult your doctor before combining medications.",
-    model="gpt-4o",
-    policy_ids=["pol_medical_safety"]
-)
-
-print(f"Verdict: {result.verdict}")
-print(f"Latency: {result.total_latency_ms}ms")
-
-if result.verdict == "FAIL":
-    for v in result.policy_evaluation.violations:
-        print(f"Violation: {v.message}")
-```
-
-## Integration Patterns
-
-### Middleware Pattern
-
-Insert Sentinel between your application and LLM provider:
-
-```python
-import openai
-from sentinel import SentinelClient
-
-sentinel = SentinelClient(base_url="http://localhost:8000", api_key="key")
-
-def safe_completion(prompt: str) -> str:
-    # Get LLM response
-    response = openai.chat.completions.create(
-        model="gpt-4o",
-        messages=[{"role": "user", "content": prompt}]
-    )
-    llm_text = response.choices[0].message.content
-
-    # Verify with Sentinel
-    result = sentinel.verify(
-        prompt=prompt,
-        response=llm_text,
-        model="gpt-4o"
-    )
-
-    if result.verdict == "PASS":
-        return llm_text
-    else:
-        return "I cannot provide that response due to safety policies."
-```
-
-### Async Pattern
-
-```python
 import asyncio
-from sentinel import AsyncSentinelClient
+from sentinel.sdk import SentinelClient
 
-async def verify_responses():
-    client = AsyncSentinelClient(
+async def main():
+    async with SentinelClient(
         base_url="http://localhost:8000",
-        api_key="key"
-    )
+        api_key="your-api-key",
+    ) as client:
+        # Check health
+        health = await client.health()
+        print(f"Status: {health.status}")
 
-    result = await client.verify(
-        prompt="...",
-        response="...",
-        model="gpt-4o"
-    )
-    return result
+        # Send a chat completion
+        result = await client.chat(
+            messages=[{"role": "user", "content": "What is aspirin used for?"}],
+            model="gpt-4o",
+        )
+        print(result)
+
+        # Query audit events
+        events = await client.get_events(limit=10)
+        print(f"Recent events: {len(events)}")
+
+asyncio.run(main())
 ```
 
-## Dashboard
+## Seeding the Golden Source
 
-Access the Sentinel dashboard at `http://localhost:3000` to:
+The Golden Source is Sentinel's knowledge base for fact-checking. Seed it with your authoritative documents:
 
-- Monitor real-time request flow
-- View guardrail performance metrics
-- Manage policies
-- Browse audit logs
-- Configure alerts
+```bash
+python scripts/seed_golden_source.py --source-dir ./data/golden_source/
+```
+
+See [Golden Source Setup](guides/golden-source-setup.md) for detailed instructions.
+
+## Viewing the Dashboard
+
+Open `http://localhost:8000/dashboard/` in your browser to access the monitoring dashboard. It provides links to:
+
+- `/dashboard/stats` -- request statistics
+- `/dashboard/events` -- audit event log
+- `/health` -- system health
 
 ## Next Steps
 
-- [API Reference](./api-reference.md) — Full endpoint documentation
-- [Configuration](./configuration.md) — Environment variables and settings
-- [Policy Language](./policy-language.md) — Create custom governance policies
-- [Architecture](./architecture.md) — System design and internals
-- [Deployment](./deployment.md) — Production deployment guide
-- [Troubleshooting](./troubleshooting.md) — Common issues and fixes
+- [Architecture](architecture.md) -- understand the five-layer pipeline
+- [Configuration](configuration.md) -- tune thresholds and provider settings
+- [Guides: Quickstart](guides/quickstart.md) -- end-to-end walkthrough
+- [Guides: Writing Policies](guides/writing-policies.md) -- define custom governance rules
+- [Deployment Guide](deployment-guide.md) -- production deployment on AWS, GCP, or bare metal
