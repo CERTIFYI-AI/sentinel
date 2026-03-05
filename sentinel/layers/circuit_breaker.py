@@ -172,7 +172,7 @@ async def evaluate(
             responses=[response_text],
             scores=[trust_score],
         )
-        await hitl_queue.enqueue_job(job)
+        await hitl_queue.enqueue(job)
         logger.info("L3 HITL: job %s enqueued", job.job_id)
         return CircuitBreakerResult(
             intervention=InterventionLevel.HITL,
