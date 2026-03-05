@@ -221,7 +221,11 @@ async def verify_chain_integrity(
                 "entry_id": str(row["entry_id"]),
                 "tenant_id": row["tenant_id"],
                 "request_id": row["request_id"],
-                "timestamp": row["timestamp"].isoformat() if hasattr(row["timestamp"], "isoformat") else str(row["timestamp"]),
+                    "timestamp": (
+                        row["timestamp"].isoformat()
+                        if hasattr(row["timestamp"], "isoformat")
+                        else str(row["timestamp"])
+                    ),
                 "prompt_hash": row["prompt_hash"],
                 "response_hash": row["response_hash"],
                 "trust_score": float(row["trust_score"]),

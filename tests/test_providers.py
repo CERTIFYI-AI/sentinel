@@ -123,7 +123,7 @@ class TestLLMResponseModel:
     """Verify LLMResponse field validation."""
 
     def test_cost_usd_cannot_be_negative(self):
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError):
             LLMResponse(content="ok", cost_usd=-0.01, model="test")
 
     def test_valid_response_instantiates(self):

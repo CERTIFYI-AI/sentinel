@@ -52,7 +52,8 @@ def init_embedding_model(model_name: str = "all-MiniLM-L6-v2") -> None:
     try:
         from sentence_transformers import SentenceTransformer
         _embedding_model = SentenceTransformer(model_name)
-        logger.info("Loaded embedding model: %s (dim=%d)", model_name, _embedding_model.get_sentence_embedding_dimension())
+        dim = _embedding_model.get_sentence_embedding_dimension()
+        logger.info("Loaded embedding model: %s (dim=%d)", model_name, dim)
     except ImportError:
         logger.warning(
             "sentence-transformers not installed. Vector search will not work. "
