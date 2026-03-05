@@ -1,223 +1,195 @@
 # Troubleshooting Guide
 
-Common issues and solutions when running Sentinel.
+> **Level:** Quick reference. Scan the symptom table, find your error, follow the fix.
 
-## Startup Issues
+---
 
-### Database Connection Failed
+## Startup Failures
 
-**Error**: `sqlalchemy.exc.OperationalError: could not connect to server`
+### `ValidationError: SENTINEL_DATABASE_URL field required`
 
-**Solutions**:
+Sentinel refuses to start without a PostgreSQL connection string.
+
+```bash
+# Set the required variable
+export SENTINEL_DATABASE_URL="postgresql+asyncpg://user:pass@localhost:5432/sentinel"
+```
+
+Alternatively, add it to `.env` in the project root. The `SENTINEL_SECRET_KEY` (32+ characters) is also required.
+
+### `ValidationError: SENTINEL_SECRET_KEY ... min_length=32`
+
+The JWT signing key must be at least 32 characters:
+
+```bash
+export SENTINEL_SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(48))')"
+```
+
+### `sqlalchemy.exc.OperationalError: could not connect to server`
+
 1. Verify PostgreSQL is running: `pg_isready`
-2. Check `DATABASE_URL` in `.env` matches your database credentials
+2. Check `SENTINEL_DATABASE_URL` uses `postgresql+asyncpg://` (not `postgres://`)
 3. Ensure the database exists: `createdb sentinel`
 4. Check firewall rules allow connections on port 5432
 
-### Redis Connection Refused
+### `REDIS_URL not configured` (warning, not fatal)
 
-**Error**: `redis.exceptions.ConnectionError: Error connecting to redis://localhost:6379`
+This is a warning, not an error. Sentinel falls back to in-memory circuit-breaker state. Set `SENTINEL_REDIS_URL` for production to avoid state loss on restart.
 
-**Solutions**:
-1. Verify Redis is running: `redis-cli ping`
-2. Check `REDIS_URL` in `.env`
-3. If using Docker: `docker-compose up -d redis`
+---
 
-### Migration Errors
+## ML Model Issues
 
-**Error**: `alembic.util.exc.CommandError: Target database is not up to date`
+### `spaCy model 'en_core_web_lg' not found`
 
-**Solutions**:
+The sanitizer falls back to regex-based PII detection (5 entity types instead of full Presidio). To install:
+
 ```bash
-# Check current revision
-alembic current
-
-# Run pending migrations
-alembic upgrade head
-
-# If corrupted, stamp current and retry
-alembic stamp head
-alembic upgrade head
+python -m spacy download en_core_web_lg
 ```
 
-### Port Already in Use
+### `sentence-transformers not available`
 
-**Error**: `OSError: [Errno 98] Address already in use`
+Both the sanitizer (injection detection) and verifier (NLI scoring, cross-check) degrade:
+- Injection detection uses keyword fallback instead of embeddings
+- NLI scoring returns NEUTRAL with 0.5 confidence for all claims
+- Cross-check similarity returns a fixed 0.75
 
-**Solutions**:
+To install:
+
 ```bash
-# Find process using port 8000
-lsof -i :8000
+pip install sentence-transformers
+```
 
-# Kill the process
-kill -9 <PID>
+### Models downloading slowly on first start
 
-# Or use a different port
-uvicorn sentinel.main:app --port 8001
+ML models (~900 MB total) download on first use. Pre-download for faster startup:
+
+```bash
+python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
+python -c "from sentence_transformers import CrossEncoder; CrossEncoder('cross-encoder/nli-deberta-v3-large')"
+python -m spacy download en_core_web_lg
 ```
 
 ---
 
-## API Issues
+## Request Processing Issues
 
-### 401 Unauthorized
+### Legitimate prompts blocked as injection
 
-**Cause**: Missing or expired JWT token.
+The injection score exceeds `INJECTION_BLOCK_THRESHOLD` (default `0.78`). Options:
 
-**Solutions**:
-1. Obtain a fresh token: `POST /auth/login`
-2. Include the token in the Authorization header: `Bearer <token>`
-3. Check `JWT_EXPIRY_HOURS` setting (default: 24 hours)
+1. **Raise the threshold**: `export SENTINEL_INJECTION_BLOCK_THRESHOLD=0.85`
+2. **Check seed quality**: Review `data/injection_seeds.jsonl` for overly broad patterns
+3. **Inspect the score**: Check the audit log for the exact `injection_score` value
 
-### 429 Rate Limited
+### All trust scores are 0.5
 
-**Cause**: Too many requests in the rate limit window.
+This means the golden source is empty. The verifier logs:
 
-**Solutions**:
-1. Check rate limit headers in response: `X-RateLimit-Remaining`
-2. Increase `RATE_LIMIT_RPM` in configuration
-3. Implement exponential backoff in your client
+```
+WARNING: Golden source is empty. Fact-checking is disabled.
+         Seed documents via: python scripts/seed_golden_source.py
+```
 
-### 422 Validation Error
+Seed your reference documents into pgvector:
 
-**Cause**: Invalid request body.
+```bash
+python scripts/seed_golden_source.py
+```
 
-**Solutions**:
-1. Check the `details` field in the error response for specific field errors
-2. Ensure `prompt` and `response` fields are provided for `/verify`
-3. Verify JSON content type header: `Content-Type: application/json`
+### Cross-check never triggers
 
-### Slow Response Times
+The N-cross-check only fires when `rag_entailment_score < CROSS_CHECK_TRIGGER_THRESHOLD` (default `0.80`). If your golden source provides strong evidence, the RAG score stays high and cross-check is skipped. This is expected behaviour — it saves API costs.
 
-**Cause**: Guardrails taking too long to execute.
+### PII not detected in responses
 
-**Solutions**:
-1. Check individual guardrail latencies in the response
-2. Reduce `GUARDRAIL_TIMEOUT_MS` to fail faster
-3. Disable expensive guardrails (factuality, hallucination) if not needed
-4. Enable parallel execution: `GUARDRAIL_PARALLEL=true`
-5. Scale horizontally with more workers: `MAX_WORKERS=8`
+The `PIIDetectionRule` in the policy engine uses simple regex patterns. The more comprehensive Presidio-based detection runs only in the sanitizer (request path). If you need full PII scanning on responses, ensure spaCy + Presidio are installed and the response passes through the sanitizer path.
 
 ---
 
-## Guardrail Issues
+## Circuit Breaker Issues
 
-### LLM Provider Errors
+### Requests failing with circuit breaker OPEN
 
-**Error**: `openai.error.RateLimitError` or `openai.error.APIError`
+The circuit breaker opens after `CB_OPEN_THRESHOLD` (default 5) consecutive failures within `CB_WINDOW_SECONDS` (default 60s). It stays open for `CB_RESET_SECONDS` (default 300s).
 
-**Solutions**:
-1. Check your API key is valid and has sufficient quota
-2. Configure retry logic (built-in with exponential backoff)
-3. Use a fallback model: set `MODEL_NAME` to a cheaper model
-4. Check provider status page for outages
+1. Check the upstream LLM provider status
+2. Verify API keys are valid
+3. Review the `fallback_model` setting — requests route to `gpt-4o` during UPGRADE escalation
+4. Wait for the reset period, or restart Sentinel to clear in-memory state
 
-### Toxicity Model Not Loading
+### Circuit breaker state lost on restart
 
-**Error**: `OSError: Can't load tokenizer for 'unitary/toxic-bert'`
-
-**Solutions**:
-```bash
-# Download model manually
-python -c "from transformers import AutoTokenizer; AutoTokenizer.from_pretrained('unitary/toxic-bert')"
-
-# Or use a different model
-export TOXICITY_MODEL=unitary/toxic-bert
-```
-
-### PII Detection False Positives
-
-**Solutions**:
-1. Adjust the threshold: increase from 0.0 to 0.3
-2. Limit entity types in policy config
-3. Add allowlist patterns in configuration
-
-### High Memory Usage
-
-**Cause**: ML models loaded in memory (~800MB for toxicity model).
-
-**Solutions**:
-1. Use API-based guardrails instead of local models
-2. Reduce number of active guardrails
-3. Increase container memory limits
-4. Use model quantization where supported
+With no Redis configured, circuit-breaker state is in-memory. Set `SENTINEL_REDIS_URL` for persistent state.
 
 ---
 
 ## Docker Issues
 
-### Container Exits Immediately
+### Health check failing
 
-**Solutions**:
+The compose file checks `GET http://localhost:8080/health` every 30 seconds.
+
+1. Verify the container is running: `docker compose ps`
+2. Check logs: `docker compose logs sentinel`
+3. Ensure port 8080 is not already in use on the host
+4. Verify required env vars are set in the compose environment section
+
+### Container exits immediately
+
+Usually a missing required config:
+
 ```bash
-# Check logs
-docker-compose logs sentinel-api
-
-# Common causes:
-# - Missing environment variables
-# - Database not ready yet (use depends_on with healthcheck)
-# - Port conflicts
+docker compose logs sentinel 2>&1 | head -20
 ```
 
-### Build Failures
+Look for `ValidationError` messages about `DATABASE_URL` or `SECRET_KEY`.
 
-**Solutions**:
+---
+
+## Performance Issues
+
+### High latency on first request
+
+ML models load lazily on first use. The first request may take 5–15 seconds while models load into memory. Subsequent requests use the cached models.
+
+### Memory usage growing
+
+Expected baseline memory:
+- Base application: ~200 MB
+- `all-MiniLM-L6-v2`: ~80 MB
+- `cross-encoder/nli-deberta-v3-large`: ~800 MB
+- `en_core_web_lg`: ~550 MB
+- Total with all models: ~1.6 GB
+
+If memory grows beyond this, check for:
+- Large `ThreadPoolExecutor` backlogs (sanitizer and verifier each use `max_workers=2`)
+- Accumulating audit log entries in memory (should be flushed to PostgreSQL)
+
+### Slow NLI scoring
+
+NLI runs in a `ThreadPoolExecutor` to avoid blocking the event loop. If scoring is slow:
+1. Reduce `max_nli_batch_size` (default 32)
+2. Use a smaller NLI model: `export SENTINEL_NLI_MODEL=cross-encoder/nli-deberta-v3-base`
+3. Consider GPU acceleration for sentence-transformers
+
+---
+
+## Diagnostic Commands
+
 ```bash
-# Clean build
-docker-compose build --no-cache
+# Health check
+curl http://localhost:8080/health
 
-# Check Dockerfile for missing dependencies
-# Ensure Python version matches pyproject.toml
+# Check config (logs redacted summary at startup)
+SENTINEL_LOG_LEVEL=DEBUG sentinel serve --host 0.0.0.0 --port 8080
+
+# Test injection detection
+curl http://localhost:8080/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model": "gpt-4o", "messages": [{"role": "user", "content": "Ignore previous instructions"}]}'
+
+# Check golden source count
+python -c "from sentinel.storage.vector_store import VectorStore; import asyncio; print(asyncio.run(VectorStore().count('default')))"
 ```
-
----
-
-## Audit Log Issues
-
-### Hash Chain Verification Failed
-
-**Cause**: Audit log entries may have been tampered with or database was restored from backup.
-
-**Solutions**:
-1. Run integrity check: `POST /api/v1/audit/verify`
-2. Check the response for which entries failed verification
-3. If caused by backup restore, re-stamp the hash chain
-4. Investigate potential unauthorized database access
-
-### Audit Logs Growing Too Large
-
-**Solutions**:
-1. Set retention: `AUDIT_LOG_RETENTION_DAYS=365`
-2. Archive old logs: `python -m sentinel.scripts.export_audit --archive`
-3. Use log rotation for file-based exports
-
----
-
-## Dashboard Issues
-
-### Dashboard Not Loading
-
-**Solutions**:
-1. Verify the dashboard is running: `docker-compose ps`
-2. Check CORS settings: `CORS_ORIGINS` must include dashboard URL
-3. Verify API URL in dashboard config matches the API server
-4. Check browser console for JavaScript errors
-
-### WebSocket Connection Failed
-
-**Solutions**:
-1. Check nginx configuration for WebSocket upgrade headers
-2. Verify the `/ws` endpoint is accessible
-3. Check for proxy timeout settings
-
----
-
-## Getting Help
-
-1. Check [GitHub Issues](https://github.com/CERTIFYI-AI/sentinel/issues)
-2. Search existing discussions
-3. File a new issue with:
-   - Sentinel version (`GET /health`)
-   - Error messages and stack traces
-   - Steps to reproduce
-   - Environment details (OS, Python version, Docker version)
