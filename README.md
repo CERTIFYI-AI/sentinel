@@ -3,10 +3,10 @@
 **The AI Reliability & Trust Engine** — verify every LLM response before it reaches your users.
 
 [![CI](https://github.com/CERTIFYI-AI/sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/CERTIFYI-AI/sentinel/actions/workflows/ci.yml)
-[![PyPI](https://img.shields.io/pypi/v/certifyi-sentinel.svg)](https://pypi.org/project/certifyi-sentinel/)
+[![PyPI](https://img.shields.io/badge/pypi-pre--release-yellow.svg)](https://github.com/CERTIFYI-AI/sentinel/releases)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-green.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![GitHub Discussions](https://img.shields.io/github/discussions/CERTIFYI-AI/sentinel)](https://github.com/CERTIFYI-AI/sentinel/discussions)
+[![GitHub Discussions](https://img.shields.io/badge/discussions-welcome-brightgreen.svg)](https://github.com/CERTIFYI-AI/sentinel/discussions)
 
 Built by [Certifyi](https://certifyi.ai) — the team that gets AI companies to ISO 42001 and SOC 2 in 8-12 weeks.
 
@@ -137,7 +137,7 @@ X-Sentinel-Latency-Ms: 312
 | Claude 3.5 Sonnet | 6.1% | 0.9% | 0.85 | +298ms median |
 | Gemini 1.5 Pro | 9.4% | 1.8% | 0.85 | +341ms median |
 
-> Methodology: 2,400-query eval dataset of medical, legal, and technical claims. Golden Source seeded with domain-specific documentation. Hallucination defined as a factual claim that contradicts or is absent from the Golden Source. Reproduce with `python scripts/run_eval.py --dataset data/eval_dataset.jsonl`. Dataset is in `data/`.
+> Methodology: 50-pair labeled eval dataset (`data/eval_dataset.jsonl`) across medical, legal, and technical domains. Each pair includes golden source, prompt, response, and hallucination label. Hallucination = factual claim that contradicts or is absent from Golden Source. Run: `python scripts/run_eval.py --dataset data/eval_dataset.jsonl`. Numbers above from internal testing — reproduce independently to validate.
 
 ## Comparison
 
