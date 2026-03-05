@@ -96,7 +96,7 @@ class CircuitBreakerResult(BaseModel):
 class AuditEntry(BaseModel):
     """A single immutable row in the audit hash chain."""
 
-        entry_id: str = Field(default_factory=lambda: str(uuid4()))
+    entry_id: str = Field(default_factory=lambda: str(uuid4()))
     tenant_id: str
     request_id: str
     timestamp: datetime = Field(default_factory=datetime.utcnow)
