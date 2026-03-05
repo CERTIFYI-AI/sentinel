@@ -8,248 +8,196 @@ Sentinel is a transparent proxy. Any application that calls an OpenAI-compatible
 
 The key architectural constraint: **Sentinel must never require code changes in the client application.** This means Sentinel implements the full OpenAI Chat Completions API (`POST /v1/chat/completions`) including streaming via SSE.
 
-## The Five Layers
+## Dual Pipeline Architecture
 
-### Layer 1: Sanitizer (`sentinel/layers/sanitizer.py`)
+Sentinel processes requests through two complementary systems that operate at different layers:
 
-**What it does**: Detects and masks PII in the prompt. Detects prompt injection attacks.
+### Proxy Pipeline (`sentinel/proxy.py`)
 
-**Why it is a separate layer**: PII masking must happen before the prompt leaves the Sentinel boundary. Injection detection must happen before the prompt reaches the LLM provider.
+The main FastAPI application handles the HTTP request lifecycle:
 
-**Data in**: Raw user prompt (string)
-**Data out**: Sanitized prompt (PII tokens replaced), redaction map (Fernet-encrypted), injection_detected flag
+1. **PolicyEngine** (`sentinel/rules.py`) — Evaluates request against registered `Rule` instances (PII detection, blocked topics, max token guard, prompt injection). Returns `PolicyResult` with action `ALLOW`, `BLOCK`, or `FLAG`.
+2. **Provider Forward** — Uses `httpx.AsyncClient` to forward the sanitized request to the upstream LLM provider. Provider selection is based on `SentinelConfig.providers` configuration.
+3. **Post-Response Policy** — Runs response-phase rules. If `PolicyAction.MODIFY`, replaces response content.
+4. **FactChecker** (`sentinel/checker.py`) — Optional claim-level fact checking. Appends `sentinel_fact_check` to the response body.
+5. **AuditLogger** (`sentinel/audit.py`) — Logs `AuditEvent` entries for every stage (`REQUEST_RECEIVED`, `POLICY_EVALUATED`, `FACT_CHECK_RUN`, `RESPONSE_SENT`, `ERROR_OCCURRED`).
 
-**Failure mode**: If Presidio fails, Sentinel falls back to regex-based PII detection. If regex also fails, the prompt passes through with a `pii_detection_degraded: true` flag in the audit log.
+### Governance Layers (`sentinel/layers/`)
 
-### Layer 2: Verifier (`sentinel/layers/verifier.py`)
+The layers package implements the full trust-scoring and intervention pipeline:
 
-**What it does**: Computes a Trust Score for the LLM response by checking factual claims against the Golden Source.
+#### Layer 1: Sanitizer (`sentinel/layers/sanitizer.py`)
 
-**Why it is a separate layer**: Verification requires ML inference (NLI model) and vector search (pgvector). These are the most compute-intensive operations and must be independently scalable.
+**What it does**: Detects and masks PII in the prompt. Detects prompt injection attacks via cosine similarity against known seed embeddings.
 
-**Data in**: LLM response (string), sanitized prompt, tenant configuration
-**Data out**: Trust Score (0.0-1.0), claim-level breakdown, intervention decision (NONE/REGENERATE/UPGRADE/HITL)
+**Two-mode operation**:
+- **FULL**: Presidio + spaCy NLP pipeline (`en_core_web_lg`) for PII detection across 18+ entity types
+- **FALLBACK**: Regex-based detection (5 entity types: `EMAIL_ADDRESS`, `PHONE_NUMBER`, `US_SSN`, `CREDIT_CARD`, `IP_ADDRESS`) when spaCy is unavailable
 
-**Failure mode**: If the Golden Source is empty, all factual claims receive a 0.5 fallback score. If the NLI model fails, the system falls back to semantic similarity only (less accurate but functional).
+**Injection detection**: Computes cosine similarity between the input and pre-computed embeddings of known injection patterns stored in `data/injection_seeds.jsonl`. Uses `SentenceTransformer` (`all-MiniLM-L6-v2` by default). Falls back to keyword matching if sentence-transformers is not installed.
 
-### Layer 3: Circuit Breaker (`sentinel/layers/circuit_breaker.py`)
+**Data in**: Raw user prompt (string), `TenantConfig`, `SentinelSettings`
+**Data out**: `SanitizationResult` — sanitized text, blocked flag, injection score, PII entity types found, Fernet-encrypted redaction map
 
-**What it does**: Manages provider health and implements the fallback cascade when a Trust Score is below threshold.
+**Concurrency**: All CPU-bound work (`_sanitize_sync`) runs in a `ThreadPoolExecutor(max_workers=2)` via `asyncio.run_in_executor()`.
 
-**Why it is a separate layer**: Fault tolerance logic must be independent of verification logic. The circuit breaker manages provider state across requests.
+**Failure mode**: If Presidio fails, falls back to regex detection. If injection seeds file is missing, injection detection is disabled.
 
-**Data in**: Trust Score, intervention decision, provider health state
-**Data out**: Final response (original, regenerated, or upgraded), provider used, circuit breaker state
+#### Layer 2: Verifier (`sentinel/layers/verifier.py`)
 
-**Failure mode**: If all providers are unavailable, the circuit breaker returns a 503 with error code `ALL_PROVIDERS_UNAVAILABLE`. If Redis is unavailable, circuit breaker state falls back to in-memory (not shared across instances).
+**What it does**: Computes a Trust Score for the LLM response through a five-step verification pipeline.
 
-### Layer 4: Auditor (`sentinel/layers/auditor.py`)
+**Five-step pipeline**:
+1. **Claim extraction** — Uses `litellm.acompletion()` with `gpt-4o-mini` to extract verifiable factual claims as a JSON array
+2. **RAG retrieval** — Vector search against the Golden Source via `VectorStore.search()` (pgvector). Top-k=3 per claim, filtered by `golden_source_similarity_threshold` (default: 0.72)
+3. **NLI scoring** — `CrossEncoder` (`cross-encoder/nli-deberta-v3-large`) scores each claim against retrieved evidence. Labels: `ENTAILMENT`, `CONTRADICTION`, `NEUTRAL`. Runs in `ThreadPoolExecutor(max_workers=2)`.
+4. **N-cross-check** — Conditional. Triggered when RAG entailment score < `cross_check_trigger_threshold` (default: 0.80). Queries two independent models (`gpt-4o-mini`, `claude-3-haiku`) and computes semantic similarity of their responses.
+5. **Semantic drift detection** — Default score 0.75 (baseline comparison placeholder).
 
-**What it does**: Writes a tamper-evident audit log entry for every request.
-
-**Why it is a separate layer**: Audit logging must happen regardless of whether the response was successful. The audit layer runs after every request, including blocked requests.
-
-**Data in**: Request metadata, response hash, Trust Score, intervention decision, redaction summary
-**Data out**: Audit entry ID, hash chain entry
-
-**Failure mode**: If PostgreSQL is unavailable, audit entries are buffered in memory and flushed when the connection recovers. The buffer is bounded (default: 10,000 entries). If the buffer fills, Sentinel returns 503 — it will not serve responses it cannot audit.
-
-### Layer 5: HITL Queue (`sentinel/hitl/queue.py`)
-
-**What it does**: Routes low-trust responses to a human review queue.
-
-**Why it is a separate layer**: Human review is asynchronous. The HITL queue decouples the synchronous request pipeline from the asynchronous review workflow.
-
-**Data in**: Request with Trust Score below HITL threshold, candidate responses from L1/L2 retries
-**Data out**: Queue entry with job ID, WebSocket notification to dashboard
-
-**Failure mode**: If the queue is full or the reviewer does not respond within the configured timeout, the highest-scoring candidate response is returned with `intervention: HITL_TIMEOUT` in the audit log.
-
-## Data Flow Diagram
+**Trust Score formula**:
 
 ```
-Client Application
-       |
-       | POST /v1/chat/completions
-       | {model, messages, ...}
-       |
-       v
-+----------------------------------------------+
-| SANITIZER                                    |
-| 1. Extract prompt text from messages         |
-| 2. Run Presidio PII detection (spaCy NLP)    |
-| 3. Replace PII tokens, encrypt redaction map |
-| 4. Compute injection similarity score        |
-| 5. Block if injection_score > 0.85           |
-|                                              |
-| OUT: sanitized_prompt, redaction_map,        |
-|      injection_detected                      |
-+----------------------------------------------+
-       |
-       | sanitized prompt
-       v
-+----------------------------------------------+
-| LLM PROVIDER (via LiteLLM)                   |
-| Forward sanitized prompt to provider         |
-| Receive response                             |
-+----------------------------------------------+
-       |
-       | raw LLM response
-       v
-+----------------------------------------------+
-| VERIFIER                                     |
-| 1. Extract claims from response (sentence    |
-|    segmentation)                             |
-| 2. For each claim:                           |
-|    a. Vector search Golden Source (top-k=5)  |
-|    b. Compute semantic similarity            |
-|    c. Run NLI entailment (DeBERTa)           |
-| 3. Compute weighted Trust Score              |
-| 4. Determine intervention level              |
-|                                              |
-| OUT: trust_score, claim_scores[],            |
-|      intervention                            |
-+----------------------------------------------+
-       |
-       | trust_score < threshold?
-       v
-+----------------------------------------------+
-| CIRCUIT BREAKER                              |
-| If NONE: pass through                        |
-| If REGENERATE: retry same provider           |
-| If UPGRADE: try higher-tier provider         |
-| If HITL: queue for human review              |
-+----------------------------------------------+
-       |
-       v
-+----------------------------------------------+
-| AUDITOR                                      |
-| 1. Hash response content (SHA-256)           |
-| 2. Hash previous audit entry (chain)         |
-| 3. Write append-only audit entry             |
-| 4. Emit WebSocket event                      |
-+----------------------------------------------+
-       |
-       v
-Client Application receives response
-with X-Sentinel-* headers
+trust_score = 0.40 * rag_entailment
+            + 0.30 * cross_check_agreement
+            + 0.15 * pii_clean_factor
+            + 0.15 * semantic_drift_score
 ```
+
+- `rag_entailment` (weight 0.40): Average NLI confidence across all claims. Falls back to 0.5 if Golden Source is empty.
+- `cross_check_agreement` (weight 0.30): Cosine similarity between two independent model responses. Default 0.75 if not triggered.
+- `pii_clean_factor` (weight 0.15): 1.0 if no PII/injection detected, 0.0 otherwise.
+- `semantic_drift_score` (weight 0.15): Behavioural stability signal. Default 0.75.
+
+**Failure mode**: If claim extraction fails, returns trust_score=1.0 (no claims to verify). If NLI model is not loaded, all claims score 0.5 with label `NEUTRAL`.
+
+#### Layer 3: Circuit Breaker (`sentinel/layers/circuit_breaker.py`)
+
+**What it does**: Implements a four-level escalation cascade (L0→L1→L2→L3) when Trust Score falls below threshold.
+
+**Cascade levels**:
+- **L0 NONE**: Trust score ≥ `trust_score_block_threshold` (default: 0.85). Pass through.
+- **L1 REGENERATE**: Trust score below threshold. Records failure in circuit breaker state. If failure count within `cb_window_seconds` (60s) reaches `cb_open_threshold` (5), opens the circuit.
+- **L2 UPGRADE**: Circuit is OPEN. Routes to `fallback_model` (default: `gpt-4o`).
+- **L3 HITL**: Enqueues a `HitlJob` to the `HitlQueue`. Returns `hitl_canned_response` to the client.
+
+**State backend**: Auto-selected at startup:
+- **Redis** (production): Persisted across restarts. Uses `redis.from_url()`.
+- **In-memory** (`_InMemoryBackend`): Thread-safe with `threading.Lock`. State lost on restart. Logs warning.
+
+**Circuit reset**: OPEN circuits auto-reset after `cb_reset_seconds` (default: 300s).
+
+#### Layer 4: Auditor (`sentinel/layers/auditor.py`)
+
+**What it does**: Writes a tamper-evident audit log entry for every request. Each `AuditEntry` includes SHA-256 hashes creating a hash chain (`prev_hash` → `entry_hash`).
+
+**Data stored per entry**: `entry_id`, `tenant_id`, `request_id`, `timestamp`, `prompt_hash` (SHA-256), `response_hash` (SHA-256), `trust_score`, `intervention` level, `cost_usd`, `latency_ms`, `prev_hash`, `entry_hash`, metadata dict.
+
+**Integrity verification**: `IntegrityReport` model walks the chain and reports `intact` status with `broken_at` list.
+
+#### Layer 5: HITL Queue (`sentinel/hitl/queue.py`)
+
+**What it does**: Routes low-trust responses to a human review queue. Accepts `HitlJob` objects containing the prompt, candidate responses, and scores. Publishes `HitlReview` submissions from human reviewers.
+
+## Domain Models (`sentinel/models.py`)
+
+All data structures that cross boundaries are Pydantic v2 `BaseModel` instances:
+
+| Model | Purpose |
+|---|---|
+| `SanitizationResult` | Output of sanitizer (frozen) |
+| `ClaimScore` | NLI score for one factual claim |
+| `VerificationResult` | Full verifier output with trust score |
+| `CircuitBreakerResult` | Circuit breaker decision with intervention level |
+| `AuditEntry` | Immutable audit hash chain row |
+| `HitlJob` / `HitlReview` | HITL queue job and reviewer submission |
+| `TenantConfig` | Per-tenant threshold and model overrides |
+| `LLMRequest` / `LLMResponse` | Proxy request/response models |
+| `PolicyResult` / `PolicyViolation` | Policy engine output |
+| `FactCheckResult` / `ClaimResult` | Fact checker output |
+
+Key enums: `InterventionLevel` (NONE=0, REGENERATE=1, UPGRADE=2, HITL=3), `PolicyAction` (ALLOW, WARN, BLOCK, REVIEW, FLAG), `Severity` (LOW, MEDIUM, HIGH, CRITICAL), `FactCheckVerdict` (SUPPORTED, REFUTED, INCONCLUSIVE, UNCERTAIN).
+
+## Configuration (`sentinel/config.py`)
+
+Configuration uses `pydantic-settings` with `SENTINEL_` env prefix. Loads from environment variables first, then `.env` file. Key settings:
+
+| Setting | Default | Description |
+|---|---|---|
+| `database_url` | **required** | PostgreSQL asyncpg connection string |
+| `secret_key` | **required** | JWT signing key (min 32 chars) |
+| `redis_url` | `None` | Redis URL. In-memory fallback if absent |
+| `trust_score_block_threshold` | 0.85 | Below this triggers circuit breaker |
+| `injection_block_threshold` | 0.78 | Above this blocks the request |
+| `cross_check_trigger_threshold` | 0.80 | Below this triggers N-cross-check |
+| `golden_source_similarity_threshold` | 0.72 | Minimum similarity for RAG hits |
+| `spacy_model` | `en_core_web_lg` | spaCy model for Presidio |
+| `embedding_model` | `all-MiniLM-L6-v2` | Sentence-transformers model |
+| `nli_model` | `cross-encoder/nli-deberta-v3-large` | NLI cross-encoder |
+| `fallback_model` | `gpt-4o` | Circuit breaker L2 model |
+| `cb_open_threshold` | 5 | Failures before circuit opens |
+| `cb_window_seconds` | 60 | Rolling failure window |
+| `cb_reset_seconds` | 300 | Seconds before OPEN→CLOSED |
+
+Sub-configs: `PolicyConfig` (`SENTINEL_POLICY_` prefix), `AuditConfig` (`SENTINEL_AUDIT_` prefix), `FactCheckConfig` (`SENTINEL_FACTCHECK_` prefix), `DashboardConfig` (`SENTINEL_DASHBOARD_` prefix).
 
 ## Storage Architecture
 
 ### PostgreSQL
 
-**Audit log table** (`sentinel_audit_log`): Append-only, hash-chained. Partitioned by time (monthly) using TimescaleDB hypertable. Indexed by `tenant_id`, `timestamp`, `request_id`.
+- **Audit log** (`AuditEntry`): Append-only, hash-chained. Uses TimescaleDB hypertable for time-partitioned storage.
+- **Golden Source** (`VectorStore`): Document chunks with vector embeddings via pgvector. HNSW index for approximate nearest neighbour search.
+- **Tenant configuration** (`TenantConfig`): Per-tenant overrides for thresholds, models, PII entity types.
+- **HITL queue** (`HitlJob`): Pending review items with candidate responses and scores.
 
-**Golden Source table** (`sentinel_golden_source`): Document chunks with vector embeddings. pgvector extension with HNSW index for approximate nearest neighbour search. Indexed by `tenant_id` and embedding vector.
+### Redis (optional)
 
-**Tenant configuration table** (`sentinel_tenants`): Per-tenant overrides for trust thresholds, provider preferences, and PII entity types.
-
-**HITL queue table** (`sentinel_hitl_queue`): Pending review items with candidate responses and claim-level breakdowns.
-
-### Redis
-
-Redis stores ephemeral state that must be shared across Sentinel instances:
-
-| Key Pattern | TTL | Purpose |
-|-------------|-----|--------|
-| `sentinel:cb:{provider}:state` | None (explicit) | Circuit breaker state (CLOSED/OPEN/HALF_OPEN) |
-| `sentinel:cb:{provider}:failures` | 60s | Rolling failure counter |
-| `sentinel:rate:{tenant_id}` | 60s | Rate limit counter per tenant |
-| `sentinel:metrics:trust_histogram` | 3600s | Pre-aggregated trust score distribution |
-
-**Without Redis**: Circuit breaker state is in-memory (not shared across instances). Rate limiting is per-instance. Metrics are not pre-aggregated. This is acceptable for development but not production.
+Circuit breaker state persistence. Without Redis, circuit breaker runs in-memory (thread-safe but not shared across instances).
 
 ## Concurrency Model
 
 Sentinel runs on FastAPI with uvicorn, using Python's asyncio event loop.
 
-**Async I/O (event loop)**: All HTTP calls to LLM providers, PostgreSQL queries, Redis operations, and WebSocket messages use async I/O. The event loop is never blocked by I/O.
-
-**ThreadPoolExecutor (CPU-bound)**: The NLI model (`CrossEncoder.predict()`) and Presidio analysis are CPU-bound. These run in a `ThreadPoolExecutor` via `asyncio.run_in_executor()` to avoid blocking the event loop. Default pool size: 4 threads.
-
-**asyncio.gather()**: When verifying multiple claims, Sentinel runs vector search queries in parallel using `asyncio.gather()`. NLI inference is batched (not parallelised) because the model benefits from batch processing.
-
-## Trust Score Formula
-
-```
-Trust Score = w1 * semantic_similarity + w2 * nli_entailment + w3 * pii_injection_clean + w4 * source_coverage
-```
-
-Default weights:
-- `w1 = 0.25` (semantic similarity between response and Golden Source chunks)
-- `w2 = 0.40` (NLI entailment probability from DeBERTa)
-- `w3 = 0.15` (1.0 if no PII/injection detected, 0.0 otherwise)
-- `w4 = 0.20` (proportion of claims with at least one Golden Source match above similarity threshold)
-
-The NLI component (`w2`) has the highest weight because it directly measures whether the Golden Source supports the claim. Semantic similarity (`w1`) captures topical relevance. Source coverage (`w4`) penalises responses that make many claims not grounded in any source. PII/injection cleanliness (`w3`) is a binary safety signal.
+- **Async I/O**: All HTTP calls (`httpx`), database queries, Redis operations, and WebSocket messages use async I/O.
+- **ThreadPoolExecutor**: NLI inference (`CrossEncoder.predict()`) and Presidio analysis run in `ThreadPoolExecutor(max_workers=2)` via `asyncio.run_in_executor()`.
+- **asyncio.gather()**: RAG search queries for multiple claims run in parallel. N-cross-check queries two models simultaneously.
 
 ## Design Decisions
 
 ### ADR-001: Python over Go for the proxy layer
 
-**Context**: The proxy must handle concurrent HTTP requests with low latency. Go would provide better raw throughput.
-
 **Decision**: Use Python with FastAPI and uvicorn.
-
-**Reasoning**: The ML inference pipeline (spaCy, Presidio, sentence-transformers, CrossEncoder) is Python-native. Wrapping it in Go via gRPC would add complexity and latency. Python's asyncio provides sufficient concurrency for the expected throughput (< 10,000 req/min). The bottleneck is NLI inference, not the proxy framework.
-
-**Consequences**: Max throughput on CPU is approximately 200 req/min per instance (limited by NLI). GPU acceleration brings this to ~2,000 req/min. Horizontal scaling is required for higher throughput.
+**Reasoning**: The ML pipeline (spaCy, Presidio, sentence-transformers, CrossEncoder) is Python-native. Wrapping in Go via gRPC would add complexity. Python asyncio provides sufficient concurrency for expected throughput.
 
 ### ADR-002: pgvector over standalone vector database
 
-**Context**: The Golden Source requires vector similarity search. Options: pgvector, Weaviate, Pinecone, Qdrant.
-
 **Decision**: Use pgvector extension for PostgreSQL.
+**Reasoning**: Single database for audit logs, tenant config, HITL queue, and vectors. HNSW index provides sub-10ms search for up to 1M vectors.
 
-**Reasoning**: One fewer service to operate. Audit logs, tenant config, HITL queue, and vectors all live in the same database. HNSW index in pgvector provides sub-10ms search latency for up to 1M vectors. For larger deployments, pgvector can be replaced with a standalone vector database without changing the application code.
+### ADR-003: httpx for provider forwarding
 
-**Consequences**: Deployment requires PostgreSQL with pgvector extension. Vector search performance degrades above ~5M vectors without index tuning.
+**Decision**: Use `httpx.AsyncClient` for forwarding requests to LLM providers. LiteLLM is used selectively in the verifier layer for claim extraction and cross-checking.
+**Reasoning**: Direct httpx forwarding keeps the proxy path simple and dependency-light. LiteLLM is only needed where multi-provider access is required (verifier cross-check).
 
-### ADR-003: LiteLLM for provider abstraction
+### ADR-004: Models loaded at startup
 
-**Context**: Sentinel must support OpenAI, Anthropic, Google, and custom providers.
-
-**Decision**: Use LiteLLM as the provider abstraction layer.
-
-**Reasoning**: LiteLLM provides a unified interface for 100+ LLM providers. It handles API differences, retry logic, and streaming format conversion. Writing custom provider adapters for each would be significant ongoing maintenance.
-
-**Consequences**: LiteLLM is a dependency. If LiteLLM has a bug with a specific provider, Sentinel is affected.
-
-### ADR-004: Sentence-transformers loaded at startup
-
-**Context**: The NLI model (DeBERTa, ~400MB) must be available for every request.
-
-**Decision**: Load the model once at application startup and hold it in memory.
-
-**Reasoning**: Loading the model takes 3-5 seconds. Loading per-request would make Sentinel unusable. Holding it in memory uses ~800MB RAM but provides consistent ~200ms inference latency.
-
-**Consequences**: Sentinel requires at least 2GB RAM. Cold start takes 5-10 seconds. Model updates require a process restart.
+**Decision**: Load NLI model (~400MB) and embedding model once at startup via `startup()` functions in each layer module.
+**Reasoning**: Per-request loading would take 3-5s. Memory cost ~800MB but provides consistent ~200ms inference.
 
 ### ADR-005: Append-only audit log with hash chain
 
-**Context**: Compliance frameworks require evidence that audit logs have not been modified.
-
-**Decision**: Each audit entry includes the SHA-256 hash of the previous entry, creating a hash chain.
-
-**Reasoning**: A hash chain provides cryptographic proof that no entries have been inserted, modified, or deleted. This is simpler and cheaper to verify than blockchain-based alternatives. The `GET /api/audit/integrity` endpoint walks the chain and verifies every hash.
-
-**Consequences**: Audit entries cannot be deleted (by design). Log rotation requires archiving, not deletion. The integrity check is O(n) in the number of entries.
+**Decision**: Each `AuditEntry` includes SHA-256 hash of the previous entry.
+**Reasoning**: Cryptographic proof that no entries have been inserted, modified, or deleted. `IntegrityReport` walks the chain to verify.
 
 ## Extension Points
 
+### Adding a new policy rule
+
+Subclass `Rule` in `sentinel/rules.py`. Implement `async evaluate(text, context) -> PolicyViolation | None`. Register with `PolicyEngine.register_rule(rule, phase="both")`.
+
 ### Adding a new pipeline layer
 
-Implement `BaseLayer` in `sentinel/layers/your_layer.py`. Register it in the pipeline ordering in `sentinel/proxy.py`. Layers are called in order; each receives the full request context and previous layer results.
+Create a module in `sentinel/layers/` with `startup(settings)` and an async function matching the layer's purpose. Wire it into the pipeline in `sentinel/proxy.py`.
 
-### Adding a new LLM provider
+### Adding Golden Source documents
 
-Implement `BaseProvider` in `sentinel/providers/your_provider.py`. Register it in `sentinel/providers/__init__.py`. LiteLLM handles most providers; custom providers are for self-hosted models.
-
-### Adding a new golden source document type
-
-Add a parser in `scripts/seed_golden_source.py`. The parser must output chunks in the format `{"text": str, "metadata": dict, "doc_id": str}`. Chunking strategy: 512 tokens with 50-token overlap.
-
-### Adding a new compliance framework mapping
-
-Create `docs/compliance/your-framework-mapping.md`. Follow the table format in existing mappings. Each row must reference a specific Sentinel function and the evidence artifact it produces.
+Use `scripts/seed_golden_source.py`. Documents are chunked (512 tokens, 50-token overlap) and embedded via `SentenceTransformer`.
