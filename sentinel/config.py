@@ -25,6 +25,7 @@ _CONFIG_DIR = Path(__file__).resolve().parent.parent / "configs"
 
 class CircuitBreakerConfig(BaseModel):
     """Circuit breaker configuration."""
+
     open_threshold: int = 5
     window_seconds: int = 60
     reset_seconds: int = 300
@@ -32,6 +33,7 @@ class CircuitBreakerConfig(BaseModel):
 
 class HitlConfig(BaseModel):
     """Human-in-the-loop configuration."""
+
     queue_name: str = "sentinel-hitl"
     canned_response: str = (
         "I want to make sure I give you accurate information "
@@ -42,6 +44,7 @@ class HitlConfig(BaseModel):
 
 class PiiConfig(BaseModel):
     """PII detection configuration."""
+
     entities: list[str] = Field(default_factory=lambda: [
         "PERSON", "EMAIL", "PHONE_NUMBER", "CREDIT_CARD", "US_SSN"
     ])
@@ -50,24 +53,28 @@ class PiiConfig(BaseModel):
 
 class GoldenSourceConfig(BaseModel):
     """Golden source similarity configuration."""
+
     similarity_threshold: float = 0.72
     top_k: int = 3
 
 
 class SemanticDriftConfig(BaseModel):
     """Semantic drift detection configuration."""
+
     alert_threshold_sigma: float = 2.0
     block_threshold_sigma: float = 3.5
 
 
 class CostConfig(BaseModel):
     """Cost tracking configuration."""
+
     verification_models: bool = True
     primary_model: bool = True
 
 
 class ProviderConfig(BaseModel):
     """Configuration for LLM providers."""
+
     name: str = "openai"
     api_base: str = "https://api.openai.com/v1"
     api_key: str = ""
@@ -83,6 +90,7 @@ class ProviderConfig(BaseModel):
 
 class ProxyConfig(BaseModel):
     """Proxy server configuration."""
+
     host: str = "0.0.0.0"
     port: int = 8080
     workers: int = 4
@@ -92,7 +100,9 @@ class ProxyConfig(BaseModel):
 
 class PolicyConfig(BaseSettings):
     """Policy engine configuration."""
+
     model_config = SettingsConfigDict(env_prefix="SENTINEL_POLICY_", extra="ignore")
+
     max_prompt_length: int = Field(default=10000, ge=100)
     blocked_topics: list[str] = Field(default_factory=list)
     content_policy_enabled: bool = True
@@ -103,7 +113,9 @@ class PolicyConfig(BaseSettings):
 
 class AuditConfig(BaseSettings):
     """Audit logging configuration."""
+
     model_config = SettingsConfigDict(env_prefix="SENTINEL_AUDIT_", extra="ignore")
+
     enabled: bool = True
     retention_days: int = Field(default=180, ge=1)
     export_format: str = "csv"
@@ -113,7 +125,9 @@ class AuditConfig(BaseSettings):
 
 class FactCheckConfig(BaseSettings):
     """Fact-checking configuration."""
+
     model_config = SettingsConfigDict(env_prefix="SENTINEL_FACTCHECK_", extra="ignore")
+
     enabled: bool = True
     min_confidence: float = Field(default=0.7, ge=0.0, le=1.0)
     max_claims_per_response: int = Field(default=20, ge=1)
@@ -125,7 +139,9 @@ class FactCheckConfig(BaseSettings):
 
 class DashboardConfig(BaseSettings):
     """Dashboard configuration."""
+
     model_config = SettingsConfigDict(env_prefix="SENTINEL_DASHBOARD_", extra="ignore")
+
     enabled: bool = True
     refresh_interval_seconds: int = Field(default=5, ge=1)
     max_audit_entries: int = Field(default=500, ge=10)
@@ -138,6 +154,7 @@ class DashboardConfig(BaseSettings):
 
 class SentinelConfig(BaseModel):
     """Core Sentinel configuration used by layers and test fixtures."""
+
     model_config = {"extra": "allow"}
 
     version: str = "0.2.0"
@@ -145,17 +162,26 @@ class SentinelConfig(BaseModel):
     injection_block_threshold: float = 0.78
     cross_check_trigger_threshold: float = 0.80
     fallback_model: str = "gpt-4o"
+
     circuit_breaker: CircuitBreakerConfig = Field(default_factory=CircuitBreakerConfig)
     hitl: HitlConfig = Field(default_factory=HitlConfig)
     pii: PiiConfig = Field(default_factory=PiiConfig)
     golden_source: GoldenSourceConfig = Field(default_factory=GoldenSourceConfig)
     semantic_drift: SemanticDriftConfig = Field(default_factory=SemanticDriftConfig)
-    providers: ProviderConfig = Field(default_factory=ProviderConfig)
     costs: CostConfig = Field(default_factory=CostConfig)
+
+    # Sub-configs used by proxy, rules, checker, audit
+    providers: list[ProviderConfig] = Field(default_factory=lambda: [ProviderConfig()])
+    proxy: ProxyConfig = Field(default_factory=ProxyConfig)
+    policy: PolicyConfig = Field(default_factory=PolicyConfig)
+    fact_check: FactCheckConfig = Field(default_factory=FactCheckConfig)
+    audit: AuditConfig = Field(default_factory=AuditConfig)
+    dashboard: DashboardConfig = Field(default_factory=DashboardConfig)
 
 
 class TenantConfig(BaseModel):
     """Per-tenant configuration wrapper."""
+
     tenant_id: str
     config: SentinelConfig = Field(default_factory=SentinelConfig)
     api_key_hash: str = ""
@@ -196,6 +222,9 @@ class SentinelSettings(BaseSettings):
     )
 
     # --- sub-configs ---
+    providers: list[ProviderConfig] = Field(
+        default_factory=lambda: [ProviderConfig()]
+    )
     proxy: ProxyConfig = Field(default_factory=ProxyConfig)
     policy: PolicyConfig = Field(default_factory=PolicyConfig)
     fact_check: FactCheckConfig = Field(default_factory=FactCheckConfig)
@@ -270,5 +299,7 @@ def load_settings(config_path: Optional[str] = None) -> SentinelSettings:
     return settings
 
 
-# -- Aliases used by other modules --------------------------
-load_config = load_settings
+def load_config() -> SentinelConfig:
+    """Build a SentinelConfig for use by proxy and internal code."""
+    return SentinelConfig()
+
