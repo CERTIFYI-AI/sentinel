@@ -5,7 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-    workflow_dispatch:
+  workflow_dispatch:
 
 jobs:
   test:
@@ -13,6 +13,21 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.11", "3.12"]
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: sentinel_test
+          POSTGRES_PASSWORD: sentinel_test
+          POSTGRES_DB: sentinel_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - uses: actions/checkout@v4
@@ -33,6 +48,8 @@ jobs:
 
       - name: Test
         run: pytest tests/ -v --cov=sentinel --cov-report=xml
+        env:
+          TEST_DATABASE_URL: postgresql://sentinel_test:sentinel_test@localhost:5432/sentinel_test
 
       - name: Upload coverage
         if: matrix.python-version == '3.11'
