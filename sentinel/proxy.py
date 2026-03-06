@@ -4,7 +4,6 @@ Implements an ASGI application (FastAPI) that sits between callers
 and upstream LLM providers, applying policy checks, fact-checking,
 and audit logging to every request/response.
 """
-
 from __future__ import annotations
 
 import logging
@@ -38,6 +37,10 @@ def create_app(config: Optional[SentinelConfig] = None) -> FastAPI:
     if config is None:
         config = load_config()
 
+    # config is now guaranteed to be SentinelConfig
+    assert config is not None
+    cfg: SentinelConfig = config
+
     app = FastAPI(
         title="Certifyi Sentinel",
         description="Real-time AI reliability and governance middleware",
@@ -47,19 +50,19 @@ def create_app(config: Optional[SentinelConfig] = None) -> FastAPI:
     # CORS
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=config.proxy.allowed_origins,
+        allow_origins=cfg.proxy.allowed_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
 
     # Shared state
-    app.state.config = config
-    app.state.policy_engine = PolicyEngine(config.policy)
-    app.state.fact_checker = FactChecker(config.fact_check)
-    app.state.audit_logger = AuditLogger(config.audit)
+    app.state.config = cfg
+    app.state.policy_engine = PolicyEngine(cfg.policy)
+    app.state.fact_checker = FactChecker(cfg.fact_check)
+    app.state.audit_logger = AuditLogger(cfg.audit)
     app.state.start_time = time.time()
-    app.state.http_client = httpx.AsyncClient(timeout=config.proxy.timeout)
+    app.state.http_client = httpx.AsyncClient(timeout=cfg.proxy.timeout)
 
     # -------------------------------------------------------------------
     # Routes
@@ -74,8 +77,10 @@ def create_app(config: Optional[SentinelConfig] = None) -> FastAPI:
             status="healthy",
             version=__version__,
             uptime_seconds=time.time() - app.state.start_time,
-            providers_connected=len(config.providers),
-            audit_backend_ok=app.state.audit_logger.is_healthy(),
+            checks={
+                "providers": len(cfg.providers) > 0,
+                "audit": app.state.audit_logger.is_healthy(),
+            },
         )
 
     @app.post("/v1/chat/completions")
@@ -96,13 +101,13 @@ def create_app(config: Optional[SentinelConfig] = None) -> FastAPI:
             temperature=body.get("temperature", 0.7),
             max_tokens=body.get("max_tokens"),
             stream=body.get("stream", False),
-            metadata=body.get("metadata", {}),
         )
 
         # Audit: request received
         await app.state.audit_logger.log(
             AuditEvent(
                 event_type=AuditEventType.REQUEST_RECEIVED,
+                tenant_id=llm_request.tenant_id,
                 request_id=llm_request.request_id,
                 data={"model": llm_request.model, "provider": llm_request.provider},
             )
@@ -113,8 +118,9 @@ def create_app(config: Optional[SentinelConfig] = None) -> FastAPI:
         await app.state.audit_logger.log(
             AuditEvent(
                 event_type=AuditEventType.POLICY_EVALUATED,
+                tenant_id=llm_request.tenant_id,
                 request_id=llm_request.request_id,
-                policy_result=policy_result,
+                policy_result=policy_result.model_dump() if policy_result else None,
             )
         )
 
@@ -132,26 +138,29 @@ def create_app(config: Optional[SentinelConfig] = None) -> FastAPI:
         # Forward to upstream provider
         try:
             upstream_response = await _forward_to_provider(
-                app.state.http_client, config, llm_request
+                app.state.http_client, cfg, llm_request
             )
         except Exception as exc:
             await app.state.audit_logger.log(
                 AuditEvent(
                     event_type=AuditEventType.ERROR_OCCURRED,
+                    tenant_id=llm_request.tenant_id,
                     request_id=llm_request.request_id,
                     error=str(exc),
                 )
             )
             raise HTTPException(status_code=502, detail=str(exc)) from exc
 
-        llm_response = LLMResponse(
-            request_id=llm_request.request_id,
-            provider=llm_request.provider,
-            model=llm_request.model,
-            content=upstream_response.get("choices", [{}])[0]
+        response_content = (
+            upstream_response.get("choices", [{}])[0]
             .get("message", {})
-            .get("content", ""),
-            usage=upstream_response.get("usage", {}),
+            .get("content", "")
+        )
+
+        llm_response = LLMResponse(
+            content=response_content,
+            model=llm_request.model,
+            provider_id=llm_request.provider,
             latency_ms=(time.time() - start) * 1000,
         )
 
@@ -165,13 +174,14 @@ def create_app(config: Optional[SentinelConfig] = None) -> FastAPI:
             )
 
         # Fact-check
-        if config.fact_check.enabled:
+        if cfg.fact_check.enabled:
             fc_result = await app.state.fact_checker.check(llm_response.content)
             await app.state.audit_logger.log(
                 AuditEvent(
                     event_type=AuditEventType.FACT_CHECK_RUN,
+                    tenant_id=llm_request.tenant_id,
                     request_id=llm_request.request_id,
-                    fact_check_result=fc_result,
+                    fact_check_result=fc_result.model_dump() if fc_result else None,
                 )
             )
             upstream_response["sentinel_fact_check"] = fc_result.model_dump()
@@ -180,6 +190,7 @@ def create_app(config: Optional[SentinelConfig] = None) -> FastAPI:
         await app.state.audit_logger.log(
             AuditEvent(
                 event_type=AuditEventType.RESPONSE_SENT,
+                tenant_id=llm_request.tenant_id,
                 request_id=llm_request.request_id,
                 data={"latency_ms": llm_response.latency_ms},
             )
@@ -202,7 +213,9 @@ async def _forward_to_provider(
     request: LLMRequest,
 ) -> Dict[str, Any]:
     """Forward a request to the appropriate upstream LLM provider."""
-    provider_cfg = None
+    from sentinel.config import ProviderConfig
+
+    provider_cfg: Optional[ProviderConfig] = None
     for p in config.providers:
         if p.name == request.provider or (not request.provider and p.enabled):
             provider_cfg = p
@@ -216,7 +229,7 @@ async def _forward_to_provider(
         "Content-Type": "application/json",
     }
 
-    payload = {
+    payload: Dict[str, Any] = {
         "model": request.model or provider_cfg.model,
         "messages": [m.model_dump() for m in request.messages],
         "temperature": request.temperature,
@@ -227,4 +240,4 @@ async def _forward_to_provider(
     url = f"{provider_cfg.api_base.rstrip('/')}/chat/completions"
     resp = await client.post(url, json=payload, headers=headers)
     resp.raise_for_status()
-    return resp.json()
+    return resp.json()  # type: ignore[no-any-return]
