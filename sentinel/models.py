@@ -465,3 +465,36 @@ class RequestStats(BaseModel):
     requests_per_minute: float = 0.0
     avg_latency_ms: float = 0.0
     error_rate: float = 0.0
+
+
+# --- Compliance Engine Models ---
+
+class ComplianceStatus(str, enum.Enum):
+    COMPLIANT="compliant"
+    NON_COMPLIANT="non_compliant"
+    PARTIAL="partial"
+    SKIPPED="skipped"
+    ERROR="error"
+
+
+
+class ComplianceCheckResult(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    framework_id: str
+    framework_name: str
+    status: ComplianceStatus
+    score: float = Field(default=0.0, ge=0.0, le=1.0)
+    violations: list[str] = Field(default_factory=list)
+    recommendations: list[str] = Field(default_factory=list)
+    checked_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    tenant_id: str = ""
+    metadata: dict = Field(default_factory=dict)
+
+class ComplianceSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    tenant_id: str
+    overall_status: ComplianceStatus
+    overall_score: float = Field(default=0.0, ge=0.0, le=1.0)
+    framework_results: list[ComplianceCheckResult] = Field(default_factory=list)
+    evaluated_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    request_id: str = Field(default_factory=lambda: str(uuid4()))

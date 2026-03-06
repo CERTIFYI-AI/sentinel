@@ -551,3 +551,22 @@ def get_framework_evaluator(framework_id: str):
 def list_framework_ids() -> list:
     from sentinel.compliance.frameworks import FRAMEWORK_REGISTRY
     return list(FRAMEWORK_REGISTRY.keys())
+
+
+def register_all(registry=None):
+    from sentinel.compliance.frameworks import ALL_FRAMEWORKS
+    if registry is None:
+        registry = ComplianceRegistry()
+    for fw_class in ALL_FRAMEWORKS:
+        try:
+            instance = fw_class()
+            registry.register(instance)
+        except Exception:
+            pass
+    return registry
+
+def get_registry():
+    global _default_registry
+    return register_all()
+
+_default_registry=None

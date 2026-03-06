@@ -1,30 +1,30 @@
-from sentinel.compliance.frameworks.eu_ai_act import EUAIActFramework
-from sentinel.compliance.frameworks.soc2 import SOC2Framework
-from sentinel.compliance.frameworks.iso27001 import ISO27001Framework
-from sentinel.compliance.frameworks.nist_ai_rmf import NISTAIRMFFramework
-from sentinel.compliance.frameworks.gdpr import GDPRFramework
-from sentinel.compliance.frameworks.hipaa import HIPAAFramework
-from sentinel.compliance.frameworks.owasp_llm import OWASPLLMFramework
+from .base import ComplianceFramework, ComplianceControl, ComplianceResult
+from .eu_ai_act import EUAIActFramework
+from .gdpr import GDPRFramework
+from .hipaa import HIPAAFramework
+from .iso27001 import ISO27001Framework
+from .nist_ai_rmf import NISTAIRMFFramework
+from .owasp_llm import OWASPLLMFramework
+from .soc2 import SOC2Framework
 
-FRAMEWORK_REGISTRY = {
-    f.framework_id: f for f in [
-        EUAIActFramework(),
-        SOC2Framework(),
-        ISO27001Framework(),
-        NISTAIRMFFramework(),
-        GDPRFramework(),
-        HIPAAFramework(),
-        OWASPLLMFramework(),
-    ]
+ALL_FRAMEWORKS = [
+    EUAIActFramework,
+    GDPRFramework,
+    HIPAAFramework,
+    ISO27001Framework,
+    NISTAIRMFFramework,
+    OWASPLLMFramework,
+    SOC2Framework,
+]
+
+FRAMEWORK_MAP = {
+    fw.framework_id if hasattr(fw,'framework_id') else fw.__name__: fw
+    for fw in ALL_FRAMEWORKS
 }
 
 __all__ = [
-    "EUAIActFramework",
-    "SOC2Framework",
-    "ISO27001Framework",
-    "NISTAIRMFFramework",
-    "GDPRFramework",
-    "HIPAAFramework",
-    "OWASPLLMFramework",
-    "FRAMEWORK_REGISTRY",
+    'ComplianceFramework','ComplianceControl','ComplianceResult',
+    'EUAIActFramework','GDPRFramework','HIPAAFramework',
+    'ISO27001Framework','NISTAIRMFFramework','OWASPLLMFramework','SOC2Framework',
+    'ALL_FRAMEWORKS','FRAMEWORK_MAP',
 ]
