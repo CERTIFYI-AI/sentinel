@@ -4,19 +4,87 @@ Uses pydantic-settings to load from environment variables with
 sentinel.yaml as a file-based override. Validates all settings at
 startup and logs a redacted summary.
 """
-
 from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, List, Optional
 
-from pydantic import Field, PostgresDsn, RedisDsn, model_validator
+from pydantic import BaseModel, Field, PostgresDsn, RedisDsn, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger(__name__)
 
 _CONFIG_DIR = Path(__file__).resolve().parent.parent / "configs"
+
+
+# ---------------------------------------------------------------------------
+# Sub-configuration models
+# ---------------------------------------------------------------------------
+
+
+class ProviderConfig(BaseModel):
+    """Configuration for a single LLM provider."""
+    name: str = "openai"
+    api_base: str = "https://api.openai.com/v1"
+    api_key: str = ""
+    model: str = "gpt-4"
+    enabled: bool = True
+
+
+class ProxyConfig(BaseModel):
+    """Proxy server configuration."""
+    host: str = "0.0.0.0"
+    port: int = 8080
+    workers: int = 4
+    timeout: float = 30.0
+    allowed_origins: list[str] = Field(default_factory=lambda: ["*"])
+
+
+class PolicyConfig(BaseSettings):
+    """Policy engine configuration."""
+    model_config = SettingsConfigDict(env_prefix="SENTINEL_POLICY_", extra="ignore")
+    max_prompt_length: int = Field(default=10000, ge=100)
+    blocked_topics: list[str] = Field(default_factory=list)
+    content_policy_enabled: bool = True
+    pii_detection: bool = True
+    strict_mode: bool = False
+    default_action: str = "allow"
+
+
+class AuditConfig(BaseSettings):
+    """Audit logging configuration."""
+    model_config = SettingsConfigDict(env_prefix="SENTINEL_AUDIT_", extra="ignore")
+    enabled: bool = True
+    retention_days: int = Field(default=180, ge=1)
+    export_format: str = "csv"
+    storage_backend: str = "sqlite"
+    storage_path: str = "data/audit.db"
+
+
+class FactCheckConfig(BaseSettings):
+    """Fact-checking configuration."""
+    model_config = SettingsConfigDict(env_prefix="SENTINEL_FACTCHECK_", extra="ignore")
+    enabled: bool = True
+    min_confidence: float = Field(default=0.7, ge=0.0, le=1.0)
+    max_claims_per_response: int = Field(default=20, ge=1)
+    provider: str = "internal"
+    external_api_url: str = ""
+    external_api_key: str = ""
+    max_claims_per_request: int = Field(default=20, ge=1)
+
+
+class DashboardConfig(BaseSettings):
+    """Dashboard configuration."""
+    model_config = SettingsConfigDict(env_prefix="SENTINEL_DASHBOARD_", extra="ignore")
+    enabled: bool = True
+    refresh_interval_seconds: int = Field(default=5, ge=1)
+    max_audit_entries: int = Field(default=500, ge=10)
+
+
+# ---------------------------------------------------------------------------
+# Main settings
+# ---------------------------------------------------------------------------
 
 
 class SentinelSettings(BaseSettings):
@@ -36,6 +104,7 @@ class SentinelSettings(BaseSettings):
 
     # --- core ---
     version: str = Field(default="0.2.0", alias="SENTINEL_VERSION")
+    environment: str = "development"
     database_url: PostgresDsn = Field(
         ..., description="asyncpg connection string for PostgreSQL"
     )
@@ -46,6 +115,14 @@ class SentinelSettings(BaseSettings):
     secret_key: str = Field(
         ..., min_length=32, description="Secret for JWT signing"
     )
+
+    # --- sub-configs ---
+    providers: List[ProviderConfig] = Field(default_factory=list)
+    proxy: ProxyConfig = Field(default_factory=ProxyConfig)
+    policy: PolicyConfig = Field(default_factory=PolicyConfig)
+    fact_check: FactCheckConfig = Field(default_factory=FactCheckConfig)
+    audit: AuditConfig = Field(default_factory=AuditConfig)
+    dashboard: DashboardConfig = Field(default_factory=DashboardConfig)
 
     # --- trust thresholds ---
     trust_score_block_threshold: float = Field(
@@ -108,7 +185,7 @@ class SentinelSettings(BaseSettings):
             logger.info("config: %s = %s", key, val)
 
 
-def load_settings() -> SentinelSettings:
+def load_settings(config_path: Optional[str] = None) -> SentinelSettings:
     """Build and validate settings, fail-fast on bad config."""
     settings = SentinelSettings()  # type: ignore[call-arg]
     settings.log_summary()
@@ -118,36 +195,3 @@ def load_settings() -> SentinelSettings:
 # -- Aliases used by other modules --------------------------
 SentinelConfig = SentinelSettings
 load_config = load_settings
-
-
-class PolicyConfig(BaseSettings):
-    """Policy engine configuration."""
-    model_config = SettingsConfigDict(env_prefix="SENTINEL_POLICY_", extra="ignore")
-    max_prompt_length: int = Field(default=10000, ge=100)
-    blocked_topics: list[str] = Field(default_factory=list)
-    content_policy_enabled: bool = True
-
-
-class AuditConfig(BaseSettings):
-    """Audit logging configuration."""
-    model_config = SettingsConfigDict(env_prefix="SENTINEL_AUDIT_", extra="ignore")
-    enabled: bool = True
-    retention_days: int = Field(default=180, ge=1)
-    export_format: str = "csv"
-
-
-class FactCheckConfig(BaseSettings):
-    """Fact-checking configuration."""
-    model_config = SettingsConfigDict(env_prefix="SENTINEL_FACTCHECK_", extra="ignore")
-    enabled: bool = True
-    min_confidence: float = Field(default=0.7, ge=0.0, le=1.0)
-    max_claims_per_response: int = Field(default=20, ge=1)
-
-
-class DashboardConfig(BaseSettings):
-    """Dashboard configuration."""
-    model_config = SettingsConfigDict(env_prefix="SENTINEL_DASHBOARD_", extra="ignore")
-    enabled: bool = True
-    refresh_interval_seconds: int = Field(default=5, ge=1)
-    max_audit_entries: int = Field(default=500, ge=10)
-
