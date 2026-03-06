@@ -113,7 +113,7 @@ class AuditEntry(BaseModel):
     prompt_hash: str = Field(description="SHA-256 of original prompt")
     response_hash: str = Field(description="SHA-256 of delivered response")
     trust_score: float = Field(ge=0.0, le=1.0)
-    intervention: int
+    intervention_level: int
     cost_usd: float = Field(default=0.0, ge=0.0)
     latency_ms: float = Field(default=0.0, ge=0.0)
     prev_hash: str
@@ -153,7 +153,7 @@ class HitlJob(BaseModel):
     job_id: str = Field(default_factory=lambda: str(uuid4()))
     tenant_id: str
     request_id: str
-    prompt: str
+    prompt_hash: str
     responses: list[str] = Field(default_factory=list)
     scores: list[float] = Field(default_factory=list)
     status: str = Field(default="pending")
@@ -400,10 +400,10 @@ class AuditEntryInput(BaseModel):
 
     tenant_id: str
     request_id: str
-    prompt: str
-    response: str
+    prompt_hash: str
+    response_hash: str
     trust_score: float = Field(ge=0.0, le=1.0)
-    intervention: int = 0
+    intervention_level: int = 0
     cost_usd: float = Field(default=0.0, ge=0.0)
     latency_ms: float = Field(default=0.0, ge=0.0)
     metadata: dict[str, Any] = Field(default_factory=dict)

@@ -110,10 +110,10 @@ async def log(
     prev_hash = await _get_last_entry_hash(entry_data.tenant_id, db)
 
     prompt_hash = _hashlib.sha256(
-        entry_data.prompt.encode("utf-8")
+        entry_data.prompt_hash.encode("utf-8")
     ).hexdigest()
     response_hash = _hashlib.sha256(
-        entry_data.response.encode("utf-8")
+        entry_data.response_hash.encode("utf-8")
     ).hexdigest()
 
     entry_dict: dict[str, Any] = {
@@ -124,7 +124,7 @@ async def log(
         "prompt_hash": prompt_hash,
         "response_hash": response_hash,
         "trust_score": entry_data.trust_score,
-        "intervention": entry_data.intervention,
+        "intervention": entry_data.intervention_level,
         "cost_usd": entry_data.cost_usd,
         "latency_ms": entry_data.latency_ms,
         "prev_hash": prev_hash,
@@ -148,7 +148,7 @@ async def log(
         prompt_hash,
         response_hash,
         entry_data.trust_score,
-        entry_data.intervention,
+        entry_data.intervention_level,
         entry_data.cost_usd,
         entry_data.latency_ms,
         prev_hash,
@@ -161,7 +161,7 @@ async def log(
         entry_id,
         entry_data.tenant_id,
         entry_data.trust_score,
-        entry_data.intervention,
+        entry_data.intervention_level,
     )
 
     return AuditEntry(
@@ -172,7 +172,7 @@ async def log(
         prompt_hash=prompt_hash,
         response_hash=response_hash,
         trust_score=entry_data.trust_score,
-        intervention=entry_data.intervention,
+        intervention=entry_data.intervention_level,
         cost_usd=entry_data.cost_usd,
         latency_ms=entry_data.latency_ms,
         prev_hash=prev_hash,
