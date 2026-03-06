@@ -89,7 +89,10 @@ async def evaluate(
             fallback_response = await fallback.complete(
                 messages=[{"role": "user", "content": prompt}],
             )
-            fallback_text = fallback_response.content if hasattr(fallback_response, "content") else str(fallback_response)
+            fallback_text = (  
+                getattr(fallback_response, "content", None)
+                or str(fallback_response)
+            )
             fallback_verification = await verify(fallback_text, config)
             if fallback_verification.trust_score >= threshold:
                 return CircuitBreakerResult(
