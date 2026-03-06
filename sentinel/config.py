@@ -158,6 +158,7 @@ class SentinelConfig(BaseModel):
     model_config = {"extra": "allow"}
 
     version: str = "0.2.0"
+    environment: str = "development"
     trust_score_threshold: float = 0.85
     injection_block_threshold: float = 0.78
     cross_check_trigger_threshold: float = 0.80
@@ -299,7 +300,7 @@ def load_settings(config_path: Optional[str] = None) -> SentinelSettings:
     return settings
 
 
-def load_config() -> SentinelConfig:
+def load_config(config_path: Optional[str] = None) -> SentinelConfig:
     """Build a SentinelConfig for use by proxy and internal code."""
     return SentinelConfig()
 
