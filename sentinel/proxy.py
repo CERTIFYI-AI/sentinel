@@ -241,3 +241,7 @@ async def _forward_to_provider(
     resp = await client.post(url, json=payload, headers=headers)
     resp.raise_for_status()
     return resp.json()  # type: ignore[no-any-return]
+
+
+# Module-level app instance for test imports and uvicorn
+app = create_app()
