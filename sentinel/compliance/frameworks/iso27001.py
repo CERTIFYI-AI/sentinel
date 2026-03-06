@@ -4,7 +4,7 @@ from sentinel.compliance.frameworks.base import ControlDefinition, ControlStatus
 
 class ISO42001Framework(BaseFramework):
     framework_id = 'iso42001'
-    display_name = 'ISO/IEC 27001:2022'
+    display_name = 'ISO/IEC 42001:2023'
     version = '2022'
     legal_weight = 'best-practice'
 
