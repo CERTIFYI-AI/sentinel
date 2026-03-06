@@ -165,7 +165,7 @@ async def log(
     )
 
     return AuditEntry(
-        entry_id=entry_id,
+        entry_id=uuid.UUID(entry_id),
         tenant_id=entry_data.tenant_id,
         request_id=entry_data.request_id,
         timestamp=now,
@@ -304,7 +304,7 @@ async def get_entries(
             metadata = json.loads(metadata)
         entries.append(
             AuditEntry(
-                entry_id=str(row["entry_id"]),
+                entry_id=row["entry_id"],
                 tenant_id=row["tenant_id"],
                 request_id=row["request_id"],
                 timestamp=row["timestamp"],
