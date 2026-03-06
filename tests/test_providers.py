@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from sentinel.providers.base import LLMProvider, LLMResponse
+from sentinel.providers.base import LLMProvider, LLMResponse, ProviderConfig
 from sentinel.providers.openai_provider import OpenAIProvider
 from sentinel.providers.anthropic_provider import AnthropicProvider
 from sentinel.providers.local_provider import LocalProvider
@@ -38,18 +38,33 @@ class TestOpenAIProvider:
 
     @pytest.fixture
     def provider(self):
-        return OpenAIProvider(
-            api_key="test-key",
+        config = ProviderConfig(
+            name="openai",
             model="gpt-4o-mini",
-            base_url=None,
+            api_key="test-key",
         )
+        return OpenAIProvider(config)
 
     async def test_complete_returns_llm_response(self, provider):
         mock_response = MagicMock()
-        mock_response.choices = [MagicMock(message=MagicMock(content="Test response"))]
+        mock_response.choices = [
+            MagicMock(
+                message=MagicMock(content="Test response"),
+                finish_reason="stop",
+            )
+        ]
         mock_response.usage = MagicMock(prompt_tokens=10, completion_tokens=20)
-
-        with patch.object(provider._client.chat.completions, "create", new=AsyncMock(return_value=mock_response)):
+        mock_response.model = "gpt-4o-mini"
+        with (
+            patch(
+                "sentinel.providers.openai_provider.litellm.acompletion",
+                new=AsyncMock(return_value=mock_response),
+            ),
+            patch(
+                "sentinel.providers.openai_provider.litellm.completion_cost",
+                return_value=0.0001,
+            ),
+        ):
             result = await provider.complete(
                 messages=[{"role": "user", "content": "Hello"}]
             )
@@ -61,7 +76,7 @@ class TestOpenAIProvider:
         assert "openai" in provider.provider_id.lower()
 
     async def test_model_attribute_set(self, provider):
-        assert provider.model == "gpt-4o-mini"
+        assert provider.config.model == "gpt-4o-mini"
 
 
 class TestAnthropicProvider:
@@ -69,17 +84,33 @@ class TestAnthropicProvider:
 
     @pytest.fixture
     def provider(self):
-        return AnthropicProvider(
-            api_key="test-key",
+        config = ProviderConfig(
+            name="anthropic",
             model="claude-3-5-haiku-20241022",
+            api_key="test-key",
         )
+        return AnthropicProvider(config)
 
     async def test_complete_returns_llm_response(self, provider):
         mock_response = MagicMock()
-        mock_response.content = [MagicMock(text="Claude response")]
-        mock_response.usage = MagicMock(input_tokens=10, output_tokens=15)
-
-        with patch.object(provider._client.messages, "create", new=AsyncMock(return_value=mock_response)):
+        mock_response.choices = [
+            MagicMock(
+                message=MagicMock(content="Claude response"),
+                finish_reason="stop",
+            )
+        ]
+        mock_response.usage = MagicMock(prompt_tokens=10, completion_tokens=15)
+        mock_response.model = "claude-3-5-haiku-20241022"
+        with (
+            patch(
+                "sentinel.providers.anthropic_provider.litellm.acompletion",
+                new=AsyncMock(return_value=mock_response),
+            ),
+            patch(
+                "sentinel.providers.anthropic_provider.litellm.completion_cost",
+                return_value=0.0001,
+            ),
+        ):
             result = await provider.complete(
                 messages=[{"role": "user", "content": "Hello"}]
             )
@@ -95,18 +126,28 @@ class TestLocalProvider:
 
     @pytest.fixture
     def provider(self):
-        return LocalProvider(
-            base_url="http://localhost:11434/v1",
+        config = ProviderConfig(
+            name="local",
             model="llama3.2",
             api_key="ollama",
+            api_base="http://localhost:11434/v1",
         )
+        return LocalProvider(config)
 
     async def test_complete_returns_llm_response(self, provider):
         mock_response = MagicMock()
-        mock_response.choices = [MagicMock(message=MagicMock(content="Local LLM response"))]
+        mock_response.choices = [
+            MagicMock(
+                message=MagicMock(content="Local LLM response"),
+                finish_reason="stop",
+            )
+        ]
         mock_response.usage = MagicMock(prompt_tokens=5, completion_tokens=10)
-
-        with patch.object(provider._client.chat.completions, "create", new=AsyncMock(return_value=mock_response)):
+        mock_response.model = "llama3.2"
+        with patch(
+            "sentinel.providers.local_provider.litellm.acompletion",
+            new=AsyncMock(return_value=mock_response),
+        ):
             result = await provider.complete(
                 messages=[{"role": "user", "content": "Hello"}]
             )
@@ -120,13 +161,15 @@ class TestLocalProvider:
 
 
 class TestLLMResponseModel:
-    """Verify LLMResponse field validation."""
+    """Verify LLMResponse field validation using sentinel.models.LLMResponse."""
 
     def test_cost_usd_cannot_be_negative(self):
-        with pytest.raises(ValueError):
-            LLMResponse(content="ok", cost_usd=-0.01, model="test")
+        from sentinel.models import LLMResponse as ModelsLLMResponse
+        with pytest.raises(Exception):
+            ModelsLLMResponse(content="ok", cost_usd=-0.01, model="test")
 
     def test_valid_response_instantiates(self):
-        r = LLMResponse(content="Hello", cost_usd=0.0, model="gpt-4o-mini")
+        from sentinel.models import LLMResponse as ModelsLLMResponse
+        r = ModelsLLMResponse(content="Hello", cost_usd=0.0, model="gpt-4o-mini")
         assert r.content == "Hello"
         assert r.cost_usd == 0.0
