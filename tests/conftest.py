@@ -136,14 +136,14 @@ def tenant_config() -> TenantConfig:
         semantic_drift=SemanticDriftConfig(
             alert_threshold_sigma=2.0, block_threshold_sigma=3.5
         ),
-        providers=ProviderConfig(
+        providers=[ProviderConfig(
             primary_name="openai",
             primary_model="gpt-4o-mini",
             primary_api_key="test-key-openai",
             fallback_name="anthropic",
             fallback_model="claude-3-5-haiku-20241022",
             fallback_api_key="test-key-anthropic",
-        ),
+        )],
         costs=CostConfig(verification_models=True, primary_model=True),
     )
     return TenantConfig(
