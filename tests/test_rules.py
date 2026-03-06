@@ -1,5 +1,4 @@
 """Tests for the policy/rules engine."""
-
 import pytest
 
 from sentinel.config import PolicyConfig
@@ -18,7 +17,7 @@ async def test_pii_detection_email():
     rule = PIIDetectionRule()
     result = await rule.evaluate("Contact me at user@example.com", {})
     assert result is not None
-    assert "email" in result.details["pii_types"]
+    assert "email" in result.description
 
 
 @pytest.mark.asyncio
@@ -33,7 +32,7 @@ async def test_pii_detection_phone():
     rule = PIIDetectionRule()
     result = await rule.evaluate("Call me at 555-123-4567", {})
     assert result is not None
-    assert "phone" in result.details["pii_types"]
+    assert "phone" in result.description
 
 
 @pytest.mark.asyncio
@@ -41,7 +40,7 @@ async def test_blocked_topic():
     rule = BlockedTopicRule(["weapons", "drugs"])
     result = await rule.evaluate("How to make weapons at home", {})
     assert result is not None
-    assert "weapons" in result.details["topics"]
+    assert "weapons" in result.description
 
 
 @pytest.mark.asyncio

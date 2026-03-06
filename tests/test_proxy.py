@@ -1,6 +1,6 @@
 """End-to-end tests for the Sentinel proxy (POST /v1/chat/completions).
 
-Tests the full pipeline: Auth → Sanitize → LLM → Verify → Deliver → Audit.
+Tests the full pipeline: Auth -> Sanitize -> LLM -> Verify -> Deliver -> Audit.
 Uses FastAPI TestClient in async mode.
 """
 from __future__ import annotations
@@ -8,7 +8,7 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 
 from sentinel.proxy import app
 
