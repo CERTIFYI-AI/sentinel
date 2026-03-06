@@ -1,23 +1,30 @@
-from .eu_ai_act import EUAIActFramework
-from .iso_42001 import ISO42001Framework
-from .nist_ai_rmf import NISTAIRMFFramework
-from .gdpr import GDPRFramework
-from .china_ai_regs import ChinaAIRegsFramework
-from .oecd_principles import OECDPrinciplesFramework
-from .ieee_7000 import IEEE7000Framework
+from sentinel.compliance.frameworks.eu_ai_act import EUAIActFramework
+from sentinel.compliance.frameworks.soc2 import SOC2Framework
+from sentinel.compliance.frameworks.iso27001 import ISO27001Framework
+from sentinel.compliance.frameworks.nist_ai_rmf import NISTAIRMFFramework
+from sentinel.compliance.frameworks.gdpr import GDPRFramework
+from sentinel.compliance.frameworks.hipaa import HIPAAFramework
+from sentinel.compliance.frameworks.owasp_llm import OWASPLLMFramework
 
-ALL_FRAMEWORKS = [
-    EUAIActFramework(),
-    GDPRFramework(),
-    ChinaAIRegsFramework(),
-    ISO42001Framework(),
-    NISTAIRMFFramework(),
-    OECDPrinciplesFramework(),
-    IEEE7000Framework(),
-]
+FRAMEWORK_REGISTRY = {
+    f.framework_id: f for f in [
+        EUAIActFramework(),
+        SOC2Framework(),
+        ISO27001Framework(),
+        NISTAIRMFFramework(),
+        GDPRFramework(),
+        HIPAAFramework(),
+        OWASPLLMFramework(),
+    ]
+}
 
 __all__ = [
-    "EUAIActFramework","ISO42001Framework","NISTAIRMFFramework",
-    "GDPRFramework","ChinaAIRegsFramework","OECDPrinciplesFramework",
-    "IEEE7000Framework","ALL_FRAMEWORKS",
+    "EUAIActFramework",
+    "SOC2Framework",
+    "ISO27001Framework",
+    "NISTAIRMFFramework",
+    "GDPRFramework",
+    "HIPAAFramework",
+    "OWASPLLMFramework",
+    "FRAMEWORK_REGISTRY",
 ]

@@ -71,7 +71,7 @@ class TestChatCompletionsEndpoint:
             from sentinel.layers.sanitizer import SanitizationResult
 
             mock_sanitize.return_value = SanitizationResult(
-                clean_prompt="What auth method does Acme Medical API use?",
+                sanitized_text="What auth method does Acme Medical API use?",
                 redaction_map={},
                 blocked=False,
                 injection_score=0.05,
@@ -111,7 +111,7 @@ class TestChatCompletionsEndpoint:
             from sentinel.layers.sanitizer import SanitizationResult
 
             mock_sanitize.return_value = SanitizationResult(
-                clean_prompt="test", redaction_map={}, blocked=False,
+                sanitized_text="test", redaction_map={}, blocked=False,
                 injection_score=0.01, detected_entities=[], latency_ms=5.0,
             )
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -133,7 +133,7 @@ class TestChatCompletionsEndpoint:
             from sentinel.layers.sanitizer import SanitizationResult
 
             mock_sanitize.return_value = SanitizationResult(
-                clean_prompt=injection_prompt,
+                sanitized_text=injection_prompt,
                 redaction_map={},
                 blocked=True,
                 injection_score=0.95,

@@ -50,11 +50,12 @@ class ControlDefinition:
     title: str
     description: str
     category: ControlCategory
-    signal_source: SignalSource | None  # None for organisational controls
-    pass_threshold: float | None  # None for organisational (always NA)
-    fail_threshold: float | None
-    evidence_template: str
-    remediation: str
+    signal_source: SignalSource | None = None  # None for organisational controls
+    pass_threshold: float | None = None  # None for organisational (always NA)
+    fail_threshold: float | None = None
+    is_organisational: bool = False  # True = always NA, evidence from org process
+    evidence_template: str = ""
+    remediation: str = ""
 
 
 @dataclass(frozen=True)
@@ -87,7 +88,8 @@ class EvidenceRecord:
     framework_id: str = ""
     tenant_id: str = ""
     signal_source: str = ""
-    signal_value: float | None = None
+    signal_key: str = ""  # alias for signal_source in framework evaluations
+    signal_value: object = None  # float | str | None
     threshold: float | None = None
     status: ControlStatus = ControlStatus.NA
     evidence_text: str = ""

@@ -67,7 +67,7 @@ class ClaimScore(BaseModel):
 class VerificationResult(BaseModel):
     """Output of the verifier layer."""
 
-    trust_score: float = Field(ge=0.0, le=1.0)
+    trust_score: float = Field(default=0.0, ge=0.0, le=1.0)
     claims: list[ClaimScore] = Field(default_factory=list)
     rag_entailment_score: float = Field(default=0.5, ge=0.0, le=1.0)
     cross_check_agreement: float = Field(default=0.75, ge=0.0, le=1.0)
@@ -82,9 +82,9 @@ class VerificationResult(BaseModel):
 class CircuitBreakerResult(BaseModel):
     """Decision from the circuit-breaker cascade."""
 
-    intervention: InterventionLevel
-    final_response: str
-    trust_score: float = Field(ge=0.0, le=1.0)
+    intervention: InterventionLevel | None = None
+    final_response: str = ""
+    trust_score: float = Field(default=0.0, ge=0.0, le=1.0)
     attempts: int = Field(default=1, ge=1)
     cost_usd: float = Field(default=0.0, ge=0.0)
     provider_used: str = Field(default="")
@@ -112,7 +112,7 @@ class AuditEntry(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     prompt_hash: str = Field(description="SHA-256 of original prompt")
     response_hash: str = Field(description="SHA-256 of delivered response")
-    trust_score: float = Field(ge=0.0, le=1.0)
+    trust_score: float = Field(default=0.0, ge=0.0, le=1.0)
     intervention_level: int
     cost_usd: float = Field(default=0.0, ge=0.0)
     latency_ms: float = Field(default=0.0, ge=0.0)
@@ -232,8 +232,8 @@ class PipelineResponse(BaseModel):
 
     content: str
     model: str
-    trust_score: float = Field(ge=0.0, le=1.0)
-    intervention: InterventionLevel
+    trust_score: float = Field(default=0.0, ge=0.0, le=1.0)
+    intervention: InterventionLevel | None = None
     cost_usd: float = 0.0
     latency_ms: float = 0.0
 
@@ -402,7 +402,7 @@ class AuditEntryInput(BaseModel):
     request_id: str
     prompt_hash: str
     response_hash: str
-    trust_score: float = Field(ge=0.0, le=1.0)
+    trust_score: float = Field(default=0.0, ge=0.0, le=1.0)
     intervention_level: int = 0
     cost_usd: float = Field(default=0.0, ge=0.0)
     latency_ms: float = Field(default=0.0, ge=0.0)

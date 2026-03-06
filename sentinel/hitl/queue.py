@@ -216,3 +216,26 @@ class HitlQueue:
         await complete_job(job_id, review)
 
 
+
+
+async def enqueue_hitl_review(
+    prompt: str,
+    response: str,
+    trust_score: float,
+    config: object | None = None,
+) -> str:
+    """Enqueue a prompt/response pair for human-in-the-loop review.
+
+    Returns a task/job ID string.
+    """
+    job: dict = {
+        "prompt": prompt,
+        "response": response,
+        "trust_score": trust_score,
+        "config": str(config),
+    }
+    import uuid  # noqa: PLC0415
+
+    job_id = str(uuid.uuid4())
+    _memory_jobs[job_id] = job
+    return job_id

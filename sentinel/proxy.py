@@ -120,7 +120,7 @@ def create_app() -> FastAPI:
         # Circuit breaker
         from sentinel.layers import circuit_breaker
         cb_result = await circuit_breaker.evaluate(
-            prompt=sanitization.clean_prompt,
+            prompt=sanitization.sanitized_text,
             initial_response=response_text,
             verification=verification,
             config=tenant,
@@ -131,7 +131,7 @@ def create_app() -> FastAPI:
         from sentinel.layers import auditor
         await auditor.log(
             tenant_id=tenant.tenant_id,
-            prompt=sanitization.clean_prompt,
+            prompt=sanitization.sanitized_text,
             response=cb_result.final_response,
             trust_score=cb_result.final_trust_score,
         )

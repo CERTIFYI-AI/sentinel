@@ -538,3 +538,16 @@ def get_framework(framework_id: str) -> ComplianceFramework:
             f"Unknown framework {framework_id!r}. "
             f"Available: {available}"
         ) from None
+
+
+# === Framework evaluator bridge (added) ===
+def get_framework_evaluator(framework_id: str):
+    from sentinel.compliance.frameworks import FRAMEWORK_REGISTRY
+    if framework_id not in FRAMEWORK_REGISTRY:
+        raise KeyError(f"No evaluator for framework: {framework_id!r}")
+    return FRAMEWORK_REGISTRY[framework_id]
+
+
+def list_framework_ids() -> list:
+    from sentinel.compliance.frameworks import FRAMEWORK_REGISTRY
+    return list(FRAMEWORK_REGISTRY.keys())

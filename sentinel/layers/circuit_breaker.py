@@ -8,6 +8,7 @@ from sentinel.models import (
     CircuitBreakerResult,
     InterventionLevel,
 )
+from sentinel.hitl.queue import enqueue_hitl_review
 
 if TYPE_CHECKING:
     from sentinel.models import VerificationResult
@@ -45,6 +46,8 @@ async def evaluate(
     hitl_queue: Any = None,
 ) -> CircuitBreakerResult:
     """Run the circuit-breaker cascade."""
+    if verification is None:
+        verification = await verify(initial_response, config)
     trust_score = verification.trust_score
     threshold = 0.85
     if hasattr(config, "trust_score_threshold"):
@@ -107,6 +110,7 @@ async def evaluate(
 
     # L3: HITL
     canned = "Please verify this response with a qualified professional for accuracy."
+    await enqueue_hitl_review(prompt, canned, trust_score, config)
     return CircuitBreakerResult(
         intervention_level=InterventionLevel.HITL,
         final_response=canned,
