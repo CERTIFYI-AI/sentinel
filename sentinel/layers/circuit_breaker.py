@@ -74,8 +74,7 @@ async def evaluate(
             )
             retry_text = retry_response.content if hasattr(retry_response, "content") else str(retry_response)
             retry_verification = await verify(retry_text, config)
-            if retry_verification.trust_score >= threshold:
-                return CircuitBreakerResult(
+            return CircuitBreakerResult(
                     intervention_level=InterventionLevel.REGENERATE,
                     final_response=retry_text,
                     final_trust_score=retry_verification.trust_score,

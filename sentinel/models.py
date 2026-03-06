@@ -1,3 +1,5 @@
+
+
 """Domain models for Certifyi Sentinel.
 
 Every data structure that crosses a boundary (API, DB, WebSocket)

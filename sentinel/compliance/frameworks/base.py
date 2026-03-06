@@ -71,3 +71,4 @@ class BaseFramework(ABC):
             remediation=remediation,
             scope_note=scope_note,
         )
+ComplianceFramework = BaseFramework

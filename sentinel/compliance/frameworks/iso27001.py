@@ -2,8 +2,8 @@ from __future__ import annotations
 from sentinel.compliance.frameworks.base import ControlDefinition, ControlStatus, BaseFramework
 
 
-class ISO27001Framework(BaseFramework):
-    framework_id = 'iso27001'
+class ISO42001Framework(BaseFramework):
+    framework_id = 'iso42001'
     display_name = 'ISO/IEC 27001:2022'
     version = '2022'
     legal_weight = 'best-practice'

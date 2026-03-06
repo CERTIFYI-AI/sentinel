@@ -12,7 +12,7 @@
       "drift_max": 0.3
     }
   },
-  "iso27001": {
+  "iso42001": {
     "enabled": true,
     "thresholds": {
       "drift_max": 0.5

@@ -1,8 +1,9 @@
-from .base import ComplianceFramework, ComplianceControl, ComplianceResult
+from .base import BaseFramework as ComplianceFramework, ComplianceResult
+ComplianceControl = ComplianceFramework
 from .eu_ai_act import EUAIActFramework
 from .gdpr import GDPRFramework
 from .hipaa import HIPAAFramework
-from .iso27001 import ISO27001Framework
+from .iso42001 import ISO42001Framework
 from .nist_ai_rmf import NISTAIRMFFramework
 from .owasp_llm import OWASPLLMFramework
 from .soc2 import SOC2Framework
@@ -11,7 +12,7 @@ ALL_FRAMEWORKS = [
     EUAIActFramework,
     GDPRFramework,
     HIPAAFramework,
-    ISO27001Framework,
+    ISO42001Framework,
     NISTAIRMFFramework,
     OWASPLLMFramework,
     SOC2Framework,
@@ -25,6 +26,7 @@ FRAMEWORK_MAP = {
 __all__ = [
     'ComplianceFramework','ComplianceControl','ComplianceResult',
     'EUAIActFramework','GDPRFramework','HIPAAFramework',
-    'ISO27001Framework','NISTAIRMFFramework','OWASPLLMFramework','SOC2Framework',
+    'ISO42001Framework','NISTAIRMFFramework','OWASPLLMFramework','SOC2Framework',
     'ALL_FRAMEWORKS','FRAMEWORK_MAP',
 ]
+FRAMEWORK_REGISTRY = FRAMEWORK_MAP
