@@ -165,7 +165,7 @@ class TestLLMResponseModel:
 
     def test_cost_usd_cannot_be_negative(self):
         from sentinel.models import LLMResponse as ModelsLLMResponse
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError):
             ModelsLLMResponse(content="ok", cost_usd=-0.01, model="test")
 
     def test_valid_response_instantiates(self):
