@@ -33,21 +33,12 @@ from sentinel.config import (
 # ---------------------------------------------------------------------------
 # Database fixtures
 # ---------------------------------------------------------------------------
-
 TEST_DSN = "postgresql://sentinel_test:sentinel_test@localhost:5432/sentinel_test"
 
 
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture
 async def db_pool() -> AsyncGenerator[asyncpg.Pool, None]:
-    """Session-scoped asyncpg connection pool pointed at the test database.
-
-    The test database must exist before running the suite.  The docker-compose
-    test profile spins up a dedicated postgres instance on port 5433 with the
-    pgvector and TimescaleDB extensions pre-installed.  Run:
-
-        docker compose --profile test up -d postgres-test
-        pytest
-    """
+    """Function-scoped asyncpg connection pool pointed at the test database."""
     pool = await asyncpg.create_pool(dsn=TEST_DSN, min_size=2, max_size=10)
     # Ensure pgvector extension is available.
     async with pool.acquire() as conn:
@@ -56,11 +47,11 @@ async def db_pool() -> AsyncGenerator[asyncpg.Pool, None]:
             """
             CREATE TABLE IF NOT EXISTS embeddings (
                 document_id TEXT NOT NULL,
-                chunk_index  INT  NOT NULL,
-                source_url   TEXT,
-                content      TEXT NOT NULL,
-                embedding    vector(384),
-                tenant_id    TEXT NOT NULL DEFAULT 'test',
+                chunk_index INT NOT NULL,
+                source_url TEXT,
+                content TEXT NOT NULL,
+                embedding vector(384),
+                tenant_id TEXT NOT NULL DEFAULT 'test',
                 PRIMARY KEY (document_id, chunk_index)
             )
             """
@@ -68,19 +59,19 @@ async def db_pool() -> AsyncGenerator[asyncpg.Pool, None]:
         await conn.execute(
             """
             CREATE TABLE IF NOT EXISTS audit_log (
-                entry_id           TEXT PRIMARY KEY,
-                tenant_id          TEXT NOT NULL,
-                request_id         TEXT NOT NULL,
-                timestamp          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-                prompt_hash        TEXT NOT NULL,
-                response_hash      TEXT NOT NULL,
-                trust_score        FLOAT NOT NULL,
+                entry_id TEXT PRIMARY KEY,
+                tenant_id TEXT NOT NULL,
+                request_id TEXT NOT NULL,
+                timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                prompt_hash TEXT NOT NULL,
+                response_hash TEXT NOT NULL,
+                trust_score FLOAT NOT NULL,
                 intervention_level INT NOT NULL,
-                cost_usd           FLOAT NOT NULL DEFAULT 0,
-                latency_ms         FLOAT NOT NULL DEFAULT 0,
+                cost_usd FLOAT NOT NULL DEFAULT 0,
+                latency_ms FLOAT NOT NULL DEFAULT 0,
                 previous_entry_hash TEXT NOT NULL,
-                entry_hash         TEXT NOT NULL,
-                metadata           JSONB NOT NULL DEFAULT '{}'
+                entry_hash TEXT NOT NULL,
+                metadata JSONB NOT NULL DEFAULT '{}'
             )
             """
         )
@@ -88,7 +79,7 @@ async def db_pool() -> AsyncGenerator[asyncpg.Pool, None]:
             """
             CREATE TABLE IF NOT EXISTS baseline_distributions (
                 tenant_id TEXT PRIMARY KEY,
-                centroid  vector(384),
+                centroid vector(384),
                 covariance_json TEXT
             )
             """
@@ -110,7 +101,6 @@ async def db_conn(db_pool: asyncpg.Pool) -> AsyncGenerator[asyncpg.Connection, N
 # ---------------------------------------------------------------------------
 # TenantConfig fixture
 # ---------------------------------------------------------------------------
-
 @pytest.fixture(scope="session")
 def tenant_config() -> TenantConfig:
     """Sample TenantConfig with known, deterministic thresholds for tests."""
@@ -156,13 +146,11 @@ def tenant_config() -> TenantConfig:
 # ---------------------------------------------------------------------------
 # Mock LLM provider
 # ---------------------------------------------------------------------------
-
 ACME_FACT_RESPONSE = (
     "The Acme Medical API supports HL7 FHIR R4 for all patient data endpoints. "
     "Authentication uses OAuth 2.0 with PKCE flow. Rate limits are 1000 requests "
     "per minute per tenant. All data is encrypted at rest using AES-256."
 )
-
 HALLUCINATION_RESPONSE = (
     "The Acme Medical API uses SOAP/XML exclusively and does not support REST. "
     "There is no rate limiting. Authentication is handled via simple API keys "
@@ -195,7 +183,6 @@ def mock_provider():
 # ---------------------------------------------------------------------------
 # Golden source seed documents (10 docs about Acme Medical API)
 # ---------------------------------------------------------------------------
-
 GOLDEN_SOURCE_DOCS = [
     {
         "document_id": "acme-001",
@@ -279,7 +266,6 @@ def golden_docs() -> list[dict]:
 # ---------------------------------------------------------------------------
 # Test prompts
 # ---------------------------------------------------------------------------
-
 @pytest.fixture(scope="session")
 def passing_prompts() -> list[str]:
     """3 prompts whose correct answers exist verbatim in the golden source."""
