@@ -22,24 +22,19 @@ def valid_auth_headers():
 @pytest.fixture
 def mock_pipeline_passing():
     """Mock all pipeline layers to return a passing result."""
-    from sentinel.layers.verifier import VerificationResult
-    from sentinel.layers.circuit_breaker import CircuitBreakerResult, InterventionLevel
+    from sentinel.models import VerificationResult, CircuitBreakerResult, InterventionLevel
 
     verification = VerificationResult(
         trust_score=0.92,
-        claim_scores=[],
+        claims=[],
         cross_check_agreement=0.92,
-        semantic_drift_sigma=0.3,
-        sources_used=["acme-001"],
-        latency_ms=180.0,
-        cost_usd=0.0002,
+        rag_entailment_score=0.92,
     )
     cb_result = CircuitBreakerResult(
         final_response="The Acme Medical API uses OAuth 2.0 with PKCE.",
-        intervention_level=InterventionLevel.NONE,
+        intervention=InterventionLevel.NONE,
         attempts=1,
-        original_trust_score=0.92,
-        final_trust_score=0.92,
+        trust_score=0.92,
         cost_usd=0.0002,
     )
     return verification, cb_result
@@ -74,6 +69,7 @@ class TestChatCompletionsEndpoint:
             patch("sentinel.layers.auditor.log", return_value=None),
         ):
             from sentinel.layers.sanitizer import SanitizationResult
+
             mock_sanitize.return_value = SanitizationResult(
                 clean_prompt="What auth method does Acme Medical API use?",
                 redaction_map={},
@@ -83,7 +79,6 @@ class TestChatCompletionsEndpoint:
                 latency_ms=12.0,
             )
             mock_llm.return_value = "The Acme Medical API uses OAuth 2.0 with PKCE."
-
             async with AsyncClient(app=app, base_url="http://test") as client:
                 resp = await client.post(
                     "/v1/chat/completions",
@@ -95,7 +90,6 @@ class TestChatCompletionsEndpoint:
                     },
                     headers=valid_auth_headers,
                 )
-
         assert resp.status_code == 200
         body = resp.json()
         assert "choices" in body
@@ -115,6 +109,7 @@ class TestChatCompletionsEndpoint:
             patch("sentinel.layers.auditor.log", return_value=None),
         ):
             from sentinel.layers.sanitizer import SanitizationResult
+
             mock_sanitize.return_value = SanitizationResult(
                 clean_prompt="test", redaction_map={}, blocked=False,
                 injection_score=0.01, detected_entities=[], latency_ms=5.0,
@@ -136,6 +131,7 @@ class TestChatCompletionsEndpoint:
             patch("sentinel.layers.sanitizer.sanitize") as mock_sanitize,
         ):
             from sentinel.layers.sanitizer import SanitizationResult
+
             mock_sanitize.return_value = SanitizationResult(
                 clean_prompt=injection_prompt,
                 redaction_map={},
