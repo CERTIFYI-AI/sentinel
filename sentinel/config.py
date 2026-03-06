@@ -22,7 +22,6 @@ _CONFIG_DIR = Path(__file__).resolve().parent.parent / "configs"
 # Sub-configuration models (BaseModel - used as nested configs)
 # ---------------------------------------------------------------------------
 
-
 class CircuitBreakerConfig(BaseModel):
     """Circuit breaker configuration."""
 
@@ -151,7 +150,6 @@ class DashboardConfig(BaseSettings):
 # Core SentinelConfig (BaseModel - used by tests and internal code)
 # ---------------------------------------------------------------------------
 
-
 class SentinelConfig(BaseModel):
     """Core Sentinel configuration used by layers and test fixtures."""
 
@@ -163,14 +161,14 @@ class SentinelConfig(BaseModel):
     injection_block_threshold: float = 0.78
     cross_check_trigger_threshold: float = 0.80
     fallback_model: str = "gpt-4o"
-
+    spacy_model: str = "en_core_web_lg"
+    embedding_model: str = "all-MiniLM-L6-v2"
     circuit_breaker: CircuitBreakerConfig = Field(default_factory=CircuitBreakerConfig)
     hitl: HitlConfig = Field(default_factory=HitlConfig)
     pii: PiiConfig = Field(default_factory=PiiConfig)
     golden_source: GoldenSourceConfig = Field(default_factory=GoldenSourceConfig)
     semantic_drift: SemanticDriftConfig = Field(default_factory=SemanticDriftConfig)
     costs: CostConfig = Field(default_factory=CostConfig)
-
     # Sub-configs used by proxy, rules, checker, audit
     providers: list[ProviderConfig] = Field(default_factory=lambda: [ProviderConfig()])
     proxy: ProxyConfig = Field(default_factory=ProxyConfig)
@@ -192,13 +190,12 @@ class TenantConfig(BaseModel):
 # SentinelSettings (BaseSettings - used for env-based config loading)
 # ---------------------------------------------------------------------------
 
-
 class SentinelSettings(BaseSettings):
     """Central configuration validated at startup.
 
     Loads from env vars first, then sentinel.yaml override file.
     Every field has a safe default except DATABASE_URL and SECRET_KEY,
-    which must be provided or the app will refuse to start.
+    which must be provided or the app will refuse to start in production.
     """
 
     model_config = SettingsConfigDict(
@@ -211,15 +208,17 @@ class SentinelSettings(BaseSettings):
     # --- core ---
     version: str = Field(default="0.2.0", alias="SENTINEL_VERSION")
     environment: str = "development"
-    database_url: PostgresDsn = Field(
-        ..., description="asyncpg connection string for PostgreSQL"
+    database_url: Optional[PostgresDsn] = Field(
+        default=None, description="asyncpg connection string for PostgreSQL"
     )
-    redis_url: RedisDsn | None = Field(
+    redis_url: Optional[RedisDsn] = Field(
         default=None,
         description="Redis URL. Falls back to in-memory if absent.",
     )
     secret_key: str = Field(
-        ..., min_length=32, description="Secret for JWT signing"
+        default="changeme-dev-secret-key-32chars!!",
+        min_length=32,
+        description="Secret for JWT signing",
     )
 
     # --- sub-configs ---
@@ -303,4 +302,3 @@ def load_settings(config_path: Optional[str] = None) -> SentinelSettings:
 def load_config(config_path: Optional[str] = None) -> SentinelConfig:
     """Build a SentinelConfig for use by proxy and internal code."""
     return SentinelConfig()
-
