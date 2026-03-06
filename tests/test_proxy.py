@@ -44,7 +44,7 @@ class TestHealthEndpoint:
     """GET /health must return 200 with status and version."""
 
     async def test_health_returns_ok(self):
-        async with AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             resp = await client.get("/health")
         assert resp.status_code == 200
         body = resp.json()
@@ -79,7 +79,7 @@ class TestChatCompletionsEndpoint:
                 latency_ms=12.0,
             )
             mock_llm.return_value = "The Acme Medical API uses OAuth 2.0 with PKCE."
-            async with AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
                 resp = await client.post(
                     "/v1/chat/completions",
                     json={
@@ -114,7 +114,7 @@ class TestChatCompletionsEndpoint:
                 clean_prompt="test", redaction_map={}, blocked=False,
                 injection_score=0.01, detected_entities=[], latency_ms=5.0,
             )
-            async with AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
                 resp = await client.post(
                     "/v1/chat/completions",
                     json={"model": "gpt-4o-mini", "messages": [{"role": "user", "content": "hi"}]},
@@ -140,7 +140,7 @@ class TestChatCompletionsEndpoint:
                 detected_entities=[],
                 latency_ms=15.0,
             )
-            async with AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
                 resp = await client.post(
                     "/v1/chat/completions",
                     json={"model": "gpt-4o-mini", "messages": [{"role": "user", "content": injection_prompt}]},
@@ -149,7 +149,7 @@ class TestChatCompletionsEndpoint:
         assert resp.status_code == 400
 
     async def test_missing_auth_returns_401(self):
-        async with AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             resp = await client.post(
                 "/v1/chat/completions",
                 json={"model": "gpt-4o-mini", "messages": [{"role": "user", "content": "hi"}]},
@@ -160,14 +160,14 @@ class TestChatCompletionsEndpoint:
 class TestModelsEndpoint:
     async def test_models_returns_200(self, valid_auth_headers, tenant_config):
         with patch("sentinel.proxy._resolve_tenant", return_value=tenant_config):
-            async with AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
                 resp = await client.get("/v1/models", headers=valid_auth_headers)
         assert resp.status_code == 200
 
 
 class TestMetricsEndpoint:
     async def test_metrics_endpoint_returns_prometheus_format(self):
-        async with AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             resp = await client.get("/metrics")
         assert resp.status_code == 200
         assert "sentinel_" in resp.text or "# HELP" in resp.text

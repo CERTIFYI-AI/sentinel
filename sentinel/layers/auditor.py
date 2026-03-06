@@ -17,7 +17,7 @@ import hashlib as _hashlib
 import io as _io
 import json as _json
 import logging as _logging
-import uuid as _uuid
+import uuid
 import datetime as _dt
 from typing import TYPE_CHECKING, Any
 
@@ -105,7 +105,7 @@ async def log(
         asyncpg.PostgresError: If the database insert fails. Caller should
             log and retry with exponential backoff.
     """
-    entry_id = str(_uuid.uuid4())
+    entry_id = str(uuid.uuid4())
     now = _dt.datetime.now(tz=_dt.timezone.utc)
     prev_hash = await _get_last_entry_hash(entry_data.tenant_id, db)
 
