@@ -13,6 +13,7 @@ import pytest
 from sentinel.layers.circuit_breaker import CircuitBreakerResult, InterventionLevel, evaluate
 from sentinel.layers.verifier import VerificationResult
 
+pytestmark = pytest.mark.asyncio
 
 def _make_verification(trust_score: float) -> VerificationResult:
     """Build a minimal VerificationResult with a specified trust_score."""
