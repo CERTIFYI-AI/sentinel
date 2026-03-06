@@ -64,7 +64,7 @@ class ComplianceFramework:
     name: str
     version: str
     description: str
-    controls: tuple[ControlDefinition, ...]
+    controls: tuple[ControlDefinition, ...] | list[ControlDefinition]
 
     @property
     def control_count(self) -> int:

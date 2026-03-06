@@ -257,3 +257,181 @@ class APIKeyPayload(BaseModel):
     key_id: str
     scopes: list[str] = Field(default_factory=lambda: ["read", "write"])
     
+
+
+# -- LLM Types (used by proxy, rules, sdk, plugins) --------
+
+
+class LLMMessage(BaseModel):
+    """A single message in a chat conversation."""
+
+    role: str = Field(description="system | user | assistant")
+    content: str
+
+
+class LLMRequest(BaseModel):
+    """Incoming LLM request through the proxy."""
+
+    model: str = "gpt-4o"
+    messages: list[LLMMessage]
+    stream: bool = False
+    temperature: float = Field(default=0.7, ge=0.0, le=2.0)
+    max_tokens: int | None = None
+    tenant_id: str = ""
+    request_id: str = Field(default_factory=lambda: str(uuid4()))
+    provider: str = ""
+
+
+class LLMResponse(BaseModel):
+    """Response from an LLM provider."""
+
+    content: str
+    model: str
+    cost_usd: float = Field(default=0.0, ge=0.0)
+    latency_ms: float = Field(default=0.0, ge=0.0)
+    provider_id: str = ""
+
+
+# -- Policy Types (used by rules, proxy) --------------------
+
+
+class Severity(enum.StrEnum):
+    """Severity of a policy violation."""
+
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+class PolicyAction(enum.StrEnum):
+    """Action to take when a policy is violated."""
+
+    ALLOW = "allow"
+    WARN = "warn"
+    BLOCK = "block"
+    REVIEW = "review"
+    FLAG = "flag"
+
+
+class PolicyViolation(BaseModel):
+    """A single policy violation."""
+
+    rule_id: str
+    description: str
+    severity: Severity = Severity.MEDIUM
+    action: PolicyAction = PolicyAction.WARN
+
+
+class PolicyResult(BaseModel):
+    """Result of policy evaluation."""
+
+    allowed: bool = True
+    violations: list[PolicyViolation] = Field(default_factory=list)
+    action: PolicyAction = PolicyAction.ALLOW
+
+
+# -- Audit Types (used by audit, proxy) ---------------------
+
+
+class AuditEventType(enum.StrEnum):
+    """Types of auditable events."""
+
+    REQUEST = "request"
+    RESPONSE = "response"
+    POLICY_CHECK = "policy_check"
+    INTERVENTION = "intervention"
+    ERROR = "error"
+    REQUEST_RECEIVED = "request_received"
+    POLICY_EVALUATED = "policy_evaluated"
+    ERROR_OCCURRED = "error_occurred"
+    FACT_CHECK_RUN = "fact_check_run"
+    RESPONSE_SENT = "response_sent"
+
+
+class AuditEvent(BaseModel):
+    """An auditable event in the system."""
+
+    event_id: str = Field(default_factory=lambda: str(uuid4()))
+    event_type: AuditEventType
+    tenant_id: str
+    request_id: str
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    data: dict[str, Any] = Field(default_factory=dict)
+    user_id: str = ""
+    session_id: str = ""
+    policy_result: dict[str, Any] | None = None
+    fact_check_result: dict[str, Any] | None = None
+    error: str | None = None
+
+
+class AuditEntryInput(BaseModel):
+    """Input for creating an audit log entry."""
+
+    tenant_id: str
+    request_id: str
+    prompt: str
+    response: str
+    trust_score: float = Field(ge=0.0, le=1.0)
+    intervention: int = 0
+    cost_usd: float = Field(default=0.0, ge=0.0)
+    latency_ms: float = Field(default=0.0, ge=0.0)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+# -- Fact Check Types (used by checker) ---------------------
+
+
+class FactCheckVerdict(enum.StrEnum):
+    """Verdict for a fact check."""
+
+    SUPPORTED = "supported"
+    REFUTED = "refuted"
+    INCONCLUSIVE = "inconclusive"
+    UNCERTAIN = "uncertain"
+
+
+class Claim(BaseModel):
+    """A factual claim extracted from text."""
+
+    claim_id: str = Field(default_factory=lambda: str(uuid4()))
+    text: str
+    source_span: str = ""
+
+
+class ClaimResult(BaseModel):
+    """Result of checking a single claim."""
+
+    claim: Claim
+    verdict: FactCheckVerdict = FactCheckVerdict.INCONCLUSIVE
+    confidence: float = Field(default=0.5, ge=0.0, le=1.0)
+    evidence: list[str] = Field(default_factory=list)
+
+
+class FactCheckResult(BaseModel):
+    """Result of checking all claims in a response."""
+
+    claims: list[ClaimResult] = Field(default_factory=list)
+    overall_verdict: FactCheckVerdict = FactCheckVerdict.INCONCLUSIVE
+    trust_score: float = Field(default=0.5, ge=0.0, le=1.0)
+
+
+# -- Health & Stats Types (used by proxy, sdk, dashboard) ---
+
+
+class HealthStatus(BaseModel):
+    """System health status."""
+
+    status: str = "healthy"
+    version: str = "0.2.0"
+    uptime_seconds: float = 0.0
+    checks: dict[str, bool] = Field(default_factory=dict)
+
+
+class RequestStats(BaseModel):
+    """Request statistics for the dashboard."""
+
+    total_requests: int = 0
+    requests_per_minute: float = 0.0
+    avg_latency_ms: float = 0.0
+    error_rate: float = 0.0
