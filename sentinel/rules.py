@@ -4,7 +4,6 @@ Evaluates incoming requests and outgoing responses against
 configurable rules for content safety, PII detection,
 topic blocking, and custom governance policies.
 """
-
 from __future__ import annotations
 
 import logging
@@ -25,12 +24,9 @@ from sentinel.models import (
 
 logger = logging.getLogger(__name__)
 
-
 # ---------------------------------------------------------------------------
 # Base rule interface
 # ---------------------------------------------------------------------------
-
-
 class Rule(ABC):
     """Abstract base class for policy rules."""
 
@@ -44,16 +40,12 @@ class Rule(ABC):
         self, text: str, context: Dict[str, Any]
     ) -> Optional[PolicyViolation]:
         """Evaluate text against this rule.
-
         Returns a PolicyViolation if the rule is triggered, else None.
         """
-
 
 # ---------------------------------------------------------------------------
 # Built-in rules
 # ---------------------------------------------------------------------------
-
-
 class PIIDetectionRule(Rule):
     """Detect common PII patterns (emails, phone numbers, SSNs)."""
 
@@ -78,10 +70,9 @@ class PIIDetectionRule(Rule):
         if found:
             return PolicyViolation(
                 rule_id=self.rule_id,
-                rule_name=self.rule_name,
+                description=f"PII detected: {', '.join(found)}",
                 severity=self.severity,
-                message=f"PII detected: {', '.join(found)}",
-                details={"pii_types": found},
+                action=PolicyAction.FLAG,
             )
         return None
 
@@ -104,10 +95,9 @@ class BlockedTopicRule(Rule):
         if matched:
             return PolicyViolation(
                 rule_id=self.rule_id,
-                rule_name=self.rule_name,
+                description=f"Blocked topic(s) detected: {', '.join(matched)}",
                 severity=self.severity,
-                message=f"Blocked topic(s) detected: {', '.join(matched)}",
-                details={"topics": matched},
+                action=PolicyAction.BLOCK,
             )
         return None
 
@@ -128,10 +118,9 @@ class MaxTokenGuardRule(Rule):
         if len(text) > self._max_chars:
             return PolicyViolation(
                 rule_id=self.rule_id,
-                rule_name=self.rule_name,
+                description=f"Input exceeds {self._max_chars} characters (length={len(text)})",
                 severity=self.severity,
-                message=f"Input exceeds {self._max_chars} characters",
-                details={"length": len(text), "max": self._max_chars},
+                action=PolicyAction.BLOCK,
             )
         return None
 
@@ -161,10 +150,9 @@ class PromptInjectionRule(Rule):
             if phrase in text_lower:
                 return PolicyViolation(
                     rule_id=self.rule_id,
-                    rule_name=self.rule_name,
+                    description=f"Potential prompt injection detected (phrase: '{phrase}')",
                     severity=self.severity,
-                    message="Potential prompt injection detected",
-                    details={"matched_phrase": phrase},
+                    action=PolicyAction.BLOCK,
                 )
         return None
 
@@ -172,8 +160,6 @@ class PromptInjectionRule(Rule):
 # ---------------------------------------------------------------------------
 # Policy engine
 # ---------------------------------------------------------------------------
-
-
 class PolicyEngine:
     """Evaluate requests and responses against registered rules."""
 
@@ -189,11 +175,9 @@ class PolicyEngine:
             rule = PIIDetectionRule()
             self._request_rules.append(rule)
             self._response_rules.append(rule)
-
         if self._config.blocked_topics:
-            rule = BlockedTopicRule(self._config.blocked_topics)
+            rule = BlockedTopicRule(self._config.blocked_topics)  # type: ignore[assignment]
             self._request_rules.append(rule)
-
         self._request_rules.append(MaxTokenGuardRule())
         self._request_rules.append(PromptInjectionRule())
 
@@ -233,9 +217,7 @@ class PolicyEngine:
         context: Dict[str, Any],
     ) -> PolicyResult:
         """Execute rules and aggregate results."""
-        start = time.time()
         violations: List[PolicyViolation] = []
-
         for rule in rules:
             if not rule.enabled:
                 continue
@@ -245,13 +227,11 @@ class PolicyEngine:
                     violations.append(violation)
             except Exception:
                 logger.exception("Rule %s failed", rule.rule_id)
-
         action = self._determine_action(violations)
         return PolicyResult(
             action=action,
             violations=violations,
-            evaluation_ms=(time.time() - start) * 1000,
-            rules_evaluated=len(rules),
+            allowed=(action == PolicyAction.ALLOW),
         )
 
     def _determine_action(
@@ -260,7 +240,6 @@ class PolicyEngine:
         """Determine the final action based on violations."""
         if not violations:
             return PolicyAction.ALLOW
-
         max_severity = max(v.severity.value for v in violations)
         if self._config.strict_mode or max_severity == Severity.CRITICAL.value:
             return PolicyAction.BLOCK
