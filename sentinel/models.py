@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 # ── Enums ─────────────────────────────────────────
@@ -88,6 +88,16 @@ class CircuitBreakerResult(BaseModel):
     attempts: int = Field(default=1, ge=1)
     cost_usd: float = Field(default=0.0, ge=0.0)
     provider_used: str = Field(default="")
+    intervention_level: InterventionLevel | None = None
+    final_trust_score: float = Field(default=0.0, ge=0.0, le=1.0)
+
+    @model_validator(mode="after")
+    def sync_cb_fields(self) -> "CircuitBreakerResult":
+        if self.intervention_level is None:
+            self.intervention_level = self.intervention
+        if self.final_trust_score == 0.0 and self.trust_score > 0.0:
+            self.final_trust_score = self.trust_score
+        return self
 
 
 # ── Audit ─────────────────────────────────────────
@@ -114,9 +124,24 @@ class AuditEntry(BaseModel):
 class IntegrityReport(BaseModel):
     """Result of an audit-chain integrity verification."""
 
-    intact: bool
+    model_config = ConfigDict(populate_by_name=True)
+
+    tenant_id: str = ""
+    intact: bool = False
+    is_intact: bool = Field(default=False)
+    total_entries: int = 0
     entries_checked: int = 0
     broken_at: list[str] = Field(default_factory=list)
+    checked_at: datetime = Field(default_factory=datetime.utcnow)
+
+    @model_validator(mode="after")
+    def sync_fields(self) -> "IntegrityReport":
+        self.is_intact = self.intact
+        if self.total_entries and not self.entries_checked:
+            self.entries_checked = self.total_entries
+        if self.entries_checked and not self.total_entries:
+            self.total_entries = self.entries_checked
+        return self
 
 
 # ── HITL ──────────────────────────────────────────
@@ -322,6 +347,7 @@ class PolicyViolation(BaseModel):
     description: str
     severity: Severity = Severity.MEDIUM
     action: PolicyAction = PolicyAction.WARN
+    details: dict | None = None
 
 
 class PolicyResult(BaseModel):
@@ -331,6 +357,8 @@ class PolicyResult(BaseModel):
     violations: list[PolicyViolation] = Field(default_factory=list)
     action: PolicyAction = PolicyAction.ALLOW
     modified_content: str | None = None
+    evaluation_ms: float = 0.0
+    rules_evaluated: int = 0
 
 
 # -- Audit Types (used by audit, proxy) ---------------------

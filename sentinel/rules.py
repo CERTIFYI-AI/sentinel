@@ -23,6 +23,15 @@ from sentinel.models import (
     Severity,
 )
 
+# BLOCK-03: Explicit severity ordering
+SEVERITY_ORDER: dict = {
+    "low": 1,
+    "medium": 2,
+    "high": 3,
+    "critical": 4,
+}
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -58,7 +67,7 @@ class PIIDetectionRule(Rule):
     """Detect common PII patterns (emails, phone numbers, SSNs)."""
 
     rule_id = "builtin.pii_detection"
-    rule_name = "PII Detection"
+
     severity = Severity.HIGH
 
     _patterns = {
@@ -78,10 +87,11 @@ class PIIDetectionRule(Rule):
         if found:
             return PolicyViolation(
                 rule_id=self.rule_id,
-                rule_name=self.rule_name,
+
                 severity=self.severity,
-                message=f"PII detected: {', '.join(found)}",
-                details={"pii_types": found},
+                description=f"PII detected: {', '.join(found)}",
+                details={"pii_types": list(found)},
+
             )
         return None
 
@@ -90,7 +100,7 @@ class BlockedTopicRule(Rule):
     """Block requests containing specified topics."""
 
     rule_id = "builtin.blocked_topic"
-    rule_name = "Blocked Topic"
+
     severity = Severity.HIGH
 
     def __init__(self, topics: List[str]) -> None:
@@ -104,10 +114,11 @@ class BlockedTopicRule(Rule):
         if matched:
             return PolicyViolation(
                 rule_id=self.rule_id,
-                rule_name=self.rule_name,
+
                 severity=self.severity,
-                message=f"Blocked topic(s) detected: {', '.join(matched)}",
-                details={"topics": matched},
+                description=f"Blocked topic(s) detected: {', '.join(matched)}",
+                details={"topics": list(matched)},
+
             )
         return None
 
@@ -116,7 +127,7 @@ class MaxTokenGuardRule(Rule):
     """Ensure input length is within bounds."""
 
     rule_id = "builtin.max_token_guard"
-    rule_name = "Max Token Guard"
+
     severity = Severity.MEDIUM
 
     def __init__(self, max_chars: int = 50000) -> None:
@@ -128,10 +139,11 @@ class MaxTokenGuardRule(Rule):
         if len(text) > self._max_chars:
             return PolicyViolation(
                 rule_id=self.rule_id,
-                rule_name=self.rule_name,
+
                 severity=self.severity,
-                message=f"Input exceeds {self._max_chars} characters",
+                description=f"Input exceeds {self._max_chars} characters",
                 details={"length": len(text), "max": self._max_chars},
+
             )
         return None
 
@@ -140,7 +152,7 @@ class PromptInjectionRule(Rule):
     """Basic prompt injection detection."""
 
     rule_id = "builtin.prompt_injection"
-    rule_name = "Prompt Injection Detection"
+
     severity = Severity.CRITICAL
 
     _suspicious = [
@@ -161,10 +173,11 @@ class PromptInjectionRule(Rule):
             if phrase in text_lower:
                 return PolicyViolation(
                     rule_id=self.rule_id,
-                    rule_name=self.rule_name,
+
                     severity=self.severity,
-                    message="Potential prompt injection detected",
+                    description="Potential prompt injection detected",
                     details={"matched_phrase": phrase},
+
                 )
         return None
 
@@ -261,9 +274,7 @@ class PolicyEngine:
         if not violations:
             return PolicyAction.ALLOW
 
-        max_severity = max(v.severity.value for v in violations)
-        if self._config.strict_mode or max_severity == Severity.CRITICAL.value:
+        max_severity_rank = max(SEVERITY_ORDER.get(v.severity.value, 0) for v in violations)
+        if self._config.strict_mode or max_severity_rank >= SEVERITY_ORDER["high"]:
             return PolicyAction.BLOCK
-        if max_severity == Severity.HIGH.value:
-            return PolicyAction.FLAG
         return PolicyAction.ALLOW

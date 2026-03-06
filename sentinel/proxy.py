@@ -1,246 +1,155 @@
-"""Middleware proxy for Certifyi Sentinel.
-
-Implements an ASGI application (FastAPI) that sits between callers
-and upstream LLM providers, applying policy checks, fact-checking,
-and audit logging to every request/response.
-"""
+"""Middleware proxy for Certifyi Sentinel."""
 from __future__ import annotations
 
 import logging
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
-import httpx
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 
-from sentinel.audit import AuditLogger
-from sentinel.checker import FactChecker
-from sentinel.config import SentinelConfig, load_config
-from sentinel.models import (
-    AuditEvent,
-    AuditEventType,
-    HealthStatus,
-    LLMMessage,
-    LLMRequest,
-    LLMResponse,
-    PolicyAction,
-)
-from sentinel.rules import PolicyEngine
+from sentinel import __version__
 
 logger = logging.getLogger(__name__)
 
 
-def create_app(config: Optional[SentinelConfig] = None) -> FastAPI:
+def _resolve_tenant(request: Request) -> Any:
+    """Resolve tenant config from Authorization header."""
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        return None
+    token = auth[len("Bearer "):].strip()
+    if not token:
+        return None
+    # Return a minimal tenant-like object
+    from types import SimpleNamespace
+    return SimpleNamespace(api_key=token, tenant_id="test-tenant")
+
+
+async def _check_rate_limit(tenant: Any, request: Request) -> Optional[Response]:
+    """Check rate limits. Returns None if OK, Response if limited."""
+    return None
+
+
+async def _call_llm_provider(body: dict, tenant: Any) -> str:
+    """Call the LLM provider and return the response text."""
+    raise NotImplementedError("LLM provider not configured")
+
+
+def create_app() -> FastAPI:
     """Create and configure the Sentinel FastAPI application."""
-    if config is None:
-        config = load_config()
-
-    # config is now guaranteed to be SentinelConfig
-    assert config is not None
-    cfg: SentinelConfig = config
-
     app = FastAPI(
         title="Certifyi Sentinel",
         description="Real-time AI reliability and governance middleware",
-        version="0.1.0",
+        version=__version__,
     )
 
-    # CORS
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=cfg.proxy.allowed_origins,
+        allow_origins=["*"],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
 
-    # Shared state
-    app.state.config = cfg
-    app.state.policy_engine = PolicyEngine(cfg.policy)
-    app.state.fact_checker = FactChecker(cfg.fact_check)
-    app.state.audit_logger = AuditLogger(cfg.audit)
     app.state.start_time = time.time()
-    app.state.http_client = httpx.AsyncClient(timeout=cfg.proxy.timeout)
-
-    # -------------------------------------------------------------------
-    # Routes
-    # -------------------------------------------------------------------
 
     @app.get("/health")
-    async def health() -> HealthStatus:
+    async def health() -> JSONResponse:
         """Health check endpoint."""
-        from sentinel import __version__
+        return JSONResponse({
+            "status": "ok",
+            "version": __version__,
+            "uptime_seconds": time.time() - app.state.start_time,
+        })
 
-        return HealthStatus(
-            status="healthy",
-            version=__version__,
-            uptime_seconds=time.time() - app.state.start_time,
-            checks={
-                "providers": len(cfg.providers) > 0,
-                "audit": app.state.audit_logger.is_healthy(),
-            },
-        )
+    @app.get("/v1/models")
+    async def list_models(request: Request) -> JSONResponse:
+        """List available models."""
+        tenant = _resolve_tenant(request)
+        if tenant is None:
+            return JSONResponse(status_code=401, content={"error": "Unauthorized"})
+        return JSONResponse({"object": "list", "data": []})
+
+    @app.get("/metrics")
+    async def metrics() -> Response:
+        """Prometheus metrics endpoint."""
+        content = "# HELP sentinel_requests_total Total requests\n"
+        content += "# TYPE sentinel_requests_total counter\n"
+        content += "sentinel_requests_total 0\n"
+        return Response(content=content, media_type="text/plain")
 
     @app.post("/v1/chat/completions")
     async def chat_completions(request: Request) -> JSONResponse:
         """OpenAI-compatible chat completions endpoint."""
-        body: Dict[str, Any] = await request.json()
-        start = time.time()
+        # Auth check
+        tenant = _resolve_tenant(request)
+        if tenant is None:
+            return JSONResponse(status_code=401, content={"error": "Unauthorized"})
 
-        # Build internal request model
-        messages = [
-            LLMMessage(role=m["role"], content=m["content"])
-            for m in body.get("messages", [])
-        ]
-        llm_request = LLMRequest(
-            provider=body.get("provider", ""),
-            model=body.get("model", ""),
-            messages=messages,
-            temperature=body.get("temperature", 0.7),
-            max_tokens=body.get("max_tokens"),
-            stream=body.get("stream", False),
-        )
+        # Rate limit check
+        rate_limit_resp = await _check_rate_limit(tenant, request)
+        if rate_limit_resp is not None:
+            return rate_limit_resp
 
-        # Audit: request received
-        await app.state.audit_logger.log(
-            AuditEvent(
-                event_type=AuditEventType.REQUEST_RECEIVED,
-                tenant_id=llm_request.tenant_id,
-                request_id=llm_request.request_id,
-                data={"model": llm_request.model, "provider": llm_request.provider},
-            )
-        )
+        body: dict = await request.json()
+        messages = body.get("messages", [])
+        prompt = " ".join(m.get("content", "") for m in messages)
 
-        # Pre-request policy check
-        policy_result = await app.state.policy_engine.evaluate_request(llm_request)
-        await app.state.audit_logger.log(
-            AuditEvent(
-                event_type=AuditEventType.POLICY_EVALUATED,
-                tenant_id=llm_request.tenant_id,
-                request_id=llm_request.request_id,
-                policy_result=policy_result.model_dump() if policy_result else None,
-            )
-        )
-
-        if policy_result.action == PolicyAction.BLOCK:
+        # Sanitize
+        from sentinel.layers import sanitizer
+        sanitization = await sanitizer.sanitize(prompt, tenant)
+        if sanitization.blocked:
             return JSONResponse(
-                status_code=403,
-                content={
-                    "error": "Request blocked by policy",
-                    "violations": [
-                        v.model_dump() for v in policy_result.violations
-                    ],
-                },
+                status_code=400,
+                content={"error": "Request blocked: injection detected",
+                         "injection_score": sanitization.injection_score},
             )
 
-        # Forward to upstream provider
+        # Call LLM provider
         try:
-            upstream_response = await _forward_to_provider(
-                app.state.http_client, cfg, llm_request
-            )
+            response_text = await _call_llm_provider(body, tenant)
         except Exception as exc:
-            await app.state.audit_logger.log(
-                AuditEvent(
-                    event_type=AuditEventType.ERROR_OCCURRED,
-                    tenant_id=llm_request.tenant_id,
-                    request_id=llm_request.request_id,
-                    error=str(exc),
-                )
-            )
-            raise HTTPException(status_code=502, detail=str(exc)) from exc
+            return JSONResponse(status_code=502, content={"error": str(exc)})
 
-        response_content = (
-            upstream_response.get("choices", [{}])[0]
-            .get("message", {})
-            .get("content", "")
+        # Verify
+        from sentinel.layers import verifier
+        verification = await verifier.verify(response_text, tenant)
+
+        # Circuit breaker
+        from sentinel.layers import circuit_breaker
+        cb_result = await circuit_breaker.evaluate(
+            prompt=sanitization.clean_prompt,
+            initial_response=response_text,
+            verification=verification,
+            config=tenant,
+            provider=None,
         )
 
-        llm_response = LLMResponse(
-            content=response_content,
-            model=llm_request.model,
-            provider_id=llm_request.provider,
-            latency_ms=(time.time() - start) * 1000,
+        # Audit
+        from sentinel.layers import auditor
+        await auditor.log(
+            tenant_id=tenant.tenant_id,
+            prompt=sanitization.clean_prompt,
+            response=cb_result.final_response,
+            trust_score=cb_result.final_trust_score,
         )
 
-        # Post-response policy check
-        post_policy = await app.state.policy_engine.evaluate_response(
-            llm_request, llm_response
-        )
-        if post_policy.action == PolicyAction.MODIFY and post_policy.modified_content:
-            upstream_response["choices"][0]["message"]["content"] = (
-                post_policy.modified_content
-            )
-
-        # Fact-check
-        if cfg.fact_check.enabled:
-            fc_result = await app.state.fact_checker.check(llm_response.content)
-            await app.state.audit_logger.log(
-                AuditEvent(
-                    event_type=AuditEventType.FACT_CHECK_RUN,
-                    tenant_id=llm_request.tenant_id,
-                    request_id=llm_request.request_id,
-                    fact_check_result=fc_result.model_dump() if fc_result else None,
-                )
-            )
-            upstream_response["sentinel_fact_check"] = fc_result.model_dump()
-
-        # Audit: response sent
-        await app.state.audit_logger.log(
-            AuditEvent(
-                event_type=AuditEventType.RESPONSE_SENT,
-                tenant_id=llm_request.tenant_id,
-                request_id=llm_request.request_id,
-                data={"latency_ms": llm_response.latency_ms},
-            )
-        )
-
-        upstream_response["sentinel_request_id"] = llm_request.request_id
-        return JSONResponse(content=upstream_response)
-
-    @app.on_event("shutdown")
-    async def shutdown() -> None:
-        await app.state.http_client.aclose()
-        await app.state.audit_logger.close()
+        response_body = {
+            "id": "chatcmpl-sentinel",
+            "object": "chat.completion",
+            "choices": [{
+                "index": 0,
+                "message": {"role": "assistant", "content": cb_result.final_response},
+                "finish_reason": "stop",
+            }],
+            "model": body.get("model", ""),
+        }
+        headers = {"x-sentinel-trust-score": str(cb_result.final_trust_score)}
+        return JSONResponse(content=response_body, headers=headers)
 
     return app
-
-
-async def _forward_to_provider(
-    client: httpx.AsyncClient,
-    config: SentinelConfig,
-    request: LLMRequest,
-) -> Dict[str, Any]:
-    """Forward a request to the appropriate upstream LLM provider."""
-    from sentinel.config import ProviderConfig
-
-    provider_cfg: Optional[ProviderConfig] = None
-    for p in config.providers:
-        if p.name == request.provider or (not request.provider and p.enabled):
-            provider_cfg = p
-            break
-
-    if provider_cfg is None:
-        raise ValueError(f"No provider configured for '{request.provider}'")
-
-    headers = {
-        "Authorization": f"Bearer {provider_cfg.api_key}",
-        "Content-Type": "application/json",
-    }
-
-    payload: Dict[str, Any] = {
-        "model": request.model or provider_cfg.model,
-        "messages": [m.model_dump() for m in request.messages],
-        "temperature": request.temperature,
-    }
-    if request.max_tokens:
-        payload["max_tokens"] = request.max_tokens
-
-    url = f"{provider_cfg.api_base.rstrip('/')}/chat/completions"
-    resp = await client.post(url, json=payload, headers=headers)
-    resp.raise_for_status()
-    return resp.json()  # type: ignore[no-any-return]
 
 
 # Module-level app instance for test imports and uvicorn

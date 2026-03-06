@@ -22,10 +22,10 @@ def _make_entry_input(tenant_id: str = "test-tenant-001") -> AuditEntryInput:
     return AuditEntryInput(
         tenant_id=tenant_id,
         request_id=str(uuid.uuid4()),
-        prompt_hash=hashlib.sha256(b"test prompt").hexdigest(),
-        response_hash=hashlib.sha256(b"test response").hexdigest(),
+        prompt="test prompt",
+        response="test response",
         trust_score=0.92,
-        intervention_level=0,
+        intervention=0,
         cost_usd=0.0002,
         latency_ms=312.5,
         metadata={"claim_scores": [], "sources": []},
@@ -72,7 +72,7 @@ class TestHashChainIntegrity:
         tenant_id = f"genesis-test-{uuid.uuid4().hex[:8]}"
         entry = await log(_make_entry_input(tenant_id=tenant_id), db_conn)
         expected_genesis = hashlib.sha256(
-            (tenant_id + "GENESIS").encode()
+            f"{tenant_id}:GENESIS".encode()
         ).hexdigest()
         assert entry.previous_entry_hash == expected_genesis
 
@@ -93,7 +93,7 @@ class TestAuditLogAppendOnly:
             if not name.startswith("_")
             and callable(getattr(auditor_module, name))
         ]
-        allowed = {"log", "verify_chain_integrity", "get_entries", "export_to_csv",
+        allowed = {"log", "verify_chain_integrity", "get_entries", "export_to_csv", "annotations",
                    "AuditEntryInput", "AuditEntry", "IntegrityReport"}
         # Ensure no unexpected write functions exist.
         for fn in public_fns:

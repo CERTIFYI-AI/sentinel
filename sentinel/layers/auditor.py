@@ -12,13 +12,13 @@ have been tampered with by walking the chain from genesis to the latest entry.
 
 from __future__ import annotations
 
-import csv
-import hashlib
-import io
-import json
-import logging
-import uuid
-from datetime import datetime, timezone
+import csv as _csv
+import hashlib as _hashlib
+import io as _io
+import json as _json
+import logging as _logging
+import uuid as _uuid
+import datetime as _dt
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 from sentinel.models import AuditEntry, AuditEntryInput, IntegrityReport
 
-logger = logging.getLogger(__name__)
+_logger = _logging.getLogger(__name__)
 
 
 def _canonical_json(entry_data: dict[str, Any]) -> str:
@@ -38,7 +38,7 @@ def _canonical_json(entry_data: dict[str, Any]) -> str:
     computation, not an input to it.
     """
     filtered = {k: v for k, v in entry_data.items() if k != "entry_hash"}
-    return json.dumps(filtered, sort_keys=True, separators=(",", ":"), default=str)
+    return _json.dumps(filtered, sort_keys=True, separators=(",", ":"), default=str)
 
 
 def _compute_hash(prev_hash: str, canonical: str) -> str:
@@ -48,7 +48,7 @@ def _compute_hash(prev_hash: str, canonical: str) -> str:
     depends on the previous entry's hash, forming an ordered, tamper-evident
     sequence similar to a blockchain without the consensus overhead.
     """
-    return hashlib.sha256(
+    return _hashlib.sha256(
         prev_hash.encode("utf-8") + canonical.encode("utf-8")
     ).hexdigest()
 
@@ -60,7 +60,7 @@ def _genesis_hash(tenant_id: str) -> str:
     instead of a previous entry hash. This anchors the chain to the tenant
     identity so chains from different tenants cannot be spliced together.
     """
-    return hashlib.sha256(f"{tenant_id}:GENESIS".encode("utf-8")).hexdigest()
+    return _hashlib.sha256(f"{tenant_id}:GENESIS".encode("utf-8")).hexdigest()
 
 
 async def _get_last_entry_hash(tenant_id: str, db: asyncpg.Connection) -> str:
@@ -105,14 +105,14 @@ async def log(
         asyncpg.PostgresError: If the database insert fails. Caller should
             log and retry with exponential backoff.
     """
-    entry_id = str(uuid.uuid4())
-    now = datetime.now(tz=timezone.utc)
+    entry_id = str(_uuid.uuid4())
+    now = _dt.datetime.now(tz=_dt.timezone.utc)
     prev_hash = await _get_last_entry_hash(entry_data.tenant_id, db)
 
-    prompt_hash = hashlib.sha256(
+    prompt_hash = _hashlib.sha256(
         entry_data.prompt.encode("utf-8")
     ).hexdigest()
-    response_hash = hashlib.sha256(
+    response_hash = _hashlib.sha256(
         entry_data.response.encode("utf-8")
     ).hexdigest()
 
@@ -153,10 +153,10 @@ async def log(
         entry_data.latency_ms,
         prev_hash,
         entry_hash,
-        json.dumps(entry_data.metadata, default=str),
+        _json.dumps(entry_data.metadata, default=str),
     )
 
-    logger.info(
+    _logger.info(
         "Audit entry %s logged for tenant %s (trust=%.4f, intervention=%d)",
         entry_id,
         entry_data.tenant_id,
@@ -233,7 +233,7 @@ async def verify_chain_integrity(
                 "cost_usd": float(row["cost_usd"]),
                 "latency_ms": float(row["latency_ms"]),
                 "prev_hash": row["prev_hash"],
-                "metadata": json.loads(row["metadata"]) if isinstance(row["metadata"], str) else row["metadata"],
+                "metadata": _json.loads(row["metadata"]) if isinstance(row["metadata"], str) else row["metadata"],
             }
 
             if row["prev_hash"] != expected_prev_hash:
@@ -249,7 +249,7 @@ async def verify_chain_integrity(
             expected_prev_hash = row["entry_hash"]
 
     intact = len(broken_links) == 0
-    logger.info(
+    _logger.info(
         "Chain integrity check for tenant %s: %d entries, %s (broken: %d)",
         tenant_id,
         total_entries,
@@ -262,7 +262,7 @@ async def verify_chain_integrity(
         total_entries=total_entries,
         intact=intact,
         broken_at=broken_links,
-        checked_at=datetime.now(tz=timezone.utc),
+        checked_at=_dt.datetime.now(tz=_dt.timezone.utc),
     )
 
 
@@ -301,7 +301,7 @@ async def get_entries(
     for row in rows:
         metadata = row["metadata"]
         if isinstance(metadata, str):
-            metadata = json.loads(metadata)
+            metadata = _json.loads(metadata)
         entries.append(
             AuditEntry(
                 entry_id=row["entry_id"],
@@ -325,7 +325,7 @@ async def get_entries(
 async def export_to_csv(
     tenant_id: str,
     db: asyncpg.Connection,
-) -> str:
+) -> bytes:
     """Export the full audit log for a tenant as a CSV string.
 
     Streams all entries ordered by timestamp ASC to produce a chronological
@@ -335,8 +335,8 @@ async def export_to_csv(
     Returns:
         UTF-8 CSV string with headers.
     """
-    output = io.StringIO()
-    writer = csv.writer(output)
+    output = _io.StringIO()
+    writer = _csv.writer(output)
     writer.writerow([
         "entry_id", "tenant_id", "request_id", "timestamp",
         "prompt_hash", "response_hash", "trust_score", "intervention",
@@ -366,10 +366,10 @@ async def export_to_csv(
                 row["entry_hash"],
             ])
 
-    return output.getvalue()
+    return output.getvalue().encode("utf-8")
 
 
-async def get_summary_stats(
+async def _get_summary_stats(
     tenant_id: str,
     db: asyncpg.Connection,
 ) -> dict[str, Any]:

@@ -68,6 +68,7 @@ class ProviderConfig:
 
 
 class LLMProvider(abc.ABC):
+    provider_id: str = ""
     """Abstract LLM provider interface.
 
     All providers must implement complete() for non-streaming and

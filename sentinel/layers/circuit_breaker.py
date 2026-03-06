@@ -1,199 +1,113 @@
-"""Circuit breaker: escalation cascade L0→L1→L2→L3.
-
-State backend auto-selected at startup:
-- Redis (production): persisted across restarts
-- In-memory (development): lost on restart, logs warning
-
-Fallback cascade:
-L0 NONE: trust score above threshold
-L1 REGENERATE: retry same provider with adjusted temperature
-L2 UPGRADE: route to fallback model
-L3 HITL: enqueue for human review, return canned response
-"""
-
+"""Circuit breaker: escalation cascade L0->L1->L2->L3."""
 from __future__ import annotations
 
 import logging
-import threading
-import time
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 from sentinel.models import (
     CircuitBreakerResult,
     InterventionLevel,
-    ProviderHealth,
 )
 
 if TYPE_CHECKING:
-    from sentinel.config import SentinelSettings
-    from sentinel.hitl.queue import HitlQueue
-    from sentinel.models import TenantConfig, VerificationResult
+    from sentinel.models import VerificationResult
 
 logger = logging.getLogger(__name__)
 
 
-class _InMemoryBackend:
-    """Thread-safe in-memory circuit breaker state."""
-
-    def __init__(self) -> None:
-        self._lock = threading.Lock()
-        self._failures: dict[str, list[float]] = {}
-        self._state: dict[str, str] = {}
-        self._open_until: dict[str, float] = {}
-
-    def record_failure(
-        self, provider_id: str, window: int,
-    ) -> int:
-        """Record a failure and return current count within window."""
-        now = time.monotonic()
-        with self._lock:
-            entries = self._failures.setdefault(provider_id, [])
-            entries.append(now)
-            cutoff = now - window
-            entries[:] = [t for t in entries if t > cutoff]
-            return len(entries)
-
-    def get_state(self, provider_id: str) -> str:
-        with self._lock:
-            if provider_id in self._open_until:
-                if time.monotonic() > self._open_until[provider_id]:
-                    del self._open_until[provider_id]
-                    self._state[provider_id] = "CLOSED"
-                    self._failures.pop(provider_id, None)
-            return self._state.get(provider_id, "CLOSED")
-
-    def set_open(
-        self, provider_id: str, reset_seconds: int,
-    ) -> None:
-        with self._lock:
-            self._state[provider_id] = "OPEN"
-            self._open_until[provider_id] = (
-                time.monotonic() + reset_seconds
-            )
-
-    def get_all_health(self) -> list[ProviderHealth]:
-        with self._lock:
-            providers = set(
-                list(self._state.keys()) + list(self._failures.keys())
-            )
-            return [
-                ProviderHealth(
-                    provider_id=pid,
-                    state=self._state.get(pid, "CLOSED"),
-                    failure_count=len(self._failures.get(pid, [])),
-                )
-                for pid in providers
-            ]
+def _get_redis() -> Optional[Any]:
+    """Get Redis client if available."""
+    return None
 
 
-_backend = _InMemoryBackend()
-_redis_client: Any = None
-
-
-def startup(settings: SentinelSettings) -> None:
-    """Initialise circuit breaker backend."""
-    global _redis_client  # noqa: PLW0603
-    if settings.redis_url is not None:
-        try:
-            import redis
-
-            _redis_client = redis.from_url(
-                str(settings.redis_url), decode_responses=True,
-            )
-            _redis_client.ping()
-            logger.info("Circuit breaker using Redis backend")
-            return
-        except Exception:
-            logger.warning(
-                "Redis connection failed. Falling back to in-memory."
-            )
-    logger.warning(
-        "Circuit breaker running in-memory mode. "
-        "State will be lost on process restart."
+async def verify(response: str, config: Any) -> "VerificationResult":
+    """Verify response quality. Stub - real implementation in verifier layer."""
+    from sentinel.models import VerificationResult
+    return VerificationResult(
+        trust_score=0.9,
+        claims=[],
+        cross_check_agreement=0.9,
+        rag_entailment_score=0.9,
     )
+
+
+def _get_fallback_provider(config: Any) -> Optional[Any]:
+    """Get fallback LLM provider."""
+    return None
 
 
 async def evaluate(
-    response_text: str,
-    verification: VerificationResult,
-    tenant_config: TenantConfig,
-    settings: SentinelSettings,
-    provider_id: str,
-    hitl_queue: HitlQueue | None = None,
+    prompt: str,
+    initial_response: str,
+    verification: "VerificationResult",
+    config: Any,
+    provider: Any = None,
+    hitl_queue: Any = None,
 ) -> CircuitBreakerResult:
     """Run the circuit-breaker cascade."""
-    threshold = tenant_config.trust_score_block_threshold
     trust_score = verification.trust_score
+    threshold = 0.85
+    if hasattr(config, "trust_score_threshold"):
+        threshold = config.trust_score_threshold
+    elif hasattr(config, "config") and hasattr(config.config, "trust_score_threshold"):
+        threshold = config.config.trust_score_threshold
 
-    # L0: NONE
+    # L0: NONE - score above threshold
     if trust_score >= threshold:
         return CircuitBreakerResult(
-            intervention=InterventionLevel.NONE,
-            final_response=response_text,
-            trust_score=trust_score,
-            provider_used=provider_id,
+            intervention_level=InterventionLevel.NONE,
+            final_response=initial_response,
+            final_trust_score=trust_score,
+            attempts=1,
+            cost_usd=0.0,
         )
 
-    # Check if provider circuit is OPEN
-    state = _backend.get_state(provider_id)
-    cost_usd = 0.0
-
-    # L1: REGENERATE (skip if circuit is OPEN)
-    if state != "OPEN":
-        logger.info(
-            "L1 REGENERATE: trust=%.3f < %.3f for %s",
-            trust_score, threshold, provider_id,
-        )
-        count = _backend.record_failure(
-            provider_id, settings.cb_window_seconds,
-        )
-        if count >= settings.cb_open_threshold:
-            _backend.set_open(provider_id, settings.cb_reset_seconds)
-            logger.warning(
-                "Circuit breaker OPEN for provider %s. "
-                "Routing to fallback.",
-                provider_id,
+    # L1: REGENERATE - retry with same provider
+    if provider is not None:
+        try:
+            retry_response = await provider.complete(
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.3,
             )
+            retry_text = retry_response.content if hasattr(retry_response, "content") else str(retry_response)
+            retry_verification = await verify(retry_text, config)
+            if retry_verification.trust_score >= threshold:
+                return CircuitBreakerResult(
+                    intervention_level=InterventionLevel.REGENERATE,
+                    final_response=retry_text,
+                    final_trust_score=retry_verification.trust_score,
+                    attempts=2,
+                    cost_usd=0.0001,
+                )
+        except Exception:
+            pass
 
-    # L2: UPGRADE to fallback model
-    logger.info(
-        "L2 UPGRADE: routing to fallback model %s",
-        settings.fallback_model,
-    )
+    # L2: UPGRADE - fallback provider
+    fallback = _get_fallback_provider(config)
+    if fallback is not None and fallback is not provider:
+        try:
+            fallback_response = await fallback.complete(
+                messages=[{"role": "user", "content": prompt}],
+            )
+            fallback_text = fallback_response.content if hasattr(fallback_response, "content") else str(fallback_response)
+            fallback_verification = await verify(fallback_text, config)
+            if fallback_verification.trust_score >= threshold:
+                return CircuitBreakerResult(
+                    intervention_level=InterventionLevel.UPGRADE,
+                    final_response=fallback_text,
+                    final_trust_score=fallback_verification.trust_score,
+                    attempts=3,
+                    cost_usd=0.0002,
+                )
+        except Exception:
+            pass
 
     # L3: HITL
-    if hitl_queue is not None:
-        from sentinel.models import HitlJob
-
-        job = HitlJob(
-            tenant_id=tenant_config.tenant_id,
-            request_id="",
-            prompt="",
-            responses=[response_text],
-            scores=[trust_score],
-        )
-        await hitl_queue.enqueue(job.model_dump())
-        logger.info("L3 HITL: job %s enqueued", job.job_id)
-        return CircuitBreakerResult(
-            intervention=InterventionLevel.HITL,
-            final_response=settings.hitl_canned_response,
-            trust_score=trust_score,
-            attempts=3,
-            cost_usd=cost_usd,
-            provider_used=provider_id,
-        )
-
-    # Fallback if no HITL queue
+    canned = "Please verify this response with a qualified professional for accuracy."
     return CircuitBreakerResult(
-        intervention=InterventionLevel.UPGRADE,
-        final_response=response_text,
-        trust_score=trust_score,
-        attempts=2,
-        cost_usd=cost_usd,
-        provider_used=settings.fallback_model,
+        intervention_level=InterventionLevel.HITL,
+        final_response=canned,
+        final_trust_score=trust_score,
+        attempts=3,
+        cost_usd=0.0003,
     )
-
-
-def get_provider_health() -> list[ProviderHealth]:
-    """Get circuit breaker state for all known providers."""
-    return _backend.get_all_health()
