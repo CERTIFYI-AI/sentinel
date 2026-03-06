@@ -93,8 +93,8 @@ class SQLiteBackend(AuditBackend):
                 event.user_id,
                 event.session_id,
                 json.dumps(event.data),
-                event.policy_result.model_dump_json() if event.policy_result else None,
-                event.fact_check_result.model_dump_json() if event.fact_check_result else None,
+                json.dumps(event.policy_result) if event.policy_result else None,
+                json.dumps(event.fact_check_result) if event.fact_check_result else None,
                 event.error,
             ),
         )
