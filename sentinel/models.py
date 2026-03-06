@@ -311,7 +311,8 @@ class PolicyAction(enum.StrEnum):
     WARN = "warn"
     BLOCK = "block"
     REVIEW = "review"
-    FLAG = "flag"     MODIFY = "modify"
+    FLAG = "flag"
+    MODIFY = "modify"
 
 
 class PolicyViolation(BaseModel):
@@ -328,7 +329,8 @@ class PolicyResult(BaseModel):
 
     allowed: bool = True
     violations: list[PolicyViolation] = Field(default_factory=list)
-    action: PolicyAction = PolicyAction.ALLOW     modified_content: str | None = Field(default=None, description="Modified response content for MODIFY action")
+    action: PolicyAction = PolicyAction.ALLOW
+    modified_content: str | None = None
 
 
 # -- Audit Types (used by audit, proxy) ---------------------
