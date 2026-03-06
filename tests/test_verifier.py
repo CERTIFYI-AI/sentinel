@@ -11,6 +11,7 @@ import pytest
 
 from sentinel.layers.verifier import verify
 from sentinel.models import ClaimScore, VerificationResult
+from sentinel.config import SentinelSettings
 
 
 @pytest.fixture
@@ -37,9 +38,9 @@ def mock_vector_store(golden_docs):
 
 
 @pytest.fixture
-def sentinel_settings(tenant_config):
-    """Extract SentinelSettings from the tenant_config fixture."""
-    return tenant_config.config
+def sentinel_settings():
+    """Return a SentinelSettings instance for tests."""
+    return SentinelSettings()
 
 
 @pytest.fixture
