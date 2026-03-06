@@ -19,17 +19,66 @@ _CONFIG_DIR = Path(__file__).resolve().parent.parent / "configs"
 
 
 # ---------------------------------------------------------------------------
-# Sub-configuration models
+# Sub-configuration models (BaseModel - used as nested configs)
 # ---------------------------------------------------------------------------
 
 
+class CircuitBreakerConfig(BaseModel):
+    """Circuit breaker configuration."""
+    open_threshold: int = 5
+    window_seconds: int = 60
+    reset_seconds: int = 300
+
+
+class HitlConfig(BaseModel):
+    """Human-in-the-loop configuration."""
+    queue_name: str = "sentinel-hitl"
+    canned_response: str = (
+        "I want to make sure I give you accurate information "
+        "on this. Let me verify the details and get back to "
+        "you shortly."
+    )
+
+
+class PiiConfig(BaseModel):
+    """PII detection configuration."""
+    entities: list[str] = Field(default_factory=lambda: [
+        "PERSON", "EMAIL", "PHONE_NUMBER", "CREDIT_CARD", "US_SSN"
+    ])
+    custom_patterns: list[str] = Field(default_factory=list)
+
+
+class GoldenSourceConfig(BaseModel):
+    """Golden source similarity configuration."""
+    similarity_threshold: float = 0.72
+    top_k: int = 3
+
+
+class SemanticDriftConfig(BaseModel):
+    """Semantic drift detection configuration."""
+    alert_threshold_sigma: float = 2.0
+    block_threshold_sigma: float = 3.5
+
+
+class CostConfig(BaseModel):
+    """Cost tracking configuration."""
+    verification_models: bool = True
+    primary_model: bool = True
+
+
 class ProviderConfig(BaseModel):
-    """Configuration for a single LLM provider."""
+    """Configuration for LLM providers."""
     name: str = "openai"
     api_base: str = "https://api.openai.com/v1"
     api_key: str = ""
     model: str = "gpt-4"
     enabled: bool = True
+    primary_name: str = "openai"
+    primary_model: str = "gpt-4o"
+    primary_api_key: str = ""
+    fallback_name: str = "anthropic"
+    fallback_model: str = "claude-3-5-haiku-20241022"
+    fallback_api_key: str = ""
 
 
 class ProxyConfig(BaseModel):
@@ -83,7 +132,37 @@ class DashboardConfig(BaseSettings):
 
 
 # ---------------------------------------------------------------------------
-# Main settings
+# Core SentinelConfig (BaseModel - used by tests and internal code)
+# ---------------------------------------------------------------------------
+
+
+class SentinelConfig(BaseModel):
+    """Core Sentinel configuration used by layers and test fixtures."""
+    model_config = {"extra": "allow"}
+
+    version: str = "0.2.0"
+    trust_score_threshold: float = 0.85
+    injection_block_threshold: float = 0.78
+    cross_check_trigger_threshold: float = 0.80
+    fallback_model: str = "gpt-4o"
+    circuit_breaker: CircuitBreakerConfig = Field(default_factory=CircuitBreakerConfig)
+    hitl: HitlConfig = Field(default_factory=HitlConfig)
+    pii: PiiConfig = Field(default_factory=PiiConfig)
+    golden_source: GoldenSourceConfig = Field(default_factory=GoldenSourceConfig)
+    semantic_drift: SemanticDriftConfig = Field(default_factory=SemanticDriftConfig)
+    providers: ProviderConfig = Field(default_factory=ProviderConfig)
+    costs: CostConfig = Field(default_factory=CostConfig)
+
+
+class TenantConfig(BaseModel):
+    """Per-tenant configuration wrapper."""
+    tenant_id: str
+    config: SentinelConfig = Field(default_factory=SentinelConfig)
+    api_key_hash: str = ""
+
+
+# ---------------------------------------------------------------------------
+# SentinelSettings (BaseSettings - used for env-based config loading)
 # ---------------------------------------------------------------------------
 
 
@@ -117,7 +196,6 @@ class SentinelSettings(BaseSettings):
     )
 
     # --- sub-configs ---
-    providers: List[ProviderConfig] = Field(default_factory=list)
     proxy: ProxyConfig = Field(default_factory=ProxyConfig)
     policy: PolicyConfig = Field(default_factory=PolicyConfig)
     fact_check: FactCheckConfig = Field(default_factory=FactCheckConfig)
@@ -193,5 +271,4 @@ def load_settings(config_path: Optional[str] = None) -> SentinelSettings:
 
 
 # -- Aliases used by other modules --------------------------
-SentinelConfig = SentinelSettings
 load_config = load_settings
