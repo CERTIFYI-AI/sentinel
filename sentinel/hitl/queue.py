@@ -215,3 +215,4 @@ class HitlQueue:
         """Complete a job with review data."""
         await complete_job(job_id, review)
 
+
