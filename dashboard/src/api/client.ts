@@ -20,7 +20,7 @@ export function clearToken() {
 }
 export function getToken() { return _token; }
 
-async function api<T>(path: string, opts: RequestInit = {}): Promise<T> {
+export async function api<T>(path: string, opts: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(opts.headers as Record<string, string> || {}),
@@ -52,7 +52,7 @@ export const fetchAuditLog = () => api<AuditEntry[]>("/audit");
 
 // HITL
 export const fetchHitlQueue = () => api<HitlItem[]>("/hitl/queue");
-export const reviewHitl = (id: string, action: string) =>
+export const reviewHitlJob = (id: string, action: string) =>
   api<HitlItem>(`/hitl/queue/${id}/review`, { method: "POST", body: JSON.stringify({ action }) });
 
 // Config
