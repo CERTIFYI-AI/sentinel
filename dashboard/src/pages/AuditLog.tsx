@@ -6,7 +6,7 @@ import { AuditTable } from "../components/dashboard/AuditTable";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 
-export function AuditLog() {
+export default function AuditLog() {
   const [page, setPage] = useState(1);
   const { data, isLoading } = useAuditLog(page);
 

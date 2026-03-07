@@ -6,7 +6,7 @@ import { Skeleton } from "../components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { useState } from "react";
 
-export function HitlQueue() {
+export default function HitlQueue() {
   const [filter, setFilter] = useState<string | undefined>("pending");
   const { data, isLoading } = useHitlQueue(filter);
 

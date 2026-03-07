@@ -7,7 +7,7 @@ import { TrustHistogram } from "../components/dashboard/TrustHistogram";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Skeleton } from "../components/ui/skeleton";
 
-export function Overview() {
+export default function Overview() {
   const { data, isLoading } = useMetrics(24);
 
   if (isLoading || !data) {
