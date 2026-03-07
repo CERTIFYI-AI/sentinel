@@ -1,0 +1,6 @@
+framework_id: gdpr
+enabled: true
+legal_weight: mandatory-law
+controls_override: {}
+scan_interval_minutes: 60
+notification_on_fail: true

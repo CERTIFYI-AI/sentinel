@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from sentinel.compliance.frameworks.base import ControlStatus, ControlDefinition, ComplianceResult, EvidenceRecord
 from sentinel.compliance.frameworks.eu_ai_act import EUAIActFramework
 from sentinel.compliance.frameworks.soc2 import SOC2Framework
-from sentinel.compliance.frameworks.iso42001 import ISO42001Framework
+from sentinel.compliance.frameworks.iso27001 import ISO27001Framework
 from sentinel.compliance.frameworks.nist_ai_rmf import NISTAIRMFFramework
 from sentinel.compliance.frameworks.gdpr import GDPRFramework
 from sentinel.compliance.frameworks.hipaa import HIPAAFramework
@@ -131,7 +131,7 @@ class TestEUAIAct:
 
 class TestAllFrameworks:
     @pytest.mark.parametrize("fw_cls", [
-        EUAIActFramework, SOC2Framework, ISO42001Framework,
+        EUAIActFramework, SOC2Framework, ISO27001Framework,
         NISTAIRMFFramework, GDPRFramework, HIPAAFramework, OWASPLLMFramework
     ])
     def test_framework_has_required_attrs(self, fw_cls):
@@ -141,7 +141,7 @@ class TestAllFrameworks:
         assert fw.legal_weight in ("regulatory", "contractual", "best-practice", "informational")
 
     @pytest.mark.parametrize("fw_cls", [
-        EUAIActFramework, SOC2Framework, ISO42001Framework,
+        EUAIActFramework, SOC2Framework, ISO27001Framework,
         NISTAIRMFFramework, GDPRFramework, HIPAAFramework, OWASPLLMFramework
     ])
     def test_evaluate_returns_results(self, fw_cls):
@@ -150,7 +150,7 @@ class TestAllFrameworks:
         assert len(results) > 0
 
     @pytest.mark.parametrize("fw_cls", [
-        EUAIActFramework, SOC2Framework, ISO42001Framework,
+        EUAIActFramework, SOC2Framework, ISO27001Framework,
         NISTAIRMFFramework, GDPRFramework, HIPAAFramework, OWASPLLMFramework
     ])
     def test_org_controls_are_always_na(self, fw_cls):
@@ -167,7 +167,7 @@ class TestAllFrameworks:
                     )
 
     @pytest.mark.parametrize("fw_cls", [
-        EUAIActFramework, SOC2Framework, ISO42001Framework,
+        EUAIActFramework, SOC2Framework, ISO27001Framework,
         NISTAIRMFFramework, GDPRFramework, HIPAAFramework, OWASPLLMFramework
     ])
     def test_fail_records_have_remediation(self, fw_cls):
@@ -180,7 +180,7 @@ class TestAllFrameworks:
                 )
 
     @pytest.mark.parametrize("fw_cls", [
-        EUAIActFramework, SOC2Framework, ISO42001Framework,
+        EUAIActFramework, SOC2Framework, ISO27001Framework,
         NISTAIRMFFramework, GDPRFramework, HIPAAFramework, OWASPLLMFramework
     ])
     def test_na_records_have_scope_note(self, fw_cls):
@@ -193,7 +193,7 @@ class TestAllFrameworks:
                 )
 
     @pytest.mark.parametrize("fw_cls", [
-        EUAIActFramework, SOC2Framework, ISO42001Framework,
+        EUAIActFramework, SOC2Framework, ISO27001Framework,
         NISTAIRMFFramework, GDPRFramework, HIPAAFramework, OWASPLLMFramework
     ])
     def test_no_pass_on_missing_signals(self, fw_cls):
@@ -207,7 +207,7 @@ class TestAllFrameworks:
 
 class TestRegistry:
     def test_framework_registry_has_all_ids(self):
-        expected = {"eu_ai_act", "soc2", "iso42001", "nist_ai_rmf", "gdpr", "hipaa", "owasp_llm"}
+        expected = {"eu_ai_act", "soc2", "iso27001", "nist_ai_rmf", "gdpr", "hipaa", "owasp_llm"}
         assert expected.issubset(set(FRAMEWORK_REGISTRY.keys()))
 
     def test_get_framework_evaluator(self):

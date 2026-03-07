@@ -1,0 +1,6 @@
+framework_id: nist_ai_rmf
+enabled: true
+legal_weight: voluntary
+controls_override: {}
+scan_interval_minutes: 120
+notification_on_fail: false

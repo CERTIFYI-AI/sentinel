@@ -1,32 +1,34 @@
-from .base import BaseFramework as ComplianceFramework, ComplianceResult
-ComplianceControl = ComplianceFramework
-from .eu_ai_act import EUAIActFramework
-from .gdpr import GDPRFramework
-from .hipaa import HIPAAFramework
-from .iso42001 import ISO42001Framework
-from .nist_ai_rmf import NISTAIRMFFramework
-from .owasp_llm import OWASPLLMFramework
-from .soc2 import SOC2Framework
+"""Compliance frameworks package."""
+from sentinel.compliance.frameworks.base import (
+    BaseFramework,
+    Control,
+    ControlStatus,
+    EvidenceRecord,
+    FrameworkMetadata,
+    FrameworkStatus,
+)
+from sentinel.compliance.frameworks.eu_ai_act import EUAIActFramework
+from sentinel.compliance.frameworks.iso42001 import ISO42001Framework
+from sentinel.compliance.frameworks.nist_ai_rmf import NISTAIRMFFramework
+from sentinel.compliance.frameworks.gdpr import GDPRFramework
+from sentinel.compliance.frameworks.china_ai_regs import ChinaAIRegsFramework
+from sentinel.compliance.frameworks.oecd_principles import OECDPrinciplesFramework
+from sentinel.compliance.frameworks.ieee7000 import IEEE7000Framework
 
-ALL_FRAMEWORKS = [
-    EUAIActFramework,
-    GDPRFramework,
-    HIPAAFramework,
-    ISO42001Framework,
-    NISTAIRMFFramework,
-    OWASPLLMFramework,
-    SOC2Framework,
-]
-
-FRAMEWORK_MAP = {
-    fw.framework_id if hasattr(fw,'framework_id') else fw.__name__: fw
-    for fw in ALL_FRAMEWORKS
+FRAMEWORK_REGISTRY: dict[str, BaseFramework] = {
+    "eu_ai_act": EUAIActFramework(),
+    "iso42001": ISO42001Framework(),
+    "nist_ai_rmf": NISTAIRMFFramework(),
+    "gdpr": GDPRFramework(),
+    "china_ai_regs": ChinaAIRegsFramework(),
+    "oecd_principles": OECDPrinciplesFramework(),
+    "ieee7000": IEEE7000Framework(),
 }
 
 __all__ = [
-    'ComplianceFramework','ComplianceControl','ComplianceResult',
-    'EUAIActFramework','GDPRFramework','HIPAAFramework',
-    'ISO42001Framework','NISTAIRMFFramework','OWASPLLMFramework','SOC2Framework',
-    'ALL_FRAMEWORKS','FRAMEWORK_MAP',
+    "BaseFramework", "Control", "ControlStatus", "EvidenceRecord",
+    "FrameworkMetadata", "FrameworkStatus", "FRAMEWORK_REGISTRY",
+    "EUAIActFramework", "ISO42001Framework", "NISTAIRMFFramework",
+    "GDPRFramework", "ChinaAIRegsFramework", "OECDPrinciplesFramework",
+    "IEEE7000Framework",
 ]
-FRAMEWORK_REGISTRY = FRAMEWORK_MAP

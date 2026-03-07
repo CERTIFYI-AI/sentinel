@@ -1,0 +1,6 @@
+framework_id: ieee7000
+enabled: false
+legal_weight: voluntary
+controls_override: {}
+scan_interval_minutes: 240
+notification_on_fail: false

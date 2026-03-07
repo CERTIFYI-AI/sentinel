@@ -1,0 +1,6 @@
+framework_id: iso42001
+enabled: true
+legal_weight: best-practice
+controls_override: {}
+scan_interval_minutes: 120
+notification_on_fail: false

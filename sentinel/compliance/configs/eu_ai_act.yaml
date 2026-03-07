@@ -1,0 +1,7 @@
+framework_id: eu_ai_act
+enabled: true
+legal_weight: mandatory-law
+controls_override: {}
+scan_interval_minutes: 60
+notification_on_fail: true
+risk_category: high-risk

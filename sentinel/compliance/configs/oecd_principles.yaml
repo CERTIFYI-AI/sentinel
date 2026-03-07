@@ -1,0 +1,6 @@
+framework_id: oecd_principles
+enabled: true
+legal_weight: voluntary
+controls_override: {}
+scan_interval_minutes: 240
+notification_on_fail: false

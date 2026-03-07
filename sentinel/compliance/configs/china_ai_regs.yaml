@@ -1,0 +1,7 @@
+framework_id: china_ai_regs
+enabled: false
+legal_weight: mandatory-law
+controls_override: {}
+scan_interval_minutes: 120
+notification_on_fail: true
+region: China
