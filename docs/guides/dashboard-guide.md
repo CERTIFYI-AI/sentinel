@@ -1,105 +1,130 @@
-# Dashboard Guide
+# Sentinel Dashboard Guide
 
-The Sentinel dashboard is a React 18 + TypeScript application that provides real-time visibility into your AI system's reliability and compliance posture.
+The Sentinel dashboard is a single-page React application served at `http://your-sentinel-host/dashboard`. It requires no separate deployment.
 
-## Accessing the Dashboard
+## Signing In
 
-By default, the dashboard runs on port 3000:
+Navigate to `/dashboard/login`. Two authentication methods are available:
 
-```bash
-docker compose up -d
-open http://localhost:3000
-```
+- **API Key** (recommended for solo operators): Paste any `sk-sentinel-*` key. Keys are created in Settings > API Keys.
+- **Email + Password** (for teams): Used by team members invited via Settings > Team.
 
-For production, the dashboard is served at `/dashboard` by the Sentinel proxy.
+Session tokens expire after 24 hours. You will be redirected to login automatically when the token expires.
 
-## Navigation
+## The Trust Pulse Bar
 
-### Overview (Home)
+Every page shows a 2px bar at the very top of the viewport. This is the most important signal in the dashboard.
 
-The home page shows:
-- **Trust Score Trend** — 7-day rolling average trust score with per-model breakdown
-- **Request Volume** — Requests per hour with circuit breaker level distribution
-- **Active Alerts** — Any trust score anomalies or HITL queue backlog
-- **Cost Summary** — Total spend today vs. yesterday
+| Color | Zone | Score Range |
+|-------|------|-------------|
+| Green (#22c55e) | HEALTHY | >= 0.85 |
+| Amber (#f59e0b) | DEGRADED | 0.70 - 0.84 |
+| Red (#ef4444) | CRITICAL | < 0.70 |
 
-### Monitoring
+Hover for the exact score and label. The color transitions smoothly as the live average trust score changes. It reflects the last 2-second WebSocket push from `/ws/metrics`.
 
-**Trust Score Distribution**
-Histogram showing the distribution of trust scores across all requests. Use this to identify if your threshold is set appropriately — a bimodal distribution with a gap near your threshold suggests good calibration.
+> **Note:** Trust signal colors (green/amber/red) are semantic data colors, intentionally different from the brand green (#368F4D). Brand green = brand identity. Trust green = data meaning.
 
-**Circuit Breaker**
-- L0/L1/L2/L3 distribution as a stacked bar chart over time
-- Escalation rate trend
-- Average latency added per level
-- HITL queue depth
+## Overview Page
 
-**PII Detection**
-- Entity type breakdown (EMAIL, PERSON, LOCATION, etc.)
-- Detection rate over time
-- Top endpoints triggering PII detection
+**URL:** `/overview`
 
-### HITL Queue
+Four stat cards show live metrics updated every 2 seconds:
 
-The Human-in-the-Loop review queue shows all responses pending human review.
+| Card | Meaning |
+|------|---------|
+| Avg Trust Score | Rolling average across all requests in the last 5 minutes |
+| Requests/min | Current request rate |
+| Intervention Rate | % of requests that triggered any fallback |
+| Active Providers | Providers in CLOSED state / total configured |
 
-For each item:
-- The original query
-- The LLM response (with PII masked)
-- The trust score and which components dragged it down
-- The relevant golden source passages
-- **Approve** / **Reject** / **Edit and Approve** actions
+### Trust Gauge
 
-> Approvals and rejections are logged as audit events and feed back into threshold tuning recommendations.
+Large radial gauge showing the current average trust score with a color-coded outer ring. Below the gauge: four component scores (RAG entailment, cross-check agreement, PII cleanliness, semantic drift).
 
-### Audit Log
+### Provider Health Grid
 
-Searchable, filterable view of all audit log entries.
+One card per configured provider. Shows circuit breaker state, failure count, and P95 latency. A pulsing red dot means the provider is OPEN and fallback routing is active.
 
-- Filter by date range, trust score range, model, endpoint
-- Export to JSON or CSV for compliance evidence
-- Click any entry for full request/response detail
-- Hash chain verification status shown per entry
+### Intervention Timeline
 
-### Analytics
+Area chart of the last 60 minutes, stacked by intervention level: NONE / REGENERATE / UPGRADE / HITL. Large HITL area = review queue backlog.
 
-**Cost per Truth**
-Shows the cost breakdown for each trust score level. High L2/L3 rates increase costs significantly — use this to justify threshold tuning.
+### Cost per Truth Chart
 
-**Model Comparison**
-Side-by-side trust score and cost comparison across providers and models.
+Two-line chart: total LLM cost vs. verified cost (cost of only those responses that passed the trust threshold). The gap between lines is your verification overhead.
 
-**Golden Source Coverage**
-Shows which knowledge base documents are being retrieved most frequently and which queries have low retrieval relevance (potential gaps in your golden source).
+## Audit Log Page
 
-### Settings
+**URL:** `/audit`
 
-- **Thresholds** — Adjust `trust_score_block_threshold` and `cross_check_trigger_threshold` with live preview of impact on historical data
-- **Alerts** — Configure email/Slack notifications for trust score drops, HITL queue depth, and cost spikes
-- **PII Entities** — Enable/disable specific PII entity types
-- **Dark Mode** — Toggle dark/light theme
+The tamper-proof record of every request Sentinel processed.
 
-## Dark Mode
+### Columns
 
-The dashboard supports full dark mode. Toggle via Settings > Appearance, or it follows your system preference automatically.
+| Column | Description |
+|--------|-------------|
+| Timestamp | Hover for full ISO 8601 |
+| Request ID | First 12 chars + copy button |
+| Trust Score | Color-coded badge |
+| Intervention | NONE / REGENERATE / UPGRADE / HITL |
+| Latency | Total pipeline latency in ms |
+| Cost | USD cost for this request LLM calls |
+| PII | Count of redacted entities, or - |
 
-## API
+### Row Expansion
 
-All dashboard data is available via the Sentinel API:
+Click the expand icon to see:
+- Claim-by-claim NLI scores (claim text, ENTAILMENT/NEUTRAL/CONTRADICTION, confidence)
+- Sources retrieved from the golden source
+- Redaction summary (entity types found, not the original values)
+- Prompt hash and response hash (SHA-256)
 
-```bash
-# Trust score summary
-GET /api/v1/metrics/trust-score-summary
+### Chain Integrity Verification
 
-# HITL queue
-GET /api/v1/hitl/queue
+The "Verify Chain Integrity" button calls `GET /api/audit/integrity`. This recomputes the SHA-256 hash chain for every entry in your tenant audit log and confirms no records have been modified.
 
-# Audit log
-GET /api/v1/audit?from=2025-01-01&to=2025-01-31
-```
+## HITL Queue Page
 
-## Related Documents
+**URL:** `/hitl`
 
-- [API Reference](../api-reference.md)
-- [Monitoring Guide](../ops/monitoring-guide.md)
-- [Configuration](../configuration.md)
+Three-panel layout for human review of Level 3 interventions.
+
+- **Left panel** - Job List: Pending review jobs sorted by priority.
+- **Middle panel** - Job Detail: Three candidate responses with trust scores and claim-level breakdowns.
+- **Right panel** - Review Form: Select an approved candidate or write a custom response.
+
+## Compliance Page
+
+**URL:** `/compliance`
+
+Evidence Center for 7 prebuilt compliance frameworks. Each framework card shows name, jurisdiction flag, legal status badge, 7-day compliance score, and controls passing count.
+
+### Control Heatmap
+
+Grid view: rows = frameworks, columns = controls. Cell color = 7-day pass rate. Click to open an evidence sheet for that specific control.
+
+### Generating a Report
+
+Click "Generate Report" to open the export sheet. Select frameworks and date range. Download as JSON with a SHA-256 fingerprint for integrity verification.
+
+## Model Inventory Page
+
+**URL:** `/models`
+
+See: [Model Inventory Guide](model-inventory-guide.md)
+
+## Settings Page
+
+**URL:** `/settings`
+
+See: [Settings Guide](settings-guide.md)
+
+## Command Palette
+
+Press `Cmd+K` (Mac) or `Ctrl+K` (Windows/Linux) from any page.
+
+Groups:
+- **Navigation** - jump to any page
+- **Actions** - Verify Chain, Generate Report, Create API Key, Add Model, Invite Member
+- **Recent** - last 5 audit request IDs (click to filter audit log)

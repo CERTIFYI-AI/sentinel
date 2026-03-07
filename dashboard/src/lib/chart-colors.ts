@@ -1,6 +1,7 @@
-// Recharts requires raw color strings, not Tailwind classes.
-// These read CSS custom properties at runtime so theme switching works.
+// src/lib/chart-colors.ts
 export const chartColors = {
+  brand: "hsl(var(--brand))",
+  brandSubtle: "hsl(var(--brand-subtle))",
   trustHigh: "hsl(var(--trust-high))",
   trustMedium: "hsl(var(--trust-medium))",
   trustLow: "hsl(var(--trust-low))",
@@ -9,8 +10,7 @@ export const chartColors = {
   interventionUpgrade: "hsl(var(--intervention-upgrade))",
   interventionHitl: "hsl(var(--intervention-hitl))",
   muted: "hsl(var(--muted-foreground))",
-  primary: "hsl(var(--primary))",
-  background: "hsl(var(--background))",
+  grid: "hsl(var(--border))",
 } as const;
 
 export function trustScoreColor(score: number): string {
@@ -20,7 +20,7 @@ export function trustScoreColor(score: number): string {
 }
 
 export function trustScoreClass(score: number): string {
-  if (score >= 0.85) return "text-green-500";
-  if (score >= 0.70) return "text-amber-500";
-  return "text-red-500";
+  if (score >= 0.85) return "text-[hsl(var(--trust-high))]";
+  if (score >= 0.70) return "text-[hsl(var(--trust-medium))]";
+  return "text-[hsl(var(--trust-low))]";
 }

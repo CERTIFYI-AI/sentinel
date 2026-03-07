@@ -3,6 +3,8 @@ Base classes and data models for the compliance framework engine.
 Implements the exact data model from the specification.
 """
 from __future__ import annotations
+
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any, Literal
@@ -23,140 +25,109 @@ class ControlStatus(StrEnum):
     PASS = "PASS"
     FAIL = "FAIL"
     PARTIAL = "PARTIAL"
-    NA = "NA"
+    NOT_APPLICABLE = "N/A"
+    PENDING = "PENDING"
 
 
-@dataclass(frozen=True)
+@dataclass
 class Control:
     control_id: str
-    control_name: str
-    article_ref: str
+    title: str
     description: str
-    sentinel_scope: bool
-    scope_note: str = ""
+    category: str
+    severity: Literal["critical", "high", "medium", "low"]
+    automated: bool = True
+    tags: list[str] = field(default_factory=list)
 
 
 @dataclass
 class EvidenceRecord:
-    framework_id: str
-    framework_name: str
     control_id: str
-    control_name: str
-    article_ref: str
+    framework_id: str
+    tenant_id: str
+    request_id: str
     status: ControlStatus
     score: float
-    signal_used: str
-    signal_value: Any
-    evidence_text: str
-    remediation: str | None = None
+    rationale: str
+    timestamp: str
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def dict(self) -> dict:
-        return {
-            "framework_id": self.framework_id,
-            "framework_name": self.framework_name,
-            "control_id": self.control_id,
-            "control_name": self.control_name,
-            "article_ref": self.article_ref,
-            "status": self.status.value,
-            "score": self.score,
-            "signal_used": self.signal_used,
-            "signal_value": self.signal_value,
-            "evidence_text": self.evidence_text,
-            "remediation": self.remediation,
-        }
+
+@dataclass
+class FrameworkConfig:
+    framework_id: str
+    enabled: bool = True
+    in_scope_controls: list[str] = field(default_factory=list)
+    thresholds: dict[str, float] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class FrameworkMetadata:
     framework_id: str
-    framework_name: str
+    name: str
     version: str
     status: FrameworkStatus
-    jurisdiction: str
-    enforcement_date: str
-    primary_source: str
-    sentinel_coverage_note: str
+    description: str
+    controls_count: int
+    tags: list[str] = field(default_factory=list)
 
 
-class BaseFramework:
+class BaseFramework(ABC):
+    """
+    Abstract base class for all compliance frameworks.
+
+    Subclasses must implement `_evaluate_control()` which is called once per
+    in-scope control during each evaluation cycle.
+    """
+
+    framework_id: str
     metadata: FrameworkMetadata
     controls: list[Control]
 
     def evaluate(
         self,
-        entry: dict,
-        result: dict,
-        config: dict,
+        audit_entry: Any,
+        pipeline_result: Any,
+        config: FrameworkConfig,
     ) -> list[EvidenceRecord]:
-        """Evaluate every control for one completed request.
-        Returns exactly len(self.controls) EvidenceRecord objects.
-        Controls with sentinel_scope=False return status=NA.
-        Never raises; catches all exceptions, returns FAIL with error.
         """
-        records: list[EvidenceRecord] = []
-        for control in self.controls:
-            if not control.sentinel_scope:
-                records.append(EvidenceRecord(
-                    framework_id=self.metadata.framework_id,
-                    framework_name=self.metadata.framework_name,
-                    control_id=control.control_id,
-                    control_name=control.control_name,
-                    article_ref=control.article_ref,
-                    status=ControlStatus.NA,
-                    score=-1.0,
-                    signal_used="organisational",
-                    signal_value=None,
-                    evidence_text=control.scope_note,
-                    remediation=None,
-                ))
-            else:
-                try:
-                    records.append(
-                        self._evaluate_control(control, entry, result, config)
-                    )
-                except Exception as exc:
-                    logger.error(
-                        "Control evaluation failed",
-                        extra={"control": control.control_id, "error": str(exc)},
-                        exc_info=True,
-                    )
-                    records.append(EvidenceRecord(
-                        framework_id=self.metadata.framework_id,
-                        framework_name=self.metadata.framework_name,
-                        control_id=control.control_id,
-                        control_name=control.control_name,
-                        article_ref=control.article_ref,
-                        status=ControlStatus.FAIL,
-                        score=0.0,
-                        signal_used="error",
-                        signal_value=str(exc),
-                        evidence_text=f"Evaluation error: {exc}",
-                        remediation="Check logs for exception details.",
-                    ))
-        return records
+        Evaluates all in-scope controls and returns evidence records.
+        Called by the compliance engine as a background task after every request.
+        """
+        evidence: list[EvidenceRecord] = []
+        in_scope = (
+            set(config.in_scope_controls)
+            if config.in_scope_controls
+            else {c.control_id for c in self.controls}
+        )
 
+        for control in self.controls:
+            if control.control_id not in in_scope:
+                continue
+            try:
+                record = self._evaluate_control(
+                    control, audit_entry, pipeline_result, config
+                )
+                evidence.append(record)
+            except Exception as exc:  # noqa: BLE001
+                logger.error(
+                    "Control evaluation failed",
+                    framework_id=self.framework_id,
+                    control_id=control.control_id,
+                    error=str(exc),
+                )
+        return evidence
+
+    @abstractmethod
     def _evaluate_control(
         self,
         control: Control,
-        entry: dict,
-        result: dict,
-        config: dict,
+        entry: Any,
+        result: Any,
+        config: FrameworkConfig,
     ) -> EvidenceRecord:
-        raise NotImplementedError
-
-    def compliance_score(self, records: list[EvidenceRecord]) -> float:
-        """Fraction of in-scope controls that PASS or PARTIAL.
-        NA controls excluded from both numerator and denominator.
-        Returns 1.0 if all controls are NA.
         """
-        in_scope = [r for r in records if r.status != ControlStatus.NA]
-        if not in_scope:
-            return 1.0
-        passed = sum(
-            1 for r in in_scope
-            if r.status in (ControlStatus.PASS, ControlStatus.PARTIAL)
-        )
-        return round(passed / len(in_scope), 4)
-
-    def get_controls(self) -> list[Control]:
-        return self.controls
+        Subclasses must implement per-control evaluation logic.
+        Called once per in-scope control by the base evaluate() method.
+        """

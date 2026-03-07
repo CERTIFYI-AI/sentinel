@@ -562,7 +562,11 @@ def register_all(registry=None):
             instance = fw_class()
             registry.register(instance)
         except Exception:
-            pass
+                            raise NotImplementedError(
+                    f"Framework '{getattr(fw_class, 'framework_id', fw_class.__name__)}' "
+                    f"is registered but has no evaluation handler. Implement "
+                    f"_evaluate_control() in its framework file."
+                )
     return registry
 
 def get_registry():

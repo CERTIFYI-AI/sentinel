@@ -205,7 +205,9 @@ async def verify(
         cross_check_agreement = await _n_cross_check(response_text)
 
     # Step 5: Semantic drift (default if no baseline)
-    semantic_drift_score = 0.75
+            semantic_drift_score = await _compute_semantic_drift(
+                        response_embedding, tenant_config.tenant_id
+        )
 
     # Final score
     pii_factor = 1.0 if pii_clean else 0.0
@@ -250,3 +252,47 @@ async def _n_cross_check(response_text: str) -> float:
     except Exception:
         logger.exception("N-cross-check failed")
         return 0.75
+
+
+async def _compute_semantic_drift(
+    response_embedding: np.ndarray,
+    tenant_id: str,
+) -> float:
+    """
+    Computes how far the current response embedding is from the tenant's
+    baseline distribution using cosine distance.
+
+    Returns a score in [0.0, 1.0] where:
+      1.0 = response is identical to baseline (no drift)
+      0.0 = maximum drift
+
+    Falls back to 0.75 (neutral) if no baseline exists yet.
+    """
+    try:
+        from sentinel.storage.baseline_store import baseline_store  # noqa: PLC0415
+        baseline = await baseline_store.get_centroid(tenant_id)
+    except Exception:  # noqa: BLE001
+        baseline = None
+
+    if baseline is None:
+        logger.warning(
+            "No semantic baseline for tenant %s. "
+            "Drift score defaulting to 0.75. "
+            "Run: python scripts/compute_baseline.py --tenant %s",
+            tenant_id,
+            tenant_id,
+        )
+        return 0.75
+
+    # Cosine similarity → drift score
+    a = response_embedding.reshape(1, -1)
+    b = np.array(baseline).reshape(1, -1)
+    dot = float(np.dot(a[0], b[0]))
+    norm_a = float(np.linalg.norm(a[0]))
+    norm_b = float(np.linalg.norm(b[0]))
+    if norm_a == 0 or norm_b == 0:
+        return 0.75
+    cosine_sim = dot / (norm_a * norm_b)
+    distance = 1.0 - cosine_sim
+    # Map distance to [0,1] score: 0 distance = 1.0 score, 3.5 std = 0.0 score
+    return float(max(0.0, 1.0 - (distance / 3.5)))

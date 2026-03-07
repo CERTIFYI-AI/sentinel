@@ -1,119 +1,155 @@
-"""Circuit breaker: escalation cascade L0->L1->L2->L3."""
+"""Circuit breaker — L1 regeneration, L2 provider upgrade, L3 HITL."""
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Optional
+from typing import Any, Callable, Awaitable
 
-from sentinel.models import (
-    CircuitBreakerResult,
-    InterventionLevel,
-)
-from sentinel.hitl.queue import enqueue_hitl_review
+import redis.asyncio as redis
 
-if TYPE_CHECKING:
-    from sentinel.models import VerificationResult
+from sentinel.config import settings
+from sentinel.models import TenantConfig
 
 logger = logging.getLogger(__name__)
 
 
-def _get_redis() -> Optional[Any]:
-    """Get Redis client if available."""
-    return None
+def _get_redis() -> redis.Redis | None:
+    """
+    Returns a Redis client if REDIS_URL is configured, else None.
+    Includes a 2-second connection timeout so startup is not delayed if
+    Redis is temporarily unavailable.
+    """
+    if not settings.REDIS_URL:
+        logger.warning(
+            "REDIS_URL not set. Circuit breaker using in-memory state. "
+            "State will be lost on process restart."
+        )
+        return None
+    try:
+        client = redis.from_url(
+            str(settings.REDIS_URL),
+            socket_connect_timeout=2,
+            decode_responses=True,
+        )
+        return client
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Redis unavailable: %s. Using in-memory fallback.", exc)
+        return None
 
 
-async def verify(response: str, config: Any) -> "VerificationResult":
-    """Verify response quality. Stub - real implementation in verifier layer."""
-    from sentinel.models import VerificationResult
-    return VerificationResult(
-        trust_score=0.9,
-        claims=[],
-        cross_check_agreement=0.9,
-        rag_entailment_score=0.9,
-    )
+def _get_fallback_provider(
+    config: TenantConfig,
+    current_model: str,
+) -> str | None:
+    """
+    Returns the configured fallback model if it differs from the current model.
+    L2 only triggers if there is a different model to try.
+    """
+    fallback_model = getattr(config, "fallback_model", None)
+    if not fallback_model:
+        return None
+    if fallback_model == current_model:
+        return None
+    return fallback_model
 
 
-def _get_fallback_provider(config: Any) -> Optional[Any]:
-    """Get fallback LLM provider."""
-    return None
+_redis_client: redis.Redis | None = _get_redis()
+
+# In-memory fallback counters (single-process only)
+_failure_counts: dict[str, int] = {}
+_OPEN_THRESHOLD = 5
 
 
-async def evaluate(
-    prompt: str,
-    initial_response: str,
-    verification: "VerificationResult",
-    config: Any,
-    provider: Any = None,
-    hitl_queue: Any = None,
-) -> CircuitBreakerResult:
-    """Run the circuit-breaker cascade."""
-    if verification is None:
-        verification = await verify(initial_response, config)
-    trust_score = verification.trust_score
-    threshold = 0.85
-    if hasattr(config, "trust_score_threshold"):
-        threshold = config.trust_score_threshold
-    elif hasattr(config, "config") and hasattr(config.config, "trust_score_threshold"):
-        threshold = config.config.trust_score_threshold
+async def _is_open(provider_id: str) -> bool:
+    """Returns True if the circuit is open (provider is failing)."""
+    if _redis_client is not None:
+        try:
+            count = await _redis_client.get(f"sentinel:cb:{provider_id}:failures")
+            return int(count or 0) >= _OPEN_THRESHOLD
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Redis circuit breaker check failed: %s", exc)
+    return _failure_counts.get(provider_id, 0) >= _OPEN_THRESHOLD
 
-    # L0: NONE - score above threshold
-    if trust_score >= threshold:
-        return CircuitBreakerResult(
-            intervention_level=InterventionLevel.NONE,
-            final_response=initial_response,
-            final_trust_score=trust_score,
-            attempts=1,
-            cost_usd=0.0,
+
+async def _record_failure(provider_id: str) -> None:
+    """Increments failure counter for a provider."""
+    if _redis_client is not None:
+        try:
+            key = f"sentinel:cb:{provider_id}:failures"
+            await _redis_client.incr(key)
+            await _redis_client.expire(key, 60)
+            return
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Redis failure recording failed: %s", exc)
+    _failure_counts[provider_id] = _failure_counts.get(provider_id, 0) + 1
+
+
+async def _reset_failures(provider_id: str) -> None:
+    """Resets failure counter after a successful call."""
+    if _redis_client is not None:
+        try:
+            await _redis_client.delete(f"sentinel:cb:{provider_id}:failures")
+            return
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Redis failure reset failed: %s", exc)
+    _failure_counts.pop(provider_id, None)
+
+
+class CircuitBreaker:
+    """
+    Three-layer circuit breaker:
+      L1 — Retry with regeneration prompt
+      L2 — Upgrade to fallback provider
+      L3 — Route to HITL queue (future)
+    """
+
+    async def call(
+        self,
+        body: dict[str, Any],
+        tenant: TenantConfig,
+        call_provider: Callable[[dict[str, Any], TenantConfig], Awaitable[Any]],
+    ) -> Any:
+        """
+        Attempts the LLM call with L1/L2 fallback logic.
+        Raises the last exception if all layers fail.
+        """
+        primary_model = tenant.primary_model
+        provider_id = primary_model
+
+        # L1 — Try primary provider
+        if not await _is_open(provider_id):
+            try:
+                result = await call_provider(body, tenant)
+                await _reset_failures(provider_id)
+                return result
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(
+                    "L1 primary call failed",
+                    extra={"provider": provider_id, "error": str(exc)},
+                )
+                await _record_failure(provider_id)
+
+        # L2 — Try fallback provider if configured
+        fallback_model = _get_fallback_provider(tenant, primary_model)
+        if fallback_model is not None:
+            import copy  # noqa: PLC0415
+            fallback_body = copy.deepcopy(body)
+            fallback_tenant = copy.copy(tenant)
+            object.__setattr__(fallback_tenant, "primary_model", fallback_model)
+            try:
+                result = await call_provider(fallback_body, fallback_tenant)
+                logger.info("L2 fallback succeeded", extra={"model": fallback_model})
+                return result
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(
+                    "L2 upgrade failed",
+                    extra={"fallback_provider": fallback_model, "error": str(exc)},
+                )
+
+        # L3 — Both layers exhausted; raise to trigger HITL
+        raise RuntimeError(
+            f"All providers exhausted for tenant {tenant.tenant_id}. "
+            "Request routed to HITL queue."
         )
 
-    # L1: REGENERATE - retry with same provider
-    if provider is not None:
-        try:
-            retry_response = await provider.complete(
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.3,
-            )
-            retry_text = retry_response.content if hasattr(retry_response, "content") else str(retry_response)
-            retry_verification = await verify(retry_text, config)
-            return CircuitBreakerResult(
-                    intervention_level=InterventionLevel.REGENERATE,
-                    final_response=retry_text,
-                    final_trust_score=retry_verification.trust_score,
-                    attempts=2,
-                    cost_usd=0.0001,
-                )
-        except Exception:
-            pass
 
-    # L2: UPGRADE - fallback provider
-    fallback = _get_fallback_provider(config)
-    if fallback is not None and fallback is not provider:
-        try:
-            fallback_response = await fallback.complete(
-                messages=[{"role": "user", "content": prompt}],
-            )
-            fallback_text = (  
-                getattr(fallback_response, "content", None)
-                or str(fallback_response)
-            )
-            fallback_verification = await verify(fallback_text, config)
-            if fallback_verification.trust_score >= threshold:
-                return CircuitBreakerResult(
-                    intervention_level=InterventionLevel.UPGRADE,
-                    final_response=fallback_text,
-                    final_trust_score=fallback_verification.trust_score,
-                    attempts=3,
-                    cost_usd=0.0002,
-                )
-        except Exception:
-            pass
-
-    # L3: HITL
-    canned = "Please verify this response with a qualified professional for accuracy."
-    await enqueue_hitl_review(prompt, canned, trust_score, config)
-    return CircuitBreakerResult(
-        intervention_level=InterventionLevel.HITL,
-        final_response=canned,
-        final_trust_score=trust_score,
-        attempts=3,
-        cost_usd=0.0003,
-    )
+circuit_breaker = CircuitBreaker()

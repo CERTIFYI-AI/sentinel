@@ -1,146 +1,103 @@
-// dashboard/src/api/client.ts
-
+// src/api/client.ts
 import type {
-  AuditEntry,
-  HitlJob,
-  HitlReviewPayload,
-  LoginRequest,
-  LoginResponse,
-  PaginatedResponse,
-  TenantConfig,
-  TrustMetricsSummary,
-  ApiKey,
+  TenantConfig, ApiKey, ApiKeyCreateResponse, TeamMember, TeamInvite,
+  MetricsSummary, TrustDataPoint, AuditEntry, HitlItem,
+  ComplianceFramework, ModelConfig, ModelHealth, ModelTestResult,
+  NotificationConfig, AuthTokenResponse,
 } from "./types";
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
-const TOKEN_KEY = "sentinel_token";
+const API_BASE = import.meta.env.VITE_API_URL || "/api";
 
-function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+let _token: string | null = localStorage.getItem("sentinel_token");
+
+export function setToken(t: string) {
+  _token = t;
+  localStorage.setItem("sentinel_token", t);
 }
-
-export function setToken(token: string): void {
-  localStorage.setItem(TOKEN_KEY, token);
+export function clearToken() {
+  _token = null;
+  localStorage.removeItem("sentinel_token");
 }
+export function getToken() { return _token; }
 
-export function clearToken(): void {
-  localStorage.removeItem(TOKEN_KEY);
-}
-
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const token = getToken();
+async function api<T>(path: string, opts: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    ...(init?.headers as Record<string, string>),
+    ...(opts.headers as Record<string, string> || {}),
   };
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-  const res = await fetch(`${BASE_URL}${path}`, {
-    ...init,
-    headers,
-  });
-  if (res.status === 401) {
-    clearToken();
-    window.location.href = "/login";
-    throw new Error("Unauthorized");
-  }
+  if (_token) headers["Authorization"] = `Bearer ${_token}`;
+  const res = await fetch(`${API_BASE}${path}`, { ...opts, headers });
   if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`API error ${res.status}: ${body}`);
+    const body = await res.json().catch(() => ({}));
+    const err = new Error((body as Record<string, unknown>).detail as string || res.statusText);
+    (err as unknown as Record<string, unknown>).status = res.status;
+    throw err;
   }
+  if (res.status === 204) return undefined as unknown as T;
   return res.json() as Promise<T>;
 }
 
 // Auth
-export function login(data: LoginRequest): Promise<LoginResponse> {
-  return request<LoginResponse>("/auth/login", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-}
+export const login = (body: Record<string, unknown>) =>
+  api<AuthTokenResponse>("/auth/token", { method: "POST", body: JSON.stringify(body) });
+export const register = (body: Record<string, unknown>) =>
+  api<AuthTokenResponse>("/auth/register", { method: "POST", body: JSON.stringify(body) });
 
 // Metrics
-export function fetchMetrics(hours?: number): Promise<TrustMetricsSummary> {
-  const params = hours ? `?hours=${hours}` : "";
-  return request<TrustMetricsSummary>(`/dashboard/metrics${params}`);
-}
+export const fetchMetrics = () => api<MetricsSummary>("/dashboard/metrics");
+export const fetchTrustTimeline = () => api<TrustDataPoint[]>("/dashboard/trust-timeline");
 
-// Audit Log
-export function fetchAuditLog(
-  page = 1,
-  pageSize = 25
-): Promise<PaginatedResponse<AuditEntry>> {
-  return request<PaginatedResponse<AuditEntry>>(
-    `/dashboard/audit?page=${page}&page_size=${pageSize}`
-  );
-}
+// Audit
+export const fetchAuditLog = () => api<AuditEntry[]>("/audit");
 
-// HITL Queue
-export function fetchHitlQueue(
-  status?: string
-): Promise<PaginatedResponse<HitlJob>> {
-  const params = status ? `?status=${status}` : "";
-  return request<PaginatedResponse<HitlJob>>(`/dashboard/hitl${params}`);
-}
-
-export function reviewHitlJob(
-  jobId: string,
-  payload: HitlReviewPayload
-): Promise<HitlJob> {
-  return request<HitlJob>(`/dashboard/hitl/${jobId}/review`, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-}
+// HITL
+export const fetchHitlQueue = () => api<HitlItem[]>("/hitl/queue");
+export const reviewHitl = (id: string, action: string) =>
+  api<HitlItem>(`/hitl/queue/${id}/review`, { method: "POST", body: JSON.stringify({ action }) });
 
 // Config
-export function fetchConfig(): Promise<TenantConfig> {
-  return request<TenantConfig>("/dashboard/config");
-}
-
-export function updateConfig(
-  config: Partial<TenantConfig>
-): Promise<TenantConfig> {
-  return request<TenantConfig>("/dashboard/config", {
-    method: "PATCH",
-    body: JSON.stringify(config),
-  });
-}
+export const fetchConfig = () => api<TenantConfig>("/tenants/config");
+export const updateConfig = (data: Partial<TenantConfig>) =>
+  api<TenantConfig>("/tenants/config", { method: "PATCH", body: JSON.stringify(data) });
 
 // API Keys
-export function fetchApiKeys(): Promise<ApiKey[]> {
-  return request<ApiKey[]>("/dashboard/keys");
-}
+export const fetchApiKeys = () => api<ApiKey[]>("/auth/keys");
+export const createApiKey = (data: { name: string; role: string; expires_in?: string }) =>
+  api<ApiKeyCreateResponse>("/auth/keys", { method: "POST", body: JSON.stringify(data) });
+export const revokeApiKey = (id: string) =>
+  api<{ ok: boolean }>(`/auth/keys/${id}`, { method: "DELETE" });
 
-export function createApiKey(name: string): Promise<ApiKey & { key: string }> {
-  return request<ApiKey & { key: string }>("/dashboard/keys", {
-    method: "POST",
-    body: JSON.stringify({ name }),
-  });
-}
+// Compliance
+export const fetchFrameworks = () => api<ComplianceFramework[]>("/compliance/frameworks");
+export const toggleFramework = (id: string, enabled: boolean) =>
+  api<ComplianceFramework>(`/compliance/frameworks/${id}`, { method: "PATCH", body: JSON.stringify({ enabled }) });
 
-export function revokeApiKey(keyId: string): Promise<void> {
-  return request<void>(`/dashboard/keys/${keyId}`, {
-    method: "DELETE",
-  });
-}
+// Models
+export const fetchModels = () => api<ModelConfig[]>("/models");
+export const createModel = (data: Partial<ModelConfig> & { api_key?: string; base_url?: string }) =>
+  api<ModelConfig>("/models", { method: "POST", body: JSON.stringify(data) });
+export const updateModel = (id: string, data: Partial<ModelConfig>) =>
+  api<ModelConfig>(`/models/${id}`, { method: "PATCH", body: JSON.stringify(data) });
+export const deleteModel = (id: string) =>
+  api<{ ok: boolean }>(`/models/${id}`, { method: "DELETE" });
+export const fetchModelHealthAll = () => api<Record<string, ModelHealth>>("/models/health/all");
+export const testModel = (id: string, data: Record<string, unknown>) =>
+  api<ModelTestResult>(`/models/${id}/test`, { method: "POST", body: JSON.stringify(data) });
+export const resetCircuitBreaker = (id: string) =>
+  api<{ ok: boolean }>(`/models/${id}/reset-cb`, { method: "POST" });
 
-// WebSocket
-export function createMetricsSocket(
-  onMessage: (data: TrustMetricsSummary) => void
-): WebSocket {
-  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  const wsUrl = `${protocol}//${new URL(BASE_URL).host}/ws/metrics`;
-  const token = getToken();
-  const ws = new WebSocket(token ? `${wsUrl}?token=${token}` : wsUrl);
-  ws.onmessage = (event) => {
-    try {
-      const parsed = JSON.parse(event.data as string) as TrustMetricsSummary;
-      onMessage(parsed);
-    } catch {
-      // ignore malformed messages
-    }
-  };
-  return ws;
-}
+// Team
+export const fetchTeamMembers = () => api<TeamMember[]>("/team/members");
+export const inviteMember = (data: { email: string; role: string }) =>
+  api<TeamInvite>("/team/invites", { method: "POST", body: JSON.stringify(data) });
+export const removeMember = (id: string) =>
+  api<{ ok: boolean }>(`/team/members/${id}`, { method: "DELETE" });
+export const updateMemberRole = (id: string, role: string) =>
+  api<TeamMember>(`/team/members/${id}`, { method: "PATCH", body: JSON.stringify({ role }) });
+
+// Notifications
+export const fetchNotifications = () => api<NotificationConfig>("/notifications/config");
+export const updateNotifications = (data: Partial<NotificationConfig>) =>
+  api<NotificationConfig>("/notifications/config", { method: "PATCH", body: JSON.stringify(data) });
+export const testWebhook = (url: string) =>
+  api<{ ok: boolean }>("/notifications/test-webhook", { method: "POST", body: JSON.stringify({ url }) });

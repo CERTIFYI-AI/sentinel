@@ -5,43 +5,44 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    --foreground: 222 84% 5%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 222 84% 5%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
+    --popover-foreground: 222 84% 5%;
+    --primary: 136 45% 38%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 15% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 220 15% 96%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 220 15% 96%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
-    --radius: 0.5rem;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 136 45% 38%;
+    --radius: 0.4rem;
     --trust-high: 142 71% 45%;
     --trust-medium: 38 92% 50%;
-    --trust-low: 0 84% 60%;
+    --trust-low: 0 72% 51%;
     --intervention-none: 220 9% 46%;
     --intervention-regen: 217 91% 60%;
     --intervention-upgrade: 38 92% 50%;
-    --intervention-hitl: 0 84% 60%;
+    --intervention-hitl: 0 72% 51%;
   }
 
   .dark {
+    --primary: 136 45% 38%;
+    --primary-foreground: 0 0% 100%;
+    --ring: 136 45% 38%;
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
+    --card: 240 6% 6%;
     --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
+    --popover: 240 6% 6%;
     --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
     --muted: 240 3.7% 15.9%;
@@ -52,14 +53,21 @@
     --destructive-foreground: 0 0% 98%;
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
+    --radius: 0.4rem;
     --trust-high: 142 71% 45%;
     --trust-medium: 38 92% 50%;
-    --trust-low: 0 84% 60%;
+    --trust-low: 0 72% 51%;
     --intervention-none: 220 9% 46%;
     --intervention-regen: 217 91% 60%;
     --intervention-upgrade: 38 92% 50%;
-    --intervention-hitl: 0 84% 60%;
+    --intervention-hitl: 0 72% 51%;
+    --brand: 136 45% 38%;
+    --brand-subtle: 136 45% 12%;
+    --brand-foreground: 136 45% 80%;
+    --status-mandatory: 0 72% 51%;
+    --status-certifiable: 217 91% 60%;
+    --status-voluntary: 136 45% 45%;
+    --status-guide: 220 9% 46%;
   }
 }
 
@@ -69,5 +77,26 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
   }
+}
+
+.font-mono {
+  font-family: "IBM Plex Mono", monospace;
+}
+
+@keyframes trust-counter {
+  from { --n: 0; }
+  to { --n: 9247; }
+}
+
+.trust-animate {
+  animation: trust-counter 1.8s ease-out forwards;
+  counter-reset: n var(--n, 0);
+}
+
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: var(--radius);
 }

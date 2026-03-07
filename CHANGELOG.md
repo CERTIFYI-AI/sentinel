@@ -1,3 +1,49 @@
+## [0.2.0] - 2025-03-07
+
+### Added
+- Enterprise dashboard UI v2 built on shadcn/ui
+- Login and Signup pages with JWT authentication
+- Two-step signup with plan selection (Free / Pro / Enterprise)
+- Model Inventory page: provider health, circuit breaker states, comparison drawer
+- Add Model wizard: 3-step flow with connection test before save
+- Test Model sheet: full pipeline test with claim scores and latency breakdown
+- Settings page: 8 sections (General, Trust & Safety, PII, Models, API Keys, Compliance, Notifications, Team)
+- Trust Pulse Bar: 2px viewport-top indicator showing live trust zone
+- Command palette (Cmd+K): global navigation and action shortcuts
+- Compliance Evidence Center: per-framework tabs with control heatmap
+- Report export with SHA-256 fingerprint
+- API key management: create, revoke, rotate via dashboard UI
+- Team management: invite members, assign roles, track last active
+- Webhook notifications for all alert conditions
+- 7 compliance frameworks now enable/disable per-tenant from UI
+
+### Changed
+- Primary brand color updated to #368F4D (forest green)
+- Sidebar: active indicator uses brand green, collapsed to 60px icon-only mode
+- All primary buttons, focus rings, and interactive accents use #368F4D
+- Trust signal colors (green/amber/red) unchanged - these are semantic, not brand
+
+### Fixed
+- Chart colors now loaded exclusively from CSS variables
+- ThemeProvider initializes with defaultTheme="dark"
+- CORS restricted to SENTINEL_CORS_ORIGINS env var
+
+### API
+- `GET /api/models` - list configured providers
+- `POST /api/models` - add new provider
+- `PATCH /api/models/{id}` - update role/config
+- `DELETE /api/models/{id}` - remove provider
+- `POST /api/models/{id}/reset-cb` - reset circuit breaker
+- `POST /api/models/test-connection` - test before save
+- `GET /api/auth/keys` - list API keys
+- `POST /api/auth/keys` - create API key
+- `DELETE /api/auth/keys/{id}` - revoke API key
+- `POST /api/auth/register` - create tenant account
+- `GET /api/team/members` - list team members
+- `POST /api/team/invites` - send invitation
+- `GET /api/compliance/frameworks` - list frameworks with scores
+- `PATCH /api/compliance/frameworks/{id}` - enable/disable framework
+
 # Changelog
 
 All notable changes to Sentinel are documented in this file.
