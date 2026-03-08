@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Outlet } from "react-router-dom";
 import { Sidebar } from "./components/dashboard/Sidebar";
@@ -18,6 +19,8 @@ import Benchmark from "./pages/Benchmark";
 import ExportCenter from "./pages/ExportCenter";
 import Notifications from "./pages/Notifications";
 
+const queryClient = new QueryClient({ defaultOptions: { queries: { refetchOnWindowFocus: false, retry: 1, staleTime: 300000 } } });
+
 function ProtectedLayout() {
   return (
     <div className="flex h-screen bg-background">
@@ -34,7 +37,8 @@ function ProtectedLayout() {
 
 export default function App() {
   return (
-    <ThemeProvider defaultTheme="system" storageKey="sentinel-theme">
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider defaultTheme="system" storageKey="sentinel-theme">
       <BrowserRouter>
         <Routes>
           <Route element={<ProtectedLayout />}>
@@ -57,5 +61,6 @@ export default function App() {
         </Routes>
       </BrowserRouter>
     </ThemeProvider>
+    </QueryClientProvider>
   );
 }
