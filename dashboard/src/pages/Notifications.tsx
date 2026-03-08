@@ -1,19 +1,17 @@
-import { PageWrapper } from "../components/layout/PageWrapper";
-import { NotificationFeed } from "../components/dashboard/NotificationFeed";
-import { Button } from "../components/ui/button";
-
-const sampleNotifications = [
-  { id: "1", title: "Compliance scan completed", message: "EU AI Act framework scan finished with 3 new findings", type: "info" as const, read: false, createdAt: "2 min ago" },
-  { id: "2", title: "Critical incident reported", message: "PII detected in model output - INC-001 created", type: "error" as const, read: false, createdAt: "15 min ago" },
-  { id: "3", title: "Remediation overdue", message: "GOV-1.2 transparency docs update is past due date", type: "warning" as const, read: false, createdAt: "1 hour ago" },
-  { id: "4", title: "Model registered", message: "GPT-4o-mini added to model inventory", type: "success" as const, read: true, createdAt: "3 hours ago" },
-  { id: "5", title: "Export ready", message: "GDPR Compliance Report PDF is ready for download", type: "info" as const, read: true, createdAt: "5 hours ago" },
-];
-
-export default function Notifications() {
-  return (
-    <PageWrapper title="Notifications" description="Stay updated on compliance events" actions={<Button variant="outline">Mark All Read</Button>}>
-      <NotificationFeed notifications={sampleNotifications} />
-    </PageWrapper>
+import {useState} from "react";
+import {Bell} from "lucide-react";
+export default function Notifications(){
+  return(
+    <div className="p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
+      <div className="flex items-center gap-3 mb-6">
+        <Bell size={24} className="text-blue-600"/>
+        <div><h1 className="text-2xl font-bold text-slate-900 dark:text-white">Notifications</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Alerts and notifications</p></div>
+      </div>
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-8 text-center">
+        <Bell size={48} className="text-slate-300 dark:text-slate-600 mx-auto mb-4"/>
+        <p className="text-slate-500 dark:text-slate-400 text-sm">Full interactive features coming soon</p>
+      </div>
+    </div>
   );
 }

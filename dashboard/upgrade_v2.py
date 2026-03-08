@@ -1,3 +1,29 @@
+import os
+S='/workspaces/sentinel/dashboard/src'
+def w(p,c):
+  fp=os.path.join(S,p)
+  os.makedirs(os.path.dirname(fp),exist_ok=True)
+  open(fp,'w').write(c)
+  print('wrote',p)
+
+print('=== UPGRADE V2 ===')
+
+# 1. main.tsx - ensure light mode default
+w('main.tsx',r'''
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App";
+import "./index.css";
+
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode><App/></React.StrictMode>
+);
+'''.lstrip())
+
+print('=== 1. main.tsx done ===')
+
+# 2. App.tsx with correct import paths
+w('App.tsx', r'''
 import {BrowserRouter,Routes,Route,Navigate,Outlet} from "react-router-dom";
 import {ThemeProvider} from "./context/ThemeContext";
 import Sidebar from "./components/Sidebar";
@@ -75,3 +101,5 @@ export default function App(){
     </ThemeProvider>
   );
 }
+'''.lstrip())
+print('=== 2. App.tsx done ===')

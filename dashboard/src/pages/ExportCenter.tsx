@@ -1,46 +1,17 @@
-import { PageWrapper } from "../components/layout/PageWrapper";
-import { ExportQueue } from "../components/dashboard/ExportQueue";
-import { Button } from "../components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-
-const sampleJobs = [
-  { id: "1", name: "GDPR Compliance Report", format: "PDF", status: "completed" as const, createdAt: "2025-01-15 10:00", size: "2.4 MB" },
-  { id: "2", name: "EU AI Act Audit Export", format: "CSV", status: "processing" as const, createdAt: "2025-01-15 10:15" },
-  { id: "3", name: "Full Model Inventory", format: "JSON", status: "queued" as const, createdAt: "2025-01-15 10:20" },
-  { id: "4", name: "Risk Assessment Q4", format: "PDF", status: "failed" as const, createdAt: "2025-01-14 16:00" },
-];
-
-const templates = [
-  { name: "Compliance Summary", description: "All frameworks overview" },
-  { name: "Audit Report", description: "Detailed control-by-control" },
-  { name: "Risk Register", description: "All identified risks" },
-  { name: "Model Inventory", description: "All registered models" },
-];
-
-export default function ExportCenter() {
-  return (
-    <PageWrapper title="Export Center" description="Generate and download compliance reports">
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Report Templates</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {templates.map((t) => (
-                <div key={t.name} className="flex items-center justify-between p-2 rounded border">
-                  <div>
-                    <p className="text-sm font-medium">{t.name}</p>
-                    <p className="text-xs text-muted-foreground">{t.description}</p>
-                  </div>
-                  <Button size="sm" variant="outline">Generate</Button>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-        <ExportQueue jobs={sampleJobs} />
+import {useState} from "react";
+import {Download} from "lucide-react";
+export default function ExportCenter(){
+  return(
+    <div className="p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
+      <div className="flex items-center gap-3 mb-6">
+        <Download size={24} className="text-blue-600"/>
+        <div><h1 className="text-2xl font-bold text-slate-900 dark:text-white">Export Center</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Export compliance reports</p></div>
       </div>
-    </PageWrapper>
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-8 text-center">
+        <Download size={48} className="text-slate-300 dark:text-slate-600 mx-auto mb-4"/>
+        <p className="text-slate-500 dark:text-slate-400 text-sm">Full interactive features coming soon</p>
+      </div>
+    </div>
   );
 }
