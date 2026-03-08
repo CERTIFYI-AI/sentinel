@@ -25,6 +25,8 @@ export interface TeamInvite { id: string; email: string; role: string; created_a
 export interface MetricsSummary {
   total_requests: number; avg_trust_score: number; avg_latency_ms: number;
   intervention_rate: number; pii_detection_rate: number; requests_24h: number;
+  intervention_counts: { none: number; regen: number; upgrade: number; hitl: number; };
+  trust_score_histogram: Array<{ bucket: string; count: number }>;
 }
 export interface TrustDataPoint { timestamp: string; score: number; count: number; }
 export interface AuditEntry {

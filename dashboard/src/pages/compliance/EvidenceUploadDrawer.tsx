@@ -1,0 +1,10 @@
+import { useState } from "react";
+interface Props { open: boolean; onClose: () => void; }
+export default function EvidenceUploadDrawer({ open, onClose }: Props) {
+  const [title, setTitle] = useState("");
+  const [control, setControl] = useState("");
+  const [file, setFile] = useState<File|null>(null);
+  const [status, setStatus] = useState<"idle"|"loading"|"success"|"error">("idle");
+  if (!open) return null;
+  const handleUpload = async () => { if(!title||!file) return; setStatus("loading"); try { await new Promise(r=>setTimeout(r,1500)); setStatus("success"); } catch { setStatus("error"); } };
+  return (<div className="fixed inset-0 z-50 flex justify-end" onClick={onClose}><div className="bg-[hsl(var(--background))] w-[500px] h-full shadow-xl p-6 overflow-auto" onClick={e=>e.stopPropagation()} onKeyDown={e=>{if(e.key==="Escape")onClose()}} tabIndex={-1}><div className="flex justify-between items-center mb-4"><h2 className="text-xl font-bold">Upload Evidence</h2><button onClick={onClose}>X</button></div><div className="space-y-4"><div><label className="block text-sm font-medium mb-1">Title</label><input className="w-full border rounded px-3 py-2" value={title} onChange={e=>setTitle(e.target.value)}/></div><div><label className="block text-sm font-medium mb-1">Control</label><select className="w-full border rounded px-3 py-2" value={control} onChange={e=>setControl(e.target.value)}><option value="">Select control</option><option value="privacy">Data Privacy</option><option value="bias">Bias Testing</option></select></div><div><label className="block text-sm font-medium mb-1">File</label><input type="file" onChange={e=>setFile(e.target.files?.[0]||null)}/></div>{status==="success"&&<div className="text-green-600 text-sm">Uploaded!</div>}{status==="error"&&<div className="text-red-600 text-sm">Upload failed.</div>}<button className="w-full px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded disabled:opacity-50" disabled={!title||!file||status==="loading"} onClick={handleUpload}>{status==="loading"?"Uploading...":"Upload"}</button></div></div></div>);}

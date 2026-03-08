@@ -20,7 +20,7 @@ export function TrustHistogram({ data }: TrustHistogramProps) {
             <XAxis dataKey="bucket" tick={{ fontSize: 12 }} />
             <YAxis tick={{ fontSize: 12 }} />
             <Tooltip />
-            <Bar dataKey="count" fill={CHART_COLORS.blue} radius={[4, 4, 0, 0]} />
+            <Bar dataKey="count" fill={CHART_COLORS.interventionRegen} radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>

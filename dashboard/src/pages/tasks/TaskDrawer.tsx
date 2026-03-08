@@ -1,0 +1,11 @@
+import { useState } from "react";
+interface Props { open: boolean; onClose: () => void; }
+export default function TaskDrawer({ open, onClose }: Props) {
+  const [title, setTitle] = useState("");
+  const [assignee, setAssignee] = useState("");
+  const [priority, setPriority] = useState("medium");
+  const [due, setDue] = useState("");
+  const [status, setStatus] = useState<"idle"|"loading"|"success"|"error">("idle");
+  if (!open) return null;
+  const handleSave = async () => { if(!title) return; setStatus("loading"); try { await new Promise(r=>setTimeout(r,1000)); setStatus("success"); } catch { setStatus("error"); } };
+  return (<div className="fixed inset-0 z-50 flex justify-end" onClick={onClose}><div className="bg-[hsl(var(--background))] w-[500px] h-full shadow-xl p-6 overflow-auto" onClick={e=>e.stopPropagation()} onKeyDown={e=>{if(e.key==="Escape")onClose()}} tabIndex={-1}><div className="flex justify-between items-center mb-4"><h2 className="text-xl font-bold">New Task</h2><button onClick={onClose}>X</button></div><div className="space-y-4"><div><label className="block text-sm font-medium mb-1">Title</label><input className="w-full border rounded px-3 py-2" value={title} onChange={e=>setTitle(e.target.value)}/></div><div><label className="block text-sm font-medium mb-1">Assignee</label><input className="w-full border rounded px-3 py-2" value={assignee} onChange={e=>setAssignee(e.target.value)}/></div><div><label className="block text-sm font-medium mb-1">Priority</label><select className="w-full border rounded px-3 py-2" value={priority} onChange={e=>setPriority(e.target.value)}><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></div><div><label className="block text-sm font-medium mb-1">Due Date</label><input type="date" className="w-full border rounded px-3 py-2" value={due} onChange={e=>setDue(e.target.value)}/></div>{status==="success"&&<div className="text-green-600 text-sm">Task created!</div>}{status==="error"&&<div className="text-red-600 text-sm">Error creating task.</div>}<button className="w-full px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded disabled:opacity-50" disabled={!title||status==="loading"} onClick={handleSave}>{status==="loading"?"Saving...":"Create Task"}</button></div></div></div>);}

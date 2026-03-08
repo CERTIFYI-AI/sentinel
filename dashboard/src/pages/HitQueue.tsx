@@ -33,7 +33,7 @@ const statusColors: Record<string, string> = {
   rejected: "bg-red-100 text-red-800",
 };
 
-export default function HitlQueue() {
+export default function HitQueue() {
   const [items, setItems] = useState<HitlItem[]>(DUMMY_ITEMS);
   const [selected, setSelected] = useState<HitlItem | null>(null);
   const [filter, setFilter] = useState<string>("all");

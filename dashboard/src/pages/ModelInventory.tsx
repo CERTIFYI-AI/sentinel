@@ -1,77 +1,44 @@
-// src/pages/ModelInventory.tsx
-import { useState } from "react";
-import { Plus, Search, LayoutGrid, Table } from "lucide-react";
-import { useModels, useModelHealth, useSetModelRole } from "../hooks/use-models";
-import { ModelCard } from "../components/models/ModelCard";
-import type { ModelConfig } from "../api/types";
+import { mockModels } from "../lib/mockData";
+import { Card, CardContent } from "../components/ui/card";
+
+const pc = (p: string) => ({ openai: "bg-green-950 text-green-400", anthropic: "bg-orange-950 text-orange-400", local: "bg-zinc-800 text-zinc-400", mistral: "bg-blue-950 text-blue-400" }[p] || "bg-zinc-800 text-zinc-400");
+const rc = (r: string) => ({ PRIMARY: "bg-green-950 text-green-400 border border-green-800", FALLBACK: "bg-blue-950 text-blue-400 border border-blue-800", EVALUATION: "bg-zinc-800 text-zinc-400 border border-zinc-700", DISABLED: "bg-red-950 text-red-400 border border-red-800" }[r] || "bg-zinc-800 text-zinc-400");
+const cc = (c: string) => ({ CLOSED: "bg-green-500", HALF_OPEN: "bg-amber-500 animate-pulse", OPEN: "bg-red-500 animate-pulse" }[c] || "bg-zinc-500");
+const tc = (s: number) => s >= 0.85 ? "text-green-400" : s >= 0.7 ? "text-amber-400" : "text-red-400";
 
 export default function ModelInventory() {
-  const { data: models, isLoading } = useModels();
-  const { data: health } = useModelHealth();
-  const setRole = useSetModelRole();
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [search, setSearch] = useState("");
-  const [providerFilter, setProviderFilter] = useState("all");
-  const [view, setView] = useState<"grid" | "table">("grid");
-
-  const providers = ["all", "openai", "anthropic", "azure", "local", "custom"];
-  const filtered = (models ?? []).filter(m =>
-    (providerFilter === "all" || m.provider === providerFilter) &&
-    (search === "" || m.display_name.toLowerCase().includes(search.toLowerCase()) || m.model_name.toLowerCase().includes(search.toLowerCase()))
-  );
-
-  function toggle(id: string) {
-    setSelected(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
-  }
-
-  if (isLoading) return <div className="p-8"><div className="space-y-4">{[1,2,3].map(i => <div key={i} className="h-48 rounded-lg bg-muted animate-pulse" />)}</div></div>;
-
   return (
-    <div className="p-8 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Model Inventory</h1>
-          <p className="text-sm text-muted-foreground mt-1">Manage LLM providers, monitor health, compare performance</p>
-        </div>
-        <div className="flex gap-2">
-          {selected.size >= 2 && <button className="h-9 px-3 rounded-md border border-border text-sm hover:bg-accent">Compare ({selected.size})</button>}
-          <button className="h-9 px-3 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 flex items-center gap-2"><Plus className="w-4 h-4" />Add Model</button>
-        </div>
+    <div className="p-6 space-y-4">
+      <div className="flex items-start justify-between"><div><h1 className="text-xl font-bold">Model Inventory</h1><p className="text-sm text-muted-foreground">Manage LLM providers and monitor circuit breaker health in real time</p></div><button className="px-4 py-2 text-sm rounded bg-[hsl(var(--primary,136_45%_45%))] text-white">Add Model</button></div>
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        {mockModels.map(m => (
+          <Card key={m.id} className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className={`text-[10px] px-1.5 py-0.5 rounded ${pc(m.provider)}`}>{m.provider}</span>
+              <span className={`w-2 h-2 rounded-full ${cc(m.cb_status)}`} />
+            </div>
+            <h3 className="text-base font-mono font-bold">{m.name}</h3>
+            <p className="text-[10px] text-muted-foreground">v{m.version}</p>
+            <div className="grid grid-cols-2 gap-2 mt-3">
+              {[{ l: "Trust P95", v: m.trust_p95.toFixed(4), c: tc(m.trust_p95) }, { l: "Latency P95", v: `${m.latency_p95_ms}ms`, c: m.latency_p95_ms > 500 ? "text-amber-400" : "text-green-400" }, { l: "Req/7d", v: m.requests_7d.toLocaleString(), c: "text-foreground" }, { l: "Cost/req", v: `$${m.cost_per_req.toFixed(5)}`, c: "text-foreground" }].map((s, i) => (
+                <div key={i} className="bg-[hsl(var(--surface-2,240_10%_6.5%))] p-2 rounded">
+                  <p className="text-[9px] uppercase text-muted-foreground">{s.l}</p>
+                  <p className={`text-sm font-mono font-bold ${s.c}`}>{s.v}</p>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center gap-2 mt-3 p-2 rounded bg-[hsl(var(--surface-2,240_10%_6.5%))]">
+              <span className={`w-1.5 h-1.5 rounded-full ${cc(m.cb_status)}`} />
+              <span className="text-[11px] font-bold">{m.cb_status}</span>
+              <span className="text-[11px] text-muted-foreground ml-auto">{m.failures_7d} failures</span>
+            </div>
+            <div className="flex items-center gap-2 mt-3">
+              <span className={`text-[10px] px-2 py-0.5 rounded ${rc(m.role)}`}>{m.role}</span>
+              <button className="text-xs text-muted-foreground hover:text-foreground ml-auto">Test</button>
+            </div>
+          </Card>
+        ))}
       </div>
-
-      <div className="flex items-center justify-between gap-4 sticky top-0 z-10 bg-background py-2">
-        <div className="flex gap-1">
-          {providers.map(p => (
-            <button key={p} onClick={() => setProviderFilter(p)}
-              className={`px-3 py-1.5 text-xs rounded-md capitalize transition-colors ${providerFilter === p ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"}`}>{p}</button>
-          ))}
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="relative"><Search className="absolute left-2.5 top-2.5 w-4 h-4 text-muted-foreground" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search models..."
-              className="h-9 w-56 rounded-md border border-input bg-background pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-          </div>
-          <div className="flex border border-border rounded-md">
-            <button onClick={() => setView("grid")} className={`p-2 ${view === "grid" ? "bg-accent" : ""}`}><LayoutGrid className="w-4 h-4" /></button>
-            <button onClick={() => setView("table")} className={`p-2 ${view === "table" ? "bg-accent" : ""}`}><Table className="w-4 h-4" /></button>
-          </div>
-        </div>
-      </div>
-
-      {filtered.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground">
-          <p className="text-lg font-medium">No models found</p>
-          <p className="text-sm mt-1">Add your first LLM provider to get started.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map(m => (
-            <ModelCard key={m.id} model={m} health={health?.[m.id]}
-              selected={selected.has(m.id)} onSelect={() => toggle(m.id)}
-              onSetRole={r => setRole.mutate({ id: m.id, role: r })} onTest={() => {}} />
-          ))}
-        </div>
-      )}
     </div>
   );
 }

@@ -1,0 +1,8 @@
+import { useMemo } from "react";
+interface Props { open: boolean; onClose: () => void; }
+interface Gap { control: string; required: string; current: string; gap: "high"|"medium"|"low"; }
+export default function GapAnalysisModal({ open, onClose }: Props) {
+  const gaps = useMemo<Gap[]>(() => [{control:"Data Privacy",required:"Full PIA",current:"Partial PIA",gap:"medium"},{control:"Model Documentation",required:"Model Card v2",current:"None",gap:"high"},{control:"Bias Testing",required:"Monthly",current:"Quarterly",gap:"low"}],[]);
+  if (!open) return null;
+  const gapColors = {high:"bg-red-100 text-red-800",medium:"bg-yellow-100 text-yellow-800",low:"bg-green-100 text-green-800"};
+  return (<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}><div className="bg-[hsl(var(--background))] rounded-lg p-6 w-[600px] max-h-[80vh] overflow-auto shadow-xl" onClick={e=>e.stopPropagation()} onKeyDown={e=>{if(e.key==="Escape")onClose()}} tabIndex={-1}><h2 className="text-xl font-bold mb-4">Gap Analysis</h2><table className="w-full border-collapse"><thead><tr className="border-b"><th className="text-left p-2">Control</th><th className="text-left p-2">Required</th><th className="text-left p-2">Current</th><th className="text-left p-2">Gap</th></tr></thead><tbody>{gaps.map((g,i)=>(<tr key={i} className="border-b"><td className="p-2">{g.control}</td><td className="p-2">{g.required}</td><td className="p-2">{g.current}</td><td className="p-2"><span className={`px-2 py-1 rounded text-xs ${gapColors[g.gap]}`}>{g.gap}</span></td></tr>))}</tbody></table><div className="flex justify-end mt-4"><button className="px-4 py-2 border rounded" onClick={onClose}>Close</button></div></div></div>);}

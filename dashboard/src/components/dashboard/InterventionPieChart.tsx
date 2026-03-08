@@ -13,7 +13,7 @@ interface InterventionPieChartProps {
   };
 }
 
-const COLORS = [CHART_COLORS.green, CHART_COLORS.blue, CHART_COLORS.amber, CHART_COLORS.red];
+const COLORS = [CHART_COLORS.trustHigh, CHART_COLORS.interventionRegen, CHART_COLORS.interventionUpgrade, CHART_COLORS.interventionHitl];
 
 export function InterventionPieChart({ counts }: InterventionPieChartProps) {
   const data = [
