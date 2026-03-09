@@ -3,7 +3,14 @@ from sentinel.compliance.frameworks.base import BaseFramework, FrameworkMetadata
 
 
 class HIPAAFramework(BaseFramework):
-    metadata = FrameworkMetadata('hipaa', 'HIPAA', 'Health Insurance Portability', FrameworkStatus.MANDATORY_LAW, 'United States', 'Since 1996', 'HIPAA controls for AI in healthcare')
+    metadata = FrameworkMetadata(
+        framework_id='hipaa',
+        framework_name='HIPAA',
+        description='Health Insurance Portability and Accountability Act',
+        status=FrameworkStatus.MANDATORY_LAW,
+        jurisdiction='United States',
+        sentinel_coverage_note='HIPAA compliance controls',
+    )
     controls = []
 
     def _evaluate_control(self, control, entry, result, config):

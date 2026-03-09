@@ -1,9 +1,16 @@
 from __future__ import annotations
-from sentinel.compliance.frameworks.base import BaseFramework, Control, ControlStatus, EvidenceRecord, FrameworkMetadata, FrameworkStatus
+from sentinel.compliance.frameworks.base import BaseFramework, FrameworkMetadata, FrameworkStatus
 
 
 class SOC2Framework(BaseFramework):
-    metadata = FrameworkMetadata('soc2', 'SOC 2', 'Trust Services Criteria', FrameworkStatus.INDUSTRY_STANDARD, 'Global', 'Since 2010', 'SOC 2 Trust Services Criteria for AI systems')
+    metadata = FrameworkMetadata(
+        framework_id='soc2',
+        framework_name='SOC 2',
+        description='Trust Services Criteria',
+        status=FrameworkStatus.CERTIFIABLE,
+        jurisdiction='Global',
+        sentinel_coverage_note='SOC 2 Trust Services Criteria controls',
+    )
     controls = []
 
     def _evaluate_control(self, control, entry, result, config):
