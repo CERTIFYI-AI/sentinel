@@ -14,6 +14,10 @@ from sentinel.compliance.frameworks.gdpr import GDPRFramework
 from sentinel.compliance.frameworks.china_ai_regs import ChinaAIRegsFramework
 from sentinel.compliance.frameworks.oecd_principles import OECDPrinciplesFramework
 from sentinel.compliance.frameworks.ieee7000 import IEEE7000Framework
+from sentinel.compliance.frameworks.hipaa import HIPAAFramework
+from sentinel.compliance.frameworks.iso27001 import ISO27001Framework
+from sentinel.compliance.frameworks.owasp_llm import OWASPLLMFramework
+from sentinel.compliance.frameworks.soc2 import SOC2Framework
 
 FRAMEWORK_REGISTRY: dict[str, BaseFramework] = {
     "eu_ai_act": EUAIActFramework(),
@@ -23,6 +27,10 @@ FRAMEWORK_REGISTRY: dict[str, BaseFramework] = {
     "china_ai_regs": ChinaAIRegsFramework(),
     "oecd_principles": OECDPrinciplesFramework(),
     "ieee7000": IEEE7000Framework(),
+            "hipaa": HIPAAFramework(),
+    "iso27001": ISO27001Framework(),
+    "owasp_llm": OWASPLLMFramework(),
+    "soc2": SOC2Framework(),
 }
 
 __all__ = [
@@ -31,4 +39,6 @@ __all__ = [
     "EUAIActFramework", "ISO42001Framework", "NISTAIRMFFramework",
     "GDPRFramework", "ChinaAIRegsFramework", "OECDPrinciplesFramework",
     "IEEE7000Framework",
+        "HIPAAFramework", "ISO27001Framework", "OWASPLLMFramework",
+    "SOC2Framework",
 ]
