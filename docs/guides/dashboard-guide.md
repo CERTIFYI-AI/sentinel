@@ -264,3 +264,37 @@ Kanban-style task management for compliance and governance work items.
 **URL:** `/incident-log`
 
 Record and track AI system incidents with severity classification and resolution tracking.
+
+## Deployment
+
+### Local Development
+
+```bash
+cd dashboard
+npm install
+npm run dev
+```
+
+The dashboard runs at `http://localhost:5173` by default.
+
+### Production Build
+
+```bash
+cd dashboard
+npm ci
+npm run build
+```
+
+The build output is in `dashboard/dist/`. Serve with any static file server.
+
+### Vercel Deployment
+
+The project includes a GitHub Actions workflow (`deploy-dashboard.yml`) that automatically builds and deploys to Vercel on push to `main`.
+
+To enable Vercel deployment, add these repository secrets:
+
+- `VERCEL_TOKEN` — Generate at https://vercel.com/account/tokens
+- `VERCEL_ORG_ID` — Found in Vercel project settings
+- `VERCEL_PROJECT_ID` — Found in Vercel project settings
+
+You can also trigger the deployment manually from the Actions tab using the "Run workflow" button.
