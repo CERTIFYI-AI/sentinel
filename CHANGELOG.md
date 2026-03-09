@@ -1,3 +1,28 @@
+## [0.3.0] - 2025-03-09
+
+### Added
+- Benchmark page: model comparison with score bars, sortable metrics, trend indicators, latency/cost tracking
+- Dataset Hub page: search, type filters, stats cards, tag system, CRUD actions
+- Export Center page: quick templates (PDF/CSV/JSON/XLSX), export history table, status tracking
+- Model Lifecycle page: pipeline visualization (dev/test/staging/prod/deprecated), gate checks, promote/rollback
+- Risk Matrix page: 5x5 likelihood x impact heatmap, risk register table, color-coded scoring
+- Vendor Register page: risk tiers, compliance score bars, certification badges, search
+- Remediation Tracker page: priority/status badges, framework control references, assignee tracking
+- Notifications page: read/unread state, type filters, mark-all-read, source attribution
+- Gap Analysis page: framework grouping, coverage metrics, expandable control details
+- Settings page: 6 tabbed sections (General, API Keys, Security, Notifications, Data, Team)
+- Mock data layer (`dashboard/src/lib/mockData.ts`) for Overview and Audit Log pages
+- Full documentation for all 15 dashboard pages in `docs/guides/dashboard-guide.md`
+
+### Fixed
+- Missing `mockData.ts` import crash on Overview and Audit Log pages
+- All 8 stub/placeholder pages replaced with production-ready implementations
+- Model Inventory upgraded with risk classification, compliance bars, search/filter
+
+### Changed
+- Dashboard now has zero placeholder pages — every route is fully functional
+- Consistent UI pattern across all pages: shadcn/ui Cards, Tailwind dark mode, lucide-react icons, TypeScript types
+
 ## [0.2.0] - 2025-03-07
 
 ### Added
