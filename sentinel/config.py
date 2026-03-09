@@ -302,3 +302,10 @@ def load_settings(config_path: Optional[str] = None) -> SentinelSettings:
 def load_config(config_path: Optional[str] = None) -> SentinelConfig:
     """Build a SentinelConfig for use by proxy and internal code."""
     return SentinelConfig()
+
+
+
+# ---------------------------------------------------------------------------
+# Module-level singleton (imported as `from sentinel.config import settings`)
+# ---------------------------------------------------------------------------
+settings = load_settings()
