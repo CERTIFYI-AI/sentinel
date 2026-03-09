@@ -1,11 +1,13 @@
 from __future__ import annotations
+
 import json
 import logging
 from datetime import datetime, timezone
 from typing import Any, Optional
+
 from dataclasses import dataclass, field
 
-from sentinel.compliance.frameworks.base import ControlStatus, FrameworkStatus
+from sentinel.compliance.frameworks.base import ControlStatus, FrameworkEvalResult
 
 logger = logging.getLogger(__name__)
 
@@ -39,10 +41,11 @@ class ReportBuilder:
     def build_report(
         self,
         tenant_id: str,
-        framework_results: list[FrameworkStatus],
+        framework_results: list[FrameworkEvalResult],
     ) -> ComplianceReport:
         """Build a full compliance report from evaluation results."""
         report = ComplianceReport(tenant_id=tenant_id)
+
         total_pass = 0
         total_fail = 0
         total_na = 0
@@ -51,17 +54,20 @@ class ReportBuilder:
         for fw_status in framework_results:
             fw_dict = self._build_framework_section(fw_status)
             report.frameworks.append(fw_dict)
+
             for c in fw_status.controls:
                 total_controls += 1
-                if c.status == ControlStatus.PASS:
+                status = str(c.status)
+                if status == ControlStatus.PASS:
                     total_pass += 1
-                elif c.status == ControlStatus.FAIL:
+                elif status == ControlStatus.FAIL:
                     total_fail += 1
-                elif c.status == ControlStatus.NA:
+                elif status in (ControlStatus.NA, ControlStatus.NOT_APPLICABLE):
                     total_na += 1
 
         applicable = total_controls - total_na
         score = (total_pass / applicable * 100) if applicable > 0 else 0.0
+
         report.summary = {
             'total_frameworks': len(framework_results),
             'total_controls': total_controls,
@@ -70,9 +76,10 @@ class ReportBuilder:
             'not_applicable': total_na,
             'compliance_score': round(score, 1),
         }
+
         return report
 
-    def _build_framework_section(self, fw_status: FrameworkStatus) -> dict:
+    def _build_framework_section(self, fw_status: FrameworkEvalResult) -> dict:
         """Build report section for a single framework."""
         controls = []
         pass_count = 0
@@ -80,10 +87,11 @@ class ReportBuilder:
         na_count = 0
 
         for c in fw_status.controls:
+            status = str(c.status)
             ctrl = {
                 'control_id': c.control_id,
-                'title': c.title,
-                'status': c.status.value,
+                'title': c.title or c.control_name,
+                'status': status,
                 'category': c.category,
                 'signal_source': c.signal_source,
                 'signal_value': c.signal_value,
@@ -92,11 +100,12 @@ class ReportBuilder:
                 'scope_note': getattr(c, 'scope_note', None),
             }
             controls.append(ctrl)
-            if c.status == ControlStatus.PASS:
+
+            if status == ControlStatus.PASS:
                 pass_count += 1
-            elif c.status == ControlStatus.FAIL:
+            elif status == ControlStatus.FAIL:
                 fail_count += 1
-            elif c.status == ControlStatus.NA:
+            elif status in (ControlStatus.NA, ControlStatus.NOT_APPLICABLE):
                 na_count += 1
 
         applicable = len(controls) - na_count
@@ -119,7 +128,7 @@ class ReportBuilder:
     def build_summary_only(
         self,
         tenant_id: str,
-        framework_results: list[FrameworkStatus],
+        framework_results: list[FrameworkEvalResult],
     ) -> dict:
         """Build lightweight summary without full control details."""
         report = self.build_report(tenant_id, framework_results)
