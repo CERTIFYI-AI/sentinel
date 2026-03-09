@@ -18,7 +18,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 
 from sentinel import __version__
-from sentinel.compliance.engine import compliance_engine
+from sentinel.compliance.engine import ComplianceEngine
 from sentinel.config import settings
 from sentinel.layers.auditor import AuditEntryInput, InterventionLevel, auditor
 from sentinel.layers.circuit_breaker import circuit_breaker
@@ -280,7 +280,7 @@ async def chat_completions(
 
     # 6. Compliance evaluation — runs after audit entry is written
     background_tasks.add_task(
-        compliance_engine.evaluate,
+        ComplianceEngine.evaluate,
         audit_entry,
         pipeline_result,
         tenant,
