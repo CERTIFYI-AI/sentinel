@@ -138,6 +138,15 @@ def _softmax(x: np.ndarray) -> np.ndarray:
     return e_x / e_x.sum(axis=1, keepdims=True)
 
 
+def _embed_text(text: str) -> np.ndarray:
+    """Embed text using the loaded embedding model."""
+    if _embedding_model is not None:
+        return _embedding_model.encode(
+            [text], convert_to_numpy=True, normalize_embeddings=True,
+        )[0]
+    return np.zeros(384)
+
+
 async def verify(
     response_text: str,
     tenant_config: TenantConfig,
@@ -194,6 +203,7 @@ async def verify(
         rag_entailment_score = sum(
             cs.confidence for cs in claim_scores
         ) / len(claim_scores)
+
     if golden_source_empty:
         rag_entailment_score = 0.5
 
@@ -205,9 +215,12 @@ async def verify(
         cross_check_agreement = await _n_cross_check(response_text)
 
     # Step 5: Semantic drift (default if no baseline)
-            semantic_drift_score = await _compute_semantic_drift(
-                        response_embedding, tenant_config.tenant_id
-        )
+    response_embedding = await loop.run_in_executor(
+        _executor, _embed_text, response_text,
+    )
+    semantic_drift_score = await _compute_semantic_drift(
+        response_embedding, tenant_config.tenant_id
+    )
 
     # Final score
     pii_factor = 1.0 if pii_clean else 0.0
@@ -242,7 +255,6 @@ async def _n_cross_check(response_text: str) -> float:
         )
         t1 = r1.choices[0].message.content or ""
         t2 = r2.choices[0].message.content or ""
-
         if _embedding_model is not None:
             embs = _embedding_model.encode(
                 [t1, t2], convert_to_numpy=True, normalize_embeddings=True,
@@ -261,15 +273,14 @@ async def _compute_semantic_drift(
     """
     Computes how far the current response embedding is from the tenant's
     baseline distribution using cosine distance.
-
     Returns a score in [0.0, 1.0] where:
-      1.0 = response is identical to baseline (no drift)
-      0.0 = maximum drift
-
+    1.0 = response is identical to baseline (no drift)
+    0.0 = maximum drift
     Falls back to 0.75 (neutral) if no baseline exists yet.
     """
     try:
         from sentinel.storage.baseline_store import baseline_store  # noqa: PLC0415
+
         baseline = await baseline_store.get_centroid(tenant_id)
     except Exception:  # noqa: BLE001
         baseline = None
@@ -284,7 +295,7 @@ async def _compute_semantic_drift(
         )
         return 0.75
 
-    # Cosine similarity → drift score
+    # Cosine similarity -> drift score
     a = response_embedding.reshape(1, -1)
     b = np.array(baseline).reshape(1, -1)
     dot = float(np.dot(a[0], b[0]))
@@ -294,5 +305,6 @@ async def _compute_semantic_drift(
         return 0.75
     cosine_sim = dot / (norm_a * norm_b)
     distance = 1.0 - cosine_sim
+
     # Map distance to [0,1] score: 0 distance = 1.0 score, 3.5 std = 0.0 score
     return float(max(0.0, 1.0 - (distance / 3.5)))
