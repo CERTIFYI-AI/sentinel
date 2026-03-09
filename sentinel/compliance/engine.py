@@ -239,3 +239,8 @@ class ComplianceEngine:
             self.evaluate(fw, signals, tenant_id, request_id)
             for fw in frameworks
         ]
+
+
+
+# Module-level singleton for import convenience
+compliance_engine = ComplianceEngine()
