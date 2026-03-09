@@ -2,7 +2,10 @@
 import pytest
 from sentinel.compliance.evidence_store import EvidenceStore, EvidenceRecord
 from sentinel.compliance.report_builder import ReportBuilder
-from sentinel.compliance.frameworks.base import ControlStatus, Control, FrameworkStatus, FrameworkMetadata
+from sentinel.compliance.frameworks.base import (
+    ControlStatus, Control, FrameworkStatus, FrameworkMetadata, FrameworkEvalResult,
+)
+
 
 TENANT = 'test-tenant-001'
 
@@ -29,6 +32,19 @@ GOOD_SIGNALS = {
     'human_oversight_enabled': True,
     'logging_enabled': True,
     'monitoring_enabled': True,
+    'trust_score': 0.95,
+    'intervention_level': 'L0',
+    'pii_entities_detected': [],
+    'pii_blocked': True,
+    'sanitizer_mode': 'presidio',
+    'entry_id': 'entry-001',
+    'entry_hash': 'abc123def456',
+    'request_id': 'req-001',
+    'response_headers': {'X-Sentinel-Trust-Score': '0.95', 'X-Sentinel-Intervention': 'L0'},
+    'hitl_configured': True,
+    'human_reviewed': False,
+    'semantic_drift_sigma': 0.5,
+    'circuit_breaker_state': 'CLOSED',
 }
 
 BAD_SIGNALS = {
@@ -54,6 +70,18 @@ BAD_SIGNALS = {
     'human_oversight_enabled': False,
     'logging_enabled': False,
     'monitoring_enabled': False,
+    'trust_score': 0.3,
+    'intervention_level': 'L3',
+    'pii_entities_detected': ['EMAIL_ADDRESS'],
+    'pii_blocked': False,
+    'sanitizer_mode': 'presidio',
+    'entry_id': '',
+    'entry_hash': '',
+    'request_id': 'req-002',
+    'response_headers': {},
+    'hitl_configured': False,
+    'human_reviewed': False,
+    'semantic_drift_sigma': 4.0,
 }
 
 
@@ -240,7 +268,7 @@ class TestReportBuilder:
                 scope_note="Not applicable",
             ),
         ]
-        return FrameworkStatus(metadata=meta, controls=controls)
+        return FrameworkEvalResult(metadata=meta, controls=controls)
 
     def test_build_report(self):
         builder = ReportBuilder()
@@ -263,3 +291,240 @@ class TestReportBuilder:
         for ctrl in fw_data["controls"]:
             if ctrl["status"] == "FAIL":
                 assert ctrl["remediation"] is not None
+
+
+class TestGdprFramework:
+    def test_evaluates_good_signals(self):
+        from sentinel.compliance.frameworks.gdpr import GDPRFramework
+        fw = GDPRFramework()
+        results = fw.evaluate(GOOD_SIGNALS, TENANT)
+        assert len(results) > 0
+
+    def test_evaluates_bad_signals(self):
+        from sentinel.compliance.frameworks.gdpr import GDPRFramework
+        fw = GDPRFramework()
+        results = fw.evaluate(BAD_SIGNALS, TENANT)
+        fail_results = [r for r in results if r.status == ControlStatus.FAIL]
+        assert len(fail_results) > 0
+
+    def test_fail_has_remediation(self):
+        from sentinel.compliance.frameworks.gdpr import GDPRFramework
+        fw = GDPRFramework()
+        results = fw.evaluate(BAD_SIGNALS, TENANT)
+        for r in results:
+            if r.status == ControlStatus.FAIL:
+                assert r.remediation is not None and len(r.remediation) > 0
+
+    def test_legal_weight_is_mandatory(self):
+        from sentinel.compliance.frameworks.gdpr import GDPRFramework
+        fw = GDPRFramework()
+        assert fw.metadata.legal_weight in ('mandatory-law', 'mandatory_law', 'mandatory-law')
+
+    def test_all_results_have_evidence_text(self):
+        from sentinel.compliance.frameworks.gdpr import GDPRFramework
+        fw = GDPRFramework()
+        results = fw.evaluate(GOOD_SIGNALS, TENANT)
+        for r in results:
+            assert r.evidence_text is not None and len(r.evidence_text) > 0
+
+
+class TestIso42001Framework:
+    def test_evaluates_good_signals(self):
+        from sentinel.compliance.frameworks.iso42001 import ISO42001Framework
+        fw = ISO42001Framework()
+        results = fw.evaluate(GOOD_SIGNALS, TENANT)
+        assert len(results) > 0
+
+    def test_evaluates_bad_signals(self):
+        from sentinel.compliance.frameworks.iso42001 import ISO42001Framework
+        fw = ISO42001Framework()
+        results = fw.evaluate(BAD_SIGNALS, TENANT)
+        fail_results = [r for r in results if r.status == ControlStatus.FAIL]
+        assert len(fail_results) > 0
+
+    def test_fail_has_remediation(self):
+        from sentinel.compliance.frameworks.iso42001 import ISO42001Framework
+        fw = ISO42001Framework()
+        results = fw.evaluate(BAD_SIGNALS, TENANT)
+        for r in results:
+            if r.status == ControlStatus.FAIL:
+                assert r.remediation is not None and len(r.remediation) > 0
+
+    def test_framework_id(self):
+        from sentinel.compliance.frameworks.iso42001 import ISO42001Framework
+        fw = ISO42001Framework()
+        assert fw.metadata.framework_id == 'iso42001'
+
+    def test_all_results_have_evidence_text(self):
+        from sentinel.compliance.frameworks.iso42001 import ISO42001Framework
+        fw = ISO42001Framework()
+        results = fw.evaluate(GOOD_SIGNALS, TENANT)
+        for r in results:
+            assert r.evidence_text is not None and len(r.evidence_text) > 0
+
+
+class TestNistAiRmfFramework:
+    def test_evaluates_good_signals(self):
+        from sentinel.compliance.frameworks.nist_ai_rmf import NISTAIRMFFramework
+        fw = NISTAIRMFFramework()
+        results = fw.evaluate(GOOD_SIGNALS, TENANT)
+        assert len(results) > 0
+
+    def test_evaluates_bad_signals(self):
+        from sentinel.compliance.frameworks.nist_ai_rmf import NISTAIRMFFramework
+        fw = NISTAIRMFFramework()
+        results = fw.evaluate(BAD_SIGNALS, TENANT)
+        fail_results = [r for r in results if r.status == ControlStatus.FAIL]
+        assert len(fail_results) > 0
+
+    def test_fail_has_remediation(self):
+        from sentinel.compliance.frameworks.nist_ai_rmf import NISTAIRMFFramework
+        fw = NISTAIRMFFramework()
+        results = fw.evaluate(BAD_SIGNALS, TENANT)
+        for r in results:
+            if r.status == ControlStatus.FAIL:
+                assert r.remediation is not None and len(r.remediation) > 0
+
+    def test_framework_id(self):
+        from sentinel.compliance.frameworks.nist_ai_rmf import NISTAIRMFFramework
+        fw = NISTAIRMFFramework()
+        assert fw.metadata.framework_id == 'nist_ai_rmf'
+
+    def test_all_results_have_evidence_text(self):
+        from sentinel.compliance.frameworks.nist_ai_rmf import NISTAIRMFFramework
+        fw = NISTAIRMFFramework()
+        results = fw.evaluate(GOOD_SIGNALS, TENANT)
+        for r in results:
+            assert r.evidence_text is not None and len(r.evidence_text) > 0
+
+
+class TestChinaAiRegsFramework:
+    def test_evaluates_good_signals(self):
+        from sentinel.compliance.frameworks.china_ai_regs import ChinaAIRegsFramework
+        fw = ChinaAIRegsFramework()
+        results = fw.evaluate(GOOD_SIGNALS, TENANT)
+        assert len(results) > 0
+
+    def test_evaluates_bad_signals(self):
+        from sentinel.compliance.frameworks.china_ai_regs import ChinaAIRegsFramework
+        fw = ChinaAIRegsFramework()
+        results = fw.evaluate(BAD_SIGNALS, TENANT)
+        fail_results = [r for r in results if r.status == ControlStatus.FAIL]
+        assert len(fail_results) > 0
+
+    def test_fail_has_remediation(self):
+        from sentinel.compliance.frameworks.china_ai_regs import ChinaAIRegsFramework
+        fw = ChinaAIRegsFramework()
+        results = fw.evaluate(BAD_SIGNALS, TENANT)
+        for r in results:
+            if r.status == ControlStatus.FAIL:
+                assert r.remediation is not None and len(r.remediation) > 0
+
+    def test_framework_id(self):
+        from sentinel.compliance.frameworks.china_ai_regs import ChinaAIRegsFramework
+        fw = ChinaAIRegsFramework()
+        assert fw.metadata.framework_id == 'china_ai_regs'
+
+    def test_all_results_have_evidence_text(self):
+        from sentinel.compliance.frameworks.china_ai_regs import ChinaAIRegsFramework
+        fw = ChinaAIRegsFramework()
+        results = fw.evaluate(GOOD_SIGNALS, TENANT)
+        for r in results:
+            assert r.evidence_text is not None and len(r.evidence_text) > 0
+
+
+class TestOecdPrinciplesFramework:
+    def test_evaluates_good_signals(self):
+        from sentinel.compliance.frameworks.oecd_principles import OECDPrinciplesFramework
+        fw = OECDPrinciplesFramework()
+        results = fw.evaluate(GOOD_SIGNALS, TENANT)
+        assert len(results) > 0
+
+    def test_evaluates_bad_signals(self):
+        from sentinel.compliance.frameworks.oecd_principles import OECDPrinciplesFramework
+        fw = OECDPrinciplesFramework()
+        results = fw.evaluate(BAD_SIGNALS, TENANT)
+        fail_results = [r for r in results if r.status == ControlStatus.FAIL]
+        assert len(fail_results) > 0
+
+    def test_fail_has_remediation(self):
+        from sentinel.compliance.frameworks.oecd_principles import OECDPrinciplesFramework
+        fw = OECDPrinciplesFramework()
+        results = fw.evaluate(BAD_SIGNALS, TENANT)
+        for r in results:
+            if r.status == ControlStatus.FAIL:
+                assert r.remediation is not None and len(r.remediation) > 0
+
+    def test_framework_id(self):
+        from sentinel.compliance.frameworks.oecd_principles import OECDPrinciplesFramework
+        fw = OECDPrinciplesFramework()
+        assert fw.metadata.framework_id == 'oecd_principles'
+
+    def test_all_results_have_evidence_text(self):
+        from sentinel.compliance.frameworks.oecd_principles import OECDPrinciplesFramework
+        fw = OECDPrinciplesFramework()
+        results = fw.evaluate(GOOD_SIGNALS, TENANT)
+        for r in results:
+            assert r.evidence_text is not None and len(r.evidence_text) > 0
+
+
+class TestIeee7000Framework:
+    def test_evaluates_good_signals(self):
+        from sentinel.compliance.frameworks.ieee7000 import IEEE7000Framework
+        fw = IEEE7000Framework()
+        results = fw.evaluate(GOOD_SIGNALS, TENANT)
+        assert len(results) > 0
+
+    def test_evaluates_bad_signals(self):
+        from sentinel.compliance.frameworks.ieee7000 import IEEE7000Framework
+        fw = IEEE7000Framework()
+        results = fw.evaluate(BAD_SIGNALS, TENANT)
+        fail_results = [r for r in results if r.status == ControlStatus.FAIL]
+        assert len(fail_results) > 0
+
+    def test_fail_has_remediation(self):
+        from sentinel.compliance.frameworks.ieee7000 import IEEE7000Framework
+        fw = IEEE7000Framework()
+        results = fw.evaluate(BAD_SIGNALS, TENANT)
+        for r in results:
+            if r.status == ControlStatus.FAIL:
+                assert r.remediation is not None and len(r.remediation) > 0
+
+    def test_framework_id(self):
+        from sentinel.compliance.frameworks.ieee7000 import IEEE7000Framework
+        fw = IEEE7000Framework()
+        assert fw.metadata.framework_id == 'ieee7000'
+
+    def test_all_results_have_evidence_text(self):
+        from sentinel.compliance.frameworks.ieee7000 import IEEE7000Framework
+        fw = IEEE7000Framework()
+        results = fw.evaluate(GOOD_SIGNALS, TENANT)
+        for r in results:
+            assert r.evidence_text is not None and len(r.evidence_text) > 0
+
+
+class TestAllFrameworksRegistry:
+    def test_registry_contains_all_7_frameworks(self):
+        from sentinel.compliance.frameworks import FRAMEWORK_REGISTRY
+        assert len(FRAMEWORK_REGISTRY) == 7
+
+    def test_all_frameworks_have_metadata(self):
+        from sentinel.compliance.frameworks import FRAMEWORK_REGISTRY
+        for fw_id, fw in FRAMEWORK_REGISTRY.items():
+            assert fw.metadata.framework_id == fw_id
+            assert fw.metadata.display_name or fw.metadata.name
+
+    def test_all_frameworks_evaluate_without_exception(self):
+        from sentinel.compliance.frameworks import FRAMEWORK_REGISTRY
+        for fw_id, fw in FRAMEWORK_REGISTRY.items():
+            results = fw.evaluate(GOOD_SIGNALS, TENANT)
+            assert isinstance(results, list), f'{fw_id} did not return a list'
+
+    def test_all_frameworks_produce_fail_on_bad_signals(self):
+        from sentinel.compliance.frameworks import FRAMEWORK_REGISTRY
+        for fw_id, fw in FRAMEWORK_REGISTRY.items():
+            results = fw.evaluate(BAD_SIGNALS, TENANT)
+            statuses = {r.status for r in results}
+            assert ControlStatus.FAIL in statuses or ControlStatus.PARTIAL in statuses, (
+                f'{fw_id} produced no failures on bad signals'
+            )
