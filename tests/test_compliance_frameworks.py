@@ -222,7 +222,7 @@ class TestRegistry:
     def test_list_framework_ids(self):
         ids = list_framework_ids()
         assert "eu_ai_act" in ids
-        assert len(ids) == 7
+        assert len(ids) == 11
 
 
 class TestFrameworkConfig:
