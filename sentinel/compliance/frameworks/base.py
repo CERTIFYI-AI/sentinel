@@ -39,7 +39,7 @@ class Control:
     category: str = ""
     severity: str = "medium"
     automated: bool = True
-        is_organisational: bool = False
+    is_organisational: bool = False
     tags: list[str] = field(default_factory=list)
     article_ref: str = ""
     sentinel_scope: bool = True
