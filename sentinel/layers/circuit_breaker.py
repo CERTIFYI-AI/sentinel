@@ -7,7 +7,7 @@ from typing import Any, Callable, Awaitable
 import redis.asyncio as redis
 
 from sentinel.config import settings
-from sentinel.models import TenantConfig
+from sentinel.models import TenantConfig, InterventionLevel
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ def _get_redis() -> redis.Redis | None:
     Includes a 2-second connection timeout so startup is not delayed if
     Redis is temporarily unavailable.
     """
-    if not settings.REDIS_URL:
+    if not settings.redis_url:
         logger.warning(
             "REDIS_URL not set. Circuit breaker using in-memory state. "
             "State will be lost on process restart."
@@ -26,7 +26,7 @@ def _get_redis() -> redis.Redis | None:
         return None
     try:
         client = redis.from_url(
-            str(settings.REDIS_URL),
+                        str(settings.redis_url),
             socket_connect_timeout=2,
             decode_responses=True,
         )
