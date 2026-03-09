@@ -14,7 +14,7 @@ from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 
 from sentinel.auth.jwt_handler import get_current_tenant
 from sentinel.compliance.engine import compliance_engine
-from sentinel.layers.auditor import auditor
+from sentinel.layers import auditor
 from sentinel.models import TenantConfig
 from sentinel.observability.metrics import metrics_collector
 from sentinel.storage.audit_store import audit_store
