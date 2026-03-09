@@ -298,3 +298,32 @@ To enable Vercel deployment, add these repository secrets:
 - `VERCEL_PROJECT_ID` — Found in Vercel project settings
 
 You can also trigger the deployment manually from the Actions tab using the "Run workflow" button.
+
+
+---
+
+## v0.4.0 Changes — Architecture & Quality Fixes
+
+### Error Handling
+- Added `ErrorBoundary` component wrapping all routes and the main layout
+- Dev mode shows stack traces; production shows user-friendly recovery UI
+- Each route is individually wrapped for isolated error handling
+
+### Performance
+- All 25 page components are now lazy-loaded via `React.lazy()` + `Suspense`
+- Code splitting reduces initial bundle size significantly
+- `LoadingSpinner` component with accessibility (`role="status"`, `aria-label`)
+
+### Authentication
+- Added `AuthContext` with `login()`, `register()`, `logout()` methods
+- Token persistence via `localStorage` with `sentinel_token` key
+- `useAuth()` hook for consuming auth state in any component
+
+### Environment Configuration
+- Added `.env.example` with all Vite environment variables documented
+- Created `src/lib/config.ts` for centralized, type-safe config access
+- Feature flags: `VITE_ENABLE_AUTH`, `VITE_ENABLE_MOCK_DATA`
+
+### Code Quality Fixes
+- Removed duplicate `badge.tsx` (case-sensitivity issue on Linux/CI)
+- All component imports standardized to PascalCase filenames
