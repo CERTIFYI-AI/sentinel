@@ -47,6 +47,7 @@ class Control:
     status: ControlStatus | str = ControlStatus.PENDING
     remediation: str | None = None
     scope_note: str = ""
+    threshold: float | str | None = None
 
 
 @dataclass
@@ -118,6 +119,13 @@ class FrameworkMetadata:
             self.status = self.legal_weight
         elif self.status and not self.legal_weight:
             self.legal_weight = str(self.status)
+
+
+@dataclass
+class FrameworkEvalResult:
+    """Result of evaluating a framework: metadata + evaluated controls."""
+    metadata: FrameworkMetadata
+    controls: list[Control] = field(default_factory=list)
 
 
 class BaseFramework(ABC):
