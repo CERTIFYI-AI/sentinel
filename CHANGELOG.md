@@ -1,3 +1,20 @@
+## [0.3.1] – 2025-03-09
+
+### Added
+- GitHub Actions workflow for dashboard deployment (`deploy-dashboard.yml`)
+- Vercel deployment integration via `amondnet/vercel-action@v25`
+- Dashboard build artifact upload (30-day retention)
+
+### Fixed
+- Added `redis>=5.0.0` to project dependencies (was missing, broke CI)
+- Added `python-jose[cryptography]>=3.3.0` and `asyncpg>=0.29.0` to project dependencies
+- Corrected `ComplianceEngine` import name in `sentinel/proxy.py` (was `compliance_engine`)
+- Added `vercel.json` for dashboard build configuration
+
+### Infrastructure
+- Dashboard builds successfully in CI (Node.js 20, `npm ci && npm run build`)
+- Vercel deployment ready — add `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` secrets to enable
+
 ## [0.3.0] - 2025-03-09
 
 ### Added
