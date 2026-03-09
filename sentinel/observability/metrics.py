@@ -135,3 +135,25 @@ def record_blocked(tenant_id: str, reason: str) -> None:
 def get_metrics_text() -> bytes:
     """Generate Prometheus exposition format text for the /metrics endpoint."""
     return generate_latest()
+
+
+
+class MetricsCollector:
+    """Facade used by the proxy layer."""
+
+    def export(self) -> bytes:
+        return generate_latest()
+
+    def increment_requests(
+        self,
+        tenant_id: str,
+        model: str,
+        intervention: str,
+    ) -> None:
+        REQUESTS_TOTAL.labels(
+            tenant_id=tenant_id,
+            intervention_level=intervention,
+        ).inc()
+
+
+metrics_collector = MetricsCollector()
