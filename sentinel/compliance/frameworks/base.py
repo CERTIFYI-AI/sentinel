@@ -39,6 +39,7 @@ class Control:
     category: str = ""
     severity: str = "medium"
     automated: bool = True
+        is_organisational: bool = False
     tags: list[str] = field(default_factory=list)
     article_ref: str = ""
     sentinel_scope: bool = True
@@ -49,6 +50,8 @@ class Control:
     scope_note: str = ""
     threshold: float | str | None = None
 
+
+ControlDefinition = Control  # backward-compat alias
 
 @dataclass
 class EvidenceRecord:

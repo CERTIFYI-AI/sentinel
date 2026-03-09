@@ -7,7 +7,7 @@ from typing import Any, Callable, Awaitable
 import redis.asyncio as redis
 
 from sentinel.config import settings
-from sentinel.models import TenantConfig, InterventionLevel
+from sentinel.models import TenantConfig, InterventionLevel, CircuitBreakerResult
 
 logger = logging.getLogger(__name__)
 
@@ -153,3 +153,18 @@ class CircuitBreaker:
 
 
 circuit_breaker = CircuitBreaker()
+
+
+async def evaluate(
+    prompt: str,
+    initial_response: str,
+    verification: Any,
+    config: Any,
+    provider: Any,
+) -> CircuitBreakerResult:
+    """Evaluate a prompt/response pair through the circuit breaker pipeline."""
+    return await circuit_breaker.call(
+        body={"prompt": prompt, "response": initial_response},
+        tenant=getattr(config, "tenant_id", "default"),
+        call_provider=provider,
+    )

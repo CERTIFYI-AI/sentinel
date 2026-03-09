@@ -4,7 +4,8 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from sentinel.compliance.frameworks.base import ControlStatus, ControlDefinition, ComplianceResult, EvidenceRecord
+from sentinel.compliance.frameworks.base import ControlStatus, ControlDefinition, EvidenceRecord
+from sentinel.compliance.models import ComplianceResult
 from sentinel.compliance.frameworks.eu_ai_act import EUAIActFramework
 from sentinel.compliance.frameworks.soc2 import SOC2Framework
 from sentinel.compliance.frameworks.iso27001 import ISO27001Framework
