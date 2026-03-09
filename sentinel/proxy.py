@@ -37,7 +37,7 @@ _bearer = HTTPBearer()
 
 async def _get_db() -> asyncpg.Connection:  # pragma: no cover
     """Yield a DB connection from the pool."""
-    conn = await asyncpg.connect(str(settings.DATABASE_URL))
+    conn = await asyncpg.connect(str(settings.database_url))
     try:
         yield conn
     finally:
@@ -46,11 +46,11 @@ async def _get_db() -> asyncpg.Connection:  # pragma: no cover
 
 def _get_redis_client() -> redis.Redis | None:
     """Return a Redis async client, or None if not configured."""
-    if not settings.REDIS_URL:
+    if not settings.redis_url:
         return None
     try:
         client = redis.from_url(
-            str(settings.REDIS_URL),
+            str(settings.redis_url),
             socket_connect_timeout=2,
             decode_responses=True,
         )
@@ -98,7 +98,7 @@ async def _resolve_tenant(
     try:
         payload = jwt.decode(
             credentials.credentials,
-            settings.SECRET_KEY,
+            settings.secret_key,
             algorithms=["HS256"],
         )
     except JWTError as exc:

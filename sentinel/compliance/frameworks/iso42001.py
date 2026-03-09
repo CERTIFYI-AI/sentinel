@@ -65,5 +65,5 @@ class ISO42001Framework(BaseFramework):
         if inj_blocked:details.append("prompt injection detected")
         if drift>=3.0:details.append(f"semantic drift {drift:.2f} >= 3.0")
         if cb!="CLOSED":details.append(f"circuit breaker {cb}")
-                detail_str = ", ".join(details)
-        return self._r(c,ControlStatus.FAIL,0.0,"injection_blocked,semantic_drift_sigma,circuit_breaker_state",{"injection":inj_blocked,"drift":drift,"cb":cb},f"AI incident detected: {detail_str}. Logged for incident management review.",f"Review audit entry. Investigate: {detail_str}.")
+        detail_str = ", ".join(details)
+        return self._r(c,ControlStatus.FAIL,0.0,"injection_blocked,semantic_drift_sigma,circuit_breaker_state",{"injection":inj_blocked,"drift":drift,"cb":cb},f"AI incident detected: nd. Logged for incident management review.",f"Review audit entry. Investigate: {detail_str}.")
