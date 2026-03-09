@@ -20,7 +20,7 @@ from jose import JWTError, jwt
 from sentinel import __version__
 from sentinel.compliance.engine import ComplianceEngine
 from sentinel.config import settings
-    from sentinel.layers.auditor import AuditEntryInput, auditor
+from sentinel.layers.auditor import AuditEntryInput, auditor
 from sentinel.layers.circuit_breaker import circuit_breaker
 from sentinel.layers.sanitizer import sanitizer
 from sentinel.models import TenantConfig, InterventionLevel
