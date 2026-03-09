@@ -32,6 +32,16 @@ const ExportCenter = lazy(() => import("./pages/ExportCenter"));
 const Notifications = lazy(() => import("./pages/Notifications"));
 const Settings = lazy(() => import("./pages/Settings"));
 
+// Security Intelligence pages
+const SecurityOverview = lazy(() => import("./pages/security/SecurityOverview"));
+const ThreatFeed = lazy(() => import("./pages/security/ThreatFeed"));
+const ScanCenter = lazy(() => import("./pages/security/ScanCenter"));
+const AttackSurface = lazy(() => import("./pages/security/AttackSurface"));
+const RedTeamLab = lazy(() => import("./pages/security/RedTeamLab"));
+const PolicyFirewall = lazy(() => import("./pages/security/PolicyFirewall"));
+const VulnTracker = lazy(() => import("./pages/security/VulnTracker"));
+const KeysVault = lazy(() => import("./pages/security/KeysVault"));
+
 function PageLoader() {
   return <LoadingSpinner label="Loading page..." className="min-h-screen" />;
 }
@@ -84,6 +94,15 @@ export default function App() {
                 <Route path="/export" element={<ExportCenter />} />
                 <Route path="/notifications" element={<Notifications />} />
                 <Route path="/settings" element={<Settings />} />
+                {/* Security Intelligence */}
+                <Route path="/security" element={<SecurityOverview />} />
+                <Route path="/security/threat-feed" element={<ThreatFeed />} />
+                <Route path="/security/scan-center" element={<ScanCenter />} />
+                <Route path="/security/attack-surface" element={<AttackSurface />} />
+                <Route path="/security/red-team" element={<RedTeamLab />} />
+                <Route path="/security/policy-firewall" element={<PolicyFirewall />} />
+                <Route path="/security/vuln-tracker" element={<VulnTracker />} />
+                <Route path="/security/keys-vault" element={<KeysVault />} />
                 <Route path="*" element={<Navigate to="/overview" replace />} />
               </Route>
             </Routes>
