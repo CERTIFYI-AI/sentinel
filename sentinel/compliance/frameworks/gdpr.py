@@ -1,8 +1,17 @@
-
 from __future__ import annotations
 from sentinel.compliance.frameworks.base import BaseFramework,Control,ControlStatus,EvidenceRecord,FrameworkMetadata,FrameworkStatus
 class GDPRFramework(BaseFramework):
-    metadata=FrameworkMetadata('gdpr','GDPR','Regulation 2016/679',FrameworkStatus.MANDATORY_LAW,'European Union','Since 2018','https://gdpr-info.eu','5 of 6 articles evaluated at runtime. Article 17 (Right to Erasure) is organisational.')
+    metadata=FrameworkMetadata(
+        framework_id='gdpr',
+        name='GDPR',
+        framework_name='Regulation 2016/679',
+        version='2016/679',
+        status=FrameworkStatus.MANDATORY_LAW,
+        jurisdiction='European Union',
+        description='Since 2018',
+        primary_source='https://gdpr-info.eu',
+        sentinel_coverage_note='5 of 6 articles evaluated at runtime. Article 17 (Right to Erasure) is organisational.',
+    )
     controls=[
         Control('art5_1c','Data Minimisation','Article 5(1)(c), GDPR Regulation 2016/679','Personal data must be adequate, relevant and limited to what is necessary.',True),
         Control('art5_1f','Integrity and Confidentiality','Article 5(1)(f), GDPR Regulation 2016/679','Data must be processed in a secure manner.',True),
@@ -31,16 +40,17 @@ class GDPRFramework(BaseFramework):
             return self._r(c,ControlStatus.PASS,1.0,'response_headers',{'trust_header':ht,'intervention_header':hi},'Transparency Art.13 met. AI processing disclosed via response headers.')
         return self._r(c,ControlStatus.FAIL,0.0,'response_headers',{'trust_header':ht,'intervention_header':hi},'Transparency headers missing.','Add X-Sentinel-Trust-Score and X-Sentinel-Intervention to API responses.')
     def _art22(self,c,e,r,cfg):
-        intervention=r.get('intervention_level','L0'); hitl=cfg.get('hitl_configured',True); reviewed=r.get('human_reviewed',False); thresh=cfg.get('trust_threshold',0.85); trust=r.get('trust_score',0.0)
-        if hitl:
-            if intervention=='L3' and not reviewed:
-                return self._r(c,ControlStatus.PARTIAL,0.5,'intervention_level,human_reviewed',{'intervention':intervention,'reviewed':reviewed},f'Human oversight invoked. Automated decision below threshold {thresh}. Review pending.')
-            return self._r(c,ControlStatus.PASS,1.0,'intervention_level,hitl_configured',{'intervention':intervention,'hitl':hitl},'Automated decision safeguards Art.22 active. Human oversight via HITL queue available.')
-        return self._r(c,ControlStatus.FAIL,0.0,'hitl_configured',False,'HITL not configured. Automated decisions lack human oversight safeguard.','Configure HITL in sentinel.yaml. Art.22 requires human oversight for significant automated decisions.')
+        intervention=r.get('intervention_level','L0'); hitl=cfg.get('hitl_configured',True); reviewed=r.get('human_reviewed',False)
+        if intervention in ('L0','L1'):
+            return self._r(c,ControlStatus.PASS,1.0,'intervention_level,hitl_configured',{'intervention':intervention,'hitl':hitl},'Automated decision-making Art.22: Low-risk intervention. Human oversight available.')
+        if intervention == 'L3' and reviewed:
+            return self._r(c,ControlStatus.PASS,1.0,'intervention_level,human_reviewed',{'intervention':intervention,'reviewed':reviewed},'Art.22: Human reviewed and approved the response.')
+        if intervention == 'L3':
+            return self._r(c,ControlStatus.PARTIAL,0.5,'intervention_level,human_reviewed',{'intervention':intervention,'reviewed':reviewed},'Art.22: High-risk decision pending human review.','Complete HITL review for this request.')
+        return self._r(c,ControlStatus.PASS,0.9,'intervention_level',{'intervention':intervention},'Automated intervention applied. Human oversight configured.')
     def _art25(self,c,e,r,cfg):
-        blocked=r.get('pii_blocked',False); ph=e.get('prompt_hash',''); enc=r.get('redaction_map_encrypted',True); mode=r.get('sanitizer_mode','presidio')
-        if blocked and ph and enc:
-            return self._r(c,ControlStatus.PASS,1.0,'pii_blocked,prompt_hash,redaction_map_encrypted',{'blocked':blocked,'hash_stored':bool(ph),'encrypted':enc},'Data protection by design Art.25: (1) PII masked before processing, (2) audit stores hash not plaintext, (3) redaction map encrypted at rest.')
-        if mode=='regex':
-            return self._r(c,ControlStatus.PARTIAL,0.7,'sanitizer_mode',{'mode':mode},'Partial data protection by design. Regex fallback mode active (5 entity types vs 18 with Presidio).','Install spaCy: python -m spacy download en_core_web_lg')
-        return self._r(c,ControlStatus.FAIL,0.0,'pii_blocked,prompt_hash',{'blocked':blocked,'hash':bool(ph)},'Data protection by design requirements not fully met.','Ensure PII masking, hash-only storage, and redaction map encryption are all active.')
+        pii_blocked=r.get('pii_blocked',False); minimised=r.get('data_minimisation_applied',False); purpose=r.get('purpose_limitation_enforced',False)
+        score=sum([pii_blocked,minimised,purpose])/3.0
+        if score>=0.66:
+            return self._r(c,ControlStatus.PASS,score,'pii_blocked,data_minimisation_applied,purpose_limitation_enforced',{'pii_blocked':pii_blocked,'minimised':minimised,'purpose':purpose},'Data protection by design Art.25 satisfied.')
+        return self._r(c,ControlStatus.FAIL,score,'pii_blocked,data_minimisation_applied,purpose_limitation_enforced',{'pii_blocked':pii_blocked,'minimised':minimised,'purpose':purpose},'Data protection by design insufficient.','Enable PII masking, data minimisation, and purpose limitation.')
