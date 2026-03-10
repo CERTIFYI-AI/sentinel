@@ -16,22 +16,62 @@ const NAV: NavSection[] = [
     title: 'SECURITY',
     items: [
       { label: 'Security Overview', to: '/security' },
-      { label: 'Campaign Manager', to: '/security/campaigns' },
-      { label: 'Attack Surface Scanner', to: '/security/scanner' },
-      { label: 'Model File Auditor', to: '/security/model-auditor' },
+      { label: 'Threat Intelligence', to: '/security/threats' },
+      { label: 'Scan Center', to: '/security/scans' },
+      { label: 'Attack Surface', to: '/security/attack-surface' },
+      { label: 'Vulnerabilities', to: '/security/vulnerabilities' },
+      { label: 'Red Team Lab', to: '/security/red-team' },
+      { label: 'Policy Firewall', to: '/security/policies' },
+      { label: 'Keys Vault', to: '/security/keys' },
       { label: 'Model Arena', to: '/security/model-arena' },
-      { label: 'Framework Intelligence', to: '/security/frameworks' },
-      { label: 'Strategy & Risk', to: '/security/strategy' },
       { label: 'Board Reports', to: '/security/reports' },
     ],
   },
   {
     title: 'EVALS',
     items: [
-      { label: 'Eval Workbench', to: '/evals' },
       { label: 'Quality Metrics', to: '/evals/quality-metrics' },
       { label: 'Eval Techniques', to: '/evals/techniques' },
-      { label: 'Benchmark Results', to: '/evals/results' },
+      { label: 'Benchmark', to: '/evals/benchmark' },
+      { label: 'Datasets', to: '/evals/datasets' },
+      { label: 'Results', to: '/evals/results' },
+    ],
+  },
+  {
+    title: 'COMPLIANCE',
+    items: [
+      { label: 'Dashboard', to: '/compliance' },
+      { label: 'Controls', to: '/compliance/controls' },
+      { label: 'Evidence Hub', to: '/compliance/evidence' },
+      { label: 'Gap Analysis', to: '/compliance/gap-analysis' },
+    ],
+  },
+  {
+    title: 'RISK',
+    items: [
+      { label: 'Risk Matrix', to: '/risk' },
+      { label: 'Vendor Register', to: '/risk/vendors' },
+      { label: 'Incident Log', to: '/risk/incidents' },
+      { label: 'Remediation', to: '/risk/remediation' },
+    ],
+  },
+  {
+    title: 'MODELS',
+    items: [
+      { label: 'Inventory', to: '/models/inventory' },
+      { label: 'Lifecycle', to: '/models/lifecycle' },
+    ],
+  },
+  {
+    title: 'OPERATIONS',
+    items: [
+      { label: 'Audit Log', to: '/audit-log' },
+      { label: 'Evidence Vault', to: '/evidence-vault' },
+      { label: 'HITL Queue', to: '/hitl-queue' },
+      { label: 'Policy Editor', to: '/policy-editor' },
+      { label: 'Export Center', to: '/export' },
+      { label: 'Notifications', to: '/notifications' },
+      { label: 'Settings', to: '/settings' },
     ],
   },
 ];
@@ -58,30 +98,28 @@ export default function Sidebar() {
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-2">
         {NAV.map((section) => (
-          <div key={section.title} className="mb-1">
+          <div key={section.title}>
             <button
               onClick={() => toggleSection(section.title)}
               className="w-full flex items-center justify-between px-4 py-2 text-xs font-semibold tracking-wider hover:bg-[var(--brand-subtle)] transition-colors"
               style={{ color: 'var(--muted-foreground)' }}
             >
               {section.title}
-              <span className="text-xs">{collapsed[section.title] ? '+' : '-'}</span>
+              <span className="text-[10px]">{collapsed[section.title] ? '+' : '-'}</span>
             </button>
             {!collapsed[section.title] && (
-              <ul>
+              <ul className="pb-1">
                 {section.items.map((item) => (
                   <li key={item.to}>
                     <Link
                       to={item.to}
-                      className={`block px-4 py-1.5 text-sm transition-colors ${
+                      className={`block px-6 py-1.5 text-sm transition-colors ${
                         isActive(item.to)
-                          ? 'font-medium'
+                          ? 'bg-[var(--brand-subtle)] font-medium border-r-2 border-[var(--brand)]'
                           : 'hover:bg-[var(--brand-subtle)]'
                       }`}
                       style={{
-                        color: isActive(item.to) ? 'var(--brand-foreground)' : 'var(--foreground)',
-                        backgroundColor: isActive(item.to) ? 'var(--brand-subtle)' : undefined,
-                        borderLeft: isActive(item.to) ? '3px solid var(--brand)' : '3px solid transparent',
+                        color: isActive(item.to) ? 'var(--brand)' : 'var(--foreground)',
                       }}
                     >
                       {item.label}
@@ -95,8 +133,8 @@ export default function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-[var(--border)] text-xs" style={{ color: 'var(--muted-foreground)' }}>
-        Sentinel v1.0
+      <div className="p-4 border-t border-[var(--border)]">
+        <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Sentinel v1.0</p>
       </div>
     </aside>
   );
