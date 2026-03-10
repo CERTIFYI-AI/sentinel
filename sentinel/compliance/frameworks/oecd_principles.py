@@ -1,8 +1,17 @@
-
 from __future__ import annotations
 from sentinel.compliance.frameworks.base import BaseFramework,Control,ControlStatus,EvidenceRecord,FrameworkMetadata,FrameworkStatus
 class OECDPrinciplesFramework(BaseFramework):
-    metadata=FrameworkMetadata('oecd_principles','OECD AI Principles','2019, updated 2023',FrameworkStatus.POLICY_GUIDE,'Global (46+ countries)','Adopted 2019','https://oecd.ai/en/ai-principles','4 of 5 principles evaluated. P2.2 (Investment in Trustworthy AI) is organisational.')
+    metadata=FrameworkMetadata(
+        framework_id='oecd_principles',
+        name='OECD AI Principles',
+        framework_name='2019, updated 2023',
+        version='2019',
+        status=FrameworkStatus.POLICY_GUIDE,
+        jurisdiction='Global (46+ countries)',
+        description='Adopted 2019',
+        primary_source='https://oecd.ai/en/ai-principles',
+        sentinel_coverage_note='4 of 5 principles evaluated. P2.2 (Investment in Trustworthy AI) is organisational.',
+    )
     controls=[
         Control('p12','Human-Centred Values and Fairness','OECD Principle 1.2','Human oversight mechanism available for AI outputs.',True),
         Control('p13','Transparency and Explainability','OECD Principle 1.3','AI system operation is transparent and explainable.',True),
@@ -11,9 +20,12 @@ class OECDPrinciplesFramework(BaseFramework):
         Control('p22','Investment in Trustworthy AI','OECD Principle 2.2','Organisational investment in trustworthy AI.',False,'Organisational investment principle. Sentinels deployment demonstrates commitment to trustworthy AI infrastructure. Reference this deployment in your AI strategy documentation.'),
     ]
     def _r(self,c,s,sc,sig,val,txt,rem=None):
-        return EvidenceRecord(self.metadata.framework_id,self.metadata.framework_name,c.control_id,c.control_name,c.article_ref,s,sc,sig,val,txt,rem)
+        return EvidenceRecord(control_id=c.control_id,framework_id=self.metadata.framework_id,framework_name=self.metadata.framework_name,control_name=c.control_name,article_ref=c.article_ref,status=s,score=sc,signal_used=sig,signal_value=val,evidence_text=txt,remediation=rem)
     def _evaluate_control(self,ctrl,entry,result,config):
-        return {'p12':self._p12,'p13':self._p13,'p14':self._p14,'p15':self._p15}[ctrl.control_id](ctrl,entry,result,config)
+        dispatch={'p12':self._p12,'p13':self._p13,'p14':self._p14,'p15':self._p15}
+        if ctrl.control_id not in dispatch:
+            return EvidenceRecord(control_id=ctrl.control_id,framework_id=self.metadata.framework_id,framework_name=self.metadata.framework_name,status=ControlStatus.NA,score=0.0,evidence_text='Organisational control. Not evaluated at runtime.',remediation=ctrl.description)
+        return dispatch[ctrl.control_id](ctrl,entry,result,config)
     def _p12(self,c,e,r,cfg):
         hitl=cfg.get('hitl_configured',True);intervention=r.get('intervention_level','L0')
         return self._r(c,ControlStatus.PASS,1.0,'hitl_configured,intervention_level',{'hitl':hitl,'intervention':intervention},f'Human-centred design (OECD P1.2): Human oversight available. HITL configured: {hitl}. Intervention: {intervention}.')
