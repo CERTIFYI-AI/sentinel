@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import logging
 import time
@@ -29,6 +30,11 @@ from sentinel.storage import tenant_store
 
 logger = logging.getLogger(__name__)
 _bearer = HTTPBearer()
+
+
+def _sha256(text: str) -> str:
+    """Return hex SHA-256 digest of *text*."""
+    return hashlib.sha256(text.encode()).hexdigest()
 
 
 # ---------------------------------------------------------------------------
@@ -71,7 +77,6 @@ async def _check_rate_limit(
     """
     if redis_client is None:
         return True
-
     key = f"sentinel:ratelimit:{tenant_id}"
     pipe = redis_client.pipeline()
     now = time.time()
@@ -103,11 +108,9 @@ async def _resolve_tenant(
         )
     except JWTError as exc:
         raise HTTPException(status_code=401, detail=str(exc)) from exc
-
     tenant_id: str | None = payload.get("tenant_id")
     if not tenant_id:
         raise HTTPException(status_code=401, detail="Missing tenant_id claim")
-
     config = await tenant_store.get_config(db, tenant_id)
     if config is None:
         raise HTTPException(status_code=401, detail="Unknown tenant")
@@ -143,7 +146,6 @@ def create_app() -> FastAPI:
         version=__version__,
         docs_url="/docs",
     )
-
     app.add_middleware(
         CORSMiddleware,
         allow_origins=getattr(settings, "CORS_ORIGINS", ["*"]),
@@ -151,14 +153,11 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-
     # Mount routers
     from sentinel.api.dashboard_router import router as dashboard_router  # noqa: PLC0415
     from sentinel.hitl.dashboard_router import hitl_router  # noqa: PLC0415
-
     app.include_router(dashboard_router)
     app.include_router(hitl_router)
-
     return app
 
 
@@ -228,19 +227,17 @@ async def chat_completions(
 
     # 3. Sanitize prompt — strip PII before any logging or LLM call
     sanitization = await sanitizer.sanitize(original_prompt, tenant)
-
     if sanitization.blocked:
         # Log blocked request to audit chain before returning 400.
-        # Compliance requires ALL events logged, not just successful ones.
         background_tasks.add_task(
             auditor.log,
             AuditEntryInput(
                 tenant_id=tenant.tenant_id,
                 request_id=request_id,
-                prompt=original_prompt,
-                response="[BLOCKED: injection detected]",
+                prompt_hash=_sha256(original_prompt),
+                response_hash=_sha256("[BLOCKED: injection detected]"),
                 trust_score=0.0,
-                intervention=InterventionLevel.BLOCKED,
+                intervention_level=int(InterventionLevel.BLOCKED) if hasattr(InterventionLevel, "BLOCKED") else 3,
                 cost_usd=0.0,
                 latency_ms=elapsed_ms(),
             ),
@@ -254,12 +251,11 @@ async def chat_completions(
         )
 
     # Replace the last user message with the sanitized version.
-    # The LLM must NEVER receive raw PII.
     body["messages"][-1]["content"] = sanitization.sanitized_text
 
     # 4. Circuit breaker / provider routing
     try:
-        circuit_result = await circuit_breaker.call(
+        circuit_result = await circuit_breaker.circuit_breaker.call(
             body=body,
             tenant=tenant,
             call_provider=_call_llm_provider,
@@ -270,10 +266,10 @@ async def chat_completions(
             AuditEntryInput(
                 tenant_id=tenant.tenant_id,
                 request_id=request_id,
-                prompt=original_prompt,
-                response=f"[ERROR: {type(exc).__name__}]",
+                prompt_hash=_sha256(original_prompt),
+                response_hash=_sha256(f"[ERROR: {type(exc).__name__}]"),
                 trust_score=0.0,
-                intervention=InterventionLevel.ERROR,
+                intervention_level=3,
                 cost_usd=0.0,
                 latency_ms=elapsed_ms(),
             ),
@@ -286,10 +282,12 @@ async def chat_completions(
     audit_entry = AuditEntryInput(
         tenant_id=tenant.tenant_id,
         request_id=request_id,
-        prompt=original_prompt,
-        response=str(pipeline_result),
+        prompt_hash=_sha256(original_prompt),
+        response_hash=_sha256(str(pipeline_result)),
         trust_score=getattr(pipeline_result, "trust_score", 1.0),
-        intervention=getattr(pipeline_result, "intervention_level", InterventionLevel.NONE),
+        intervention_level=int(
+            getattr(pipeline_result, "intervention_level", InterventionLevel.NONE)
+        ),
         cost_usd=getattr(pipeline_result, "cost_usd", 0.0),
         latency_ms=elapsed_ms(),
     )
