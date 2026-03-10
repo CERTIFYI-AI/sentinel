@@ -71,7 +71,7 @@ class TestChatCompletionsEndpoint:
         verification, cb_result = mock_pipeline_passing
         with (
             patch("sentinel.proxy._resolve_tenant", return_value=tenant_config),
-            patch("sentinel.proxy._check_rate_limit", return_value=None),
+            patch("sentinel.proxy._check_rate_limit", return_value=True),
             patch("sentinel.layers.sanitizer.sanitize") as mock_sanitize,
             patch("sentinel.proxy._call_llm_provider") as mock_llm,
             patch("sentinel.layers.verifier.verify", return_value=verification),
@@ -112,7 +112,7 @@ class TestChatCompletionsEndpoint:
         verification, cb_result = mock_pipeline_passing
         with (
             patch("sentinel.proxy._resolve_tenant", return_value=tenant_config),
-            patch("sentinel.proxy._check_rate_limit", return_value=None),
+            patch("sentinel.proxy._check_rate_limit", return_value=True),
             patch("sentinel.layers.sanitizer.sanitize") as mock_sanitize,
             patch("sentinel.proxy._call_llm_provider", return_value="Response text."),
             patch("sentinel.layers.verifier.verify", return_value=verification),
@@ -139,7 +139,7 @@ class TestChatCompletionsEndpoint:
     ):
         with (
             patch("sentinel.proxy._resolve_tenant", return_value=tenant_config),
-            patch("sentinel.proxy._check_rate_limit", return_value=None),
+            patch("sentinel.proxy._check_rate_limit", return_value=True),
             patch("sentinel.layers.sanitizer.sanitize") as mock_sanitize,
         ):
             from sentinel.layers.sanitizer import SanitizationResult
