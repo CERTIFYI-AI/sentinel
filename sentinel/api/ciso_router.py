@@ -68,3 +68,24 @@ async def get_risk_heatmap(
     """Return risk heatmap data (category x severity matrix)."""
     # TODO: wire to PostureCalculator findings
     return []
+
+
+async def compute_posture_score(tenant_id: str) -> object:
+    """Compute the security posture score for a tenant.
+
+    Returns a SimpleNamespace with overall_score, security_score,
+    compliance_score, quality_score, hitl_score, risk_trend, trend_delta.
+    """
+    from types import SimpleNamespace
+
+    # TODO: wire to real PostureCalculator
+    return SimpleNamespace(
+        tenant_id=tenant_id,
+        overall_score=75.0,
+        security_score=70.0,
+        compliance_score=78.0,
+        quality_score=80.0,
+        hitl_score=85.0,
+        risk_trend="stable",
+        trend_delta=0.0,
+    )
