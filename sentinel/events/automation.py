@@ -181,3 +181,178 @@ def _extract_finding_category(framework_ref: str) -> str:
     if "hallucin" in ref_lower:
         return "hallucinationcritical"
     return ""
+
+
+# ---------------------------------------------------------------------------
+# Dict-based automation rules (accept plain dict events)
+# ---------------------------------------------------------------------------
+
+async def _rule_campaign_finding_to_compliance_gap(event: dict) -> object:
+    """Create a compliance gap from a security campaign finding event."""
+    payload = event.get("payload", {})
+    tenant_id = event.get("tenant_id", "")
+    from sentinel.compliance.registry import ComplianceRegistry
+    registry = ComplianceRegistry()
+    gap = await registry.create_gap(
+        tenant_id=tenant_id,
+        framework_id=payload.get("framework_id", ""),
+        control_id=payload.get("control_id", ""),
+        severity=payload.get("severity", "MEDIUM"),
+        title=payload.get("title", ""),
+        source_finding_id=payload.get("finding_id"),
+    )
+    from sentinel.events.bus import EventBus
+    bus = EventBus()
+    await bus.publish({
+        "event_type": "compliance.gap.created",
+        "tenant_id": tenant_id,
+        "payload": {"gap_id": gap.id},
+    })
+    return gap
+
+
+async def _rule_recalculate_posture(event: dict) -> None:
+    """Recalculate posture score after a significant event."""
+    tenant_id = event.get("tenant_id", "")
+    from sentinel.api.ciso_router import compute_posture_score
+    await compute_posture_score(tenant_id)
+
+
+async def _rule_eval_failure_to_hitl(event: dict) -> object:
+    """Create a HITL review item from an eval failure event."""
+    payload = event.get("payload", {})
+    tenant_id = event.get("tenant_id", "")
+    from sentinel.hitl.store import HitlStore
+    store = HitlStore()
+    item = await store.create(
+        tenant_id=tenant_id,
+        source_id=payload.get("run_id", ""),
+        source_module="evals",
+        metric=payload.get("metric"),
+        score=payload.get("score"),
+        threshold=payload.get("threshold"),
+        model_id=payload.get("model_id"),
+    )
+    return item
+
+
+async def _rule_eval_failure_to_task(event: dict) -> object:  # type: ignore[override]
+    """Create a remediation task from an eval failure event."""
+    payload = event.get("payload", {})
+    tenant_id = event.get("tenant_id", "")
+    from sentinel.tasks.task_store import TaskStore
+    store = TaskStore()
+    task = await store.create(
+        tenant_id=tenant_id,
+        title=f"Eval quality issue: {payload.get('metric', 'unknown')}",
+        description=(
+            f"Metric {payload.get('metric')} scored "
+            f"{float(payload.get('score', 0)):.2f} against "
+            f"threshold {float(payload.get('threshold', 0)):.2f}."
+        ),
+        status="OPEN",
+        priority="HIGH",
+        source_module="evals",
+        source_type="evalfailure",
+        source_id=payload.get("run_id", ""),
+        model_id=payload.get("model_id"),
+        framework_ref=None,
+    )
+    return task
+
+
+async def _rule_compliance_gap_to_task(event: dict) -> object:  # type: ignore[override]
+    """Create a remediation task from a compliance gap created event."""
+    payload = event.get("payload", {})
+    tenant_id = event.get("tenant_id", "")
+    from sentinel.tasks.task_store import TaskStore
+    store = TaskStore()
+    task = await store.create(
+        tenant_id=tenant_id,
+        title=f"Close compliance gap: {payload.get('control_id', '')} ({payload.get('framework_id', '')})",
+        description=f"Compliance gap: {payload.get('title', '')}",
+        status="OPEN",
+        priority=payload.get("severity", "MEDIUM"),
+        source_module="compliance",
+        source_type="compliancegap",
+        source_id=payload.get("gap_id", ""),
+        model_id=None,
+        framework_ref=f"{payload.get('framework_id', '')}/{payload.get('control_id', '')}",
+    )
+    return task
+
+async def run_automation_rules(event: object) -> None:  # type: ignore[override]
+    """Evaluate all automation rules for the given event (dict or SentinelEvent)."""
+    if isinstance(event, dict):
+        rules = [
+            _rule_campaign_finding_to_compliance_gap,
+            _rule_campaign_finding_to_task,
+            _rule_eval_failure_to_hitl,
+            _rule_eval_failure_to_task,
+            _rule_compliance_gap_to_task,
+            _rule_recalculate_posture,
+        ]
+        for rule in rules:
+            try:
+                await rule(event)  # type: ignore[arg-type]
+            except Exception:
+                logger.exception("Automation rule %s failed", rule.__name__)
+    else:
+        # Legacy SentinelEvent path
+        _legacy_rules = [
+            _rule_campaign_finding_to_task,
+            _rule_eval_failure_to_task,
+            _rule_compliance_gap_to_task,
+            _rule_recalculate_posture_score,
+        ]
+        for rule in _legacy_rules:
+            try:
+                await rule(event)  # type: ignore[arg-type]
+            except Exception:
+                logger.exception("Automation rule %s failed for event", rule.__name__)
+
+async def _rule_campaign_finding_to_task(event: object) -> object:  # type: ignore[override]
+    """Create a remediation task from a campaign finding (dict or SentinelEvent)."""
+    if isinstance(event, dict):
+        payload = event.get("payload", {})
+        tenant_id = event.get("tenant_id", "")
+        from sentinel.tasks.task_store import TaskStore
+        store = TaskStore()
+        task = await store.create(
+            tenant_id=tenant_id,
+            title=f"Remediate: {payload.get('title', 'Security Finding')}",
+            description=(
+                f"Security vulnerability detected in campaign {payload.get('campaign_id')}."
+            ),
+            status="OPEN",
+            priority=payload.get("severity", "HIGH"),
+            source_module="security",
+            source_type="vulnerability",
+            source_id=payload.get("finding_id", ""),
+            model_id=None,
+            framework_ref=payload.get("framework_id"),
+        )
+        return task
+    else:
+        # Legacy SentinelEvent path
+        _event = event
+        from sentinel.events.bus import EventType
+        if _event.type not in (  # type: ignore[union-attr]
+            EventType.CAMPAIGN_FINDING_CRITICAL,
+            EventType.CAMPAIGN_FINDING_HIGH,
+        ):
+            return None
+        from sentinel.tasks.task_store import TaskStore
+        store = TaskStore()
+        return await store.create(
+            tenant_id=_event.tenant_id,  # type: ignore[union-attr]
+            title=f"Remediate {_event.payload.get('title', 'Security Finding')}",  # type: ignore[union-attr]
+            description="",
+            status="OPEN",
+            priority=_event.payload.get("severity", "HIGH"),  # type: ignore[union-attr]
+            source_module="security",
+            source_type="vulnerability",
+            source_id=_event.payload.get("findingId", ""),  # type: ignore[union-attr]
+            model_id=None,
+            framework_ref=None,
+        )
