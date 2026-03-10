@@ -22,10 +22,10 @@ def _make_entry_input(tenant_id: str = "test-tenant-001") -> AuditEntryInput:
     return AuditEntryInput(
         tenant_id=tenant_id,
         request_id=str(uuid.uuid4()),
-        prompt="test prompt",
-        response="test response",
+        prompt_hash="test prompt",
+        response_hash="test response",
         trust_score=0.92,
-        intervention=0,
+        intervention_level=0,
         cost_usd=0.0002,
         latency_ms=312.5,
         metadata={"claim_scores": [], "sources": []},
@@ -42,13 +42,13 @@ class TestHashChainIntegrity:
             await log(_make_entry_input(tenant_id=tenant_id), db_conn)
 
         report = await verify_chain_integrity(tenant_id=tenant_id, db=db_conn)
-        assert report.is_intact, f"Chain broken at: {report.broken_entry_ids}"
+        assert report.intact, f"Chain broken at: {report.broken_at}"
         assert report.total_entries == 100
-        assert len(report.broken_entry_ids) == 0
+        assert len(report.broken_at) == 0
 
     async def test_corrupted_entry_is_detected(self, db_conn):
         """Manually overwrite one entry_hash in the DB; verify_chain_integrity
-        must return that entry's ID in broken_entry_ids."""
+        must return that entry's ID in broken_at."""
         tenant_id = f"corrupt-test-{uuid.uuid4().hex[:8]}"
         entries = []
         for _ in range(10):
@@ -64,17 +64,18 @@ class TestHashChainIntegrity:
         )
 
         report = await verify_chain_integrity(tenant_id=tenant_id, db=db_conn)
-        assert not report.is_intact
-        assert target_entry_id in report.broken_entry_ids
+        assert not report.intact
+        assert str(target_entry_id) in report.broken_at
 
     async def test_genesis_entry_hash_uses_tenant_seed(self, db_conn):
-        """First entry's previous_entry_hash must equal sha256(tenant_id + 'GENESIS')."""
+        """First entry's prev_hash must equal sha256(tenant_id + 'GENESIS')."""
         tenant_id = f"genesis-test-{uuid.uuid4().hex[:8]}"
         entry = await log(_make_entry_input(tenant_id=tenant_id), db_conn)
+
         expected_genesis = hashlib.sha256(
             f"{tenant_id}:GENESIS".encode()
         ).hexdigest()
-        assert entry.previous_entry_hash == expected_genesis
+        assert entry.prev_hash == expected_genesis
 
 
 class TestAuditLogAppendOnly:
@@ -82,19 +83,22 @@ class TestAuditLogAppendOnly:
 
     def test_no_delete_function_exposed(self):
         import sentinel.layers.auditor as auditor_module
+
         assert not hasattr(auditor_module, "delete")
         assert not hasattr(auditor_module, "update")
         assert not hasattr(auditor_module, "delete_entry")
 
     def test_only_allowed_public_functions(self):
         import sentinel.layers.auditor as auditor_module
+
         public_fns = [
             name for name in dir(auditor_module)
             if not name.startswith("_")
             and callable(getattr(auditor_module, name))
         ]
+
         allowed = {"log", "verify_chain_integrity", "get_entries", "export_to_csv", "annotations",
-                   "AuditEntryInput", "AuditEntry", "IntegrityReport"}
+                    "AuditEntryInput", "AuditEntry", "IntegrityReport"}
         # Ensure no unexpected write functions exist.
         for fn in public_fns:
             assert fn in allowed or fn[0].isupper(), (
@@ -113,11 +117,12 @@ class TestExportToCsv:
 
         csv_bytes: bytes = await export_to_csv(tenant_id=tenant_id, db=db_conn)
         reader = csv.DictReader(io.StringIO(csv_bytes.decode()))
+
         expected_headers = {
             "entry_id", "tenant_id", "request_id", "timestamp",
             "prompt_hash", "response_hash", "trust_score",
-            "intervention_level", "cost_usd", "latency_ms",
-            "previous_entry_hash", "entry_hash",
+            "intervention", "cost_usd", "latency_ms",
+            "prev_hash", "entry_hash",
         }
         assert set(reader.fieldnames or []) >= expected_headers
 
