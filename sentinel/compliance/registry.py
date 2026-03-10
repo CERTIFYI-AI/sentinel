@@ -573,4 +573,44 @@ def get_registry():
     global _default_registry
     return register_all()
 
+
+class ComplianceRegistry:
+    """Registry for compliance frameworks and gap management."""
+
+    def __init__(self) -> None:
+        self._frameworks: dict = {}
+
+    def register(self, framework: object) -> None:
+        """Register a compliance framework instance."""
+        fid = getattr(framework, "framework_id", None)
+        if fid:
+            self._frameworks[fid] = framework
+
+    async def create_gap(
+        self,
+        *,
+        tenant_id: str,
+        framework_id: str,
+        control_id: str,
+        severity: str,
+        title: str = "",
+        description: str = "",
+        source_finding_id: str | None = None,
+    ) -> object:
+        """Create a compliance gap record."""
+        from types import SimpleNamespace
+        import uuid as _uuid
+        gap = SimpleNamespace(
+            id=str(_uuid.uuid4()),
+            tenant_id=tenant_id,
+            framework_id=framework_id,
+            control_id=control_id,
+            severity=severity,
+            title=title,
+            description=description,
+            source_finding_id=source_finding_id,
+            status="OPEN",
+        )
+        return gap
+
 _default_registry=None
