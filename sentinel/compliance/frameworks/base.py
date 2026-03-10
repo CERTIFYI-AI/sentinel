@@ -185,10 +185,6 @@ class BaseFramework(ABC):
                     evidence_text="No signals provided for evaluation.",
                 )
                 for c in self.controls
-                    # Ensure FAIL records always have a remediation hint
-        for rec in evidence:
-            if rec.status == ControlStatus.FAIL and not rec.remediation:
-                rec.remediation = f"Review {rec.control_id} control. Investigate signals: {rec.signal_used}."
             ]
 
         evidence: list[EvidenceRecord] = []
@@ -205,6 +201,11 @@ class BaseFramework(ABC):
                     control.control_id,
                     str(exc),
                 )
+
+                # Ensure FAIL records always have a remediation hint
+        for rec in evidence:
+            if rec.status == ControlStatus.FAIL and not rec.remediation:
+                rec.remediation = f"Review {rec.control_id} control. Investigate signals: {rec.signal_used}."
         return evidence
 
     def get_metadata(self) -> FrameworkMetadata:
