@@ -1,8 +1,8 @@
 import { eventBus } from "./eventBus";
-import type { EventName, EventMap } from "./eventBus";
+import type { EventMap } from "./eventBus";
 import { queryClient } from "./queryClient";
 import { QK } from "./queryKeys";
-import { useGlobalStore } from "./store";
+import { useSentinelStore } from "./store";
 
 const WS_BASE = import.meta.env.VITE_WS_URL ?? "ws://localhost:8000/ws";
 const RECONNECT_BASE_MS = 1_000;
@@ -83,7 +83,7 @@ export function connectWs(token?: string): void {
 
   ws.onopen = () => {
     reconnectAttempt = 0;
-    useGlobalStore.getState().setWsConnected(true);
+    useSentinelStore.getState().setWsConnected(true);
     eventBus.emit("ws:connected", undefined);
   };
 
@@ -92,7 +92,7 @@ export function connectWs(token?: string): void {
   };
 
   ws.onclose = (e) => {
-    useGlobalStore.getState().setWsConnected(false);
+    useSentinelStore.getState().setWsConnected(false);
     eventBus.emit("ws:disconnected", { reason: e.reason || "closed" });
     scheduleReconnect();
   };
@@ -119,5 +119,5 @@ export function disconnectWs(): void {
     ws.close();
     ws = null;
   }
-  useGlobalStore.getState().setWsConnected(false);
+  useSentinelStore.getState().setWsConnected(false);
 }
