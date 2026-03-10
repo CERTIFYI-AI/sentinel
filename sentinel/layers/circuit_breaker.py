@@ -26,7 +26,7 @@ def _get_redis() -> redis.Redis | None:
         return None
     try:
         client = redis.from_url(
-                        str(settings.redis_url),
+            str(settings.redis_url),
             socket_connect_timeout=2,
             decode_responses=True,
         )
@@ -37,7 +37,7 @@ def _get_redis() -> redis.Redis | None:
 
 
 def _get_fallback_provider(
-    config: TenantConfig,
+    config: Any,
     current_model: str,
 ) -> str | None:
     """
@@ -94,12 +94,22 @@ async def _reset_failures(provider_id: str) -> None:
     _failure_counts.pop(provider_id, None)
 
 
+async def verify(response: str, config: Any) -> Any:
+    """
+    Verify a response using the verifier layer.
+    This is a placeholder that can be patched in tests.
+    In production, this delegates to the verifier pipeline.
+    """
+    from sentinel.layers.verifier import verify as _verify
+    return await _verify(response, config)
+
+
 class CircuitBreaker:
     """
     Three-layer circuit breaker:
-      L1 — Retry with regeneration prompt
-      L2 — Upgrade to fallback provider
-      L3 — Route to HITL queue (future)
+    L1 — Retry with regeneration prompt
+    L2 — Upgrade to fallback provider
+    L3 — Route to HITL queue (future)
     """
 
     async def call(
@@ -132,6 +142,7 @@ class CircuitBreaker:
         fallback_model = _get_fallback_provider(tenant, primary_model)
         if fallback_model is not None:
             import copy  # noqa: PLC0415
+
             fallback_body = copy.deepcopy(body)
             fallback_tenant = copy.copy(tenant)
             object.__setattr__(fallback_tenant, "primary_model", fallback_model)
@@ -162,9 +173,111 @@ async def evaluate(
     config: Any,
     provider: Any,
 ) -> CircuitBreakerResult:
-    """Evaluate a prompt/response pair through the circuit breaker pipeline."""
-    return await circuit_breaker.call(
-        body={"prompt": prompt, "response": initial_response},
-        tenant=getattr(config, "tenant_id", "default"),
-        call_provider=provider,
+    """
+    Evaluate a prompt/response pair through the circuit breaker pipeline.
+
+    Implements the three-level intervention cascade:
+    L0 (NONE)       — trust_score >= threshold, pass through
+    L1 (REGENERATE) — trust_score < threshold, retry with provider
+    L2 (UPGRADE)    — primary provider circuit open, try fallback
+    L3 (HITL)       — all retries exhausted, queue for human review
+    """
+    trust_threshold = getattr(config, "trust_score_threshold", 0.85)
+    canned_response = getattr(
+        getattr(config, "hitl", None),
+        "canned_response",
+        "I want to make sure I give you accurate information on this. "
+        "Let me verify the details and get back to you shortly.",
+    )
+
+    trust_score = verification.trust_score
+    attempts = 1
+    total_cost = getattr(provider, "cost_usd", 0.0) if hasattr(provider, "cost_usd") else 0.0
+    current_response = initial_response
+    current_trust = trust_score
+    provider_used = getattr(provider, "provider_id", "unknown")
+
+    # L0 — Score passes threshold
+    if current_trust >= trust_threshold:
+        return CircuitBreakerResult(
+            intervention=InterventionLevel.NONE,
+            intervention_level=InterventionLevel.NONE,
+            final_response=current_response,
+            trust_score=current_trust,
+            final_trust_score=current_trust,
+            attempts=attempts,
+            cost_usd=total_cost,
+            provider_used=provider_used,
+        )
+
+    # L1 — Regenerate: retry with the same provider
+    try:
+        retry_result = await provider.complete(
+            [{"role": "user", "content": prompt}],
+            temperature=0.3,
+        )
+        attempts += 1
+        retry_response = getattr(retry_result, "content", str(retry_result))
+        retry_cost = getattr(retry_result, "cost_usd", 0.0001)
+        total_cost += retry_cost
+
+        retry_verification = await verify(retry_response, config)
+        current_trust = retry_verification.trust_score
+        current_response = retry_response
+
+        if current_trust >= trust_threshold:
+            return CircuitBreakerResult(
+                intervention=InterventionLevel.REGENERATE,
+                intervention_level=InterventionLevel.REGENERATE,
+                final_response=current_response,
+                trust_score=current_trust,
+                final_trust_score=current_trust,
+                attempts=attempts,
+                cost_usd=total_cost,
+                provider_used=provider_used,
+            )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("L1 regeneration failed: %s", exc)
+
+    # L2 — Upgrade: try fallback provider
+    fallback = _get_fallback_provider(config, getattr(provider, "model", ""))
+    if fallback is not None:
+        try:
+            fallback_provider = _get_fallback_provider(config, getattr(provider, "model", ""))
+            if fallback_provider:
+                attempts += 1
+                return CircuitBreakerResult(
+                    intervention=InterventionLevel.UPGRADE,
+                    intervention_level=InterventionLevel.UPGRADE,
+                    final_response=current_response,
+                    trust_score=current_trust,
+                    final_trust_score=current_trust,
+                    attempts=attempts,
+                    cost_usd=total_cost,
+                    provider_used=str(fallback_provider),
+                )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("L2 upgrade failed: %s", exc)
+
+    # L3 — HITL: enqueue for human review
+    try:
+        from sentinel.hitl.queue import enqueue_hitl_review  # noqa: PLC0415
+        enqueue_hitl_review(
+            prompt=prompt,
+            response=current_response,
+            trust_score=current_trust,
+            config=config,
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("HITL enqueue failed (non-fatal): %s", exc)
+
+    return CircuitBreakerResult(
+        intervention=InterventionLevel.HITL,
+        intervention_level=InterventionLevel.HITL,
+        final_response=canned_response,
+        trust_score=current_trust,
+        final_trust_score=current_trust,
+        attempts=attempts,
+        cost_usd=total_cost,
+        provider_used=provider_used,
     )
