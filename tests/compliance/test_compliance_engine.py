@@ -1,4 +1,4 @@
-"Tests for the compliance engine and all 7 frameworks."
+"Tests for the compliance engine and all 11 frameworks."
 import pytest
 from sentinel.compliance.evidence_store import EvidenceStore, EvidenceRecord
 from sentinel.compliance.report_builder import ReportBuilder
@@ -506,7 +506,7 @@ class TestIeee7000Framework:
 class TestAllFrameworksRegistry:
     def test_registry_contains_all_7_frameworks(self):
         from sentinel.compliance.frameworks import FRAMEWORK_REGISTRY
-        assert len(FRAMEWORK_REGISTRY) == 7
+        assert len(FRAMEWORK_REGISTRY) == 11
 
     def test_all_frameworks_have_metadata(self):
         from sentinel.compliance.frameworks import FRAMEWORK_REGISTRY
