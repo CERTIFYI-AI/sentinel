@@ -157,6 +157,22 @@ The response includes Sentinel headers:
 | | [Scaling Guide](docs/ops/scaling-guide.md) | GPU acceleration, horizontal scaling, Kubernetes |
 | | [Monitoring Guide](docs/ops/monitoring-guide.md) | Grafana dashboards and alerting |
 
+## Security Intelligence Module
+
+Sentinel includes a comprehensive Security Intelligence dashboard for monitoring, detecting, and managing security threats across your AI infrastructure.
+
+**Key Capabilities:**
+- Real-time threat feed with severity classification
+- Automated security scanning (Full, Quick, API, Model)
+- Attack surface mapping and endpoint risk scoring
+- Vulnerability lifecycle management with CVSS scoring
+- Red team adversarial testing lab
+- Policy firewall rule engine
+- API key and secrets vault management
+- Centralized security overview dashboard
+
+See [Security Module Documentation](docs/SECURITY_MODULE.md) for full details.
+
 ## Contributing
 
 Sentinel is Apache 2.0 licensed and open to contributions. Start by reading [CONTRIBUTING.md](CONTRIBUTING.md). The fastest path to a merged PR is picking a `good first issue` labelled issue, running `pip install -e ".[dev]"` and `pytest tests/ -v`, making a focused change, and opening a pull request against `main`. Every PR must pass `ruff check .` and `mypy sentinel/`.

@@ -201,3 +201,83 @@ Create a module in `sentinel/layers/` with `startup(settings)` and an async func
 ### Adding Golden Source documents
 
 Use `scripts/seed_golden_source.py`. Documents are chunked (512 tokens, 50-token overlap) and embedded via `SentenceTransformer`.
+
+
+---
+
+## Security Intelligence Module Architecture
+
+The Security Intelligence module extends the Sentinel dashboard with comprehensive security monitoring capabilities.
+
+### Component Hierarchy
+
+```
+App.tsx (Router)
+  |-- Sidebar.tsx (Navigation)
+  |-- SecurityOverview.tsx (Dashboard Hub)
+  |    |-- Metrics Cards
+  |    |-- Recent Events
+  |    |-- Quick Actions -> All Sub-modules
+  |
+  |-- ThreatFeed.tsx
+  |    |-- Threat List Table
+  |    |-- Severity Filter
+  |    |-- Stat Cards
+  |
+  |-- ScanCenter.tsx
+  |    |-- Scan History Table
+  |    |-- New Scan Trigger
+  |    |-- Type/Status Filters
+  |
+  |-- AttackSurface.tsx
+  |    |-- Endpoint Registry
+  |    |-- Risk Score Matrix
+  |    |-- Add Endpoint Form
+  |
+  |-- VulnTracker.tsx
+  |    |-- Vulnerability Table
+  |    |-- Status Workflow
+  |    |-- CVSS Scoring
+  |
+  |-- RedTeamLab.tsx
+  |    |-- Campaign Manager
+  |    |-- Attack Simulations
+  |    |-- Results Dashboard
+  |
+  |-- PolicyFirewall.tsx
+  |    |-- Rule Engine Table
+  |    |-- Enable/Disable Toggle
+  |    |-- Priority Management
+  |
+  |-- KeysVault.tsx
+       |-- Key Inventory
+       |-- Rotation Manager
+       |-- Usage Analytics
+```
+
+### Data Flow
+
+```
+Sentinel API --> Security Middleware --> Dashboard Components
+     |                                        |
+     v                                        v
+Threat Engine                          React State (hooks)
+     |                                        |
+     v                                        v
+Policy Engine <-- Rule Evaluation <-- PolicyFirewall UI
+     |                                        |
+     v                                        v
+Scan Runner  --> Results Store  --> ScanCenter/VulnTracker UI
+```
+
+### Module Integration Map
+
+The Security Intelligence module connects with core Sentinel components:
+
+- **Proxy Pipeline**: PolicyFirewall rules feed into the proxy request/response pipeline
+- **Compliance Engine**: Security findings map to compliance framework controls
+- **Audit System**: All security events are logged to the audit trail
+- **Alert System**: Critical threats trigger real-time notifications
+- **RBAC**: Role-based access controls gate security operations
+
+For detailed module documentation, see [SECURITY_MODULE.md](./SECURITY_MODULE.md).

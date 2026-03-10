@@ -271,3 +271,140 @@ Default: 60 requests per minute per tenant (configurable via `SENTINEL_RATE_LIMI
 - [SDK Guide](sdk-guide.md) -- Python client for the API
 - [Error Codes Reference](reference/error-codes.md) -- full list of error codes
 - [Configuration](configuration.md) -- server and provider settings
+
+- [Security Module](SECURITY_MODULE.md) -- security intelligence endpoints
+
+---
+
+## Security Intelligence API Endpoints
+
+The following endpoints power the Security Intelligence dashboard module.
+
+### Threats
+
+#### `GET /api/v1/security/threats`
+
+List all detected threats with optional filtering.
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| severity | string | Filter by severity: Critical, High, Medium, Low |
+| status | string | Filter by status: Active, Investigating, Mitigated, Resolved |
+| source | string | Filter by detection source |
+| limit | integer | Results per page (default: 50) |
+| offset | integer | Pagination offset |
+
+**Response:** `200 OK`
+```json
+{
+  "threats": [{"id": "THR-001", "title": "...", "severity": "Critical", ...}],
+  "total": 42,
+  "page": 1
+}
+```
+
+#### `POST /api/v1/security/threats/:id/investigate`
+
+Trigger investigation workflow for a specific threat.
+
+---
+
+### Scans
+
+#### `GET /api/v1/security/scans`
+
+List scan history with results summary.
+
+#### `POST /api/v1/security/scans`
+
+Trigger a new security scan.
+
+**Request Body:**
+```json
+{
+  "type": "Full Scan | Quick Scan | API Scan | Model Scan",
+  "target": "string",
+  "config": {}
+}
+```
+
+---
+
+### Attack Surface
+
+#### `GET /api/v1/security/endpoints`
+
+List all monitored endpoints with risk scores.
+
+#### `POST /api/v1/security/endpoints`
+
+Register a new endpoint for monitoring.
+
+#### `PUT /api/v1/security/endpoints/:id`
+
+Update endpoint configuration or risk assessment.
+
+---
+
+### Vulnerabilities
+
+#### `GET /api/v1/security/vulnerabilities`
+
+List vulnerabilities with CVSS scores and status.
+
+#### `PATCH /api/v1/security/vulnerabilities/:id`
+
+Update vulnerability status or assignment.
+
+---
+
+### Red Team
+
+#### `GET /api/v1/security/redteam/campaigns`
+
+List adversarial test campaigns.
+
+#### `POST /api/v1/security/redteam/campaigns`
+
+Create and launch a new red team campaign.
+
+---
+
+### Policy Rules
+
+#### `GET /api/v1/security/policies`
+
+List all firewall policy rules.
+
+#### `POST /api/v1/security/policies`
+
+Create a new policy rule.
+
+#### `PUT /api/v1/security/policies/:id`
+
+Update rule configuration, priority, or enabled status.
+
+#### `DELETE /api/v1/security/policies/:id`
+
+Remove a policy rule.
+
+---
+
+### Keys Management
+
+#### `GET /api/v1/security/keys`
+
+List API keys (masked) with usage statistics.
+
+#### `POST /api/v1/security/keys`
+
+Generate a new API key.
+
+#### `POST /api/v1/security/keys/:id/rotate`
+
+Rotate an existing API key.
+
+#### `DELETE /api/v1/security/keys/:id`
+
+Revoke an API key.
