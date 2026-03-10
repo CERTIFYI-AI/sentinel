@@ -10,6 +10,7 @@ import hashlib
 import io
 import json
 import uuid
+
 from datetime import datetime, timezone
 
 import pytest
@@ -40,7 +41,6 @@ class TestHashChainIntegrity:
         tenant_id = f"chain-test-{uuid.uuid4().hex[:8]}"
         for _ in range(100):
             await log(_make_entry_input(tenant_id=tenant_id), db_conn)
-
         report = await verify_chain_integrity(tenant_id=tenant_id, db=db_conn)
         assert report.intact, f"Chain broken at: {report.broken_at}"
         assert report.total_entries == 100
@@ -60,9 +60,8 @@ class TestHashChainIntegrity:
         await db_conn.execute(
             "UPDATE audit_log SET entry_hash = $1 WHERE entry_id = $2",
             "CORRUPTED_HASH_VALUE_THAT_WILL_NOT_VERIFY",
-            target_entry_id,
+            str(target_entry_id),
         )
-
         report = await verify_chain_integrity(tenant_id=tenant_id, db=db_conn)
         assert not report.intact
         assert str(target_entry_id) in report.broken_at
@@ -71,7 +70,6 @@ class TestHashChainIntegrity:
         """First entry's prev_hash must equal sha256(tenant_id + 'GENESIS')."""
         tenant_id = f"genesis-test-{uuid.uuid4().hex[:8]}"
         entry = await log(_make_entry_input(tenant_id=tenant_id), db_conn)
-
         expected_genesis = hashlib.sha256(
             f"{tenant_id}:GENESIS".encode()
         ).hexdigest()
@@ -83,20 +81,17 @@ class TestAuditLogAppendOnly:
 
     def test_no_delete_function_exposed(self):
         import sentinel.layers.auditor as auditor_module
-
         assert not hasattr(auditor_module, "delete")
         assert not hasattr(auditor_module, "update")
         assert not hasattr(auditor_module, "delete_entry")
 
     def test_only_allowed_public_functions(self):
         import sentinel.layers.auditor as auditor_module
-
         public_fns = [
             name for name in dir(auditor_module)
             if not name.startswith("_")
             and callable(getattr(auditor_module, name))
         ]
-
         allowed = {"log", "verify_chain_integrity", "get_entries", "export_to_csv", "annotations",
                     "AuditEntryInput", "AuditEntry", "IntegrityReport"}
         # Ensure no unexpected write functions exist.
@@ -121,7 +116,7 @@ class TestExportToCsv:
         expected_headers = {
             "entry_id", "tenant_id", "request_id", "timestamp",
             "prompt_hash", "response_hash", "trust_score",
-            "intervention", "cost_usd", "latency_ms",
+            "intervention_level", "cost_usd", "latency_ms",
             "prev_hash", "entry_hash",
         }
         assert set(reader.fieldnames or []) >= expected_headers
