@@ -10,7 +10,17 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from sentinel.proxy import app
+from sentinel.proxy import app, _get_db
+
+
+# ---------------------------------------------------------------------------
+# Override _get_db to avoid real database connections in tests
+# ---------------------------------------------------------------------------
+async def _mock_get_db():
+    """Yield a MagicMock instead of a real asyncpg connection."""
+    yield MagicMock()
+
+app.dependency_overrides[_get_db] = _mock_get_db
 
 
 @pytest.fixture
@@ -79,6 +89,7 @@ class TestChatCompletionsEndpoint:
                 latency_ms=12.0,
             )
             mock_llm.return_value = "The Acme Medical API uses OAuth 2.0 with PKCE."
+
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
                 resp = await client.post(
                     "/v1/chat/completions",
@@ -90,10 +101,10 @@ class TestChatCompletionsEndpoint:
                     },
                     headers=valid_auth_headers,
                 )
-        assert resp.status_code == 200
-        body = resp.json()
-        assert "choices" in body
-        assert body["choices"][0]["message"]["content"]
+            assert resp.status_code == 200
+            body = resp.json()
+            assert "choices" in body
+            assert body["choices"][0]["message"]["content"]
 
     async def test_trust_score_header_present(
         self, valid_auth_headers, mock_pipeline_passing, tenant_config
@@ -114,13 +125,14 @@ class TestChatCompletionsEndpoint:
                 sanitized_text="test", redaction_map={}, blocked=False,
                 injection_score=0.01, detected_entities=[], latency_ms=5.0,
             )
+
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
                 resp = await client.post(
                     "/v1/chat/completions",
                     json={"model": "gpt-4o-mini", "messages": [{"role": "user", "content": "hi"}]},
                     headers=valid_auth_headers,
                 )
-        assert "x-sentinel-trust-score" in resp.headers
+            assert "x-sentinel-trust-score" in resp.headers
 
     async def test_blocked_injection_returns_400(
         self, valid_auth_headers, tenant_config, injection_prompt
@@ -140,13 +152,14 @@ class TestChatCompletionsEndpoint:
                 detected_entities=[],
                 latency_ms=15.0,
             )
+
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
                 resp = await client.post(
                     "/v1/chat/completions",
                     json={"model": "gpt-4o-mini", "messages": [{"role": "user", "content": injection_prompt}]},
                     headers=valid_auth_headers,
                 )
-        assert resp.status_code == 400
+            assert resp.status_code == 400
 
     async def test_missing_auth_returns_401(self):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -162,7 +175,7 @@ class TestModelsEndpoint:
         with patch("sentinel.proxy._resolve_tenant", return_value=tenant_config):
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
                 resp = await client.get("/v1/models", headers=valid_auth_headers)
-        assert resp.status_code == 200
+            assert resp.status_code == 200
 
 
 class TestMetricsEndpoint:
