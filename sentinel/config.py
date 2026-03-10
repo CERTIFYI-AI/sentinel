@@ -185,6 +185,13 @@ class TenantConfig(BaseModel):
     config: SentinelConfig = Field(default_factory=SentinelConfig)
     api_key_hash: str = ""
 
+    @property
+    def primary_model(self) -> str:
+        """Return the primary model from the first provider config."""
+        if self.config.providers:
+            return self.config.providers[0].primary_model
+        return self.config.fallback_model
+
 
 # ---------------------------------------------------------------------------
 # SentinelSettings (BaseSettings - used for env-based config loading)
