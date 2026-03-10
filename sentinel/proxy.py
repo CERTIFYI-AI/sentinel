@@ -184,6 +184,23 @@ async def get_metrics() -> PlainTextResponse:
     )
 
 
+@app.get("/v1/models")
+async def list_models(
+    credentials: HTTPAuthorizationCredentials = Depends(_bearer),
+    db: asyncpg.Connection = Depends(_get_db),
+) -> dict[str, Any]:
+    """OpenAI-compatible model listing endpoint."""
+    tenant = await _resolve_tenant(credentials, db)
+    providers = getattr(tenant, "config", None)
+    models = []
+    if providers and hasattr(providers, "providers"):
+        for p in providers.providers:
+            models.append({"id": p.primary_model, "object": "model", "owned_by": p.primary_name})
+            if p.fallback_model:
+                models.append({"id": p.fallback_model, "object": "model", "owned_by": p.fallback_name})
+    return {"object": "list", "data": models}
+
+
 @app.post("/v1/chat/completions")
 async def chat_completions(
     request_body: dict[str, Any],
