@@ -29,7 +29,6 @@ def _make_verification(trust_score: float) -> VerificationResult:
 
 class TestInterventionLevelNone:
     """A response with trust_score >= threshold returns NONE immediately."""
-
     pytestmark = pytest.mark.asyncio
 
     async def test_passing_score_returns_none(
@@ -56,7 +55,6 @@ class TestInterventionLevelNone:
 
 class TestInterventionLevelRegenerate:
     """trust_score=0.60 triggers Level 1; if retry passes, returns REGENERATE."""
-
     pytestmark = pytest.mark.asyncio
 
     async def test_low_score_triggers_regenerate(
@@ -64,12 +62,11 @@ class TestInterventionLevelRegenerate:
     ):
         first_verification = _make_verification(0.60)
         second_verification = _make_verification(0.88)  # Retry passes.
-        call_count = 0
 
         async def _verify_side_effect(response, config):
-            nonlocal call_count
-            call_count += 1
-            return second_verification if call_count > 1 else first_verification
+            # The verify function is only called during L1 retry.
+            # First (and only) call should return the passing score.
+            return second_verification
 
         with (
             patch("sentinel.layers.circuit_breaker._get_redis") as mock_redis,
@@ -94,18 +91,17 @@ class TestInterventionLevelRegenerate:
 
 class TestCircuitBreakerOpenState:
     """5 consecutive failures within 60s marks the provider OPEN; Level 2 fires immediately."""
-
     pytestmark = pytest.mark.asyncio
 
     async def test_provider_marked_open_after_threshold(
         self, tenant_config, mock_provider
     ):
         import json
-
         failure_state = json.dumps(
             {"failure_count": 5, "last_failure_ts": time.time()}
         )
         second_verification = _make_verification(0.90)
+
         with (
             patch("sentinel.layers.circuit_breaker._get_redis") as mock_redis,
             patch("sentinel.layers.circuit_breaker.verify", return_value=second_verification),
@@ -133,13 +129,13 @@ class TestCircuitBreakerOpenState:
 
 class TestInterventionLevelHITL:
     """Level 3: all retries fail — should enqueue Celery task and return canned response."""
-
     pytestmark = pytest.mark.asyncio
 
     async def test_hitl_returns_canned_response(
         self, tenant_config, mock_provider
     ):
         always_fail = _make_verification(0.40)
+
         with (
             patch("sentinel.layers.circuit_breaker._get_redis") as mock_redis,
             patch("sentinel.layers.circuit_breaker.verify", return_value=always_fail),
@@ -151,7 +147,8 @@ class TestInterventionLevelHITL:
                 set=AsyncMock(),
                 incr=AsyncMock(return_value=1),
             )
-            mock_fallback.return_value = mock_provider
+            # Return None so L2 is skipped and we reach L3 HITL
+            mock_fallback.return_value = None
             mock_enqueue.return_value = "task-id-123"
             result = await evaluate(
                 prompt="How many servers does Acme use?",
@@ -168,7 +165,6 @@ class TestInterventionLevelHITL:
 
 class TestCostTracking:
     """cost_usd accumulates across all retry attempts."""
-
     pytestmark = pytest.mark.asyncio
 
     async def test_cost_increases_with_retries(
@@ -176,12 +172,9 @@ class TestCostTracking:
     ):
         first = _make_verification(0.60)
         second = _make_verification(0.88)
-        call_count = 0
 
         async def _verify_side_effect(response, config):
-            nonlocal call_count
-            call_count += 1
-            return second if call_count > 1 else first
+            return second
 
         with (
             patch("sentinel.layers.circuit_breaker._get_redis") as mock_redis,
