@@ -15,7 +15,7 @@ export const QK = {
   apiKeys: ["proxy", "api-keys"] as const,
 
   // EVALS MODULE
-  evalRuns: (page: number) => ["evals", "runs", page] as const,
+  evalRuns: ["evals", "runs"] as const,
   evalRun: (id: string) => ["evals", "runs", id] as const,
   evalDatasets: ["evals", "datasets"] as const,
   evalDataset: (id: string) => ["evals", "datasets", id] as const,
@@ -23,9 +23,14 @@ export const QK = {
   evalMetricRun: (id: string) => ["evals", "metrics", id] as const,
   evalTechniques: ["evals", "techniques"] as const,
   evalArena: ["evals", "arena"] as const,
+  evalSummary: ["evals", "summary"] as const,
+  evalTemplates: ["evals", "templates"] as const,
 
   // SECURITY MODULE
   securityPosture: ["security", "posture"] as const,
+  securityOverview: ["security", "overview"] as const,
+  securityFindings: ["security", "findings"] as const,
+  threatFeed: ["security", "threats"] as const,
   campaigns: (page: number) =>
     ["security", "campaigns", page] as const,
   campaign: (id: string) => ["security", "campaigns", id] as const,
@@ -39,8 +44,9 @@ export const QK = {
     ["security", "vulns", page, severity] as const,
 
   // TASKS (cross-module)
-  tasks: (filters: object) => ["tasks", filters] as const,
+  tasks: ["tasks"] as const,
   task: (id: string) => ["tasks", id] as const,
+  taskStats: ["tasks", "stats"] as const,
 
   // NOTIFICATIONS (cross-module)
   notifications: ["notifications"] as const,
@@ -49,6 +55,10 @@ export const QK = {
   // CISO AGGREGATES
   cisoPosture: ["ciso", "posture"] as const,
   cisoDeployments: ["ciso", "deployments"] as const,
+  cisoMetrics: ["ciso", "metrics"] as const,
+  riskTrend: ["ciso", "risk-trend"] as const,
+  complianceFrameworks: ["ciso", "frameworks"] as const,
+  executiveSummary: ["ciso", "executive-summary"] as const,
   boardReportData: (config: object) =>
     ["ciso", "report", config] as const,
 } as const;
