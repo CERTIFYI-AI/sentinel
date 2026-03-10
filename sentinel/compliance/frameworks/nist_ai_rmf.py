@@ -18,7 +18,7 @@ class NISTAIRMFFramework(BaseFramework):
         Control('gv4_1_genai','Data Privacy in GPAI (GenAI Profile)','GV-4.1, NIST AI 600-1 GenAI Profile','Data privacy risks in generative AI addressed.',True),
     ]
     def _r(self,c,s,sc,sig,val,txt,rem=None):
-        return EvidenceRecord(self.metadata.framework_id,self.metadata.framework_name,c.control_id,c.control_name,c.article_ref,s,sc,sig,val,txt,rem)
+        return EvidenceRecord(control_id=c.control_id,framework_id=self.metadata.framework_id,framework_name=self.metadata.framework_name,control_name=c.control_name,article_ref=c.article_ref,status=s,score=sc,signal_used=sig,signal_value=val,evidence_text=txt,remediation=rem)
     def _evaluate_control(self,control,entry,result,config):
         m={'govern4_1':self._govern4_1,'map1_1':self._map1_1,'map2_2':self._map2_2,'measure1_1':self._measure1_1,'measure2_6':self._measure2_6,'measure2_7':self._measure2_7,'manage1_3':self._manage1_3,'manage2_2':self._manage2_2,'gv1_1_genai':self._gv1_1,'gv4_1_genai':self._gv4_1}
         return m[control.control_id](control,entry,result,config)

@@ -1,145 +1,73 @@
-import { useState } from "react";
-import PageWrapper from "@/components/PageWrapper";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Shield, ShieldCheck, ShieldAlert, ShieldX, Plus, RefreshCw } from "lucide-react";
+import { useState } from 'react';
+import { Card, CardContent } from '../../components/ui/card';
+import { Shield, Plus, ToggleLeft, ToggleRight, AlertTriangle, CheckCircle, Clock, Zap, Edit, Trash2 } from 'lucide-react';
 
-interface Policy {
-  id: string;
-  name: string;
-  description: string;
-  category: "access" | "data" | "network" | "compliance";
-  status: "active" | "inactive" | "violation";
-  lastUpdated: string;
-  enforced: boolean;
-  violations: number;
+interface PolicyRule {
+  id: string; name: string; type: 'block' | 'allow' | 'monitor' | 'rate-limit';
+  target: string; condition: string; enabled: boolean;
+  hits: number; lastTriggered: string | null; severity: string;
 }
 
-const POLICIES: Policy[] = [
-  { id: "POL-001", name: "MFA Enforcement", description: "Require multi-factor authentication for all admin accounts", category: "access", status: "active", lastUpdated: "2024-01-15", enforced: true, violations: 0 },
-  { id: "POL-002", name: "Data Encryption at Rest", description: "All sensitive data must be encrypted using AES-256", category: "data", status: "active", lastUpdated: "2024-01-14", enforced: true, violations: 2 },
-  { id: "POL-003", name: "Egress Filtering", description: "Block unauthorized outbound connections to unknown IPs", category: "network", status: "active", lastUpdated: "2024-01-13", enforced: true, violations: 5 },
-  { id: "POL-004", name: "GDPR Data Retention", description: "Auto-delete personal data after 90-day retention period", category: "compliance", status: "violation", lastUpdated: "2024-01-12", enforced: true, violations: 12 },
-  { id: "POL-005", name: "API Rate Limiting", description: "Enforce rate limits on all public-facing API endpoints", category: "network", status: "active", lastUpdated: "2024-01-11", enforced: true, violations: 1 },
-  { id: "POL-006", name: "Password Complexity", description: "Minimum 12 chars with uppercase, lowercase, number, symbol", category: "access", status: "active", lastUpdated: "2024-01-10", enforced: true, violations: 3 },
-  { id: "POL-007", name: "PII Masking", description: "Mask personally identifiable information in logs and exports", category: "data", status: "inactive", lastUpdated: "2024-01-09", enforced: false, violations: 0 },
-  { id: "POL-008", name: "SOC 2 Audit Trail", description: "Maintain complete audit logs for all system changes", category: "compliance", status: "active", lastUpdated: "2024-01-08", enforced: true, violations: 0 },
+const INITIAL_RULES: PolicyRule[] = [
+  { id: 'PF-001', name: 'Block Prompt Injection Patterns', type: 'block', target: 'All Models', condition: 'Input matches injection signatures', enabled: true, hits: 1247, lastTriggered: '2025-03-10T01:30:00Z', severity: 'critical' },
+  { id: 'PF-002', name: 'Rate Limit API Calls', type: 'rate-limit', target: 'API Gateway', condition: '> 100 req/min per user', enabled: true, hits: 892, lastTriggered: '2025-03-10T02:00:00Z', severity: 'medium' },
+  { id: 'PF-003', name: 'Monitor PII in Outputs', type: 'monitor', target: 'All Models', condition: 'Output contains PII patterns', enabled: true, hits: 456, lastTriggered: '2025-03-09T22:00:00Z', severity: 'high' },
+  { id: 'PF-004', name: 'Block Model Weight Access', type: 'block', target: 'Model Server', condition: 'Unauthorized weight download attempt', enabled: true, hits: 23, lastTriggered: '2025-03-08T10:00:00Z', severity: 'critical' },
+  { id: 'PF-005', name: 'Allow Internal Tool Calls', type: 'allow', target: 'Agent Pipeline', condition: 'Tool call from approved list', enabled: true, hits: 5621, lastTriggered: '2025-03-10T02:15:00Z', severity: 'low' },
+  { id: 'PF-006', name: 'Block Jailbreak Patterns', type: 'block', target: 'Chat Models', condition: 'Input matches jailbreak DB', enabled: false, hits: 78, lastTriggered: '2025-03-07T14:00:00Z', severity: 'high' },
+  { id: 'PF-007', name: 'Monitor External API Calls', type: 'monitor', target: 'Agent Pipeline', condition: 'Outbound HTTP to non-allowlisted domains', enabled: true, hits: 234, lastTriggered: '2025-03-09T16:00:00Z', severity: 'medium' },
+  { id: 'PF-008', name: 'Rate Limit Embedding Requests', type: 'rate-limit', target: 'Embedding Service', condition: '> 500 req/min per tenant', enabled: true, hits: 45, lastTriggered: '2025-03-06T08:00:00Z', severity: 'low' },
 ];
 
-const CATEGORY_COLORS: Record<string, string> = {
-  access: "text-blue-400",
-  data: "text-purple-400",
-  network: "text-orange-400",
-  compliance: "text-green-400",
-};
+const typeColor: Record<string, string> = { block: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', allow: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', monitor: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', 'rate-limit': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' };
 
 export default function PolicyFirewall() {
-  const [policies, setPolicies] = useState(POLICIES);
-  const [filter, setFilter] = useState<string>("all");
+  const [rules, setRules] = useState(INITIAL_RULES);
+  const [showAdd, setShowAdd] = useState(false);
 
-  const filtered = filter === "all" ? policies : policies.filter(p => p.category === filter);
-  const activeCount = policies.filter(p => p.status === "active").length;
-  const violationCount = policies.filter(p => p.status === "violation").length;
-  const totalViolations = policies.reduce((sum, p) => sum + p.violations, 0);
-
-  const toggleEnforcement = (id: string) => {
-    setPolicies(prev => prev.map(p => p.id === id ? { ...p, enforced: !p.enforced, status: !p.enforced ? "active" : "inactive" } : p));
-  };
+  const toggleRule = (id: string) => setRules(r => r.map(rule => rule.id === id ? { ...rule, enabled: !rule.enabled } : rule));
 
   return (
-    <PageWrapper title="Policy Firewall" subtitle="Define, enforce, and monitor security policies across your infrastructure">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card className="bg-slate-900 border-slate-800">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <ShieldCheck className="h-8 w-8 text-green-400" />
-              <div>
-                <p className="text-2xl font-bold text-slate-100">{activeCount}</p>
-                <p className="text-xs text-slate-500">Active Policies</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-slate-900 border-slate-800">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <ShieldAlert className="h-8 w-8 text-red-400" />
-              <div>
-                <p className="text-2xl font-bold text-slate-100">{violationCount}</p>
-                <p className="text-xs text-slate-500">In Violation</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-slate-900 border-slate-800">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <ShieldX className="h-8 w-8 text-yellow-400" />
-              <div>
-                <p className="text-2xl font-bold text-slate-100">{totalViolations}</p>
-                <p className="text-xs text-slate-500">Total Violations</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-slate-900 border-slate-800">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <Shield className="h-8 w-8 text-blue-400" />
-              <div>
-                <p className="text-2xl font-bold text-slate-100">{policies.length}</p>
-                <p className="text-xs text-slate-500">Total Policies</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h1 className="text-2xl font-bold text-slate-900 dark:text-white">Policy Firewall</h1><p className="text-sm text-slate-500 mt-1">AI security policy rules and enforcement</p></div>
+        <button onClick={() => setShowAdd(!showAdd)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"><Plus className="w-4 h-4" /> Add Rule</button>
       </div>
 
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex gap-2">
-          {["all", "access", "data", "network", "compliance"].map(cat => (
-            <Button key={cat} size="sm" variant={filter === cat ? "default" : "outline"} onClick={() => setFilter(cat)} className="capitalize text-xs">
-              {cat}
-            </Button>
-          ))}
-        </div>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" className="gap-1"><RefreshCw className="h-3 w-3" />Sync</Button>
-          <Button size="sm" className="gap-1"><Plus className="h-3 w-3" />Add Policy</Button>
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        {filtered.map(policy => (
-          <Card key={policy.id} className="bg-slate-900 border-slate-800">
-            <CardContent className="py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-1">
-                    <span className="text-xs font-mono text-slate-500">{policy.id}</span>
-                    <h4 className="text-sm font-semibold text-slate-100">{policy.name}</h4>
-                    <Badge variant={policy.status === "active" ? "default" : policy.status === "violation" ? "destructive" : "secondary"} className="text-xs">
-                      {policy.status}
-                    </Badge>
-                    <span className={`text-xs capitalize ${CATEGORY_COLORS[policy.category]}`}>{policy.category}</span>
-                  </div>
-                  <p className="text-xs text-slate-500">{policy.description}</p>
-                  <div className="flex gap-4 mt-2 text-xs text-slate-500">
-                    <span>Updated: {policy.lastUpdated}</span>
-                    {policy.violations > 0 && <span className="text-red-400">{policy.violations} violations</span>}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-500">Enforced</span>
-                  <Switch checked={policy.enforced} onCheckedChange={() => toggleEnforcement(policy.id)} />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      <div className="grid grid-cols-4 gap-4">
+        {[{ l: 'Total Rules', v: rules.length, c: 'blue' }, { l: 'Active', v: rules.filter(r => r.enabled).length, c: 'green' }, { l: 'Block Rules', v: rules.filter(r => r.type === 'block').length, c: 'red' }, { l: 'Total Hits', v: rules.reduce((a, r) => a + r.hits, 0).toLocaleString(), c: 'purple' }].map((s, i) => (
+          <Card key={i}><CardContent className="p-4"><p className="text-xs text-slate-500">{s.l}</p><p className={`text-2xl font-bold text-${s.c}-600`}>{s.v}</p></CardContent></Card>
         ))}
       </div>
-    </PageWrapper>
+
+      {showAdd && (
+        <Card><CardContent className="p-4 space-y-4">
+          <h3 className="font-semibold text-slate-900 dark:text-white">Add New Rule</h3>
+          <div className="grid grid-cols-4 gap-4">
+            <div><label className="text-xs text-slate-500 mb-1 block">Rule Name</label><input placeholder="Rule name" className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm" /></div>
+            <div><label className="text-xs text-slate-500 mb-1 block">Type</label><select className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"><option>Block</option><option>Allow</option><option>Monitor</option><option>Rate Limit</option></select></div>
+            <div><label className="text-xs text-slate-500 mb-1 block">Target</label><input placeholder="Target system" className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm" /></div>
+            <div><label className="text-xs text-slate-500 mb-1 block">Condition</label><input placeholder="Condition expression" className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm" /></div>
+          </div>
+          <div className="flex gap-2"><button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Save Rule</button><button onClick={() => setShowAdd(false)} className="px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm">Cancel</button></div>
+        </CardContent></Card>
+      )}
+
+      <Card><CardContent className="p-0">
+        <table className="w-full"><thead><tr className="border-b border-slate-200 dark:border-slate-700"><th className="p-3 text-left text-xs font-medium text-slate-500">Rule</th><th className="p-3 text-left text-xs font-medium text-slate-500">Type</th><th className="p-3 text-left text-xs font-medium text-slate-500">Target</th><th className="p-3 text-left text-xs font-medium text-slate-500">Condition</th><th className="p-3 text-left text-xs font-medium text-slate-500">Hits</th><th className="p-3 text-left text-xs font-medium text-slate-500">Last Triggered</th><th className="p-3 text-left text-xs font-medium text-slate-500">Enabled</th><th className="p-3 text-left text-xs font-medium text-slate-500">Actions</th></tr></thead>
+        <tbody>{rules.map(rule => (
+          <tr key={rule.id} className={`border-b border-slate-100 dark:border-slate-800 ${!rule.enabled ? 'opacity-50' : ''}`}>
+            <td className="p-3"><div className="font-medium text-sm text-slate-900 dark:text-white">{rule.name}</div><div className="text-xs text-slate-400">{rule.id}</div></td>
+            <td className="p-3"><span className={`text-xs px-2 py-0.5 rounded font-medium ${typeColor[rule.type]}`}>{rule.type}</span></td>
+            <td className="p-3 text-xs text-slate-500">{rule.target}</td>
+            <td className="p-3 text-xs text-slate-500 max-w-48 truncate">{rule.condition}</td>
+            <td className="p-3 text-sm font-mono">{rule.hits.toLocaleString()}</td>
+            <td className="p-3 text-xs text-slate-500">{rule.lastTriggered ? new Date(rule.lastTriggered).toLocaleDateString() : '-'}</td>
+            <td className="p-3"><button onClick={() => toggleRule(rule.id)} className="text-slate-500 hover:text-blue-600">{rule.enabled ? <ToggleRight className="w-6 h-6 text-green-600" /> : <ToggleLeft className="w-6 h-6 text-slate-400" />}</button></td>
+            <td className="p-3"><div className="flex gap-1"><button className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800"><Edit className="w-3.5 h-3.5 text-slate-400" /></button><button className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800"><Trash2 className="w-3.5 h-3.5 text-slate-400" /></button></div></td>
+          </tr>
+        ))}</tbody></table>
+      </CardContent></Card>
+    </div>
   );
 }

@@ -137,7 +137,25 @@ class BaseFramework(ABC):
     Subclasses must implement `_evaluate_control()` which is called once per
     in-scope control during each evaluation cycle.
     """
-    framework_id: str = ""
+    @property
+    def framework_id(self) -> str:
+        return self.metadata.framework_id
+
+    @property
+    def display_name(self) -> str:
+        return self.metadata.framework_name
+
+    _LEGAL_WEIGHT_MAP = {
+        FrameworkStatus.MANDATORY_LAW: "regulatory",
+        FrameworkStatus.CERTIFIABLE: "contractual",
+        FrameworkStatus.VOLUNTARY: "best-practice",
+        FrameworkStatus.POLICY_GUIDE: "best-practice",
+        FrameworkStatus.TECH_STANDARD: "best-practice",
+    }
+
+    @property
+    def legal_weight(self) -> str:
+        return self._LEGAL_WEIGHT_MAP.get(self.metadata.status, "best-practice")
     metadata: FrameworkMetadata
     controls: list[Control]
 
@@ -153,6 +171,25 @@ class BaseFramework(ABC):
         """
         if config is None:
             config = {}
+
+                    if not signals:
+            return [
+                EvidenceRecord(
+                    control_id=c.control_id,
+                    framework_id=self.metadata.framework_id,
+                    framework_name=self.metadata.framework_name,
+                    control_name=c.control_name,
+                    article_ref=getattr(c, 'article_ref', ''),
+                    status=ControlStatus.PENDING,
+                    score=0.0,
+                    evidence_text="No signals provided for evaluation.",
+                )
+                for c in self.controls
+                    # Ensure FAIL records always have a remediation hint
+        for rec in evidence:
+            if rec.status == ControlStatus.FAIL and not rec.remediation:
+                rec.remediation = f"Review {rec.control_id} control. Investigate signals: {rec.signal_used}."
+            ]
 
         evidence: list[EvidenceRecord] = []
         for control in self.controls:
@@ -173,6 +210,10 @@ class BaseFramework(ABC):
     def get_metadata(self) -> FrameworkMetadata:
         """Return the framework metadata."""
         return self.metadata
+
+    def get_controls(self) -> list[Control]:
+        """Return the list of controls for this framework."""
+        return self.controls
 
     @abstractmethod
     def _evaluate_control(

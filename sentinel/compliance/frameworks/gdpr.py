@@ -12,7 +12,7 @@ class GDPRFramework(BaseFramework):
         Control('art25','Data Protection by Design','Article 25, GDPR Regulation 2016/679','Data protection must be implemented by design and by default.',True),
     ]
     def _r(self,c,s,sc,sig,val,txt,rem=None):
-        return EvidenceRecord(self.metadata.framework_id,self.metadata.framework_name,c.control_id,c.control_name,c.article_ref,s,sc,sig,val,txt,rem)
+        return EvidenceRecord(control_id=c.control_id,framework_id=self.metadata.framework_id,framework_name=self.metadata.framework_name,control_name=c.control_name,article_ref=c.article_ref,status=s,score=sc,signal_used=sig,signal_value=val,evidence_text=txt,remediation=rem)
     def _evaluate_control(self,control,entry,result,config):
         return {'art5_1c':self._art5_1c,'art5_1f':self._art5_1f,'art13':self._art13,'art22':self._art22,'art25':self._art25}[control.control_id](control,entry,result,config)
     def _art5_1c(self,c,e,r,cfg):

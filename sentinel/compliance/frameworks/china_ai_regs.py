@@ -11,7 +11,7 @@ class ChinaAIRegsFramework(BaseFramework):
         Control('ds4','Synthetic Content Labeling','Deep Synthesis Regulations Art.4','Synthetic content watermarking/labeling at application layer.',False,'Synthetic content watermarking requires application-level implementation (e.g. C2PA). Sentinel logs the generation event but does not embed content watermarks. Implement at the application layer.'),
     ]
     def _r(self,c,s,sc,sig,val,txt,rem=None):
-        return EvidenceRecord(self.metadata.framework_id,self.metadata.framework_name,c.control_id,c.control_name,c.article_ref,s,sc,sig,val,txt,rem)
+        return EvidenceRecord(control_id=c.control_id,framework_id=self.metadata.framework_id,framework_name=self.metadata.framework_name,control_name=c.control_name,article_ref=c.article_ref,status=s,score=sc,signal_used=sig,signal_value=val,evidence_text=txt,remediation=rem)
     def _evaluate_control(self,ctrl,entry,result,config):
         return {'art4':self._art4,'art7':self._art7,'art9':self._art9,'art17_cn':self._art17}[ctrl.control_id](ctrl,entry,result,config)
     def _art4(self,c,e,r,cfg):

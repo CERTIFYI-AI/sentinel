@@ -25,7 +25,7 @@ class ISO42001Framework(BaseFramework):
         Control("a81","Incident Management","Annex A.8.1, ISO/IEC 42001:2023","Manage AI incidents systematically.",True),
     ]
     def _r(self,ctrl,st,sc,sig,val,txt,rem=None):
-        return EvidenceRecord(self.metadata.framework_id,self.metadata.framework_name,ctrl.control_id,ctrl.control_name,ctrl.article_ref,st,sc,sig,val,txt,rem)
+        return EvidenceRecord(control_id=ctrl.control_id,framework_id=self.metadata.framework_id,framework_name=self.metadata.framework_name,control_name=ctrl.control_name,article_ref=ctrl.article_ref,status=st,score=sc,signal_used=sig,signal_value=val,evidence_text=txt,remediation=rem)
     def _evaluate_control(self,control,entry,result,config):
         return {"a33":self._a33,"a41":self._a41,"a42":self._a42,"a52":self._a52,"a611":self._a611,"a612":self._a612,"a71":self._a71,"a81":self._a81}[control.control_id](control,entry,result,config)
     def _a33(self,c,e,r,cfg):
