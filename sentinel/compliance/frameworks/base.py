@@ -3,7 +3,6 @@ Base classes and data models for the compliance framework engine.
 Implements the exact data model from the specification.
 """
 from __future__ import annotations
-
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import StrEnum
@@ -52,6 +51,7 @@ class Control:
 
 
 ControlDefinition = Control  # backward-compat alias
+
 
 @dataclass
 class EvidenceRecord:
@@ -137,6 +137,7 @@ class BaseFramework(ABC):
     Subclasses must implement `_evaluate_control()` which is called once per
     in-scope control during each evaluation cycle.
     """
+
     @property
     def framework_id(self) -> str:
         return self.metadata.framework_id
@@ -156,6 +157,7 @@ class BaseFramework(ABC):
     @property
     def legal_weight(self) -> str:
         return self._LEGAL_WEIGHT_MAP.get(self.metadata.status, "best-practice")
+
     metadata: FrameworkMetadata
     controls: list[Control]
 
@@ -172,7 +174,7 @@ class BaseFramework(ABC):
         if config is None:
             config = {}
 
-                    if not signals:
+        if not signals:
             return [
                 EvidenceRecord(
                     control_id=c.control_id,
@@ -202,10 +204,11 @@ class BaseFramework(ABC):
                     str(exc),
                 )
 
-                # Ensure FAIL records always have a remediation hint
+        # Ensure FAIL records always have a remediation hint
         for rec in evidence:
             if rec.status == ControlStatus.FAIL and not rec.remediation:
                 rec.remediation = f"Review {rec.control_id} control. Investigate signals: {rec.signal_used}."
+
         return evidence
 
     def get_metadata(self) -> FrameworkMetadata:
