@@ -2,7 +2,7 @@ from __future__ import annotations
 from sentinel.compliance.frameworks.base import BaseFramework, Control, ControlStatus, EvidenceRecord, FrameworkMetadata, FrameworkStatus
 
 
-class DoDAlFramework(BaseFramework):
+class DoDAIFramework(BaseFramework):
     metadata = FrameworkMetadata(
         framework_id='dod_ai',
         framework_name='DoD AI Ethical Principles',
@@ -44,5 +44,5 @@ class DoDAlFramework(BaseFramework):
         intervention = r.get('intervention', 'NONE')
         cb_state = r.get('circuit_breaker_state', 'CLOSED')
         if cb_state != 'OPEN':
-            return self._r(c, ControlStatus.PASS, 1.0, 'intervention,circuit_breaker_state', {'intervention': intervention, 'cb': cb_state}, 'Governability controls active.')
-        return self._r(c, ControlStatus.FAIL, 0.0, 'intervention,circuit_breaker_state', {'intervention': intervention, 'cb': cb_state}, 'Circuit breaker OPEN: system ungovernable.', 'Investigate root cause before resetting circuit breaker.')
+            return self._r(c, ControlStatus.PASS, 1.0, 'intervention,circuit_breaker_state', f'intervention={intervention}, cb={cb_state}', 'Circuit breaker closed. Governability maintained.')
+        return self._r(c, ControlStatus.FAIL, 0.3, 'circuit_breaker_state', cb_state, 'Circuit breaker OPEN indicates loss of governability.', 'Investigate circuit breaker triggers and implement fallback controls.')
