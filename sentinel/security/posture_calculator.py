@@ -155,3 +155,35 @@ class PostureCalculator:
             open_findings=len(open_findings),
             critical_findings=critical_count,
         )
+
+
+# -- Module-level convenience functions ----------------------------
+
+_default_calculator = PostureCalculator()
+
+
+async def get_security_score(tenant_id: str) -> float:
+    """Return the overall security posture score for *tenant_id*."""
+    report = _default_calculator.compute(tenant_id)
+    return report.overall_score
+
+
+async def get_open_findings(tenant_id: str) -> int:
+    """Return the count of open findings for *tenant_id*."""
+    findings = _default_calculator.get_findings(tenant_id)
+    return len(findings)
+
+
+async def get_top_findings(
+    tenant_id: str, *, limit: int = 10
+) -> list[dict[str, Any]]:
+    """Return the top (most severe) open findings for *tenant_id*."""
+    from dataclasses import asdict
+
+    findings = _default_calculator.get_findings(tenant_id)
+    ranked = sorted(
+        findings,
+        key=lambda f: SEVERITY_WEIGHTS.get(f.severity, 0.0),
+        reverse=True,
+    )
+    return [asdict(f) for f in ranked[:limit]]
