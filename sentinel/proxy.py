@@ -154,7 +154,8 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
         # Mount routers
-    from sentinel.api.auth_router import router as auth_router  # noqa: PLC0415
+    from sentinel.api.policy_router import router as policy_router
+from sentinel.api.auth_router import router as auth_router  # noqa: PLC0415
     from sentinel.api.dashboard_router import router as dashboard_router  # noqa: PLC0415
     from sentinel.api.compliance_router import router as compliance_router  # noqa: PLC0415
     from sentinel.api.approval_router import router as approval_router  # noqa: PLC0415
@@ -169,6 +170,7 @@ def create_app() -> FastAPI:
     from sentinel.hitl.dashboard_router import hitl_router  # noqa: PLC0415
 
     app.include_router(auth_router)
+    app.include_router(policy_router, prefix="/api/v1/policies", tags=["policies"])
     app.include_router(dashboard_router)
     app.include_router(compliance_router)
     app.include_router(approval_router)
