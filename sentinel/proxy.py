@@ -153,21 +153,21 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    # Mount routers
-from sentinel.api.policy_router import router as policy_router
-from sentinel.api.auth_router import router as auth_router  # noqa: PLC0415
-from sentinel.api.dashboard_router import router as dashboard_router  # noqa: PLC0415
-from sentinel.api.compliance_router import router as compliance_router  # noqa: PLC0415
-from sentinel.api.approval_router import router as approval_router  # noqa: PLC0415
-from sentinel.api.audit_log_router import router as audit_log_router  # noqa: PLC0415
-from sentinel.api.ciso_router import router as ciso_router  # noqa: PLC0415
-from sentinel.api.evals_router import router as evals_router  # noqa: PLC0415
-from sentinel.api.events_router import router as events_router  # noqa: PLC0415
-from sentinel.api.health_router import router as health_router  # noqa: PLC0415
-from sentinel.api.security_router import router as security_router  # noqa: PLC0415
-from sentinel.api.tasks_router import router as tasks_router  # noqa: PLC0415
-from sentinel.api.notifications_router import router as notifications_router  # noqa: PLC0415
-from sentinel.hitl.dashboard_router import hitl_router  # noqa: PLC0415
+        # Mount routers
+    from sentinel.api.policy_router import router as policy_router
+    from sentinel.api.auth_router import router as auth_router  # noqa: PLC0415
+    from sentinel.api.dashboard_router import router as dashboard_router  # noqa: PLC0415
+    from sentinel.api.compliance_router import router as compliance_router  # noqa: PLC0415
+    from sentinel.api.approval_router import router as approval_router  # noqa: PLC0415
+    from sentinel.api.audit_log_router import router as audit_log_router  # noqa: PLC0415
+    from sentinel.api.ciso_router import router as ciso_router  # noqa: PLC0415
+    from sentinel.api.evals_router import router as evals_router  # noqa: PLC0415
+    from sentinel.api.events_router import router as events_router  # noqa: PLC0415
+    from sentinel.api.health_router import router as health_router  # noqa: PLC0415
+    from sentinel.api.security_router import router as security_router  # noqa: PLC0415
+    from sentinel.api.tasks_router import router as tasks_router  # noqa: PLC0415
+    from sentinel.api.notifications_router import router as notifications_router  # noqa: PLC0415
+    from sentinel.hitl.dashboard_router import hitl_router  # noqa: PLC0415
 
     app.include_router(auth_router)
     app.include_router(policy_router, prefix="/api/v1/policies", tags=["policies"])
