@@ -21,7 +21,7 @@ from sentinel.compliance.frameworks.soc2 import SOC2Framework
 from sentinel.compliance.frameworks.owasp_agentic import OWASPAgenticFramework
 from sentinel.compliance.frameworks.owasp_api import OWASPAPIFramework
 from sentinel.compliance.frameworks.mitre_atlas import MITREATLASFramework
-from sentinel.compliance.frameworks.dod_ai import DoDAlFramework
+from sentinel.compliance.frameworks.dod_ai import DoDAIFramework
 
 FRAMEWORK_REGISTRY: dict[str, BaseFramework] = {
     "eu_ai_act": EUAIActFramework(),
@@ -38,7 +38,7 @@ FRAMEWORK_REGISTRY: dict[str, BaseFramework] = {
     "owasp_agentic": OWASPAgenticFramework(),
     "owasp_api": OWASPAPIFramework(),
     "mitre_atlas": MITREATLASFramework(),
-    "dod_ai": DoDAlFramework(),
+    "dod_ai": DoDAIFramework(),
 }
 
 ALL_FRAMEWORKS = [
@@ -56,7 +56,7 @@ ALL_FRAMEWORKS = [
     OWASPAgenticFramework,
     OWASPAPIFramework,
     MITREATLASFramework,
-    DoDAlFramework,
+    DoDAIFramework,
 ]
 
 __all__ = [
@@ -65,9 +65,7 @@ __all__ = [
     "ALL_FRAMEWORKS",
     "EUAIActFramework", "ISO42001Framework", "NISTAIRMFFramework",
     "GDPRFramework", "ChinaAIRegsFramework", "OECDPrinciplesFramework",
-    "IEEE7000Framework",
-    "HIPAAFramework", "ISO27001Framework", "OWASPLLMFramework",
-    "SOC2Framework",
-    "OWASPAgenticFramework", "OWASPAPIFramework", "MITREATLASFramework",
-    "DoDAlFramework",
+    "IEEE7000Framework", "HIPAAFramework", "ISO27001Framework",
+    "OWASPLLMFramework", "SOC2Framework", "OWASPAgenticFramework",
+    "OWASPAPIFramework", "MITREATLASFramework", "DoDAIFramework",
 ]
