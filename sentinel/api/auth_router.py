@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import asyncpg
-import jwt
+from jose import jwt, JWTError
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, EmailStr, field_validator
