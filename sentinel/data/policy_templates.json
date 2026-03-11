@@ -1,0 +1,1278 @@
+{
+  "templates": [
+    {
+      "id": "tpl-001",
+      "name": "Information Security Policy",
+      "slug": "infosec",
+      "description": "Information Security Policy template for SOC2 compliance",
+      "framework": "SOC2",
+      "category": "Access Control",
+      "control_ref": "CC6.1",
+      "is_mandatory": true,
+      "risk_level": "high",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "soc2",
+        "access-control",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-002",
+      "name": "Access Control Policy",
+      "slug": "access-control",
+      "description": "Access Control Policy template for SOC2 compliance",
+      "framework": "SOC2",
+      "category": "Access Control",
+      "control_ref": "CC6.1",
+      "is_mandatory": true,
+      "risk_level": "high",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "soc2",
+        "access-control",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-003",
+      "name": "Change Management Policy",
+      "slug": "change-mgmt",
+      "description": "Change Management Policy template for SOC2 compliance",
+      "framework": "SOC2",
+      "category": "Change Management",
+      "control_ref": "CC8.1",
+      "is_mandatory": true,
+      "risk_level": "high",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "soc2",
+        "change-management",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-004",
+      "name": "Incident Response Policy",
+      "slug": "incident-response",
+      "description": "Incident Response Policy template for SOC2 compliance",
+      "framework": "SOC2",
+      "category": "Security Operations",
+      "control_ref": "CC7.2",
+      "is_mandatory": true,
+      "risk_level": "high",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "soc2",
+        "security-operations",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-005",
+      "name": "Risk Assessment Policy",
+      "slug": "risk-assessment",
+      "description": "Risk Assessment Policy template for SOC2 compliance",
+      "framework": "SOC2",
+      "category": "Risk Management",
+      "control_ref": "CC3.1",
+      "is_mandatory": true,
+      "risk_level": "high",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "soc2",
+        "risk-management",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-006",
+      "name": "Vendor Management Policy",
+      "slug": "vendor-mgmt",
+      "description": "Vendor Management Policy template for SOC2 compliance",
+      "framework": "SOC2",
+      "category": "Third Party",
+      "control_ref": "CC9.2",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "soc2",
+        "third-party",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-007",
+      "name": "Data Classification Policy",
+      "slug": "data-classification",
+      "description": "Data Classification Policy template for SOC2 compliance",
+      "framework": "SOC2",
+      "category": "Data Protection",
+      "control_ref": "CC6.7",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "soc2",
+        "data-protection",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-008",
+      "name": "Business Continuity Policy",
+      "slug": "business-continuity",
+      "description": "Business Continuity Policy template for SOC2 compliance",
+      "framework": "SOC2",
+      "category": "Availability",
+      "control_ref": "A1.2",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "soc2",
+        "availability",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-009",
+      "name": "Encryption Policy",
+      "slug": "encryption",
+      "description": "Encryption Policy template for SOC2 compliance",
+      "framework": "SOC2",
+      "category": "Data Protection",
+      "control_ref": "CC6.1",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "soc2",
+        "data-protection",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-010",
+      "name": "Acceptable Use Policy",
+      "slug": "acceptable-use",
+      "description": "Acceptable Use Policy template for SOC2 compliance",
+      "framework": "SOC2",
+      "category": "Access Control",
+      "control_ref": "CC6.2",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "soc2",
+        "access-control",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-011",
+      "name": "ISMS Policy",
+      "slug": "isms",
+      "description": "ISMS Policy template for ISO27001 compliance",
+      "framework": "ISO27001",
+      "category": "Management System",
+      "control_ref": "A.5.1",
+      "is_mandatory": true,
+      "risk_level": "high",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "iso27001",
+        "management-system",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-012",
+      "name": "Asset Management Policy",
+      "slug": "asset-mgmt",
+      "description": "Asset Management Policy template for ISO27001 compliance",
+      "framework": "ISO27001",
+      "category": "Asset Management",
+      "control_ref": "A.8.1",
+      "is_mandatory": true,
+      "risk_level": "high",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "iso27001",
+        "asset-management",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-013",
+      "name": "Human Resource Security Policy",
+      "slug": "hr-security",
+      "description": "Human Resource Security Policy template for ISO27001 compliance",
+      "framework": "ISO27001",
+      "category": "HR Security",
+      "control_ref": "A.7.1",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "iso27001",
+        "hr-security",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-014",
+      "name": "Physical Security Policy",
+      "slug": "physical-security",
+      "description": "Physical Security Policy template for ISO27001 compliance",
+      "framework": "ISO27001",
+      "category": "Physical Security",
+      "control_ref": "A.11.1",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "iso27001",
+        "physical-security",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-015",
+      "name": "Communications Security Policy",
+      "slug": "comms-security",
+      "description": "Communications Security Policy template for ISO27001 compliance",
+      "framework": "ISO27001",
+      "category": "Network Security",
+      "control_ref": "A.13.1",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "iso27001",
+        "network-security",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-016",
+      "name": "Supplier Relationships Policy",
+      "slug": "supplier-relations",
+      "description": "Supplier Relationships Policy template for ISO27001 compliance",
+      "framework": "ISO27001",
+      "category": "Third Party",
+      "control_ref": "A.15.1",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "iso27001",
+        "third-party",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-017",
+      "name": "Compliance Policy",
+      "slug": "compliance",
+      "description": "Compliance Policy template for ISO27001 compliance",
+      "framework": "ISO27001",
+      "category": "Compliance",
+      "control_ref": "A.18.1",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "iso27001",
+        "compliance",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-018",
+      "name": "Data Protection Policy",
+      "slug": "data-protection",
+      "description": "Data Protection Policy template for GDPR compliance",
+      "framework": "GDPR",
+      "category": "Privacy",
+      "control_ref": "Art.5",
+      "is_mandatory": true,
+      "risk_level": "high",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "gdpr",
+        "privacy",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-019",
+      "name": "Data Subject Rights Policy",
+      "slug": "data-subject-rights",
+      "description": "Data Subject Rights Policy template for GDPR compliance",
+      "framework": "GDPR",
+      "category": "Privacy",
+      "control_ref": "Art.12-23",
+      "is_mandatory": true,
+      "risk_level": "high",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "gdpr",
+        "privacy",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-020",
+      "name": "Data Breach Notification Policy",
+      "slug": "breach-notification",
+      "description": "Data Breach Notification Policy template for GDPR compliance",
+      "framework": "GDPR",
+      "category": "Incident Management",
+      "control_ref": "Art.33-34",
+      "is_mandatory": true,
+      "risk_level": "high",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "gdpr",
+        "incident-management",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-021",
+      "name": "Data Processing Agreement Policy",
+      "slug": "dpa",
+      "description": "Data Processing Agreement Policy template for GDPR compliance",
+      "framework": "GDPR",
+      "category": "Third Party",
+      "control_ref": "Art.28",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "gdpr",
+        "third-party",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-022",
+      "name": "Privacy Impact Assessment Policy",
+      "slug": "pia",
+      "description": "Privacy Impact Assessment Policy template for GDPR compliance",
+      "framework": "GDPR",
+      "category": "Privacy",
+      "control_ref": "Art.35",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "gdpr",
+        "privacy",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-023",
+      "name": "Data Retention Policy",
+      "slug": "data-retention",
+      "description": "Data Retention Policy template for GDPR compliance",
+      "framework": "GDPR",
+      "category": "Data Management",
+      "control_ref": "Art.5(1)(e)",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "gdpr",
+        "data-management",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-024",
+      "name": "Consent Management Policy",
+      "slug": "consent-mgmt",
+      "description": "Consent Management Policy template for GDPR compliance",
+      "framework": "GDPR",
+      "category": "Privacy",
+      "control_ref": "Art.7",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "gdpr",
+        "privacy",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-025",
+      "name": "PHI Protection Policy",
+      "slug": "phi-protection",
+      "description": "PHI Protection Policy template for HIPAA compliance",
+      "framework": "HIPAA",
+      "category": "Privacy",
+      "control_ref": "164.502",
+      "is_mandatory": true,
+      "risk_level": "high",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "hipaa",
+        "privacy",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-026",
+      "name": "Security Management Policy",
+      "slug": "security-mgmt",
+      "description": "Security Management Policy template for HIPAA compliance",
+      "framework": "HIPAA",
+      "category": "Security",
+      "control_ref": "164.308(a)(1)",
+      "is_mandatory": true,
+      "risk_level": "high",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "hipaa",
+        "security",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-027",
+      "name": "Workforce Security Policy",
+      "slug": "workforce-security",
+      "description": "Workforce Security Policy template for HIPAA compliance",
+      "framework": "HIPAA",
+      "category": "HR Security",
+      "control_ref": "164.308(a)(3)",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "hipaa",
+        "hr-security",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-028",
+      "name": "Information Access Management Policy",
+      "slug": "info-access",
+      "description": "Information Access Management Policy template for HIPAA compliance",
+      "framework": "HIPAA",
+      "category": "Access Control",
+      "control_ref": "164.308(a)(4)",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "hipaa",
+        "access-control",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-029",
+      "name": "Security Awareness Training Policy",
+      "slug": "security-training",
+      "description": "Security Awareness Training Policy template for HIPAA compliance",
+      "framework": "HIPAA",
+      "category": "Training",
+      "control_ref": "164.308(a)(5)",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "hipaa",
+        "training",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-030",
+      "name": "Contingency Plan Policy",
+      "slug": "contingency",
+      "description": "Contingency Plan Policy template for HIPAA compliance",
+      "framework": "HIPAA",
+      "category": "Business Continuity",
+      "control_ref": "164.308(a)(7)",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "hipaa",
+        "business-continuity",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-031",
+      "name": "Transmission Security Policy",
+      "slug": "transmission-security",
+      "description": "Transmission Security Policy template for HIPAA compliance",
+      "framework": "HIPAA",
+      "category": "Data Protection",
+      "control_ref": "164.312(e)",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "hipaa",
+        "data-protection",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-032",
+      "name": "Cybersecurity Framework Policy",
+      "slug": "csf-policy",
+      "description": "Cybersecurity Framework Policy template for NIST-CSF compliance",
+      "framework": "NIST-CSF",
+      "category": "Governance",
+      "control_ref": "ID.GV-1",
+      "is_mandatory": true,
+      "risk_level": "high",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "nist-csf",
+        "governance",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-033",
+      "name": "Asset Management Policy",
+      "slug": "nist-asset-mgmt",
+      "description": "Asset Management Policy template for NIST-CSF compliance",
+      "framework": "NIST-CSF",
+      "category": "Identify",
+      "control_ref": "ID.AM-1",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "nist-csf",
+        "identify",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-034",
+      "name": "Identity Management Policy",
+      "slug": "identity-mgmt",
+      "description": "Identity Management Policy template for NIST-CSF compliance",
+      "framework": "NIST-CSF",
+      "category": "Protect",
+      "control_ref": "PR.AC-1",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "nist-csf",
+        "protect",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-035",
+      "name": "Security Monitoring Policy",
+      "slug": "security-monitoring",
+      "description": "Security Monitoring Policy template for NIST-CSF compliance",
+      "framework": "NIST-CSF",
+      "category": "Detect",
+      "control_ref": "DE.CM-1",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "nist-csf",
+        "detect",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-036",
+      "name": "Response Planning Policy",
+      "slug": "response-planning",
+      "description": "Response Planning Policy template for NIST-CSF compliance",
+      "framework": "NIST-CSF",
+      "category": "Respond",
+      "control_ref": "RS.RP-1",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "nist-csf",
+        "respond",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-037",
+      "name": "Recovery Planning Policy",
+      "slug": "recovery-planning",
+      "description": "Recovery Planning Policy template for NIST-CSF compliance",
+      "framework": "NIST-CSF",
+      "category": "Recover",
+      "control_ref": "RC.RP-1",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "nist-csf",
+        "recover",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-038",
+      "name": "Security Planning Policy",
+      "slug": "security-planning",
+      "description": "Security Planning Policy template for NIST-800-53 compliance",
+      "framework": "NIST-800-53",
+      "category": "Planning",
+      "control_ref": "PL-1",
+      "is_mandatory": true,
+      "risk_level": "high",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "nist-800-53",
+        "planning",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-039",
+      "name": "Access Control Policy",
+      "slug": "nist-access-control",
+      "description": "Access Control Policy template for NIST-800-53 compliance",
+      "framework": "NIST-800-53",
+      "category": "Access Control",
+      "control_ref": "AC-1",
+      "is_mandatory": true,
+      "risk_level": "high",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "nist-800-53",
+        "access-control",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-040",
+      "name": "Audit and Accountability Policy",
+      "slug": "audit-accountability",
+      "description": "Audit and Accountability Policy template for NIST-800-53 compliance",
+      "framework": "NIST-800-53",
+      "category": "Audit",
+      "control_ref": "AU-1",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "nist-800-53",
+        "audit",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-041",
+      "name": "Configuration Management Policy",
+      "slug": "config-mgmt",
+      "description": "Configuration Management Policy template for NIST-800-53 compliance",
+      "framework": "NIST-800-53",
+      "category": "Configuration",
+      "control_ref": "CM-1",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "nist-800-53",
+        "configuration",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-042",
+      "name": "Identification and Authentication Policy",
+      "slug": "id-auth",
+      "description": "Identification and Authentication Policy template for NIST-800-53 compliance",
+      "framework": "NIST-800-53",
+      "category": "Authentication",
+      "control_ref": "IA-1",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "nist-800-53",
+        "authentication",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-043",
+      "name": "System and Communications Protection Policy",
+      "slug": "sys-comms-protection",
+      "description": "System and Communications Protection Policy template for NIST-800-53 compliance",
+      "framework": "NIST-800-53",
+      "category": "System Protection",
+      "control_ref": "SC-1",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "nist-800-53",
+        "system-protection",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-044",
+      "name": "Cardholder Data Protection Policy",
+      "slug": "cardholder-data",
+      "description": "Cardholder Data Protection Policy template for PCI-DSS compliance",
+      "framework": "PCI-DSS",
+      "category": "Data Protection",
+      "control_ref": "Req.3",
+      "is_mandatory": true,
+      "risk_level": "high",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "pci-dss",
+        "data-protection",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-045",
+      "name": "Network Security Policy",
+      "slug": "network-security",
+      "description": "Network Security Policy template for PCI-DSS compliance",
+      "framework": "PCI-DSS",
+      "category": "Network Security",
+      "control_ref": "Req.1",
+      "is_mandatory": true,
+      "risk_level": "high",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "pci-dss",
+        "network-security",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-046",
+      "name": "Vulnerability Management Policy",
+      "slug": "vuln-mgmt",
+      "description": "Vulnerability Management Policy template for PCI-DSS compliance",
+      "framework": "PCI-DSS",
+      "category": "Vulnerability Management",
+      "control_ref": "Req.5",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "pci-dss",
+        "vulnerability-management",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-047",
+      "name": "Access Control Measures Policy",
+      "slug": "pci-access-control",
+      "description": "Access Control Measures Policy template for PCI-DSS compliance",
+      "framework": "PCI-DSS",
+      "category": "Access Control",
+      "control_ref": "Req.7",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "pci-dss",
+        "access-control",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-048",
+      "name": "Monitoring and Testing Policy",
+      "slug": "monitoring-testing",
+      "description": "Monitoring and Testing Policy template for PCI-DSS compliance",
+      "framework": "PCI-DSS",
+      "category": "Monitoring",
+      "control_ref": "Req.10",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "pci-dss",
+        "monitoring",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-049",
+      "name": "Information Security Policy",
+      "slug": "pci-infosec",
+      "description": "Information Security Policy template for PCI-DSS compliance",
+      "framework": "PCI-DSS",
+      "category": "Governance",
+      "control_ref": "Req.12",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "pci-dss",
+        "governance",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-050",
+      "name": "AI Risk Management Policy",
+      "slug": "ai-risk-mgmt",
+      "description": "AI Risk Management Policy template for EU-AI-Act compliance",
+      "framework": "EU-AI-Act",
+      "category": "AI Governance",
+      "control_ref": "Art.9",
+      "is_mandatory": true,
+      "risk_level": "high",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "eu-ai-act",
+        "ai-governance",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-051",
+      "name": "AI Transparency Policy",
+      "slug": "ai-transparency",
+      "description": "AI Transparency Policy template for EU-AI-Act compliance",
+      "framework": "EU-AI-Act",
+      "category": "Transparency",
+      "control_ref": "Art.13",
+      "is_mandatory": true,
+      "risk_level": "high",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "eu-ai-act",
+        "transparency",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-052",
+      "name": "AI Data Governance Policy",
+      "slug": "ai-data-governance",
+      "description": "AI Data Governance Policy template for EU-AI-Act compliance",
+      "framework": "EU-AI-Act",
+      "category": "Data Quality",
+      "control_ref": "Art.10",
+      "is_mandatory": true,
+      "risk_level": "high",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "eu-ai-act",
+        "data-quality",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-053",
+      "name": "AI Human Oversight Policy",
+      "slug": "ai-human-oversight",
+      "description": "AI Human Oversight Policy template for EU-AI-Act compliance",
+      "framework": "EU-AI-Act",
+      "category": "Human Oversight",
+      "control_ref": "Art.14",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "eu-ai-act",
+        "human-oversight",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-054",
+      "name": "AI Technical Documentation Policy",
+      "slug": "ai-tech-docs",
+      "description": "AI Technical Documentation Policy template for EU-AI-Act compliance",
+      "framework": "EU-AI-Act",
+      "category": "Documentation",
+      "control_ref": "Art.11",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "eu-ai-act",
+        "documentation",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-055",
+      "name": "AI Conformity Assessment Policy",
+      "slug": "ai-conformity",
+      "description": "AI Conformity Assessment Policy template for EU-AI-Act compliance",
+      "framework": "EU-AI-Act",
+      "category": "Compliance",
+      "control_ref": "Art.43",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "eu-ai-act",
+        "compliance",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-056",
+      "name": "High-Risk AI Systems Policy",
+      "slug": "high-risk-ai",
+      "description": "High-Risk AI Systems Policy template for EU-AI-Act compliance",
+      "framework": "EU-AI-Act",
+      "category": "AI Classification",
+      "control_ref": "Art.6",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "eu-ai-act",
+        "ai-classification",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-057",
+      "name": "AI Management System Policy",
+      "slug": "aims",
+      "description": "AI Management System Policy template for ISO42001 compliance",
+      "framework": "ISO42001",
+      "category": "AI Management",
+      "control_ref": "5.2",
+      "is_mandatory": true,
+      "risk_level": "high",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "iso42001",
+        "ai-management",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-058",
+      "name": "AI Ethics Policy",
+      "slug": "ai-ethics",
+      "description": "AI Ethics Policy template for ISO42001 compliance",
+      "framework": "ISO42001",
+      "category": "Ethics",
+      "control_ref": "6.1",
+      "is_mandatory": true,
+      "risk_level": "high",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "iso42001",
+        "ethics",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-059",
+      "name": "AI Impact Assessment Policy",
+      "slug": "ai-impact",
+      "description": "AI Impact Assessment Policy template for ISO42001 compliance",
+      "framework": "ISO42001",
+      "category": "Risk Assessment",
+      "control_ref": "6.1.2",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "iso42001",
+        "risk-assessment",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-060",
+      "name": "AI System Lifecycle Policy",
+      "slug": "ai-lifecycle",
+      "description": "AI System Lifecycle Policy template for ISO42001 compliance",
+      "framework": "ISO42001",
+      "category": "Development",
+      "control_ref": "8.2",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "iso42001",
+        "development",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-061",
+      "name": "AI Data Management Policy",
+      "slug": "ai-data-mgmt",
+      "description": "AI Data Management Policy template for ISO42001 compliance",
+      "framework": "ISO42001",
+      "category": "Data Management",
+      "control_ref": "8.4",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "iso42001",
+        "data-management",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-062",
+      "name": "AI Performance Monitoring Policy",
+      "slug": "ai-performance",
+      "description": "AI Performance Monitoring Policy template for ISO42001 compliance",
+      "framework": "ISO42001",
+      "category": "Operations",
+      "control_ref": "9.1",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "iso42001",
+        "operations",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-063",
+      "name": "Consumer Privacy Policy",
+      "slug": "consumer-privacy",
+      "description": "Consumer Privacy Policy template for CCPA compliance",
+      "framework": "CCPA",
+      "category": "Privacy",
+      "control_ref": "1798.100",
+      "is_mandatory": true,
+      "risk_level": "high",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "ccpa",
+        "privacy",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-064",
+      "name": "Data Sale Opt-Out Policy",
+      "slug": "data-sale-optout",
+      "description": "Data Sale Opt-Out Policy template for CCPA compliance",
+      "framework": "CCPA",
+      "category": "Privacy",
+      "control_ref": "1798.120",
+      "is_mandatory": true,
+      "risk_level": "high",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "ccpa",
+        "privacy",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-065",
+      "name": "Consumer Request Handling Policy",
+      "slug": "consumer-requests",
+      "description": "Consumer Request Handling Policy template for CCPA compliance",
+      "framework": "CCPA",
+      "category": "Privacy",
+      "control_ref": "1798.105",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "ccpa",
+        "privacy",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-066",
+      "name": "Data Inventory Policy",
+      "slug": "data-inventory",
+      "description": "Data Inventory Policy template for CCPA compliance",
+      "framework": "CCPA",
+      "category": "Data Management",
+      "control_ref": "1798.110",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "ccpa",
+        "data-management",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-067",
+      "name": "Service Provider Agreement Policy",
+      "slug": "service-provider",
+      "description": "Service Provider Agreement Policy template for CCPA compliance",
+      "framework": "CCPA",
+      "category": "Third Party",
+      "control_ref": "1798.140",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "ccpa",
+        "third-party",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-068",
+      "name": "System Security Plan Policy",
+      "slug": "ssp",
+      "description": "System Security Plan Policy template for FedRAMP compliance",
+      "framework": "FedRAMP",
+      "category": "Security Planning",
+      "control_ref": "PL-2",
+      "is_mandatory": true,
+      "risk_level": "high",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "fedramp",
+        "security-planning",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-069",
+      "name": "Continuous Monitoring Policy",
+      "slug": "continuous-monitoring",
+      "description": "Continuous Monitoring Policy template for FedRAMP compliance",
+      "framework": "FedRAMP",
+      "category": "Monitoring",
+      "control_ref": "CA-7",
+      "is_mandatory": true,
+      "risk_level": "high",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "fedramp",
+        "monitoring",
+        "policy"
+      ]
+    },
+    {
+      "id": "tpl-070",
+      "name": "Incident Response Plan Policy",
+      "slug": "fedramp-ir",
+      "description": "Incident Response Plan Policy template for FedRAMP compliance",
+      "framework": "FedRAMP",
+      "category": "Incident Response",
+      "control_ref": "IR-1",
+      "is_mandatory": false,
+      "risk_level": "medium",
+      "review_frequency_days": 365,
+      "version": "1.0.0",
+      "tags": [
+        "fedramp",
+        "incident-response",
+        "policy"
+      ]
+    }
+  ],
+  "total": 70,
+  "frameworks": [
+    "SOC2",
+    "ISO27001",
+    "GDPR",
+    "HIPAA",
+    "NIST-CSF",
+    "NIST-800-53",
+    "PCI-DSS",
+    "EU-AI-Act",
+    "ISO42001",
+    "CCPA",
+    "FedRAMP"
+  ]
+}
