@@ -169,21 +169,21 @@ from sentinel.api.tasks_router import router as tasks_router  # noqa: PLC0415
 from sentinel.api.notifications_router import router as notifications_router  # noqa: PLC0415
 from sentinel.hitl.dashboard_router import hitl_router  # noqa: PLC0415
 
-app.include_router(auth_router)
-app.include_router(policy_router, prefix="/api/v1/policies", tags=["policies"])
-app.include_router(dashboard_router)
-app.include_router(compliance_router)
-app.include_router(approval_router)
-app.include_router(audit_log_router)
-app.include_router(ciso_router)
-app.include_router(evals_router)
-app.include_router(events_router)
-app.include_router(health_router)
-app.include_router(security_router)
-app.include_router(tasks_router)
-app.include_router(notifications_router)
-app.include_router(hitl_router)
-return app
+    app.include_router(auth_router)
+    app.include_router(policy_router, prefix="/api/v1/policies", tags=["policies"])
+    app.include_router(dashboard_router)
+    app.include_router(compliance_router)
+    app.include_router(approval_router)
+    app.include_router(audit_log_router)
+    app.include_router(ciso_router)
+    app.include_router(evals_router)
+    app.include_router(events_router)
+    app.include_router(health_router)
+    app.include_router(security_router)
+    app.include_router(tasks_router)
+    app.include_router(notifications_router)
+    app.include_router(hitl_router)
+    return app
 
 
 app = create_app()
