@@ -16,7 +16,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, EmailStr, field_validator
 
-from sentinel.config import get_settings
+from sentinel.config import settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -91,7 +91,7 @@ def _hash_password(password: str, salt: str) -> str:
 
 
 def _create_jwt(user_id: str, email: str, role: str, tenant_id: str) -> tuple[str, str]:
-    settings = get_settings()
+    settings = settings
     now = datetime.now(timezone.utc)
     access_payload = {
         "sub": user_id,
@@ -116,7 +116,7 @@ def _create_jwt(user_id: str, email: str, role: str, tenant_id: str) -> tuple[st
 
 
 async def _get_db():
-    settings = get_settings()
+    settings = settings
     pool = getattr(settings, "db_pool", None)
     if pool is None:
         raise HTTPException(503, "Database unavailable")
@@ -129,7 +129,7 @@ async def _get_current_user(
 ):
     if credentials is None:
         raise HTTPException(401, "Not authenticated")
-    settings = get_settings()
+    settings = settings
     key = getattr(settings, "SECRET_KEY", getattr(settings, "secret_key", "dev-secret"))
     try:
         payload = jwt.decode(credentials.credentials, key, algorithms=["HS256"])
@@ -236,7 +236,7 @@ async def register(
 async def refresh_token(
     body: dict,
 ) -> dict:
-    settings = get_settings()
+    settings = settings
     key = getattr(settings, "SECRET_KEY", getattr(settings, "secret_key", "dev-secret"))
     token = body.get("refresh_token", "")
     try:
