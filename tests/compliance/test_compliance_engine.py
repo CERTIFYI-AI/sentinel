@@ -1,4 +1,4 @@
-"Tests for the compliance engine and all 11 frameworks."
+"Tests for the compliance engine and all 15 frameworks."
 import pytest
 from sentinel.compliance.evidence_store import EvidenceStore, EvidenceRecord
 from sentinel.compliance.report_builder import ReportBuilder
@@ -504,9 +504,9 @@ class TestIeee7000Framework:
 
 
 class TestAllFrameworksRegistry:
-    def test_registry_contains_all_7_frameworks(self):
+    def test_registry_contains_all_15_frameworks(self):
         from sentinel.compliance.frameworks import FRAMEWORK_REGISTRY
-        assert len(FRAMEWORK_REGISTRY) == 11
+        assert len(FRAMEWORK_REGISTRY) == 15
 
     def test_all_frameworks_have_metadata(self):
         from sentinel.compliance.frameworks import FRAMEWORK_REGISTRY
@@ -528,3 +528,163 @@ class TestAllFrameworksRegistry:
             assert ControlStatus.FAIL in statuses or ControlStatus.PARTIAL in statuses, (
                 f'{fw_id} produced no failures on bad signals'
             )
+
+
+class TestHipaaFramework:
+    def test_evaluates_good_signals(self):
+        from sentinel.compliance.frameworks.hipaa import HIPAAFramework
+        fw = HIPAAFramework()
+        results = fw.evaluate(GOOD_SIGNALS, TENANT)
+        assert len(results) > 0
+
+    def test_evaluates_bad_signals(self):
+        from sentinel.compliance.frameworks.hipaa import HIPAAFramework
+        fw = HIPAAFramework()
+        results = fw.evaluate(BAD_SIGNALS, TENANT)
+        fail_results = [r for r in results if r.status == ControlStatus.FAIL]
+        assert len(fail_results) > 0
+
+    def test_framework_id(self):
+        from sentinel.compliance.frameworks.hipaa import HIPAAFramework
+        fw = HIPAAFramework()
+        assert fw.metadata.framework_id == 'hipaa'
+
+
+class TestIso27001Framework:
+    def test_evaluates_good_signals(self):
+        from sentinel.compliance.frameworks.iso27001 import ISO27001Framework
+        fw = ISO27001Framework()
+        results = fw.evaluate(GOOD_SIGNALS, TENANT)
+        assert len(results) > 0
+
+    def test_evaluates_bad_signals(self):
+        from sentinel.compliance.frameworks.iso27001 import ISO27001Framework
+        fw = ISO27001Framework()
+        results = fw.evaluate(BAD_SIGNALS, TENANT)
+        fail_results = [r for r in results if r.status == ControlStatus.FAIL]
+        assert len(fail_results) > 0
+
+    def test_framework_id(self):
+        from sentinel.compliance.frameworks.iso27001 import ISO27001Framework
+        fw = ISO27001Framework()
+        assert fw.metadata.framework_id == 'iso27001'
+
+
+class TestSoc2Framework:
+    def test_evaluates_good_signals(self):
+        from sentinel.compliance.frameworks.soc2 import SOC2Framework
+        fw = SOC2Framework()
+        results = fw.evaluate(GOOD_SIGNALS, TENANT)
+        assert len(results) > 0
+
+    def test_evaluates_bad_signals(self):
+        from sentinel.compliance.frameworks.soc2 import SOC2Framework
+        fw = SOC2Framework()
+        results = fw.evaluate(BAD_SIGNALS, TENANT)
+        fail_results = [r for r in results if r.status == ControlStatus.FAIL]
+        assert len(fail_results) > 0
+
+    def test_framework_id(self):
+        from sentinel.compliance.frameworks.soc2 import SOC2Framework
+        fw = SOC2Framework()
+        assert fw.metadata.framework_id == 'soc2'
+
+
+class TestOwaspLlmFramework:
+    def test_evaluates_good_signals(self):
+        from sentinel.compliance.frameworks.owasp_llm import OWASPLLMFramework
+        fw = OWASPLLMFramework()
+        results = fw.evaluate(GOOD_SIGNALS, TENANT)
+        assert len(results) > 0
+
+    def test_evaluates_bad_signals(self):
+        from sentinel.compliance.frameworks.owasp_llm import OWASPLLMFramework
+        fw = OWASPLLMFramework()
+        results = fw.evaluate(BAD_SIGNALS, TENANT)
+        fail_results = [r for r in results if r.status == ControlStatus.FAIL]
+        assert len(fail_results) > 0
+
+    def test_framework_id(self):
+        from sentinel.compliance.frameworks.owasp_llm import OWASPLLMFramework
+        fw = OWASPLLMFramework()
+        assert fw.metadata.framework_id == 'owasp_llm'
+
+
+class TestDodAiFramework:
+    def test_evaluates_good_signals(self):
+        from sentinel.compliance.frameworks.dod_ai import DoDAIFramework
+        fw = DoDAIFramework()
+        results = fw.evaluate(GOOD_SIGNALS, TENANT)
+        assert len(results) > 0
+
+    def test_evaluates_bad_signals(self):
+        from sentinel.compliance.frameworks.dod_ai import DoDAIFramework
+        fw = DoDAIFramework()
+        results = fw.evaluate(BAD_SIGNALS, TENANT)
+        fail_results = [r for r in results if r.status == ControlStatus.FAIL]
+        assert len(fail_results) > 0
+
+    def test_framework_id(self):
+        from sentinel.compliance.frameworks.dod_ai import DoDAIFramework
+        fw = DoDAIFramework()
+        assert fw.metadata.framework_id == 'dod_ai'
+
+
+class TestMitreAtlasFramework:
+    def test_evaluates_good_signals(self):
+        from sentinel.compliance.frameworks.mitre_atlas import MITREATLASFramework
+        fw = MITREATLASFramework()
+        results = fw.evaluate(GOOD_SIGNALS, TENANT)
+        assert len(results) > 0
+
+    def test_evaluates_bad_signals(self):
+        from sentinel.compliance.frameworks.mitre_atlas import MITREATLASFramework
+        fw = MITREATLASFramework()
+        results = fw.evaluate(BAD_SIGNALS, TENANT)
+        fail_results = [r for r in results if r.status == ControlStatus.FAIL]
+        assert len(fail_results) > 0
+
+    def test_framework_id(self):
+        from sentinel.compliance.frameworks.mitre_atlas import MITREATLASFramework
+        fw = MITREATLASFramework()
+        assert fw.metadata.framework_id == 'mitre_atlas'
+
+
+class TestOwaspAgenticFramework:
+    def test_evaluates_good_signals(self):
+        from sentinel.compliance.frameworks.owasp_agentic import OWASPAgenticFramework
+        fw = OWASPAgenticFramework()
+        results = fw.evaluate(GOOD_SIGNALS, TENANT)
+        assert len(results) > 0
+
+    def test_evaluates_bad_signals(self):
+        from sentinel.compliance.frameworks.owasp_agentic import OWASPAgenticFramework
+        fw = OWASPAgenticFramework()
+        results = fw.evaluate(BAD_SIGNALS, TENANT)
+        fail_results = [r for r in results if r.status == ControlStatus.FAIL]
+        assert len(fail_results) > 0
+
+    def test_framework_id(self):
+        from sentinel.compliance.frameworks.owasp_agentic import OWASPAgenticFramework
+        fw = OWASPAgenticFramework()
+        assert fw.metadata.framework_id == 'owasp_agentic'
+
+
+class TestOwaspApiFramework:
+    def test_evaluates_good_signals(self):
+        from sentinel.compliance.frameworks.owasp_api import OWASPAPIFramework
+        fw = OWASPAPIFramework()
+        results = fw.evaluate(GOOD_SIGNALS, TENANT)
+        assert len(results) > 0
+
+    def test_evaluates_bad_signals(self):
+        from sentinel.compliance.frameworks.owasp_api import OWASPAPIFramework
+        fw = OWASPAPIFramework()
+        results = fw.evaluate(BAD_SIGNALS, TENANT)
+        fail_results = [r for r in results if r.status == ControlStatus.FAIL]
+        assert len(fail_results) > 0
+
+    def test_framework_id(self):
+        from sentinel.compliance.frameworks.owasp_api import OWASPAPIFramework
+        fw = OWASPAPIFramework()
+        assert fw.metadata.framework_id == 'owasp_api'
