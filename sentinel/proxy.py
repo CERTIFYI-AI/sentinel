@@ -153,10 +153,33 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    # Mount routers
+        # Mount routers
+    from sentinel.api.auth_router import router as auth_router  # noqa: PLC0415
     from sentinel.api.dashboard_router import router as dashboard_router  # noqa: PLC0415
+    from sentinel.api.compliance_router import router as compliance_router  # noqa: PLC0415
+    from sentinel.api.approval_router import router as approval_router  # noqa: PLC0415
+    from sentinel.api.audit_log_router import router as audit_log_router  # noqa: PLC0415
+    from sentinel.api.ciso_router import router as ciso_router  # noqa: PLC0415
+    from sentinel.api.evals_router import router as evals_router  # noqa: PLC0415
+    from sentinel.api.events_router import router as events_router  # noqa: PLC0415
+    from sentinel.api.health_router import router as health_router  # noqa: PLC0415
+    from sentinel.api.security_router import router as security_router  # noqa: PLC0415
+    from sentinel.api.tasks_router import router as tasks_router  # noqa: PLC0415
+    from sentinel.api.notifications_router import router as notifications_router  # noqa: PLC0415
     from sentinel.hitl.dashboard_router import hitl_router  # noqa: PLC0415
+
+    app.include_router(auth_router)
     app.include_router(dashboard_router)
+    app.include_router(compliance_router)
+    app.include_router(approval_router)
+    app.include_router(audit_log_router)
+    app.include_router(ciso_router)
+    app.include_router(evals_router)
+    app.include_router(events_router)
+    app.include_router(health_router)
+    app.include_router(security_router)
+    app.include_router(tasks_router)
+    app.include_router(notifications_router)
     app.include_router(hitl_router)
     return app
 
