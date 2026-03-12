@@ -1,10 +1,10 @@
 """Events API Router for Sentinel - with WebSocket real-time streaming.
 
 Exposes:
-  GET  /api/events/         - list recent events (REST)
-  POST /api/events/         - publish a custom event
-  GET  /api/events/stream   - SSE stream for real-time events
-  WS   /api/events/ws       - WebSocket for real-time events
+  GET  /api/events/          - list recent events (REST)
+  POST /api/events/          - publish a custom event
+  GET  /api/events/stream    - SSE stream for real-time events
+  WS   /api/events/ws        - WebSocket for real-time events
 """
 from __future__ import annotations
 
@@ -25,154 +25,160 @@ router = APIRouter(prefix="/events", tags=["events"])
 # In-memory event log + WebSocket connection manager
 # ---------------------------------------------------------------------------
 _event_log: list[dict[str, Any]] = []
-_MAX_LOG = 1000  # keep last 1000 events in memory
+_MAX_LOG = 1000
+
+_ws_connections: dict[str, list[WebSocket]] = {}  # tenant_id -> [ws]
+
+# ---------------------------------------------------------------------------
+# Try to wire into the real EventBus singleton
+# ---------------------------------------------------------------------------
+try:
+    from sentinel.events.bus import bus as _event_bus
+    _has_event_bus = True
+    logger.info("EventBus singleton connected to events_router")
+except Exception as e:
+    _event_bus = None
+    _has_event_bus = False
+    logger.warning(f"EventBus not available: {e}")
 
 
+# ---------------------------------------------------------------------------
+# WebSocket connection manager
+# ---------------------------------------------------------------------------
 class ConnectionManager:
-    """Manages active WebSocket connections per tenant."""
+    def __init__(self):
+        self.active: dict[str, list[WebSocket]] = {}
 
-    def __init__(self) -> None:
-        self._connections: dict[str, list[WebSocket]] = {}
+    async def connect(self, ws: WebSocket, tenant_id: str):
+        await ws.accept()
+        self.active.setdefault(tenant_id, []).append(ws)
 
-    async def connect(self, websocket: WebSocket, tenant_id: str) -> None:
-        await websocket.accept()
-        self._connections.setdefault(tenant_id, []).append(websocket)
-        logger.info("WS connected: tenant=%s total=%d", tenant_id, len(self._connections[tenant_id]))
+    def disconnect(self, ws: WebSocket, tenant_id: str):
+        self.active.get(tenant_id, []).remove(ws) if ws in self.active.get(tenant_id, []) else None
 
-    def disconnect(self, websocket: WebSocket, tenant_id: str) -> None:
-        conns = self._connections.get(tenant_id, [])
-        if websocket in conns:
-            conns.remove(websocket)
-        logger.info("WS disconnected: tenant=%s remaining=%d", tenant_id, len(conns))
-
-    async def broadcast(self, event: dict[str, Any]) -> None:
-        """Broadcast event to all connections for the event's tenant."""
-        tenant_id = event.get("tenant_id", "")
-        conns = list(self._connections.get(tenant_id, []))
-        dead: list[WebSocket] = []
-        for ws in conns:
+    async def broadcast(self, message: dict, tenant_id: str):
+        dead = []
+        for ws in self.active.get(tenant_id, []):
             try:
-                await ws.send_text(json.dumps(event))
+                await ws.send_json(message)
             except Exception:
                 dead.append(ws)
         for ws in dead:
             self.disconnect(ws, tenant_id)
 
+    async def broadcast_all(self, message: dict):
+        for tenant_id in list(self.active.keys()):
+            await self.broadcast(message, tenant_id)
+
 
 manager = ConnectionManager()
 
 
-# Try to wire up the real EventBus for cross-module propagation
-try:
-    from sentinel.events.bus import EventBus
-    _bus = EventBus.get_instance()
-    _BUS_AVAILABLE = True
-except Exception as _bus_err:
-    logger.warning("EventBus not available: %s", _bus_err)
-    _bus = None
-    _BUS_AVAILABLE = False
-
-
-async def _store_and_broadcast(event: dict[str, Any]) -> None:
-    """Persist event to log and broadcast to WebSocket subscribers."""
-    _event_log.append(event)
-    if len(_event_log) > _MAX_LOG:
-        del _event_log[: len(_event_log) - _MAX_LOG]
-    await manager.broadcast(event)
+# ---------------------------------------------------------------------------
+# Background task: pump EventBus -> WebSocket connections
+# ---------------------------------------------------------------------------
+async def _pump_event_bus(tenant_id: str, q: asyncio.Queue, ws: WebSocket):
+    """Relay events from EventBus queue to a WebSocket client."""
+    try:
+        while True:
+            event = await asyncio.wait_for(q.get(), timeout=30)
+            payload = {
+                "event_type": event.type if isinstance(event.type, str) else event.type.value,
+                "tenant_id": event.tenant_id,
+                "data": event.payload,
+                "timestamp": event.timestamp,
+            }
+            _event_log.append(payload)
+            if len(_event_log) > _MAX_LOG:
+                _event_log.pop(0)
+            await ws.send_json(payload)
+    except (asyncio.TimeoutError, asyncio.CancelledError):
+        pass
+    except WebSocketDisconnect:
+        pass
 
 
 # ---------------------------------------------------------------------------
 # Pydantic models
 # ---------------------------------------------------------------------------
-
-
-class EventPayload(BaseModel):
-    """Schema for publishing a custom event."""
-
-    event_type: str = Field(..., description="Dot-notated event type")
-    tenant_id: str = Field(..., description="Tenant that owns the event")
+class PublishRequest(BaseModel):
+    event_type: str = Field(..., description="Dot-separated event type, e.g. model.registered")
+    tenant_id: str = Field(default="default")
     data: dict[str, Any] = Field(default_factory=dict)
-
-
-class EventResponse(BaseModel):
-    event_type: str
-    tenant_id: str
-    data: dict[str, Any]
-    timestamp: str | None = None
 
 
 # ---------------------------------------------------------------------------
 # REST endpoints
 # ---------------------------------------------------------------------------
-
-
-@router.get("/", response_model=list[EventResponse])
+@router.get("/")
 async def list_events(
-    tenant_id: str = Query(..., description="Filter by tenant"),
-    event_type: str | None = Query(None, description="Filter by event type"),
-    limit: int = Query(50, ge=1, le=500),
-) -> list[dict[str, Any]]:
+    tenant_id: str = Query(default="default"),
+    limit: int = Query(default=50, le=500),
+):
     """Return recent events for a tenant."""
-    filtered = [e for e in _event_log if e.get("tenant_id") == tenant_id]
-    if event_type:
-        filtered = [e for e in filtered if e.get("event_type") == event_type]
-    return filtered[-limit:]
+    events = [
+        e for e in _event_log
+        if e.get("tenant_id") == tenant_id
+    ]
+    return {"events": events[-limit:], "total": len(events)}
 
 
-@router.post("/", response_model=EventResponse, status_code=201)
-async def publish_event(payload: EventPayload) -> dict[str, Any]:
-    """Publish a custom event - persists to log and broadcasts via WS."""
-    record: dict[str, Any] = {
-        "event_type": payload.event_type,
-        "tenant_id": payload.tenant_id,
-        "data": payload.data,
+@router.post("/")
+async def publish_event(req: PublishRequest):
+    """Publish a custom event."""
+    event_data = {
+        "event_type": req.event_type,
+        "tenant_id": req.tenant_id,
+        "data": req.data,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
-    await _store_and_broadcast(record)
-    # Also publish to real EventBus if available
-    if _BUS_AVAILABLE and _bus is not None:
+    _event_log.append(event_data)
+    if len(_event_log) > _MAX_LOG:
+        _event_log.pop(0)
+
+    # Broadcast to connected WebSocket clients
+    await manager.broadcast(event_data, req.tenant_id)
+
+    # Also publish to EventBus if available
+    if _has_event_bus and _event_bus:
         try:
-            await _bus.publish(
-                event_type=payload.event_type,
-                tenant_id=payload.tenant_id,
-                data=payload.data,
+            from sentinel.events.bus import SentinelEvent, EventType
+            # Use a generic event type if the specific one doesn't exist
+            evt = SentinelEvent(
+                type=req.event_type,  # type: ignore[arg-type]
+                source_module="api.events",
+                tenant_id=req.tenant_id,
+                payload=req.data,
             )
-        except Exception as bus_err:
-            logger.warning("EventBus publish failed: %s", bus_err)
-    logger.info("Event published: %s for tenant %s", payload.event_type, payload.tenant_id)
-    return record
+            await _event_bus.publish(evt)
+        except Exception as e:
+            logger.warning(f"EventBus publish failed: {e}")
 
-
-# ---------------------------------------------------------------------------
-# SSE stream endpoint
-# ---------------------------------------------------------------------------
+    return {"status": "published", "event": event_data}
 
 
 @router.get("/stream")
 async def event_stream(
-    tenant_id: str = Query(..., description="Tenant to subscribe"),
-    event_type: str | None = Query(None, description="Filter by event type prefix"),
-) -> StreamingResponse:
-    """Server-Sent Events stream for real-time event delivery."""
-
-    async def generator():
-        # Send last 20 events on connect
-        backlog = [e for e in _event_log if e.get("tenant_id") == tenant_id][-20:]
-        for evt in backlog:
-            yield f"data: {json.dumps(evt)}\n\n"
-        # Then stream new events via polling
+    tenant_id: str = Query(default="default"),
+):
+    """SSE stream: sends events as text/event-stream."""
+    async def generate():
+        # Send a heartbeat first
+        yield f"data: {{\"type\": \"connected\", \"tenant_id\": \"{tenant_id}\"}}\ n\ n"
         last_idx = len(_event_log)
         while True:
             await asyncio.sleep(1)
-            new_events = _event_log[last_idx:]
+            current = _event_log
+            new_events = [
+                e for e in current[last_idx:]
+                if e.get("tenant_id") == tenant_id
+            ]
             for evt in new_events:
-                if evt.get("tenant_id") == tenant_id:
-                    if not event_type or evt.get("event_type", "").startswith(event_type):
-                        yield f"data: {json.dumps(evt)}\n\n"
-            last_idx = len(_event_log)
+                yield f"data: {json.dumps(evt)}\n\n"
+            last_idx = len(current)
 
     return StreamingResponse(
-        generator(),
+        generate(),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
@@ -181,41 +187,54 @@ async def event_stream(
     )
 
 
-# ---------------------------------------------------------------------------
-# WebSocket endpoint for real-time bidirectional streaming
-# ---------------------------------------------------------------------------
-
-
 @router.websocket("/ws")
-async def websocket_events(
-    websocket: WebSocket,
-    tenant_id: str = Query(..., description="Tenant ID"),
-) -> None:
-    """WebSocket endpoint. Connects client to tenant event stream.
+async def websocket_endpoint(ws: WebSocket, tenant_id: str = Query(default="default")):
+    """WebSocket endpoint for real-time event streaming."""
+    await manager.connect(ws, tenant_id)
+    logger.info(f"WebSocket connected: tenant={tenant_id}")
 
-    On connect: sends last 20 events as backlog.
-    Ongoing:    receives events published by any module and forwards them.
-    Client can also send JSON to publish an event.
-    """
-    await manager.connect(websocket, tenant_id)
-    # Send backlog
-    backlog = [e for e in _event_log if e.get("tenant_id") == tenant_id][-20:]
-    for evt in backlog:
-        await websocket.send_text(json.dumps(evt))
+    # Also subscribe to the EventBus if available
+    pump_task = None
+    if _has_event_bus and _event_bus:
+        try:
+            q = _event_bus.subscribe(tenant_id)
+            pump_task = asyncio.create_task(_pump_event_bus(tenant_id, q, ws))
+        except Exception as e:
+            logger.warning(f"EventBus subscribe failed: {e}")
+            q = None
+    else:
+        q = None
+
     try:
+        # Send connection confirmation
+        await ws.send_json({
+            "event_type": "connection.established",
+            "tenant_id": tenant_id,
+            "data": {"message": "Connected to Sentinel event stream"},
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+
         while True:
-            # Accept optional messages from client (publish from frontend)
-            raw = await asyncio.wait_for(websocket.receive_text(), timeout=30)
+            # Keep connection alive, receive pings
             try:
-                payload = json.loads(raw)
-                record: dict[str, Any] = {
-                    "event_type": payload.get("event_type", "ui.custom"),
-                    "tenant_id": tenant_id,
-                    "data": payload.get("data", {}),
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                }
-                await _store_and_broadcast(record)
-            except Exception as parse_err:
-                logger.debug("WS parse error: %s", parse_err)
-    except (WebSocketDisconnect, asyncio.TimeoutError):
-        manager.disconnect(websocket, tenant_id)
+                data = await asyncio.wait_for(ws.receive_text(), timeout=30)
+                msg = json.loads(data)
+                if msg.get("type") == "ping":
+                    await ws.send_json({"type": "pong", "timestamp": datetime.now(timezone.utc).isoformat()})
+            except asyncio.TimeoutError:
+                # Send keepalive heartbeat
+                await ws.send_json({"event_type": "heartbeat", "tenant_id": tenant_id, "data": {}, "timestamp": datetime.now(timezone.utc).isoformat()})
+
+    except WebSocketDisconnect:
+        logger.info(f"WebSocket disconnected: tenant={tenant_id}")
+    except Exception as e:
+        logger.warning(f"WebSocket error: {e}")
+    finally:
+        if pump_task:
+            pump_task.cancel()
+        if q and _event_bus:
+            try:
+                _event_bus.unsubscribe(tenant_id, q)
+            except Exception:
+                pass
+        manager.disconnect(ws, tenant_id)
