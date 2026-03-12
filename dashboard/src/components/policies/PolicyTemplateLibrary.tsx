@@ -4,7 +4,6 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, FileText, Shield, Filter } from 'lucide-react';
 import type { PolicyTemplate, Framework } from '@/lib/types/policy';
 import { FRAMEWORKS } from '@/lib/types/policy';
 
@@ -52,11 +51,11 @@ export function PolicyTemplateLibrary({ templates, onInstantiate, loading }: Pro
 
       <div className='flex gap-4 flex-wrap'>
         <div className='relative flex-1 min-w-[200px]'>
-          <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground' />
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground">🔍</span>
           <Input placeholder='Search templates...' value={search} onChange={e => setSearch(e.target.value)} className='pl-10' />
         </div>
         <Select value={framework} onValueChange={setFramework}>
-          <SelectTrigger className='w-[180px]'><Filter className='h-4 w-4 mr-2' /><SelectValue placeholder='Framework' /></SelectTrigger>
+          <SelectTrigger className='w-[180px]'><span className="h-4 w-4 mr-2">☰</span><SelectValue placeholder='Framework' /></SelectTrigger>
           <SelectContent>
             <SelectItem value='all'>All Frameworks</SelectItem>
             {FRAMEWORKS.map(fw => <SelectItem key={fw} value={fw}>{fw} ({fwCounts[fw] || 0})</SelectItem>)}
@@ -79,7 +78,7 @@ export function PolicyTemplateLibrary({ templates, onInstantiate, loading }: Pro
             <CardHeader className='pb-3'>
               <div className='flex items-start justify-between'>
                 <div className='flex items-center gap-2'>
-                  <FileText className='h-5 w-5 text-primary' />
+                  <span className="h-5 w-5 text-primary">📄</span>
                   <CardTitle className='text-sm font-medium'>{template.name}</CardTitle>
                 </div>
                 {template.is_mandatory && <Badge variant='destructive' className='text-xs'>Required</Badge>}
@@ -88,7 +87,7 @@ export function PolicyTemplateLibrary({ templates, onInstantiate, loading }: Pro
             <CardContent>
               <p className='text-xs text-muted-foreground mb-3'>{template.description}</p>
               <div className='flex flex-wrap gap-1 mb-3'>
-                <Badge variant='outline' className='text-xs'><Shield className='h-3 w-3 mr-1' />{template.framework}</Badge>
+                <Badge variant='outline' className='text-xs'><span className="h-3 w-3 mr-1">🛡</span>{template.framework}</Badge>
                 <Badge variant='secondary' className='text-xs'>{template.category}</Badge>
                 <Badge variant={template.risk_level === 'high' ? 'destructive' : 'outline'} className='text-xs'>{template.risk_level}</Badge>
               </div>

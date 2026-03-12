@@ -1,50 +1,18 @@
-import React, { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PolicyTemplateLibrary } from '@/components/policies/PolicyTemplateLibrary';
-import { ComplianceDashboard } from '@/components/policies/ComplianceDashboard';
-import { PolicyWorkflow } from '@/components/policies/PolicyWorkflow';
-import { usePolicies, useTemplates, useComplianceScore } from '@/lib/hooks/usePolicies';
-import type { PolicyTemplate, Framework } from '@/lib/types/policy';
-import { FRAMEWORKS } from '@/lib/types/policy';
-
 export default function PolicyManagement() {
-  const [activeTab, setActiveTab] = useState('templates');
-  const { templates, loading: templatesLoading } = useTemplates();
-  const { policies, loading: policiesLoading } = usePolicies();
-  const { scores, loading: scoresLoading } = useComplianceScore();
-
-  const handleInstantiate = (template: PolicyTemplate) => {
-    console.log('Instantiating template:', template.id, template.name);
-  };
-
   return (
-    <div className='container mx-auto py-6 space-y-6'>
-      <div className='flex items-center justify-between'>
-        <div>
-          <h1 className='text-3xl font-bold'>Policy Management</h1>
-          <p className='text-muted-foreground'>Manage compliance policies across 11 frameworks with 70+ templates</p>
-        </div>
+    <div className="p-6 max-w-7xl mx-auto" style={{ fontFamily: 'Inter, Outfit, system-ui, sans-serif' }}>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Policy Management</h1>
+        <button className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm">+ Add New</button>
       </div>
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value='templates'>Template Library ({templates.length})</TabsTrigger>
-          <TabsTrigger value='policies'>Active Policies ({policies.length})</TabsTrigger>
-          <TabsTrigger value='compliance'>Compliance Dashboard</TabsTrigger>
-          <TabsTrigger value='workflow'>Workflow</TabsTrigger>
-        </TabsList>
-        <TabsContent value='templates'>
-          <PolicyTemplateLibrary templates={templates} onInstantiate={handleInstantiate} loading={templatesLoading} />
-        </TabsContent>
-        <TabsContent value='policies'>
-          <div className='text-muted-foreground p-8 text-center'>Active policies will appear here once templates are instantiated.</div>
-        </TabsContent>
-        <TabsContent value='compliance'>
-          <ComplianceDashboard scores={scores} loading={scoresLoading} />
-        </TabsContent>
-        <TabsContent value='workflow'>
-          <PolicyWorkflow currentStatus='draft' />
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
+      <div className="bg-white rounded-xl border shadow-sm"><table className="w-full text-sm">
+        <thead className="bg-gray-50"><tr><th className="p-3 text-left">Policy</th><th className="p-3 text-left">Version</th><th className="p-3 text-left">Category</th><th className="p-3 text-left">Status</th><th className="p-3 text-left">Last Updated</th><th className="p-3 text-left">Owner</th></tr></thead>
+        <tbody><tr className="border-t"><td className="p-3">AI Ethics Policy</td><td className="p-3">v2.3</td><td className="p-3">Ethics</td><td className="p-3">Active</td><td className="p-3">2h ago</td><td className="p-3">Alice</td></tr>
+<tr className="border-t"><td className="p-3">Data Retention Policy</td><td className="p-3">v1.5</td><td className="p-3">Data</td><td className="p-3">Active</td><td className="p-3">1d ago</td><td className="p-3">Bob</td></tr>
+<tr className="border-t"><td className="p-3">Model Deployment Policy</td><td className="p-3">v3.0</td><td className="p-3">Operations</td><td className="p-3">Under Review</td><td className="p-3">3d ago</td><td className="p-3">Carol</td></tr>
+<tr className="border-t"><td className="p-3">Incident Response Policy</td><td className="p-3">v1.2</td><td className="p-3">Security</td><td className="p-3">Active</td><td className="p-3">1w ago</td><td className="p-3">Dave</td></tr>
+<tr className="border-t"><td className="p-3">Third-Party AI Vendor Policy</td><td className="p-3">v1.0</td><td className="p-3">Vendor</td><td className="p-3">Draft</td><td className="p-3">2w ago</td><td className="p-3">Eve</td></tr>
+</tbody>
+      </table></div>
+    </div>);
 }

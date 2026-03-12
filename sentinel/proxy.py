@@ -12,6 +12,8 @@ from typing import Any
 import asyncpg
 import litellm
 import redis.asyncio as redis
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
@@ -183,6 +185,16 @@ def create_app() -> FastAPI:
     app.include_router(tasks_router)
     app.include_router(notifications_router)
     app.include_router(hitl_router)
+    import os
+    static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static')
+    if os.path.isdir(static_dir):
+        app.mount('/assets', StaticFiles(directory=os.path.join(static_dir, 'assets')), name='static-assets')
+        @app.get('/{full_path:path}')
+        async def serve_spa(full_path: str):
+            index = os.path.join(static_dir, 'index.html')
+            if os.path.isfile(index):
+                return FileResponse(index)
+            return {"detail": "Not Found"}
     return app
 
 

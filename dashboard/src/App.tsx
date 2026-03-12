@@ -1,8 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import Sidebar from './components/Sidebar';
+import TopHeader from './components/TopHeader';
 
-// Security pages
 const SecurityHome = lazy(() => import('./pages/security/SecurityHome'));
 const SecurityOverview = lazy(() => import('./pages/security/SecurityOverview'));
 const ThreatFeed = lazy(() => import('./pages/security/ThreatFeed'));
@@ -14,20 +14,13 @@ const PolicyFirewall = lazy(() => import('./pages/security/PolicyFirewall'));
 const KeysVault = lazy(() => import('./pages/security/KeysVault'));
 const ModelArena = lazy(() => import('./pages/security/ModelArena'));
 const ReportGenerator = lazy(() => import('./pages/security/ReportGenerator'));
-
-// Eval pages
 const QualityMetrics = lazy(() => import('./pages/evals/QualityMetrics'));
 const EvalTechniques = lazy(() => import('./pages/evals/EvalTechniques'));
-
-// Compliance pages
 const ComplianceControls = lazy(() => import('./pages/compliance/ComplianceControls'));
 const EvidenceHub = lazy(() => import('./pages/compliance/EvidenceHub'));
 const ComplianceDashboard = lazy(() => import('./pages/ComplianceDashboard'));
-
-// Risk pages
+const PolicyManagement = lazy(() => import('./pages/PolicyManagement'));
 const RiskMatrix = lazy(() => import('./pages/RiskMatrix'));
-
-// Top-level pages
 const Overview = lazy(() => import('./pages/Overview'));
 const AuditLog = lazy(() => import('./pages/AuditLog'));
 const Benchmark = lazy(() => import('./pages/Benchmark'));
@@ -49,7 +42,14 @@ const Login = lazy(() => import('./pages/Login'));
 const Signup = lazy(() => import('./pages/Signup'));
 
 function Loading() {
-  return <div className="flex items-center justify-center h-64" style={{ fontFamily: 'Outfit' }}><p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>Loading...</p></div>;
+  return (
+    <div className="flex items-center justify-center h-64">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-sm text-gray-400">Loading...</p>
+      </div>
+    </div>
+  );
 }
 
 export default function App() {
@@ -59,74 +59,63 @@ export default function App() {
         <Route path="/login" element={<Suspense fallback={<Loading />}><Login /></Suspense>} />
         <Route path="/signup" element={<Suspense fallback={<Loading />}><Signup /></Suspense>} />
         <Route path="/*" element={
-          <div className="flex min-h-screen bg-white">
+          <div className="flex min-h-screen bg-gray-50">
             <Sidebar />
-            <main className="flex-1 overflow-auto">
-              <Suspense fallback={<Loading />}>
-                <Routes>
-                  {/* Dashboard */}
-                  <Route path="/" element={<Navigate to="/security" replace />} />
-                  <Route path="/overview" element={<Overview />} />
-
-                  {/* Security */}
-                  <Route path="/security" element={<SecurityHome />} />
-                  <Route path="/security/overview" element={<SecurityOverview />} />
-                  <Route path="/security/threats" element={<ThreatFeed />} />
-                  <Route path="/security/scans" element={<ScanCenter />} />
-                  <Route path="/security/scanner" element={<ScanCenter />} />
-                  <Route path="/security/attack-surface" element={<AttackSurface />} />
-                  <Route path="/security/vulnerabilities" element={<VulnTracker />} />
-                  <Route path="/security/red-team" element={<RedTeamLab />} />
-                  <Route path="/security/policies" element={<PolicyFirewall />} />
-                  <Route path="/security/keys" element={<KeysVault />} />
-                  <Route path="/security/model-arena" element={<ModelArena />} />
-                  <Route path="/security/reports" element={<ReportGenerator />} />
-                  <Route path="/security/model-auditor" element={<SecurityOverview />} />
-                  <Route path="/security/campaigns" element={<ThreatFeed />} />
-                  <Route path="/security/frameworks" element={<SecurityHome />} />
-                  <Route path="/security/strategy" element={<SecurityHome />} />
-
-                  {/* Evals */}
-                  <Route path="/evals" element={<QualityMetrics />} />
-                  <Route path="/evals/quality-metrics" element={<QualityMetrics />} />
-                  <Route path="/evals/techniques" element={<EvalTechniques />} />
-                  <Route path="/evals/results" element={<QualityMetrics />} />
-                  <Route path="/evals/benchmark" element={<Benchmark />} />
-                  <Route path="/evals/datasets" element={<Datasets />} />
-
-                  {/* Compliance */}
-                  <Route path="/compliance" element={<ComplianceDashboard />} />
-                  <Route path="/compliance/controls" element={<ComplianceControls />} />
-                  <Route path="/compliance/evidence" element={<EvidenceHub />} />
-                  <Route path="/compliance/gap-analysis" element={<GapAnalysis />} />
-
-                  {/* Risk */}
-                  <Route path="/risk" element={<RiskMatrix />} />
-                  <Route path="/risk/matrix" element={<RiskMatrix />} />
-                  <Route path="/risk/vendors" element={<Vendors />} />
-                  <Route path="/risk/incidents" element={<IncidentLog />} />
-                  <Route path="/risk/remediation" element={<Remediation />} />
-
-                  {/* Models */}
-                  <Route path="/models" element={<ModelInventory />} />
-                  <Route path="/models/inventory" element={<ModelInventory />} />
-                  <Route path="/models/lifecycle" element={<ModelLifecycle />} />
-
-                  {/* Operations */}
-                  <Route path="/audit-log" element={<AuditLog />} />
-                  <Route path="/evidence-vault" element={<EvidenceVault />} />
-                  <Route path="/export" element={<ExportCenter />} />
-                  <Route path="/hitl-queue" element={<HitlQueue />} />
-                  <Route path="/notifications" element={<Notifications />} />
-                  <Route path="/policy-editor" element={<PolicyEditor />} />
-                  <Route path="/remediation-tracker" element={<RemediationTracker />} />
-                  <Route path="/settings" element={<Settings />} />
-
-                  {/* Catch-all */}
-                  <Route path="*" element={<Navigate to="/security" replace />} />
-                </Routes>
-              </Suspense>
-            </main>
+            <div className="flex-1 flex flex-col overflow-auto">
+              <TopHeader />
+              <main className="flex-1 overflow-auto">
+                <Suspense fallback={<Loading />}>
+                  <Routes>
+                    <Route path="/" element={<Navigate to="/overview" replace />} />
+                    <Route path="/overview" element={<Overview />} />
+                    <Route path="/security" element={<SecurityHome />} />
+                    <Route path="/security/overview" element={<SecurityOverview />} />
+                    <Route path="/security/threats" element={<ThreatFeed />} />
+                    <Route path="/security/scans" element={<ScanCenter />} />
+                    <Route path="/security/scanner" element={<ScanCenter />} />
+                    <Route path="/security/attack-surface" element={<AttackSurface />} />
+                    <Route path="/security/vulnerabilities" element={<VulnTracker />} />
+                    <Route path="/security/red-team" element={<RedTeamLab />} />
+                    <Route path="/security/policies" element={<PolicyFirewall />} />
+                    <Route path="/security/keys" element={<KeysVault />} />
+                    <Route path="/security/model-arena" element={<ModelArena />} />
+                    <Route path="/security/reports" element={<ReportGenerator />} />
+                    <Route path="/security/model-auditor" element={<SecurityOverview />} />
+                    <Route path="/security/campaigns" element={<ThreatFeed />} />
+                    <Route path="/security/frameworks" element={<SecurityHome />} />
+                    <Route path="/security/strategy" element={<SecurityHome />} />
+                    <Route path="/evals" element={<QualityMetrics />} />
+                    <Route path="/evals/quality-metrics" element={<QualityMetrics />} />
+                    <Route path="/evals/techniques" element={<EvalTechniques />} />
+                    <Route path="/evals/results" element={<QualityMetrics />} />
+                    <Route path="/evals/benchmark" element={<Benchmark />} />
+                    <Route path="/evals/datasets" element={<Datasets />} />
+                    <Route path="/compliance" element={<ComplianceDashboard />} />
+                    <Route path="/compliance/controls" element={<ComplianceControls />} />
+                    <Route path="/compliance/evidence" element={<EvidenceHub />} />
+                    <Route path="/compliance/gap-analysis" element={<GapAnalysis />} />
+                    <Route path="/compliance/policies" element={<PolicyManagement />} />
+                    <Route path="/risk" element={<RiskMatrix />} />
+                    <Route path="/risk/matrix" element={<RiskMatrix />} />
+                    <Route path="/risk/vendors" element={<Vendors />} />
+                    <Route path="/risk/incidents" element={<IncidentLog />} />
+                    <Route path="/risk/remediation" element={<Remediation />} />
+                    <Route path="/models" element={<ModelInventory />} />
+                    <Route path="/models/inventory" element={<ModelInventory />} />
+                    <Route path="/models/lifecycle" element={<ModelLifecycle />} />
+                    <Route path="/audit-log" element={<AuditLog />} />
+                    <Route path="/evidence-vault" element={<EvidenceVault />} />
+                    <Route path="/export" element={<ExportCenter />} />
+                    <Route path="/hitl-queue" element={<HitlQueue />} />
+                    <Route path="/notifications" element={<Notifications />} />
+                    <Route path="/policy-editor" element={<PolicyEditor />} />
+                    <Route path="/remediation-tracker" element={<RemediationTracker />} />
+                    <Route path="/settings" element={<Settings />} />
+                    <Route path="*" element={<Navigate to="/overview" replace />} />
+                  </Routes>
+                </Suspense>
+              </main>
+            </div>
           </div>
         } />
       </Routes>

@@ -1,7 +1,17 @@
-import { useState, useMemo } from "react";
-interface Evidence { id: string; title: string; control: string; type: string; uploadedAt: string; }
 export default function EvidenceHub() {
-  const [search, setSearch] = useState("");
-  const evidence = useMemo<Evidence[]>(() => [{id:"1",title:"Privacy Impact Assessment",control:"Data Privacy",type:"PDF",uploadedAt:"2024-01-15"},{id:"2",title:"Bias Test Report",control:"Bias Testing",type:"PDF",uploadedAt:"2024-01-14"},{id:"3",title:"Model Card",control:"Documentation",type:"MD",uploadedAt:"2024-01-13"}],[]);
-  const filtered = evidence.filter(e=>e.title.toLowerCase().includes(search.toLowerCase()));
-  return (<div className="p-6"><h1 className="text-2xl font-bold mb-1">Evidence Hub</h1><p className="text-sm text-muted-foreground mb-4">Manage compliance evidence and artifacts</p><div className="flex gap-2 mb-4"><input placeholder="Search evidence..." className="border rounded px-3 py-2 flex-1" value={search} onChange={e=>setSearch(e.target.value)}/><button className="px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded">Upload Evidence</button></div>{filtered.length===0?(<div className="text-center py-12 text-muted-foreground">No evidence found. Upload evidence to get started.</div>):(<table className="w-full border-collapse"><thead><tr className="border-b"><th className="text-left p-2">Title</th><th className="text-left p-2">Control</th><th className="text-left p-2">Type</th><th className="text-left p-2">Uploaded</th></tr></thead><tbody>{filtered.map(e=>(<tr key={e.id} className="border-b hover:bg-[hsl(var(--muted))]"><td className="p-2">{e.title}</td><td className="p-2">{e.control}</td><td className="p-2">{e.type}</td><td className="p-2">{e.uploadedAt}</td></tr>))}</tbody></table>)}</div>);}
+  return (
+    <div className="p-6 max-w-7xl mx-auto" style={{ fontFamily: 'Inter, Outfit, system-ui, sans-serif' }}>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Evidence Hub</h1>
+        <button className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm">+ Add New</button>
+      </div>
+      <div className="bg-white rounded-xl border shadow-sm"><table className="w-full text-sm">
+        <thead className="bg-gray-50"><tr><th className="p-3 text-left">Evidence</th><th className="p-3 text-left">Control</th><th className="p-3 text-left">Type</th><th className="p-3 text-left">Uploaded</th><th className="p-3 text-left">Size</th><th className="p-3 text-left">Status</th></tr></thead>
+        <tbody><tr className="border-t"><td className="p-3">AI Ethics Policy v2.3</td><td className="p-3">CC-001</td><td className="p-3">Policy Document</td><td className="p-3">2h ago</td><td className="p-3">1.2 MB</td><td className="p-3">Approved</td></tr>
+<tr className="border-t"><td className="p-3">Bias Test Results Q1</td><td className="p-3">CC-003</td><td className="p-3">Test Report</td><td className="p-3">1d ago</td><td className="p-3">890 KB</td><td className="p-3">Under Review</td></tr>
+<tr className="border-t"><td className="p-3">DPIA for Chat Model</td><td className="p-3">CC-002</td><td className="p-3">Assessment</td><td className="p-3">3d ago</td><td className="p-3">2.1 MB</td><td className="p-3">Approved</td></tr>
+<tr className="border-t"><td className="p-3">Incident Playbook v1</td><td className="p-3">CC-004</td><td className="p-3">Procedure</td><td className="p-3">1w ago</td><td className="p-3">456 KB</td><td className="p-3">Draft</td></tr>
+</tbody>
+      </table></div>
+    </div>);
+}

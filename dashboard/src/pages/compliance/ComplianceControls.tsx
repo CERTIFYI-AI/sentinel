@@ -1,9 +1,18 @@
-import { useState, useMemo } from "react";
-interface Control { id: string; name: string; framework: string; status: "compliant"|"non-compliant"|"partial"; owner: string; }
 export default function ComplianceControls() {
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("all");
-  const controls = useMemo<Control[]>(() => [{id:"1",name:"Data Privacy Assessment",framework:"EU AI Act",status:"compliant",owner:"Alice"},{id:"2",name:"Bias Testing",framework:"NIST AI RMF",status:"partial",owner:"Bob"},{id:"3",name:"Model Documentation",framework:"ISO 42001",status:"non-compliant",owner:"Carol"},{id:"4",name:"Risk Assessment",framework:"EU AI Act",status:"compliant",owner:"Dave"}],[]);
-  const filtered = controls.filter(c=>(filter==="all"||c.status===filter)&&c.name.toLowerCase().includes(search.toLowerCase()));
-  const statusColors = {compliant:"bg-green-100 text-green-800","non-compliant":"bg-red-100 text-red-800",partial:"bg-yellow-100 text-yellow-800"};
-  return (<div className="p-6"><h1 className="text-2xl font-bold mb-1">Compliance Controls</h1><p className="text-sm text-muted-foreground mb-4">Manage compliance controls across frameworks</p><div className="flex gap-2 mb-4"><input placeholder="Search controls..." className="border rounded px-3 py-2 flex-1" value={search} onChange={e=>setSearch(e.target.value)}/><select className="border rounded px-3 py-2" value={filter} onChange={e=>setFilter(e.target.value)}><option value="all">All Status</option><option value="compliant">Compliant</option><option value="partial">Partial</option><option value="non-compliant">Non-Compliant</option></select></div>{filtered.length===0?(<div className="text-center py-12 text-muted-foreground">No controls found.</div>):(<table className="w-full border-collapse"><thead><tr className="border-b"><th className="text-left p-2">Control</th><th className="text-left p-2">Framework</th><th className="text-left p-2">Status</th><th className="text-left p-2">Owner</th></tr></thead><tbody>{filtered.map(c=>(<tr key={c.id} className="border-b hover:bg-[hsl(var(--muted))]"><td className="p-2">{c.name}</td><td className="p-2">{c.framework}</td><td className="p-2"><span className={`px-2 py-1 rounded text-xs ${statusColors[c.status]}`}>{c.status}</span></td><td className="p-2">{c.owner}</td></tr>))}</tbody></table>)}</div>);}
+  return (
+    <div className="p-6 max-w-7xl mx-auto" style={{ fontFamily: 'Inter, Outfit, system-ui, sans-serif' }}>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Compliance Controls</h1>
+        <button className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm">+ Add New</button>
+      </div>
+      <div className="bg-white rounded-xl border shadow-sm"><table className="w-full text-sm">
+        <thead className="bg-gray-50"><tr><th className="p-3 text-left">Control ID</th><th className="p-3 text-left">Control</th><th className="p-3 text-left">Framework</th><th className="p-3 text-left">Status</th><th className="p-3 text-left">Evidence</th><th className="p-3 text-left">Owner</th></tr></thead>
+        <tbody><tr className="border-t"><td className="p-3">CC-001</td><td className="p-3">AI Model Risk Assessment</td><td className="p-3">NIST AI RMF</td><td className="p-3">Implemented</td><td className="p-3">3 docs</td><td className="p-3">Alice</td></tr>
+<tr className="border-t"><td className="p-3">CC-002</td><td className="p-3">Data Privacy Impact Assessment</td><td className="p-3">EU AI Act</td><td className="p-3">In Progress</td><td className="p-3">1 doc</td><td className="p-3">Bob</td></tr>
+<tr className="border-t"><td className="p-3">CC-003</td><td className="p-3">Algorithmic Bias Testing</td><td className="p-3">ISO 42001</td><td className="p-3">Implemented</td><td className="p-3">5 docs</td><td className="p-3">Carol</td></tr>
+<tr className="border-t"><td className="p-3">CC-004</td><td className="p-3">Incident Response Plan</td><td className="p-3">SOC 2 Type II</td><td className="p-3">Draft</td><td className="p-3">0 docs</td><td className="p-3">Dave</td></tr>
+<tr className="border-t"><td className="p-3">CC-005</td><td className="p-3">Model Monitoring Procedures</td><td className="p-3">OWASP LLM</td><td className="p-3">Implemented</td><td className="p-3">2 docs</td><td className="p-3">Eve</td></tr>
+</tbody>
+      </table></div>
+    </div>);
+}

@@ -1,52 +1,18 @@
-import { useState } from "react";
-import { mockAuditEntries } from "../lib/mockData";
-import { Card, CardContent } from "../components/ui/card";
-
-const tc = (s: number) => s >= 0.85 ? "text-green-400" : s >= 0.7 ? "text-amber-400" : "text-red-400";
-const ib = (i: string) => ({ NONE: "bg-zinc-800 text-zinc-400", REGENERATE: "bg-blue-950 text-blue-400", UPGRADE: "bg-amber-950 text-amber-400", HITL: "bg-red-950 text-red-400", BLOCKED: "bg-purple-950 text-purple-400" }[i] || "bg-zinc-800 text-zinc-400");
-
 export default function AuditLog() {
-  const [filter, setFilter] = useState("All");
-  const entries = filter === "All" ? mockAuditEntries : mockAuditEntries.filter(e => e.intervention === filter);
   return (
-    <div className="p-6 space-y-4">
-      <div><h1 className="text-xl font-bold">Audit Log</h1><p className="text-sm text-muted-foreground">Append-only SHA-256 hash chain — cryptographic proof for every AI decision</p></div>
-      <div className="flex gap-2 items-center">
-        {["All","NONE","REGENERATE","UPGRADE","HITL","BLOCKED"].map(f => (
-          <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 text-xs rounded ${filter === f ? "bg-[hsl(var(--primary,136_45%_45%))] text-white" : "bg-[hsl(var(--surface-2,240_10%_6.5%))] text-muted-foreground hover:bg-[hsl(var(--surface-3,240_8%_9%))]"}`}>{f}</button>
-        ))}
-        <div className="ml-auto"><button className="px-3 py-1.5 text-xs rounded bg-[hsl(var(--surface-2,240_10%_6.5%))] text-muted-foreground">Verify Chain</button></div>
+    <div className="p-6 max-w-7xl mx-auto" style={{ fontFamily: 'Inter, Outfit, system-ui, sans-serif' }}>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Audit Log</h1>
+        <button className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm">+ Add New</button>
       </div>
-      <Card>
-        <CardContent className="p-0">
-          <table className="w-full text-sm">
-            <thead><tr className="border-b border-border bg-[hsl(var(--surface-2,240_10%_6.5%))]">
-              {["Timestamp","Request ID","Model","Trust","Intervention","PII","Latency","Cost","Hash"].map(h => (
-                <th key={h} className="px-3 py-2.5 text-left text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{h}</th>
-              ))}
-            </tr></thead>
-            <tbody>
-              {entries.map((e, i) => (
-                <tr key={i} className={`border-b border-[hsl(var(--border-2,240_3.7%_12%))] hover:bg-[hsl(var(--accent,240_3.7%_15.9%))] ${e.intervention === "HITL" ? "border-l-2 border-l-red-500" : e.intervention === "BLOCKED" ? "bg-red-950/20" : ""}`}>
-                  <td className="px-3 py-2.5 text-xs text-muted-foreground">{e.timestamp}</td>
-                  <td className="px-3 py-2.5 font-mono text-xs">{e.id}</td>
-                  <td className="px-3 py-2.5 text-xs">{e.model}</td>
-                  <td className={`px-3 py-2.5 font-mono text-xs font-bold ${tc(e.trust_score)}`}>{e.trust_score.toFixed(4)}</td>
-                  <td className="px-3 py-2.5"><span className={`text-[10px] px-1.5 py-0.5 rounded ${ib(e.intervention)}`}>{e.intervention}</span></td>
-                  <td className={`px-3 py-2.5 text-xs ${e.pii_count > 0 ? "text-amber-400 font-bold" : "text-muted-foreground"}`}>{e.pii_count}</td>
-                  <td className={`px-3 py-2.5 font-mono text-xs ${e.latency_ms > 800 ? "text-red-400" : e.latency_ms > 400 ? "text-amber-400" : "text-green-400"}`}>{e.latency_ms}ms</td>
-                  <td className="px-3 py-2.5 font-mono text-xs">${e.cost.toFixed(5)}</td>
-                  <td className="px-3 py-2.5 font-mono text-[10px] text-muted-foreground">{e.chain_hash}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="flex items-center justify-between px-3 py-2.5 text-xs text-muted-foreground border-t border-border">
-            <span>Showing {entries.length} of {mockAuditEntries.length} entries</span>
-            <div className="flex gap-1">{[1,2,3].map(p => <button key={p} className={`w-8 h-8 rounded ${p===1?"bg-[hsl(var(--primary,136_45%_45%))] text-white":"hover:bg-[hsl(var(--accent,240_3.7%_15.9%))]"}`}>{p}</button>)}</div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+      <div className="bg-white rounded-xl border shadow-sm"><table className="w-full text-sm">
+        <thead className="bg-gray-50"><tr><th className="p-3 text-left">Timestamp</th><th className="p-3 text-left">User</th><th className="p-3 text-left">Action</th><th className="p-3 text-left">Resource</th><th className="p-3 text-left">Details</th><th className="p-3 text-left">IP</th></tr></thead>
+        <tbody><tr className="border-t"><td className="p-3">2 min ago</td><td className="p-3">admin@certifyi.ai</td><td className="p-3">Updated</td><td className="p-3">Policy: AI Ethics v2.3</td><td className="p-3">Version bump</td><td className="p-3">192.168.1.1</td></tr>
+<tr className="border-t"><td className="p-3">15 min ago</td><td className="p-3">alice@certifyi.ai</td><td className="p-3">Created</td><td className="p-3">Scan: GPT-4o Injection</td><td className="p-3">New scan initiated</td><td className="p-3">192.168.1.2</td></tr>
+<tr className="border-t"><td className="p-3">1h ago</td><td className="p-3">bob@certifyi.ai</td><td className="p-3">Deleted</td><td className="p-3">Risk: RSK-006</td><td className="p-3">Duplicate removed</td><td className="p-3">192.168.1.3</td></tr>
+<tr className="border-t"><td className="p-3">3h ago</td><td className="p-3">carol@certifyi.ai</td><td className="p-3">Approved</td><td className="p-3">Evidence: Bias Test Q1</td><td className="p-3">Review complete</td><td className="p-3">192.168.1.4</td></tr>
+<tr className="border-t"><td className="p-3">6h ago</td><td className="p-3">admin@certifyi.ai</td><td className="p-3">Modified</td><td className="p-3">Control: CC-003</td><td className="p-3">Status changed</td><td className="p-3">192.168.1.1</td></tr>
+</tbody>
+      </table></div>
+    </div>);
 }

@@ -1,6 +1,30 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-:root{--bg:#ffffff;--bg2:#f8fafc;--border:#e2e8f0;--text:#0f172a;--text2:#64748b;--brand:#2563eb;}
-.dark{--bg:#0f172a;--bg2:#1e293b;--border:#334155;--text:#f1f5f9;--text2:#94a3b8;--brand:#3b82f6;}
-body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;transition:background 0.2s,color 0.2s;}
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+  --primary: 221 83% 53%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96%;
+  --secondary-foreground: 222 47% 11%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;
+  --accent: 210 40% 96%;
+  --accent-foreground: 222 47% 11%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --ring: 221 83% 53%;
+  --radius: 0.5rem;
+  --brand: 221 83% 53%;
+  --brand-subtle: 221 83% 97%;
+}
+body { background: hsl(var(--background)); color: hsl(var(--foreground)); font-family: Outfit, system-ui, sans-serif; }
+* { border-color: hsl(var(--border)); }

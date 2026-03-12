@@ -2,7 +2,6 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Shield, AlertTriangle, CheckCircle, FileText } from 'lucide-react';
 import type { ComplianceScore, Framework } from '@/lib/types/policy';
 
 interface Props {
@@ -20,7 +19,7 @@ export function ComplianceDashboard({ scores, loading }: Props) {
         <Card>
           <CardContent className='pt-6'>
             <div className='flex items-center gap-3'>
-              <Shield className='h-8 w-8 text-primary' />
+              <span className="h-8 w-8 text-primary">🛡</span>
               <div>
                 <p className='text-2xl font-bold'>{overall}%</p>
                 <p className='text-xs text-muted-foreground'>Overall Compliance</p>
@@ -31,7 +30,7 @@ export function ComplianceDashboard({ scores, loading }: Props) {
         <Card>
           <CardContent className='pt-6'>
             <div className='flex items-center gap-3'>
-              <FileText className='h-8 w-8 text-blue-500' />
+              <span className="h-8 w-8 text-blue-500">📄</span>
               <div>
                 <p className='text-2xl font-bold'>{scores.reduce((a, s) => a + s.total, 0)}</p>
                 <p className='text-xs text-muted-foreground'>Total Policies</p>
@@ -42,7 +41,7 @@ export function ComplianceDashboard({ scores, loading }: Props) {
         <Card>
           <CardContent className='pt-6'>
             <div className='flex items-center gap-3'>
-              <CheckCircle className='h-8 w-8 text-green-500' />
+              <span className="h-8 w-8 text-green-500">✅</span>
               <div>
                 <p className='text-2xl font-bold'>{scores.reduce((a, s) => a + s.compliant, 0)}</p>
                 <p className='text-xs text-muted-foreground'>Compliant</p>
@@ -53,7 +52,7 @@ export function ComplianceDashboard({ scores, loading }: Props) {
         <Card>
           <CardContent className='pt-6'>
             <div className='flex items-center gap-3'>
-              <AlertTriangle className='h-8 w-8 text-yellow-500' />
+              <span className="h-8 w-8 text-yellow-500">⚠</span>
               <div>
                 <p className='text-2xl font-bold'>{scores.reduce((a, s) => a + s.gaps.length, 0)}</p>
                 <p className='text-xs text-muted-foreground'>Gaps Found</p>
