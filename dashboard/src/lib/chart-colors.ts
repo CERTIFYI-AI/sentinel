@@ -24,4 +24,3 @@ export function trustScoreClass(score: number): string {
   if (score >= 0.70) return "text-[hsl(var(--trust-medium))]";
   return "text-[hsl(var(--trust-low))]";
 }
-export const CHART_COLORS = chartColors;

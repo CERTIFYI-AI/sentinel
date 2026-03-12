@@ -142,6 +142,23 @@ async def _call_llm_provider(
 # App factory
 # ---------------------------------------------------------------------------
 
+
+# New Sentinel module routers
+try:
+    from sentinel.api.routers.model_router import router as ai_models_router
+    from sentinel.api.routers.controls_router import router as controls_router
+    from sentinel.api.routers.dataset_router import router as datasets_router
+    from sentinel.api.routers.agent_router import router as agents_router
+    from sentinel.api.routers.vendor_router import router as vendors_router
+    from sentinel.api.routers.bias_audit_router import router as bias_audits_router
+    from sentinel.api.routers.evidence_router import router as evidence_router
+    from sentinel.api.routers.hitl_router import router as hitl_router
+    _NEW_ROUTERS_LOADED = True
+except ImportError as e:
+    import logging
+    logging.getLogger(__name__).warning(f"New routers not loaded: {e}")
+    _NEW_ROUTERS_LOADED = False
+
 def create_app() -> FastAPI:
     app = FastAPI(
         title="Certifyi Sentinel",
@@ -195,6 +212,17 @@ def create_app() -> FastAPI:
             if os.path.isfile(index):
                 return FileResponse(index)
             return {"detail": "Not Found"}
+
+    # New module routers
+    if _NEW_ROUTERS_LOADED:
+        app.include_router(ai_models_router, prefix="/api/v1", tags=["ai-models"])
+        app.include_router(controls_router, prefix="/api/v1", tags=["controls"])
+        app.include_router(datasets_router, prefix="/api/v1", tags=["datasets"])
+        app.include_router(agents_router, prefix="/api/v1", tags=["agents"])
+        app.include_router(vendors_router, prefix="/api/v1", tags=["vendors"])
+        app.include_router(bias_audits_router, prefix="/api/v1", tags=["bias-audits"])
+        app.include_router(evidence_router, prefix="/api/v1", tags=["evidence"])
+        app.include_router(hitl_router, prefix="/api/v1", tags=["hitl"])
     return app
 
 
