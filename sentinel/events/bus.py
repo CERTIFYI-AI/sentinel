@@ -98,3 +98,4 @@ class EventBus:
 
 # Singleton — import this everywhere
 bus = EventBus()
+event_bus = bus  # Alias for backwards compatibility with generated routers
