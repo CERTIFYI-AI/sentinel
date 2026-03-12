@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional
-import jwt, os, io
+from jose import jwt
+import os, io
 from sentinel.models.policy_engine import PolicyEngine
 from sentinel.utils.policy_pdf import generate_policy_pdf
 
