@@ -75,3 +75,45 @@ async def emit_agent_discovered(tenant_id: str, agent_id: str, source: str, agen
         'agent_id': agent_id, 'source': source, 'type': agent_type, 'risk_level': risk_level,
         'timestamp': datetime.now(timezone.utc).isoformat()
     })
+
+
+
+# -----------------------------------------------------------------------
+# ComplianceEvent class - required by events/__init__.py
+# -----------------------------------------------------------------------
+from dataclasses import dataclass, field as dc_field
+import uuid
+
+
+@dataclass
+class ComplianceEvent:
+    """Structured compliance event compatible with agent_router and other modules."""
+    event_type: str
+    tenant_id: str
+    module: str
+    payload: dict = dc_field(default_factory=dict)
+    event_id: str = dc_field(default_factory=lambda: str(uuid.uuid4()))
+    timestamp: str = dc_field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
+
+    def to_dict(self) -> dict:
+        return {
+            "event_id": self.event_id,
+            "event_type": self.event_type,
+            "tenant_id": self.tenant_id,
+            "module": self.module,
+            "payload": self.payload,
+            "timestamp": self.timestamp,
+        }
+
+
+# publish_compliance is an alias for emit_compliance_event for backwards compatibility
+async def publish_compliance(
+    event_type: str,
+    tenant_id: str,
+    module: str,
+    payload: Optional[dict] = None,
+) -> None:
+    """Alias for emit_compliance_event - for backwards compatibility."""
+    await emit_compliance_event(event_type, tenant_id, module, payload or {})
