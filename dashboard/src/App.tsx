@@ -57,20 +57,17 @@ function Loading() {
 
 /**
  * AuthenticatedLayout - mounts real-time hooks once user is in the protected area.
- * Both useRealtimeEvents (unread counter) and useRealtimeInvalidation (cache refresh)
- * are initialized here so all child pages receive live updates automatically.
+ * useRealtimeEvents: WebSocket connection + unread notification counter.
+ * useRealtimeInvalidation: maps incoming events to React Query cache invalidations.
  */
 function AuthenticatedLayout() {
-  // Get tenant_id from auth store (fallback to 'default' for dev)
-  const tenantId = useAuthStore?.((s: any) => s.user?.tenant_id) ?? 'default';
+  const tenantId = useAuthStore((s) => s.user?.tenantId ?? 'default');
 
-  // Connect to WebSocket and track unread notifications
   useRealtimeEvents({
     tenantId,
     notifyPrefixes: ['hitl', 'security', 'compliance', 'bias_audit', 'approval'],
   });
 
-  // Automatically invalidate React Query caches when events arrive
   useRealtimeInvalidation();
 
   return (
