@@ -1,12 +1,12 @@
 import { Link } from 'react-router-dom';
 
 const STATS = [
-  { label: 'Models', value: 12, icon: '\U0001F916', to: '/models/inventory', color: 'bg-blue-50 text-blue-700' },
-  { label: 'Vendors', value: 5, icon: '\U0001F3E2', to: '/risk/vendors', color: 'bg-purple-50 text-purple-700' },
-  { label: 'Policies', value: 24, icon: '\U0001F4DC', to: '/compliance/policies', color: 'bg-emerald-50 text-emerald-700' },
-  { label: 'Open Risks', value: 8, icon: '\u26A0\uFE0F', to: '/risk', color: 'bg-amber-50 text-amber-700' },
-  { label: 'Controls', value: 156, icon: '\U0001F39B\uFE0F', to: '/compliance/controls', color: 'bg-indigo-50 text-indigo-700' },
-  { label: 'Incidents', value: 3, icon: '\U0001F6A8', to: '/risk/incidents', color: 'bg-red-50 text-red-700' },
+  { label: 'Models', value: 12, icon: '🤖', to: '/models/inventory', color: 'bg-blue-50 text-blue-700' },
+  { label: 'Vendors', value: 5, icon: '🏢', to: '/risk/vendors', color: 'bg-purple-50 text-purple-700' },
+  { label: 'Policies', value: 24, icon: '📜', to: '/compliance/policies', color: 'bg-emerald-50 text-emerald-700' },
+  { label: 'Open Risks', value: 8, icon: '⚠️', to: '/risk', color: 'bg-amber-50 text-amber-700' },
+  { label: 'Controls', value: 156, icon: '🎛️', to: '/compliance/controls', color: 'bg-indigo-50 text-indigo-700' },
+  { label: 'Incidents', value: 3, icon: '🚨', to: '/risk/incidents', color: 'bg-red-50 text-red-700' },
 ];
 
 const FRAMEWORKS = [
@@ -33,7 +33,6 @@ export default function Overview() {
         <h1 className="text-2xl font-bold text-gray-900">Good afternoon, Admin</h1>
         <p className="text-gray-500 text-sm mt-1">Here is an overview of your AI governance platform</p>
       </div>
-
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
         {STATS.map((stat) => (
@@ -46,7 +45,6 @@ export default function Overview() {
           </Link>
         ))}
       </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Compliance Frameworks */}
         <div className="bg-white rounded-xl border p-6">
@@ -71,7 +69,6 @@ export default function Overview() {
             })}
           </div>
         </div>
-
         {/* Recent Activity */}
         <div className="bg-white rounded-xl border p-6">
           <div className="flex items-center justify-between mb-4">
@@ -98,7 +95,6 @@ export default function Overview() {
           </div>
         </div>
       </div>
-
       {/* AI Governance Score */}
       <div className="bg-white rounded-xl border p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">AI Governance Score</h2>
