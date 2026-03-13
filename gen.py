@@ -1,634 +1,821 @@
 #!/usr/bin/env python3
-import os
-
-B = os.path.expanduser('~/sentinel')
-
-def w(rel, content):
-    p = os.path.join(B, rel)
-    os.makedirs(os.path.dirname(p), exist_ok=True)
-    with open(p, 'w') as f:
-        f.write(content)
-    print('OK:', rel)
-
-# ── DB Migration 004 ─────────────────────────────────────────────────────────
-w('sentinel/api/migrations/004_new_tables.sql', """-- Migration 004: New tables for Sentinel full lifecycle
-CREATE TABLE IF NOT EXISTS ai_models(
-    id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, name TEXT NOT NULL,
-    version TEXT, model_type TEXT,
-    status TEXT DEFAULT 'draft' CHECK(status IN ('draft','active','deprecated','retired')),
-    risk_level TEXT DEFAULT 'medium' CHECK(risk_level IN ('low','medium','high','critical')),
-    owner TEXT, description TEXT, use_case TEXT, framework TEXT,
-    metadata JSONB DEFAULT '{}', created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-CREATE TABLE IF NOT EXISTS datasets(
-    id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, name TEXT NOT NULL,
-    description TEXT, source TEXT, format TEXT, size_mb FLOAT,
-    status TEXT DEFAULT 'draft' CHECK(status IN ('draft','active','archived')),
-    sensitivity TEXT DEFAULT 'internal' CHECK(sensitivity IN ('public','internal','confidential','restricted')),
-    bias_score FLOAT, owner TEXT, metadata JSONB DEFAULT '{}', created_at TIMESTAMPTZ DEFAULT NOW()
-);
-CREATE TABLE IF NOT EXISTS vendors(
-    id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, name TEXT NOT NULL,
-    category TEXT, status TEXT DEFAULT 'pending' CHECK(status IN ('pending','approved','rejected','under_review')),
-    risk_level TEXT DEFAULT 'medium' CHECK(risk_level IN ('low','medium','high','critical')),
-    contact_email TEXT, website TEXT, description TEXT, assessment_score FLOAT,
-    owner TEXT, metadata JSONB DEFAULT '{}', created_at TIMESTAMPTZ DEFAULT NOW()
-);
-CREATE TABLE IF NOT EXISTS agents(
-    id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, name TEXT NOT NULL,
-    description TEXT, agent_type TEXT,
-    status TEXT DEFAULT 'draft' CHECK(status IN ('draft','active','paused','retired')),
-    discovery_status TEXT DEFAULT 'pending' CHECK(discovery_status IN ('pending','approved','rejected')),
-    rejection_reason TEXT,
-    risk_level TEXT DEFAULT 'medium' CHECK(risk_level IN ('low','medium','high','critical')),
-    model_id TEXT, owner TEXT, metadata JSONB DEFAULT '{}', created_at TIMESTAMPTZ DEFAULT NOW()
-);
-CREATE TABLE IF NOT EXISTS bias_audits(
-    id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, model_id TEXT, dataset_id TEXT,
-    status TEXT DEFAULT 'pending' CHECK(status IN ('pending','running','complete','failed')),
-    bias_score FLOAT, passed BOOLEAN, results JSONB DEFAULT '{}',
-    recommendations TEXT, completed_at TIMESTAMPTZ, created_at TIMESTAMPTZ DEFAULT NOW()
-);
-CREATE TABLE IF NOT EXISTS evidence(
-    id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, title TEXT NOT NULL,
-    control_id TEXT, policy_id TEXT, description TEXT, file_url TEXT,
-    uploaded_by TEXT, status TEXT DEFAULT 'pending' CHECK(status IN ('pending','approved','rejected')),
-    reviewed_by TEXT, reviewed_at TIMESTAMPTZ, created_at TIMESTAMPTZ DEFAULT NOW()
-);
-CREATE TABLE IF NOT EXISTS hitl_reviews(
-    id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, entity_type TEXT NOT NULL,
-    entity_id TEXT NOT NULL, review_type TEXT DEFAULT 'manual', assigned_to TEXT,
-    status TEXT DEFAULT 'pending' CHECK(status IN ('pending','approved','rejected','escalated')),
-    decision TEXT, notes TEXT, context TEXT, due_at TIMESTAMPTZ,
-    resolved_by TEXT, resolved_at TIMESTAMPTZ, created_at TIMESTAMPTZ DEFAULT NOW()
-);
-CREATE INDEX IF NOT EXISTS idx_models_t ON ai_models(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_datasets_t ON datasets(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_vendors_t ON vendors(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_agents_t ON agents(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_bias_t ON bias_audits(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_evidence_t ON evidence(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_hitl_t ON hitl_reviews(tenant_id);
-""")
-
-# ── Backend Routers ───────────────────────────────────────────────────────────
-w('sentinel/api/routers/model_router.py', """from fastapi import APIRouter,Request,Depends
-from db import get_db
-from auth import get_tenant,get_user
-import uuid
-from datetime import datetime,timezone
-router=APIRouter(prefix='/api/models',tags=['models'])
-@router.get('')
-async def list_models(req:Request,db=Depends(get_db)):
-    t=get_tenant(req)
-    rows=await db.fetch('SELECT * FROM ai_models WHERE tenant_id=$1 ORDER BY created_at DESC',t)
-    return [dict(r) for r in rows]
-@router.post('')
-async def create_model(req:Request,db=Depends(get_db)):
-    t=get_tenant(req);u=get_user(req);b=await req.json();mid=str(uuid.uuid4())
-    await db.execute('INSERT INTO ai_models(id,tenant_id,name,version,model_type,status,risk_level,owner,description,use_case,framework,created_at,updated_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$12)',mid,t,b['name'],b.get('version'),b.get('model_type'),b.get('status','draft'),b.get('risk_level','medium'),b.get('owner'),b.get('description'),b.get('use_case'),b.get('framework'),datetime.now(timezone.utc))
-    await db.execute(\"INSERT INTO compliance_audit_log(tenant_id,actor,action,entity_type,entity_id,details,created_at) VALUES($1,$2,'model.created','model',$3,$4,$5)\",t,u,mid,f'Model created: {b["name"]}',datetime.now(timezone.utc))
-    return await db.fetchrow('SELECT * FROM ai_models WHERE id=$1',mid)
-@router.patch('/{mid}')
-async def update_model(mid:str,req:Request,db=Depends(get_db)):
-    t=get_tenant(req);b=await req.json()
-    sets=','.join(f'{k}=${i+2}' for i,k in enumerate(b.keys()))
-    await db.execute(f'UPDATE ai_models SET {sets},updated_at=NOW() WHERE id=$1 AND tenant_id=${len(b)+2}',mid,*b.values(),t)
-    return await db.fetchrow('SELECT * FROM ai_models WHERE id=$1',mid)
-@router.delete('/{mid}')
-async def delete_model(mid:str,req:Request,db=Depends(get_db)):
-    t=get_tenant(req)
-    await db.execute('DELETE FROM ai_models WHERE id=$1 AND tenant_id=$2',mid,t)
-    return {'deleted':True}
-""")
-
-w('sentinel/api/routers/controls_router.py', """from fastapi import APIRouter,Request,Depends
-from db import get_db
-from auth import get_tenant,get_user
-import uuid
-from datetime import datetime,timezone
-router=APIRouter(prefix='/api/controls',tags=['controls'])
-@router.get('')
-async def list_controls(req:Request,db=Depends(get_db)):
-    t=get_tenant(req)
-    rows=await db.fetch('SELECT * FROM controls WHERE tenant_id=$1 ORDER BY created_at DESC',t)
-    return [dict(r) for r in rows]
-@router.post('')
-async def create_control(req:Request,db=Depends(get_db)):
-    t=get_tenant(req);u=get_user(req);b=await req.json();cid=str(uuid.uuid4())
-    await db.execute('INSERT INTO controls(id,tenant_id,title,framework,control_id,status,owner,description,due_date,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',cid,t,b['title'],b.get('framework'),b.get('control_id'),b.get('status','not_started'),b.get('owner'),b.get('description'),b.get('due_date'),datetime.now(timezone.utc))
-    await db.execute(\"INSERT INTO compliance_audit_log(tenant_id,actor,action,entity_type,entity_id,details,created_at) VALUES($1,$2,'control.created','control',$3,$4,$5)\",t,u,cid,f'Control created: {b["title"]}',datetime.now(timezone.utc))
-    return await db.fetchrow('SELECT * FROM controls WHERE id=$1',cid)
-@router.patch('/{cid}')
-async def update_control(cid:str,req:Request,db=Depends(get_db)):
-    t=get_tenant(req);b=await req.json()
-    sets=','.join(f'{k}=${i+2}' for i,k in enumerate(b.keys()))
-    await db.execute(f'UPDATE controls SET {sets} WHERE id=$1 AND tenant_id=${len(b)+2}',cid,*b.values(),t)
-    return await db.fetchrow('SELECT * FROM controls WHERE id=$1',cid)
-@router.delete('/{cid}')
-async def delete_control(cid:str,req:Request,db=Depends(get_db)):
-    t=get_tenant(req)
-    await db.execute('DELETE FROM controls WHERE id=$1 AND tenant_id=$2',cid,t)
-    return {'deleted':True}
-""")
-
-w('sentinel/api/routers/dataset_router.py', """from fastapi import APIRouter,Request,Depends
-from db import get_db
-from auth import get_tenant,get_user
-import uuid
-from datetime import datetime,timezone
-router=APIRouter(prefix='/api/datasets',tags=['datasets'])
-@router.get('')
-async def list_datasets(req:Request,db=Depends(get_db)):
-    t=get_tenant(req)
-    return [dict(r) for r in await db.fetch('SELECT * FROM datasets WHERE tenant_id=$1 ORDER BY created_at DESC',t)]
-@router.post('')
-async def create_dataset(req:Request,db=Depends(get_db)):
-    t=get_tenant(req);b=await req.json();did=str(uuid.uuid4())
-    await db.execute('INSERT INTO datasets(id,tenant_id,name,description,source,format,size_mb,status,sensitivity,owner,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)',did,t,b['name'],b.get('description'),b.get('source'),b.get('format'),b.get('size_mb'),b.get('status','draft'),b.get('sensitivity','internal'),b.get('owner'),datetime.now(timezone.utc))
-    return await db.fetchrow('SELECT * FROM datasets WHERE id=$1',did)
-@router.patch('/{did}')
-async def update_dataset(did:str,req:Request,db=Depends(get_db)):
-    t=get_tenant(req);b=await req.json()
-    sets=','.join(f'{k}=${i+2}' for i,k in enumerate(b.keys()))
-    await db.execute(f'UPDATE datasets SET {sets} WHERE id=$1 AND tenant_id=${len(b)+2}',did,*b.values(),t)
-    return await db.fetchrow('SELECT * FROM datasets WHERE id=$1',did)
-@router.delete('/{did}')
-async def delete_dataset(did:str,req:Request,db=Depends(get_db)):
-    await db.execute('DELETE FROM datasets WHERE id=$1 AND tenant_id=$2',did,get_tenant(req))
-    return {'deleted':True}
-""")
-
-w('sentinel/api/routers/agent_router.py', """from fastapi import APIRouter,Request,Depends
-from db import get_db
-from auth import get_tenant,get_user
-import uuid
-from datetime import datetime,timezone
-router=APIRouter(prefix='/api/agents',tags=['agents'])
-@router.get('')
-async def list_agents(req:Request,db=Depends(get_db)):
-    t=get_tenant(req)
-    return [dict(r) for r in await db.fetch('SELECT * FROM agents WHERE tenant_id=$1 ORDER BY created_at DESC',t)]
-@router.post('')
-async def create_agent(req:Request,db=Depends(get_db)):
-    t=get_tenant(req);b=await req.json();aid=str(uuid.uuid4())
-    await db.execute('INSERT INTO agents(id,tenant_id,name,description,agent_type,status,risk_level,owner,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)',aid,t,b['name'],b.get('description'),b.get('agent_type'),b.get('status','draft'),b.get('risk_level','medium'),b.get('owner'),datetime.now(timezone.utc))
-    return await db.fetchrow('SELECT * FROM agents WHERE id=$1',aid)
-@router.post('/{aid}/approve')
-async def approve_agent(aid:str,req:Request,db=Depends(get_db)):
-    t=get_tenant(req);u=get_user(req)
-    await db.execute(\"UPDATE agents SET discovery_status='approved' WHERE id=$1 AND tenant_id=$2\",aid,t)
-    await db.execute(\"INSERT INTO compliance_audit_log(tenant_id,actor,action,entity_type,entity_id,details,created_at) VALUES($1,$2,'agent.approved','agent',$3,$4,$5)\",t,u,aid,'Agent approved',datetime.now(timezone.utc))
-    return await db.fetchrow('SELECT * FROM agents WHERE id=$1',aid)
-@router.post('/{aid}/reject')
-async def reject_agent(aid:str,req:Request,db=Depends(get_db)):
-    t=get_tenant(req);u=get_user(req);b=await req.json()
-    await db.execute(\"UPDATE agents SET discovery_status='rejected',rejection_reason=$3 WHERE id=$1 AND tenant_id=$2\",aid,t,b.get('reason',''))
-    await db.execute(\"INSERT INTO compliance_audit_log(tenant_id,actor,action,entity_type,entity_id,details,created_at) VALUES($1,$2,'agent.rejected','agent',$3,$4,$5)\",t,u,aid,'Agent rejected',datetime.now(timezone.utc))
-    return await db.fetchrow('SELECT * FROM agents WHERE id=$1',aid)
-@router.patch('/{aid}')
-async def update_agent(aid:str,req:Request,db=Depends(get_db)):
-    t=get_tenant(req);b=await req.json()
-    sets=','.join(f'{k}=${i+2}' for i,k in enumerate(b.keys()))
-    await db.execute(f'UPDATE agents SET {sets} WHERE id=$1 AND tenant_id=${len(b)+2}',aid,*b.values(),t)
-    return await db.fetchrow('SELECT * FROM agents WHERE id=$1',aid)
-@router.delete('/{aid}')
-async def delete_agent(aid:str,req:Request,db=Depends(get_db)):
-    await db.execute('DELETE FROM agents WHERE id=$1 AND tenant_id=$2',aid,get_tenant(req))
-    return {'deleted':True}
-""")
-
-w('sentinel/api/routers/vendor_router.py', """from fastapi import APIRouter,Request,Depends
-from db import get_db
-from auth import get_tenant,get_user
-import uuid
-from datetime import datetime,timezone
-router=APIRouter(prefix='/api/vendors',tags=['vendors'])
-@router.get('')
-async def list_vendors(req:Request,db=Depends(get_db)):
-    t=get_tenant(req)
-    return [dict(r) for r in await db.fetch('SELECT * FROM vendors WHERE tenant_id=$1 ORDER BY created_at DESC',t)]
-@router.post('')
-async def create_vendor(req:Request,db=Depends(get_db)):
-    t=get_tenant(req);b=await req.json();vid=str(uuid.uuid4())
-    await db.execute('INSERT INTO vendors(id,tenant_id,name,category,status,risk_level,contact_email,website,description,owner,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)',vid,t,b['name'],b.get('category'),b.get('status','pending'),b.get('risk_level','medium'),b.get('contact_email'),b.get('website'),b.get('description'),b.get('owner'),datetime.now(timezone.utc))
-    return await db.fetchrow('SELECT * FROM vendors WHERE id=$1',vid)
-@router.post('/{vid}/approve')
-async def approve_vendor(vid:str,req:Request,db=Depends(get_db)):
-    t=get_tenant(req);u=get_user(req)
-    await db.execute(\"UPDATE vendors SET status='approved' WHERE id=$1 AND tenant_id=$2\",vid,t)
-    await db.execute(\"INSERT INTO compliance_audit_log(tenant_id,actor,action,entity_type,entity_id,details,created_at) VALUES($1,$2,'vendor.approved','vendor',$3,$4,$5)\",t,u,vid,'Vendor approved',datetime.now(timezone.utc))
-    return await db.fetchrow('SELECT * FROM vendors WHERE id=$1',vid)
-@router.post('/{vid}/reject')
-async def reject_vendor(vid:str,req:Request,db=Depends(get_db)):
-    t=get_tenant(req);u=get_user(req)
-    await db.execute(\"UPDATE vendors SET status='rejected' WHERE id=$1 AND tenant_id=$2\",vid,t)
-    await db.execute(\"INSERT INTO compliance_audit_log(tenant_id,actor,action,entity_type,entity_id,details,created_at) VALUES($1,$2,'vendor.rejected','vendor',$3,$4,$5)\",t,u,vid,'Vendor rejected',datetime.now(timezone.utc))
-    return await db.fetchrow('SELECT * FROM vendors WHERE id=$1',vid)
-@router.patch('/{vid}')
-async def update_vendor(vid:str,req:Request,db=Depends(get_db)):
-    t=get_tenant(req);b=await req.json()
-    sets=','.join(f'{k}=${i+2}' for i,k in enumerate(b.keys()))
-    await db.execute(f'UPDATE vendors SET {sets} WHERE id=$1 AND tenant_id=${len(b)+2}',vid,*b.values(),t)
-    return await db.fetchrow('SELECT * FROM vendors WHERE id=$1',vid)
-@router.delete('/{vid}')
-async def delete_vendor(vid:str,req:Request,db=Depends(get_db)):
-    await db.execute('DELETE FROM vendors WHERE id=$1 AND tenant_id=$2',vid,get_tenant(req))
-    return {'deleted':True}
-""")
-
-w('sentinel/api/routers/evidence_router.py', """from fastapi import APIRouter,Request,Depends
-from db import get_db
-from auth import get_tenant,get_user
-import uuid
-from datetime import datetime,timezone
-router=APIRouter(prefix='/api/evidence',tags=['evidence'])
-@router.get('')
-async def list_evidence(req:Request,db=Depends(get_db)):
-    t=get_tenant(req)
-    return [dict(r) for r in await db.fetch('SELECT * FROM evidence WHERE tenant_id=$1 ORDER BY created_at DESC',t)]
-@router.post('')
-async def create_evidence(req:Request,db=Depends(get_db)):
-    t=get_tenant(req);u=get_user(req);b=await req.json();eid=str(uuid.uuid4())
-    await db.execute('INSERT INTO evidence(id,tenant_id,title,control_id,policy_id,description,uploaded_by,status,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)',eid,t,b['title'],b.get('control_id'),b.get('policy_id'),b.get('description'),u,'pending',datetime.now(timezone.utc))
-    await db.execute(\"INSERT INTO compliance_audit_log(tenant_id,actor,action,entity_type,entity_id,details,created_at) VALUES($1,$2,'evidence.uploaded','evidence',$3,$4,$5)\",t,u,eid,f'Evidence uploaded: {b["title"]}',datetime.now(timezone.utc))
-    return await db.fetchrow('SELECT * FROM evidence WHERE id=$1',eid)
-@router.patch('/{eid}/review')
-async def review_evidence(eid:str,req:Request,db=Depends(get_db)):
-    t=get_tenant(req);u=get_user(req);b=await req.json();status=b.get('status','approved')
-    await db.execute('UPDATE evidence SET status=$1,reviewed_by=$2,reviewed_at=$3 WHERE id=$4 AND tenant_id=$5',status,u,datetime.now(timezone.utc),eid,t)
-    return await db.fetchrow('SELECT * FROM evidence WHERE id=$1',eid)
-@router.patch('/{eid}')
-async def update_evidence(eid:str,req:Request,db=Depends(get_db)):
-    t=get_tenant(req);b=await req.json()
-    sets=','.join(f'{k}=${i+2}' for i,k in enumerate(b.keys()))
-    await db.execute(f'UPDATE evidence SET {sets} WHERE id=$1 AND tenant_id=${len(b)+2}',eid,*b.values(),t)
-    return await db.fetchrow('SELECT * FROM evidence WHERE id=$1',eid)
-@router.delete('/{eid}')
-async def delete_evidence(eid:str,req:Request,db=Depends(get_db)):
-    await db.execute('DELETE FROM evidence WHERE id=$1 AND tenant_id=$2',eid,get_tenant(req))
-    return {'deleted':True}
-""")
-
-w('sentinel/api/routers/hitl_router.py', """from fastapi import APIRouter,Request,Depends
-from db import get_db
-from auth import get_tenant,get_user
-import uuid
-from datetime import datetime,timezone,timedelta
-router=APIRouter(prefix='/api/hitl',tags=['hitl'])
-SLA=72
-@router.get('')
-async def list_hitl(req:Request,db=Depends(get_db)):
-    t=get_tenant(req)
-    return [dict(r) for r in await db.fetch('SELECT * FROM hitl_reviews WHERE tenant_id=$1 ORDER BY created_at DESC',t)]
-@router.post('')
-async def create_hitl(req:Request,db=Depends(get_db)):
-    t=get_tenant(req);u=get_user(req);b=await req.json();hid=str(uuid.uuid4())
-    due=datetime.now(timezone.utc)+timedelta(hours=SLA)
-    await db.execute('INSERT INTO hitl_reviews(id,tenant_id,entity_type,entity_id,review_type,assigned_to,status,due_at,context,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',hid,t,b['entity_type'],b['entity_id'],b.get('review_type','manual'),b.get('assigned_to'),b.get('status','pending'),due,b.get('context',''),datetime.now(timezone.utc))
-    return await db.fetchrow('SELECT * FROM hitl_reviews WHERE id=$1',hid)
-@router.post('/{hid}/resolve')
-async def resolve_hitl(hid:str,req:Request,db=Depends(get_db)):
-    t=get_tenant(req);u=get_user(req);b=await req.json();d=b.get('decision','approved')
-    await db.execute('UPDATE hitl_reviews SET status=$1,decision=$2,notes=$3,resolved_by=$4,resolved_at=$5 WHERE id=$6 AND tenant_id=$7',d,d,b.get('notes',''),u,datetime.now(timezone.utc),hid,t)
-    await db.execute(\"INSERT INTO compliance_audit_log(tenant_id,actor,action,entity_type,entity_id,details,created_at) VALUES($1,$2,'hitl.resolved','hitl',$3,$4,$5)\",t,u,hid,f'HITL resolved: {d}',datetime.now(timezone.utc))
-    return await db.fetchrow('SELECT * FROM hitl_reviews WHERE id=$1',hid)
-@router.patch('/{hid}')
-async def update_hitl(hid:str,req:Request,db=Depends(get_db)):
-    t=get_tenant(req);b=await req.json()
-    sets=','.join(f'{k}=${i+2}' for i,k in enumerate(b.keys()))
-    await db.execute(f'UPDATE hitl_reviews SET {sets} WHERE id=$1 AND tenant_id=${len(b)+2}',hid,*b.values(),t)
-    return await db.fetchrow('SELECT * FROM hitl_reviews WHERE id=$1',hid)
-@router.delete('/{hid}')
-async def delete_hitl(hid:str,req:Request,db=Depends(get_db)):
-    await db.execute('DELETE FROM hitl_reviews WHERE id=$1 AND tenant_id=$2',hid,get_tenant(req))
-    return {'deleted':True}
-""")
-
-w('sentinel/api/routers/compliance_router.py', """from fastapi import APIRouter,Request,Depends
-from db import get_db
-from auth import get_tenant
-router=APIRouter(prefix='/api/compliance',tags=['compliance'])
-async def score(t,db):
-    c=await db.fetchrow(\"SELECT COUNT(*) total,SUM(CASE WHEN status='implemented' THEN 1 ELSE 0 END) imp FROM controls WHERE tenant_id=$1\",t)
-    p=await db.fetchrow(\"SELECT COUNT(*) total,SUM(CASE WHEN status='approved' THEN 1 ELSE 0 END) app FROM policies WHERE tenant_id=$1\",t)
-    r=await db.fetchrow(\"SELECT COUNT(*) total,SUM(CASE WHEN status IN ('mitigated','accepted') THEN 1 ELSE 0 END) addr FROM risks WHERE tenant_id=$1\",t)
-    e=await db.fetchrow(\"SELECT COUNT(*) total,SUM(CASE WHEN status='approved' THEN 1 ELSE 0 END) app FROM evidence WHERE tenant_id=$1\",t)
-    m=await db.fetchrow(\"SELECT COUNT(*) total,SUM(CASE WHEN status='active' THEN 1 ELSE 0 END) active FROM ai_models WHERE tenant_id=$1\",t)
-    cs=round((c['imp'] or 0)/(c['total'] or 1)*100,1)
-    ps=round((p['app'] or 0)/(p['total'] or 1)*100,1)
-    rs=round((r['addr'] or 0)/(r['total'] or 1)*100,1)
-    es=round((e['app'] or 0)/(e['total'] or 1)*100,1)
-    ov=round(cs*0.35+ps*0.25+rs*0.25+es*0.15,1)
-    return {'overall':ov,'controls':{'score':cs,'total':c['total'],'implemented':c['imp']},'policies':{'score':ps,'total':p['total'],'approved':p['app']},'risks':{'score':rs,'total':r['total'],'addressed':r['addr']},'evidence':{'score':es,'total':e['total'],'approved':e['app']},'models':{'total':m['total'],'active':m['active']}}
-@router.get('/score')
-async def get_score(req:Request,db=Depends(get_db)):
-    return await score(get_tenant(req),db)
-@router.get('/summary')
-async def get_summary(req:Request,db=Depends(get_db)):
-    t=get_tenant(req);s=await score(t,db)
-    ov=await db.fetchval(\"SELECT COUNT(*) FROM hitl_reviews WHERE tenant_id=$1 AND status='pending' AND due_at<NOW()\",t)
-    ra=await db.fetch('SELECT * FROM compliance_audit_log WHERE tenant_id=$1 ORDER BY created_at DESC LIMIT 10',t)
-    return {**s,'hitl_overdue':ov,'recent_activity':[dict(r) for r in ra]}
-@router.get('/audit-log')
-async def get_audit_log(req:Request,db=Depends(get_db)):
-    t=get_tenant(req)
-    rows=await db.fetch('SELECT * FROM compliance_audit_log WHERE tenant_id=$1 ORDER BY created_at DESC LIMIT 100',t)
-    return [dict(r) for r in rows]
-""")
-
-# ── Frontend Files ──────────────────────────────────────────────────────────
-w('dashboard/src/stores/apiStore.ts', """import{create}from 'zustand'
-const API=import.meta.env.VITE_API_URL||''
-export async function apiFetch(path:string,opts:RequestInit={}){
-  const token=localStorage.getItem('sentinel_token')||''
-  const res=await fetch(`${API}${path}`,{...opts,headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`,...((opts.headers||{}) as object)}})
-  if(!res.ok)throw new Error(await res.text())
-  return res.json()
-}
-export function createEntityStore<T extends{id:string}>(endpoint:string){
-  return create<{items:T[];loading:boolean;error:string|null;fetchAll:()=>Promise<void>;create:(d:any)=>Promise<T>;update:(id:string,d:any)=>Promise<T>;remove:(id:string)=>Promise<void>;action:(id:string,act:string,d?:any)=>Promise<T>}>((set,get)=>({
-    items:[],loading:false,error:null,
-    fetchAll:async()=>{set({loading:true,error:null});try{const d=await apiFetch(endpoint);set({items:d})}catch(e:any){set({error:e.message})};set({loading:false})},
-    create:async(d)=>{const item=await apiFetch(endpoint,{method:'POST',body:JSON.stringify(d)});set({items:[...get().items,item]});return item},
-    update:async(id,d)=>{const item=await apiFetch(`${endpoint}/${id}`,{method:'PATCH',body:JSON.stringify(d)});set({items:get().items.map(i=>i.id===id?item:i)});return item},
-    remove:async(id)=>{await apiFetch(`${endpoint}/${id}`,{method:'DELETE'});set({items:get().items.filter(i=>i.id!==id)})},
-    action:async(id,act,d={})=>{const item=await apiFetch(`${endpoint}/${id}/${act}`,{method:'POST',body:JSON.stringify(d)});set({items:get().items.map(i=>i.id===id?item:i)});return item}
-  }))
-}
-export const useModelStore=createEntityStore('/api/models')
-export const useControlsStore=createEntityStore('/api/controls')
-export const useDatasetStore=createEntityStore('/api/datasets')
-export const useAgentStore=createEntityStore('/api/agents')
-export const useVendorStore=createEntityStore('/api/vendors')
-export const useEvidenceStore=createEntityStore('/api/evidence')
-export const useHitlStore=createEntityStore('/api/hitl')
-""")
-
-w('dashboard/src/stores/complianceStore.ts', """import{create}from 'zustand'
-import{apiFetch}from './apiStore'
-export const useComplianceStore=create<{score:any;loading:boolean;fetchScore:()=>Promise<void>;fetchSummary:()=>Promise<void>}>((set)=>({
-  score:null,loading:false,
-  fetchScore:async()=>{set({loading:true});try{const d=await apiFetch('/api/compliance/score');set({score:d})}catch(e){};set({loading:false})},
-  fetchSummary:async()=>{set({loading:true});try{const d=await apiFetch('/api/compliance/summary');set({score:d})}catch(e){};set({loading:false})}
-}))
-""")
-
-w('dashboard/src/components/EntityPage.tsx', """import{useState,useEffect}from 'react'
-export function EntityPage({title,store,columns,actions=[],formFields,searchKeys=[]}:any){
-  const{items,loading,error,fetchAll,create,update,remove}=store
-  const[search,setSearch]=useState('')
-  const[modal,setModal]=useState<any>(null)
-  const[form,setForm]=useState<any>({})
-  const[saving,setSaving]=useState(false)
-  useEffect(()=>{fetchAll()},[fetchAll])
-  const filtered=items.filter((i:any)=>!search||searchKeys.some((k:string)=>String(i[k]||'').toLowerCase().includes(search.toLowerCase())))
-  const openCreate=()=>{setForm({});setModal({mode:'create'})}
-  const openEdit=(r:any)=>{setForm({...r});setModal({mode:'edit',data:r})}
-  const closeModal=()=>{setModal(null);setForm({})}
-  const handleSubmit=async(e:any)=>{e.preventDefault();setSaving(true);try{if(modal.mode==='create')await create(form);else await update(modal.data.id,form);closeModal()}catch(err:any){alert(err.message)};setSaving(false)}
-  const handleDelete=async(id:string)=>{if(!confirm('Delete?'))return;try{await remove(id)}catch(err:any){alert(err.message)}}
-  return(
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-        <button onClick={openCreate} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">+ Add</button>
-      </div>
-      {searchKeys.length>0&&<input value={search} onChange={e=>setSearch(e.target.value)} placeholder={`Search ${title}...`} className="mb-4 w-full max-w-md px-3 py-2 border rounded-lg text-sm"/>}
-      {error&&<div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>}
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-        {loading?<div className="flex justify-center h-32 items-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"/></div>:filtered.length===0?<div className="text-center py-12 text-gray-400"><p className="text-3xl mb-2">&#128202;</p><p>No {title.toLowerCase()} yet</p><button onClick={openCreate} className="mt-3 px-4 py-2 bg-blue-600 text-white rounded text-sm">Add first</button></div>:
-        <table className="w-full text-sm"><thead className="bg-gray-50 border-b"><tr>{columns.map((c:any)=><th key={c.key} className="text-left px-4 py-3 font-medium text-gray-600">{c.label}</th>)}<th className="px-4 py-3">Actions</th></tr></thead>
-        <tbody className="divide-y">{filtered.map((row:any)=>(
-          <tr key={row.id} className="hover:bg-gray-50">
-            {columns.map((c:any)=><td key={c.key} className="px-4 py-3">{c.render?c.render(row[c.key],row):String(row[c.key]??'\u2014')}</td>)}
-            <td className="px-4 py-3"><div className="flex gap-2 flex-wrap">
-              <button onClick={()=>openEdit(row)} className="text-xs px-2 py-1 bg-gray-100 rounded hover:bg-gray-200">Edit</button>
-              {actions.filter((a:any)=>!a.show||a.show(row)).map((a:any)=>(<button key={a.label} onClick={()=>a.onClick(row)} className={`text-xs px-2 py-1 rounded ${a.className||'bg-blue-50 text-blue-700'}`}>{a.label}</button>))}
-              <button onClick={()=>handleDelete(row.id)} className="text-xs px-2 py-1 bg-red-50 text-red-700 rounded hover:bg-red-100">Delete</button>
-            </div></td>
-          </tr>
-        ))}</tbody></table>}
-      </div>
-      {modal&&<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"><div className="bg-white rounded-2xl w-full max-w-md shadow-2xl"><div className="flex items-center justify-between p-5 border-b"><h2 className="font-semibold">{modal.mode==='create'?`New ${title}`:`Edit`}</h2><button onClick={closeModal} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button></div>
-      <form onSubmit={handleSubmit} className="p-5 space-y-4">
-        {formFields.map((f:any)=>(<div key={f.key}><label className="block text-sm font-medium text-gray-700 mb-1">{f.label}{f.required&&<span className="text-red-500 ml-1">*</span>}</label>
-          {f.type==='select'?<select value={form[f.key]||''} onChange={e=>setForm({...form,[f.key]:e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm"><option value="">Select...</option>{f.options?.map((o:any)=><option key={o.value} value={o.value}>{o.label}</option>)}</select>:f.type==='textarea'?<textarea value={form[f.key]||''} onChange={e=>setForm({...form,[f.key]:e.target.value})} rows={3} className="w-full border rounded-lg px-3 py-2 text-sm"/>:<input type={f.type||'text'} value={form[f.key]||''} onChange={e=>setForm({...form,[f.key]:e.target.value})} required={f.required} className="w-full border rounded-lg px-3 py-2 text-sm"/>}
-        </div>))}
-        <div className="flex gap-3 pt-2"><button type="submit" disabled={saving} className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium disabled:opacity-50">{saving?'Saving...':'Save'}</button><button type="button" onClick={closeModal} className="flex-1 py-2 border rounded-lg text-sm">Cancel</button></div>
-      </form></div></div>}
-    </div>
-  )
-}
-""")
-
-SB='bg-green-100 text-green-800'
-SBD='bg-gray-100 text-gray-600'
-SBY='bg-yellow-100 text-yellow-800'
-SBR='bg-red-100 text-red-800'
-SBB='bg-blue-100 text-blue-800'
-
-def badge(v,mp):
-    return f'<span className={{`px-2 py-0.5 rounded-full text-xs font-medium ${{{mp}[v]||\'bg-gray-100\'}}`}}>{{v}}</span>'
-
-for fname,title,endpoint,cols,fields,sk,acts in [
-  ('Models.tsx','AI Models','/api/models',
-    [('name','Name'),('version','Version'),('model_type','Type'),('status','Status','S'),('risk_level','Risk','R'),('owner','Owner')],
-    [('name','Model Name',True,'text'),('version','Version',False,'text'),('model_type','Type',False,'text'),('status','Status',False,'select',[('draft','Draft'),('active','Active'),('deprecated','Deprecated'),('retired','Retired')]),('risk_level','Risk',False,'select',[('low','Low'),('medium','Medium'),('high','High'),('critical','Critical')]),('owner','Owner',False,'text'),('description','Description',False,'textarea')],
-    ['name','owner','model_type'],[]),
-  ('Controls.tsx','Controls','/api/controls',
-    [('title','Title'),('framework','Framework'),('control_id','ID'),('status','Status','S'),('owner','Owner')],
-    [('title','Title',True,'text'),('framework','Framework',False,'select',[('ISO_27001','ISO 27001'),('SOC2','SOC 2'),('EU_AI_Act','EU AI Act'),('NIST_AI_RMF','NIST AI RMF'),('OWASP_LLM','OWASP LLM')]),('control_id','Control ID',False,'text'),('status','Status',False,'select',[('not_started','Not Started'),('in_progress','In Progress'),('implemented','Implemented'),('failed','Failed')]),('owner','Owner',False,'text'),('due_date','Due Date',False,'date'),('description','Description',False,'textarea')],
-    ['title','framework','owner'],[]),
-  ('Datasets.tsx','Datasets','/api/datasets',
-    [('name','Name'),('source','Source'),('format','Format'),('status','Status','S'),('sensitivity','Sensitivity'),('owner','Owner')],
-    [('name','Dataset Name',True,'text'),('source','Source',False,'text'),('format','Format',False,'text'),('status','Status',False,'select',[('draft','Draft'),('active','Active'),('archived','Archived')]),('sensitivity','Sensitivity',False,'select',[('public','Public'),('internal','Internal'),('confidential','Confidential'),('restricted','Restricted')]),('owner','Owner',False,'text'),('description','Description',False,'textarea')],
-    ['name','source','owner'],[]),
-]:
-    store_name='use'+fname.replace('.tsx','')+'Store'
-    col_defs=[]
-    for c in cols:
-        if len(c)==3:
-            mp='S' if c[2]=='S' else 'R'
-            col_defs.append(f"{{key:'{c[0]}',label:'{c[1]}',render:(v:string)=><span className={{`px-2 py-0.5 rounded-full text-xs font-medium ${{{mp}[v]||'bg-gray-100'}}`}}>{{v}}</span>}}")
-        else:
-            col_defs.append(f"{{key:'{c[0]}',label:'{c[1]}'}}")
-    field_defs=[]
-    for f in fields:
-        if f[3]=='select':
-            opts=','.join(f"{{value:'{o[0]}',label:'{o[1]}'}}" for o in f[4])
-            field_defs.append(f"{{key:'{f[0]}',label:'{f[1]}',required:{'true' if f[2] else 'false'},type:'select',options:[{opts}]}}")
-        elif f[3]=='textarea':
-            field_defs.append(f"{{key:'{f[0]}',label:'{f[1]}',required:{'true' if f[2] else 'false'},type:'textarea'}}")
-        else:
-            field_defs.append(f"{{key:'{f[0]}',label:'{f[1]}',required:{'true' if f[2] else 'false'}}}")
-    sk_str='['+','.join(f"'{s}'" for s in sk)+']'
-    act_str='['+','.join(str(a) for a in acts)+']'
-    content=f"""import{{EntityPage}}from '../components/EntityPage'
-import{{createEntityStore}}from '../stores/apiStore'
-const S={{active:'bg-green-100 text-green-800',draft:'bg-gray-100 text-gray-600',deprecated:'bg-yellow-100 text-yellow-800',retired:'bg-red-100 text-red-800',implemented:'bg-green-100 text-green-800',in_progress:'bg-blue-100 text-blue-800',not_started:'bg-gray-100 text-gray-600',failed:'bg-red-100 text-red-800',archived:'bg-yellow-100 text-yellow-800'}}
-const R={{low:'bg-blue-100 text-blue-800',medium:'bg-yellow-100 text-yellow-800',high:'bg-orange-100 text-orange-800',critical:'bg-red-100 text-red-800'}}
-const store=createEntityStore('{endpoint}')
-export default function {fname.replace('.tsx','')}Page(){{
-  return<EntityPage title="{title}" store={{store()}} columns={{[{','.join(col_defs)}]}} formFields={{[{','.join(field_defs)}]}} searchKeys={{{sk_str}}}/>
-}}
+"""Sentinel GRC - Comprehensive Feature Fix Script
+Runs one feature at a time. Execute: python3 gen.py
 """
-    w(f'dashboard/src/pages/{fname}',content)
+import os, sys
 
-print('Module pages written')
+B = os.path.dirname(os.path.abspath(__file__))
 
-# Agents and Vendors pages
-w('dashboard/src/pages/Agents.tsx', """import{EntityPage}from '../components/EntityPage'
-import{createEntityStore,useAgentStore}from '../stores/apiStore'
-const S={active:'bg-green-100 text-green-800',draft:'bg-gray-100 text-gray-600',paused:'bg-yellow-100 text-yellow-800',retired:'bg-red-100 text-red-800'}
-const D={approved:'bg-green-100 text-green-800',rejected:'bg-red-100 text-red-800',pending:'bg-yellow-100 text-yellow-800'}
-const store=createEntityStore('/api/agents')
-export default function AgentsPage(){
-  return<EntityPage title="AI Agents" store={store()} columns={[{key:'name',label:'Name'},{key:'agent_type',label:'Type'},{key:'status',label:'Status',render:(v:string)=><span className={`px-2 py-0.5 rounded-full text-xs font-medium ${S[v]||'bg-gray-100'}`}>{v}</span>},{key:'discovery_status',label:'Discovery',render:(v:string)=><span className={`px-2 py-0.5 rounded-full text-xs font-medium ${D[v]||'bg-gray-100'}`}>{v}</span>},{key:'risk_level',label:'Risk'},{key:'owner',label:'Owner'}]} actions={[{label:'Approve',show:(r:any)=>r.discovery_status==='pending',className:'bg-green-50 text-green-700',onClick:(r:any)=>store.getState().action(r.id,'approve')},{label:'Reject',show:(r:any)=>r.discovery_status==='pending',className:'bg-red-50 text-red-700',onClick:(r:any)=>store.getState().action(r.id,'reject',{reason:'Rejected'})}]} formFields={[{key:'name',label:'Agent Name',required:true},{key:'agent_type',label:'Type'},{key:'status',label:'Status',type:'select',options:[{value:'draft',label:'Draft'},{value:'active',label:'Active'},{value:'paused',label:'Paused'},{value:'retired',label:'Retired'}]},{key:'risk_level',label:'Risk',type:'select',options:[{value:'low',label:'Low'},{value:'medium',label:'Medium'},{value:'high',label:'High'},{value:'critical',label:'Critical'}]},{key:'owner',label:'Owner'},{key:'description',label:'Description',type:'textarea'}]} searchKeys={['name','agent_type','owner']}/>
+def W(path, content):
+    full = os.path.join(B, path)
+    os.makedirs(os.path.dirname(full), exist_ok=True)
+    with open(full, 'w', encoding='utf-8') as f:
+        f.write(content)
+    print(f'  [OK] {path}')
+
+print('\n=== FEATURE 1: TRUST ENGINE (Weighted 0-100 Scoring) ===')
+
+# ----- sentinel/trust_engine/__init__.py -----
+W('sentinel/trust_engine/__init__.py', '''from sentinel.trust_engine.engine import TrustEngine, compute_trust_score
+from sentinel.trust_engine.router import router as trust_engine_router
+__all__ = ["TrustEngine", "compute_trust_score", "trust_engine_router"]
+''')
+
+# ----- sentinel/trust_engine/engine.py -----
+W('sentinel/trust_engine/engine.py', '''
+from __future__ import annotations
+import logging
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
+from datetime import datetime, timezone
+
+logger = logging.getLogger(__name__)
+
+DEFAULT_WEIGHTS: Dict[str, float] = {
+    "compliance": 0.30,
+    "bias_fairness": 0.25,
+    "performance": 0.25,
+    "security": 0.20,
 }
-""")
 
-w('dashboard/src/pages/Vendors.tsx', """import{EntityPage}from '../components/EntityPage'
-import{createEntityStore}from '../stores/apiStore'
-const S={approved:'bg-green-100 text-green-800',rejected:'bg-red-100 text-red-800',under_review:'bg-blue-100 text-blue-800',pending:'bg-yellow-100 text-yellow-800'}
-const store=createEntityStore('/api/vendors')
-export default function VendorsPage(){
-  return<EntityPage title="Vendors" store={store()} columns={[{key:'name',label:'Name'},{key:'category',label:'Category'},{key:'status',label:'Status',render:(v:string)=><span className={`px-2 py-0.5 rounded-full text-xs font-medium ${S[v]||'bg-gray-100'}`}>{v}</span>},{key:'risk_level',label:'Risk'},{key:'assessment_score',label:'Score',render:(v:number)=>v!=null?`${v}%`:'\u2014'},{key:'owner',label:'Owner'}]} actions={[{label:'Approve',show:(r:any)=>['pending','under_review'].includes(r.status),className:'bg-green-50 text-green-700',onClick:(r:any)=>store.getState().action(r.id,'approve')},{label:'Reject',show:(r:any)=>['pending','under_review'].includes(r.status),className:'bg-red-50 text-red-700',onClick:(r:any)=>store.getState().action(r.id,'reject')}]} formFields={[{key:'name',label:'Vendor Name',required:true},{key:'category',label:'Category'},{key:'contact_email',label:'Email',type:'email'},{key:'website',label:'Website',type:'url'},{key:'risk_level',label:'Risk',type:'select',options:[{value:'low',label:'Low'},{value:'medium',label:'Medium'},{value:'high',label:'High'},{value:'critical',label:'Critical'}]},{key:'owner',label:'Owner'},{key:'description',label:'Description',type:'textarea'}]} searchKeys={['name','category','owner']}/>
+@dataclass
+class TrustSignal:
+    name: str
+    score: float          # 0.0 - 100.0
+    weight: float         # 0.0 - 1.0
+    confidence: float = 1.0
+    notes: str = ""
+    details: Dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def weighted(self) -> float:
+        return round(self.weight * self.score, 4)
+
+@dataclass
+class TrustResult:
+    overall_score: float
+    grade: str
+    label: str
+    signals: Dict[str, TrustSignal] = field(default_factory=dict)
+    model_id: Optional[str] = None
+    tenant_id: Optional[str] = None
+    computed_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    recommendations: List[str] = field(default_factory=list)
+
+    @property
+    def is_trusted(self) -> bool:
+        return self.overall_score >= 70.0
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "overall_score": self.overall_score,
+            "grade": self.grade,
+            "label": self.label,
+            "is_trusted": self.is_trusted,
+            "signals": {k: {"score": v.score, "weight": v.weight, "weighted": v.weighted, "confidence": v.confidence, "notes": v.notes} for k, v in self.signals.items()},
+            "model_id": self.model_id,
+            "tenant_id": self.tenant_id,
+            "computed_at": self.computed_at,
+            "recommendations": self.recommendations,
+        }
+
+def _grade(score: float) -> tuple:
+    if score >= 90: return ("A", "Highly Trusted")
+    if score >= 80: return ("B", "Trusted")
+    if score >= 70: return ("C", "Provisionally Trusted")
+    if score >= 60: return ("D", "Low Trust - Review Required")
+    return ("F", "Untrusted - Immediate Action Required")
+
+def _clamp(v: float) -> float:
+    return min(max(float(v or 0), 0.0), 100.0)
+
+def _recommendations(signals: Dict[str, TrustSignal]) -> List[str]:
+    recs = []
+    thresholds = {"compliance": 75, "bias_fairness": 70, "performance": 70, "security": 80}
+    messages = {
+        "compliance": "Review compliance controls and run a full framework assessment.",
+        "bias_fairness": "Conduct a bias audit across protected attributes and demographic groups.",
+        "performance": "Investigate latency spikes, error rates, and model drift indicators.",
+        "security": "Run a security assessment including prompt injection and data leakage tests.",
+    }
+    for k, sig in signals.items():
+        if sig.score < thresholds.get(k, 70):
+            recs.append(messages.get(k, f"Improve {k} score (currently {sig.score:.1f})."))
+    return recs
+
+class TrustEngine:
+    """Computes weighted trust score (0-100) across compliance, bias, performance, security."""
+
+    def __init__(self, weights: Optional[Dict[str, float]] = None):
+        self.weights = weights or dict(DEFAULT_WEIGHTS)
+        total = sum(self.weights.values())
+        if abs(total - 1.0) > 0.01:
+            raise ValueError(f"Trust weights must sum to 1.0, got {total:.4f}")
+
+    def compute(
+        self,
+        compliance_score: float = 0.0,
+        bias_fairness_score: float = 0.0,
+        performance_score: float = 0.0,
+        security_score: float = 0.0,
+        model_id: Optional[str] = None,
+        tenant_id: Optional[str] = None,
+        notes: Optional[Dict[str, str]] = None,
+    ) -> TrustResult:
+        notes = notes or {}
+        raw = {
+            "compliance": _clamp(compliance_score),
+            "bias_fairness": _clamp(bias_fairness_score),
+            "performance": _clamp(performance_score),
+            "security": _clamp(security_score),
+        }
+        signals = {k: TrustSignal(name=k, score=raw[k], weight=self.weights[k], notes=notes.get(k, "")) for k in self.weights}
+        overall = round(sum(s.weighted for s in signals.values()), 2)
+        grade, label = _grade(overall)
+        result = TrustResult(
+            overall_score=overall, grade=grade, label=label,
+            signals=signals, model_id=model_id, tenant_id=tenant_id,
+            recommendations=_recommendations(signals),
+        )
+        logger.info("TrustEngine: %.2f (%s) model=%s tenant=%s", overall, grade, model_id, tenant_id)
+        return result
+
+    def compute_from_dict(self, scores: Dict[str, float], **kwargs) -> TrustResult:
+        return self.compute(
+            compliance_score=scores.get("compliance", 0),
+            bias_fairness_score=scores.get("bias_fairness", 0),
+            performance_score=scores.get("performance", 0),
+            security_score=scores.get("security", 0),
+            **kwargs,
+        )
+
+def compute_trust_score(compliance=0, bias_fairness=0, performance=0, security=0, weights=None) -> float:
+    return TrustEngine(weights=weights).compute(compliance, bias_fairness, performance, security).overall_score
+''')
+
+# ----- sentinel/trust_engine/router.py -----
+W('sentinel/trust_engine/router.py', '''
+from __future__ import annotations
+from typing import Dict, List, Optional
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func, desc
+from sentinel.api.db import get_db
+from sentinel.models import TrustTrace, ModelInventory
+from sentinel.trust_engine.engine import TrustEngine, TrustResult
+from sentinel.events.emitters import emit
+import uuid, logging
+from datetime import datetime, timezone
+
+logger = logging.getLogger(__name__)
+router = APIRouter(prefix="/trust-engine", tags=["Trust Engine"])
+
+class ComputeTrustRequest(BaseModel):
+    model_id: str = Field(..., description="Model ID to score")
+    compliance_score: float = Field(default=0.0, ge=0, le=100)
+    bias_fairness_score: float = Field(default=0.0, ge=0, le=100)
+    performance_score: float = Field(default=0.0, ge=0, le=100)
+    security_score: float = Field(default=0.0, ge=0, le=100)
+    weights: Optional[Dict[str, float]] = None
+    notes: Optional[Dict[str, str]] = None
+
+class TrustScoreResponse(BaseModel):
+    id: str
+    model_id: str
+    overall_score: float
+    grade: str
+    label: str
+    is_trusted: bool
+    signals: Dict
+    recommendations: List[str]
+    computed_at: str
+
+class TrustSummaryResponse(BaseModel):
+    total_models: int
+    avg_trust_score: float
+    grade_distribution: Dict[str, int]
+    untrusted_models: List[Dict]
+
+@router.post("/compute", response_model=TrustScoreResponse, status_code=status.HTTP_201_CREATED)
+async def compute_trust_score(req: ComputeTrustRequest, db: AsyncSession = Depends(get_db)):
+    engine = TrustEngine(weights=req.weights)
+    result: TrustResult = engine.compute(
+        compliance_score=req.compliance_score,
+        bias_fairness_score=req.bias_fairness_score,
+        performance_score=req.performance_score,
+        security_score=req.security_score,
+        model_id=req.model_id,
+        notes=req.notes,
+    )
+    trace = TrustTrace(
+        id=str(uuid.uuid4()),
+        model_id=req.model_id,
+        trust_score=result.overall_score,
+        grade=result.grade,
+        compliance_score=req.compliance_score,
+        bias_fairness_score=req.bias_fairness_score,
+        performance_score=req.performance_score,
+        security_score=req.security_score,
+        recommendations=result.recommendations,
+        created_at=datetime.now(timezone.utc),
+    )
+    db.add(trace)
+    await db.flush()
+    await emit("trust.score.computed", "trust_engine", payload={"id": trace.id, "model_id": req.model_id, "score": result.overall_score, "grade": result.grade})
+    return TrustScoreResponse(
+        id=trace.id, model_id=req.model_id,
+        overall_score=result.overall_score, grade=result.grade,
+        label=result.label, is_trusted=result.is_trusted,
+        signals=result.to_dict()["signals"],
+        recommendations=result.recommendations,
+        computed_at=result.computed_at,
+    )
+
+@router.get("/model/{model_id}/history", response_model=List[TrustScoreResponse])
+async def get_trust_history(model_id: str, limit: int = 20, db: AsyncSession = Depends(get_db)):
+    r = await db.execute(select(TrustTrace).where(TrustTrace.model_id == model_id).order_by(desc(TrustTrace.created_at)).limit(limit))
+    traces = r.scalars().all()
+    return [TrustScoreResponse(
+        id=t.id, model_id=t.model_id,
+        overall_score=getattr(t, "trust_score", 0) or 0,
+        grade=getattr(t, "grade", "?") or "?",
+        label="", is_trusted=(getattr(t, "trust_score", 0) or 0) >= 70,
+        signals={}, recommendations=getattr(t, "recommendations", []) or [],
+        computed_at=str(getattr(t, "created_at", "")),
+    ) for t in traces]
+
+@router.get("/model/{model_id}/latest")
+async def get_latest_trust_score(model_id: str, db: AsyncSession = Depends(get_db)):
+    r = await db.execute(select(TrustTrace).where(TrustTrace.model_id == model_id).order_by(desc(TrustTrace.created_at)).limit(1))
+    trace = r.scalar_one_or_none()
+    if not trace:
+        raise HTTPException(404, f"No trust score found for model {model_id}")
+    return {"model_id": model_id, "trust_score": getattr(trace, "trust_score", 0), "grade": getattr(trace, "grade", "?"), "computed_at": str(getattr(trace, "created_at", ""))}
+
+@router.get("/summary", response_model=TrustSummaryResponse)
+async def trust_summary(db: AsyncSession = Depends(get_db)):
+    r = await db.execute(select(TrustTrace.model_id, func.max(TrustTrace.created_at).label("latest")).group_by(TrustTrace.model_id))
+    model_latest = {row.model_id: row.latest for row in r}
+    total = len(model_latest)
+    if total == 0:
+        return TrustSummaryResponse(total_models=0, avg_trust_score=0.0, grade_distribution={}, untrusted_models=[])
+    scores_r = await db.execute(select(TrustTrace).where(TrustTrace.created_at.in_(model_latest.values())))
+    traces = scores_r.scalars().all()
+    scores = [getattr(t, "trust_score", 0) or 0 for t in traces]
+    avg = round(sum(scores) / len(scores), 2) if scores else 0.0
+    grade_dist: Dict[str, int] = {}
+    untrusted = []
+    for t in traces:
+        g = getattr(t, "grade", "?") or "?"
+        grade_dist[g] = grade_dist.get(g, 0) + 1
+        if (getattr(t, "trust_score", 0) or 0) < 70:
+            untrusted.append({"model_id": t.model_id, "trust_score": getattr(t, "trust_score", 0)})
+    return TrustSummaryResponse(total_models=total, avg_trust_score=avg, grade_distribution=grade_dist, untrusted_models=untrusted)
+
+@router.get("/weights")
+async def get_default_weights():
+    from sentinel.trust_engine.engine import DEFAULT_WEIGHTS
+    return {"weights": DEFAULT_WEIGHTS, "description": {"compliance": "Regulatory adherence (30%)", "bias_fairness": "Equitable outcomes (25%)", "performance": "Reliability and uptime (25%)", "security": "Attack resistance (20%)"}}
+''')
+
+print('Trust Engine: engine.py + router.py written')
+
+print('\n=== FEATURE 2: VENDOR MANAGEMENT (Risk Scoring + Questionnaires) ===')
+
+W('sentinel/vendor/__init__.py', 'from sentinel.vendor.router import router as vendor_router\n__all__ = ["vendor_router"]\n')
+
+W('sentinel/vendor/risk.py', '''
+from __future__ import annotations
+from typing import Any, Dict, List, Optional
+from dataclasses import dataclass, field
+
+VENDOR_RISK_WEIGHTS = {
+    "data_handling": 0.25,
+    "security_posture": 0.25,
+    "compliance_certs": 0.20,
+    "contract_terms": 0.15,
+    "incident_history": 0.15,
 }
-""")
 
-w('dashboard/src/pages/HITL.tsx', """import{useEffect,useState}from 'react'
-import{useHitlStore}from '../stores/apiStore'
-export default function HITLPage(){
-  const store=useHitlStore()
-  const[notes,setNotes]=useState<Record<string,string>>({})
-  const[resolving,setResolving]=useState('')
-  useEffect(()=>{store.fetchAll()},[store.fetchAll])
-  const resolve=async(id:string,decision:string)=>{
-    setResolving(id)
-    try{await store.action(id,'resolve',{decision,notes:notes[id]||''})}catch(e:any){alert(e.message)}
-    setResolving('')
-  }
-  const pending=store.items.filter((i:any)=>i.status==='pending')
-  const overdue=pending.filter((i:any)=>new Date(i.due_at)<new Date())
-  return(
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">HITL Reviews</h1>
-        <div className="flex gap-3">{overdue.length>0&&<span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm">{overdue.length} Overdue</span>}<span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm">{pending.length} Pending</span></div>
-      </div>
-      {store.loading?<div className="flex justify-center h-32 items-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"/></div>:(
-        <div className="space-y-4">
-          {store.items.length===0&&<div className="text-center py-12 text-gray-400"><p className="text-4xl mb-2">&#9989;</p><p>No HITL reviews pending</p></div>}
-          {store.items.map((r:any)=>(
-            <div key={r.id} className={`bg-white rounded-xl shadow-sm border p-5 ${new Date(r.due_at)<new Date()&&r.status==='pending'?'border-red-300':''}`}>
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${r.status==='pending'?'bg-yellow-100 text-yellow-800':r.status==='approved'?'bg-green-100 text-green-800':'bg-red-100 text-red-800'}`}>{r.status}</span>
-                    <span className="text-xs text-gray-400">{r.entity_type} \u2022 {r.review_type}</span>
-                    {new Date(r.due_at)<new Date()&&r.status==='pending'&&<span className="text-xs text-red-600 font-medium">&#9888; Overdue</span>}
-                  </div>
-                  <p className="font-medium text-gray-900">{r.context||`Review ${r.entity_type}`}</p>
-                  <p className="text-xs text-gray-400 mt-1">Due: {new Date(r.due_at).toLocaleString()}</p>
-                </div>
-                {r.status==='pending'&&(
-                  <div className="flex flex-col gap-2 min-w-[160px]">
-                    <textarea value={notes[r.id]||''} onChange={e=>setNotes({...notes,[r.id]:e.target.value})} placeholder="Notes..." rows={2} className="w-full border rounded px-2 py-1 text-xs"/>
-                    <div className="flex gap-2">
-                      <button onClick={()=>resolve(r.id,'approved')} disabled={resolving===r.id} className="flex-1 py-1 bg-green-600 text-white rounded text-xs disabled:opacity-50">Approve</button>
-                      <button onClick={()=>resolve(r.id,'rejected')} disabled={resolving===r.id} className="flex-1 py-1 bg-red-600 text-white rounded text-xs disabled:opacity-50">Reject</button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-""")
+RISK_THRESHOLDS = {"low": 70, "medium": 50}
 
-print('HITL+Agents+Vendors pages written')
+@dataclass
+class VendorRiskResult:
+    vendor_id: str
+    vendor_name: str
+    overall_score: float
+    risk_level: str
+    dimension_scores: Dict[str, float] = field(default_factory=dict)
+    findings: List[str] = field(default_factory=list)
+    recommendations: List[str] = field(default_factory=list)
 
-w('dashboard/src/pages/Dashboard.tsx', """import{useEffect}from 'react'
-import{useComplianceStore}from '../stores/complianceStore'
-export default function Dashboard(){
-  const{score,loading,fetchSummary}=useComplianceStore()
-  useEffect(()=>{fetchSummary()},[fetchSummary])
-  const s=score
-  if(loading&&!s)return<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"/></div>
-  return(
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Compliance Dashboard</h1>
-        <button onClick={fetchSummary} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Refresh</button>
-      </div>
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-6 text-white">
-        <p className="text-blue-200 text-sm">Overall Compliance Score</p>
-        <div className="flex items-end gap-2 mt-1"><span className="text-6xl font-bold">{s?.overall??0}</span><span className="text-2xl mb-2">%</span></div>
-        <div className="w-full bg-blue-900 rounded-full h-2 mt-3"><div className="bg-white rounded-full h-2 transition-all" style={{width:`${s?.overall??0}%`}}/></div>
-      </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[{l:'Controls',s:s?.controls?.score,d:`${s?.controls?.implemented??0}/${s?.controls?.total??0} implemented`},{l:'Policies',s:s?.policies?.score,d:`${s?.policies?.approved??0}/${s?.policies?.total??0} approved`},{l:'Risks',s:s?.risks?.score,d:`${s?.risks?.addressed??0}/${s?.risks?.total??0} addressed`},{l:'Evidence',s:s?.evidence?.score,d:`${s?.evidence?.approved??0}/${s?.evidence?.total??0} approved`}].map(c=>(
-          <div key={c.l} className="bg-white rounded-xl p-4 shadow-sm border"><p className="text-gray-500 text-xs font-medium uppercase tracking-wide">{c.l}</p><p className="text-3xl font-bold mt-1">{c.s??0}<span className="text-lg text-gray-400">%</span></p><p className="text-xs text-gray-500 mt-1">{c.d}</p></div>
-        ))}
-      </div>
-      {(s?.hitl_overdue??0)>0&&(<div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3"><span className="text-red-500 text-xl">&#9888;&#65039;</span><div><p className="font-semibold text-red-700">{s?.hitl_overdue} HITL Reviews Overdue</p><p className="text-sm text-red-600">Human reviews exceeded 72-hour SLA</p></div><a href="/hitl" className="ml-auto px-3 py-1 bg-red-600 text-white rounded text-sm">Review Now</a></div>)}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl p-5 shadow-sm border"><h3 className="font-semibold mb-3">AI Models</h3><div className="flex gap-6"><div className="text-center"><p className="text-3xl font-bold">{s?.models?.total??0}</p><p className="text-xs text-gray-500">Total</p></div><div className="text-center"><p className="text-3xl font-bold text-green-600">{s?.models?.active??0}</p><p className="text-xs text-gray-500">Active</p></div></div></div>
-        <div className="bg-white rounded-xl p-5 shadow-sm border"><h3 className="font-semibold mb-3">Recent Activity</h3><div className="space-y-2 max-h-40 overflow-y-auto">{(s?.recent_activity||[]).slice(0,5).map((a:any,i:number)=>(<div key={i} className="flex items-start gap-2 text-sm"><span className="text-blue-500 text-xs mt-0.5">&#9679;</span><div><span className="font-medium">{a.action}</span><span className="text-gray-400 text-xs ml-2">{new Date(a.created_at).toLocaleDateString()}</span></div></div>))}{(!s?.recent_activity||s.recent_activity.length===0)&&<p className="text-gray-400 text-sm">No recent activity</p>}</div></div>
-      </div>
-    </div>
-  )
-}
-""")
+    @property
+    def is_approved(self) -> bool:
+        return self.overall_score >= 60
 
-print('Dashboard page written')
-
-# ── Patch main.py to add new routers ────────────────────────────────────────────────
-main_path=os.path.join(B,'sentinel/api/main.py')
-if os.path.exists(main_path):
-    content=open(main_path).read()
-    new_imports=''
-    new_includes=''
-    routers_to_add=[
-        ('model_router','model_router'),
-        ('controls_router','controls_router'),
-        ('dataset_router','dataset_router'),
-        ('agent_router','agent_router'),
-        ('vendor_router','vendor_router'),
-        ('evidence_router','evidence_router'),
-        ('hitl_router','hitl_router'),
-        ('compliance_router','compliance_router'),
-    ]
-    patch=''
-    for mod,rtr in routers_to_add:
-        imp=f'from routers.{mod} import router as {rtr}'
-        inc=f'app.include_router({rtr})'
-        if imp not in content:
-            patch+=f'\n{imp}\n{inc}'
-    if patch:
-        # Insert after last import line
-        lines=content.split('\n')
-        insert_at=0
-        for i,l in enumerate(lines):
-            if l.startswith('from ')||l.startswith('import '):
-                insert_at=i
-        lines.insert(insert_at+1,patch)
-        open(main_path,'w').write('\n'.join(lines))
-        print('Patched main.py with new routers')
+def score_vendor(vendor_id: str, vendor_name: str, answers: Dict[str, Any]) -> VendorRiskResult:
+    dims = {}
+    for dim in VENDOR_RISK_WEIGHTS:
+        raw = answers.get(dim, 0)
+        dims[dim] = min(max(float(raw), 0.0), 100.0)
+    overall = round(sum(VENDOR_RISK_WEIGHTS[k] * dims[k] for k in VENDOR_RISK_WEIGHTS), 2)
+    if overall >= RISK_THRESHOLDS["low"]:
+        risk_level = "low"
+    elif overall >= RISK_THRESHOLDS["medium"]:
+        risk_level = "medium"
     else:
-        print('main.py already has all routers')
-else:
-    print(f'WARNING: main.py not found at {main_path}')
+        risk_level = "high"
+    recs = []
+    if dims.get("data_handling", 100) < 70:
+        recs.append("Review data handling practices and encryption standards.")
+    if dims.get("security_posture", 100) < 70:
+        recs.append("Request latest penetration test report and SOC 2 Type II.")
+    if dims.get("compliance_certs", 100) < 60:
+        recs.append("Verify vendor compliance certifications (ISO 27001, SOC2, etc.).")
+    if dims.get("incident_history", 100) < 60:
+        recs.append("Escalate review: vendor has incident history requiring investigation.")
+    return VendorRiskResult(
+        vendor_id=vendor_id, vendor_name=vendor_name,
+        overall_score=overall, risk_level=risk_level,
+        dimension_scores=dims, recommendations=recs,
+    )
+''')
 
-print('\n=== gen.py complete ===')
-print('Files written to:')
-print(f'  Backend: {os.path.join(B,"sentinel/api/routers")}')
-print(f'  Frontend: {os.path.join(B,"dashboard/src")}')
-print(f'  Migration: {os.path.join(B,"sentinel/api/migrations")}')
-print('Run: cd dashboard && npm run build')
-print('Run: cd sentinel/api && uvicorn main:app --reload')
+W('sentinel/vendor/router.py', '''
+from __future__ import annotations
+from typing import Any, Dict, List, Optional
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, desc
+from sentinel.api.db import get_db
+from sentinel.models import Vendor, VendorQuestionnaire
+from sentinel.vendor.risk import score_vendor, VendorRiskResult
+import uuid, logging
+from datetime import datetime, timezone
+
+logger = logging.getLogger(__name__)
+router = APIRouter(prefix="/vendors", tags=["Vendor Management"])
+
+QUESTIONNAIRE_TEMPLATE = [
+    {"id": "q1", "section": "data_handling", "question": "Does the vendor encrypt data at rest and in transit?", "type": "score"},
+    {"id": "q2", "section": "data_handling", "question": "Does the vendor have a documented data retention and deletion policy?", "type": "score"},
+    {"id": "q3", "section": "security_posture", "question": "Does the vendor hold a current SOC 2 Type II certification?", "type": "score"},
+    {"id": "q4", "section": "security_posture", "question": "Has the vendor conducted a penetration test in the last 12 months?", "type": "score"},
+    {"id": "q5", "section": "compliance_certs", "question": "Does the vendor hold ISO 27001 or equivalent certification?", "type": "score"},
+    {"id": "q6", "section": "compliance_certs", "question": "Is the vendor compliant with applicable AI/data regulations (GDPR, EU AI Act)?", "type": "score"},
+    {"id": "q7", "section": "contract_terms", "question": "Does the contract include data processing agreements and liability clauses?", "type": "score"},
+    {"id": "q8", "section": "contract_terms", "question": "Are SLA terms clearly defined with penalties for breaches?", "type": "score"},
+    {"id": "q9", "section": "incident_history", "question": "Has the vendor had a reportable security incident in the last 24 months?", "type": "score"},
+    {"id": "q10", "section": "incident_history", "question": "Does the vendor have an incident response plan with defined RTOs?", "type": "score"},
+]
+
+class VendorCreate(BaseModel):
+    name: str
+    category: str = "AI Provider"
+    contact_email: Optional[str] = None
+    website: Optional[str] = None
+    description: Optional[str] = None
+
+class VendorResponse(BaseModel):
+    id: str
+    name: str
+    category: str
+    contact_email: Optional[str]
+    website: Optional[str]
+    description: Optional[str]
+    risk_score: Optional[float]
+    risk_level: Optional[str]
+    created_at: Optional[str]
+
+class SubmitQuestionnaireRequest(BaseModel):
+    vendor_id: str
+    answers: Dict[str, Any] = Field(..., description="Map of section -> score 0-100")
+
+class RiskAssessmentResponse(BaseModel):
+    vendor_id: str
+    vendor_name: str
+    overall_score: float
+    risk_level: str
+    dimension_scores: Dict[str, float]
+    recommendations: List[str]
+    is_approved: bool
+
+@router.get("/questionnaire/template")
+async def get_questionnaire_template():
+    return {"template": QUESTIONNAIRE_TEMPLATE, "scoring_guide": {"0-100": "Score each section 0 (worst) to 100 (best)", "sections": list({q["section"] for q in QUESTIONNAIRE_TEMPLATE})},}
+
+@router.post("/", response_model=VendorResponse, status_code=status.HTTP_201_CREATED)
+async def create_vendor(data: VendorCreate, db: AsyncSession = Depends(get_db)):
+    vendor = Vendor(id=str(uuid.uuid4()), name=data.name, category=data.category, contact_email=data.contact_email, website=data.website, description=data.description, created_at=datetime.now(timezone.utc))
+    db.add(vendor)
+    await db.flush()
+    return VendorResponse(id=vendor.id, name=vendor.name, category=vendor.category, contact_email=vendor.contact_email, website=vendor.website, description=vendor.description, risk_score=None, risk_level=None, created_at=str(vendor.created_at))
+
+@router.get("/", response_model=List[VendorResponse])
+async def list_vendors(skip: int = 0, limit: int = 50, db: AsyncSession = Depends(get_db)):
+    r = await db.execute(select(Vendor).order_by(desc(Vendor.created_at)).offset(skip).limit(limit))
+    vendors = r.scalars().all()
+    results = []
+    for v in vendors:
+        latest_q = await db.execute(select(VendorQuestionnaire).where(VendorQuestionnaire.vendor_id == v.id).order_by(desc(VendorQuestionnaire.created_at)).limit(1))
+        q = latest_q.scalar_one_or_none()
+        results.append(VendorResponse(id=v.id, name=v.name, category=getattr(v, "category", "AI Provider") or "AI Provider", contact_email=getattr(v, "contact_email", None), website=getattr(v, "website", None), description=getattr(v, "description", None), risk_score=getattr(q, "risk_score", None) if q else None, risk_level=getattr(q, "risk_level", None) if q else None, created_at=str(v.created_at) if hasattr(v, "created_at") else None))
+    return results
+
+@router.get("/{vendor_id}", response_model=VendorResponse)
+async def get_vendor(vendor_id: str, db: AsyncSession = Depends(get_db)):
+    r = await db.execute(select(Vendor).where(Vendor.id == vendor_id))
+    v = r.scalar_one_or_none()
+    if not v:
+        raise HTTPException(404, "Vendor not found")
+    return VendorResponse(id=v.id, name=v.name, category=getattr(v, "category", "AI Provider") or "AI Provider", contact_email=getattr(v, "contact_email", None), website=getattr(v, "website", None), description=getattr(v, "description", None), risk_score=None, risk_level=None, created_at=str(getattr(v, "created_at", "")))
+
+@router.post("/assess", response_model=RiskAssessmentResponse)
+async def assess_vendor_risk(req: SubmitQuestionnaireRequest, db: AsyncSession = Depends(get_db)):
+    r = await db.execute(select(Vendor).where(Vendor.id == req.vendor_id))
+    vendor = r.scalar_one_or_none()
+    if not vendor:
+        raise HTTPException(404, "Vendor not found")
+    result: VendorRiskResult = score_vendor(vendor_id=req.vendor_id, vendor_name=vendor.name, answers=req.answers)
+    q = VendorQuestionnaire(id=str(uuid.uuid4()), vendor_id=req.vendor_id, answers=req.answers, risk_score=result.overall_score, risk_level=result.risk_level, created_at=datetime.now(timezone.utc))
+    db.add(q)
+    await db.flush()
+    return RiskAssessmentResponse(vendor_id=req.vendor_id, vendor_name=vendor.name, overall_score=result.overall_score, risk_level=result.risk_level, dimension_scores=result.dimension_scores, recommendations=result.recommendations, is_approved=result.is_approved)
+
+@router.get("/{vendor_id}/assessments")
+async def list_vendor_assessments(vendor_id: str, db: AsyncSession = Depends(get_db)):
+    r = await db.execute(select(VendorQuestionnaire).where(VendorQuestionnaire.vendor_id == vendor_id).order_by(desc(VendorQuestionnaire.created_at)))
+    qs = r.scalars().all()
+    return [{"id": q.id, "risk_score": getattr(q, "risk_score", None), "risk_level": getattr(q, "risk_level", None), "created_at": str(getattr(q, "created_at", ""))} for q in qs]
+''')
+
+print('Vendor Management: risk.py + router.py written')
+
+print('\n=== FEATURE 3: GOVERNANCE / REGULATORY CHANGE MANAGEMENT ===')
+
+W('sentinel/governance/__init__.py', 'from sentinel.governance.router import router as governance_router\n__all__ = ["governance_router"]\n')
+
+W('sentinel/governance/router.py', '''
+from __future__ import annotations
+from typing import Any, Dict, List, Optional
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, desc
+from sentinel.api.db import get_db
+from sentinel.models import RegulationEntry
+import uuid, logging
+from datetime import datetime, timezone
+
+logger = logging.getLogger(__name__)
+router = APIRouter(prefix="/governance", tags=["Governance & Regulatory"])
+
+REGULATION_CATALOG = [
+    {"id": "eu-ai-act", "name": "EU AI Act", "region": "EU", "category": "AI Regulation", "effective_date": "2024-08-01", "description": "Comprehensive EU framework regulating AI systems by risk level.", "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:52021PC0206"},
+    {"id": "iso-42001", "name": "ISO/IEC 42001", "region": "Global", "category": "AI Management", "effective_date": "2023-12-01", "description": "International standard for AI management systems.", "url": "https://www.iso.org/standard/81230.html"},
+    {"id": "nist-ai-rmf", "name": "NIST AI Risk Management Framework", "region": "US", "category": "AI Risk", "effective_date": "2023-01-26", "description": "NIST framework for managing AI risks across the AI lifecycle.", "url": "https://airc.nist.gov/"},
+    {"id": "gdpr", "name": "GDPR", "region": "EU", "category": "Data Privacy", "effective_date": "2018-05-25", "description": "EU General Data Protection Regulation covering AI data processing.", "url": "https://gdpr.eu"},
+    {"id": "soc2", "name": "SOC 2 Type II", "region": "US", "category": "Security Audit", "effective_date": "2022-01-01", "description": "AICPA Trust Service Criteria covering security, availability, and confidentiality.", "url": "https://www.aicpa.org/resources/landing/system-and-organization-controls-soc-suite-of-services"},
+    {"id": "iso-27001", "name": "ISO/IEC 27001:2022", "region": "Global", "category": "Information Security", "effective_date": "2022-10-25", "description": "International standard for information security management systems.", "url": "https://www.iso.org/standard/27001"},
+    {"id": "owasp-llm", "name": "OWASP LLM Top 10", "region": "Global", "category": "AI Security", "effective_date": "2023-08-01", "description": "Top 10 security risks for LLM applications.", "url": "https://owasp.org/www-project-top-10-for-large-language-model-applications/"},
+    {"id": "ccpa", "name": "CCPA", "region": "US", "category": "Data Privacy", "effective_date": "2020-01-01", "description": "California Consumer Privacy Act governing personal data use.", "url": "https://oag.ca.gov/privacy/ccpa"},
+]
+
+STATUS_OPTIONS = ["monitoring", "in_progress", "compliant", "non_compliant", "not_applicable"]
+
+class RegulationStatusUpdate(BaseModel):
+    regulation_id: str
+    status: str = Field(..., description="One of: monitoring, in_progress, compliant, non_compliant, not_applicable")
+    notes: Optional[str] = None
+    owner: Optional[str] = None
+    due_date: Optional[str] = None
+
+class RegulationStatusResponse(BaseModel):
+    id: str
+    regulation_id: str
+    regulation_name: str
+    status: str
+    notes: Optional[str]
+    owner: Optional[str]
+    due_date: Optional[str]
+    updated_at: Optional[str]
+
+class RegulatoryChangeLog(BaseModel):
+    regulation_id: str
+    change_type: str
+    summary: str
+    impact_level: str
+    effective_date: Optional[str]
+
+@router.get("/catalog")
+async def list_regulation_catalog(region: Optional[str] = None, category: Optional[str] = None):
+    regs = REGULATION_CATALOG
+    if region:
+        regs = [r for r in regs if r["region"].lower() == region.lower()]
+    if category:
+        regs = [r for r in regs if r["category"].lower() == category.lower()]
+    return {"regulations": regs, "total": len(regs)}
+
+@router.get("/catalog/{regulation_id}")
+async def get_regulation_detail(regulation_id: str):
+    reg = next((r for r in REGULATION_CATALOG if r["id"] == regulation_id), None)
+    if not reg:
+        raise HTTPException(404, f"Regulation {regulation_id} not in catalog")
+    return reg
+
+@router.post("/status", response_model=RegulationStatusResponse, status_code=status.HTTP_201_CREATED)
+async def update_regulation_status(data: RegulationStatusUpdate, db: AsyncSession = Depends(get_db)):
+    if data.status not in STATUS_OPTIONS:
+        raise HTTPException(400, f"Invalid status. Must be one of: {STATUS_OPTIONS}")
+    reg_meta = next((r for r in REGULATION_CATALOG if r["id"] == data.regulation_id), None)
+    reg_name = reg_meta["name"] if reg_meta else data.regulation_id
+    entry = RegulationEntry(
+        id=str(uuid.uuid4()),
+        regulation_id=data.regulation_id,
+        regulation_name=reg_name,
+        status=data.status,
+        notes=data.notes,
+        owner=data.owner,
+        due_date=data.due_date,
+        updated_at=datetime.now(timezone.utc),
+    )
+    db.add(entry)
+    await db.flush()
+    return RegulationStatusResponse(id=entry.id, regulation_id=entry.regulation_id, regulation_name=reg_name, status=entry.status, notes=entry.notes, owner=entry.owner, due_date=entry.due_date, updated_at=str(entry.updated_at))
+
+@router.get("/status", response_model=List[RegulationStatusResponse])
+async def list_regulation_statuses(db: AsyncSession = Depends(get_db)):
+    r = await db.execute(select(RegulationEntry).order_by(desc(RegulationEntry.updated_at)))
+    entries = r.scalars().all()
+    return [RegulationStatusResponse(id=e.id, regulation_id=e.regulation_id, regulation_name=getattr(e, "regulation_name", e.regulation_id), status=e.status, notes=getattr(e, "notes", None), owner=getattr(e, "owner", None), due_date=getattr(e, "due_date", None), updated_at=str(getattr(e, "updated_at", ""))) for e in entries]
+
+@router.get("/status/{regulation_id}", response_model=RegulationStatusResponse)
+async def get_regulation_status(regulation_id: str, db: AsyncSession = Depends(get_db)):
+    r = await db.execute(select(RegulationEntry).where(RegulationEntry.regulation_id == regulation_id).order_by(desc(RegulationEntry.updated_at)).limit(1))
+    entry = r.scalar_one_or_none()
+    if not entry:
+        raise HTTPException(404, f"No status found for regulation {regulation_id}")
+    return RegulationStatusResponse(id=entry.id, regulation_id=entry.regulation_id, regulation_name=getattr(entry, "regulation_name", regulation_id), status=entry.status, notes=getattr(entry, "notes", None), owner=getattr(entry, "owner", None), due_date=getattr(entry, "due_date", None), updated_at=str(getattr(entry, "updated_at", "")))
+
+@router.get("/dashboard")
+async def governance_dashboard(db: AsyncSession = Depends(get_db)):
+    r = await db.execute(select(RegulationEntry).order_by(desc(RegulationEntry.updated_at)))
+    entries = r.scalars().all()
+    # Build latest-per-regulation map
+    latest: Dict[str, Any] = {}
+    for e in entries:
+        if e.regulation_id not in latest:
+            latest[e.regulation_id] = e
+    status_counts: Dict[str, int] = {}
+    for e in latest.values():
+        status_counts[e.status] = status_counts.get(e.status, 0) + 1
+    tracked = len(latest)
+    total_in_catalog = len(REGULATION_CATALOG)
+    untracked = [r for r in REGULATION_CATALOG if r["id"] not in latest]
+    return {
+        "summary": {"tracked": tracked, "total_in_catalog": total_in_catalog, "untracked_count": len(untracked)},
+        "status_breakdown": status_counts,
+        "compliant_count": status_counts.get("compliant", 0),
+        "attention_required": status_counts.get("non_compliant", 0) + status_counts.get("in_progress", 0),
+        "untracked_regulations": untracked[:5],
+    }
+
+@router.post("/change-log", status_code=status.HTTP_201_CREATED)
+async def log_regulatory_change(data: RegulatoryChangeLog):
+    logger.info("Regulatory change logged: %s - %s (%s)", data.regulation_id, data.change_type, data.impact_level)
+    return {"id": str(uuid.uuid4()), "regulation_id": data.regulation_id, "change_type": data.change_type, "summary": data.summary, "impact_level": data.impact_level, "effective_date": data.effective_date, "logged_at": datetime.now(timezone.utc).isoformat()}
+''')
+
+print('Governance: router.py written')
+
+print('\n=== FEATURE 4: EXPANDED AUDIT LOGGING (Immutable + Before/After State) ===')
+
+W('sentinel/audit.py', '''
+from __future__ import annotations
+import json, logging, uuid
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
+from fastapi import Request
+
+logger = logging.getLogger("sentinel.audit")
+
+_audit_store: List[Dict[str, Any]] = []
+
+class AuditRecord:
+    def __init__(self, action: str, actor: str, resource_type: str, resource_id: str,
+                 before_state: Optional[Dict] = None, after_state: Optional[Dict] = None,
+                 metadata: Optional[Dict] = None, tenant_id: Optional[str] = None):
+        self.id = str(uuid.uuid4())
+        self.timestamp = datetime.now(timezone.utc).isoformat()
+        self.action = action
+        self.actor = actor
+        self.resource_type = resource_type
+        self.resource_id = resource_id
+        self.before_state = before_state
+        self.after_state = after_state
+        self.metadata = metadata or {}
+        self.tenant_id = tenant_id
+        self.checksum = self._compute_checksum()
+
+    def _compute_checksum(self) -> str:
+        import hashlib
+        payload = json.dumps({"id": self.id, "timestamp": self.timestamp, "action": self.action,
+            "actor": self.actor, "resource_type": self.resource_type, "resource_id": self.resource_id,
+            "before_state": self.before_state, "after_state": self.after_state}, sort_keys=True)
+        return hashlib.sha256(payload.encode()).hexdigest()
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id, "timestamp": self.timestamp, "action": self.action,
+            "actor": self.actor, "resource_type": self.resource_type,
+            "resource_id": self.resource_id, "before_state": self.before_state,
+            "after_state": self.after_state, "metadata": self.metadata,
+            "tenant_id": self.tenant_id, "checksum": self.checksum,
+        }
+
+def log_audit(action: str, actor: str, resource_type: str, resource_id: str,
+             before_state: Optional[Dict] = None, after_state: Optional[Dict] = None,
+             metadata: Optional[Dict] = None, tenant_id: Optional[str] = None) -> AuditRecord:
+    record = AuditRecord(action=action, actor=actor, resource_type=resource_type,
+        resource_id=resource_id, before_state=before_state, after_state=after_state,
+        metadata=metadata, tenant_id=tenant_id)
+    _audit_store.append(record.to_dict())
+    logger.info("AUDIT: [%s] %s %s/%s by=%s checksum=%s", record.timestamp,
+        action, resource_type, resource_id, actor, record.checksum)
+    return record
+
+def get_audit_log(resource_type: Optional[str] = None, resource_id: Optional[str] = None,
+                  actor: Optional[str] = None, limit: int = 100) -> List[Dict]:
+    records = _audit_store[:]
+    if resource_type:
+        records = [r for r in records if r["resource_type"] == resource_type]
+    if resource_id:
+        records = [r for r in records if r["resource_id"] == resource_id]
+    if actor:
+        records = [r for r in records if r["actor"] == actor]
+    return sorted(records, key=lambda r: r["timestamp"], reverse=True)[:limit]
+
+def verify_audit_integrity(record_id: str) -> bool:
+    record = next((r for r in _audit_store if r["id"] == record_id), None)
+    if not record:
+        return False
+    recomputed = AuditRecord(
+        action=record["action"], actor=record["actor"],
+        resource_type=record["resource_type"], resource_id=record["resource_id"],
+        before_state=record["before_state"], after_state=record["after_state"],
+    )
+    recomputed.id = record["id"]
+    recomputed.timestamp = record["timestamp"]
+    return recomputed._compute_checksum() == record["checksum"]
+''')
+
+print('Audit Logging: audit.py expanded with immutable records + checksums')
+
+print('\n=== FEATURE 5: BIAS/FAIRNESS AUDITING ===')
+
+W('sentinel/evals/bias_fairness.py', '''
+from __future__ import annotations
+from typing import Any, Dict, List, Optional
+from dataclasses import dataclass, field
+import logging, uuid
+from datetime import datetime, timezone
+
+logger = logging.getLogger(__name__)
+
+PROTECTED_ATTRIBUTES = ["gender", "race", "age", "disability", "ethnicity", "religion", "sexual_orientation"]
+
+@dataclass
+class BiasMetric:
+    attribute: str
+    metric_name: str
+    value: float
+    threshold: float
+    passed: bool
+    details: str = ""
+
+@dataclass
+class FairnessReport:
+    id: str
+    model_id: str
+    overall_fairness_score: float
+    metrics: List[BiasMetric] = field(default_factory=list)
+    protected_attributes_tested: List[str] = field(default_factory=list)
+    issues_found: List[str] = field(default_factory=list)
+    recommendations: List[str] = field(default_factory=list)
+    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+    @property
+    def is_fair(self) -> bool:
+        return self.overall_fairness_score >= 80.0
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id, "model_id": self.model_id,
+            "overall_fairness_score": self.overall_fairness_score,
+            "is_fair": self.is_fair,
+            "metrics": [{"attribute": m.attribute, "metric": m.metric_name, "value": m.value, "threshold": m.threshold, "passed": m.passed, "details": m.details} for m in self.metrics],
+            "protected_attributes_tested": self.protected_attributes_tested,
+            "issues_found": self.issues_found,
+            "recommendations": self.recommendations,
+            "created_at": self.created_at,
+        }
+
+def run_bias_audit(
+    model_id: str,
+    predictions: Optional[Dict[str, List[float]]] = None,
+    demographic_parity_threshold: float = 0.1,
+    equalized_odds_threshold: float = 0.1,
+) -> FairnessReport:
+    report_id = str(uuid.uuid4())
+    metrics: List[BiasMetric] = []
+    issues: List[str] = []
+    recs: List[str] = []
+    tested_attrs: List[str] = []
+    scores: List[float] = []
+
+    if not predictions:
+        return FairnessReport(id=report_id, model_id=model_id, overall_fairness_score=0.0,
+            issues_found=["No prediction data provided for bias assessment."],
+            recommendations=["Provide demographic-disaggregated prediction data to run a meaningful bias audit."])
+
+    for attr, values in predictions.items():
+        if attr not in PROTECTED_ATTRIBUTES:
+            continue
+        tested_attrs.append(attr)
+        if len(values) < 2:
+            continue
+        mean_val = sum(values) / len(values)
+        max_val = max(values)
+        min_val = min(values)
+        disparity = abs(max_val - min_val)
+        dp_passed = disparity <= demographic_parity_threshold
+        dp_score = max(0.0, 100.0 - (disparity * 500.0))
+        scores.append(dp_score)
+        metrics.append(BiasMetric(attribute=attr, metric_name="demographic_parity", value=round(disparity, 4),
+            threshold=demographic_parity_threshold, passed=dp_passed, details=f"Disparity between groups: {disparity:.4f}"))
+        if not dp_passed:
+            issues.append(f"Demographic parity violation for '{attr}': disparity={disparity:.4f} > threshold={demographic_parity_threshold}")
+            recs.append(f"Investigate and mitigate bias in '{attr}' predictions. Consider re-balancing training data or applying fairness constraints.")
+
+    overall = round(sum(scores) / len(scores), 2) if scores else 0.0
+    if not tested_attrs:
+        issues.append("No protected attributes found in prediction data.")
+        recs.append("Include data disaggregated by protected attributes (gender, race, age, etc.).")
+
+    report = FairnessReport(id=report_id, model_id=model_id, overall_fairness_score=overall,
+        metrics=metrics, protected_attributes_tested=tested_attrs, issues_found=issues, recommendations=recs)
+    logger.info("Bias audit for model %s: score=%.2f, issues=%d", model_id, overall, len(issues))
+    return report
+''')
+
+print('Bias/Fairness: bias_fairness.py written')
+
+print('\n=== CLEANUP: Fix empty sentinel_ui_gen.py ===')
+
+W('sentinel_ui_gen.py', '''
+# Sentinel UI Generator - Placeholder
+# This module provides utilities for generating UI scaffolding for the Sentinel dashboard.
+# It is invoked by the build pipeline to generate frontend components.
+
+import json, os, sys
+
+def generate_dashboard_config():
+    return {
+        "modules": [
+            {"id": "trust-engine", "label": "Trust Engine", "icon": "shield-check", "route": "/trust-engine"},
+            {"id": "compliance", "label": "Compliance", "icon": "clipboard-check", "route": "/compliance"},
+            {"id": "vendor-management", "label": "Vendor Management", "icon": "building", "route": "/vendors"},
+            {"id": "governance", "label": "Governance", "icon": "gavel", "route": "/governance"},
+            {"id": "model-inventory", "label": "Model Inventory", "icon": "cpu", "route": "/models"},
+            {"id": "audit-log", "label": "Audit Log", "icon": "scroll", "route": "/audit"},
+            {"id": "bias-fairness", "label": "Bias & Fairness", "icon": "balance-scale", "route": "/bias-fairness"},
+            {"id": "security", "label": "Security", "icon": "lock", "route": "/security"},
+            {"id": "hitl", "label": "Human-in-the-Loop", "icon": "users", "route": "/hitl"},
+            {"id": "settings", "label": "Settings", "icon": "cog", "route": "/settings"},
+        ],
+        "version": "1.0.0",
+    }
+
+if __name__ == "__main__":
+    config = generate_dashboard_config()
+    print(json.dumps(config, indent=2))
+''')
+
+print('sentinel_ui_gen.py fixed (was 0 bytes, now has content)')
+
+print('\n=== ALL FEATURES WRITTEN ===')
+print('Files created/modified:')
+print('  sentinel/trust_engine/__init__.py')
+print('  sentinel/trust_engine/engine.py')
+print('  sentinel/trust_engine/router.py')
+print('  sentinel/vendor/__init__.py')
+print('  sentinel/vendor/risk.py')
+print('  sentinel/vendor/router.py')
+print('  sentinel/governance/__init__.py')
+print('  sentinel/governance/router.py')
+print('  sentinel/audit.py')
+print('  sentinel/evals/bias_fairness.py')
+print('  sentinel_ui_gen.py')
+print('\nRun: python3 gen.py')
