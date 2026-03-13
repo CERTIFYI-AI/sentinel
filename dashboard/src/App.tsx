@@ -44,6 +44,35 @@ const Vendors = lazy(() => import('./pages/Vendors'));
 const Login = lazy(() => import('./pages/Login'));
 const Signup = lazy(() => import('./pages/Signup'));
 
+const TrustEngineDashboard = lazy(() => import('./pages/trust-engine/TrustEngineDashboard'));
+const LiveTraceFeed = lazy(() => import('./pages/trust-engine/LiveTraceFeed'));
+const GuardrailActivity = lazy(() => import('./pages/trust-engine/GuardrailActivity'));
+const CostTokenDashboard = lazy(() => import('./pages/trust-engine/CostTokenDashboard'));
+const FallbackLog = lazy(() => import('./pages/trust-engine/FallbackLog'));
+const ToolCallMonitor = lazy(() => import('./pages/trust-engine/ToolCallMonitor'));
+const TrustConfig = lazy(() => import('./pages/trust-engine/TrustConfig'));
+const RBACDashboard = lazy(() => import('./pages/rbac/RBACDashboard'));
+const RoleManager = lazy(() => import('./pages/rbac/RoleManager'));
+const UserManager = lazy(() => import('./pages/rbac/UserManager'));
+const AgentDiscovery = lazy(() => import('./pages/agents/AgentDiscovery'));
+const ShadowAI = lazy(() => import('./pages/agents/ShadowAI'));
+const AgentDetail = lazy(() => import('./pages/agents/AgentDetail'));
+const VendorRegistry = lazy(() => import('./pages/vendors/VendorRegistry'));
+const VendorDetail = lazy(() => import('./pages/vendors/VendorDetail'));
+const VendorQuestionnaire = lazy(() => import('./pages/vendors/VendorQuestionnaire'));
+const HITLReviewCenter = lazy(() => import('./pages/hitl/HITLReviewCenter'));
+const HITLDetail = lazy(() => import('./pages/hitl/HITLDetail'));
+const BiasAuditWizard = lazy(() => import('./pages/bias-audits/BiasAuditWizard'));
+const BiasAuditResults = lazy(() => import('./pages/bias-audits/BiasAuditResults'));
+const ControlsList = lazy(() => import('./pages/controls/ControlsList'));
+const ControlDetail = lazy(() => import('./pages/controls/ControlDetail'));
+const DatasetRegistry = lazy(() => import('./pages/datasets/DatasetRegistry'));
+const DatasetDetail = lazy(() => import('./pages/datasets/DatasetDetail'));
+const EvidenceSyncEngine = lazy(() => import('./pages/evidence/EvidenceSyncEngine'));
+const RegRadar = lazy(() => import('./pages/governance/RegRadar'));
+const RegDetail = lazy(() => import('./pages/governance/RegDetail'));
+const Frameworks = lazy(() => import('./pages/governance/Frameworks'));
+
 function Loading() {
   return (
     <div className="flex items-center justify-center h-64">

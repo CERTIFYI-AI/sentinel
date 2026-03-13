@@ -215,7 +215,7 @@ class SentinelSettings(BaseSettings):
     # --- core ---
     version: str = Field(default="0.2.0", alias="SENTINEL_VERSION")
     environment: str = "development"
-    database_url: Optional[PostgresDsn] = Field(
+    database_url: Optional[str] = Field(
         default=None, description="asyncpg connection string for PostgreSQL"
     )
     redis_url: Optional[RedisDsn] = Field(

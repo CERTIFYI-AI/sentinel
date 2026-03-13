@@ -1,3 +1,5 @@
+from sentinel.api.db import get_db, AsyncSessionLocal
+from sentinel.api.event_helpers import emit
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -8,12 +10,6 @@ from sentinel.models.policy_engine import PolicyEngine
 from sentinel.utils.policy_pdf import generate_policy_pdf
 
 
-async def get_db():
-    import asyncpg, os
-    dsn = os.environ.get("DATABASE_URL", "postgresql://sentinel:sentinel@localhost:5432/sentinel")
-    if not hasattr(get_db, "_pool") or get_db._pool is None:
-        get_db._pool = await asyncpg.create_pool(dsn=dsn, min_size=1, max_size=5)
-    return get_db._pool
 
 router = APIRouter()
 engine = PolicyEngine()

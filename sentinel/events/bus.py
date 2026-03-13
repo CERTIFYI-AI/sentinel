@@ -34,6 +34,33 @@ class EventType(str, Enum):
     TASK_OVERDUE = "task.overdue"
     AUDIT_CHAIN_INTEGRITY_FAIL = "audit.chain.integrityfail"
     POSTURE_SCORE_UPDATED = "posture.score.updated"
+    # ── New cross-module event types ──
+    POLICY_CREATED = "policy.created"
+    POLICY_APPROVED = "policy.approved"
+    POLICY_REJECTED = "policy.rejected"
+    VENDOR_CREATED = "vendor.created"
+    VENDOR_UPDATED = "vendor.updated"
+    AGENT_REGISTERED = "agent.registered"
+    AGENT_CONFIRMED = "agent.confirmed"
+    CONTROL_CREATED = "control.created"
+    CONTROL_TESTED = "control.tested"
+    DATASET_CREATED = "dataset.created"
+    BIAS_AUDIT_CREATED = "bias_audit.created"
+    BIAS_AUDIT_RUN = "bias_audit.run"
+    TRUST_SCORE_COMPUTED = "trust.score.computed"
+    TRUST_CONFIG_UPDATED = "trust.config.updated"
+    RBAC_ROLE_CREATED = "rbac.role.created"
+    RBAC_USER_UPDATED = "rbac.user.updated"
+    SHADOW_AI_DETECTED = "shadow_ai.detected"
+    SHADOW_AI_RESOLVED = "shadow_ai.resolved"
+    REG_RADAR_CREATED = "reg_radar.created"
+    REG_RADAR_UPDATED = "reg_radar.updated"
+    OBSERVABILITY_ALERT = "observability.alert"
+    QUESTIONNAIRE_SUBMITTED = "questionnaire.submitted"
+    NOTIFICATION_CREATED = "notification.created"
+    APPROVAL_REQUESTED = "approval.requested"
+    APPROVAL_COMPLETED = "approval.completed"
+
 
 
 @dataclass

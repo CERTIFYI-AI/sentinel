@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
+import asyncio
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -11,7 +12,28 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Sentinel API starting up...")
+    # Start cross-module event consumer
+    try:
+        from sentinel.api.event_listeners import handle_event, register_listeners
+        from sentinel.events.bus import bus
+        _listener_q = register_listeners()
+        async def _event_consumer():
+            while True:
+                try:
+                    event = await _listener_q.get()
+                    await handle_event(event)
+                except asyncio.CancelledError:
+                    break
+                except Exception as e:
+                    logger.error(f"Event consumer error: {e}")
+        _consumer_task = asyncio.create_task(_event_consumer())
+        logger.info("Cross-module event consumer started")
+    except Exception as e:
+        _consumer_task = None
+        logger.warning(f"Event consumer not started: {e}")
     yield
+    if _consumer_task:
+        _consumer_task.cancel()
     logger.info("Sentinel API shutting down...")
 
 
@@ -206,3 +228,45 @@ async def api_info():
         if hasattr(r, "path")
     ]
     return {"total_routes": len(routes), "routes": routes}
+
+try:
+    from sentinel.api import trust_engine_router
+    app.include_router(trust_engine_router.router, prefix="/api/trust-engine", tags=["trust-engine"])
+    logger.info('trust_engine_router loaded')
+except Exception as e:
+    logger.warning(f'trust_engine_router error: {e}')
+
+try:
+    from sentinel.api import rbac_router
+    app.include_router(rbac_router.router, prefix="/api/rbac", tags=["rbac"])
+    logger.info('rbac_router loaded')
+except Exception as e:
+    logger.warning(f'rbac_router error: {e}')
+
+try:
+    from sentinel.api import shadow_ai_router
+    app.include_router(shadow_ai_router.router, prefix="/api/shadow-ai", tags=["shadow-ai"])
+    logger.info('shadow_ai_router loaded')
+except Exception as e:
+    logger.warning(f'shadow_ai_router error: {e}')
+
+try:
+    from sentinel.api import reg_radar_router
+    app.include_router(reg_radar_router.router, prefix="/api/reg-radar", tags=["reg-radar"])
+    logger.info('reg_radar_router loaded')
+except Exception as e:
+    logger.warning(f'reg_radar_router error: {e}')
+
+try:
+    from sentinel.api import observability_router
+    app.include_router(observability_router.router, prefix="/api/observability", tags=["observability"])
+    logger.info('observability_router loaded')
+except Exception as e:
+    logger.warning(f'observability_router error: {e}')
+
+try:
+    from sentinel.api import questionnaire_router
+    app.include_router(questionnaire_router.router, prefix="/api/questionnaires", tags=["questionnaires"])
+    logger.info('questionnaire_router loaded')
+except Exception as e:
+    logger.warning(f'questionnaire_router error: {e}')

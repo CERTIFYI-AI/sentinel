@@ -1,3 +1,4 @@
+from sentinel.api.db import get_db, AsyncSessionLocal
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from typing import Optional, List
@@ -7,12 +8,6 @@ from sentinel.events.compliance_events import emit_model_registered, emit_hitl_d
 
 router = APIRouter()
 
-async def get_db():
-    import asyncpg, os
-    dsn = os.environ.get("DATABASE_URL","postgresql://sentinel:sentinel@localhost:5432/sentinel")
-    if not hasattr(get_db,"_pool") or get_db._pool is None:
-        get_db._pool = await asyncpg.create_pool(dsn=dsn,min_size=1,max_size=5)
-    return get_db._pool
 
 def get_tenant(req: Request) -> str:
     token = req.headers.get("Authorization","").replace("Bearer ","")

@@ -260,3 +260,146 @@ async def get_db():
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+
+# ---- Additional Models for full lifecycle ----
+class TrustTrace(Base):
+    __tablename__ = "trust_traces"
+    id = Column(String, primary_key=True, default=new_id)
+    trust_id = Column(String, unique=True, index=True, default=lambda: f"TRX-{int(__import__('time').time())}-{new_id()[:8]}")
+    model_id = Column(String, nullable=True)
+    user_hash = Column(String, nullable=True)
+    original_prompt = Column(Text, nullable=True)
+    transformed_prompt = Column(Text, nullable=True)
+    raw_response = Column(Text, nullable=True)
+    filtered_response = Column(Text, nullable=True)
+    trust_score = Column(Float, default=100.0)
+    pii_detected = Column(Boolean, default=False)
+    injection_detected = Column(Boolean, default=False)
+    intent_violation = Column(Boolean, default=False)
+    hallucination_score = Column(Float, default=0.0)
+    toxicity_detected = Column(Boolean, default=False)
+    schema_valid = Column(Boolean, default=True)
+    fallback_triggered = Column(Boolean, default=False)
+    input_tokens = Column(Integer, default=0)
+    output_tokens = Column(Integer, default=0)
+    latency_ms = Column(Float, default=0.0)
+    cost_usd = Column(Float, default=0.0)
+    guardrail_rules = Column(JSON, default=list)
+    region = Column(String, default="us-east-1")
+    created_at = Column(DateTime, default=now)
+
+class GuardrailRule(Base):
+    __tablename__ = "guardrail_rules"
+    id = Column(String, primary_key=True, default=new_id)
+    name = Column(String, nullable=False)
+    rule_type = Column(String, default="injection")  # injection/pii/intent/toxicity/schema
+    model_id = Column(String, nullable=True)
+    pattern = Column(Text, nullable=True)
+    action = Column(String, default="block")  # block/redact/warn/log
+    severity = Column(String, default="High")
+    enabled = Column(Boolean, default=True)
+    trigger_count = Column(Integer, default=0)
+    created_at = Column(DateTime, default=now)
+    updated_at = Column(DateTime, default=now, onupdate=now)
+
+class ShadowAIFinding(Base):
+    __tablename__ = "shadow_ai_findings"
+    id = Column(String, primary_key=True, default=new_id)
+    source_type = Column(String)  # api_call/library_import/saas_oauth
+    endpoint = Column(String, nullable=True)
+    library = Column(String, nullable=True)
+    service = Column(String, nullable=True)
+    first_seen = Column(DateTime, default=now)
+    last_seen = Column(DateTime, default=now)
+    risk_level = Column(String, default="High")
+    status = Column(String, default="Unsanctioned")  # Unsanctioned/Sanctioned/Blocked/Dismissed
+    recommended_action = Column(String, default="Sanction")
+    escalated_to_hitl = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=now)
+
+class RegulationEntry(Base):
+    __tablename__ = "regulation_entries"
+    id = Column(String, primary_key=True, default=new_id)
+    name = Column(String, nullable=False)
+    jurisdiction = Column(String, default="EU")
+    status = Column(String, default="Enacted")  # Draft/Enacted/Enforcing/Amended
+    effective_date = Column(String, nullable=True)
+    relevance_score = Column(Float, default=0.0)
+    linked_frameworks = Column(JSON, default=list)
+    linked_policies = Column(JSON, default=list)
+    requirements_summary = Column(Text, nullable=True)
+    models_in_scope = Column(Integer, default=0)
+    controls_mapped = Column(Integer, default=0)
+    gap_percent = Column(Float, default=0.0)
+    alert_on_change = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=now)
+    updated_at = Column(DateTime, default=now, onupdate=now)
+
+class RBACRole(Base):
+    __tablename__ = "rbac_roles"
+    id = Column(String, primary_key=True, default=new_id)
+    name = Column(String, unique=True, nullable=False)
+    description = Column(Text, nullable=True)
+    is_system = Column(Boolean, default=False)
+    permissions = Column(JSON, default=dict)  # {module: [read,write,approve,delete]}
+    created_at = Column(DateTime, default=now)
+
+class RBACUser(Base):
+    __tablename__ = "rbac_users"
+    id = Column(String, primary_key=True, default=new_id)
+    email = Column(String, unique=True, nullable=False)
+    name = Column(String, nullable=True)
+    role_id = Column(String, nullable=True)
+    role_name = Column(String, default="Auditor")
+    enabled = Column(Boolean, default=True)
+    last_login = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=now)
+
+class ModelTrustConfig(Base):
+    __tablename__ = "model_trust_configs"
+    id = Column(String, primary_key=True, default=new_id)
+    model_id = Column(String, unique=True, nullable=False)
+    allowed_intents = Column(JSON, default=list)
+    blocked_intents = Column(JSON, default=list)
+    output_schema = Column(Text, nullable=True)
+    fallback_chain = Column(JSON, default=list)
+    trust_score_threshold = Column(Float, default=70.0)
+    fallback_threshold = Column(Float, default=50.0)
+    pii_sensitivity = Column(String, default="redact")  # block/redact/warn
+    hallucination_mode = Column(String, default="balanced")  # strict/balanced/lenient
+    budget_monthly_usd = Column(Float, default=0.0)
+    latency_sla_ms = Column(Float, default=5000.0)
+    tool_policy = Column(JSON, default=dict)
+    retention_days = Column(Integer, default=90)
+    created_at = Column(DateTime, default=now)
+    updated_at = Column(DateTime, default=now, onupdate=now)
+
+class VendorQuestionnaire(Base):
+    __tablename__ = "vendor_questionnaires"
+    id = Column(String, primary_key=True, default=new_id)
+    vendor_id = Column(String, nullable=False)
+    template = Column(String, default="CAIQ")
+    questions = Column(JSON, default=list)
+    answers = Column(JSON, default=dict)
+    status = Column(String, default="Draft")  # Draft/Sent/Received/Scored
+    score = Column(Float, nullable=True)
+    sent_date = Column(DateTime, nullable=True)
+    response_date = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=now)
+    updated_at = Column(DateTime, default=now, onupdate=now)
+
+class ObservabilityMetric(Base):
+    __tablename__ = "observability_metrics"
+    id = Column(String, primary_key=True, default=new_id)
+    model_id = Column(String, nullable=False, index=True)
+    timestamp = Column(DateTime, default=now)
+    p50_latency = Column(Float, default=0.0)
+    p95_latency = Column(Float, default=0.0)
+    p99_latency = Column(Float, default=0.0)
+    error_rate = Column(Float, default=0.0)
+    throughput = Column(Float, default=0.0)
+    psi_score = Column(Float, default=0.0)
+    trust_score = Column(Float, default=100.0)
+    token_count = Column(Integer, default=0)
+    cost_usd = Column(Float, default=0.0)
