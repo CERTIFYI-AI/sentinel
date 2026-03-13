@@ -38,9 +38,9 @@ export function ApiKeySettings() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-lg font-semibold">API Keys</h2>
-          <p className="text-sm text-muted-foreground">{activeKeys.length} active keys &middot; {expiredKeys.length} expired</p>
+          <p className="text-sm text-gray-500">{activeKeys.length} active keys &middot; {expiredKeys.length} expired</p>
         </div>
-        <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm">
+        <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 h-9 px-4 rounded-md bg-[#1A6B5A] text-white text-sm">
           <Plus className="w-4 h-4" /> Create New Key
         </button>
       </div>
@@ -53,7 +53,7 @@ export function ApiKeySettings() {
               {keyCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             </button>
           </div>
-          <button onClick={() => setCreatedKey(null)} className="text-sm text-muted-foreground">Done</button>
+          <button onClick={() => setCreatedKey(null)} className="text-sm text-gray-500">Done</button>
         </div>
       )}
       {showCreate && (
@@ -71,7 +71,7 @@ export function ApiKeySettings() {
             <option value="never">Never</option>
           </select>
           <div className="flex gap-2">
-            <button onClick={handleCreate} disabled={!newKeyName || createKey.isPending} className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm">
+            <button onClick={handleCreate} disabled={!newKeyName || createKey.isPending} className="h-9 px-4 rounded-md bg-[#1A6B5A] text-white text-sm">
               {createKey.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create Key"}
             </button>
             <button onClick={() => setShowCreate(false)} className="h-9 px-4 rounded-md border text-sm">Cancel</button>
@@ -94,7 +94,7 @@ export function ApiKeySettings() {
                 <td className="p-3">{String(k.name)}</td>
                 <td className="p-3"><span className="px-2 py-0.5 rounded text-xs bg-muted">{String(k.role)}</span></td>
                 <td className="p-3 font-mono text-xs">{String(k.prefix ?? "sk-...")}</td>
-                <td className="p-3 text-muted-foreground">{String(k.created_at ?? "")}</td>
+                <td className="p-3 text-gray-500">{String(k.created_at ?? "")}</td>
                 <td className="p-3">
                   <span className={`px-2 py-0.5 rounded text-xs ${k.status === "active" ? "bg-green-900/30 text-green-400" : "bg-red-900/30 text-red-400"}`}>
                     {String(k.status)}

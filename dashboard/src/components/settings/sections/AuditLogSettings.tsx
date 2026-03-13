@@ -25,7 +25,7 @@ export function AuditLogSettings() {
       <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><ScrollText className="h-5 w-5" /> Settings Audit Log</CardTitle></CardHeader>
         <CardContent>
-          {isLoading ? <p className="text-sm text-muted-foreground">Loading…</p> : (
+          {isLoading ? <p className="text-sm text-gray-500">Loading…</p> : (
             <Table>
               <TableHeader><TableRow>
                 <TableHead>Time</TableHead><TableHead>User</TableHead><TableHead>Action</TableHead><TableHead>Resource</TableHead><TableHead>Details</TableHead>
@@ -37,7 +37,7 @@ export function AuditLogSettings() {
                     <TableCell className="font-mono text-sm">{e.actor}</TableCell>
                     <TableCell><Badge variant="outline">{e.action}</Badge></TableCell>
                     <TableCell className="text-sm">{e.resource}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{e.detail}</TableCell>
+                    <TableCell className="text-xs text-gray-500 max-w-[200px] truncate">{e.detail}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

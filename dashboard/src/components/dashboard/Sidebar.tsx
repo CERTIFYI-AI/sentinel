@@ -49,13 +49,13 @@ export function Sidebar() {
     <aside className="w-56 border-r bg-card flex flex-col h-full">
       <div className="p-4 border-b">
         <Link to="/overview" className="flex items-center gap-2">
-          <span className="text-xl font-bold text-primary">Sentinel</span>
+          <span className="text-xl font-bold text-[#1A6B5A]">Sentinel</span>
         </Link>
       </div>
       <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-4">
         {modules.map((mod) => (
           <div key={mod.label}>
-            <p className="px-3 mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <p className="px-3 mb-1 text-xs font-semibold uppercase tracking-wider text-gray-500">
               {mod.label}
             </p>
             <div className="space-y-0.5">
@@ -66,8 +66,8 @@ export function Sidebar() {
                   className={cn(
                     "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
                     pathname === item.path
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                      ? "bg-[#1A6B5A] text-white"
+                      : "text-gray-500 hover:bg-gray-100 hover:text-accent-foreground"
                   )}
                 >
                   <span className="text-base">{item.icon}</span>

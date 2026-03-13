@@ -22,16 +22,16 @@ export function BenchmarkSpider({ categories }: BenchmarkSpiderProps) {
             <div key={cat.label} className="space-y-1">
               <div className="flex justify-between text-xs">
                 <span className="font-medium">{cat.label}</span>
-                <span className="text-muted-foreground">{cat.score}% / {cat.benchmark}%</span>
+                <span className="text-gray-500">{cat.score}% / {cat.benchmark}%</span>
               </div>
               <div className="h-2 bg-muted rounded-full overflow-hidden relative">
                 <div className="h-full bg-muted-foreground/30 rounded-full absolute" style={{ width: cat.benchmark + "%" }} />
-                <div className="h-full bg-primary rounded-full absolute" style={{ width: cat.score + "%" }} />
+                <div className="h-full bg-[#1A6B5A] rounded-full absolute" style={{ width: cat.score + "%" }} />
               </div>
             </div>
           ))}
-          <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2">
-            <span className="flex items-center gap-1"><span className="w-3 h-2 bg-primary rounded" /> Your score</span>
+          <div className="flex items-center gap-4 text-xs text-gray-500 pt-2">
+            <span className="flex items-center gap-1"><span className="w-3 h-2 bg-[#1A6B5A] rounded" /> Your score</span>
             <span className="flex items-center gap-1"><span className="w-3 h-2 bg-muted-foreground/30 rounded" /> Industry avg</span>
           </div>
         </div>

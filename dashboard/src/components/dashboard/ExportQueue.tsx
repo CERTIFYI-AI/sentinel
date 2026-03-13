@@ -36,7 +36,7 @@ export function ExportQueue({ jobs, onDownload, onRetry }: ExportQueueProps) {
             <div key={job.id} className="flex items-center justify-between p-2 rounded border">
               <div>
                 <p className="text-sm font-medium">{job.name}</p>
-                <p className="text-xs text-muted-foreground">{job.format} &middot; {job.createdAt}{job.size ? " \u00b7 " + job.size : ""}</p>
+                <p className="text-xs text-gray-500">{job.format} &middot; {job.createdAt}{job.size ? " \u00b7 " + job.size : ""}</p>
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant={statusVariant[job.status]}>{job.status}</Badge>

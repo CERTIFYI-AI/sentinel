@@ -43,7 +43,7 @@ export function NotificationSettings() {
           <div className="flex items-center justify-between">
             <Label>Enable email alerts</Label>
             <button type="button" role="switch" aria-checked={merged.email_alerts} onClick={() => toggle("email_alerts")}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${merged.email_alerts ? "bg-primary" : "bg-muted"}`}>
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${merged.email_alerts ? "bg-[#1A6B5A]" : "bg-muted"}`}>
               <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${merged.email_alerts ? "translate-x-6" : "translate-x-1"}`} />
             </button>
           </div>
@@ -64,7 +64,7 @@ export function NotificationSettings() {
           <div className="flex items-center justify-between">
             <Label>Enable Slack notifications</Label>
             <button type="button" role="switch" aria-checked={merged.slack_enabled} onClick={() => toggle("slack_enabled")}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${merged.slack_enabled ? "bg-primary" : "bg-muted"}`}>
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${merged.slack_enabled ? "bg-[#1A6B5A]" : "bg-muted"}`}>
               <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${merged.slack_enabled ? "translate-x-6" : "translate-x-1"}`} />
             </button>
           </div>
@@ -77,7 +77,7 @@ export function NotificationSettings() {
             <div key={key} className="flex items-center justify-between">
               <Label>{key.replace("alert_on_", "").replace(/_/g, " ").replace(/^\w/, (c: string) => c.toUpperCase())}</Label>
               <button type="button" role="switch" aria-checked={!!merged[key]} onClick={() => toggle(key)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${merged[key] ? "bg-primary" : "bg-muted"}`}>
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${merged[key] ? "bg-[#1A6B5A]" : "bg-muted"}`}>
                 <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${merged[key] ? "translate-x-6" : "translate-x-1"}`} />
               </button>
             </div>

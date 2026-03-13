@@ -33,7 +33,7 @@ export function EvidenceUploader({ evidence, onUpload }: EvidenceUploaderProps) 
       </CardHeader>
       <CardContent className="space-y-4">
         <div
-          className={"border-2 border-dashed rounded-lg p-8 text-center transition-colors " + (dragOver ? "border-primary bg-primary/5" : "border-muted-foreground/25")}
+          className={"border-2 border-dashed rounded-lg p-8 text-center transition-colors " + (dragOver ? "border-primary bg-[#1A6B5A]/5" : "border-muted-foreground/25")}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
           onDrop={(e) => {
@@ -43,7 +43,7 @@ export function EvidenceUploader({ evidence, onUpload }: EvidenceUploaderProps) 
             if (file && onUpload) onUpload(file, "", "");
           }}
         >
-          <p className="text-muted-foreground text-sm">Drag and drop evidence files here</p>
+          <p className="text-gray-500 text-sm">Drag and drop evidence files here</p>
           <Button variant="outline" size="sm" className="mt-2">Browse Files</Button>
         </div>
         <div className="space-y-2">
@@ -51,7 +51,7 @@ export function EvidenceUploader({ evidence, onUpload }: EvidenceUploaderProps) 
             <div key={e.id} className="flex items-center justify-between p-2 rounded border">
               <div>
                 <p className="text-sm font-medium">{e.name}</p>
-                <p className="text-xs text-muted-foreground">{e.framework} - {e.controlId}</p>
+                <p className="text-xs text-gray-500">{e.framework} - {e.controlId}</p>
               </div>
               <Badge variant={statusVariant[e.status]}>{e.status}</Badge>
             </div>

@@ -19,8 +19,8 @@ const colorMap: Record<string, string> = {
   "High-Certain": "bg-destructive text-destructive-foreground",
   "High-Likely": "bg-destructive/80 text-destructive-foreground",
   "Medium-Possible": "bg-warning text-warning-foreground",
-  "Low-Unlikely": "bg-primary/20 text-primary",
-  "Minimal-Rare": "bg-muted text-muted-foreground",
+  "Low-Unlikely": "bg-emerald-50 text-[#1A6B5A]",
+  "Minimal-Rare": "bg-muted text-gray-500",
 };
 
 function getCellColor(impact: string, likelihood: string): string {
@@ -32,7 +32,7 @@ function getCellColor(impact: string, likelihood: string): string {
   if (score >= 6) return "bg-destructive text-destructive-foreground";
   if (score >= 4) return "bg-destructive/60 text-white";
   if (score >= 2) return "bg-warning text-warning-foreground";
-  return "bg-muted text-muted-foreground";
+  return "bg-muted text-gray-500";
 }
 
 export function RiskHeatMap({ data }: RiskHeatMapProps) {
@@ -51,14 +51,14 @@ export function RiskHeatMap({ data }: RiskHeatMapProps) {
               <tr>
                 <th className="p-1"></th>
                 {LIKELIHOOD.map((l) => (
-                  <th key={l} className="p-1 text-center font-medium text-muted-foreground">{l}</th>
+                  <th key={l} className="p-1 text-center font-medium text-gray-500">{l}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {LEVELS.map((impact) => (
                 <tr key={impact}>
-                  <td className="p-1 font-medium text-muted-foreground whitespace-nowrap">{impact}</td>
+                  <td className="p-1 font-medium text-gray-500 whitespace-nowrap">{impact}</td>
                   {LIKELIHOOD.map((like) => {
                     const count = grid.get(impact + "-" + like) ?? 0;
                     return (

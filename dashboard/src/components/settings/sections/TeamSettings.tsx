@@ -60,7 +60,7 @@ export function TeamSettings() {
       <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5" /> Members</CardTitle></CardHeader>
         <CardContent>
-          {isLoading ? <p className="text-sm text-muted-foreground">Loading…</p> : (
+          {isLoading ? <p className="text-sm text-gray-500">Loading…</p> : (
             <Table>
               <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Role</TableHead><TableHead>Status</TableHead><TableHead /></TableRow></TableHeader>
               <TableBody>

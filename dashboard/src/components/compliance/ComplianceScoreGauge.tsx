@@ -30,7 +30,7 @@ export function ComplianceScoreGauge({ score, label }: Props) {
         </RadialBarChart>
       </ResponsiveContainer>
       <div className="mt-1 text-center">
-        <div className="text-2xl font-bold" style={{ color }}>{score.toFixed(0)}%</div>
+        <div className="text-2xl font-bold text-gray-900" style={{ color }}>{score.toFixed(0)}%</div>
         <div className="text-xs text-gray-500 mt-0.5">{label}</div>
       </div>
     </div>

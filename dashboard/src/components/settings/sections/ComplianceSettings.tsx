@@ -31,7 +31,7 @@ export function ComplianceSettings() {
     <div className="space-y-6 max-w-2xl">
       <div>
         <h2 className="text-lg font-semibold">Compliance Frameworks</h2>
-        <p className="text-sm text-muted-foreground">Enable frameworks to accumulate real-time evidence.</p>
+        <p className="text-sm text-gray-500">Enable frameworks to accumulate real-time evidence.</p>
       </div>
       <div className="space-y-2">
         {FRAMEWORKS.map(fw => {
@@ -43,7 +43,7 @@ export function ComplianceSettings() {
                   <span className="font-medium">{fw.name}</span>
                   <span className={"text-xs px-2 py-0.5 rounded bg-muted " + fw.sc}>{fw.status}</span>
                 </div>
-                <p className="text-sm text-muted-foreground mt-1">{fw.desc}</p>
+                <p className="text-sm text-gray-500 mt-1">{fw.desc}</p>
               </div>
               <button
                 onClick={() => toggle.mutate({ id: fw.id, on: !isOn })}

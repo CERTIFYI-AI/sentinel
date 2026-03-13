@@ -41,7 +41,7 @@ export default function Overview() {
               <span className="text-xs font-medium opacity-75">{stat.label}</span>
               <span className="text-lg">{stat.icon}</span>
             </div>
-            <p className="text-2xl font-bold">{stat.value}</p>
+            <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
           </Link>
         ))}
       </div>

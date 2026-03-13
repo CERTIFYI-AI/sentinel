@@ -15,7 +15,7 @@ export default function RemediationTracker() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card><CardHeader className="pb-2"><CardTitle className="text-sm">Open</CardTitle></CardHeader><CardContent><p className="text-3xl font-bold">2</p></CardContent></Card>
         <Card><CardHeader className="pb-2"><CardTitle className="text-sm">Overdue</CardTitle></CardHeader><CardContent><p className="text-3xl font-bold text-destructive">1</p></CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm">Resolved</CardTitle></CardHeader><CardContent><p className="text-3xl font-bold text-primary">1</p></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm">Resolved</CardTitle></CardHeader><CardContent><p className="text-3xl font-bold text-[#1A6B5A]">1</p></CardContent></Card>
       </div>
       <RemediationTimeline items={sampleItems} />
     </PageWrapper>

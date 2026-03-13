@@ -19,10 +19,10 @@ export function ComplianceDashboard({ scores, loading }: Props) {
         <Card>
           <CardContent className='pt-6'>
             <div className='flex items-center gap-3'>
-              <span className="h-8 w-8 text-primary">🛡</span>
+              <span className="h-8 w-8 text-[#1A6B5A]">🛡</span>
               <div>
                 <p className='text-2xl font-bold'>{overall}%</p>
-                <p className='text-xs text-muted-foreground'>Overall Compliance</p>
+                <p className='text-xs text-gray-500'>Overall Compliance</p>
               </div>
             </div>
           </CardContent>
@@ -33,7 +33,7 @@ export function ComplianceDashboard({ scores, loading }: Props) {
               <span className="h-8 w-8 text-blue-500">📄</span>
               <div>
                 <p className='text-2xl font-bold'>{scores.reduce((a, s) => a + s.total, 0)}</p>
-                <p className='text-xs text-muted-foreground'>Total Policies</p>
+                <p className='text-xs text-gray-500'>Total Policies</p>
               </div>
             </div>
           </CardContent>
@@ -44,7 +44,7 @@ export function ComplianceDashboard({ scores, loading }: Props) {
               <span className="h-8 w-8 text-green-500">✅</span>
               <div>
                 <p className='text-2xl font-bold'>{scores.reduce((a, s) => a + s.compliant, 0)}</p>
-                <p className='text-xs text-muted-foreground'>Compliant</p>
+                <p className='text-xs text-gray-500'>Compliant</p>
               </div>
             </div>
           </CardContent>
@@ -55,7 +55,7 @@ export function ComplianceDashboard({ scores, loading }: Props) {
               <span className="h-8 w-8 text-yellow-500">⚠</span>
               <div>
                 <p className='text-2xl font-bold'>{scores.reduce((a, s) => a + s.gaps.length, 0)}</p>
-                <p className='text-xs text-muted-foreground'>Gaps Found</p>
+                <p className='text-xs text-gray-500'>Gaps Found</p>
               </div>
             </div>
           </CardContent>
@@ -72,7 +72,7 @@ export function ComplianceDashboard({ scores, loading }: Props) {
             </CardHeader>
             <CardContent>
               <Progress value={score.score} className='mb-2' />
-              <div className='flex justify-between text-xs text-muted-foreground'>
+              <div className='flex justify-between text-xs text-gray-500'>
                 <span>{score.compliant}/{score.total} compliant</span>
                 <span>{score.gaps.length} gaps</span>
               </div>

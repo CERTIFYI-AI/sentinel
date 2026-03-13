@@ -30,8 +30,8 @@ export function ModuleRail() {
                       isActive
                         ? "bg-[hsl(136,45%,38%)] text-white"
                         : m.active
-                        ? "text-muted-foreground hover:bg-accent"
-                        : "text-muted-foreground/40 cursor-not-allowed"
+                        ? "text-gray-500 hover:bg-gray-100"
+                        : "text-gray-500/40 cursor-not-allowed"
                     }`}
                     aria-label={m.label}
                     disabled={!m.active}
@@ -47,7 +47,7 @@ export function ModuleRail() {
         <div className="flex flex-col items-center pb-3 gap-1">
           <Tooltip>
             <TooltipTrigger asChild>
-              <button className="w-10 h-10 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-accent" aria-label="Help">
+              <button className="w-10 h-10 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100" aria-label="Help">
                 <HelpCircle className="h-5 w-5" />
               </button>
             </TooltipTrigger>
@@ -56,7 +56,7 @@ export function ModuleRail() {
           <Tooltip>
             <TooltipTrigger asChild>
               <button onClick={() => navigate("/settings")} className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors ${
-                location.pathname === "/settings" ? "bg-[hsl(136,45%,38%)] text-white" : "text-muted-foreground hover:bg-accent"
+                location.pathname === "/settings" ? "bg-[hsl(136,45%,38%)] text-white" : "text-gray-500 hover:bg-gray-100"
               }`} aria-label="Settings">
                 <Settings className="h-5 w-5" />
               </button>

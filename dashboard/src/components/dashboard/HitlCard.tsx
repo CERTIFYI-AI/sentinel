@@ -32,7 +32,7 @@ export function HitlCard({ job }: HitlCardProps) {
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="text-xs text-muted-foreground">
+        <div className="text-xs text-gray-500">
           Trust: {(job.trust_score * 100).toFixed(0)}% | Model: {job.model} | {new Date(job.created_at).toLocaleString()}
         </div>
         <div className="rounded bg-muted p-2 text-xs max-h-24 overflow-y-auto">

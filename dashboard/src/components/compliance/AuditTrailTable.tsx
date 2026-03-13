@@ -31,20 +31,20 @@ export function AuditTrailTable({ entries }: AuditTrailTableProps) {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b">
-                <th className="text-left p-2 font-medium text-muted-foreground">Time</th>
-                <th className="text-left p-2 font-medium text-muted-foreground">Action</th>
-                <th className="text-left p-2 font-medium text-muted-foreground">User</th>
-                <th className="text-left p-2 font-medium text-muted-foreground">Resource</th>
-                <th className="text-left p-2 font-medium text-muted-foreground">Outcome</th>
+                <th className="text-left p-2 font-medium text-gray-500">Time</th>
+                <th className="text-left p-2 font-medium text-gray-500">Action</th>
+                <th className="text-left p-2 font-medium text-gray-500">User</th>
+                <th className="text-left p-2 font-medium text-gray-500">Resource</th>
+                <th className="text-left p-2 font-medium text-gray-500">Outcome</th>
               </tr>
             </thead>
             <tbody>
               {entries.map((e) => (
                 <tr key={e.id} className="border-b last:border-0">
-                  <td className="p-2 text-xs text-muted-foreground whitespace-nowrap">{e.timestamp}</td>
+                  <td className="p-2 text-xs text-gray-500 whitespace-nowrap">{e.timestamp}</td>
                   <td className="p-2">{e.action}</td>
-                  <td className="p-2 text-muted-foreground">{e.user}</td>
-                  <td className="p-2 text-muted-foreground">{e.resource}</td>
+                  <td className="p-2 text-gray-500">{e.user}</td>
+                  <td className="p-2 text-gray-500">{e.resource}</td>
                   <td className="p-2"><Badge variant={outcomeVariant[e.outcome]}>{e.outcome}</Badge></td>
                 </tr>
               ))}

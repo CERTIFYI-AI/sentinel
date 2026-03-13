@@ -19,7 +19,7 @@ export function GeneralSettings() {
 
   return (
     <div className="space-y-6 max-w-lg">
-      <div><h2 className="text-lg font-semibold">General</h2><p className="text-sm text-muted-foreground">Organization settings</p></div>
+      <div><h2 className="text-lg font-semibold">General</h2><p className="text-sm text-gray-500">Organization settings</p></div>
       <div><label className="text-sm font-medium">Organization name</label>
         <input value={form.org_name} onChange={e => change("org_name", e.target.value)} className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
       </div>
@@ -28,10 +28,10 @@ export function GeneralSettings() {
       </div>
       <div><label className="text-sm font-medium">Tenant ID</label>
         <div className="flex gap-2 mt-1"><input readOnly value={cfg?.id ?? ""} className="flex-1 h-10 rounded-md border border-input bg-muted px-3 font-mono text-sm" />
-          <button onClick={() => navigator.clipboard.writeText(cfg?.id ?? "")} className="h-10 px-3 rounded-md border border-border hover:bg-accent"><Copy className="w-4 h-4" /></button></div>
+          <button onClick={() => navigator.clipboard.writeText(cfg?.id ?? "")} className="h-10 px-3 rounded-md border border-border hover:bg-gray-100"><Copy className="w-4 h-4" /></button></div>
       </div>
       <div><label className="text-sm font-medium">Plan</label>
-        <span className="ml-2 text-xs uppercase bg-primary/20 text-primary px-2 py-0.5 rounded">{cfg?.plan}</span>
+        <span className="ml-2 text-xs uppercase bg-emerald-50 text-[#1A6B5A] px-2 py-0.5 rounded">{cfg?.plan}</span>
       </div>
       <div><label className="text-sm font-medium">Timezone</label>
         <select value={form.timezone} onChange={e => change("timezone", e.target.value)} className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
@@ -39,7 +39,7 @@ export function GeneralSettings() {
         </select>
       </div>
       <button onClick={() => update.mutate(form)} disabled={!dirty || update.isPending}
-        className="h-10 px-6 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2">
+        className="h-10 px-6 rounded-md bg-[#1A6B5A] text-white text-sm font-medium hover:bg-[#1A6B5A]/90 disabled:opacity-50 flex items-center gap-2">
         {update.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}Save Changes
       </button>
     </div>

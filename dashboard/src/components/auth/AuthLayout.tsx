@@ -17,7 +17,7 @@ function AnimatedCounter() {
   }, []);
   return (
     <div className="text-center">
-      <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2">Live Trust Score</p>
+      <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-2">Live Trust Score</p>
       <p className="font-mono text-[88px] font-bold leading-none" style={{ color: "hsl(var(--brand))", textShadow: "0 0 40px hsl(136 45% 38% / 0.4)" }}>
         {val.toFixed(4)}
       </p>
@@ -37,19 +37,19 @@ export function AuthLayout({ children }: { children: ReactNode }) {
       <div className="hidden lg:flex lg:w-[55%] flex-col justify-between p-10" style={{ background: "hsl(var(--brand-subtle))" }}>
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg flex items-center justify-center font-mono font-bold text-white" style={{ background: "hsl(var(--brand))" }}>S</div>
-          <div><span className="font-semibold text-foreground">Sentinel</span> <span className="text-muted-foreground">by Certifyi</span></div>
+          <div><span className="font-semibold text-foreground">Sentinel</span> <span className="text-gray-500">by Certifyi</span></div>
         </div>
         <div className="flex flex-col items-center gap-10">
           <AnimatedCounter />
           <div className="space-y-3">
             {proofs.map(p => (
-              <div key={p} className="flex items-center gap-2 text-[11px] uppercase tracking-widest text-muted-foreground">
+              <div key={p} className="flex items-center gap-2 text-[11px] uppercase tracking-widest text-gray-500">
                 <span className="w-1.5 h-1.5 rounded-full" style={{ background: "hsl(var(--brand))" }} />{p}
               </div>
             ))}
           </div>
         </div>
-        <p className="text-xs text-muted-foreground">certifyi.ai</p>
+        <p className="text-xs text-gray-500">certifyi.ai</p>
       </div>
       <div className="flex-1 flex items-center justify-center p-8 bg-background">
         <div className="w-full max-w-[380px]">{children}</div>

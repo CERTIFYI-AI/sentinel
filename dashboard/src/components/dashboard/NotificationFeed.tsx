@@ -33,15 +33,15 @@ export function NotificationFeed({ notifications, onMarkRead }: NotificationFeed
           {notifications.map((n) => (
             <div
               key={n.id}
-              className={"p-3 rounded border cursor-pointer transition-colors " + (n.read ? "opacity-60" : "bg-accent/50")}
+              className={"p-3 rounded border cursor-pointer transition-colors " + (n.read ? "opacity-60" : "bg-gray-100/50")}
               onClick={() => onMarkRead?.(n.id)}
             >
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium">{n.title}</p>
                 <Badge variant={typeVariant[n.type]} className="text-xs">{n.type}</Badge>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">{n.message}</p>
-              <p className="text-xs text-muted-foreground mt-1">{n.createdAt}</p>
+              <p className="text-xs text-gray-500 mt-1">{n.message}</p>
+              <p className="text-xs text-gray-500 mt-1">{n.createdAt}</p>
             </div>
           ))}
         </div>

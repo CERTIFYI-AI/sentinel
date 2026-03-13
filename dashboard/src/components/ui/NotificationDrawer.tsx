@@ -62,16 +62,16 @@ export function NotificationDrawer({ open, onOpenChange }: Props) {
               <button
                 key={n.id}
                 onClick={() => { navigate(n.link); onOpenChange(false); }}
-                className={`w-full text-left px-4 py-3 hover:bg-accent transition-colors ${n.read ? "opacity-60" : ""}`}
+                className={`w-full text-left px-4 py-3 hover:bg-gray-100 transition-colors ${n.read ? "opacity-60" : ""}`}
               >
                 <div className="flex gap-3">
                   <Icon className={`h-5 w-5 mt-0.5 shrink-0 ${colorMap[n.type]}`} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-medium truncate">{n.title}</p>
-                      <span className="text-[11px] text-muted-foreground shrink-0 ml-2">{n.ago}</span>
+                      <span className="text-[11px] text-gray-500 shrink-0 ml-2">{n.ago}</span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">{n.description}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{n.description}</p>
                   </div>
                 </div>
               </button>

@@ -14,7 +14,7 @@ export function EmptyState({ icon, title, description, action, code }: EmptyStat
     <div className="flex flex-col items-center justify-center min-h-[400px] max-w-[480px] mx-auto text-center px-4">
       <span className="text-5xl mb-4">{icon}</span>
       <h3 className="text-base font-bold text-foreground mb-1">{title}</h3>
-      <p className="text-[13px] text-muted-foreground mb-4">{description}</p>
+      <p className="text-[13px] text-gray-500 mb-4">{description}</p>
       {action && (
         <Button
           onClick={action.onClick}
