@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -10,7 +12,7 @@
     --card-foreground: 222 84% 5%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 84% 5%;
-    --primary: 136 45% 38%;
+    --primary: 156 65% 26%;
     --primary-foreground: 0 0% 100%;
     --secondary: 220 15% 96%;
     --secondary-foreground: 222 47% 11%;
@@ -22,7 +24,7 @@
     --destructive-foreground: 0 0% 98%;
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 136 45% 38%;
+    --ring: 156 65% 26%;
     --radius: 0.4rem;
     --trust-high: 142 71% 45%;
     --trust-medium: 38 92% 50%;
@@ -34,9 +36,9 @@
   }
 
   .dark {
-    --primary: 136 45% 38%;
+    --primary: 156 65% 26%;
     --primary-foreground: 0 0% 100%;
-    --ring: 136 45% 38%;
+    --ring: 156 65% 26%;
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
     --card: 240 6% 6%;
@@ -61,9 +63,9 @@
     --intervention-regen: 217 91% 60%;
     --intervention-upgrade: 38 92% 50%;
     --intervention-hitl: 0 72% 51%;
-    --brand: 136 45% 38%;
-    --brand-subtle: 136 45% 12%;
-    --brand-foreground: 136 45% 80%;
+    --brand: 156 65% 26%;
+    --brand-subtle: 156 65% 12%;
+    --brand-foreground: 156 65% 80%;
     --status-mandatory: 0 72% 51%;
     --status-certifiable: 217 91% 60%;
     --status-voluntary: 136 45% 45%;
@@ -77,12 +79,12 @@
   }
   body {
     background-color: hsl(var(--background)); color: hsl(var(--foreground));
-    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    font-family: "Outfit", system-ui, sans-serif;
   }
 }
 
 .font-mono {
-  font-family: "IBM Plex Mono", monospace;
+  font-family: "JetBrains Mono", monospace;
 }
 
 @keyframes trust-counter {

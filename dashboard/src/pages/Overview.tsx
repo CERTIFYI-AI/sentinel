@@ -28,7 +28,7 @@ const RECENT_ACTIVITY = [
 
 export default function Overview() {
   return (
-    <div className="p-6 max-w-7xl mx-auto" style={{ fontFamily: 'Inter, Outfit, system-ui, sans-serif' }}>
+    <div className="p-6 max-w-7xl mx-auto" style={{ fontFamily: 'Outfit, Inter, system-ui, sans-serif' }}>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Good afternoon, Admin</h1>
         <p className="text-gray-500 text-sm mt-1">Here is an overview of your AI governance platform</p>

@@ -54,7 +54,7 @@ export default function Vendors(){
 
       <Card>
         <CardContent className="p-0">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm text-gray-900">
             <thead><tr className="border-b border-slate-200 dark:border-slate-700">
               {["Vendor","Risk Tier","Compliance","Certifications","Status","Models","Last Assessment",""].map(h=>(
                 <th key={h} className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">{h}</th>

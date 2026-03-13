@@ -30,8 +30,8 @@ export function ModelCard({ model, health, selected, onSelect, onSetRole, onTest
         <span className={`w-2 h-2 rounded-full ${model.status === "active" ? "bg-[hsl(var(--trust-high))]" : model.status === "degraded" ? "bg-[hsl(var(--trust-medium))]" : "bg-destructive"}`} />
       </div>
       <div>
-        <p className="font-mono text-base font-bold">{model.display_name}</p>
-        <p className="text-xs text-muted-foreground font-mono">{model.model_name}@{model.version}</p>
+        <p className="font-mono text-base font-bold text-gray-900">{model.display_name}</p>
+        <p className="text-xs text-gray-500 font-mono">{model.model_name}@{model.version}</p>
       </div>
       {h && (
         <div className="grid grid-cols-4 gap-2">
@@ -42,7 +42,7 @@ export function ModelCard({ model, health, selected, onSelect, onSetRole, onTest
           ].map(([label, val, color]) => (
             <div key={String(label)} className="text-center">
               <p className="text-[10px] uppercase text-muted-foreground">{label}</p>
-              <p className="font-mono text-sm" style={color ? { color: String(color) } : undefined}>{val}</p>
+              <p className="font-mono text-sm text-gray-700" style={color ? { color: String(color) } : undefined}>{val}</p>
             </div>
           ))}
         </div>
