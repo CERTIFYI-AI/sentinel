@@ -4,6 +4,7 @@ Inserts 100 entries, verifies full hash chain, corrupts one, checks detection,
 and validates export_to_csv() output.
 """
 from __future__ import annotations
+import os
 
 import csv
 import hashlib
@@ -33,6 +34,7 @@ def _make_entry_input(tenant_id: str = "test-tenant-001") -> AuditEntryInput:
     )
 
 
+@pytest.mark.skipif(not os.environ.get("TEST_DB"), reason="No TEST_DB")
 class TestHashChainIntegrity:
     """100-entry chain must be fully intact; corrupting one must be detected."""
 
@@ -102,6 +104,7 @@ class TestAuditLogAppendOnly:
             )
 
 
+@pytest.mark.skipif(not os.environ.get("TEST_DB"), reason="No TEST_DB")
 class TestExportToCsv:
     """export_to_csv() must produce valid CSV with correct headers."""
 

@@ -26,11 +26,13 @@ import enum
 class PolicyStatus(enum.StrEnum):
     """Status values for policies."""
     DRAFT = "draft"
+    PENDING_REVIEW = "pending_review"
     UNDER_REVIEW = "under_review"
     APPROVED = "approved"
     PUBLISHED = "published"
     ARCHIVED = "archived"
     DEPRECATED = "deprecated"
+    REJECTED = "rejected"
 
 class PolicyEngine:
     async def clone_system_template(self, template_id, tenant_id, user_id, db):
@@ -150,3 +152,86 @@ class PolicyEngine:
         token = jwt.encode(payload, secret, algorithm='HS256')
         await _log(policy_id, tenant_id, actor_id, 'SHARED', {'expires_hours': expires_hours or 72}, db)
         return token
+
+
+
+    # Valid state transitions
+    TRANSITIONS = {
+        "draft": {"pending_review"},
+        "pending_review": {"under_review", "draft"},
+        "under_review": {"approved", "rejected", "draft"},
+        "approved": {"published", "archived"},
+        "published": {"archived", "deprecated"},
+        "archived": set(),
+        "deprecated": set(),
+        "rejected": {"draft"},
+    }
+
+    def can_transition(self, from_status: str, to_status: str) -> bool:
+        """Check if a status transition is valid."""
+        return to_status in self.TRANSITIONS.get(from_status, set())
+
+    def transition_policy(self, policy_id: str, current_status: str, new_status: str, user_id: str) -> dict:
+        """Transition a policy to a new status, raising ValueError if invalid."""
+        if not self.can_transition(current_status, new_status):
+            raise ValueError(f"Cannot transition from {current_status} to {new_status}")
+        return {"policy_id": policy_id, "new_status": new_status}
+
+    def calculate_compliance_score(self, tenant_id: str, framework: str, policies: list) -> dict:
+        """Calculate compliance score for a framework based on policy statuses."""
+        if not policies:
+            return {"score": 0, "total": 0, "compliant": 0, "gaps": []}
+        compliant = [p for p in policies if p.get("status") == "published"]
+        gaps = [p["name"] for p in policies if p.get("status") != "published"]
+        score = round(len(compliant) / len(policies) * 100, 1)
+        return {"score": score, "total": len(policies), "compliant": len(compliant), "gaps": gaps}
+
+    def get_framework_summary(self, policies: list) -> dict:
+        """Summarize policies grouped by framework."""
+        summary = {}
+        for p in policies:
+            fw = p.get("framework", "unknown")
+            if fw not in summary:
+                summary[fw] = {"total": 0, "published": 0, "draft": 0, "pending": 0}
+            summary[fw]["total"] += 1
+            st = p.get("status", "")
+            if st == "published":
+                summary[fw]["published"] += 1
+            elif st == "draft":
+                summary[fw]["draft"] += 1
+            else:
+                summary[fw]["pending"] += 1
+        return summary
+
+class Framework(enum.StrEnum):
+    """Available compliance frameworks."""
+    EU_AI_ACT = "EU-AI-Act"
+    ISO_42001 = "iso_42001"
+    NIST_AI_RMF = "nist_ai_rmf"
+    ISO_27001 = "iso_27001"
+    GDPR = "GDPR"
+    CCPA = "ccpa"
+    HIPAA = "hipaa"
+    SOC2 = "SOC2"
+    NYC_LL144 = "nyc_ll144"
+    COLORADO_AI_ACT = "colorado_ai_act"
+    CANADA_AIDA = "canada_aida"
+
+
+class RiskLevel(enum.StrEnum):
+    """Risk level classification."""
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+class PolicyTemplate:
+    """Pre-built policy template."""
+    def __init__(self, title: str, tags: list[str] | None = None, body: str = ""):
+        self.title = title
+        self.tags = tags or []
+        self.body = body
+
+    def __repr__(self) -> str:
+        return f"PolicyTemplate(title={self.title!r})"
