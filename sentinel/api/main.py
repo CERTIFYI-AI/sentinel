@@ -270,3 +270,25 @@ try:
     logger.info('questionnaire_router loaded')
 except Exception as e:
     logger.warning(f'questionnaire_router error: {e}')
+
+
+try:
+    from sentinel.api import incident_router
+    app.include_router(incident_router.router, prefix="/api/incidents", tags=["incidents"])
+    logger.info('incident_router loaded')
+except Exception as e:
+    logger.warning(f'incident_router error: {e}')
+
+try:
+    from sentinel.api import risk_router
+    app.include_router(risk_router.router, prefix="/api/risks", tags=["risks"])
+    logger.info('risk_router loaded')
+except Exception as e:
+    logger.warning(f'risk_router error: {e}')
+
+try:
+    from sentinel.api import use_case_router
+    app.include_router(use_case_router.router, prefix="/api/use-cases", tags=["use-cases"])
+    logger.info('use_case_router loaded')
+except Exception as e:
+    logger.warning(f'use_case_router error: {e}')
