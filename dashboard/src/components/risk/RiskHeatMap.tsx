@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../ui/table';
 
 const LEVELS = ["Critical", "High", "Medium", "Low", "Minimal"] as const;
 const LIKELIHOOD = ["Rare", "Unlikely", "Possible", "Likely", "Certain"] as const;
@@ -20,7 +21,7 @@ const colorMap: Record<string, string> = {
   "High-Likely": "bg-destructive/80 text-destructive-foreground",
   "Medium-Possible": "bg-warning text-warning-foreground",
   "Low-Unlikely": "bg-emerald-50 text-[#1A6B5A]",
-  "Minimal-Rare": "bg-muted text-gray-500",
+  "Minimal-Rare": "bg-muted text-muted-foreground",
 };
 
 function getCellColor(impact: string, likelihood: string): string {
@@ -32,7 +33,7 @@ function getCellColor(impact: string, likelihood: string): string {
   if (score >= 6) return "bg-destructive text-destructive-foreground";
   if (score >= 4) return "bg-destructive/60 text-white";
   if (score >= 2) return "bg-warning text-warning-foreground";
-  return "bg-muted text-gray-500";
+  return "bg-muted text-muted-foreground";
 }
 
 export function RiskHeatMap({ data }: RiskHeatMapProps) {
@@ -46,33 +47,33 @@ export function RiskHeatMap({ data }: RiskHeatMapProps) {
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr>
-                <th className="p-1"></th>
+          <Table className="w-full text-xs">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="p-1"></TableHead>
                 {LIKELIHOOD.map((l) => (
-                  <th key={l} className="p-1 text-center font-medium text-gray-500">{l}</th>
+                  <TableHead key={l} className="p-1 text-center font-medium text-muted-foreground">{l}</TableHead>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {LEVELS.map((impact) => (
-                <tr key={impact}>
-                  <td className="p-1 font-medium text-gray-500 whitespace-nowrap">{impact}</td>
+                <TableRow key={impact}>
+                  <TableCell className="p-1 font-medium text-muted-foreground whitespace-nowrap">{impact}</TableCell>
                   {LIKELIHOOD.map((like) => {
                     const count = grid.get(impact + "-" + like) ?? 0;
                     return (
-                      <td key={like} className="p-1">
+                      <TableCell key={like} className="p-1">
                         <div className={"rounded p-2 text-center font-mono " + getCellColor(impact, like)}>
                           {count}
                         </div>
-                      </td>
+                      </TableCell>
                     );
                   })}
-                </tr>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </CardContent>
     </Card>

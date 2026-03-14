@@ -1,3 +1,4 @@
+import type { BadgeVariant } from '../../lib/compliance-types';
 import { Badge } from "../ui/badge";
 
 interface IncidentSeverityBadgeProps {

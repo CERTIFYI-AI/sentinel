@@ -1,3 +1,4 @@
+import type { BadgeVariant } from '../../lib/compliance-types';
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
 
@@ -29,12 +30,12 @@ export function ControlStatusGrid({ controls, framework }: ControlStatusGridProp
       <CardContent>
         <div className="space-y-1">
           {controls.map((c) => (
-            <div key={c.id} className="flex items-center justify-between p-2 rounded hover:bg-gray-100/50 transition-colors">
+            <div key={c.id} className="flex items-center justify-between p-2 rounded hover:bg-muted/50 transition-colors">
               <div className="flex-1">
                 <p className="text-sm font-medium">{c.id}: {c.name}</p>
-                {c.status === "PASS" && c.signal && <p className="text-xs text-gray-500">Signal: {c.signal}</p>}
+                {c.status === "PASS" && c.signal && <p className="text-xs text-muted-foreground">Signal: {c.signal}</p>}
                 {c.status === "FAIL" && c.remediation && <p className="text-xs text-destructive">Fix: {c.remediation}</p>}
-                {c.status === "NA" && <p className="text-xs text-gray-500">Requires organizational process</p>}
+                {c.status === "NA" && <p className="text-xs text-muted-foreground">Requires organizational process</p>}
               </div>
               <Badge variant={statusVariant[c.status]}>{c.status}</Badge>
             </div>

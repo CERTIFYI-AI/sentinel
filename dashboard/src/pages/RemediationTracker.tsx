@@ -1,3 +1,4 @@
+import { Wrench, Plus, MagnifyingGlass } from '@phosphor-icons/react';
 import { PageWrapper } from "../components/layout/PageWrapper";
 import { RemediationTimeline } from "../components/compliance/RemediationTimeline";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";

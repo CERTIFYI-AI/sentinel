@@ -5,7 +5,7 @@ const WEIGHT_STYLES: Record<LegalWeight, string> = {
   regulatory: 'bg-red-100 text-red-800 border border-red-300',
   contractual: 'bg-orange-100 text-orange-800 border border-orange-300',
   'best-practice': 'bg-blue-100 text-blue-800 border border-blue-300',
-  informational: 'bg-gray-100 text-gray-700 border border-gray-300',
+  informational: 'bg-muted text-foreground border border-border',
 };
 
 const WEIGHT_LABELS: Record<LegalWeight, string> = {

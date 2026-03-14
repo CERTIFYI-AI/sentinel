@@ -1,3 +1,4 @@
+import { ShieldCheck, Plus, MagnifyingGlass } from '@phosphor-icons/react';
 // dashboard/src/pages/ciso/CisoDashboard.tsx
 // Dedicated CISO executive dashboard — Sprint 3 #19
 // Aggregated risk posture, trend analysis, and board report generation
@@ -7,6 +8,7 @@ import { apiClient } from "../../lib/api-client";
 import { QK } from "../../lib/queryKeys";
 import { useSentinelStore } from "../../lib/store";
 import { useState } from "react";
+import Badge from '../../components/ui/badge';
 
 interface PostureData {
   overallScore: number;
@@ -42,17 +44,17 @@ function PostureSkeleton() {
       <div className="h-8 bg-[hsl(var(--muted))] rounded w-48" />
       <div className="grid grid-cols-4 gap-4">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-32 bg-[hsl(var(--muted))] rounded-lg" />
+          <div key={i} className="h-32 bg-[hsl(var(--muted))] rounded-none" />
         ))}
       </div>
-      <div className="h-64 bg-[hsl(var(--muted))] rounded-lg" />
+      <div className="h-64 bg-[hsl(var(--muted))] rounded-none" />
     </div>
   );
 }
 
 function PostureError({ message }: { message: string }) {
   return (
-    <div className="rounded-lg border border-[hsl(var(--destructive))] bg-[hsl(var(--destructive)/0.1)] p-6">
+    <div className="rounded-none border border-[hsl(var(--destructive))] bg-[hsl(var(--destructive)/0.1)] p-6">
       <h3 className="font-outfit text-lg font-semibold text-[hsl(var(--destructive))]">
         Failed to load posture data
       </h3>
@@ -78,7 +80,7 @@ function ScoreCard({
         : "hsl(var(--destructive))";
 
   return (
-    <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5">
+    <div className="rounded-none border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5">
       <p className="font-outfit text-sm text-[hsl(var(--muted-foreground))]">{label}</p>
       <p className="font-outfit text-3xl font-bold mt-1" style={{ color }}>
         {score.toFixed(1)}
@@ -124,7 +126,7 @@ function TopFindings({ findings }: { findings: PostureData["topFindings"] }) {
   };
 
   return (
-    <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5">
+    <div className="rounded-none border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5">
       <h3 className="font-outfit text-lg font-semibold text-[hsl(var(--foreground))] mb-4">
         Top Findings
       </h3>
@@ -158,7 +160,7 @@ function TopFindings({ findings }: { findings: PostureData["topFindings"] }) {
 
 function TaskSummary({ open, overdue }: { open: number; overdue: number }) {
   return (
-    <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5">
+    <div className="rounded-none border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5">
       <h3 className="font-outfit text-lg font-semibold text-[hsl(var(--foreground))] mb-4">
         Task Summary
       </h3>
@@ -184,7 +186,7 @@ function TaskSummary({ open, overdue }: { open: number; overdue: number }) {
 function TrendChart({ history }: { history: PostureHistory["entries"] }) {
   if (history.length === 0) {
     return (
-      <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5">
+      <div className="rounded-none border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5">
         <p className="font-outfit text-sm text-[hsl(var(--muted-foreground))]">No historical data available yet.</p>
       </div>
     );
@@ -194,7 +196,7 @@ function TrendChart({ history }: { history: PostureHistory["entries"] }) {
   const chartHeight = 200;
 
   return (
-    <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5">
+    <div className="rounded-none border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5">
       <h3 className="font-outfit text-lg font-semibold text-[hsl(var(--foreground))] mb-4">
         90-Day Risk Trend
       </h3>
@@ -260,7 +262,7 @@ export default function CisoDashboard() {
           <TrendBadge trend={posture.trend} delta={posture.trendDelta} />
           <a
             href="/ciso/board-report"
-            className="font-outfit text-sm px-4 py-2 rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-opacity"
+            className="font-outfit text-sm px-4 py-2 rounded-none bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-opacity"
           >
             Generate Board Report
           </a>
@@ -268,7 +270,7 @@ export default function CisoDashboard() {
       </div>
 
       {/* Overall posture score */}
-      <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 text-center">
+      <div className="rounded-none border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 text-center">
         <p className="font-outfit text-sm text-[hsl(var(--muted-foreground))]">Overall Posture Score</p>
         <p
           className="font-outfit text-6xl font-bold mt-2"

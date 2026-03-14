@@ -1,31 +1,17 @@
-// src/components/LoadingSpinner.tsx
-import { Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import React from 'react';
 
 interface LoadingSpinnerProps {
+  size?: 'sm' | 'md' | 'lg';
   className?: string;
-  size?: "sm" | "md" | "lg";
-  label?: string;
 }
 
-const sizes = { sm: "w-4 h-4", md: "w-8 h-8", lg: "w-12 h-12" };
-
-export default function LoadingSpinner({
-  className,
-  size = "md",
-  label = "Loading...",
-}: LoadingSpinnerProps) {
+export function LoadingSpinner({ size = 'md', className = '' }: LoadingSpinnerProps) {
+  const sizes = { sm: 'h-4 w-4', md: 'h-8 w-8', lg: 'h-12 w-12' };
   return (
-    <div
-      className={cn(
-        "flex flex-col items-center justify-center gap-3 min-h-[200px]",
-        className
-      )}
-      role="status"
-      aria-label={label}
-    >
-      <Loader2 className={cn("animate-spin text-emerald-600", sizes[size])} />
-      <span className="text-sm text-slate-500 dark:text-slate-400">{label}</span>
+    <div className={`flex items-center justify-center ${className}`}>
+      <div className={`animate-spin rounded-full border-2 border-border border-t-emerald-500 ${sizes[size]}`} />
     </div>
   );
 }
+
+export default LoadingSpinner;

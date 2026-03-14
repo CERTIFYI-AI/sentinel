@@ -30,27 +30,27 @@ export function LoginForm({ onSuccess }: { onSuccess: () => void }) {
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
         <h1 className="text-xl font-semibold">Sign in to Sentinel</h1>
-        <p className="text-sm text-gray-500 mt-1">AI governance platform</p>
+        <p className="text-sm text-muted-foreground mt-1">AI governance platform</p>
       </div>
 
       <div className="flex border-b border-border">
         {(["apikey", "email"] as const).map(t => (
           <button key={t} type="button" onClick={() => setTab(t)}
             className={`pb-2 px-4 text-sm font-medium border-b-2 transition-colors ${
-              tab === t ? "border-primary text-[#1A6B5A]" : "border-transparent text-gray-500 hover:text-foreground"
+              tab === t ? "border-primary text-[#1A6B5A]" : "border-transparent text-muted-foreground hover:text-foreground"
             }`}>
             {t === "apikey" ? "API Key" : "Email & Password"}
           </button>
         ))}
       </div>
 
-      {error && <div className="bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-md p-3">{error}</div>}
+      {error && <div className="bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-none p-3">{error}</div>}
 
       {tab === "apikey" ? (
         <div className="relative">
           <input type={show ? "text" : "password"} value={apiKey} onChange={e => setApiKey(e.target.value)}
-            placeholder="sk-sentinel-..." className="w-full h-10 rounded-md border border-input bg-background px-3 pr-10 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-          <button type="button" onClick={() => setShow(!show)} className="absolute right-2 top-2 text-gray-500 hover:text-foreground">
+            placeholder="sk-sentinel-..." className="w-full h-10 rounded-none border border-input bg-background px-3 pr-10 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+          <button type="button" onClick={() => setShow(!show)} className="absolute right-2 top-2 text-muted-foreground hover:text-foreground">
             {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
         </div>
@@ -59,15 +59,15 @@ export function LoginForm({ onSuccess }: { onSuccess: () => void }) {
           <div>
             <label className="text-sm font-medium">Work email</label>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)}
-              placeholder="you@company.com" className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+              placeholder="you@company.com" className="mt-1 w-full h-10 rounded-none border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           </div>
           <div>
             <div className="flex justify-between"><label className="text-sm font-medium">Password</label>
-              <button type="button" className="text-xs text-gray-500 hover:text-[hsl(var(--brand-foreground))]">Forgot password?</button></div>
+              <button type="button" className="text-xs text-muted-foreground hover:text-[hsl(var(--brand-foreground))]">Forgot password?</button></div>
             <div className="relative mt-1">
               <input type={show ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)}
-                className="w-full h-10 rounded-md border border-input bg-background px-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-              <button type="button" onClick={() => setShow(!show)} className="absolute right-2 top-2 text-gray-500 hover:text-foreground">
+                className="w-full h-10 rounded-none border border-input bg-background px-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+              <button type="button" onClick={() => setShow(!show)} className="absolute right-2 top-2 text-muted-foreground hover:text-foreground">
                 {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
@@ -76,11 +76,11 @@ export function LoginForm({ onSuccess }: { onSuccess: () => void }) {
       )}
 
       <button type="submit" disabled={loading}
-        className="w-full h-10 rounded-md bg-[#1A6B5A] text-white font-medium text-sm hover:bg-[#1A6B5A]/90 disabled:opacity-50 flex items-center justify-center gap-2">
+        className="w-full h-10 rounded-none bg-[#1A6B5A] text-white font-medium text-sm hover:bg-[#1A6B5A]/90 disabled:opacity-50 flex items-center justify-center gap-2">
         {loading ? <><Loader2 className="w-4 h-4 animate-spin" />Signing in...</> : tab === "apikey" ? "Continue" : "Sign in"}
       </button>
 
-      <div className="text-center text-sm text-gray-500">
+      <div className="text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{" "}
         <Link to="/signup" className="text-[hsl(var(--brand-foreground))] hover:underline">Create one &rarr;</Link>
       </div>

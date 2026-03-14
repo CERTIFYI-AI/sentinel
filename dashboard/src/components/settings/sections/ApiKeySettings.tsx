@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useApiKeys, useCreateApiKey, useRevokeApiKey } from "../../../hooks/use-settings";
 import { Loader2, Plus, Copy, Check } from "lucide-react";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../../ui/table';
 
 export function ApiKeySettings() {
   const { data: keys, isLoading } = useApiKeys();
@@ -38,9 +39,9 @@ export function ApiKeySettings() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-lg font-semibold">API Keys</h2>
-          <p className="text-sm text-gray-500">{activeKeys.length} active keys &middot; {expiredKeys.length} expired</p>
+          <p className="text-sm text-muted-foreground">{activeKeys.length} active keys &middot; {expiredKeys.length} expired</p>
         </div>
-        <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 h-9 px-4 rounded-md bg-[#1A6B5A] text-white text-sm">
+        <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 h-9 px-4 rounded-none bg-[#1A6B5A] text-white text-sm">
           <Plus className="w-4 h-4" /> Create New Key
         </button>
       </div>
@@ -53,7 +54,7 @@ export function ApiKeySettings() {
               {keyCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             </button>
           </div>
-          <button onClick={() => setCreatedKey(null)} className="text-sm text-gray-500">Done</button>
+          <button onClick={() => setCreatedKey(null)} className="text-sm text-muted-foreground">Done</button>
         </div>
       )}
       {showCreate && (
@@ -71,44 +72,44 @@ export function ApiKeySettings() {
             <option value="never">Never</option>
           </select>
           <div className="flex gap-2">
-            <button onClick={handleCreate} disabled={!newKeyName || createKey.isPending} className="h-9 px-4 rounded-md bg-[#1A6B5A] text-white text-sm">
+            <button onClick={handleCreate} disabled={!newKeyName || createKey.isPending} className="h-9 px-4 rounded-none bg-[#1A6B5A] text-white text-sm">
               {createKey.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create Key"}
             </button>
-            <button onClick={() => setShowCreate(false)} className="h-9 px-4 rounded-md border text-sm">Cancel</button>
+            <button onClick={() => setShowCreate(false)} className="h-9 px-4 rounded-none border text-sm">Cancel</button>
           </div>
         </div>
       )}
       <div className="border rounded">
-        <table className="w-full text-sm">
-          <thead><tr className="border-b bg-muted/50">
-            <th className="text-left p-3 font-medium">Name</th>
-            <th className="text-left p-3 font-medium">Role</th>
-            <th className="text-left p-3 font-medium">Prefix</th>
-            <th className="text-left p-3 font-medium">Created</th>
-            <th className="text-left p-3 font-medium">Status</th>
-            <th className="text-right p-3 font-medium">Actions</th>
-          </tr></thead>
-          <tbody>
+        <Table className="w-full text-sm">
+          <TableHeader><TableRow className="border-b bg-muted/50">
+            <TableHead className="text-left p-3 font-medium">Name</TableHead>
+            <TableHead className="text-left p-3 font-medium">Role</TableHead>
+            <TableHead className="text-left p-3 font-medium">Prefix</TableHead>
+            <TableHead className="text-left p-3 font-medium">Created</TableHead>
+            <TableHead className="text-left p-3 font-medium">Status</TableHead>
+            <TableHead className="text-right p-3 font-medium">Actions</TableHead>
+          </TableRow></TableHeader>
+          <TableBody>
             {(keys ?? []).map((k: Record<string, unknown>) => (
-              <tr key={String(k.id)} className="border-b">
-                <td className="p-3">{String(k.name)}</td>
-                <td className="p-3"><span className="px-2 py-0.5 rounded text-xs bg-muted">{String(k.role)}</span></td>
-                <td className="p-3 font-mono text-xs">{String(k.prefix ?? "sk-...")}</td>
-                <td className="p-3 text-gray-500">{String(k.created_at ?? "")}</td>
-                <td className="p-3">
+              <TableRow key={String(k.id)} className="border-b">
+                <TableCell className="p-3">{String(k.name)}</TableCell>
+                <TableCell className="p-3"><span className="px-2 py-0.5 rounded text-xs bg-muted">{String(k.role)}</span></TableCell>
+                <TableCell className="p-3 font-mono text-xs">{String(k.prefix ?? "sk-...")}</TableCell>
+                <TableCell className="p-3 text-muted-foreground">{String(k.created_at ?? "")}</TableCell>
+                <TableCell className="p-3">
                   <span className={`px-2 py-0.5 rounded text-xs ${k.status === "active" ? "bg-green-900/30 text-green-400" : "bg-red-900/30 text-red-400"}`}>
                     {String(k.status)}
                   </span>
-                </td>
-                <td className="p-3 text-right">
+                </TableCell>
+                <TableCell className="p-3 text-right">
                   {k.status === "active" && (
                     <button onClick={() => revokeKey.mutate(String(k.id))} className="text-xs text-red-400 hover:underline">Revoke</button>
                   )}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </div>
   );

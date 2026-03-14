@@ -1,3 +1,4 @@
+import { FileText, Plus, MagnifyingGlass } from '@phosphor-icons/react';
 import { useState } from "react";
 import { usePolicyData } from "../../lib/hooks/usePolicyData";
 

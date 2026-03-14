@@ -1,3 +1,4 @@
+import { CheckSquare, Plus, MagnifyingGlass } from '@phosphor-icons/react';
 import { useState } from "react";
 interface Props { open: boolean; onClose: () => void; }
 export default function TaskDrawer({ open, onClose }: Props) {

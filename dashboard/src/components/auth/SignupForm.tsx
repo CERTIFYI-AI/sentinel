@@ -49,54 +49,54 @@ export function SignupForm({ onSuccess }: { onSuccess: () => void }) {
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-semibold">{step === 1 ? "Create your account" : "Choose your plan"}</h1>
-        <p className="text-sm text-gray-500 mt-1">{step === 1 ? "Get started in under 2 minutes" : "All plans include a 14-day free trial"}</p>
+        <p className="text-sm text-muted-foreground mt-1">{step === 1 ? "Get started in under 2 minutes" : "All plans include a 14-day free trial"}</p>
       </div>
-      {errors.form && <div className="bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-md p-3">{errors.form}</div>}
+      {errors.form && <div className="bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-none p-3">{errors.form}</div>}
       {step === 1 ? (
         <div className="space-y-4">
           <div><label className="text-sm font-medium">Organization name</label>
-            <input value={orgName} onChange={e => setOrgName(e.target.value)} className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+            <input value={orgName} onChange={e => setOrgName(e.target.value)} className="mt-1 w-full h-10 rounded-none border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           </div>
           <div><label className="text-sm font-medium">Work email</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@company.com" className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@company.com" className="mt-1 w-full h-10 rounded-none border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             {errors.email && <p className="text-xs text-destructive mt-1">{errors.email}</p>}
           </div>
           <div><label className="text-sm font-medium">Create password</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="mt-1 w-full h-10 rounded-none border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             <div className="flex gap-1 mt-2">{[0,1,2,3].map(i => <div key={i} className={`h-1 flex-1 rounded-full ${i <= strength ? strengthColors[strength] : "bg-muted"}`} />)}</div>
           </div>
           <div><label className="text-sm font-medium">Confirm password</label>
-            <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+            <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} className="mt-1 w-full h-10 rounded-none border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             {confirm && confirm !== password && <p className="text-xs text-destructive mt-1">Passwords do not match</p>}
           </div>
           <button onClick={() => setStep(2)} disabled={!canStep1}
-            className="w-full h-10 rounded-md bg-[#1A6B5A] text-white font-medium text-sm hover:bg-[#1A6B5A]/90 disabled:opacity-50 flex items-center justify-center gap-2">
+            className="w-full h-10 rounded-none bg-[#1A6B5A] text-white font-medium text-sm hover:bg-[#1A6B5A]/90 disabled:opacity-50 flex items-center justify-center gap-2">
             Continue <ArrowRight className="w-4 h-4" /></button>
         </div>
       ) : (
         <div className="space-y-4">
           {plans.map(p => (
             <button key={p.id} type="button" onClick={() => setPlan(p.id)}
-              className={`w-full text-left rounded-lg border p-4 transition-colors ${plan === p.id ? "border-primary bg-[#1A6B5A]/5" : "border-border hover:border-muted-foreground/30"}`}>
+              className={`w-full text-left rounded-none border p-4 transition-colors ${plan === p.id ? "border-primary bg-[#1A6B5A]/5" : "border-border hover:border-muted-foreground/30"}`}>
               <div className="flex items-center justify-between">
-                <span className={`text-[10px] uppercase tracking-widest font-medium ${p.id === "pro" ? "text-[#1A6B5A]" : "text-gray-500"}`}>{p.label}</span>
+                <span className={`text-[10px] uppercase tracking-widest font-medium ${p.id === "pro" ? "text-[#1A6B5A]" : "text-muted-foreground"}`}>{p.label}</span>
                 {plan === p.id && <Check className="w-4 h-4 text-[#1A6B5A]" />}
               </div>
-              <p className="text-xs text-gray-500 mt-1">{p.features}</p>
+              <p className="text-xs text-muted-foreground mt-1">{p.features}</p>
               <p className="font-mono text-sm font-semibold mt-2">{p.price}</p>
             </button>
           ))}
-          <p className="text-[11px] text-gray-500">By creating an account you agree to our <span className="underline">Terms of Service</span> and <span className="underline">Privacy Policy</span>.</p>
+          <p className="text-[11px] text-muted-foreground">By creating an account you agree to our <span className="underline">Terms of Service</span> and <span className="underline">Privacy Policy</span>.</p>
           <div className="flex gap-3">
-            <button onClick={() => setStep(1)} className="h-10 px-4 rounded-md border border-border text-sm hover:bg-gray-100 flex items-center gap-2">
+            <button onClick={() => setStep(1)} className="h-10 px-4 rounded-none border border-border text-sm hover:bg-muted flex items-center gap-2">
               <ArrowLeft className="w-4 h-4" /> Back</button>
             <button onClick={handleSubmit} disabled={loading}
-              className="flex-1 h-10 rounded-md bg-[#1A6B5A] text-white font-medium text-sm hover:bg-[#1A6B5A]/90 disabled:opacity-50 flex items-center justify-center gap-2">
+              className="flex-1 h-10 rounded-none bg-[#1A6B5A] text-white font-medium text-sm hover:bg-[#1A6B5A]/90 disabled:opacity-50 flex items-center justify-center gap-2">
               {loading ? <><Loader2 className="w-4 h-4 animate-spin" />Creating...</> : "Create account"}</button>
           </div>
         </div>
       )}
-      <div className="text-center text-sm text-gray-500">
+      <div className="text-center text-sm text-muted-foreground">
         Already have an account? <Link to="/login" className="text-[hsl(var(--brand-foreground))] hover:underline">Sign in</Link>
       </div>
     </div>

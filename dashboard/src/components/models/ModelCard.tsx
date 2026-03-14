@@ -6,7 +6,7 @@ import type { ModelConfig, ModelHealth } from "../../api/types";
 
 const roleBadge: Record<string, string> = {
   primary: "bg-emerald-50 text-[#1A6B5A] border-primary/30",
-  fallback: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+  fallback: "bg-emerald-600/20 text-blue-400 border-blue-500/30",
   evaluation: "bg-zinc-500/20 text-zinc-400 border-zinc-500/30",
   disabled: "bg-destructive/20 text-destructive border-destructive/30",
 };
@@ -21,7 +21,7 @@ export function ModelCard({ model, health, selected, onSelect, onSetRole, onTest
     onSetRole: (r: string) => void; onTest: () => void }) {
   const h = health;
   return (
-    <div className={`rounded-lg border p-4 space-y-3 transition-colors ${selected ? "border-primary bg-[#1A6B5A]/5" : "border-border"}`}>
+    <div className={`rounded-none border p-4 space-y-3 transition-colors ${selected ? "border-primary bg-[#1A6B5A]/5" : "border-border"}`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <input type="checkbox" checked={selected} onChange={onSelect} className="rounded border-border" />
@@ -30,8 +30,8 @@ export function ModelCard({ model, health, selected, onSelect, onSetRole, onTest
         <span className={`w-2 h-2 rounded-full ${model.status === "active" ? "bg-[hsl(var(--trust-high))]" : model.status === "degraded" ? "bg-[hsl(var(--trust-medium))]" : "bg-destructive"}`} />
       </div>
       <div>
-        <p className="font-mono text-base font-bold text-gray-900">{model.display_name}</p>
-        <p className="text-xs text-gray-500 font-mono">{model.model_name}@{model.version}</p>
+        <p className="font-mono text-base font-bold text-foreground">{model.display_name}</p>
+        <p className="text-xs text-muted-foreground font-mono">{model.model_name}@{model.version}</p>
       </div>
       {h && (
         <div className="grid grid-cols-4 gap-2">
@@ -41,8 +41,8 @@ export function ModelCard({ model, health, selected, onSelect, onSetRole, onTest
             ["Cost", "$" + h.cost_per_1k.toFixed(4), undefined],
           ].map(([label, val, color]) => (
             <div key={String(label)} className="text-center">
-              <p className="text-[10px] uppercase text-gray-500">{label}</p>
-              <p className="font-mono text-sm text-gray-700" style={color ? { color: String(color) } : undefined}>{val}</p>
+              <p className="text-[10px] uppercase text-muted-foreground">{label}</p>
+              <p className="font-mono text-sm text-foreground" style={color ? { color: String(color) } : undefined}>{val}</p>
             </div>
           ))}
         </div>
@@ -51,15 +51,15 @@ export function ModelCard({ model, health, selected, onSelect, onSetRole, onTest
         <div className="flex items-center gap-2 text-xs">
           <span className={`w-1.5 h-1.5 rounded-full ${cbDot[h.cb_state]}`} />
           <span className="font-mono">{h.cb_state}</span>
-          <span className="text-gray-500">{h.failure_count} failures</span>
+          <span className="text-muted-foreground">{h.failure_count} failures</span>
         </div>
       )}
       <div className="flex items-center justify-between">
         <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium uppercase ${roleBadge[model.role]}`}>{model.role}</span>
         <div className="flex gap-1">
-          {model.role !== "primary" && <button onClick={() => onSetRole("primary")} className="text-xs px-2 py-1 rounded border border-border hover:bg-gray-100">Set Primary</button>}
-          <button onClick={onTest} className="text-xs px-2 py-1 rounded border border-border hover:bg-gray-100">Test</button>
-          <button className="p-1 rounded hover:bg-gray-100"><MoreHorizontal className="w-4 h-4" /></button>
+          {model.role !== "primary" && <button onClick={() => onSetRole("primary")} className="text-xs px-2 py-1 rounded border border-border hover:bg-muted">Set Primary</button>}
+          <button onClick={onTest} className="text-xs px-2 py-1 rounded border border-border hover:bg-muted">Test</button>
+          <button className="p-1 rounded hover:bg-muted"><MoreHorizontal className="w-4 h-4" /></button>
         </div>
       </div>
     </div>

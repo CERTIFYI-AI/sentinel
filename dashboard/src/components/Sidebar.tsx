@@ -1,81 +1,152 @@
-import { NavLink } from 'react-router-dom';
-import { useState } from 'react';
-import * as Icons from 'lucide-react';
-import { cn } from '../lib/utils';
 
-interface NavItem { label: string; to: string; icon: string; }
-interface NavSection { title: string; items: NavItem[]; }
+import { NavLink, useLocation } from 'react-router-dom'
+import { useState } from 'react'
+import {
+  SquaresFour, Bell, FileText, Shield, BookOpen, ChartBar,
+  UserCircleCheck, Robot, Rss, Database, BuildingOffice,
+  Warning, Scales, FolderOpen, Warning, ChartBar,
+  ShieldCheck, LockOpen, Lock, Gear, Star,
+  SignOut, CaretDown, CaretRight, MoonStars, SunHorizon
+} from '@phosphor-icons/react'
+import { cn } from '../lib/utils'
 
-const NAV: NavSection[] = [
-  { title: 'DASHBOARD', items: [
-    { label: 'Overview', to: '/overview', icon: 'BarChart3' },
-    { label: 'Alerts', to: '/notifications', icon: 'Bell' },
+const NAV = [
+  { title: 'OVERVIEW', items: [
+    { label: 'Dashboard', to: '/overview', icon: SquaresFour },
+    { label: 'Notifications', to: '/notifications', icon: Bell },
   ]},
   { title: 'GOVERNANCE', items: [
-    { label: 'Policy Manager', to: '/compliance/policies', icon: 'FileText' },
-        { label: 'Controls', to: '/compliance/controls', icon: 'Shield' },
-    { label: 'Frameworks', to: '/frameworks', icon: 'Layers' },
-    { label: 'Reg Radar', to: '/reg-radar', icon: 'Radio' },
+    { label: 'Policy Manager', to: '/compliance/policies', icon: FileText },
+    { label: 'Controls', to: '/compliance/controls', icon: Shield },
+    { label: 'Frameworks', to: '/frameworks', icon: BookOpen },
+    { label: 'Reg ChartBar', to: '/reg-radar', icon: ChartBar },
+    { label: 'HITL Reviews', to: '/hitl', icon: UserCircleCheck, badge: 3 },
   ]},
   { title: 'AI INVENTORY', items: [
-    { label: 'Model Inventory', to: '/models/inventory', icon: 'Brain' },
-    { label: 'Model Lifecycle', to: '/models/lifecycle', icon: 'RefreshCw' },
-    { label: 'Agent Discovery', to: '/agents', icon: 'Bot' },
-    { label: 'Shadow AI', to: '/agents/shadow-ai', icon: 'Ghost' },
-    { label: 'Datasets', to: '/datasets', icon: 'Database' },
-    { label: 'Vendors', to: '/vendors', icon: 'Building2' },
+    { label: 'Model Inventory', to: '/models/inventory', icon: Robot },
+    { label: 'Agent Discovery', to: '/agents', icon: Rss, badge: 12 },
+    { label: 'Datasets', to: '/datasets', icon: Database },
+    { label: 'Vendor List', to: '/vendors', icon: BuildingOffice },
   ]},
   { title: 'RISK & COMPLIANCE', items: [
-    { label: 'Compliance', to: '/compliance', icon: 'CheckCircle' },
-    { label: 'Bias Audits', to: '/bias-audits', icon: 'Scale' },
-    { label: 'Evidence Sync', to: '/evidence-sync', icon: 'FolderSync' },
-    { label: 'HITL Reviews', to: '/hitl', icon: 'UserCheck' },
-    { label: 'Risk Map', to: '/risk', icon: 'Map' },
-    { label: 'Trust Engine', to: '/trust-engine', icon: 'Lock' },
-    { label: 'Guardrails', to: '/trust-engine/guardrails', icon: 'ShieldAlert' },
+    { label: 'Risk Map', to: '/risk', icon: Warning },
+    { label: 'Bias Audits', to: '/bias-audits', icon: Scales },
+    { label: 'Evidence Sync', to: '/evidence-sync', icon: FolderOpen },
+    { label: 'Incidents', to: '/risk/incidents', icon: Warning },
+    { label: 'Reporting', to: '/reporting', icon: ChartBar },
   ]},
-  { title: 'SECURITY', items: [
-    { label: 'Security Overview', to: '/security', icon: 'ShieldCheck' },
-    { label: 'Threat Feed', to: '/security/threats', icon: 'Skull' },
-    { label: 'Scan Center', to: '/security/scans', icon: 'Search' },
-    { label: 'Incidents', to: '/risk/incidents', icon: 'AlertTriangle' },
+  { title: 'TRUST ENGINE', items: [
+    { label: 'Trust Engine', to: '/trust-engine', icon: ShieldCheck },
+    { label: 'Guardrails', to: '/trust-engine/guardrails', icon: LockOpen },
   ]},
   { title: 'ADMINISTRATION', items: [
-    { label: 'Access Control', to: '/access-control', icon: 'Key' },
-    { label: 'Audit Log', to: '/audit-log', icon: 'BookOpen' },
-    { label: 'Settings', to: '/settings', icon: 'Settings' },
+    { label: 'Access Control', to: '/access-control', icon: Lock },
+    { label: 'Settings', to: '/settings', icon: Gear },
   ]},
-];
-
-function getIcon(name: string) {
-  const Icon = (Icons as Record<string, React.ComponentType<{ className?: string }>>)[name];
-  return Icon ? <Icon className="h-4 w-4" /> : null;
-}
+]
 
 export default function Sidebar() {
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
-  const toggle = (t: string) => setCollapsed((p) => ({ ...p, [t]: !p[t] }));
+  const location = useLocation()
+  const [collapsed, setCollapsed] = useState(false)
+  const [expandedSections, setExpandedSections] = useState<string[]>(NAV.map(s => s.title))
+  const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains('dark'))
+
+  const isActive = (to: string) =>
+    to === '/overview' ? location.pathname === '/' || location.pathname === '/overview' : location.pathname.startsWith(to)
+
+  const toggleSection = (title: string) =>
+    setExpandedSections(prev => prev.includes(title) ? prev.filter(t => t !== title) : [...prev, title])
+
+  const toggleDark = () => {
+    const next = !darkMode
+    setDarkMode(next)
+    document.documentElement.classList.toggle('dark', next)
+    localStorage.setItem('theme', next ? 'dark' : 'light')
+  }
+
   return (
-    <aside className="w-60 border-r bg-card h-full overflow-y-auto flex flex-col">
-      <div className="px-4 py-4 font-bold text-lg border-b">Sentinel GRC</div>
-      <nav className="flex-1 px-2 py-2 space-y-1">
-        {NAV.map((s) => (
-          <div key={s.title}>
-            <button onClick={() => toggle(s.title)} className="w-full flex items-center justify-between px-2 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground">
-              {s.title}
-              {collapsed[s.title] ? <Icons.ChevronRight className="h-3 w-3" /> : <Icons.ChevronDown className="h-3 w-3" />}
-            </button>
-            {!collapsed[s.title] && <div className="space-y-0.5">
-              {s.items.map((item) => (
-                <NavLink key={item.to} to={item.to} className={({ isActive }) => cn('flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors', isActive ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:bg-muted hover:text-foreground')}>
-                  {getIcon(item.icon)}
-                  {item.label}
-                </NavLink>
-              ))}
-            </div>}
+    <aside className={cn(
+      'flex flex-col h-screen bg-zinc-950 text-zinc-100 border-r border-zinc-800 transition-all duration-200 flex-shrink-0',
+      collapsed ? 'w-16' : 'w-64'
+    )}>
+      <div className='flex items-center gap-3 px-4 h-14 border-b border-zinc-800'>
+        <div className='w-8 h-8 bg-emerald-600 flex items-center justify-center flex-shrink-0'>
+          <ShieldCheck size={18} weight='fill' className='text-white' />
+        </div>
+        {!collapsed && (
+          <div className='flex-1 min-w-0'>
+            <p className='text-sm font-semibold text-white truncate'>Sentinel AI</p>
+            <p className='text-[10px] text-zinc-500'>GRC Platform</p>
+          </div>
+        )}
+        <button onClick={() => setCollapsed(!collapsed)} className='text-zinc-500 hover:text-zinc-300 ml-auto'>
+          {collapsed ? <CaretRight size={14}/> : <CaretDown size={14}/>}
+        </button>
+      </div>
+      <div className='flex-1 overflow-y-auto py-2'>
+        {NAV.map(section => (
+          <div key={section.title} className='px-2 mb-1'>
+            {!collapsed && (
+              <button onClick={() => toggleSection(section.title)}
+                className='flex items-center justify-between w-full px-2 py-1'>
+                <span className='text-[10px] font-semibold tracking-wider text-zinc-500 uppercase'>{section.title}</span>
+                {expandedSections.includes(section.title) ? <CaretDown size={10} className='text-zinc-600'/> : <CaretRight size={10} className='text-zinc-600'/>}
+              </button>
+            )}
+            {(collapsed || expandedSections.includes(section.title)) && (
+              <div className='space-y-0.5'>
+                {section.items.map((item: any) => {
+                  const Icon = item.icon
+                  const active = isActive(item.to)
+                  return (
+                    <NavLink key={item.to} to={item.to}
+                      className={cn(
+                        'flex items-center gap-3 px-3 py-2 text-sm transition-colors group',
+                        active ? 'bg-emerald-600/15 text-emerald-400' : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100',
+                        collapsed && 'justify-center px-2'
+                      )}
+                      title={collapsed ? item.label : undefined}>
+                      <Icon size={18} weight='duotone' className={cn('flex-shrink-0', active ? 'text-emerald-400' : 'text-zinc-500 group-hover:text-zinc-300')} />
+                      {!collapsed && (
+                        <>
+                          <span className='flex-1 truncate'>{item.label}</span>
+                          {item.badge && (
+                            <span className='bg-emerald-600 text-white text-[10px] px-1.5 py-0.5 font-medium min-w-[20px] text-center'>{item.badge}</span>
+                          )}
+                        </>
+                      )}
+                    </NavLink>
+                  )
+                })}
+              </div>
+            )}
           </div>
         ))}
-      </nav>
+      </div>
+      <div className='border-t border-zinc-800 p-3 space-y-1'>
+        <button className={cn('flex items-center gap-3 w-full px-3 py-2 text-sm text-zinc-400 hover:bg-zinc-800 hover:text-emerald-400 transition-colors', collapsed && 'justify-center px-2')}>
+          <Star size={18} weight='duotone' className='flex-shrink-0 text-emerald-500' />
+          {!collapsed && <span>AI Advisor</span>}
+        </button>
+        <button onClick={toggleDark} className={cn('flex items-center gap-3 w-full px-3 py-2 text-sm text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 transition-colors', collapsed && 'justify-center px-2')}>
+          {darkMode ? <SunHorizon size={18} weight='duotone' className='flex-shrink-0'/> : <MoonStars size={18} weight='duotone' className='flex-shrink-0'/>}
+          {!collapsed && <span>{darkMode ? 'Light Mode' : 'Dark Mode'}</span>}
+        </button>
+        <div className={cn('flex items-center gap-3 px-3 py-2', collapsed && 'justify-center px-2')}>
+          <div className='w-7 h-7 bg-emerald-600 flex items-center justify-center flex-shrink-0'>
+            <span className='text-xs font-semibold text-white'>BA</span>
+          </div>
+          {!collapsed && (
+            <>
+              <div className='flex-1 min-w-0'>
+                <p className='text-xs font-medium text-zinc-200 truncate'>Bhaskar Admin</p>
+                <p className='text-[10px] text-zinc-500'>CISO</p>
+              </div>
+              <button className='text-zinc-600 hover:text-zinc-300'><SignOut size={14}/></button>
+            </>
+          )}
+        </div>
+      </div>
     </aside>
-  );
+  )
 }

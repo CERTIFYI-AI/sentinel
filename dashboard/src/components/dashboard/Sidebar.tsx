@@ -55,7 +55,7 @@ export function Sidebar() {
       <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-4">
         {modules.map((mod) => (
           <div key={mod.label}>
-            <p className="px-3 mb-1 text-xs font-semibold uppercase tracking-wider text-gray-500">
+            <p className="px-3 mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               {mod.label}
             </p>
             <div className="space-y-0.5">
@@ -64,10 +64,10 @@ export function Sidebar() {
                   key={item.path}
                   to={item.path}
                   className={cn(
-                    "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
+                    "flex items-center gap-2 rounded-none px-3 py-2 text-sm transition-colors",
                     pathname === item.path
                       ? "bg-[#1A6B5A] text-white"
-                      : "text-gray-500 hover:bg-gray-100 hover:text-accent-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-accent-foreground"
                   )}
                 >
                   <span className="text-base">{item.icon}</span>

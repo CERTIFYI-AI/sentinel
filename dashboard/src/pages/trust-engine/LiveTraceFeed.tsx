@@ -1,5 +1,7 @@
+import { ShieldCheck, Plus, MagnifyingGlass, Warning } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/authStore';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table';
 
 export default function LiveTraceFeed() {
   const [data, setData] = useState<any[]>([]);
@@ -17,10 +19,10 @@ export default function LiveTraceFeed() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Live Trace Feed</h1>
-          <p className="text-sm text-gray-500 mt-1">Real-time stream of Trust IDs with TrustScores, model, latency, and flags</p>
+          <h1 className="text-2xl font-bold text-foreground dark:text-foreground">Live Trace Feed</h1>
+          <p className="text-sm text-muted-foreground mt-1">Real-time stream of Trust IDs with TrustScores, model, latency, and flags</p>
         </div>
-        <button className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm">
+        <button className="px-4 py-2 bg-emerald-600 text-foreground rounded-none hover:bg-emerald-700 text-sm">
           + Add New
         </button>
       </div>
@@ -30,37 +32,37 @@ export default function LiveTraceFeed() {
           <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : data.length === 0 ? (
-        <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+        <div className="text-center py-16 bg-white dark:bg-card rounded-none border border-border dark:border-border">
           <div className="text-4xl mb-4">📋</div>
-          <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300">No items yet</h3>
-          <p className="text-sm text-gray-500 mt-2">Create your first live trace feed to get started</p>
+          <h3 className="text-lg font-semibold text-foreground dark:text-gray-300">No items yet</h3>
+          <p className="text-sm text-muted-foreground mt-2">Create your first live trace feed to get started</p>
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-900">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Updated</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+        <div className="bg-card dark:bg-card rounded-none border border-border dark:border-border overflow-hidden">
+          <Table className="w-full">
+            <TableHeader className="bg-muted dark:bg-background">
+              <TableRow>
+                <TableHead className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Name</TableHead>
+                <TableHead className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Status</TableHead>
+                <TableHead className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Score</TableHead>
+                <TableHead className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Updated</TableHead>
+                <TableHead className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-border dark:divide-border">
               {data.map((item: any, i: number) => (
-                <tr key={item.id || i} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                  <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{item.name || item.title || `Item ${i+1}`}</td>
-                  <td className="px-4 py-3"><span className="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-800">{item.status || 'Active'}</span></td>
-                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{item.score || item.compliance_score || '--'}</td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{item.updated_at ? new Date(item.updated_at).toLocaleDateString() : '--'}</td>
-                  <td className="px-4 py-3 text-right">
+                <TableRow key={item.id || i} className="hover:bg-muted dark:hover:bg-muted/50">
+                  <TableCell className="px-4 py-3 text-sm font-medium text-foreground dark:text-foreground">{item.name || item.title || `Item ${i+1}`}</TableCell>
+                  <TableCell className="px-4 py-3"><span className="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-800">{item.status || 'Active'}</span></TableCell>
+                  <TableCell className="px-4 py-3 text-sm text-muted-foreground dark:text-muted-foreground">{item.score || item.compliance_score || '--'}</TableCell>
+                  <TableCell className="px-4 py-3 text-sm text-muted-foreground">{item.updated_at ? new Date(item.updated_at).toLocaleDateString() : '--'}</TableCell>
+                  <TableCell className="px-4 py-3 text-right">
                     <button className="text-sm text-emerald-600 hover:text-emerald-800">View</button>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
     </div>

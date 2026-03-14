@@ -1,3 +1,4 @@
+import { SquaresFour, Plus, MagnifyingGlass } from '@phosphor-icons/react';
 // src/pages/Signup.tsx
 import { useNavigate } from "react-router-dom";
 import { AuthLayout } from "../components/auth/AuthLayout";

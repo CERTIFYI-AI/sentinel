@@ -26,7 +26,7 @@ export function ComplianceProgressBar({ frameworks }: ComplianceProgressBarProps
               <div key={fw.framework} className="space-y-1">
                 <div className="flex justify-between text-xs">
                   <span className="font-medium">{fw.framework}</span>
-                  <span className="text-gray-500">{pct}% ({fw.pass}/{fw.total})</span>
+                  <span className="text-muted-foreground">{pct}% ({fw.pass}/{fw.total})</span>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden flex">
                   <div className="h-full bg-[#1A6B5A]" style={{ width: (fw.pass / fw.total * 100) + "%" }} />
@@ -36,7 +36,7 @@ export function ComplianceProgressBar({ frameworks }: ComplianceProgressBarProps
               </div>
             );
           })}
-          <div className="flex items-center gap-4 text-xs text-gray-500 pt-1">
+          <div className="flex items-center gap-4 text-xs text-muted-foreground pt-1">
             <span className="flex items-center gap-1"><span className="w-3 h-2 bg-[#1A6B5A] rounded" /> Pass</span>
             <span className="flex items-center gap-1"><span className="w-3 h-2 bg-destructive rounded" /> Fail</span>
             <span className="flex items-center gap-1"><span className="w-3 h-2 bg-muted-foreground/30 rounded" /> N/A</span>

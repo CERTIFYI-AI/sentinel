@@ -47,7 +47,7 @@ export function TeamSettings() {
             </div>
             <div className="w-36 space-y-1">
               <Label htmlFor="inv-role">Role</Label>
-              <select id="inv-role" className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm" {...register("role")}>
+              <select id="inv-role" className="h-9 w-full rounded-none border border-input bg-background px-3 text-sm" {...register("role")}>
                 <option value="viewer">Viewer</option>
                 <option value="editor">Editor</option>
                 <option value="admin">Admin</option>
@@ -60,7 +60,7 @@ export function TeamSettings() {
       <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5" /> Members</CardTitle></CardHeader>
         <CardContent>
-          {isLoading ? <p className="text-sm text-gray-500">Loading…</p> : (
+          {isLoading ? <p className="text-sm text-muted-foreground">Loading…</p> : (
             <Table>
               <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Role</TableHead><TableHead>Status</TableHead><TableHead /></TableRow></TableHeader>
               <TableBody>

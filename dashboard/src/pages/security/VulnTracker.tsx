@@ -1,17 +1,19 @@
-export default function VulnTracker() {
+import { ShieldCheck, Plus, MagnifyingGlass } from '@phosphor-icons/react';
+
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table';export default function VulnTracker() {
   return (
     <div className="p-6 max-w-7xl mx-auto" style={{ fontFamily: 'Outfit, Inter, system-ui, sans-serif' }}>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Vulnerability Tracker</h1>
-        <button className="bg-[#1A6B5A] text-white px-4 py-2 rounded-lg text-sm">+ Add New</button>
+        <h1 className="text-2xl font-bold text-foreground">Vulnerability Tracker</h1>
+        <button className="bg-[#1A6B5A] text-foreground px-4 py-2 rounded-none text-sm">+ Add New</button>
       </div>
-      <div className="bg-white rounded-xl border shadow-sm"><table className="w-full text-sm text-gray-900">
-        <thead className="bg-gray-50 text-gray-600"><tr><th className="p-3 text-left">ID</th><th className="p-3 text-left">Vulnerability</th><th className="p-3 text-left">Severity</th><th className="p-3 text-left">Component</th><th className="p-3 text-left">Status</th><th className="p-3 text-left">Assignee</th></tr></thead>
-        <tbody><tr className="border-t"><td className="p-3">VLN-001</td><td className="p-3">Prompt injection in chat endpoint</td><td className="p-3">Critical</td><td className="p-3">Chat API</td><td className="p-3">Open</td><td className="p-3">Alice</td></tr>
-<tr className="border-t"><td className="p-3">VLN-002</td><td className="p-3">Model output data leak</td><td className="p-3">High</td><td className="p-3">Model Server</td><td className="p-3">In Progress</td><td className="p-3">Bob</td></tr>
-<tr className="border-t"><td className="p-3">VLN-003</td><td className="p-3">Weak input sanitization</td><td className="p-3">Medium</td><td className="p-3">Input Layer</td><td className="p-3">Resolved</td><td className="p-3">Carol</td></tr>
-<tr className="border-t"><td className="p-3">VLN-004</td><td className="p-3">Rate limiting bypass</td><td className="p-3">High</td><td className="p-3">API Gateway</td><td className="p-3">Open</td><td className="p-3">Dave</td></tr>
-</tbody>
-      </table></div>
+      <div className="bg-card rounded-none border shadow-sm"><Table className="w-full text-sm text-foreground">
+        <TableHeader className="bg-muted text-muted-foreground"><TableRow><TableHead className="p-3 text-left">ID</TableHead><TableHead className="p-3 text-left">Vulnerability</TableHead><TableHead className="p-3 text-left">Severity</TableHead><TableHead className="p-3 text-left">Component</TableHead><TableHead className="p-3 text-left">Status</TableHead><TableHead className="p-3 text-left">Assignee</TableHead></TableRow></TableHeader>
+        <TableBody><TableRow className="border-t"><TableCell className="p-3">VLN-001</TableCell><TableCell className="p-3">Prompt injection in chat endpoint</TableCell><TableCell className="p-3">Critical</TableCell><TableCell className="p-3">Chat API</TableCell><TableCell className="p-3">Open</TableCell><TableCell className="p-3">Alice</TableCell></TableRow>
+<TableRow className="border-t"><TableCell className="p-3">VLN-002</TableCell><TableCell className="p-3">Model output data leak</TableCell><TableCell className="p-3">High</TableCell><TableCell className="p-3">Model Server</TableCell><TableCell className="p-3">In Progress</TableCell><TableCell className="p-3">Bob</TableCell></TableRow>
+<TableRow className="border-t"><TableCell className="p-3">VLN-003</TableCell><TableCell className="p-3">Weak input sanitization</TableCell><TableCell className="p-3">Medium</TableCell><TableCell className="p-3">Input Layer</TableCell><TableCell className="p-3">Resolved</TableCell><TableCell className="p-3">Carol</TableCell></TableRow>
+<TableRow className="border-t"><TableCell className="p-3">VLN-004</TableCell><TableCell className="p-3">Rate limiting bypass</TableCell><TableCell className="p-3">High</TableCell><TableCell className="p-3">API Gateway</TableCell><TableCell className="p-3">Open</TableCell><TableCell className="p-3">Dave</TableCell></TableRow>
+</TableBody>
+      </Table></div>
     </div>);
 }

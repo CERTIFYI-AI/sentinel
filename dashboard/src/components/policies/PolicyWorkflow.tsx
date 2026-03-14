@@ -36,7 +36,7 @@ export function PolicyWorkflow({ currentStatus, onTransition, policyName }: Prop
         <div className='flex items-center justify-between mb-6'>
           {WORKFLOW_STEPS.map((step, idx) => (
             <React.Fragment key={step}>
-              <div className={`flex flex-col items-center gap-1 ${idx <= currentIdx ? 'text-[#1A6B5A]' : 'text-gray-500'}`}>
+              <div className={`flex flex-col items-center gap-1 ${idx <= currentIdx ? 'text-[#1A6B5A]' : 'text-muted-foreground'}`}>
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${idx < currentIdx ? 'bg-[#1A6B5A] text-white border-primary' : idx === currentIdx ? 'border-primary bg-[#1A6B5A]/10' : 'border-muted'}`}>
                   {STATUS_ICONS[step] || <span className='text-xs'>{idx + 1}</span>}
                 </div>
@@ -47,7 +47,7 @@ export function PolicyWorkflow({ currentStatus, onTransition, policyName }: Prop
           ))}
         </div>
         <div className='flex items-center gap-2'>
-          <span className='text-sm text-gray-500'>Current:</span>
+          <span className='text-sm text-muted-foreground'>Current:</span>
           <Badge className={STATUS_COLORS[currentStatus]}>{currentStatus.replace('_', ' ')}</Badge>
         </div>
         {availableTransitions.length > 0 && (
