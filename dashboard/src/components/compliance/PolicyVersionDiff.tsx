@@ -20,7 +20,7 @@ export function PolicyVersionDiff({ current, previous }: PolicyVersionDiffProps)
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          <div className="flex items-center justify-between text-xs text-gray-500">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>v{current.version} by {current.author}</span>
             <span>{current.updatedAt}</span>
           </div>

@@ -1,3 +1,4 @@
+import { FolderOpen, Plus, MagnifyingGlass } from '@phosphor-icons/react';
 import { useState } from "react";
 interface Props { open: boolean; onClose: () => void; }
 export default function EvidenceUploadDrawer({ open, onClose }: Props) {

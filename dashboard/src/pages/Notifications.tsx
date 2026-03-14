@@ -1,3 +1,4 @@
+import { Bell, Plus, MagnifyingGlass } from '@phosphor-icons/react';
 import {useState} from "react";
 import {Bell,AlertTriangle,Info,CheckCircle2,XCircle,Shield,Clock,Check,Trash2,Filter} from "lucide-react";
 import {Card,CardContent} from "@/components/ui/card";
@@ -18,7 +19,7 @@ const initialNotifications:Notification[] = [
 ];
 
 const typeIcon = (t:string) => {
-  switch(t){case "critical":return <XCircle size={16} className="text-red-500"/>;case "warning":return <AlertTriangle size={16} className="text-amber-500"/>;case "success":return <CheckCircle2 size={16} className="text-emerald-500"/>;default:return <Info size={16} className="text-blue-500"/>;}
+  switch(t){case "critical":return <XCircle size={16} className="text-red-500"/>;case "warning":return <AlertTriangle size={16} className="text-amber-500"/>;case "success":return <CheckCircle2 size={16} className="text-emerald-500"/>;default:return <Info size={16} className="text-emerald-500"/>;}
 };
 
 export default function Notifications(){
@@ -33,19 +34,19 @@ export default function Notifications(){
     <div className="p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="relative"><Bell size={24} className="text-blue-600"/>{unreadCount>0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">{unreadCount}</span>}</div>
+          <div className="relative"><Bell size={24} className="text-emerald-600"/>{unreadCount>0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-foreground text-[10px] rounded-full flex items-center justify-center">{unreadCount}</span>}</div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Notifications</h1>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-foreground">Notifications</h1>
             <p className="text-slate-500 dark:text-slate-400 text-sm">{unreadCount} unread notifications</p>
           </div>
         </div>
-        <button onClick={markAllRead} className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"><Check size={14}/> Mark all read</button>
+        <button onClick={markAllRead} className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-none border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"><Check size={14}/> Mark all read</button>
       </div>
 
       <div className="flex items-center gap-3 mb-4">
         <Filter size={14} className="text-slate-400"/>
         {["all","unread","critical","warning","info","success"].map(t => (
-          <button key={t} onClick={()=>setFilterType(t)} className={`px-3 py-1.5 text-xs rounded-full capitalize ${filterType===t?"bg-blue-600 text-white":"bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"}`}>{t}</button>
+          <button key={t} onClick={()=>setFilterType(t)} className={`px-3 py-1.5 text-xs rounded-full capitalize ${filterType===t?"bg-emerald-600 text-foreground":"bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"}`}>{t}</button>
         ))}
       </div>
 
@@ -57,8 +58,8 @@ export default function Notifications(){
                 <div className="mt-0.5">{typeIcon(n.type)}</div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <h3 className={`text-sm font-medium ${!n.read?"text-slate-900 dark:text-white":"text-slate-600 dark:text-slate-400"}`}>{n.title}</h3>
-                    {!n.read && <span className="w-2 h-2 rounded-full bg-blue-500"/>}
+                    <h3 className={`text-sm font-medium ${!n.read?"text-slate-900 dark:text-foreground":"text-slate-600 dark:text-slate-400"}`}>{n.title}</h3>
+                    {!n.read && <span className="w-2 h-2 rounded-full bg-emerald-600"/>}
                   </div>
                   <p className="text-xs text-slate-500 mt-1">{n.message}</p>
                   <div className="flex items-center gap-3 mt-2 text-xs text-slate-400">

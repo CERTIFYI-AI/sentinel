@@ -1,3 +1,4 @@
+import { Export, Plus, MagnifyingGlass } from '@phosphor-icons/react';
 // dashboard/src/pages/ciso/BoardReport.tsx
 // Board report generation page — Sprint 2 #14
 // CONFIG -> LOADING -> PREVIEW state machine, PDF export via postBlob()
@@ -56,11 +57,11 @@ function ConfigStep({
         </p>
       </div>
 
-      <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 space-y-4">
+      <div className="rounded-none border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 space-y-4">
         <div>
           <label className="font-outfit text-sm font-medium text-[hsl(var(--foreground))]">Reporting Period</label>
           <select
-            className="mt-1 w-full font-outfit text-sm rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-[hsl(var(--foreground))]"
+            className="mt-1 w-full font-outfit text-sm rounded-none border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-[hsl(var(--foreground))]"
             value={config.period}
             onChange={(e) => onChange({ period: e.target.value as ReportConfig["period"] })}
           >
@@ -93,7 +94,7 @@ function ConfigStep({
 
       <button
         onClick={onGenerate}
-        className="w-full font-outfit text-sm font-medium py-3 rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-opacity"
+        className="w-full font-outfit text-sm font-medium py-3 rounded-none bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-opacity"
       >
         Generate Report
       </button>
@@ -131,14 +132,14 @@ function PreviewStep({
         <div className="flex gap-3">
           <button
             onClick={onReset}
-            className="font-outfit text-sm px-4 py-2 rounded-md border border-[hsl(var(--border))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors"
+            className="font-outfit text-sm px-4 py-2 rounded-none border border-[hsl(var(--border))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors"
           >
             Reconfigure
           </button>
           <button
             onClick={onExport}
             disabled={exporting}
-            className="font-outfit text-sm px-4 py-2 rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-opacity disabled:opacity-50"
+            className="font-outfit text-sm px-4 py-2 rounded-none bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             {exporting ? "Exporting..." : "Export PDF"}
           </button>
@@ -146,13 +147,13 @@ function PreviewStep({
       </div>
 
       {/* Executive Summary */}
-      <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6">
+      <div className="rounded-none border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6">
         <h3 className="font-outfit text-lg font-semibold text-[hsl(var(--foreground))] mb-3">Executive Summary</h3>
         <p className="font-outfit text-sm text-[hsl(var(--muted-foreground))] leading-relaxed">{data.executiveSummary}</p>
       </div>
 
       {/* Overall score */}
-      <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 text-center">
+      <div className="rounded-none border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 text-center">
         <p className="font-outfit text-sm text-[hsl(var(--muted-foreground))]">Overall Posture Score ({data.period})</p>
         <p className="font-outfit text-5xl font-bold text-[hsl(var(--primary))] mt-2">{data.overallScore.toFixed(1)}</p>
         <p className="font-outfit text-xs text-[hsl(var(--muted-foreground))] mt-1">
@@ -162,7 +163,7 @@ function PreviewStep({
 
       {/* Sections */}
       {data.sections.map((section, i) => (
-        <div key={i} className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6">
+        <div key={i} className="rounded-none border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-outfit text-lg font-semibold text-[hsl(var(--foreground))]">{section.title}</h3>
             {section.score !== undefined && (
@@ -175,7 +176,7 @@ function PreviewStep({
 
       {/* Top risks */}
       {data.topRisks.length > 0 && (
-        <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6">
+        <div className="rounded-none border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6">
           <h3 className="font-outfit text-lg font-semibold text-[hsl(var(--foreground))] mb-4">Top Risks & Recommendations</h3>
           <div className="space-y-4">
             {data.topRisks.map((risk) => (
@@ -264,12 +265,12 @@ export default function BoardReport() {
         />
       )}
       {state === "ERROR" && (
-        <div className="rounded-lg border border-[hsl(var(--destructive))] bg-[hsl(var(--destructive)/0.1)] p-6">
+        <div className="rounded-none border border-[hsl(var(--destructive))] bg-[hsl(var(--destructive)/0.1)] p-6">
           <h3 className="font-outfit text-lg font-semibold text-[hsl(var(--destructive))]">Report generation failed</h3>
           <p className="font-outfit text-sm text-[hsl(var(--muted-foreground))] mt-2">{errorMsg}</p>
           <button
             onClick={() => setState("CONFIG")}
-            className="mt-4 font-outfit text-sm px-4 py-2 rounded-md border border-[hsl(var(--border))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors"
+            className="mt-4 font-outfit text-sm px-4 py-2 rounded-none border border-[hsl(var(--border))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors"
           >
             Try Again
           </button>

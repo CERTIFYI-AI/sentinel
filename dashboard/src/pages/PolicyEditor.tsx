@@ -1,3 +1,4 @@
+import { FileText, Plus, MagnifyingGlass } from '@phosphor-icons/react';
 
 import { useState } from "react";
 
@@ -45,25 +46,25 @@ export default function PolicyEditor() {
     <div className="p-6">
       <div className="flex justify-between items-start mb-6">
         <div><h1 className="text-2xl font-bold text-zinc-900">Policy Editor</h1><p className="text-sm text-zinc-500 mt-1">Create and manage governance policies</p></div>
-        <button onClick={() => setShowNew(true)} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">New Policy</button>
+        <button onClick={() => setShowNew(true)} className="bg-green-600 hover:bg-green-700 text-foreground px-4 py-2 rounded-none text-sm font-medium">New Policy</button>
       </div>
 
       {showNew && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setShowNew(false)}>
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg" onClick={e => e.stopPropagation()}>
+          <div className="bg-card rounded-none shadow-xl p-6 w-full max-w-lg" onClick={e => e.stopPropagation()}>
             <h2 className="text-lg font-bold mb-4">Create New Policy</h2>
             <div className="space-y-4">
-              <div><label className="block text-xs font-medium text-zinc-600 mb-1">Policy Name *</label><input value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm" placeholder="e.g. Data Governance Policy" /></div>
-              <div><label className="block text-xs font-medium text-zinc-600 mb-1">Framework</label><select value={form.framework} onChange={e => setForm({...form, framework: e.target.value})} className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm">{Object.keys(fwColor).map(f => <option key={f}>{f}</option>)}</select></div>
-              <div><label className="block text-xs font-medium text-zinc-600 mb-1">Policy Content *</label><textarea value={form.content} onChange={e => setForm({...form, content: e.target.value})} rows={5} className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm" placeholder="Write the policy content..." /></div>
-              <div className="flex gap-3 justify-end"><button onClick={() => setShowNew(false)} className="px-4 py-2 text-sm text-zinc-600 hover:bg-zinc-100 rounded-lg">Cancel</button><button onClick={addPolicy} disabled={!form.name.trim() || !form.content.trim()} className="px-4 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg disabled:opacity-40">Create Policy</button></div>
+              <div><label className="block text-xs font-medium text-zinc-600 mb-1">Policy Name *</label><input value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full border border-zinc-300 rounded-none px-3 py-2 text-sm" placeholder="e.g. Data Governance Policy" /></div>
+              <div><label className="block text-xs font-medium text-zinc-600 mb-1">Framework</label><select value={form.framework} onChange={e => setForm({...form, framework: e.target.value})} className="w-full border border-zinc-300 rounded-none px-3 py-2 text-sm">{Object.keys(fwColor).map(f => <option key={f}>{f}</option>)}</select></div>
+              <div><label className="block text-xs font-medium text-zinc-600 mb-1">Policy Content *</label><textarea value={form.content} onChange={e => setForm({...form, content: e.target.value})} rows={5} className="w-full border border-zinc-300 rounded-none px-3 py-2 text-sm" placeholder="Write the policy content..." /></div>
+              <div className="flex gap-3 justify-end"><button onClick={() => setShowNew(false)} className="px-4 py-2 text-sm text-zinc-600 hover:bg-zinc-100 rounded-none">Cancel</button><button onClick={addPolicy} disabled={!form.name.trim() || !form.content.trim()} className="px-4 py-2 text-sm bg-green-600 hover:bg-green-700 text-foreground rounded-none disabled:opacity-40">Create Policy</button></div>
             </div>
           </div>
         </div>
       )}
 
       <div className="grid grid-cols-3 gap-6">
-        <div className="bg-white border border-zinc-200 rounded-xl">
+        <div className="bg-card border border-zinc-200 rounded-none">
           <div className="px-4 py-3 border-b border-zinc-100"><h3 className="text-sm font-semibold text-zinc-700">Policies ({policies.length})</h3></div>
           <div className="divide-y divide-zinc-50 max-h-[600px] overflow-y-auto">
             {policies.map(p => (
@@ -78,7 +79,7 @@ export default function PolicyEditor() {
           </div>
         </div>
 
-        <div className="col-span-2 bg-white border border-zinc-200 rounded-xl">
+        <div className="col-span-2 bg-white border border-zinc-200 rounded-none">
           {sel ? (
             <div>
               <div className="px-5 py-4 border-b border-zinc-100 flex justify-between items-center">
@@ -88,7 +89,7 @@ export default function PolicyEditor() {
                 </div>
                 <div className="flex gap-2">
                   {editContent !== null ? (
-                    <><button onClick={() => setEditContent(null)} className="px-3 py-1.5 text-xs text-zinc-600 hover:bg-zinc-100 rounded">Cancel</button><button onClick={saveEdit} className="px-3 py-1.5 text-xs bg-green-600 text-white rounded">Save</button></>
+                    <><button onClick={() => setEditContent(null)} className="px-3 py-1.5 text-xs text-zinc-600 hover:bg-zinc-100 rounded">Cancel</button><button onClick={saveEdit} className="px-3 py-1.5 text-xs bg-green-600 text-foreground rounded">Save</button></>
                   ) : (
                     <button onClick={() => setEditContent(sel.content)} className="px-3 py-1.5 text-xs border border-zinc-300 rounded hover:bg-zinc-50">Edit</button>
                   )}
@@ -96,9 +97,9 @@ export default function PolicyEditor() {
               </div>
               <div className="p-5">
                 {editContent !== null ? (
-                  <textarea value={editContent} onChange={e => setEditContent(e.target.value)} rows={12} className="w-full border border-zinc-300 rounded-lg px-4 py-3 text-sm font-mono" />
+                  <textarea value={editContent} onChange={e => setEditContent(e.target.value)} rows={12} className="w-full border border-zinc-300 rounded-none px-4 py-3 text-sm font-mono" />
                 ) : (
-                  <div className="bg-zinc-50 rounded-lg p-4 text-sm text-zinc-700 leading-relaxed whitespace-pre-wrap font-mono">{sel.content}</div>
+                  <div className="bg-zinc-50 rounded-none p-4 text-sm text-zinc-700 leading-relaxed whitespace-pre-wrap font-mono">{sel.content}</div>
                 )}
               </div>
             </div>

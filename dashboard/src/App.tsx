@@ -25,6 +25,8 @@ const ComplianceDashboard = lazy(() => import('./pages/ComplianceDashboard'));
 const PolicyManagement = lazy(() => import('./pages/PolicyManagement'));
 const RiskMatrix = lazy(() => import('./pages/RiskMatrix'));
 const Overview = lazy(() => import('./pages/Overview'));
+const Policies = lazy(() => import('./pages/Policies'));
+const RiskRegister = lazy(() => import('./pages/RiskRegister'));
 const AuditLog = lazy(() => import('./pages/AuditLog'));
 const Benchmark = lazy(() => import('./pages/Benchmark'));
 const Datasets = lazy(() => import('./pages/Datasets'));
@@ -43,6 +45,7 @@ const Settings = lazy(() => import('./pages/Settings'));
 const Vendors = lazy(() => import('./pages/Vendors'));
 const Login = lazy(() => import('./pages/Login'));
 const Signup = lazy(() => import('./pages/Signup'));
+
 const TrustEngineDashboard = lazy(() => import('./pages/trust-engine/TrustEngineDashboard'));
 const LiveTraceFeed = lazy(() => import('./pages/trust-engine/LiveTraceFeed'));
 const GuardrailActivity = lazy(() => import('./pages/trust-engine/GuardrailActivity'));
@@ -63,14 +66,14 @@ const HITLReviewCenter = lazy(() => import('./pages/hitl/HITLReviewCenter'));
 const HITLDetail = lazy(() => import('./pages/hitl/HITLDetail'));
 const BiasAuditWizard = lazy(() => import('./pages/bias-audits/BiasAuditWizard'));
 const BiasAuditResults = lazy(() => import('./pages/bias-audits/BiasAuditResults'));
-const ControlsList = lazy(() => import('./pages/controls/ControlsList'));
+const ControlsList = lazy(() => import('./pages/Controls'));
 const ControlDetail = lazy(() => import('./pages/controls/ControlDetail'));
 const DatasetRegistry = lazy(() => import('./pages/datasets/DatasetRegistry'));
 const DatasetDetail = lazy(() => import('./pages/datasets/DatasetDetail'));
 const EvidenceSyncEngine = lazy(() => import('./pages/evidence/EvidenceSyncEngine'));
 const RegRadar = lazy(() => import('./pages/governance/RegRadar'));
 const RegDetail = lazy(() => import('./pages/governance/RegDetail'));
-const Frameworks = lazy(() => import('./pages/governance/Frameworks'));
+const Frameworks = lazy(() => import('./pages/Frameworks'));
 
 function Loading() {
   return (
@@ -90,58 +93,24 @@ function Loading() {
  */
 function AuthenticatedLayout() {
   const tenantId = useAuthStore((s) => s.user?.tenantId ?? 'default');
+
   useRealtimeEvents({
     tenantId,
     notifyPrefixes: ['hitl', 'security', 'compliance', 'bias_audit', 'approval'],
   });
+
   useRealtimeInvalidation();
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar />
-      <div className="flex-1 flex flex-col overflow-auto">
+      <div className="flex-1 flex flex-col overflow-hidden">
         <TopHeader />
         <main className="flex-1 overflow-auto">
           <Suspense fallback={<Loading />}>
             <Routes>
               <Route path="/" element={<Navigate to="/overview" replace />} />
               <Route path="/overview" element={<Overview />} />
-
-              {/* Governance */}
-              <Route path="/controls" element={<Navigate to="/compliance/controls" replace />} />
-              <Route path="/frameworks" element={<Frameworks />} />
-              <Route path="/reg-radar" element={<RegRadar />} />
-
-              {/* AI Inventory */}
-              <Route path="/agents" element={<AgentDiscovery />} />
-              <Route path="/agents/shadow-ai" element={<ShadowAI />} />
-              <Route path="/agents/:id" element={<AgentDetail />} />
-              <Route path="/datasets" element={<DatasetRegistry />} />
-              <Route path="/datasets/:id" element={<DatasetDetail />} />
-              <Route path="/vendors" element={<VendorRegistry />} />
-              <Route path="/vendors/:id" element={<VendorDetail />} />
-              <Route path="/vendors/:id/questionnaire" element={<VendorQuestionnaire />} />
-
-              {/* Risk & Compliance */}
-              <Route path="/bias-audits" element={<BiasAuditWizard />} />
-              <Route path="/bias-audits/:id" element={<BiasAuditResults />} />
-              <Route path="/evidence-sync" element={<EvidenceSyncEngine />} />
-              <Route path="/hitl" element={<HITLReviewCenter />} />
-              <Route path="/hitl/:id" element={<HITLDetail />} />
-              <Route path="/trust-engine" element={<TrustEngineDashboard />} />
-              <Route path="/trust-engine/guardrails" element={<GuardrailActivity />} />
-              <Route path="/trust-engine/traces" element={<LiveTraceFeed />} />
-              <Route path="/trust-engine/costs" element={<CostTokenDashboard />} />
-              <Route path="/trust-engine/fallbacks" element={<FallbackLog />} />
-              <Route path="/trust-engine/tools" element={<ToolCallMonitor />} />
-              <Route path="/trust-engine/config" element={<TrustConfig />} />
-
-              {/* Administration */}
-              <Route path="/access-control" element={<RBACDashboard />} />
-              <Route path="/access-control/roles" element={<RoleManager />} />
-              <Route path="/access-control/users" element={<UserManager />} />
-
-              {/* Security */}
               <Route path="/security" element={<SecurityHome />} />
               <Route path="/security/overview" element={<SecurityOverview />} />
               <Route path="/security/threats" element={<ThreatFeed />} />
@@ -158,36 +127,26 @@ function AuthenticatedLayout() {
               <Route path="/security/campaigns" element={<ThreatFeed />} />
               <Route path="/security/frameworks" element={<SecurityHome />} />
               <Route path="/security/strategy" element={<SecurityHome />} />
-
-              {/* Evals */}
               <Route path="/evals" element={<QualityMetrics />} />
               <Route path="/evals/quality-metrics" element={<QualityMetrics />} />
               <Route path="/evals/techniques" element={<EvalTechniques />} />
               <Route path="/evals/results" element={<QualityMetrics />} />
               <Route path="/evals/benchmark" element={<Benchmark />} />
               <Route path="/evals/datasets" element={<Datasets />} />
-
-              {/* Compliance */}
               <Route path="/compliance" element={<ComplianceDashboard />} />
               <Route path="/compliance/controls" element={<ComplianceControls />} />
-              <Route path="/compliance/controls/:id" element={<ControlDetail />} />
               <Route path="/compliance/evidence" element={<EvidenceHub />} />
               <Route path="/compliance/gap-analysis" element={<GapAnalysis />} />
-              <Route path="/compliance/policies" element={<PolicyManagement />} />
-
-              {/* Risk */}
-              <Route path="/risk" element={<RiskMatrix />} />
+              <Route path="/compliance/policies" element={<Policies />} />
+                <Route path="/policies" element={<Policies />} />
+              <Route path="/risk" element={<RiskRegister />} />
               <Route path="/risk/matrix" element={<RiskMatrix />} />
               <Route path="/risk/vendors" element={<Vendors />} />
               <Route path="/risk/incidents" element={<IncidentLog />} />
               <Route path="/risk/remediation" element={<Remediation />} />
-
-              {/* Models */}
               <Route path="/models" element={<ModelInventory />} />
               <Route path="/models/inventory" element={<ModelInventory />} />
               <Route path="/models/lifecycle" element={<ModelLifecycle />} />
-
-              {/* Other */}
               <Route path="/audit-log" element={<AuditLog />} />
               <Route path="/evidence-vault" element={<EvidenceVault />} />
               <Route path="/export" element={<ExportCenter />} />
@@ -196,6 +155,38 @@ function AuthenticatedLayout() {
               <Route path="/policy-editor" element={<PolicyEditor />} />
               <Route path="/remediation-tracker" element={<RemediationTracker />} />
               <Route path="/settings" element={<Settings />} />
+
+              {/* Governance */}
+              <Route path="/controls" element={<Navigate to="/compliance/controls" replace />} />
+              <Route path="/frameworks" element={<Frameworks />} />
+              <Route path="/reg-radar" element={<RegRadar />} />
+              {/* AI Inventory */}
+              <Route path="/agents" element={<AgentDiscovery />} />
+              <Route path="/agents/shadow-ai" element={<ShadowAI />} />
+              <Route path="/agents/:id" element={<AgentDetail />} />
+              <Route path="/datasets" element={<DatasetRegistry />} />
+              <Route path="/datasets/:id" element={<DatasetDetail />} />
+              <Route path="/vendors" element={<VendorRegistry />} />
+              <Route path="/vendors/:id" element={<VendorDetail />} />
+              <Route path="/vendors/:id/questionnaire" element={<VendorQuestionnaire />} />
+              {/* Risk & Compliance */}
+              <Route path="/bias-audits" element={<BiasAuditWizard />} />
+              <Route path="/bias-audits/:id" element={<BiasAuditResults />} />
+              <Route path="/evidence-sync" element={<EvidenceSyncEngine />} />
+              <Route path="/hitl" element={<HITLReviewCenter />} />
+              <Route path="/hitl/:id" element={<HITLDetail />} />
+              <Route path="/trust-engine" element={<TrustEngineDashboard />} />
+              <Route path="/trust-engine/guardrails" element={<GuardrailActivity />} />
+              <Route path="/trust-engine/traces" element={<LiveTraceFeed />} />
+              <Route path="/trust-engine/costs" element={<CostTokenDashboard />} />
+              <Route path="/trust-engine/fallbacks" element={<FallbackLog />} />
+              <Route path="/trust-engine/tools" element={<ToolCallMonitor />} />
+              <Route path="/trust-engine/config" element={<TrustConfig />} />
+              {/* Administration */}
+              <Route path="/access-control" element={<RBACDashboard />} />
+              <Route path="/access-control/roles" element={<RoleManager />} />
+              <Route path="/access-control/users" element={<UserManager />} />
+              <Route path="/compliance/controls/:id" element={<ControlDetail />} />
 
               <Route path="*" element={<Navigate to="/overview" replace />} />
             </Routes>

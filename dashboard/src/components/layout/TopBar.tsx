@@ -29,15 +29,15 @@ export function TopBar() {
       <header className="h-12 border-b border-border bg-background flex items-center px-4 gap-3 shrink-0">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-1 text-sm">
-          <button onClick={() => navigate("/overview")} className="text-gray-500 hover:text-foreground transition-colors">Proxy</button>
-          <ChevronRight className="h-3.5 w-3.5 text-gray-500" />
+          <button onClick={() => navigate("/overview")} className="text-muted-foreground hover:text-foreground transition-colors">Proxy</button>
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="font-medium text-foreground">{currentPage}</span>
         </nav>
 
         {/* Search */}
         <button
           onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
-          className="hidden md:flex items-center gap-2 flex-1 max-w-md mx-auto bg-muted/50 rounded-md px-3 py-1.5 text-sm text-gray-500 hover:bg-muted transition-colors"
+          className="hidden md:flex items-center gap-2 flex-1 max-w-md mx-auto bg-muted/50 rounded-none px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted transition-colors"
         >
           <Search className="h-3.5 w-3.5" />
           <span>Search audits, requests, models...</span>
@@ -60,7 +60,7 @@ export function TopBar() {
           {/* Live indicator */}
           <div className="hidden md:flex items-center gap-1.5 px-2">
             <span className="h-2 w-2 rounded-full bg-[hsl(136,45%,38%)] animate-pulse" />
-            <span className="text-xs text-gray-500">Live</span>
+            <span className="text-xs text-muted-foreground">Live</span>
           </div>
 
           {/* Theme toggle */}

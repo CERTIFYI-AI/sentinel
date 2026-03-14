@@ -8,5 +8,5 @@ const cfg: Record<string, { bg: string; text: string; label: string }> = {
 };
 export function ProviderBadge({ provider, size = "sm" }: { provider: string; size?: "sm" | "md" }) {
   const c = cfg[provider] || cfg.custom;
-  return <span className={`inline-flex items-center rounded-md px-2 py-0.5 font-medium ${c.bg} ${c.text} ${size === "md" ? "text-xs" : "text-[10px]"}`}>{c.label}</span>;
+  return <span className={`inline-flex items-center rounded-none px-2 py-0.5 font-medium ${c.bg} ${c.text} ${size === "md" ? "text-xs" : "text-[10px]"}`}>{c.label}</span>;
 }

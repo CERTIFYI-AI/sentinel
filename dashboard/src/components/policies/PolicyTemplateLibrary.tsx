@@ -45,13 +45,13 @@ export function PolicyTemplateLibrary({ templates, onInstantiate, loading }: Pro
       <div className='flex items-center justify-between'>
         <div>
           <h2 className='text-2xl font-bold'>Policy Template Library</h2>
-          <p className='text-gray-500'>{templates.length} templates across {Object.keys(fwCounts).length} frameworks</p>
+          <p className='text-muted-foreground'>{templates.length} templates across {Object.keys(fwCounts).length} frameworks</p>
         </div>
       </div>
 
       <div className='flex gap-4 flex-wrap'>
         <div className='relative flex-1 min-w-[200px]'>
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500">🔍</span>
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground">🔍</span>
           <Input placeholder='Search templates...' value={search} onChange={e => setSearch(e.target.value)} className='pl-10' />
         </div>
         <Select value={framework} onValueChange={setFramework}>
@@ -70,7 +70,7 @@ export function PolicyTemplateLibrary({ templates, onInstantiate, loading }: Pro
         </Select>
       </div>
 
-      <div className='text-sm text-gray-500'>{filtered.length} templates found</div>
+      <div className='text-sm text-muted-foreground'>{filtered.length} templates found</div>
 
       <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
         {filtered.map(template => (
@@ -85,14 +85,14 @@ export function PolicyTemplateLibrary({ templates, onInstantiate, loading }: Pro
               </div>
             </CardHeader>
             <CardContent>
-              <p className='text-xs text-gray-500 mb-3'>{template.description}</p>
+              <p className='text-xs text-muted-foreground mb-3'>{template.description}</p>
               <div className='flex flex-wrap gap-1 mb-3'>
                 <Badge variant='outline' className='text-xs'><span className="h-3 w-3 mr-1">🛡</span>{template.framework}</Badge>
                 <Badge variant='secondary' className='text-xs'>{template.category}</Badge>
                 <Badge variant={template.risk_level === 'high' ? 'destructive' : 'outline'} className='text-xs'>{template.risk_level}</Badge>
               </div>
               <div className='flex items-center justify-between'>
-                <span className='text-xs text-gray-500'>v{template.version}</span>
+                <span className='text-xs text-muted-foreground'>v{template.version}</span>
                 <Button size='sm' variant='outline' onClick={() => onInstantiate?.(template)}>Use Template</Button>
               </div>
             </CardContent>

@@ -1,4 +1,6 @@
+import { ShieldCheck, Plus, MagnifyingGlass } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table';
 const SCANS = [
   { name: 'GPT-4o Injection Scan', status: 'Complete', findings: 3, date: '2 hours ago', severity: 'High' },
   { name: 'Claude 3.5 Prompt Leak Test', status: 'Complete', findings: 1, date: '1 day ago', severity: 'Medium' },
@@ -14,22 +16,22 @@ const THREATS = [
 export default function SecurityHome() {
   return (
     <div className="p-6 max-w-7xl mx-auto" style={{ fontFamily: 'Outfit, Inter, system-ui, sans-serif' }}>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Security Center</h1>
+      <h1 className="text-2xl font-bold text-foreground mb-6">Security Center</h1>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         {THREATS.map((t,i) => (
-          <div key={i} className={`bg-white rounded-xl p-4 border shadow-sm`}>
-            <p className="text-sm text-gray-500">{t.type}</p>
+          <div key={i} className={`bg-white rounded-none p-4 border shadow-sm`}>
+            <p className="text-sm text-muted-foreground">{t.type}</p>
             <p className="text-2xl font-bold mt-1">{t.count}</p>
             <span className={`text-xs text-${t.color}-600`}>{t.trend === 'up' ? 'Trending up' : t.trend === 'down' ? 'Declining' : 'Stable'}</span>
           </div>
         ))}
       </div>
-      <div className="bg-white rounded-xl border shadow-sm">
+      <div className="bg-card rounded-none border shadow-sm">
         <div className="p-4 border-b"><h2 className="font-semibold">Recent Scans</h2></div>
-        <table className="w-full text-sm text-gray-900">
-          <thead className="bg-gray-50 text-gray-600"><tr><th className="p-3 text-left">Scan Name</th><th className="p-3 text-left">Status</th><th className="p-3 text-left">Findings</th><th className="p-3 text-left">Severity</th><th className="p-3 text-left">Date</th></tr></thead>
-          <tbody>{SCANS.map((s,i) => (<tr key={i} className="border-t"><td className="p-3">{s.name}</td><td className="p-3"><span className={`px-2 py-1 rounded-full text-xs ${s.status==='Complete'?'bg-green-100 text-green-700':s.status==='Running'?'bg-blue-100 text-blue-700':'bg-gray-100 text-gray-700'}`}>{s.status}</span></td><td className="p-3">{s.findings}</td><td className="p-3">{s.severity}</td><td className="p-3 text-gray-500">{s.date}</td></tr>))}</tbody>
-        </table>
+        <Table className="w-full text-sm text-foreground">
+          <TableHeader className="bg-muted text-muted-foreground"><TableRow><TableHead className="p-3 text-left">Scan Name</TableHead><TableHead className="p-3 text-left">Status</TableHead><TableHead className="p-3 text-left">Findings</TableHead><TableHead className="p-3 text-left">Severity</TableHead><TableHead className="p-3 text-left">Date</TableHead></TableRow></TableHeader>
+          <TableBody>{SCANS.map((s,i) => (<TableRow key={i} className="border-t"><TableCell className="p-3">{s.name}</TableCell><TableCell className="p-3"><span className={`px-2 py-1 rounded-full text-xs ${s.status==='Complete'?'bg-green-100 text-green-700':s.status==='Running'?'bg-blue-100 text-blue-700':'bg-muted text-foreground'}`}>{s.status}</span></TableCell><TableCell className="p-3">{s.findings}</TableCell><TableCell className="p-3">{s.severity}</TableCell><TableCell className="p-3 text-muted-foreground">{s.date}</TableCell></TableRow>))}</TableBody>
+        </Table>
       </div>
     </div>
   );

@@ -48,7 +48,7 @@ export default class ErrorBoundary extends Component<Props, State> {
               {this.state.error?.message || "An unexpected error occurred"}
             </p>
             {import.meta.env.DEV && this.state.errorInfo && (
-              <details className="text-left text-xs bg-slate-100 dark:bg-slate-800 rounded-lg p-3 max-h-40 overflow-auto">
+              <details className="text-left text-xs bg-slate-100 dark:bg-slate-800 rounded-none p-3 max-h-40 overflow-auto">
                 <summary className="cursor-pointer font-medium">Stack trace</summary>
                 <pre className="mt-2 whitespace-pre-wrap">
                   {this.state.errorInfo.componentStack}
@@ -57,7 +57,7 @@ export default class ErrorBoundary extends Component<Props, State> {
             )}
             <button
               onClick={this.handleReset}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors text-sm font-medium"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-none bg-emerald-600 text-white hover:bg-emerald-700 transition-colors text-sm font-medium"
             >
               <RefreshCw className="w-4 h-4" />
               Try again

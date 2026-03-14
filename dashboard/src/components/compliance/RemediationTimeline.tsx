@@ -1,3 +1,4 @@
+import type { BadgeVariant } from '../../lib/compliance-types';
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
 
@@ -38,7 +39,7 @@ export function RemediationTimeline({ items }: RemediationTimelineProps) {
                   <p className="text-sm font-medium">{item.title}</p>
                   <Badge variant={statusColors[item.status]} className="text-xs">{item.status.replace("_", " ")}</Badge>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   {item.framework} {item.controlId} &middot; {item.assignee} &middot; Due: {item.dueDate}
                 </p>
               </div>

@@ -1,6 +1,8 @@
+import { Buildings, Plus, MagnifyingGlass, Warning } from '@phosphor-icons/react';
 import {useState} from "react";
 import {Globe,Shield,CheckCircle2,AlertTriangle,ExternalLink,Star,Search,Plus} from "lucide-react";
 import {Card,CardContent} from "@/components/ui/card";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/table';
 
 type Vendor = {
   id:string; name:string; category:string; riskTier:"critical"|"high"|"medium"|"low";
@@ -17,7 +19,7 @@ const vendors:Vendor[] = [
   {id:"6",name:"Cohere",category:"NLP Platform",riskTier:"low",complianceScore:88,certifications:["SOC 2","GDPR"],lastAssessment:"2024-06-01",status:"approved",contactEmail:"sales@cohere.com",models:1},
 ];
 
-const tierColors:Record<string,string> = {critical:"text-red-600 bg-red-500/10",high:"text-amber-600 bg-amber-500/10",medium:"text-blue-600 bg-blue-500/10",low:"text-emerald-600 bg-emerald-500/10"};
+const tierColors:Record<string,string> = {critical:"text-red-600 bg-red-500/10",high:"text-amber-600 bg-amber-500/10",medium:"text-emerald-600 bg-emerald-600/10",low:"text-emerald-600 bg-emerald-500/10"};
 
 export default function Vendors(){
   const [search,setSearch] = useState("");
@@ -27,18 +29,18 @@ export default function Vendors(){
     <div className="p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <Globe size={24} className="text-blue-600"/>
+          <Globe size={24} className="text-emerald-600"/>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Vendor Register</h1>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-foreground">Vendor Register</h1>
             <p className="text-slate-500 dark:text-slate-400 text-sm">Third-party AI vendor compliance and risk management</p>
           </div>
         </div>
-        <button className="flex items-center gap-1.5 px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700"><Plus size={14}/> Add Vendor</button>
+        <button className="flex items-center gap-1.5 px-4 py-2 text-sm rounded-none bg-emerald-600 text-foreground hover:bg-emerald-700"><Plus size={14}/> Add Vendor</button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         {[
-          {l:"Total Vendors",v:vendors.length,c:"text-blue-600"},
+          {l:"Total Vendors",v:vendors.length,c:"text-emerald-600"},
           {l:"Critical Tier",v:vendors.filter(v=>v.riskTier==="critical").length,c:"text-red-600"},
           {l:"Approved",v:vendors.filter(v=>v.status==="approved").length,c:"text-emerald-600"},
           {l:"Avg Compliance",v:Math.round(vendors.reduce((s,v)=>s+v.complianceScore,0)/vendors.length)+"%",c:"text-purple-600"},
@@ -49,40 +51,40 @@ export default function Vendors(){
 
       <div className="relative max-w-sm mb-4">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
-        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search vendors..." className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"/>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search vendors..." className="w-full pl-9 pr-3 py-2 text-sm rounded-none border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-foreground"/>
       </div>
 
       <Card>
         <CardContent className="p-0">
-          <table className="w-full text-sm text-gray-900">
-            <thead><tr className="border-b border-slate-200 dark:border-slate-700">
+          <Table className="w-full text-sm text-foreground">
+            <TableHeader><TableRow className="border-b border-slate-200 dark:border-slate-700">
               {["Vendor","Risk Tier","Compliance","Certifications","Status","Models","Last Assessment",""].map(h=>(
-                <th key={h} className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">{h}</th>
+                <TableHead key={h} className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">{h}</TableHead>
               ))}
-            </tr></thead>
-            <tbody>{filtered.map(v=>(
-              <tr key={v.id} className="border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-900/50">
-                <td className="px-4 py-3">
-                  <div className="font-medium text-slate-900 dark:text-white">{v.name}</div>
+            </TableRow></TableHeader>
+            <TableBody>{filtered.map(v=>(
+              <TableRow key={v.id} className="border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-900/50">
+                <TableCell className="px-4 py-3">
+                  <div className="font-medium text-slate-900 dark:text-foreground">{v.name}</div>
                   <div className="text-xs text-slate-500">{v.category}</div>
-                </td>
-                <td className="px-4 py-3"><span className={`px-2 py-0.5 text-xs rounded-full font-medium capitalize ${tierColors[v.riskTier]}`}>{v.riskTier}</span></td>
-                <td className="px-4 py-3">
+                </TableCell>
+                <TableCell className="px-4 py-3"><span className={`px-2 py-0.5 text-xs rounded-full font-medium capitalize ${tierColors[v.riskTier]}`}>{v.riskTier}</span></TableCell>
+                <TableCell className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     <div className="w-16 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                       <div className={`h-full rounded-full ${v.complianceScore>=90?"bg-emerald-500":v.complianceScore>=80?"bg-amber-500":"bg-red-500"}`} style={{width:`${v.complianceScore}%`}}/>
                     </div>
                     <span className="text-xs font-mono">{v.complianceScore}%</span>
                   </div>
-                </td>
-                <td className="px-4 py-3"><div className="flex flex-wrap gap-1">{v.certifications.map(c=><span key={c} className="px-1.5 py-0.5 text-[10px] rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">{c}</span>)}</div></td>
-                <td className="px-4 py-3"><span className={`px-2 py-0.5 text-xs rounded-full ${v.status==="approved"?"bg-emerald-500/10 text-emerald-600":v.status==="under-review"?"bg-amber-500/10 text-amber-600":"bg-red-500/10 text-red-600"}`}>{v.status}</span></td>
-                <td className="px-4 py-3 font-mono text-center">{v.models}</td>
-                <td className="px-4 py-3 text-xs text-slate-500">{v.lastAssessment}</td>
-                <td className="px-4 py-3"><button className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800"><ExternalLink size={14} className="text-slate-400"/></button></td>
-              </tr>
-            ))}</tbody>
-          </table>
+                </TableCell>
+                <TableCell className="px-4 py-3"><div className="flex flex-wrap gap-1">{v.certifications.map(c=><span key={c} className="px-1.5 py-0.5 text-[10px] rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">{c}</span>)}</div></TableCell>
+                <TableCell className="px-4 py-3"><span className={`px-2 py-0.5 text-xs rounded-full ${v.status==="approved"?"bg-emerald-500/10 text-emerald-600":v.status==="under-review"?"bg-amber-500/10 text-amber-600":"bg-red-500/10 text-red-600"}`}>{v.status}</span></TableCell>
+                <TableCell className="px-4 py-3 font-mono text-center">{v.models}</TableCell>
+                <TableCell className="px-4 py-3 text-xs text-slate-500">{v.lastAssessment}</TableCell>
+                <TableCell className="px-4 py-3"><button className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800"><ExternalLink size={14} className="text-slate-400"/></button></TableCell>
+              </TableRow>
+            ))}</TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>

@@ -49,7 +49,7 @@ export function NotificationSettings() {
           </div>
           <div className="flex items-center justify-between">
             <Label>Digest frequency</Label>
-            <select className="h-9 rounded-md border border-input bg-background px-3 text-sm" value={merged.digest_frequency}
+            <select className="h-9 rounded-none border border-input bg-background px-3 text-sm" value={merged.digest_frequency}
               onChange={(e) => { const v = e.target.value as NotificationPrefs["digest_frequency"]; setLocal((p) => ({...p, digest_frequency: v})); update.mutate({digest_frequency: v}); }}>
               <option value="realtime">Realtime</option>
               <option value="hourly">Hourly</option>

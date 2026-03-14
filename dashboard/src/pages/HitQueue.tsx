@@ -1,3 +1,4 @@
+import { UserCircle, Plus, MagnifyingGlass } from '@phosphor-icons/react';
 import { useState } from "react";
 
 interface HitlItem {
@@ -28,7 +29,7 @@ const riskColors: Record<string, string> = {
 };
 
 const statusColors: Record<string, string> = {
-  pending: "bg-gray-100 text-gray-800",
+  pending: "bg-muted text-foreground",
   approved: "bg-green-100 text-green-800",
   rejected: "bg-red-100 text-red-800",
 };
@@ -50,8 +51,8 @@ export default function HitQueue() {
     <div className="p-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">HITL Queue</h1>
-          <p className="text-gray-500 dark:text-gray-400">Human-in-the-loop review for flagged AI outputs</p>
+          <h1 className="text-2xl font-bold text-foreground dark:text-foreground">HITL Queue</h1>
+          <p className="text-muted-foreground dark:text-muted-foreground">Human-in-the-loop review for flagged AI outputs</p>
         </div>
         <span className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
           {pendingCount} pending review
@@ -61,7 +62,7 @@ export default function HitQueue() {
       <div className="flex gap-2 mb-4">
         {["all", "pending", "approved", "rejected"].map(f => (
           <button key={f} onClick={() => setFilter(f)}
-            className={`px-3 py-1 rounded text-sm capitalize ${filter === f ? "bg-green-600 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"}`}>
+            className={`px-3 py-1 rounded text-sm capitalize ${filter === f ? "bg-green-600 text-foreground" : "bg-muted dark:bg-card text-foreground dark:text-gray-300"}`}>
             {f}
           </button>
         ))}
@@ -71,49 +72,49 @@ export default function HitQueue() {
         <div className="lg:col-span-2 space-y-3">
           {filtered.map(item => (
             <div key={item.id} onClick={() => setSelected(item)}
-              className={`border rounded-lg p-4 cursor-pointer transition hover:shadow-md ${
-                selected?.id === item.id ? "border-green-500 bg-green-50 dark:bg-green-900/20" : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
+              className={`border rounded-none p-4 cursor-pointer transition hover:shadow-md ${
+                selected?.id === item.id ? "border-green-500 bg-green-50 dark:bg-green-900/20" : "border-border dark:border-border bg-white dark:bg-background"
               }`}>
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-sm text-gray-500">{item.id}</span>
+                  <span className="font-mono text-sm text-muted-foreground">{item.id}</span>
                   <span className={`px-2 py-0.5 rounded text-xs font-medium ${riskColors[item.riskLevel]}`}>{item.riskLevel}</span>
                   <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[item.status]}`}>{item.status}</span>
                 </div>
-                <span className="text-xs text-gray-400">{item.timestamp}</span>
+                <span className="text-xs text-muted-foreground">{item.timestamp}</span>
               </div>
-              <p className="text-sm font-medium text-gray-900 dark:text-white">{item.flagReason}</p>
-              <p className="text-xs text-gray-500 mt-1">Model: {item.model}</p>
+              <p className="text-sm font-medium text-foreground dark:text-foreground">{item.flagReason}</p>
+              <p className="text-xs text-muted-foreground mt-1">Model: {item.model}</p>
             </div>
           ))}
         </div>
 
-        <div className="border rounded-lg p-4 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+        <div className="border rounded-none p-4 bg-white dark:bg-background border-border dark:border-border">
           {selected ? (
             <div>
-              <h3 className="font-bold text-lg mb-3 text-gray-900 dark:text-white">Review: {selected.id}</h3>
+              <h3 className="font-bold text-lg mb-3 text-foreground dark:text-foreground">Review: {selected.id}</h3>
               <div className="space-y-3 text-sm">
-                <div><span className="font-medium text-gray-500">Model:</span> <span className="text-gray-900 dark:text-white">{selected.model}</span></div>
-                <div><span className="font-medium text-gray-500">Risk:</span> <span className={`px-2 py-0.5 rounded text-xs ${riskColors[selected.riskLevel]}`}>{selected.riskLevel}</span></div>
-                <div><span className="font-medium text-gray-500">Flag Reason:</span> <span className="text-gray-900 dark:text-white">{selected.flagReason}</span></div>
-                <div className="border-t pt-3 dark:border-gray-700">
-                  <p className="font-medium text-gray-500 mb-1">Input:</p>
-                  <p className="bg-gray-50 dark:bg-gray-800 p-2 rounded text-gray-900 dark:text-gray-200">{selected.input}</p>
+                <div><span className="font-medium text-muted-foreground">Model:</span> <span className="text-foreground dark:text-foreground">{selected.model}</span></div>
+                <div><span className="font-medium text-muted-foreground">Risk:</span> <span className={`px-2 py-0.5 rounded text-xs ${riskColors[selected.riskLevel]}`}>{selected.riskLevel}</span></div>
+                <div><span className="font-medium text-muted-foreground">Flag Reason:</span> <span className="text-foreground dark:text-foreground">{selected.flagReason}</span></div>
+                <div className="border-t pt-3 dark:border-border">
+                  <p className="font-medium text-muted-foreground mb-1">Input:</p>
+                  <p className="bg-muted dark:bg-card p-2 rounded text-foreground dark:text-gray-200">{selected.input}</p>
                 </div>
-                <div className="border-t pt-3 dark:border-gray-700">
-                  <p className="font-medium text-gray-500 mb-1">Output:</p>
-                  <p className="bg-gray-50 dark:bg-gray-800 p-2 rounded text-gray-900 dark:text-gray-200">{selected.output}</p>
+                <div className="border-t pt-3 dark:border-border">
+                  <p className="font-medium text-muted-foreground mb-1">Output:</p>
+                  <p className="bg-muted dark:bg-card p-2 rounded text-foreground dark:text-gray-200">{selected.output}</p>
                 </div>
                 {selected.status === "pending" && (
                   <div className="flex gap-2 pt-3">
-                    <button onClick={() => handleAction(selected.id, "approved")} className="flex-1 bg-green-600 text-white py-2 rounded hover:bg-green-700">Approve</button>
-                    <button onClick={() => handleAction(selected.id, "rejected")} className="flex-1 bg-red-600 text-white py-2 rounded hover:bg-red-700">Reject</button>
+                    <button onClick={() => handleAction(selected.id, "approved")} className="flex-1 bg-green-600 text-foreground py-2 rounded hover:bg-green-700">Approve</button>
+                    <button onClick={() => handleAction(selected.id, "rejected")} className="flex-1 bg-red-600 text-foreground py-2 rounded hover:bg-red-700">Reject</button>
                   </div>
                 )}
               </div>
             </div>
           ) : (
-            <div className="text-center text-gray-400 py-12">
+            <div className="text-center text-muted-foreground py-12">
               <p className="text-lg">Select an item to review</p>
               <p className="text-sm mt-1">Click on a flagged output from the list</p>
             </div>

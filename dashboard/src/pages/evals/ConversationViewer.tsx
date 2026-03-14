@@ -1,3 +1,4 @@
+import { ChartBar, Plus, MagnifyingGlass } from '@phosphor-icons/react';
 import { useState, useMemo } from "react";
 interface Message { role: "user"|"assistant"|"system"; content: string; }
 export default function ConversationViewer() {

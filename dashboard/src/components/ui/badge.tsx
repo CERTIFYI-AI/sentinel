@@ -1,9 +1,16 @@
-// dashboard/src/components/ui/Badge.tsx
-import React from "react";
-import { clsx } from "clsx";
 
-type BadgeVariant = "healthy"|"degraded"|"critical"|"none"|"regen"|"upgrade"|"hitl"|"blocked"|"closed"|"halfopen"|"open"|"mandatory"|"certifiable"|"voluntary"|"policy"|"technical"|"active"|"inactive"|"error"|"pending"|"revoked"|"soon"|"high"|"medium"|"low"|"admin"|"reviewer"|"api"|"connected"|"disconnected";
-type BadgeSize = "sm"|"md"|"lg";
+import React from 'react';
+import { clsx } from 'clsx';
+
+export type BadgeVariant =
+  | 'healthy' | 'degraded' | 'critical' | 'unknown'
+  | 'passing' | 'failing' | 'not_tested' | 'not_applicable'
+  | 'open' | 'mitigated' | 'accepted' | 'closed'
+  | 'draft' | 'active' | 'archived' | 'under_review'
+  | 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning'
+  | 'low' | 'medium' | 'high';
+
+export type BadgeSize = 'sm' | 'md';
 
 interface BadgeProps {
   variant?: BadgeVariant;
@@ -13,58 +20,50 @@ interface BadgeProps {
   className?: string;
 }
 
-const variantStyles: Record<BadgeVariant, string> = {
-  healthy: "bg-[hsl(var(--trust-high-bg))] text-[hsl(var(--trust-high))] border border-[hsl(var(--trust-high))]",
-  degraded: "bg-[hsl(var(--trust-medium-bg))] text-[hsl(var(--trust-medium))] border border-[hsl(var(--trust-medium))]",
-  critical: "bg-[hsl(var(--trust-low-bg))] text-[hsl(var(--trust-low))] border border-[hsl(var(--trust-low))]",
-  none: "bg-[hsl(var(--tag-zinc-bg))] text-[hsl(var(--tag-zinc))] border border-[hsl(var(--tag-zinc-border))]",
-  regen: "bg-[hsl(var(--info-bg))] text-[hsl(var(--int-regen))] border border-[hsl(var(--int-regen))]",
-  upgrade: "bg-[hsl(var(--warning-bg))] text-[hsl(var(--int-upgrade))] border border-[hsl(var(--int-upgrade))]",
-  hitl: "bg-[hsl(var(--trust-low-bg))] text-[hsl(var(--int-hitl))] border border-[hsl(var(--int-hitl))]",
-  blocked: "bg-[hsl(var(--tag-purple-bg))] text-[hsl(var(--int-blocked))] border border-[hsl(var(--int-blocked))]",
-  closed: "bg-[hsl(var(--success-bg))] text-[hsl(var(--success))] border border-[hsl(var(--success))]",
-  halfopen: "bg-[hsl(var(--warning-bg))] text-[hsl(var(--warning))] border border-[hsl(var(--warning))]",
-  open: "bg-[hsl(var(--trust-low-bg))] text-[hsl(var(--destructive))] border border-[hsl(var(--destructive))]",
-  mandatory: "bg-[hsl(var(--tag-red-bg))] text-[hsl(var(--tag-red))] border border-[hsl(var(--tag-red-border))]",
-  certifiable: "bg-[hsl(var(--tag-blue-bg))] text-[hsl(var(--tag-blue))] border border-[hsl(var(--tag-blue-border))]",
-  voluntary: "bg-[hsl(var(--tag-green-bg))] text-[hsl(var(--tag-green))] border border-[hsl(var(--tag-green-border))]",
-  policy: "bg-[hsl(var(--tag-zinc-bg))] text-[hsl(var(--tag-zinc))] border border-[hsl(var(--tag-zinc-border))]",
-  technical: "bg-[hsl(var(--tag-zinc-bg))] text-[hsl(var(--tag-zinc))] border border-[hsl(var(--tag-zinc-border))]",
-  active: "bg-[hsl(var(--success-bg))] text-[hsl(var(--success))] border border-[hsl(var(--success))]",
-  inactive: "bg-[hsl(var(--tag-zinc-bg))] text-[hsl(var(--tag-zinc))] border border-[hsl(var(--tag-zinc-border))]",
-  error: "bg-[hsl(var(--destructive-bg))] text-[hsl(var(--destructive))] border border-[hsl(var(--destructive))]",
-  pending: "bg-[hsl(var(--info-bg))] text-[hsl(var(--info))] border border-[hsl(var(--info))]",
-  revoked: "bg-[hsl(var(--destructive-bg))] text-[hsl(var(--destructive))] border border-[hsl(var(--destructive))] line-through",
-  soon: "bg-[hsl(var(--tag-zinc-bg))] text-[hsl(var(--tag-zinc))]/70 border border-[hsl(var(--tag-zinc-border))]",
-  high: "bg-[hsl(var(--tag-red-bg))] text-[hsl(var(--tag-red))] border border-[hsl(var(--tag-red-border))]",
-  medium: "bg-[hsl(var(--tag-amber-bg))] text-[hsl(var(--tag-amber))] border border-[hsl(var(--tag-amber-border))]",
-  low: "bg-[hsl(var(--tag-zinc-bg))] text-[hsl(var(--tag-zinc))] border border-[hsl(var(--tag-zinc-border))]",
-  admin: "bg-[hsl(var(--tag-green-bg))] text-[hsl(var(--tag-green))] border border-[hsl(var(--tag-green-border))]",
-  reviewer: "bg-[hsl(var(--tag-blue-bg))] text-[hsl(var(--tag-blue))] border border-[hsl(var(--tag-blue-border))]",
-  api: "bg-[hsl(var(--tag-zinc-bg))] text-[hsl(var(--tag-zinc))] border border-[hsl(var(--tag-zinc-border))]",
-  connected: "bg-[hsl(var(--success-bg))] text-[hsl(var(--success))] border border-[hsl(var(--success))]",
-  disconnected: "bg-[hsl(var(--tag-zinc-bg))] text-[hsl(var(--tag-zinc))] border border-[hsl(var(--tag-zinc-border))]",
+const variantStyles: Record<string, string> = {
+  healthy:       "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30",
+  passing:       "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30",
+  active:        "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30",
+  mitigated:     "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30",
+  success:       "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30",
+  closed:        "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30",
+  degraded:      "bg-yellow-500/10 text-yellow-400 border border-yellow-500/30",
+  warning:       "bg-yellow-500/10 text-yellow-400 border border-yellow-500/30",
+  medium:        "bg-yellow-500/10 text-yellow-400 border border-yellow-500/30",
+  under_review:  "bg-yellow-500/10 text-yellow-400 border border-yellow-500/30",
+  accepted:      "bg-yellow-500/10 text-yellow-400 border border-yellow-500/30",
+  critical:      "bg-red-500/10 text-red-400 border border-red-500/30",
+  failing:       "bg-red-500/10 text-red-400 border border-red-500/30",
+  destructive:   "bg-red-500/10 text-red-400 border border-red-500/30",
+  high:          "bg-red-500/10 text-red-400 border border-red-500/30",
+  open:          "bg-red-500/10 text-red-400 border border-red-500/30",
+  unknown:       "bg-zinc-500/10 text-zinc-400 border border-zinc-500/30",
+  not_tested:    "bg-zinc-500/10 text-zinc-400 border border-zinc-500/30",
+  not_applicable:"bg-zinc-500/10 text-zinc-400 border border-zinc-500/30",
+  archived:      "bg-zinc-500/10 text-zinc-400 border border-zinc-500/30",
+  draft:         "bg-zinc-500/10 text-zinc-400 border border-zinc-500/30",
+  secondary:     "bg-zinc-500/10 text-zinc-400 border border-zinc-500/30",
+  outline:       "bg-transparent text-zinc-400 border border-zinc-600",
+  default:       "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30",
+  low:           "bg-blue-500/10 text-blue-400 border border-blue-500/30",
 };
 
 const sizeStyles: Record<BadgeSize, string> = {
-  sm: "text-[10px] px-[6px] py-[1px] rounded-[3px]",
-  md: "text-[11px] px-2 py-[2px] rounded-[4px]",
-  lg: "text-[12px] px-[10px] py-[3px] rounded-[4px]",
+  sm: "text-[10px] px-1.5 py-0",
+  md: "text-xs px-2 py-0.5",
 };
 
-export function trustBadgeVariant(score: number): BadgeVariant {
-  if (score >= 0.85) return "healthy";
-  if (score >= 0.70) return "degraded";
-  return "critical";
-}
+const Badge = ({ variant = 'default', size = 'md', pulse = false, children, className }: BadgeProps) => (
+  <span className={clsx(
+    "inline-flex items-center gap-1 font-medium whitespace-nowrap rounded-sm",
+    variantStyles[variant] ?? variantStyles.default,
+    sizeStyles[size],
+    className
+  )}>
+    {pulse && <span className="w-[6px] h-[6px] rounded-full bg-current animate-pulse-dot flex-shrink-0" />}
+    {children}
+  </span>
+);
 
-export function Badge({ variant="none", size="md", children, pulse=false, className }: BadgeProps) {
-  return (
-    <span className={clsx("inline-flex items-center gap-1 font-medium whitespace-nowrap", variantStyles[variant], sizeStyles[size], className)}>
-      {pulse && <span className="w-[6px] h-[6px] rounded-full bg-current animate-pulse-dot flex-shrink-0" />}
-      {children}
-    </span>
-  );
-}
-
+export { Badge };
 export default Badge;

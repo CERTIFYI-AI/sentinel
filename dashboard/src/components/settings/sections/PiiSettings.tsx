@@ -36,14 +36,14 @@ export function PiiSettings() {
             className={`p-4 rounded border cursor-pointer ${mode === "full" ? "border-[hsl(var(--brand))] bg-[hsl(var(--brand-subtle))]" : "border-border"}`}
           >
             <div className="font-medium">Full detection (Presidio + spaCy)</div>
-            <div className="text-sm text-gray-500">18 entity types. Highest accuracy.</div>
+            <div className="text-sm text-muted-foreground">18 entity types. Highest accuracy.</div>
           </div>
           <div
             onClick={() => setMode("regex")}
             className={`p-4 rounded border cursor-pointer ${mode === "regex" ? "border-[hsl(var(--brand))] bg-[hsl(var(--brand-subtle))]" : "border-border"}`}
           >
             <div className="font-medium">Regex fallback</div>
-            <div className="text-sm text-gray-500">5 entity types. No additional dependencies.</div>
+            <div className="text-sm text-muted-foreground">5 entity types. No additional dependencies.</div>
           </div>
         </div>
       </div>
@@ -53,7 +53,7 @@ export function PiiSettings() {
             <label className="text-sm font-medium">Enabled entity types</label>
             <div className="space-x-2 text-xs">
               <button className="text-[hsl(var(--brand-foreground))]" onClick={() => setEntities([...allEntities])}>Select all</button>
-              <button className="text-gray-500" onClick={() => setEntities([])}>Deselect all</button>
+              <button className="text-muted-foreground" onClick={() => setEntities([])}>Deselect all</button>
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2">
@@ -83,7 +83,7 @@ export function PiiSettings() {
           <option value="fixed">Replace with fixed: [REDACTED]</option>
         </select>
       </div>
-      <button onClick={save} disabled={update.isPending} className="h-10 px-6 rounded-md bg-[#1A6B5A] text-white text-sm">
+      <button onClick={save} disabled={update.isPending} className="h-10 px-6 rounded-none bg-[#1A6B5A] text-white text-sm">
         {update.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save PII Settings"}
       </button>
     </div>

@@ -1,5 +1,7 @@
+import type { BadgeVariant } from '../../lib/compliance-types';
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../ui/table';
 
 interface AuditEntry {
   id: string;
@@ -28,28 +30,28 @@ export function AuditTrailTable({ entries }: AuditTrailTableProps) {
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left p-2 font-medium text-gray-500">Time</th>
-                <th className="text-left p-2 font-medium text-gray-500">Action</th>
-                <th className="text-left p-2 font-medium text-gray-500">User</th>
-                <th className="text-left p-2 font-medium text-gray-500">Resource</th>
-                <th className="text-left p-2 font-medium text-gray-500">Outcome</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="w-full text-sm">
+            <TableHeader>
+              <TableRow className="border-b">
+                <TableHead className="text-left p-2 font-medium text-muted-foreground">Time</TableHead>
+                <TableHead className="text-left p-2 font-medium text-muted-foreground">Action</TableHead>
+                <TableHead className="text-left p-2 font-medium text-muted-foreground">User</TableHead>
+                <TableHead className="text-left p-2 font-medium text-muted-foreground">Resource</TableHead>
+                <TableHead className="text-left p-2 font-medium text-muted-foreground">Outcome</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {entries.map((e) => (
-                <tr key={e.id} className="border-b last:border-0">
-                  <td className="p-2 text-xs text-gray-500 whitespace-nowrap">{e.timestamp}</td>
-                  <td className="p-2">{e.action}</td>
-                  <td className="p-2 text-gray-500">{e.user}</td>
-                  <td className="p-2 text-gray-500">{e.resource}</td>
-                  <td className="p-2"><Badge variant={outcomeVariant[e.outcome]}>{e.outcome}</Badge></td>
-                </tr>
+                <TableRow key={e.id} className="border-b last:border-0">
+                  <TableCell className="p-2 text-xs text-muted-foreground whitespace-nowrap">{e.timestamp}</TableCell>
+                  <TableCell className="p-2">{e.action}</TableCell>
+                  <TableCell className="p-2 text-muted-foreground">{e.user}</TableCell>
+                  <TableCell className="p-2 text-muted-foreground">{e.resource}</TableCell>
+                  <TableCell className="p-2"><Badge variant={outcomeVariant[e.outcome]}>{e.outcome}</Badge></TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </CardContent>
     </Card>

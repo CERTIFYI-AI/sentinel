@@ -1,5 +1,7 @@
+import { ShieldCheck, Plus, MagnifyingGlass } from '@phosphor-icons/react';
 
 import { useState } from "react";
+import Badge from '../components/ui/badge';
 
 interface Framework {
   id: string; name: string; flag: string; score: number; passing: number; total: number;
@@ -49,13 +51,13 @@ export default function ComplianceDashboard({ tenantId }: { tenantId: string }) 
           <h1 className="text-2xl font-bold text-zinc-900">Compliance</h1>
           <p className="text-sm text-zinc-500 mt-1">Real-time evidence accumulation across {frameworks.length} global AI governance frameworks</p>
         </div>
-        <button onClick={generateReport} disabled={generating} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-60">
+        <button onClick={generateReport} disabled={generating} className="bg-green-600 hover:bg-green-700 text-foreground px-4 py-2 rounded-none text-sm font-medium disabled:opacity-60">
           {generating ? "Generating..." : "Generate Report"}
         </button>
       </div>
 
       {reportReady && (
-        <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-4 flex justify-between items-center">
+        <div className="mb-4 bg-green-50 border border-green-200 rounded-none p-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <span className="text-green-600 text-lg">\u2713</span>
             <div>
@@ -68,7 +70,7 @@ export default function ComplianceDashboard({ tenantId }: { tenantId: string }) 
       )}
 
       {/* Overall Governance Score */}
-      <div className="bg-white border border-zinc-200 rounded-xl p-5 mb-6">
+      <div className="bg-card border border-zinc-200 rounded-none p-5 mb-6">
         <div className="flex justify-between items-center mb-3">
           <h3 className="text-sm font-semibold text-zinc-700">AI Governance Score</h3>
           <span className={`text-3xl font-mono font-bold ${scoreColor(overallScore)}`}>{overallScore}%</span>
@@ -88,7 +90,7 @@ export default function ComplianceDashboard({ tenantId }: { tenantId: string }) 
       {/* Framework Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
         {frameworks.map(fw => (
-          <div key={fw.id} className={`bg-white border rounded-xl p-4 transition-all ${fw.enabled ? "border-green-300 shadow-sm" : "border-zinc-200 opacity-60"}`}>
+          <div key={fw.id} className={`bg-white border rounded-none p-4 transition-all ${fw.enabled ? "border-green-300 shadow-sm" : "border-zinc-200 opacity-60"}`}>
             <div className="flex justify-between items-center mb-3">
               <div className="flex items-center gap-2">
                 <span className="text-lg">{fw.flag}</span>

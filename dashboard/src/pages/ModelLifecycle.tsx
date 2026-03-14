@@ -1,3 +1,4 @@
+import { Robot, Plus, MagnifyingGlass } from '@phosphor-icons/react';
 import {useState} from "react";
 import {GitBranch,CheckCircle2,Clock,AlertCircle,ArrowRight,Play,Pause,RotateCcw,Eye} from "lucide-react";
 import {Card,CardContent} from "@/components/ui/card";
@@ -17,7 +18,7 @@ const lifecycleModels:LifecycleModel[] = [
 ];
 
 const stages = ["development","testing","staging","production","deprecated"] as const;
-const stageColors:Record<string,string> = {development:"bg-slate-500",testing:"bg-blue-500",staging:"bg-amber-500",production:"bg-emerald-500",deprecated:"bg-red-500"};
+const stageColors:Record<string,string> = {development:"bg-slate-500",testing:"bg-emerald-600",staging:"bg-amber-500",production:"bg-emerald-500",deprecated:"bg-red-500"};
 
 export default function ModelLifecycle(){
   const [selected,setSelected] = useState<string|null>(null);
@@ -25,9 +26,9 @@ export default function ModelLifecycle(){
   return (
     <div className="p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
       <div className="flex items-center gap-3 mb-6">
-        <GitBranch size={24} className="text-blue-600"/>
+        <GitBranch size={24} className="text-emerald-600"/>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Model Lifecycle</h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-foreground">Model Lifecycle</h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm">Track AI models through development, testing, staging, and production stages</p>
         </div>
       </div>
@@ -39,7 +40,7 @@ export default function ModelLifecycle(){
             {stages.map((s,i) => (
               <div key={s} className="flex items-center">
                 <div className="text-center">
-                  <div className={`w-12 h-12 rounded-full ${stageColors[s]} flex items-center justify-center text-white font-bold text-lg mx-auto mb-2`}>
+                  <div className={`w-12 h-12 rounded-full ${stageColors[s]} flex items-center justify-center text-foreground font-bold text-lg mx-auto mb-2`}>
                     {lifecycleModels.filter(m=>m.stage===s).length}
                   </div>
                   <span className="text-xs font-medium text-slate-600 dark:text-slate-300 capitalize">{s}</span>
@@ -60,7 +61,7 @@ export default function ModelLifecycle(){
                 <div className="flex items-center gap-4">
                   <div className={`w-3 h-3 rounded-full ${stageColors[m.stage]}`}/>
                   <div>
-                    <div className="font-semibold text-slate-900 dark:text-white">{m.name}</div>
+                    <div className="font-semibold text-slate-900 dark:text-foreground">{m.name}</div>
                     <div className="text-xs text-slate-500">{m.provider} &middot; {m.version} &middot; Deployed: {m.deployedAt}</div>
                   </div>
                 </div>
@@ -74,16 +75,16 @@ export default function ModelLifecycle(){
                   <div className="text-xs font-medium text-slate-500 mb-2 uppercase">Gate Checks</div>
                   <div className="grid grid-cols-4 gap-3">
                     {Object.entries(m.checks).map(([k,v]) => (
-                      <div key={k} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs ${v?"bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400":"bg-slate-100 dark:bg-slate-800 text-slate-500"}`}>
+                      <div key={k} className={`flex items-center gap-2 px-3 py-2 rounded-none text-xs ${v?"bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400":"bg-slate-100 dark:bg-slate-800 text-slate-500"}`}>
                         {v?<CheckCircle2 size={14}/>:<Clock size={14}/>}
                         <span className="capitalize">{k}</span>
                       </div>
                     ))}
                   </div>
                   <div className="flex gap-2 mt-3">
-                    {m.stage!=="production" && m.stage!=="deprecated" && <button className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg bg-blue-600 text-white hover:bg-blue-700"><Play size={12}/> Promote</button>}
-                    <button className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300"><Eye size={12}/> View Details</button>
-                    {m.stage==="production" && <button className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg border border-red-200 text-red-600 hover:bg-red-50"><RotateCcw size={12}/> Rollback</button>}
+                    {m.stage!=="production" && m.stage!=="deprecated" && <button className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-none bg-emerald-600 text-foreground hover:bg-emerald-700"><Play size={12}/> Promote</button>}
+                    <button className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-none border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300"><Eye size={12}/> View Details</button>
+                    {m.stage==="production" && <button className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-none border border-red-200 text-red-600 hover:bg-red-50"><RotateCcw size={12}/> Rollback</button>}
                   </div>
                 </div>
               )}
