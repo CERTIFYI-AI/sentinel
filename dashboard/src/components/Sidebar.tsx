@@ -1,3 +1,11 @@
+import { NavLink } from 'react-router-dom';
+import { useState } from 'react';
+import * as Icons from 'lucide-react';
+import { cn } from '../lib/utils';
+
+interface NavItem { label: string; to: string; icon: string; }
+interface NavSection { title: string; items: NavItem[]; }
+
 const NAV: NavSection[] = [
   { title: 'DASHBOARD', items: [
     { label: 'Overview', to: '/overview', icon: 'BarChart3' },
@@ -37,4 +45,37 @@ const NAV: NavSection[] = [
     { label: 'Audit Log', to: '/audit-log', icon: 'BookOpen' },
     { label: 'Settings', to: '/settings', icon: 'Settings' },
   ]},
-]
+];
+
+function getIcon(name: string) {
+  const Icon = (Icons as Record<string, React.ComponentType<{ className?: string }>>)[name];
+  return Icon ? <Icon className="h-4 w-4" /> : null;
+}
+
+export default function Sidebar() {
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const toggle = (t: string) => setCollapsed((p) => ({ ...p, [t]: !p[t] }));
+  return (
+    <aside className="w-60 border-r bg-card h-full overflow-y-auto flex flex-col">
+      <div className="px-4 py-4 font-bold text-lg border-b">Sentinel GRC</div>
+      <nav className="flex-1 px-2 py-2 space-y-1">
+        {NAV.map((s) => (
+          <div key={s.title}>
+            <button onClick={() => toggle(s.title)} className="w-full flex items-center justify-between px-2 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground">
+              {s.title}
+              {collapsed[s.title] ? <Icons.ChevronRight className="h-3 w-3" /> : <Icons.ChevronDown className="h-3 w-3" />}
+            </button>
+            {!collapsed[s.title] && <div className="space-y-0.5">
+              {s.items.map((item) => (
+                <NavLink key={item.to} to={item.to} className={({ isActive }) => cn('flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors', isActive ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:bg-muted hover:text-foreground')}>
+                  {getIcon(item.icon)}
+                  {item.label}
+                </NavLink>
+              ))}
+            </div>}
+          </div>
+        ))}
+      </nav>
+    </aside>
+  );
+}
