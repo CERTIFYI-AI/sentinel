@@ -49,6 +49,7 @@ class EventType(str, Enum):
     BIAS_AUDIT_RUN = "bias_audit.run"
     TRUST_SCORE_COMPUTED = "trust.score.computed"
     TRUST_CONFIG_UPDATED = "trust.config.updated"
+    CUSTOM = "custom"
     RBAC_ROLE_CREATED = "rbac.role.created"
     RBAC_USER_UPDATED = "rbac.user.updated"
     SHADOW_AI_DETECTED = "shadow_ai.detected"
