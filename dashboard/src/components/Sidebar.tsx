@@ -13,7 +13,7 @@ const NAV: NavSection[] = [
   ]},
   { title: 'GOVERNANCE', items: [
     { label: 'Policy Manager', to: '/compliance/policies', icon: 'FileText' },
-    { label: 'Controls', to: '/controls', icon: 'Shield' },
+        { label: 'Controls', to: '/compliance/controls', icon: 'Shield' },
     { label: 'Frameworks', to: '/frameworks', icon: 'Layers' },
     { label: 'Reg Radar', to: '/reg-radar', icon: 'Radio' },
   ]},
