@@ -260,3 +260,13 @@ async def create_welcome_notification(user_id: str, tenant_id: str, db) -> None:
         "Your AI governance platform is ready. Start by registering your first model.",
         db,
     )
+
+
+async def emit(event_type: str, source: str, payload: dict | None = None) -> None:
+    """Generic emit function for any event type."""
+    event = SentinelEvent(
+        event_type=EventType.CUSTOM if not hasattr(EventType, event_type.upper().replace('.', '_')) else getattr(EventType, event_type.upper().replace('.', '_')),
+        source=source,
+        payload=payload or {},
+    )
+    await bus.publish(event)

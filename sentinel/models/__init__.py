@@ -500,3 +500,70 @@ class ComplianceSummary(BaseModel):
     framework_results: list[ComplianceCheckResult] = Field(default_factory=list)
     evaluated_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
     request_id: str = Field(default_factory=lambda: str(uuid4()))
+
+
+# -- GRC Platform Models (Supabase table mappings) --------------------------
+
+class TrustTrace(BaseModel):
+    """Maps to Supabase TrustTrace table."""
+    id: str
+    modelId: str
+    trustScore: float
+    fairnessScore: float | None = None
+    transparencyScore: float | None = None
+    robustnessScore: float | None = None
+    privacyScore: float | None = None
+    accountabilityScore: float | None = None
+    timestamp: str
+    tenantId: str
+    createdAt: str | None = None
+
+
+class Vendor(BaseModel):
+    """Maps to Supabase Vendor table."""
+    id: str
+    name: str
+    riskTier: int | None = None
+    status: str
+    contactEmail: str | None = None
+    contractExpiry: str | None = None
+    lastAssessment: str | None = None
+    suspendedReason: str | None = None
+    tenantId: str
+    createdAt: str | None = None
+
+
+class RegulationEntry(BaseModel):
+    """Maps to Supabase Regulation table."""
+    id: str
+    name: str
+    jurisdiction: str | None = None
+    effectiveDate: str | None = None
+    category: str | None = None
+    tenantId: str
+    createdAt: str | None = None
+
+
+class ModelInventory(BaseModel):
+    """Maps to Supabase Model table for model inventory."""
+    id: str
+    name: str
+    provider: str | None = None
+    version: str | None = None
+    status: str | None = None
+    risk_level: str | None = None
+    trust_score: float | None = None
+    tenant_id: str = ""
+    created_at: str | None = None
+
+
+class VendorQuestionnaire(BaseModel):
+    """Maps to Supabase VendorQuestionnaire table."""
+    id: str
+    vendor_id: str
+    question: str | None = None
+    answer: str | None = None
+    category: str | None = None
+    status: str | None = None
+    tenant_id: str = ""
+    created_at: str | None = None

@@ -20,6 +20,18 @@ async def _log(policy_id, tenant_id, actor_id, action, detail, db):
            VALUES($1,$2,$3,$4,$5)""",
         tenant_id, policy_id, actor_id, action, json.dumps(detail))
 
+
+import enum
+
+class PolicyStatus(enum.StrEnum):
+    """Status values for policies."""
+    DRAFT = "draft"
+    UNDER_REVIEW = "under_review"
+    APPROVED = "approved"
+    PUBLISHED = "published"
+    ARCHIVED = "archived"
+    DEPRECATED = "deprecated"
+
 class PolicyEngine:
     async def clone_system_template(self, template_id, tenant_id, user_id, db):
         tpl = await db.fetchrow("SELECT * FROM policy_templates WHERE id=$1 AND tenant_id='system'", template_id)
