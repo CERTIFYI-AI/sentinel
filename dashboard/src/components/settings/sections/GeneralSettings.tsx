@@ -1,7 +1,7 @@
 // src/components/settings/sections/GeneralSettings.tsx
 import { useState, useEffect } from "react";
 import { useTenantConfig, useUpdateTenantConfig } from "../../../hooks/use-settings";
-import { Copy, Loader2 } from "lucide-react";
+import { Copy, SpinnerGap } from "@phosphor-icons/react";
 
 export function GeneralSettings() {
   const { data: cfg, isLoading } = useTenantConfig();
@@ -40,7 +40,7 @@ export function GeneralSettings() {
       </div>
       <button onClick={() => update.mutate(form)} disabled={!dirty || update.isPending}
         className="h-10 px-6 rounded-none bg-[#1A6B5A] text-white text-sm font-medium hover:bg-[#1A6B5A]/90 disabled:opacity-50 flex items-center gap-2">
-        {update.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}Save Changes
+        {update.isPending ? <SpinnerGap className="w-4 h-4 animate-spin" /> : null}FloppyDisk Changes
       </button>
     </div>
   );

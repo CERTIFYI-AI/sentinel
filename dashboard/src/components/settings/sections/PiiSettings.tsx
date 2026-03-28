@@ -1,7 +1,7 @@
 // src/components/settings/sections/PiiSettings.tsx
 import { useState } from "react";
 import { useTenantConfig, useUpdateTenantConfig } from "../../../hooks/use-settings";
-import { Loader2 } from "lucide-react";
+import { SpinnerGap } from "@phosphor-icons/react";
 
 export function PiiSettings() {
   const { data: config, isLoading } = useTenantConfig();
@@ -84,7 +84,7 @@ export function PiiSettings() {
         </select>
       </div>
       <button onClick={save} disabled={update.isPending} className="h-10 px-6 rounded-none bg-[#1A6B5A] text-white text-sm">
-        {update.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save PII Settings"}
+        {update.isPending ? <SpinnerGap className="w-4 h-4 animate-spin" /> : "FloppyDisk PII Settings"}
       </button>
     </div>
   );

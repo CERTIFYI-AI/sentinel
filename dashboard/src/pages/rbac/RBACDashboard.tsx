@@ -1,70 +1,44 @@
-import { Lock, Plus, MagnifyingGlass } from '@phosphor-icons/react';
-import { useState, useEffect } from 'react';
-import { useAuthStore } from '../../store/authStore';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table';
+
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../../components/ui/table";
+import { Users, Shield, Activity, AlertTriangle } from "lucide-react";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+
+const roleData = [{name:"Admin",value:2,color:"#ef4444"},{name:"CISO",value:1,color:"#f59e0b"},{name:"Compliance Officer",value:4,color:"#16a34a"},{name:"Auditor",value:3,color:"#3b82f6"},{name:"Developer",value:8,color:"#8b5cf6"},{name:"Viewer",value:6,color:"#6b7280"}];
+const accessLog = [
+  { user: "Bhaskar Admin", resource: "Risk Register", time: "2 min ago", ip: "192.168.1.45", result: "success" },
+  { user: "Sarah Chen", resource: "Trust Engine Config", time: "5 min ago", ip: "10.0.0.23", result: "success" },
+  { user: "Unknown User", resource: "Admin Settings", time: "12 min ago", ip: "203.45.67.89", result: "denied" },
+  { user: "John Park", resource: "Model Inventory", time: "15 min ago", ip: "192.168.1.67", result: "success" },
+  { user: "Emily Davis", resource: "Compliance Reports", time: "20 min ago", ip: "10.0.0.45", result: "success" },
+  { user: "Tom Lee", resource: "Security Scans", time: "25 min ago", ip: "192.168.1.89", result: "success" },
+  { user: "Unknown IP", resource: "User Management", time: "30 min ago", ip: "45.67.89.12", result: "denied" },
+  { user: "Lisa Wang", resource: "Vendor Registry", time: "35 min ago", ip: "10.0.0.78", result: "success" },
+  { user: "Mike Johnson", resource: "Incident Logs", time: "42 min ago", ip: "192.168.1.34", result: "success" },
+  { user: "Bot Detection", resource: "API Endpoint", time: "45 min ago", ip: "178.23.45.67", result: "denied" },
+];
 
 export default function RBACDashboard() {
-  const [data, setData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const token = useAuthStore((s) => s.token);
-
-  useEffect(() => {
-    fetch('/api/rbac', { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.ok ? r.json() : [])
-      .then(d => { setData(Array.isArray(d) ? d : d.items || []); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, [token]);
-
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground dark:text-foreground">Access Control</h1>
-          <p className="text-sm text-muted-foreground mt-1">Role-based access control management with user roles and permissions</p>
-        </div>
-        <button className="px-4 py-2 bg-emerald-600 text-foreground rounded-none hover:bg-emerald-700 text-sm">
-          + Add New
-        </button>
+      <div><h1 className="text-2xl font-bold">Access Control Overview</h1><p className="text-muted-foreground">RBAC dashboard and access monitoring</p></div>
+      <div className="grid grid-cols-4 gap-4">
+        <Card><CardContent className="pt-6"><div className="flex items-center gap-2"><Users className="w-5 h-5 text-blue-400" /><div><div className="text-sm text-muted-foreground">Total Users</div><div className="text-2xl font-bold">24</div></div></div></CardContent></Card>
+        <Card><CardContent className="pt-6"><div className="flex items-center gap-2"><Shield className="w-5 h-5 text-green-400" /><div><div className="text-sm text-muted-foreground">Roles</div><div className="text-2xl font-bold">6</div></div></div></CardContent></Card>
+        <Card><CardContent className="pt-6"><div className="flex items-center gap-2"><Activity className="w-5 h-5 text-yellow-400" /><div><div className="text-sm text-muted-foreground">Active Sessions</div><div className="text-2xl font-bold">8</div></div></div></CardContent></Card>
+        <Card><CardContent className="pt-6"><div className="flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-red-400" /><div><div className="text-sm text-muted-foreground">Failed Logins</div><div className="text-2xl font-bold text-red-400">3</div></div></div></CardContent></Card>
       </div>
-
-      {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-        </div>
-      ) : data.length === 0 ? (
-        <div className="text-center py-16 bg-white dark:bg-card rounded-none border border-border dark:border-border">
-          <div className="text-4xl mb-4">📋</div>
-          <h3 className="text-lg font-semibold text-foreground dark:text-gray-300">No items yet</h3>
-          <p className="text-sm text-muted-foreground mt-2">Create your first access control to get started</p>
-        </div>
-      ) : (
-        <div className="bg-card dark:bg-card rounded-none border border-border dark:border-border overflow-hidden">
-          <Table className="w-full">
-            <TableHeader className="bg-muted dark:bg-background">
-              <TableRow>
-                <TableHead className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Name</TableHead>
-                <TableHead className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Status</TableHead>
-                <TableHead className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Score</TableHead>
-                <TableHead className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Updated</TableHead>
-                <TableHead className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody className="divide-y divide-border dark:divide-border">
-              {data.map((item: any, i: number) => (
-                <TableRow key={item.id || i} className="hover:bg-muted dark:hover:bg-muted/50">
-                  <TableCell className="px-4 py-3 text-sm font-medium text-foreground dark:text-foreground">{item.name || item.title || `Item ${i+1}`}</TableCell>
-                  <TableCell className="px-4 py-3"><span className="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-800">{item.status || 'Active'}</span></TableCell>
-                  <TableCell className="px-4 py-3 text-sm text-muted-foreground dark:text-muted-foreground">{item.score || item.compliance_score || '--'}</TableCell>
-                  <TableCell className="px-4 py-3 text-sm text-muted-foreground">{item.updated_at ? new Date(item.updated_at).toLocaleDateString() : '--'}</TableCell>
-                  <TableCell className="px-4 py-3 text-right">
-                    <button className="text-sm text-emerald-600 hover:text-emerald-800">View</button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-    </div>
-  );
+      <div className="grid grid-cols-2 gap-6">
+        <Card><CardHeader><CardTitle>Users by Role</CardTitle></CardHeader><CardContent>
+          <ResponsiveContainer width="100%" height={250}><PieChart><Pie data={roleData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} dataKey="value" label={({name,value})=>`${name}: ${value}`}>
+            {roleData.map((e,i) => <Cell key={i} fill={e.color} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer>
+        </CardContent></Card>
+        <Card><CardHeader><CardTitle>Recent Access Log</CardTitle></CardHeader><CardContent className="max-h-[300px] overflow-auto">
+          <Table><TableHeader><TableRow><TableHead>User</TableHead><TableHead>Resource</TableHead><TableHead>Time</TableHead><TableHead>IP</TableHead><TableHead>Result</TableHead></TableRow></TableHeader>
+            <TableBody>{accessLog.map((l,i) => (<TableRow key={i}><TableCell className="font-medium">{l.user}</TableCell><TableCell>{l.resource}</TableCell><TableCell className="text-muted-foreground">{l.time}</TableCell><TableCell className="font-mono text-xs">{l.ip}</TableCell>
+              <TableCell><span className={l.result==="success"?"text-green-400":"text-red-400"}>{l.result}</span></TableCell></TableRow>))}</TableBody></Table>
+        </CardContent></Card>
+      </div>
+    </div>);
 }

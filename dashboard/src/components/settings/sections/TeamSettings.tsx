@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { UserPlus, Trash2, Shield } from "lucide-react";
+import { UserPlus, Trash, Shield } from "@phosphor-icons/react";
 
 const inviteSchema = z.object({
   email: z.string().email("Valid email required"),
@@ -70,7 +70,7 @@ export function TeamSettings() {
                     <TableCell className="font-mono text-sm">{m.email}</TableCell>
                     <TableCell><Badge variant="outline">{m.role}</Badge></TableCell>
                     <TableCell><Badge variant={m.status === "active" ? "default" : "secondary"}>{m.status}</Badge></TableCell>
-                    <TableCell><Button variant="ghost" size="sm"><Trash2 className="h-4 w-4" /></Button></TableCell>
+                    <TableCell><Button variant="ghost" size="sm"><Trash className="h-4 w-4" /></Button></TableCell>
                   </TableRow>
                 ))}
               </TableBody>

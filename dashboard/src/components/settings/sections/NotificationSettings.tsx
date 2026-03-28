@@ -4,7 +4,7 @@ import { api } from "../../../api/client";
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
 import { Button } from "../../ui/button";
 import { Label } from "../../ui/label";
-import { Bell, Mail, MessageSquare } from "lucide-react";
+import { Bell, Mail, ChatCircle } from "@phosphor-icons/react";
 import { useState } from "react";
 
 interface NotificationPrefs {
@@ -38,7 +38,7 @@ export function NotificationSettings() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2"><Mail className="h-5 w-5" /> Email Alerts</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Envelope className="h-5 w-5" /> Email Alerts</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <Label>Enable email alerts</Label>
@@ -59,7 +59,7 @@ export function NotificationSettings() {
         </CardContent>
       </Card>
       <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2"><MessageSquare className="h-5 w-5" /> Slack Integration</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2"><ChatCircle className="h-5 w-5" /> Slack Integration</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <Label>Enable Slack notifications</Label>

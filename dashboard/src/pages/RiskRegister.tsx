@@ -16,12 +16,12 @@ const riskLevel = (score: number) => score>=15?"critical":score>=10?"high":score
 export default function RiskRegister() {
   const [items, setItems] = useState(MOCK);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFunnel, setStatusFunnel] = useState("all");
   useEffect(() => {
     fetch("/api/risks").then(r=>r.json()).then(d=>{ const arr=Array.isArray(d)?d:d.items||[]; if(arr.length) setItems(arr); }).catch(()=>{});
   }, []);
   const filtered = items
-    .filter(x=>statusFilter==="all"||x.status===statusFilter)
+    .filter(x=>statusFunnel==="all"||x.status===statusFunnel)
     .filter(x=>x.title?.toLowerCase().includes(search.toLowerCase()))
     .sort((a,b)=>b.risk_score-a.risk_score);
   const counts = { open:items.filter(x=>x.status==="open").length, critical:items.filter(x=>x.risk_score>=15).length, mitigated:items.filter(x=>x.status==="mitigated").length };
@@ -47,9 +47,9 @@ export default function RiskRegister() {
       <div className="flex items-center gap-3">
         <div className="relative flex-1 max-w-sm">
           <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"/>
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search risks..." className="w-full pl-8 pr-3 py-2 text-sm bg-card border border-border rounded-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"/>
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="MagnifyingGlass risks..." className="w-full pl-8 pr-3 py-2 text-sm bg-card border border-border rounded-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"/>
         </div>
-        <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="px-3 py-2 text-sm bg-card border border-border rounded-sm text-foreground focus:outline-none">
+        <select value={statusFunnel} onChange={e=>setStatusFunnel(e.target.value)} className="px-3 py-2 text-sm bg-card border border-border rounded-sm text-foreground focus:outline-none">
           <option value="all">All Status</option>
           <option value="open">Open</option>
           <option value="mitigated">Mitigated</option>

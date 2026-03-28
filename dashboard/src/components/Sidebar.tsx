@@ -4,7 +4,7 @@ import { useState } from 'react'
 import {
   SquaresFour, Bell, FileText, Shield, BookOpen, ChartBar,
   UserCircleCheck, Robot, Rss, Database, BuildingOffice,
-  Warning, Scales, FolderOpen, Warning, ChartBar,
+  Warning, Scales, FolderOpen,
   ShieldCheck, LockOpen, Lock, Gear, Star,
   SignOut, CaretDown, CaretRight, MoonStars, SunHorizon
 } from '@phosphor-icons/react'
@@ -19,7 +19,7 @@ const NAV = [
     { label: 'Policy Manager', to: '/compliance/policies', icon: FileText },
     { label: 'Controls', to: '/compliance/controls', icon: Shield },
     { label: 'Frameworks', to: '/frameworks', icon: BookOpen },
-    { label: 'Reg ChartBar', to: '/reg-radar', icon: ChartBar },
+    { label: 'Reg Radar', to: '/reg-radar', icon: ChartBar },
     { label: 'HITL Reviews', to: '/hitl', icon: UserCircleCheck, badge: 3 },
   ]},
   { title: 'AI INVENTORY', items: [

@@ -1,7 +1,7 @@
 // dashboard/src/components/ui/Tag.tsx
 import React from "react";
 import { clsx } from "clsx";
-import { X } from "lucide-react";
+import { X } from "@phosphor-icons/react";
 
 type TagColor = "blue"|"green"|"amber"|"red"|"purple"|"orange"|"zinc";
 type TagSize = "sm"|"md"|"lg";

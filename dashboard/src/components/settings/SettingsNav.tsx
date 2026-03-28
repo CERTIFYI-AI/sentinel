@@ -1,11 +1,11 @@
 // src/components/settings/SettingsNav.tsx
 import { NavLink } from "react-router-dom";
-import { SlidersHorizontal, Shield, EyeOff, Cpu, Key, ShieldCheck, Bell, Users, CreditCard } from "lucide-react";
+import { Sliders, Shield, EyeSlash, Cpu, Key, ShieldCheck, Bell, Users, CreditCard } from "@phosphor-icons/react";
 
 const sections = [
-  { to: "general", label: "General", icon: SlidersHorizontal },
+  { to: "general", label: "General", icon: Sliders },
   { to: "trust", label: "Trust & Safety", icon: Shield },
-  { to: "pii", label: "PII Detection", icon: EyeOff },
+  { to: "pii", label: "PII Detection", icon: EyeSlash },
   { to: "api-keys", label: "API Keys", icon: Key },
   { to: "compliance", label: "Compliance", icon: ShieldCheck },
   { to: "notifications", label: "Notifications", icon: Bell },

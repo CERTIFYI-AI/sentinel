@@ -1,7 +1,7 @@
 // src/components/auth/SignupForm.tsx
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Loader2, ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { SpinnerGap, ArrowLeft, ArrowRight, Check } from "@phosphor-icons/react";
 import { register, login } from "../../api/client";
 
 function strengthLevel(pw: string): number {
@@ -92,7 +92,7 @@ export function SignupForm({ onSuccess }: { onSuccess: () => void }) {
               <ArrowLeft className="w-4 h-4" /> Back</button>
             <button onClick={handleSubmit} disabled={loading}
               className="flex-1 h-10 rounded-none bg-[#1A6B5A] text-white font-medium text-sm hover:bg-[#1A6B5A]/90 disabled:opacity-50 flex items-center justify-center gap-2">
-              {loading ? <><Loader2 className="w-4 h-4 animate-spin" />Creating...</> : "Create account"}</button>
+              {loading ? <><SpinnerGap className="w-4 h-4 animate-spin" />Creating...</> : "Create account"}</button>
           </div>
         </div>
       )}

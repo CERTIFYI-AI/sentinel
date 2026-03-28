@@ -4,7 +4,7 @@ import { api } from "../../../api/client";
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../ui/table";
 import { Badge } from "../../ui/badge";
-import { ScrollText } from "lucide-react";
+import { Scroll } from "@phosphor-icons/react";
 
 interface AuditEntry {
   id: string;
@@ -23,7 +23,7 @@ export function AuditLogSettings() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2"><ScrollText className="h-5 w-5" /> Settings Audit Log</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Scroll className="h-5 w-5" />  Gear Audit Log</CardTitle></CardHeader>
         <CardContent>
           {isLoading ? <p className="text-sm text-muted-foreground">Loading…</p> : (
             <Table>

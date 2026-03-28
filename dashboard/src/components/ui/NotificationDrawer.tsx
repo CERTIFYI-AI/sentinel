@@ -2,7 +2,7 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { AlertCircle, TrendingDown, Users, Shield, CheckCircle } from "lucide-react";
+import { WarningCircle, TrendDown, Users, Shield, CheckCircle } from "@phosphor-icons/react";
 
 interface Notification {
   id: string;
@@ -23,8 +23,8 @@ const MOCK_NOTIFICATIONS: Notification[] = [
 ];
 
 const iconMap = {
-  cb_open: AlertCircle,
-  trust_drop: TrendingDown,
+  cb_open: WarningCircle,
+  trust_drop: TrendDown,
   hitl_depth: Users,
   chain_violation: Shield,
   report_ready: CheckCircle,
