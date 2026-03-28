@@ -1,92 +1,85 @@
-import React, { useState, useEffect } from "react";
-import { CheckSquare, Plus, MagnifyingGlass, Funnel } from "@phosphor-icons/react";
-import Badge from "../components/ui/badge";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/table';
 
-const MOCK: any[] = [
-  { id:"1", control_id:"AC-1", title:"Access Control Policy", status:"passing", severity:"high", framework:"ISO 27001", owner:"admin@certifyi.ai", last_tested:"2025-06-01" },
-  { id:"2", control_id:"AC-2", title:"Account Management", status:"passing", severity:"high", framework:"ISO 27001", owner:"admin@certifyi.ai", last_tested:"2025-06-01" },
-  { id:"3", control_id:"IA-5", title:"Authenticator Management", status:"failing", severity:"critical", framework:"ISO 27001", owner:"sec@certifyi.ai", last_tested:"2025-05-30" },
-  { id:"4", control_id:"SC-8", title:"Transmission Confidentiality", status:"passing", severity:"medium", framework:"SOC 2", owner:"admin@certifyi.ai", last_tested:"2025-05-28" },
-  { id:"5", control_id:"AU-2", title:"Event Logging", status:"not_tested", severity:"medium", framework:"SOC 2", owner:"ops@certifyi.ai", last_tested:null },
-  { id:"6", control_id:"LLM-1", title:"Prompt Injection Prevention", status:"failing", severity:"critical", framework:"OWASP LLM", owner:"ai@certifyi.ai", last_tested:"2025-05-25" },
-  { id:"7", control_id:"LLM-2", title:"Insecure Output Handling", status:"not_tested", severity:"high", framework:"OWASP LLM", owner:"ai@certifyi.ai", last_tested:null },
-  { id:"8", control_id:"EU-3", title:"AI Transparency Requirements", status:"passing", severity:"high", framework:"EU AI Act", owner:"legal@certifyi.ai", last_tested:"2025-06-02" },
+import { useState } from "react";
+import { Card, CardContent } from "../components/ui/card";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
+import { Input } from "../components/ui/input";
+import { Button } from "../components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
+import { Search, Plus, Shield, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
+
+const mockControls = [
+  { id: "CTL-001", name: "Access Control Policy", framework: "SOC 2", controlId: "CC-6.1", status: "passing", severity: "high", owner: "alice@company.com", lastTested: "2026-01-10", evidence: 3, description: "Logical and physical access controls are in place" },
+  { id: "CTL-002", name: "Change Management", framework: "SOC 2", controlId: "CC-8.1", status: "passing", severity: "high", owner: "bob@company.com", lastTested: "2026-01-08", evidence: 2, description: "Changes to infrastructure and software are authorized" },
+  { id: "CTL-003", name: "Risk Assessment", framework: "ISO 27001", controlId: "A.8.1", status: "failing", severity: "critical", owner: "carol@company.com", lastTested: "2025-12-20", evidence: 1, description: "Regular risk assessments of information assets" },
+  { id: "CTL-004", name: "Data Classification", framework: "GDPR", controlId: "Art.5", status: "passing", severity: "medium", owner: "dave@company.com", lastTested: "2026-01-05", evidence: 4, description: "Personal data is classified and labeled" },
+  { id: "CTL-005", name: "Model Transparency", framework: "AI Act", controlId: "AI-T-01", status: "failing", severity: "high", owner: "eve@company.com", lastTested: "2026-01-12", evidence: 0, description: "AI model decision-making is transparent and documented" },
+  { id: "CTL-006", name: "Incident Response", framework: "SOC 2", controlId: "CC-7.3", status: "passing", severity: "critical", owner: "frank@company.com", lastTested: "2026-01-11", evidence: 5, description: "Security incidents are identified and responded to" },
+  { id: "CTL-007", name: "Encryption at Rest", framework: "ISO 27001", controlId: "A.10.1", status: "passing", severity: "high", owner: "alice@company.com", lastTested: "2026-01-09", evidence: 2, description: "Data at rest is encrypted using AES-256" },
+  { id: "CTL-008", name: "Bias Monitoring", framework: "AI Act", controlId: "AI-B-01", status: "warning", severity: "high", owner: "bob@company.com", lastTested: "2026-01-14", evidence: 1, description: "AI models are monitored for bias and fairness" },
+  { id: "CTL-009", name: "Vendor Due Diligence", framework: "SOC 2", controlId: "CC-9.2", status: "passing", severity: "medium", owner: "carol@company.com", lastTested: "2025-12-15", evidence: 3, description: "Third-party vendors undergo security assessment" },
+  { id: "CTL-010", name: "Data Retention", framework: "GDPR", controlId: "Art.17", status: "warning", severity: "medium", owner: "dave@company.com", lastTested: "2025-11-30", evidence: 2, description: "Data retention policies are enforced" },
 ];
 
-const SEV_ORDER: Record<string,number> = { critical:0, high:1, medium:2, low:3 };
+const statusColor = (s:string) => s==="passing" ? "bg-green-500/10 text-green-400 border-green-500/30" : s==="failing" ? "bg-red-500/10 text-red-400 border-red-500/30" : "bg-yellow-500/10 text-yellow-400 border-yellow-500/30";
+const severityColor = (s:string) => s==="critical" ? "text-red-400" : s==="high" ? "text-orange-400" : "text-yellow-400";
 
 export default function Controls() {
-  const [items, setItems] = useState(MOCK);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  useEffect(() => {
-    fetch("/api/controls").then(r=>r.json()).then(d=>{ const arr=Array.isArray(d)?d:d.items||[]; if(arr.length) setItems(arr); }).catch(()=>{});
-  }, []);
-  const filtered = items
-    .filter(x => statusFilter==="all" || x.status===statusFilter)
-    .filter(x => x.title?.toLowerCase().includes(search.toLowerCase()) || x.control_id?.toLowerCase().includes(search.toLowerCase()))
-    .sort((a,b) => (SEV_ORDER[a.severity]||4)-(SEV_ORDER[b.severity]||4));
-  const counts = { passing: items.filter(x=>x.status==="passing").length, failing: items.filter(x=>x.status==="failing").length, not_tested: items.filter(x=>x.status==="not_tested").length };
+  const [framework, setFramework] = useState("All");
+  const [status, setStatus] = useState("All");
+  const [selected, setSelected] = useState<any>(null);
+  const frameworks = ["All", ...Array.from(new Set(mockControls.map(c => c.framework)))];
+  const statuses = ["All", "passing", "failing", "warning"];
+  const filtered = mockControls.filter(c =>
+    (framework === "All" || c.framework === framework) &&
+    (status === "All" || c.status === status) &&
+    (c.name.toLowerCase().includes(search.toLowerCase()) || c.controlId.toLowerCase().includes(search.toLowerCase()))
+  );
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground font-outfit flex items-center gap-2"><CheckSquare size={20} className="text-emerald-400"/>Controls</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Monitor and manage compliance controls</p>
-        </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-foreground text-sm font-medium rounded-sm transition-colors">
-          <Plus size={16}/>Add Control
-        </button>
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h1 className="text-2xl font-bold text-white">Controls Library</h1><p className="text-sm text-gray-400">Manage compliance controls across frameworks</p></div>
+        <Button className="bg-green-600 hover:bg-green-700 text-white"><Plus className="w-4 h-4 mr-2" />Add Control</Button>
       </div>
-      <div className="grid grid-cols-3 gap-4">
-        {[{label:"Passing",count:counts.passing,v:"healthy"},{label:"Failing",count:counts.failing,v:"critical"},{label:"Not Tested",count:counts.not_tested,v:"unknown"}].map((s,i)=>(
-          <button key={i} onClick={()=>setStatusFilter(s.label.toLowerCase().replace(" ","_")===statusFilter?"all":s.label.toLowerCase().replace(" ","_"))} className="bg-card border border-border rounded-sm p-4 text-left hover:border-emerald-500/30 transition-colors">
-            <p className="text-2xl font-bold text-foreground font-outfit">{s.count}</p>
-            <div className="flex items-center gap-2 mt-1"><Badge variant={s.v as any} size="sm">{s.label}</Badge></div>
-          </button>
+      <div className="grid grid-cols-4 gap-4">
+        {[{label:"Total Controls",value:mockControls.length,color:"text-white"},{label:"Passing",value:mockControls.filter(c=>c.status==="passing").length,color:"text-green-400"},{label:"Failing",value:mockControls.filter(c=>c.status==="failing").length,color:"text-red-400"},{label:"Warning",value:mockControls.filter(c=>c.status==="warning").length,color:"text-yellow-400"}].map(s=>(
+          <Card key={s.label} className="bg-gray-900 border-gray-800"><CardContent className="p-4"><p className="text-xs text-gray-400">{s.label}</p><p className={`text-2xl font-bold ${s.color}`}>{s.value}</p></CardContent></Card>
         ))}
       </div>
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"/>
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search controls..." className="w-full pl-8 pr-3 py-2 text-sm bg-card border border-border rounded-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"/>
+      <Card className="bg-gray-900 border-gray-800"><CardContent className="p-4 space-y-4">
+        <div className="flex gap-3 flex-wrap">
+          <div className="relative flex-1 min-w-48"><Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" /><Input placeholder="Search controls..." value={search} onChange={e=>setSearch(e.target.value)} className="pl-9 bg-gray-800 border-gray-700 text-white" /></div>
+          <select value={framework} onChange={e=>setFramework(e.target.value)} className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-white">{frameworks.map(f=><option key={f}>{f}</option>)}</select>
+          <select value={status} onChange={e=>setStatus(e.target.value)} className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-white">{statuses.map(s=><option key={s}>{s}</option>)}</select>
         </div>
-        <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="px-3 py-2 text-sm bg-card border border-border rounded-sm text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500">
-          <option value="all">All Status</option>
-          <option value="passing">Passing</option>
-          <option value="failing">Failing</option>
-          <option value="not_tested">Not Tested</option>
-          <option value="not_applicable">N/A</option>
-        </select>
-      </div>
-      <div className="bg-card border border-border rounded-sm overflow-hidden">
-        <Table className="w-full text-xs">
-          <TableHeader><TableRow className="border-b border-border bg-muted/30 text-muted-foreground">
-            <TableHead className="px-5 py-3 text-left font-medium">ID</TableHead>
-            <TableHead className="px-5 py-3 text-left font-medium">Control Title</TableHead>
-            <TableHead className="px-5 py-3 text-left font-medium">Framework</TableHead>
-            <TableHead className="px-5 py-3 text-left font-medium">Severity</TableHead>
-            <TableHead className="px-5 py-3 text-left font-medium">Status</TableHead>
-            <TableHead className="px-5 py-3 text-left font-medium">Owner</TableHead>
-            <TableHead className="px-5 py-3 text-left font-medium">Last Tested</TableHead>
-          </TableRow></TableHeader>
-          <TableBody className="divide-y divide-border">
-            {filtered.map(c => (
-              <TableRow key={c.id} className="hover:bg-muted/20 transition-colors">
-                <TableCell className="px-5 py-3 font-mono text-emerald-400">{c.control_id}</TableCell>
-                <TableCell className="px-5 py-3 font-medium text-foreground">{c.title}</TableCell>
-                <TableCell className="px-5 py-3 text-muted-foreground">{c.framework}</TableCell>
-                <TableCell className="px-5 py-3"><Badge variant={c.severity as any}>{c.severity}</Badge></TableCell>
-                <TableCell className="px-5 py-3"><Badge variant={c.status as any}>{c.status.replace("_"," ")}</Badge></TableCell>
-                <TableCell className="px-5 py-3 text-muted-foreground">{c.owner}</TableCell>
-                <TableCell className="px-5 py-3 text-muted-foreground">{c.last_tested||"—"}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
+        <Table>
+          <TableHeader><TableRow className="border-gray-800"><TableHead className="text-gray-400">Control ID</TableHead><TableHead className="text-gray-400">Name</TableHead><TableHead className="text-gray-400">Framework</TableHead><TableHead className="text-gray-400">Severity</TableHead><TableHead className="text-gray-400">Status</TableHead><TableHead className="text-gray-400">Last Tested</TableHead><TableHead className="text-gray-400">Evidence</TableHead></TableRow></TableHeader>
+          <TableBody>{filtered.map(c=>(
+            <TableRow key={c.id} className="border-gray-800 hover:bg-gray-800/50 cursor-pointer" onClick={()=>setSelected(c)}>
+              <TableCell className="text-green-400 font-mono text-xs">{c.controlId}</TableCell>
+              <TableCell className="text-white font-medium">{c.name}</TableCell>
+              <TableCell><span className="text-xs px-2 py-0.5 rounded bg-gray-700 text-gray-300">{c.framework}</span></TableCell>
+              <TableCell><span className={`text-xs font-medium ${severityColor(c.severity)}`}>{c.severity}</span></TableCell>
+              <TableCell><span className={`text-xs px-2 py-0.5 rounded border ${statusColor(c.status)}`}>{c.status}</span></TableCell>
+              <TableCell className="text-gray-400 text-xs">{c.lastTested}</TableCell>
+              <TableCell className="text-gray-300 text-xs">{c.evidence} items</TableCell>
+            </TableRow>
+          ))}</TableBody>
         </Table>
-        {filtered.length===0 && <div className="py-12 text-center text-sm text-muted-foreground">No controls found</div>}
-      </div>
+      </CardContent></Card>
+      <Dialog open={!!selected} onOpenChange={()=>setSelected(null)}>
+        <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-lg">
+          <DialogHeader><DialogTitle>{selected?.name}</DialogTitle></DialogHeader>
+          {selected && <div className="space-y-3 text-sm">
+            <p className="text-gray-400">{selected.description}</p>
+            <div className="grid grid-cols-2 gap-3">
+              {[["Control ID",selected.controlId],["Framework",selected.framework],["Status",selected.status],["Severity",selected.severity],["Owner",selected.owner],["Last Tested",selected.lastTested],["Evidence",selected.evidence+" items"]].map(([k,v])=>(
+                <div key={k}><p className="text-gray-400 text-xs">{k}</p><p className="text-white">{String(v)}</p></div>
+              ))}
+            </div>
+          </div>}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

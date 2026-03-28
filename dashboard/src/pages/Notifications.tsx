@@ -1,6 +1,6 @@
 import { Bell, Plus, MagnifyingGlass } from '@phosphor-icons/react';
 import {useState} from "react";
-import {Bell,AlertTriangle,Info,CheckCircle2,XCircle,Shield,Clock,Check,Trash2,Filter} from "lucide-react";
+import {Bell,Warning,Info,CheckCircle,XCircle,Shield,Clock,Check,Trash,Funnel} from "@phosphor-icons/react";
 import {Card,CardContent} from "@/components/ui/card";
 
 type Notification = {
@@ -19,12 +19,12 @@ const initialNotifications:Notification[] = [
 ];
 
 const typeIcon = (t:string) => {
-  switch(t){case "critical":return <XCircle size={16} className="text-red-500"/>;case "warning":return <AlertTriangle size={16} className="text-amber-500"/>;case "success":return <CheckCircle2 size={16} className="text-emerald-500"/>;default:return <Info size={16} className="text-emerald-500"/>;}
+  switch(t){case "critical":return <XCircle size={16} className="text-red-500"/>;case "warning":return <Warning size={16} className="text-amber-500"/>;case "success":return <CheckCircle size={16} className="text-emerald-500"/>;default:return <Info size={16} className="text-emerald-500"/>;}
 };
 
 export default function Notifications(){
   const [notifications,setNotifications] = useState(initialNotifications);
-  const [filterType,setFilterType] = useState("all");
+  const [filterType,setFunnelType] = useState("all");
   const markRead = (id:string) => setNotifications(n=>n.map(x=>x.id===id?{...x,read:true}:x));
   const markAllRead = () => setNotifications(n=>n.map(x=>({...x,read:true})));
   const filtered = filterType==="all"?notifications:filterType==="unread"?notifications.filter(n=>!n.read):notifications.filter(n=>n.type===filterType);
@@ -44,9 +44,9 @@ export default function Notifications(){
       </div>
 
       <div className="flex items-center gap-3 mb-4">
-        <Filter size={14} className="text-slate-400"/>
+        <Funnel size={14} className="text-slate-400"/>
         {["all","unread","critical","warning","info","success"].map(t => (
-          <button key={t} onClick={()=>setFilterType(t)} className={`px-3 py-1.5 text-xs rounded-full capitalize ${filterType===t?"bg-emerald-600 text-foreground":"bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"}`}>{t}</button>
+          <button key={t} onClick={()=>setFunnelType(t)} className={`px-3 py-1.5 text-xs rounded-full capitalize ${filterType===t?"bg-emerald-600 text-foreground":"bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"}`}>{t}</button>
         ))}
       </div>
 

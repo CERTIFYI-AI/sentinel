@@ -1,7 +1,7 @@
 // src/components/settings/sections/TrustSafetySettings.tsx
 import { useState, useEffect } from "react";
 import { useTenantConfig, useUpdateTenantConfig } from "../../../hooks/use-settings";
-import { Loader2 } from "lucide-react";
+import { SpinnerGap } from "@phosphor-icons/react";
 
 function ThresholdSlider({ label, description, value, onChange, min, max, step }: { label: string; description: string; value: number; onChange: (v: number) => void; min: number; max: number; step: number }) {
   const pct = ((value - min) / (max - min)) * 100;
@@ -62,7 +62,7 @@ export function TrustSafetySettings() {
           <input type="number" value={cbTimeout} onChange={e => { setCbTimeout(Number(e.target.value)); setDirty(true); }} className="mt-1 w-full h-10 rounded-none border border-input bg-background px-3 font-mono text-sm" /></div>
       </div>
       <button onClick={save} disabled={!dirty || update.isPending} className="h-10 px-6 rounded-none bg-[#1A6B5A] text-white text-sm font-medium hover:bg-[#1A6B5A]/90 disabled:opacity-50 flex items-center gap-2">
-        {update.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}Save Trust Settings
+        {update.isPending ? <SpinnerGap className="w-4 h-4 animate-spin" /> : null}FloppyDisk Trust Settings
       </button>
     </div>
   );

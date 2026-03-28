@@ -1,92 +1,54 @@
-import { Buildings, Plus, MagnifyingGlass, Warning } from '@phosphor-icons/react';
-import {useState} from "react";
-import {Globe,Shield,CheckCircle2,AlertTriangle,ExternalLink,Star,Search,Plus} from "lucide-react";
-import {Card,CardContent} from "@/components/ui/card";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/table';
 
-type Vendor = {
-  id:string; name:string; category:string; riskTier:"critical"|"high"|"medium"|"low";
-  complianceScore:number; certifications:string[]; lastAssessment:string;
-  status:"approved"|"under-review"|"restricted"; contactEmail:string; models:number;
-};
+import { useState } from "react";
+import { Card, CardContent } from "../components/ui/card";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
+import { Input } from "../components/ui/input";
+import { Button } from "../components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
+import { Search, Plus, Building2, AlertTriangle, Shield } from "lucide-react";
 
-const vendors:Vendor[] = [
-  {id:"1",name:"OpenAI",category:"LLM Provider",riskTier:"critical",complianceScore:92,certifications:["SOC 2 Type II","ISO 27001"],lastAssessment:"2024-06-10",status:"approved",contactEmail:"enterprise@openai.com",models:4},
-  {id:"2",name:"Anthropic",category:"LLM Provider",riskTier:"critical",complianceScore:96,certifications:["SOC 2 Type II","ISO 27001","GDPR"],lastAssessment:"2024-06-12",status:"approved",contactEmail:"sales@anthropic.com",models:2},
-  {id:"3",name:"Google Cloud AI",category:"Cloud AI Platform",riskTier:"high",complianceScore:94,certifications:["SOC 2","ISO 27001","FedRAMP","HIPAA"],lastAssessment:"2024-06-08",status:"approved",contactEmail:"cloud@google.com",models:3},
-  {id:"4",name:"Meta AI",category:"Open Source Models",riskTier:"medium",complianceScore:78,certifications:["SOC 2 Type II"],lastAssessment:"2024-05-20",status:"under-review",contactEmail:"ai-partnerships@meta.com",models:2},
-  {id:"5",name:"Mistral AI",category:"LLM Provider",riskTier:"medium",complianceScore:82,certifications:["GDPR"],lastAssessment:"2024-05-15",status:"under-review",contactEmail:"enterprise@mistral.ai",models:1},
-  {id:"6",name:"Cohere",category:"NLP Platform",riskTier:"low",complianceScore:88,certifications:["SOC 2","GDPR"],lastAssessment:"2024-06-01",status:"approved",contactEmail:"sales@cohere.com",models:1},
+const mockVendors = [
+  { id: "VND-001", name: "OpenAI", category: "AI Model Provider", services: "GPT-4, DALL-E, Whisper", riskTier: 1, status: "active", lastAssessment: "2025-05-15", contractExpiry: "2026-01-31", contact: "enterprise@openai.com" },
+  { id: "VND-002", name: "Anthropic", category: "AI Model Provider", services: "Claude-3 Opus/Haiku", riskTier: 1, status: "active", lastAssessment: "2025-05-20", contractExpiry: "2025-12-31", contact: "sales@anthropic.com" },
+  { id: "VND-003", name: "AWS", category: "Cloud Infrastructure", services: "Bedrock, SageMaker", riskTier: 2, status: "active", lastAssessment: "2025-04-10", contractExpiry: "2026-03-15", contact: "aws-enterprise@amazon.com" },
+  { id: "VND-004", name: "Microsoft Azure", category: "Cloud Infrastructure", services: "Azure OpenAI, Cognitive", riskTier: 2, status: "active", lastAssessment: "2025-05-01", contractExpiry: "2026-06-30", contact: "azure@microsoft.com" },
+  { id: "VND-005", name: "HuggingFace", category: "Model Hub", services: "Model Hosting, Inference API", riskTier: 2, status: "under-review", lastAssessment: "2025-03-20", contractExpiry: "2025-09-30", contact: "enterprise@huggingface.co" },
+  { id: "VND-006", name: "Pinecone", category: "Vector Database", services: "Vector Search, Embeddings", riskTier: 3, status: "active", lastAssessment: "2025-04-25", contractExpiry: "2025-11-30", contact: "sales@pinecone.io" },
+  { id: "VND-007", name: "Datadog", category: "Monitoring", services: "LLM Observability", riskTier: 3, status: "active", lastAssessment: "2025-05-10", contractExpiry: "2026-02-28", contact: "sales@datadog.com" },
+  { id: "VND-008", name: "Scale AI", category: "Data Labeling", services: "RLHF, Data Annotation", riskTier: 2, status: "inactive", lastAssessment: "2025-01-15", contractExpiry: "2025-06-30", contact: "enterprise@scale.com" },
 ];
 
-const tierColors:Record<string,string> = {critical:"text-red-600 bg-red-500/10",high:"text-amber-600 bg-amber-500/10",medium:"text-emerald-600 bg-emerald-600/10",low:"text-emerald-600 bg-emerald-500/10"};
+const tierColor = (t: number) => t === 1 ? "bg-red-500/10 text-red-400 border-red-500/30" : t === 2 ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/30" : "bg-green-500/10 text-green-400 border-green-500/30";
+const statusColor = (s: string) => s === "active" ? "bg-green-500/10 text-green-400 border-green-500/30" : s === "under-review" ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/30" : "bg-red-500/10 text-red-400 border-red-500/30";
 
-export default function Vendors(){
-  const [search,setSearch] = useState("");
-  const filtered = vendors.filter(v=>v.name.toLowerCase().includes(search.toLowerCase())||v.category.toLowerCase().includes(search.toLowerCase()));
-
+export default function Vendors() {
+  const [search, setSearch] = useState("");
+  const [sel, setSel] = useState<typeof mockVendors[0] | null>(null);
+  const filtered = mockVendors.filter(v => v.name.toLowerCase().includes(search.toLowerCase()) || v.category.toLowerCase().includes(search.toLowerCase()));
   return (
-    <div className="p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <Globe size={24} className="text-emerald-600"/>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-foreground">Vendor Register</h1>
-            <p className="text-slate-500 dark:text-slate-400 text-sm">Third-party AI vendor compliance and risk management</p>
-          </div>
-        </div>
-        <button className="flex items-center gap-1.5 px-4 py-2 text-sm rounded-none bg-emerald-600 text-foreground hover:bg-emerald-700"><Plus size={14}/> Add Vendor</button>
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between"><div><h1 className="text-2xl font-bold">Vendor Registry</h1><p className="text-muted-foreground">Manage AI vendor relationships and risk</p></div>
+        <Button className="bg-green-600 hover:bg-green-700"><Plus className="w-4 h-4 mr-2" />Add Vendor</Button></div>
+      <div className="grid grid-cols-4 gap-4">
+        <Card><CardContent className="pt-6"><div className="flex items-center gap-2"><Building2 className="w-5 h-5 text-muted-foreground" /><div><div className="text-sm text-muted-foreground">Total Vendors</div><div className="text-2xl font-bold">{mockVendors.length}</div></div></div></CardContent></Card>
+        <Card><CardContent className="pt-6"><div className="flex items-center gap-2"><Shield className="w-5 h-5 text-green-400" /><div><div className="text-sm text-muted-foreground">Active</div><div className="text-2xl font-bold text-green-400">{mockVendors.filter(v=>v.status==="active").length}</div></div></div></CardContent></Card>
+        <Card><CardContent className="pt-6"><div className="flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-red-400" /><div><div className="text-sm text-muted-foreground">Tier 1 (Critical)</div><div className="text-2xl font-bold text-red-400">{mockVendors.filter(v=>v.riskTier===1).length}</div></div></div></CardContent></Card>
+        <Card><CardContent className="pt-6"><div className="flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-yellow-400" /><div><div className="text-sm text-muted-foreground">Under Review</div><div className="text-2xl font-bold text-yellow-400">{mockVendors.filter(v=>v.status==="under-review").length}</div></div></div></CardContent></Card>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        {[
-          {l:"Total Vendors",v:vendors.length,c:"text-emerald-600"},
-          {l:"Critical Tier",v:vendors.filter(v=>v.riskTier==="critical").length,c:"text-red-600"},
-          {l:"Approved",v:vendors.filter(v=>v.status==="approved").length,c:"text-emerald-600"},
-          {l:"Avg Compliance",v:Math.round(vendors.reduce((s,v)=>s+v.complianceScore,0)/vendors.length)+"%",c:"text-purple-600"},
-        ].map((s,i)=>(
-          <Card key={i}><CardContent className="p-4"><div className="text-xs text-slate-500 mb-1">{s.l}</div><div className={`text-2xl font-bold ${s.c}`}>{s.v}</div></CardContent></Card>
-        ))}
-      </div>
-
-      <div className="relative max-w-sm mb-4">
-        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
-        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search vendors..." className="w-full pl-9 pr-3 py-2 text-sm rounded-none border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-foreground"/>
-      </div>
-
-      <Card>
-        <CardContent className="p-0">
-          <Table className="w-full text-sm text-foreground">
-            <TableHeader><TableRow className="border-b border-slate-200 dark:border-slate-700">
-              {["Vendor","Risk Tier","Compliance","Certifications","Status","Models","Last Assessment",""].map(h=>(
-                <TableHead key={h} className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">{h}</TableHead>
-              ))}
-            </TableRow></TableHeader>
-            <TableBody>{filtered.map(v=>(
-              <TableRow key={v.id} className="border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-900/50">
-                <TableCell className="px-4 py-3">
-                  <div className="font-medium text-slate-900 dark:text-foreground">{v.name}</div>
-                  <div className="text-xs text-slate-500">{v.category}</div>
-                </TableCell>
-                <TableCell className="px-4 py-3"><span className={`px-2 py-0.5 text-xs rounded-full font-medium capitalize ${tierColors[v.riskTier]}`}>{v.riskTier}</span></TableCell>
-                <TableCell className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-16 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full ${v.complianceScore>=90?"bg-emerald-500":v.complianceScore>=80?"bg-amber-500":"bg-red-500"}`} style={{width:`${v.complianceScore}%`}}/>
-                    </div>
-                    <span className="text-xs font-mono">{v.complianceScore}%</span>
-                  </div>
-                </TableCell>
-                <TableCell className="px-4 py-3"><div className="flex flex-wrap gap-1">{v.certifications.map(c=><span key={c} className="px-1.5 py-0.5 text-[10px] rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">{c}</span>)}</div></TableCell>
-                <TableCell className="px-4 py-3"><span className={`px-2 py-0.5 text-xs rounded-full ${v.status==="approved"?"bg-emerald-500/10 text-emerald-600":v.status==="under-review"?"bg-amber-500/10 text-amber-600":"bg-red-500/10 text-red-600"}`}>{v.status}</span></TableCell>
-                <TableCell className="px-4 py-3 font-mono text-center">{v.models}</TableCell>
-                <TableCell className="px-4 py-3 text-xs text-slate-500">{v.lastAssessment}</TableCell>
-                <TableCell className="px-4 py-3"><button className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800"><ExternalLink size={14} className="text-slate-400"/></button></TableCell>
-              </TableRow>
-            ))}</TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
-  );
+      <div className="relative"><Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" /><Input placeholder="Search vendors..." className="pl-10" value={search} onChange={e => setSearch(e.target.value)} /></div>
+      <Card><Table><TableHeader><TableRow><TableHead>ID</TableHead><TableHead>Name</TableHead><TableHead>Category</TableHead><TableHead>AI Services</TableHead><TableHead>Risk Tier</TableHead><TableHead>Status</TableHead><TableHead>Last Assessment</TableHead><TableHead>Contract Expiry</TableHead></TableRow></TableHeader>
+        <TableBody>{filtered.map(v => (<TableRow key={v.id} className="cursor-pointer hover:bg-muted/50" onClick={()=>setSel(v)}>
+          <TableCell className="font-mono text-sm">{v.id}</TableCell><TableCell className="font-medium">{v.name}</TableCell><TableCell>{v.category}</TableCell><TableCell className="max-w-[200px] truncate">{v.services}</TableCell>
+          <TableCell><span className={`px-2 py-1 rounded-full text-xs border ${tierColor(v.riskTier)}`}>Tier {v.riskTier}</span></TableCell>
+          <TableCell><span className={`px-2 py-1 rounded-full text-xs border ${statusColor(v.status)}`}>{v.status}</span></TableCell>
+          <TableCell>{v.lastAssessment}</TableCell><TableCell>{v.contractExpiry}</TableCell></TableRow>))}</TableBody></Table></Card>
+      <Dialog open={!!sel} onOpenChange={()=>setSel(null)}><DialogContent><DialogHeader><DialogTitle>{sel?.name}</DialogTitle></DialogHeader>
+        {sel && <div className="space-y-3"><div className="grid grid-cols-2 gap-3 text-sm">
+          <div><span className="text-muted-foreground">ID:</span> {sel.id}</div><div><span className="text-muted-foreground">Category:</span> {sel.category}</div>
+          <div><span className="text-muted-foreground">Services:</span> {sel.services}</div><div><span className="text-muted-foreground">Contact:</span> {sel.contact}</div>
+          <div><span className="text-muted-foreground">Risk Tier:</span> <span className={`px-2 py-1 rounded-full text-xs border ${tierColor(sel.riskTier)}`}>Tier {sel.riskTier}</span></div>
+          <div><span className="text-muted-foreground">Status:</span> <span className={`px-2 py-1 rounded-full text-xs border ${statusColor(sel.status)}`}>{sel.status}</span></div>
+        </div><div className="flex gap-2 pt-2"><Button size="sm" variant="outline">Edit</Button><Button size="sm" variant="outline">Assessment</Button><Button size="sm" variant="destructive">Remove</Button></div></div>}
+      </DialogContent></Dialog>
+    </div>);
 }

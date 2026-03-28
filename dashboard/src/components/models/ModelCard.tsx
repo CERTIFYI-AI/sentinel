@@ -1,5 +1,5 @@
 // src/components/models/ModelCard.tsx
-import { MoreHorizontal } from "lucide-react";
+import { DotsThree } from "@phosphor-icons/react";
 import { ProviderBadge } from "./ProviderBadge";
 import { trustScoreColor } from "../../lib/chart-colors";
 import type { ModelConfig, ModelHealth } from "../../api/types";
@@ -59,7 +59,7 @@ export function ModelCard({ model, health, selected, onSelect, onSetRole, onTest
         <div className="flex gap-1">
           {model.role !== "primary" && <button onClick={() => onSetRole("primary")} className="text-xs px-2 py-1 rounded border border-border hover:bg-muted">Set Primary</button>}
           <button onClick={onTest} className="text-xs px-2 py-1 rounded border border-border hover:bg-muted">Test</button>
-          <button className="p-1 rounded hover:bg-muted"><MoreHorizontal className="w-4 h-4" /></button>
+          <button className="p-1 rounded hover:bg-muted"><DotsThree className="w-4 h-4" /></button>
         </div>
       </div>
     </div>

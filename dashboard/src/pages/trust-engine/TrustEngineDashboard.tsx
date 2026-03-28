@@ -1,70 +1,49 @@
-import { ShieldCheck, Plus, MagnifyingGlass, Warning } from '@phosphor-icons/react';
-import { useState, useEffect } from 'react';
-import { useAuthStore } from '../../store/authStore';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table';
+
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../../components/ui/table";
+import { Button } from "../../components/ui/button";
+import { Shield, Activity, Ban, Flag, CheckCircle } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+
+const hourlyData = Array.from({length: 24}, (_, i) => ({ hour: `${i}:00`, requests: Math.floor(Math.random() * 3000) + 1000, blocked: Math.floor(Math.random() * 50) + 5 }));
+const recentEvents = [
+  { time: "14:32:05", model: "GPT-4-Turbo", action: "generate", policy: "PII Detection", outcome: "blocked" },
+  { time: "14:31:52", model: "Claude-3-Opus", action: "chat", policy: "Toxicity Filter", outcome: "passed" },
+  { time: "14:31:48", model: "GPT-4-Turbo", action: "generate", policy: "Jailbreak Detection", outcome: "flagged" },
+  { time: "14:31:30", model: "Gemini-Pro", action: "analyze", policy: "Rate Limit", outcome: "passed" },
+  { time: "14:31:15", model: "Claude-3-Haiku", action: "chat", policy: "Content Safety", outcome: "passed" },
+  { time: "14:30:58", model: "GPT-4-Turbo", action: "generate", policy: "PII Detection", outcome: "flagged" },
+  { time: "14:30:42", model: "GPT-4-Vision", action: "analyze", policy: "Image Safety", outcome: "passed" },
+  { time: "14:30:21", model: "Claude-3-Opus", action: "generate", policy: "Hallucination Check", outcome: "blocked" },
+  { time: "14:30:05", model: "Mistral-Large", action: "chat", policy: "Token Limit", outcome: "passed" },
+  { time: "14:29:48", model: "GPT-4-Turbo", action: "generate", policy: "Cost Guard", outcome: "passed" },
+];
+const outcomeColor = (o: string) => o === "passed" ? "text-green-400" : o === "blocked" ? "text-red-400" : "text-yellow-400";
 
 export default function TrustEngineDashboard() {
-  const [data, setData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const token = useAuthStore((s) => s.token);
-
-  useEffect(() => {
-    fetch('/api/trust-engine', { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.ok ? r.json() : [])
-      .then(d => { setData(Array.isArray(d) ? d : d.items || []); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, [token]);
-
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground dark:text-foreground">Trust Engine Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-1">Real-time Trust Engine overview with TrustScore analytics, guardrail activity, and cost monitoring</p>
+      <div className="flex items-center justify-between"><div><h1 className="text-2xl font-bold">Trust Engine</h1><p className="text-muted-foreground">Real-time AI request monitoring and policy enforcement</p></div>
+        <div className="flex items-center gap-2"><span className="flex items-center gap-1 text-green-400 text-sm"><span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />LIVE</span></div></div>
+      <div className="grid grid-cols-2 gap-4">
+        <Card className="col-span-2 md:col-span-1"><CardContent className="pt-6 flex items-center gap-4"><div className="w-24 h-24 rounded-full border-4 border-green-500 flex items-center justify-center"><span className="text-3xl font-bold">78</span></div><div><div className="text-sm text-muted-foreground">Trust Score</div><div className="text-lg font-semibold text-green-400">Healthy</div><p className="text-xs text-muted-foreground">Based on last 24h of activity</p></div></CardContent></Card>
+        <div className="grid grid-cols-2 gap-4">
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-2"><Activity className="w-5 h-5 text-blue-400" /><div><div className="text-sm text-muted-foreground">Requests Today</div><div className="text-2xl font-bold">45,231</div></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-2"><Ban className="w-5 h-5 text-red-400" /><div><div className="text-sm text-muted-foreground">Blocked</div><div className="text-2xl font-bold text-red-400">342</div></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-2"><Flag className="w-5 h-5 text-yellow-400" /><div><div className="text-sm text-muted-foreground">Flagged</div><div className="text-2xl font-bold text-yellow-400">89</div></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-2"><CheckCircle className="w-5 h-5 text-green-400" /><div><div className="text-sm text-muted-foreground">Pass Rate</div><div className="text-2xl font-bold text-green-400">99.2%</div></div></div></CardContent></Card>
         </div>
-        <button className="px-4 py-2 bg-emerald-600 text-foreground rounded-none hover:bg-emerald-700 text-sm">
-          + Add New
-        </button>
       </div>
-
-      {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-        </div>
-      ) : data.length === 0 ? (
-        <div className="text-center py-16 bg-white dark:bg-card rounded-none border border-border dark:border-border">
-          <div className="text-4xl mb-4">📋</div>
-          <h3 className="text-lg font-semibold text-foreground dark:text-gray-300">No items yet</h3>
-          <p className="text-sm text-muted-foreground mt-2">Create your first trust engine dashboard to get started</p>
-        </div>
-      ) : (
-        <div className="bg-card dark:bg-card rounded-none border border-border dark:border-border overflow-hidden">
-          <Table className="w-full">
-            <TableHeader className="bg-muted dark:bg-background">
-              <TableRow>
-                <TableHead className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Name</TableHead>
-                <TableHead className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Status</TableHead>
-                <TableHead className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Score</TableHead>
-                <TableHead className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Updated</TableHead>
-                <TableHead className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody className="divide-y divide-border dark:divide-border">
-              {data.map((item: any, i: number) => (
-                <TableRow key={item.id || i} className="hover:bg-muted dark:hover:bg-muted/50">
-                  <TableCell className="px-4 py-3 text-sm font-medium text-foreground dark:text-foreground">{item.name || item.title || `Item ${i+1}`}</TableCell>
-                  <TableCell className="px-4 py-3"><span className="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-800">{item.status || 'Active'}</span></TableCell>
-                  <TableCell className="px-4 py-3 text-sm text-muted-foreground dark:text-muted-foreground">{item.score || item.compliance_score || '--'}</TableCell>
-                  <TableCell className="px-4 py-3 text-sm text-muted-foreground">{item.updated_at ? new Date(item.updated_at).toLocaleDateString() : '--'}</TableCell>
-                  <TableCell className="px-4 py-3 text-right">
-                    <button className="text-sm text-emerald-600 hover:text-emerald-800">View</button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-    </div>
-  );
+      <Card><CardHeader><CardTitle>Request Volume & Blocks (24h)</CardTitle></CardHeader><CardContent>
+        <ResponsiveContainer width="100%" height={250}><LineChart data={hourlyData}><CartesianGrid strokeDasharray="3 3" stroke="#333" />
+          <XAxis dataKey="hour" stroke="#888" fontSize={12} /><YAxis stroke="#888" fontSize={12} /><Tooltip contentStyle={{backgroundColor:"#1a1a2e",border:"1px solid #333"}} />
+          <Line type="monotone" dataKey="requests" stroke="#16a34a" strokeWidth={2} dot={false} /><Line type="monotone" dataKey="blocked" stroke="#ef4444" strokeWidth={2} dot={false} /></LineChart></ResponsiveContainer>
+      </CardContent></Card>
+      <Card><CardHeader><CardTitle>Recent Policy Enforcement</CardTitle></CardHeader><CardContent>
+        <Table><TableHeader><TableRow><TableHead>Time</TableHead><TableHead>Model</TableHead><TableHead>Action</TableHead><TableHead>Policy</TableHead><TableHead>Outcome</TableHead></TableRow></TableHeader>
+          <TableBody>{recentEvents.map((e, i) => (<TableRow key={i}><TableCell className="font-mono text-sm">{e.time}</TableCell><TableCell>{e.model}</TableCell><TableCell>{e.action}</TableCell><TableCell>{e.policy}</TableCell>
+            <TableCell><span className={`font-medium ${outcomeColor(e.outcome)}`}>{e.outcome}</span></TableCell></TableRow>))}</TableBody></Table>
+      </CardContent></Card>
+    </div>);
 }

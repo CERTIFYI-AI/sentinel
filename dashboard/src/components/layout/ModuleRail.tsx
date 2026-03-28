@@ -1,12 +1,12 @@
 // dashboard/src/components/layout/ModuleRail.tsx
 import { useNavigate, useLocation } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Activity, LayoutGrid, AlertTriangle, Hexagon, HelpCircle, Settings } from "lucide-react";
+import { Activity, SquaresFour, Warning, Hexagon, Question,  Gear } from "@phosphor-icons/react";
 
 const modules = [
   { id: "proxy", icon: Activity, label: "Proxy \u2014 AI Trust Engine", path: "/overview", active: true },
-  { id: "evals", icon: LayoutGrid, label: "Evals \u2014 Coming in v0.3", path: "", active: false },
-  { id: "risk", icon: AlertTriangle, label: "Risk \u2014 Coming in v0.3", path: "", active: false },
+  { id: "evals", icon: SquaresFour, label: "Evals \u2014 Coming in v0.3", path: "", active: false },
+  { id: "risk", icon: Warning, label: "Risk \u2014 Coming in v0.3", path: "", active: false },
   { id: "shadow", icon: Hexagon, label: "Shadow \u2014 Coming in v0.3", path: "", active: false },
 ];
 
@@ -48,7 +48,7 @@ export function ModuleRail() {
           <Tooltip>
             <TooltipTrigger asChild>
               <button className="w-10 h-10 flex items-center justify-center rounded-none text-muted-foreground hover:bg-muted" aria-label="Help">
-                <HelpCircle className="h-5 w-5" />
+                <Question className="h-5 w-5" />
               </button>
             </TooltipTrigger>
             <TooltipContent side="right">Help</TooltipContent>

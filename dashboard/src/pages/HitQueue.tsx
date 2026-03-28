@@ -37,7 +37,7 @@ const statusColors: Record<string, string> = {
 export default function HitQueue() {
   const [items, setItems] = useState<HitlItem[]>(DUMMY_ITEMS);
   const [selected, setSelected] = useState<HitlItem | null>(null);
-  const [filter, setFilter] = useState<string>("all");
+  const [filter, setFunnel] = useState<string>("all");
 
   const filtered = filter === "all" ? items : items.filter(i => i.status === filter);
   const pendingCount = items.filter(i => i.status === "pending").length;
@@ -61,7 +61,7 @@ export default function HitQueue() {
 
       <div className="flex gap-2 mb-4">
         {["all", "pending", "approved", "rejected"].map(f => (
-          <button key={f} onClick={() => setFilter(f)}
+          <button key={f} onClick={() => setFunnel(f)}
             className={`px-3 py-1 rounded text-sm capitalize ${filter === f ? "bg-green-600 text-foreground" : "bg-muted dark:bg-card text-foreground dark:text-gray-300"}`}>
             {f}
           </button>

@@ -1,7 +1,7 @@
 // src/components/auth/LoginForm.tsx
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeSlash, SpinnerGap } from "@phosphor-icons/react";
 import { login } from "../../api/client";
 
 export function LoginForm({ onSuccess }: { onSuccess: () => void }) {
@@ -51,7 +51,7 @@ export function LoginForm({ onSuccess }: { onSuccess: () => void }) {
           <input type={show ? "text" : "password"} value={apiKey} onChange={e => setApiKey(e.target.value)}
             placeholder="sk-sentinel-..." className="w-full h-10 rounded-none border border-input bg-background px-3 pr-10 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           <button type="button" onClick={() => setShow(!show)} className="absolute right-2 top-2 text-muted-foreground hover:text-foreground">
-            {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            {show ? <EyeSlash className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
         </div>
       ) : (
@@ -68,7 +68,7 @@ export function LoginForm({ onSuccess }: { onSuccess: () => void }) {
               <input type={show ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)}
                 className="w-full h-10 rounded-none border border-input bg-background px-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
               <button type="button" onClick={() => setShow(!show)} className="absolute right-2 top-2 text-muted-foreground hover:text-foreground">
-                {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {show ? <EyeSlash className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
           </div>
@@ -77,7 +77,7 @@ export function LoginForm({ onSuccess }: { onSuccess: () => void }) {
 
       <button type="submit" disabled={loading}
         className="w-full h-10 rounded-none bg-[#1A6B5A] text-white font-medium text-sm hover:bg-[#1A6B5A]/90 disabled:opacity-50 flex items-center justify-center gap-2">
-        {loading ? <><Loader2 className="w-4 h-4 animate-spin" />Signing in...</> : tab === "apikey" ? "Continue" : "Sign in"}
+        {loading ? <><SpinnerGap className="w-4 h-4 animate-spin" />Signing in...</> : tab === "apikey" ? "Continue" : "Sign in"}
       </button>
 
       <div className="text-center text-sm text-muted-foreground">

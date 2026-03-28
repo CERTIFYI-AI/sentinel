@@ -1,6 +1,6 @@
 // src/components/ErrorBoundary.tsx
 import { Component, type ErrorInfo, type ReactNode } from "react";
-import { AlertTriangle, RefreshCw } from "lucide-react";
+import { Warning, ArrowsClockwise } from "@phosphor-icons/react";
 
 interface Props {
   children: ReactNode;
@@ -39,7 +39,7 @@ export default class ErrorBoundary extends Component<Props, State> {
         <div className="flex items-center justify-center min-h-[400px] p-8">
           <div className="text-center max-w-md space-y-4">
             <div className="mx-auto w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-              <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-400" />
+              <Warning className="w-8 h-8 text-red-600 dark:text-red-400" />
             </div>
             <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
               Something went wrong
@@ -59,7 +59,7 @@ export default class ErrorBoundary extends Component<Props, State> {
               onClick={this.handleReset}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-none bg-emerald-600 text-white hover:bg-emerald-700 transition-colors text-sm font-medium"
             >
-              <RefreshCw className="w-4 h-4" />
+              <ArrowsClockwise className="w-4 h-4" />
               Try again
             </button>
           </div>

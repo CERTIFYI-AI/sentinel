@@ -1,6 +1,6 @@
 import { Wrench, Plus, MagnifyingGlass } from '@phosphor-icons/react';
 import {useState} from "react";
-import {Wrench,CheckCircle2,Clock,AlertTriangle,User,Calendar,ArrowUpRight,Filter} from "lucide-react";
+import {Wrench,CheckCircle,Clock,Warning,User,Calendar,ArrowUpRight,Funnel} from "@phosphor-icons/react";
 import {Card,CardContent} from "@/components/ui/card";
 
 type RemediationItem = {
@@ -22,7 +22,7 @@ const priorityColors:Record<string,string> = {critical:"bg-red-500/10 text-red-6
 const statusColors:Record<string,string> = {open:"bg-slate-200 text-slate-600","in-progress":"bg-emerald-600/10 text-emerald-600",resolved:"bg-emerald-500/10 text-emerald-600",deferred:"bg-amber-500/10 text-amber-600"};
 
 export default function Remediation(){
-  const [filterStatus,setFilterStatus] = useState("all");
+  const [filterStatus,setFunnelStatus] = useState("all");
   const filtered = filterStatus==="all"?items:items.filter(i=>i.status===filterStatus);
   const stats = {open:items.filter(i=>i.status==="open").length,inProgress:items.filter(i=>i.status==="in-progress").length,resolved:items.filter(i=>i.status==="resolved").length,total:items.length};
 
@@ -43,9 +43,9 @@ export default function Remediation(){
       </div>
 
       <div className="flex items-center gap-3 mb-4">
-        <Filter size={14} className="text-slate-400"/>
+        <Funnel size={14} className="text-slate-400"/>
         {["all","open","in-progress","resolved","deferred"].map(s=>(
-          <button key={s} onClick={()=>setFilterStatus(s)} className={`px-3 py-1.5 text-xs rounded-full capitalize ${filterStatus===s?"bg-emerald-600 text-foreground":"bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"}`}>{s}</button>
+          <button key={s} onClick={()=>setFunnelStatus(s)} className={`px-3 py-1.5 text-xs rounded-full capitalize ${filterStatus===s?"bg-emerald-600 text-foreground":"bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"}`}>{s}</button>
         ))}
       </div>
 

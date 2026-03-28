@@ -1,7 +1,7 @@
 // src/components/settings/sections/ApiKeySettings.tsx
 import { useState } from "react";
 import { useApiKeys, useCreateApiKey, useRevokeApiKey } from "../../../hooks/use-settings";
-import { Loader2, Plus, Copy, Check } from "lucide-react";
+import { SpinnerGap, Plus, Copy, Check } from "@phosphor-icons/react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../../ui/table';
 
 export function ApiKeySettings() {
@@ -73,7 +73,7 @@ export function ApiKeySettings() {
           </select>
           <div className="flex gap-2">
             <button onClick={handleCreate} disabled={!newKeyName || createKey.isPending} className="h-9 px-4 rounded-none bg-[#1A6B5A] text-white text-sm">
-              {createKey.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create Key"}
+              {createKey.isPending ? <SpinnerGap className="w-4 h-4 animate-spin" /> : "Create Key"}
             </button>
             <button onClick={() => setShowCreate(false)} className="h-9 px-4 rounded-none border text-sm">Cancel</button>
           </div>

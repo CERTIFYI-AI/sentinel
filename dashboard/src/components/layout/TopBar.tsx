@@ -1,7 +1,7 @@
 // dashboard/src/components/layout/TopBar.tsx
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Bell, Search, Sun, Moon, ChevronRight, User } from "lucide-react";
+import { Bell, MagnifyingGlass, Sun, Moon, CaretRight, User } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/theme-provider";
 import { NotificationDrawer } from "@/components/ui/NotificationDrawer";
@@ -30,17 +30,17 @@ export function TopBar() {
         {/* Breadcrumb */}
         <nav className="flex items-center gap-1 text-sm">
           <button onClick={() => navigate("/overview")} className="text-muted-foreground hover:text-foreground transition-colors">Proxy</button>
-          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+          <CaretRight className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="font-medium text-foreground">{currentPage}</span>
         </nav>
 
-        {/* Search */}
+        {/* MagnifyingGlass */}
         <button
           onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
           className="hidden md:flex items-center gap-2 flex-1 max-w-md mx-auto bg-muted/50 rounded-none px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted transition-colors"
         >
-          <Search className="h-3.5 w-3.5" />
-          <span>Search audits, requests, models...</span>
+          <MagnifyingGlass className="h-3.5 w-3.5" />
+          <span>MagnifyingGlass audits, requests, models...</span>
           <kbd className="ml-auto text-[10px] bg-background px-1.5 py-0.5 rounded border border-border">&#8984;K</kbd>
         </button>
 
