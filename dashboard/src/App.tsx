@@ -49,6 +49,8 @@ const Signup = lazy(() => import('./pages/Signup'));
 const TrustEngineDashboard = lazy(() => import('./pages/trust-engine/TrustEngineDashboard'));
 const LiveTraceFeed = lazy(() => import('./pages/trust-engine/LiveTraceFeed'));
 const GuardrailActivity = lazy(() => import('./pages/trust-engine/GuardrailActivity'));
+const Reporting = lazy(() => import("./pages/reporting/Reporting"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 const CostTokenDashboard = lazy(() => import('./pages/trust-engine/CostTokenDashboard'));
 const FallbackLog = lazy(() => import('./pages/trust-engine/FallbackLog'));
 const ToolCallMonitor = lazy(() => import('./pages/trust-engine/ToolCallMonitor'));
@@ -188,7 +190,8 @@ function AuthenticatedLayout() {
               <Route path="/access-control/users" element={<UserManager />} />
               <Route path="/compliance/controls/:id" element={<ControlDetail />} />
 
-              <Route path="*" element={<Navigate to="/overview" replace />} />
+            <Route path="/reporting" element={<Suspense fallback={<Loading />}><Reporting /></Suspense>} />
+              <Route path="*" element={<Suspense fallback={<Loading />}><NotFound /></Suspense>} />
             </Routes>
           </Suspense>
         </main>

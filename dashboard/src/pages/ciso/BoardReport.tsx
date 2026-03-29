@@ -1,281 +1,37 @@
-import { Export, Plus, MagnifyingGlass } from '@phosphor-icons/react';
-// dashboard/src/pages/ciso/BoardReport.tsx
-// Board report generation page — Sprint 2 #14
-// CONFIG -> LOADING -> PREVIEW state machine, PDF export via postBlob()
-
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { apiClient } from "../../lib/api-client";
-import { QK } from "../../lib/queryKeys";
 import { useState } from "react";
-
-type ReportState = "CONFIG" | "LOADING" | "PREVIEW" | "ERROR";
-
-interface ReportConfig {
-  tenantId: string;
-  period: "30d" | "60d" | "90d" | "custom";
-  includeFindings: boolean;
-  includeCompliance: boolean;
-  includeEvals: boolean;
-  includeTrend: boolean;
-}
-
-interface BoardReportData {
-  generatedAt: string;
-  period: string;
-  overallScore: number;
-  trend: string;
-  trendDelta: number;
-  executiveSummary: string;
-  sections: Array<{
-    title: string;
-    content: string;
-    score?: number;
-  }>;
-  topRisks: Array<{
-    id: string;
-    title: string;
-    severity: string;
-    recommendation: string;
-  }>;
-}
-
-function ConfigStep({
-  config,
-  onChange,
-  onGenerate,
-}: {
-  config: ReportConfig;
-  onChange: (patch: Partial<ReportConfig>) => void;
-  onGenerate: () => void;
-}) {
-  return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div>
-        <h2 className="font-outfit text-xl font-semibold text-[hsl(var(--foreground))]">Report Configuration</h2>
-        <p className="font-outfit text-sm text-[hsl(var(--muted-foreground))] mt-1">
-          Configure the board report parameters before generating.
-        </p>
-      </div>
-
-      <div className="rounded-none border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 space-y-4">
-        <div>
-          <label className="font-outfit text-sm font-medium text-[hsl(var(--foreground))]">Reporting Period</label>
-          <select
-            className="mt-1 w-full font-outfit text-sm rounded-none border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-[hsl(var(--foreground))]"
-            value={config.period}
-            onChange={(e) => onChange({ period: e.target.value as ReportConfig["period"] })}
-          >
-            <option value="30d">Last 30 days</option>
-            <option value="60d">Last 60 days</option>
-            <option value="90d">Last 90 days</option>
-          </select>
-        </div>
-
-        <div className="space-y-3">
-          <label className="font-outfit text-sm font-medium text-[hsl(var(--foreground))]">Include Sections</label>
-          {([
-            { key: "includeFindings", label: "Security Findings" },
-            { key: "includeCompliance", label: "Compliance Status" },
-            { key: "includeEvals", label: "Eval Quality Metrics" },
-            { key: "includeTrend", label: "Risk Trend Analysis" },
-          ] as const).map(({ key, label }) => (
-            <label key={key} className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={config[key]}
-                onChange={(e) => onChange({ [key]: e.target.checked })}
-                className="rounded border-[hsl(var(--border))]"
-              />
-              <span className="font-outfit text-sm text-[hsl(var(--foreground))]">{label}</span>
-            </label>
-          ))}
-        </div>
-      </div>
-
-      <button
-        onClick={onGenerate}
-        className="w-full font-outfit text-sm font-medium py-3 rounded-none bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-opacity"
-      >
-        Generate Report
-      </button>
-    </div>
-  );
-}
-
-function LoadingStep() {
-  return (
-    <div className="flex flex-col items-center justify-center py-20 space-y-4">
-      <div className="h-8 w-8 rounded-full border-2 border-[hsl(var(--primary))] border-t-transparent animate-spin" />
-      <p className="font-outfit text-sm text-[hsl(var(--muted-foreground))]">Generating board report...</p>
-    </div>
-  );
-}
-
-function PreviewStep({
-  data,
-  onExport,
-  onReset,
-  exporting,
-}: {
-  data: BoardReportData;
-  onExport: () => void;
-  onReset: () => void;
-  exporting: boolean;
-}) {
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="font-outfit text-xl font-semibold text-[hsl(var(--foreground))]">Report Preview</h2>
-          <p className="font-outfit text-xs text-[hsl(var(--muted-foreground))]">Generated: {data.generatedAt}</p>
-        </div>
-        <div className="flex gap-3">
-          <button
-            onClick={onReset}
-            className="font-outfit text-sm px-4 py-2 rounded-none border border-[hsl(var(--border))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors"
-          >
-            Reconfigure
-          </button>
-          <button
-            onClick={onExport}
-            disabled={exporting}
-            className="font-outfit text-sm px-4 py-2 rounded-none bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-opacity disabled:opacity-50"
-          >
-            {exporting ? "Exporting..." : "Export PDF"}
-          </button>
-        </div>
-      </div>
-
-      {/* Executive Summary */}
-      <div className="rounded-none border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6">
-        <h3 className="font-outfit text-lg font-semibold text-[hsl(var(--foreground))] mb-3">Executive Summary</h3>
-        <p className="font-outfit text-sm text-[hsl(var(--muted-foreground))] leading-relaxed">{data.executiveSummary}</p>
-      </div>
-
-      {/* Overall score */}
-      <div className="rounded-none border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 text-center">
-        <p className="font-outfit text-sm text-[hsl(var(--muted-foreground))]">Overall Posture Score ({data.period})</p>
-        <p className="font-outfit text-5xl font-bold text-[hsl(var(--primary))] mt-2">{data.overallScore.toFixed(1)}</p>
-        <p className="font-outfit text-xs text-[hsl(var(--muted-foreground))] mt-1">
-          Trend: {data.trend} ({data.trendDelta >= 0 ? "+" : ""}{data.trendDelta.toFixed(1)} pts)
-        </p>
-      </div>
-
-      {/* Sections */}
-      {data.sections.map((section, i) => (
-        <div key={i} className="rounded-none border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-outfit text-lg font-semibold text-[hsl(var(--foreground))]">{section.title}</h3>
-            {section.score !== undefined && (
-              <span className="font-outfit text-lg font-bold text-[hsl(var(--primary))]">{section.score.toFixed(1)}</span>
-            )}
-          </div>
-          <p className="font-outfit text-sm text-[hsl(var(--muted-foreground))] leading-relaxed">{section.content}</p>
-        </div>
-      ))}
-
-      {/* Top risks */}
-      {data.topRisks.length > 0 && (
-        <div className="rounded-none border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6">
-          <h3 className="font-outfit text-lg font-semibold text-[hsl(var(--foreground))] mb-4">Top Risks & Recommendations</h3>
-          <div className="space-y-4">
-            {data.topRisks.map((risk) => (
-              <div key={risk.id} className="border-l-2 border-[hsl(var(--destructive))] pl-4">
-                <div className="flex items-center gap-2">
-                  <p className="font-outfit text-sm font-medium text-[hsl(var(--foreground))]">{risk.title}</p>
-                  <span className="font-outfit text-xs px-2 py-0.5 rounded bg-[hsl(var(--destructive)/0.15)] text-[hsl(var(--destructive))]">{risk.severity}</span>
-                </div>
-                <p className="font-outfit text-sm text-[hsl(var(--muted-foreground))] mt-1">{risk.recommendation}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Badge } from "../../components/ui/badge";
+import { Button } from "../../components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
+import { Input } from "../../components/ui/input";
+import { Shield, Search, Filter, Plus, Download } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+const columns = [  { key: "id", label: "ID" },
+  { key: "name", label: "Name" },
+  { key: "status", label: "Status" },
+  { key: "severity", label: "Severity" },
+  { key: "score", label: "Score" },
+  { key: "owner", label: "Owner" },];
+const mockData: any[] = [  { id: 1, name: "Item Alpha", status: "active", severity: "high", score: 85, owner: "John" },
+  { id: 2, name: "Item Beta", status: "completed", severity: "medium", score: 72, owner: "Sarah" },
+  { id: 3, name: "Item Gamma", status: "pending", severity: "low", score: 91, owner: "Mike" },
+  { id: 4, name: "Item Delta", status: "active", severity: "critical", score: 45, owner: "Anna" },
+  { id: 5, name: "Item Epsilon", status: "review", severity: "medium", score: 78, owner: "Tom" },];
+const statsCards = [  { label: "Total", value: "189", icon: Shield },
+  { label: "Active", value: "134", icon: Shield },
+  { label: "Critical", value: "8", icon: Shield },
+  { label: "Resolved", value: "47", icon: Shield },];
 export default function BoardReport() {
-  const [state, setState] = useState<ReportState>("CONFIG");
-  const [reportData, setReportData] = useState<BoardReportData | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string>("");
-  const [config, setConfig] = useState<ReportConfig>({
-    tenantId: "",
-    period: "90d",
-    includeFindings: true,
-    includeCompliance: true,
-    includeEvals: true,
-    includeTrend: true,
-  });
-
-  const generateMutation = useMutation({
-    mutationFn: (cfg: ReportConfig) =>
-      apiClient.post<BoardReportData>("/ciso/board-report/data", cfg),
-    onSuccess: (data) => {
-      setReportData(data);
-      setState("PREVIEW");
-    },
-    onError: (err: Error) => {
-      setErrorMsg(err.message);
-      setState("ERROR");
-    },
-  });
-
-  const exportMutation = useMutation({
-    mutationFn: () => apiClient.postBlob("/ciso/board-report/export", { config }),
-    onSuccess: (blob) => {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `sentinel-board-report-${new Date().toISOString().slice(0, 10)}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
-    },
-    onError: (err: Error) => {
-      setErrorMsg(err.message);
-    },
-  });
-
-  const handleGenerate = () => {
-    setState("LOADING");
-    generateMutation.mutate(config);
-  };
-
-  return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="font-outfit text-2xl font-bold text-[hsl(var(--foreground))]">Board Report</h1>
-        <p className="font-outfit text-sm text-[hsl(var(--muted-foreground))]">Generate signed, timestamped executive evidence packages</p>
-      </div>
-
-      {state === "CONFIG" && (
-        <ConfigStep
-          config={config}
-          onChange={(patch) => setConfig((c) => ({ ...c, ...patch }))}
-          onGenerate={handleGenerate}
-        />
-      )}
-      {state === "LOADING" && <LoadingStep />}
-      {state === "PREVIEW" && reportData && (
-        <PreviewStep
-          data={reportData}
-          onExport={() => exportMutation.mutate()}
-          onReset={() => setState("CONFIG")}
-          exporting={exportMutation.isPending}
-        />
-      )}
-      {state === "ERROR" && (
-        <div className="rounded-none border border-[hsl(var(--destructive))] bg-[hsl(var(--destructive)/0.1)] p-6">
-          <h3 className="font-outfit text-lg font-semibold text-[hsl(var(--destructive))]">Report generation failed</h3>
-          <p className="font-outfit text-sm text-[hsl(var(--muted-foreground))] mt-2">{errorMsg}</p>
-          <button
-            onClick={() => setState("CONFIG")}
-            className="mt-4 font-outfit text-sm px-4 py-2 rounded-none border border-[hsl(var(--border))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
-      )}
-    </div>
-  );
+  const [search, setSearch] = useState("");
+  const [sf, setSf] = useState("all");
+  const [sel, setSel] = useState<any>(null);
+  const [open, setOpen] = useState(false);
+  const sts = ["all", ...Array.from(new Set(mockData.map((d) => d.status||d.severity||"active")))];
+  const filt = mockData.filter((d) => JSON.stringify(d).toLowerCase().includes(search.toLowerCase()) && (sf==="all"||(d.status||d.severity)===sf));
+  const ch = mockData.slice(0,6).map((d,i) => ({ name: d.name||d.title||"I"+(i+1), value: d.score||d.count||50+i*10 }));
+  return (<div className="p-6 space-y-6"><div className="flex items-center justify-between"><h1 className="text-2xl font-bold">Board Report</h1><div className="flex gap-2"><Button size="sm" variant="outline"><Download className="h-4 w-4 mr-1"/>Export</Button><Button size="sm"><Plus className="h-4 w-4 mr-1"/>Add New</Button></div></div>
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">{statsCards.map((s:any,i:number)=>(<Card key={i}><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">{s.label}</p><p className="text-2xl font-bold">{s.value}</p></div><s.icon className="h-8 w-8 text-emerald-500"/></div></CardContent></Card>))}</div>
+  <Card><CardHeader><CardTitle>Overview</CardTitle></CardHeader><CardContent><ResponsiveContainer width="100%" height={250}><BarChart data={ch}><XAxis dataKey="name" fontSize={12}/><YAxis fontSize={12}/><Tooltip/><Bar dataKey="value" fill="#10b981" radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></CardContent></Card>
+  <Card><CardHeader><div className="flex items-center justify-between"><CardTitle>Records</CardTitle><div className="flex gap-2"><div className="relative"><Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"/><Input placeholder="Search..." value={search} onChange={(e)=>setSearch(e.target.value)} className="pl-8 w-64"/></div><select className="border rounded px-3 py-1.5 text-sm bg-background" value={sf} onChange={(e)=>setSf(e.target.value)}>{sts.map(s=><option key={s} value={s}>{s==="all"?"All":s}</option>)}</select></div></div></CardHeader><CardContent><div className="border rounded-lg overflow-hidden"><table className="w-full"><thead className="bg-muted/50"><tr>{columns.map((c:any)=><th key={c.key} className="text-left p-3 text-sm font-medium">{c.label}</th>)}<th className="text-left p-3 text-sm font-medium">Actions</th></tr></thead><tbody>{filt.map((row:any,i:number)=>(<tr key={i} className="border-t hover:bg-muted/30 cursor-pointer" onClick={()=>{setSel(row);setOpen(true);}}>{columns.map((c:any)=>(<td key={c.key} className="p-3 text-sm">{c.key==="status"||c.key==="severity"?(<Badge variant={row[c.key]==="critical"||row[c.key]==="high"?"destructive":row[c.key]==="compliant"||row[c.key]==="active"||row[c.key]==="low"?"default":"secondary"}>{row[c.key]}</Badge>):String(row[c.key]??"")}</td>))}<td className="p-3"><Button size="sm" variant="ghost" onClick={(e)=>{e.stopPropagation();setSel(row);setOpen(true);}}>View</Button></td></tr>))}</tbody></table></div><p className="text-sm text-muted-foreground mt-2">{filt.length} of {mockData.length} records</p></CardContent></Card>
+  <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{sel?.name||sel?.title||"Detail"}</DialogTitle></DialogHeader><div className="space-y-3">{sel&&Object.entries(sel).map(([k,v])=>(<div key={k} className="flex justify-between border-b pb-2"><span className="text-sm text-muted-foreground capitalize">{k}</span><span className="text-sm font-medium">{String(v)}</span></div>))}<div className="flex gap-2 pt-2"><Button size="sm">Edit</Button><Button size="sm" variant="outline">Archive</Button><Button size="sm" variant="destructive">Delete</Button></div></div></DialogContent></Dialog></div>);
 }

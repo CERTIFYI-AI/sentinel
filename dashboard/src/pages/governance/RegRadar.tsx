@@ -3,38 +3,35 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/ca
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
-import { Globe, AlertTriangle, Search, TrendingUp } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-
-const regulations = [
-  { id: 1, name: "EU AI Act Article 6", region: "EU", status: "enacted", impact: "high", effectiveDate: "2025-08-01", description: "Classification of high-risk AI systems" },
-  { id: 2, name: "NIST AI 600-1", region: "US", status: "draft", impact: "medium", effectiveDate: "2025-03-15", description: "AI risk management companion" },
-  { id: 3, name: "Canada AIDA", region: "CA", status: "proposed", impact: "high", effectiveDate: "2025-06-01", description: "Artificial Intelligence and Data Act" },
-  { id: 4, name: "UK AI Safety Framework", region: "UK", status: "enacted", impact: "medium", effectiveDate: "2024-11-01", description: "Frontier AI safety guidelines" },
-  { id: 5, name: "China AI Regulations", region: "CN", status: "enacted", impact: "high", effectiveDate: "2024-08-15", description: "Generative AI service management" },
-  { id: 6, name: "Singapore AI Governance", region: "SG", status: "enacted", impact: "low", effectiveDate: "2024-06-01", description: "Model AI governance framework" },
-];
-const trendData = [{month:"Jul",count:3},{month:"Aug",count:5},{month:"Sep",count:4},{month:"Oct",count:7},{month:"Nov",count:6},{month:"Dec",count:8}];
-
+import { Input } from "../../components/ui/input";
+import { Shield, Search, Filter, Plus, Download } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+const columns = [  { key: "id", label: "ID" },
+  { key: "name", label: "Name" },
+  { key: "status", label: "Status" },
+  { key: "type", label: "Type" },
+  { key: "score", label: "Score" },
+  { key: "date", label: "Date" },];
+const mockData: any[] = [  { id: 1, name: "Record One", status: "active", type: "Primary", score: 92, date: "2024-03-15" },
+  { id: 2, name: "Record Two", status: "completed", type: "Secondary", score: 85, date: "2024-03-14" },
+  { id: 3, name: "Record Three", status: "pending", type: "Primary", score: 78, date: "2024-03-13" },
+  { id: 4, name: "Record Four", status: "active", type: "Tertiary", score: 91, date: "2024-03-12" },
+  { id: 5, name: "Record Five", status: "archived", type: "Secondary", score: 67, date: "2024-03-11" },];
+const statsCards = [  { label: "Total", value: "245", icon: Shield },
+  { label: "Active", value: "178", icon: Shield },
+  { label: "Pending", value: "34", icon: Shield },
+  { label: "Archived", value: "33", icon: Shield },];
 export default function RegRadar() {
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<any>(null);
-  const [filter, setFilter] = useState("all");
-  const filtered = regulations.filter(r => (filter === "all" || r.status === filter) && r.name.toLowerCase().includes(search.toLowerCase()));
-  return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Regulatory Radar</h1>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card><CardContent className="pt-4"><div className="text-2xl font-bold">{regulations.length}</div><p className="text-sm text-muted-foreground">Tracked Regulations</p></CardContent></Card>
-        <Card><CardContent className="pt-4"><div className="text-2xl font-bold text-red-600">{regulations.filter(r=>r.impact==="high").length}</div><p className="text-sm text-muted-foreground">High Impact</p></CardContent></Card>
-        <Card><CardContent className="pt-4"><div className="text-2xl font-bold text-green-600">{regulations.filter(r=>r.status==="enacted").length}</div><p className="text-sm text-muted-foreground">Enacted</p></CardContent></Card>
-        <Card><CardContent className="pt-4"><div className="text-2xl font-bold text-yellow-600">{regulations.filter(r=>r.status==="draft"||r.status==="proposed").length}</div><p className="text-sm text-muted-foreground">Pending</p></CardContent></Card>
-      </div>
-      <Card><CardHeader><CardTitle>Regulation Trend</CardTitle></CardHeader><CardContent><ResponsiveContainer width="100%" height={200}><LineChart data={trendData}><XAxis dataKey="month"/><YAxis/><Tooltip/><Line type="monotone" dataKey="count" stroke="#16a34a" strokeWidth={2}/></LineChart></ResponsiveContainer></CardContent></Card>
-      <Card><CardHeader><div className="flex justify-between items-center"><CardTitle>Regulations</CardTitle><div className="flex gap-2"><div className="relative"><Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground"/><input className="pl-8 h-9 border rounded-md text-sm w-64" placeholder="Search..." value={search} onChange={e=>setSearch(e.target.value)}/></div><select className="h-9 border rounded-md text-sm px-2" value={filter} onChange={e=>setFilter(e.target.value)}><option value="all">All</option><option value="enacted">Enacted</option><option value="draft">Draft</option><option value="proposed">Proposed</option></select></div></div></CardHeader>
-        <CardContent><table className="w-full text-sm"><thead><tr className="border-b"><th className="text-left p-2">Regulation</th><th className="text-left p-2">Region</th><th className="text-left p-2">Status</th><th className="text-left p-2">Impact</th><th className="text-left p-2">Effective</th><th className="p-2">Action</th></tr></thead>
-          <tbody>{filtered.map(r=>(<tr key={r.id} className="border-b hover:bg-muted/50"><td className="p-2 font-medium">{r.name}</td><td className="p-2"><Badge variant="outline">{r.region}</Badge></td><td className="p-2"><Badge className={r.status==="enacted"?"bg-green-500":r.status==="draft"?"bg-yellow-500":"bg-blue-500"}>{r.status}</Badge></td><td className="p-2"><Badge className={r.impact==="high"?"bg-red-500":r.impact==="medium"?"bg-yellow-500":"bg-green-500"}>{r.impact}</Badge></td><td className="p-2">{r.effectiveDate}</td><td className="p-2"><Button size="sm" variant="outline" onClick={()=>setSelected(r)}>Details</Button></td></tr>))}</tbody></table></CardContent></Card>
-      <Dialog open={!!selected} onOpenChange={()=>setSelected(null)}><DialogContent><DialogHeader><DialogTitle>{selected?.name}</DialogTitle></DialogHeader><div className="space-y-3"><p className="text-sm">{selected?.description}</p><div className="grid grid-cols-2 gap-4"><div><p className="text-sm text-muted-foreground">Region</p><p className="font-medium">{selected?.region}</p></div><div><p className="text-sm text-muted-foreground">Impact</p><Badge className={selected?.impact==="high"?"bg-red-500":"bg-yellow-500"}>{selected?.impact}</Badge></div></div><p className="text-sm"><strong>Effective:</strong> {selected?.effectiveDate}</p></div></DialogContent></Dialog>
-    </div>
-  );
+  const [sf, setSf] = useState("all");
+  const [sel, setSel] = useState<any>(null);
+  const [open, setOpen] = useState(false);
+  const sts = ["all", ...Array.from(new Set(mockData.map((d) => d.status||d.severity||"active")))];
+  const filt = mockData.filter((d) => JSON.stringify(d).toLowerCase().includes(search.toLowerCase()) && (sf==="all"||(d.status||d.severity)===sf));
+  const ch = mockData.slice(0,6).map((d,i) => ({ name: d.name||d.title||"I"+(i+1), value: d.score||d.count||50+i*10 }));
+  return (<div className="p-6 space-y-6"><div className="flex items-center justify-between"><h1 className="text-2xl font-bold">Regulatory Radar</h1><div className="flex gap-2"><Button size="sm" variant="outline"><Download className="h-4 w-4 mr-1"/>Export</Button><Button size="sm"><Plus className="h-4 w-4 mr-1"/>Add New</Button></div></div>
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">{statsCards.map((s:any,i:number)=>(<Card key={i}><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">{s.label}</p><p className="text-2xl font-bold">{s.value}</p></div><s.icon className="h-8 w-8 text-emerald-500"/></div></CardContent></Card>))}</div>
+  <Card><CardHeader><CardTitle>Overview</CardTitle></CardHeader><CardContent><ResponsiveContainer width="100%" height={250}><BarChart data={ch}><XAxis dataKey="name" fontSize={12}/><YAxis fontSize={12}/><Tooltip/><Bar dataKey="value" fill="#10b981" radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></CardContent></Card>
+  <Card><CardHeader><div className="flex items-center justify-between"><CardTitle>Records</CardTitle><div className="flex gap-2"><div className="relative"><Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"/><Input placeholder="Search..." value={search} onChange={(e)=>setSearch(e.target.value)} className="pl-8 w-64"/></div><select className="border rounded px-3 py-1.5 text-sm bg-background" value={sf} onChange={(e)=>setSf(e.target.value)}>{sts.map(s=><option key={s} value={s}>{s==="all"?"All":s}</option>)}</select></div></div></CardHeader><CardContent><div className="border rounded-lg overflow-hidden"><table className="w-full"><thead className="bg-muted/50"><tr>{columns.map((c:any)=><th key={c.key} className="text-left p-3 text-sm font-medium">{c.label}</th>)}<th className="text-left p-3 text-sm font-medium">Actions</th></tr></thead><tbody>{filt.map((row:any,i:number)=>(<tr key={i} className="border-t hover:bg-muted/30 cursor-pointer" onClick={()=>{setSel(row);setOpen(true);}}>{columns.map((c:any)=>(<td key={c.key} className="p-3 text-sm">{c.key==="status"||c.key==="severity"?(<Badge variant={row[c.key]==="critical"||row[c.key]==="high"?"destructive":row[c.key]==="compliant"||row[c.key]==="active"||row[c.key]==="low"?"default":"secondary"}>{row[c.key]}</Badge>):String(row[c.key]??"")}</td>))}<td className="p-3"><Button size="sm" variant="ghost" onClick={(e)=>{e.stopPropagation();setSel(row);setOpen(true);}}>View</Button></td></tr>))}</tbody></table></div><p className="text-sm text-muted-foreground mt-2">{filt.length} of {mockData.length} records</p></CardContent></Card>
+  <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{sel?.name||sel?.title||"Detail"}</DialogTitle></DialogHeader><div className="space-y-3">{sel&&Object.entries(sel).map(([k,v])=>(<div key={k} className="flex justify-between border-b pb-2"><span className="text-sm text-muted-foreground capitalize">{k}</span><span className="text-sm font-medium">{String(v)}</span></div>))}<div className="flex gap-2 pt-2"><Button size="sm">Edit</Button><Button size="sm" variant="outline">Archive</Button><Button size="sm" variant="destructive">Delete</Button></div></div></DialogContent></Dialog></div>);
 }

@@ -1,49 +1,37 @@
 import { useState } from "react";
-import { Card, CardContent } from "../components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
-import { Search, Plus } from "lucide-react";
-
-const mockData = [
-  { id: "INC-001", title: "GPT-4 hallucination in customer chat", severity: "critical", type: "hallucination", status: "resolved", reporter: "Alice Chen", date: "2026-03-15", mttr: "2h" },
-  { id: "INC-002", title: "PII detected in model output", severity: "high", type: "data breach", status: "investigating", reporter: "Bob Kumar", date: "2026-03-18", mttr: "ongoing" },
-  { id: "INC-003", title: "Bias detected in resume screener", severity: "high", type: "bias", status: "open", reporter: "Carol Davis", date: "2026-03-20", mttr: "ongoing" },
-  { id: "INC-004", title: "Model API timeout spike", severity: "medium", type: "model failure", status: "resolved", reporter: "Dave Wilson", date: "2026-03-10", mttr: "45m" },
-  { id: "INC-005", title: "Jailbreak attempt detected", severity: "high", type: "data breach", status: "resolved", reporter: "Eve Sharma", date: "2026-03-12", mttr: "1h" },
-  { id: "INC-006", title: "Cost overrun Claude-3", severity: "medium", type: "model failure", status: "resolved", reporter: "Frank Li", date: "2026-03-08", mttr: "3h" },
-  { id: "INC-007", title: "Unauthorized model deploy", severity: "critical", type: "model failure", status: "resolved", reporter: "Grace Kim", date: "2026-03-05", mttr: "6h" },
-  { id: "INC-008", title: "Toxicity spike", severity: "high", type: "hallucination", status: "resolved", reporter: "Henry Zhang", date: "2026-03-14", mttr: "1.5h" },
-  { id: "INC-009", title: "Data pipeline corruption", severity: "critical", type: "data breach", status: "investigating", reporter: "Iris Patel", date: "2026-03-22", mttr: "ongoing" },
-  { id: "INC-010", title: "Embedding service degradation", severity: "low", type: "model failure", status: "resolved", reporter: "Jack Brown", date: "2026-03-16", mttr: "30m" },
-  { id: "INC-011", title: "Cross-tenant data exposure", severity: "critical", type: "data breach", status: "open", reporter: "Karen Lee", date: "2026-03-25", mttr: "ongoing" },
-  { id: "INC-012", title: "Rate limit bypass", severity: "medium", type: "model failure", status: "resolved", reporter: "Leo Martinez", date: "2026-03-11", mttr: "2h" },
-  { id: "INC-013", title: "Guardrail false positive", severity: "low", type: "model failure", status: "resolved", reporter: "Mia Johnson", date: "2026-03-09", mttr: "1h" },
-  { id: "INC-014", title: "Model version mismatch", severity: "medium", type: "model failure", status: "resolved", reporter: "Noah Williams", date: "2026-03-13", mttr: "4h" },
-  { id: "INC-015", title: "Prompt injection in bot", severity: "high", type: "data breach", status: "resolved", reporter: "Olivia Taylor", date: "2026-03-17", mttr: "2h" },
-];
-
-const sc = (s: string) => ({ critical: "bg-red-500/10 text-red-400", high: "bg-orange-500/10 text-orange-400", medium: "bg-yellow-500/10 text-yellow-400", low: "bg-green-500/10 text-green-400", resolved: "bg-green-500/10 text-green-400", investigating: "bg-yellow-500/10 text-yellow-400", open: "bg-red-500/10 text-red-400" }[s] || "bg-gray-500/10 text-gray-400");
-
+import { Input } from "../components/ui/input";
+import { Shield, Search, Filter, Plus, Download } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+const columns = [  { key: "id", label: "ID" },
+  { key: "name", label: "Name" },
+  { key: "status", label: "Status" },
+  { key: "type", label: "Type" },
+  { key: "score", label: "Score" },
+  { key: "date", label: "Date" },];
+const mockData: any[] = [  { id: 1, name: "Item One", status: "active", type: "Primary", score: 90, date: "2024-03-15" },
+  { id: 2, name: "Item Two", status: "completed", type: "Secondary", score: 82, date: "2024-03-14" },
+  { id: 3, name: "Item Three", status: "pending", type: "Primary", score: 75, date: "2024-03-13" },
+  { id: 4, name: "Item Four", status: "active", type: "Tertiary", score: 88, date: "2024-03-12" },
+  { id: 5, name: "Item Five", status: "archived", type: "Secondary", score: 65, date: "2024-03-11" },];
+const statsCards = [  { label: "Total", value: "312", icon: Shield },
+  { label: "Active", value: "245", icon: Shield },
+  { label: "Pending", value: "42", icon: Shield },
+  { label: "Completed", value: "25", icon: Shield },];
 export default function IncidentLog() {
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<any>(null);
-  const filtered = mockData.filter(r => JSON.stringify(r).toLowerCase().includes(search.toLowerCase()));
-  return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between"><h1 className="text-2xl font-bold">Incident Management</h1><Button className="bg-green-600 hover:bg-green-700"><Plus className="h-4 w-4 mr-2" />Report Incident</Button></div>
-      <div className="grid grid-cols-4 gap-4">
-        <Card className="border-border/50"><CardContent className="p-4 text-center"><div className="text-2xl font-bold">15</div><div className="text-xs text-muted-foreground">Total</div></CardContent></Card>
-        <Card className="border-border/50"><CardContent className="p-4 text-center"><div className="text-2xl font-bold text-red-400">4</div><div className="text-xs text-muted-foreground">Critical</div></CardContent></Card>
-        <Card className="border-border/50"><CardContent className="p-4 text-center"><div className="text-2xl font-bold text-yellow-400">2</div><div className="text-xs text-muted-foreground">Investigating</div></CardContent></Card>
-        <Card className="border-border/50"><CardContent className="p-4 text-center"><div className="text-2xl font-bold text-green-400">10</div><div className="text-xs text-muted-foreground">Resolved</div></CardContent></Card>
-      </div>
-      <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Search incidents..." className="pl-9" value={search} onChange={e => setSearch(e.target.value)} /></div>
-      <Card className="border-border/50"><Table><TableHeader><TableRow><TableHead>ID</TableHead><TableHead>Title</TableHead><TableHead>Severity</TableHead><TableHead>Type</TableHead><TableHead>Status</TableHead><TableHead>Reporter</TableHead><TableHead>Date</TableHead><TableHead>MTTR</TableHead></TableRow></TableHeader>
-        <TableBody>{filtered.map(r => (<TableRow key={r.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelected(r)}><TableCell className="font-mono text-sm">{r.id}</TableCell><TableCell>{r.title}</TableCell><TableCell><Badge className={sc(r.severity)}>{r.severity}</Badge></TableCell><TableCell>{r.type}</TableCell><TableCell><Badge className={sc(r.status)}>{r.status}</Badge></TableCell><TableCell>{r.reporter}</TableCell><TableCell>{r.date}</TableCell><TableCell>{r.mttr}</TableCell></TableRow>))}</TableBody></Table></Card>
-      <Dialog open={!!selected} onOpenChange={() => setSelected(null)}><DialogContent><DialogHeader><DialogTitle>{selected?.title}</DialogTitle></DialogHeader>{selected && <div className="space-y-2 text-sm"><div>ID: {selected.id}</div><div>Severity: <Badge className={sc(selected.severity)}>{selected.severity}</Badge></div><div>Status: <Badge className={sc(selected.status)}>{selected.status}</Badge></div><div>Reporter: {selected.reporter}</div><div>MTTR: {selected.mttr}</div><div className="flex gap-2 pt-2"><Button size="sm" variant="outline">Edit</Button><Button size="sm" variant="destructive">Delete</Button></div></div>}</DialogContent></Dialog>
-    </div>
-  );
+  const [sf, setSf] = useState("all");
+  const [sel, setSel] = useState<any>(null);
+  const [open, setOpen] = useState(false);
+  const sts = ["all", ...Array.from(new Set(mockData.map((d) => d.status||d.severity||"active")))];
+  const filt = mockData.filter((d) => JSON.stringify(d).toLowerCase().includes(search.toLowerCase()) && (sf==="all"||(d.status||d.severity)===sf));
+  const ch = mockData.slice(0,6).map((d,i) => ({ name: d.name||d.title||"I"+(i+1), value: d.score||d.count||50+i*10 }));
+  return (<div className="p-6 space-y-6"><div className="flex items-center justify-between"><h1 className="text-2xl font-bold">Incident Log</h1><div className="flex gap-2"><Button size="sm" variant="outline"><Download className="h-4 w-4 mr-1"/>Export</Button><Button size="sm"><Plus className="h-4 w-4 mr-1"/>Add New</Button></div></div>
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">{statsCards.map((s:any,i:number)=>(<Card key={i}><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">{s.label}</p><p className="text-2xl font-bold">{s.value}</p></div><s.icon className="h-8 w-8 text-emerald-500"/></div></CardContent></Card>))}</div>
+  <Card><CardHeader><CardTitle>Overview</CardTitle></CardHeader><CardContent><ResponsiveContainer width="100%" height={250}><BarChart data={ch}><XAxis dataKey="name" fontSize={12}/><YAxis fontSize={12}/><Tooltip/><Bar dataKey="value" fill="#10b981" radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></CardContent></Card>
+  <Card><CardHeader><div className="flex items-center justify-between"><CardTitle>Records</CardTitle><div className="flex gap-2"><div className="relative"><Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"/><Input placeholder="Search..." value={search} onChange={(e)=>setSearch(e.target.value)} className="pl-8 w-64"/></div><select className="border rounded px-3 py-1.5 text-sm bg-background" value={sf} onChange={(e)=>setSf(e.target.value)}>{sts.map(s=><option key={s} value={s}>{s==="all"?"All":s}</option>)}</select></div></div></CardHeader><CardContent><div className="border rounded-lg overflow-hidden"><table className="w-full"><thead className="bg-muted/50"><tr>{columns.map((c:any)=><th key={c.key} className="text-left p-3 text-sm font-medium">{c.label}</th>)}<th className="text-left p-3 text-sm font-medium">Actions</th></tr></thead><tbody>{filt.map((row:any,i:number)=>(<tr key={i} className="border-t hover:bg-muted/30 cursor-pointer" onClick={()=>{setSel(row);setOpen(true);}}>{columns.map((c:any)=>(<td key={c.key} className="p-3 text-sm">{c.key==="status"||c.key==="severity"?(<Badge variant={row[c.key]==="critical"||row[c.key]==="high"?"destructive":row[c.key]==="compliant"||row[c.key]==="active"||row[c.key]==="low"?"default":"secondary"}>{row[c.key]}</Badge>):String(row[c.key]??"")}</td>))}<td className="p-3"><Button size="sm" variant="ghost" onClick={(e)=>{e.stopPropagation();setSel(row);setOpen(true);}}>View</Button></td></tr>))}</tbody></table></div><p className="text-sm text-muted-foreground mt-2">{filt.length} of {mockData.length} records</p></CardContent></Card>
+  <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{sel?.name||sel?.title||"Detail"}</DialogTitle></DialogHeader><div className="space-y-3">{sel&&Object.entries(sel).map(([k,v])=>(<div key={k} className="flex justify-between border-b pb-2"><span className="text-sm text-muted-foreground capitalize">{k}</span><span className="text-sm font-medium">{String(v)}</span></div>))}<div className="flex gap-2 pt-2"><Button size="sm">Edit</Button><Button size="sm" variant="outline">Archive</Button><Button size="sm" variant="destructive">Delete</Button></div></div></DialogContent></Dialog></div>);
 }

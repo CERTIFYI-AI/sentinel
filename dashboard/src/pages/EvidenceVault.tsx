@@ -1,89 +1,37 @@
-
 import { useState } from "react";
-import { Card, CardContent } from "../components/ui/card";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
-import { Input } from "../components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
-import { Search, Plus, Upload, FileText, CheckCircle, Clock } from "lucide-react";
-
-const mockEvidence = [
-  { id: "EVD-001", title: "Penetration Test Report 2026", type: "Security Report", control: "CC-7.2", framework: "SOC 2", status: "approved", uploadedBy: "alice@company.com", uploadDate: "2026-01-10", expiryDate: "2027-01-10", fileSize: "2.4 MB", tags: ["pentest","security"] },
-  { id: "EVD-002", title: "Access Control Policy v3", type: "Policy Document", control: "CC-6.1", framework: "SOC 2", status: "approved", uploadedBy: "bob@company.com", uploadDate: "2025-12-15", expiryDate: "2026-12-15", fileSize: "340 KB", tags: ["policy","access"] },
-  { id: "EVD-003", title: "ISO 27001 Internal Audit", type: "Audit Report", control: "A.9.1", framework: "ISO 27001", status: "under-review", uploadedBy: "carol@company.com", uploadDate: "2026-01-12", expiryDate: "2027-01-12", fileSize: "5.1 MB", tags: ["iso","audit"] },
-  { id: "EVD-004", title: "Vendor Security Assessment - OpenAI", type: "Vendor Report", control: "CC-9.2", framework: "SOC 2", status: "approved", uploadedBy: "dave@company.com", uploadDate: "2025-11-20", expiryDate: "2026-11-20", fileSize: "1.2 MB", tags: ["vendor","openai"] },
-  { id: "EVD-005", title: "GDPR Data Mapping Record", type: "Compliance Doc", control: "Art.30", framework: "GDPR", status: "approved", uploadedBy: "eve@company.com", uploadDate: "2025-10-05", expiryDate: "2026-10-05", fileSize: "890 KB", tags: ["gdpr","data"] },
-  { id: "EVD-006", title: "Model Risk Assessment - GPT-4", type: "Risk Document", control: "MRM-01", framework: "AI Act", status: "under-review", uploadedBy: "frank@company.com", uploadDate: "2026-01-14", expiryDate: "2026-07-14", fileSize: "3.7 MB", tags: ["model","risk"] },
-  { id: "EVD-007", title: "Business Continuity Plan", type: "Policy Document", control: "A.17.1", framework: "ISO 27001", status: "expired", uploadedBy: "alice@company.com", uploadDate: "2024-06-01", expiryDate: "2025-06-01", fileSize: "1.8 MB", tags: ["bcp","continuity"] },
-  { id: "EVD-008", title: "Employee Security Training Records", type: "Training", control: "CC-1.4", framework: "SOC 2", status: "approved", uploadedBy: "hr@company.com", uploadDate: "2026-01-03", expiryDate: "2027-01-03", fileSize: "450 KB", tags: ["training","awareness"] },
-];
-
-const statusColor = (s:string) => s==="approved" ? "bg-green-500/10 text-green-400 border-green-500/30" : s==="under-review" ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/30" : "bg-red-500/10 text-red-400 border-red-500/30";
-
+import { Input } from "../components/ui/input";
+import { Shield, Search, Filter, Plus, Download } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+const columns = [  { key: "id", label: "ID" },
+  { key: "name", label: "Name" },
+  { key: "status", label: "Status" },
+  { key: "type", label: "Type" },
+  { key: "score", label: "Score" },
+  { key: "date", label: "Date" },];
+const mockData: any[] = [  { id: 1, name: "Record A", status: "active", type: "Core", score: 92, date: "2024-03-15" },
+  { id: 2, name: "Record B", status: "compliant", type: "Extended", score: 87, date: "2024-03-14" },
+  { id: 3, name: "Record C", status: "pending", type: "Core", score: 71, date: "2024-03-13" },
+  { id: 4, name: "Record D", status: "active", type: "Custom", score: 95, date: "2024-03-12" },
+  { id: 5, name: "Record E", status: "review", type: "Extended", score: 63, date: "2024-03-11" },];
+const statsCards = [  { label: "Total", value: "278", icon: Shield },
+  { label: "Active", value: "201", icon: Shield },
+  { label: "Gaps", value: "15", icon: Shield },
+  { label: "Score", value: "88%", icon: Shield },];
 export default function EvidenceVault() {
   const [search, setSearch] = useState("");
-  const [framework, setFramework] = useState("All");
-  const [status, setStatus] = useState("All");
-  const [selected, setSelected] = useState<any>(null);
-  const frameworks = ["All", ...Array.from(new Set(mockEvidence.map(e => e.framework)))];
-  const statuses = ["All", "approved", "under-review", "expired"];
-  const filtered = mockEvidence.filter(e =>
-    (framework === "All" || e.framework === framework) &&
-    (status === "All" || e.status === status) &&
-    (e.title.toLowerCase().includes(search.toLowerCase()) || e.control.toLowerCase().includes(search.toLowerCase()))
-  );
-  return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div><h1 className="text-2xl font-bold text-white">Evidence Vault</h1><p className="text-sm text-gray-400">Centralized compliance evidence repository</p></div>
-        <Button className="bg-green-600 hover:bg-green-700 text-white"><Upload className="w-4 h-4 mr-2" />Upload Evidence</Button>
-      </div>
-      <div className="grid grid-cols-4 gap-4">
-        {[{label:"Total Evidence",value:mockEvidence.length,color:"text-white",icon:FileText},{label:"Approved",value:mockEvidence.filter(e=>e.status==="approved").length,color:"text-green-400",icon:CheckCircle},{label:"Under Review",value:mockEvidence.filter(e=>e.status==="under-review").length,color:"text-yellow-400",icon:Clock},{label:"Expired",value:mockEvidence.filter(e=>e.status==="expired").length,color:"text-red-400",icon:FileText}].map(stat=>(
-          <Card key={stat.label} className="bg-gray-900 border-gray-800"><CardContent className="p-4 flex items-center gap-3"><stat.icon className={`w-8 h-8 ${stat.color}`} /><div><p className="text-xs text-gray-400">{stat.label}</p><p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p></div></CardContent></Card>
-        ))}
-      </div>
-      <Card className="bg-gray-900 border-gray-800">
-        <CardContent className="p-4 space-y-4">
-          <div className="flex gap-3 flex-wrap">
-            <div className="relative flex-1 min-w-48"><Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" /><Input placeholder="Search evidence..." value={search} onChange={e=>setSearch(e.target.value)} className="pl-9 bg-gray-800 border-gray-700 text-white" /></div>
-            <select value={framework} onChange={e=>setFramework(e.target.value)} className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-white">{frameworks.map(f=><option key={f}>{f}</option>)}</select>
-            <select value={status} onChange={e=>setStatus(e.target.value)} className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-white">{statuses.map(s=><option key={s}>{s}</option>)}</select>
-          </div>
-          <Table>
-            <TableHeader><TableRow className="border-gray-800"><TableHead className="text-gray-400">ID</TableHead><TableHead className="text-gray-400">Title</TableHead><TableHead className="text-gray-400">Type</TableHead><TableHead className="text-gray-400">Control</TableHead><TableHead className="text-gray-400">Framework</TableHead><TableHead className="text-gray-400">Status</TableHead><TableHead className="text-gray-400">Expiry</TableHead><TableHead className="text-gray-400">Size</TableHead></TableRow></TableHeader>
-            <TableBody>{filtered.map(ev=>(
-              <TableRow key={ev.id} className="border-gray-800 hover:bg-gray-800/50 cursor-pointer" onClick={()=>setSelected(ev)}>
-                <TableCell className="text-green-400 font-mono text-xs">{ev.id}</TableCell>
-                <TableCell className="text-white font-medium">{ev.title}</TableCell>
-                <TableCell className="text-gray-400 text-xs">{ev.type}</TableCell>
-                <TableCell className="text-gray-300 font-mono text-xs">{ev.control}</TableCell>
-                <TableCell><span className="text-xs px-2 py-0.5 rounded bg-gray-700 text-gray-300">{ev.framework}</span></TableCell>
-                <TableCell><span className={`text-xs px-2 py-0.5 rounded border ${statusColor(ev.status)}`}>{ev.status}</span></TableCell>
-                <TableCell className="text-gray-400 text-xs">{ev.expiryDate}</TableCell>
-                <TableCell className="text-gray-400 text-xs">{ev.fileSize}</TableCell>
-              </TableRow>
-            ))}</TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-      <Dialog open={!!selected} onOpenChange={()=>setSelected(null)}>
-        <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-lg">
-          <DialogHeader><DialogTitle>{selected?.title}</DialogTitle></DialogHeader>
-          {selected && <div className="space-y-3 text-sm">
-            <div className="grid grid-cols-2 gap-3">
-              {[["ID",selected.id],["Type",selected.type],["Control",selected.control],["Framework",selected.framework],["Status",selected.status],["Uploaded By",selected.uploadedBy],["Upload Date",selected.uploadDate],["Expiry",selected.expiryDate],["File Size",selected.fileSize]].map(([k,v])=>(
-                <div key={k}><p className="text-gray-400 text-xs">{k}</p><p className="text-white">{v}</p></div>
-              ))}
-            </div>
-            <div><p className="text-gray-400 text-xs mb-1">Tags</p><div className="flex gap-1 flex-wrap">{selected.tags.map((t:string)=><span key={t} className="text-xs px-2 py-0.5 bg-green-900/30 text-green-400 rounded">{t}</span>)}</div></div>
-            <div className="flex gap-2 pt-2">
-              <Button size="sm" className="bg-green-600 hover:bg-green-700">Download</Button>
-              <Button size="sm" variant="outline" className="border-gray-700">View</Button>
-            </div>
-          </div>}
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
+  const [sf, setSf] = useState("all");
+  const [sel, setSel] = useState<any>(null);
+  const [open, setOpen] = useState(false);
+  const sts = ["all", ...Array.from(new Set(mockData.map((d) => d.status||d.severity||"active")))];
+  const filt = mockData.filter((d) => JSON.stringify(d).toLowerCase().includes(search.toLowerCase()) && (sf==="all"||(d.status||d.severity)===sf));
+  const ch = mockData.slice(0,6).map((d,i) => ({ name: d.name||d.title||"I"+(i+1), value: d.score||d.count||50+i*10 }));
+  return (<div className="p-6 space-y-6"><div className="flex items-center justify-between"><h1 className="text-2xl font-bold">Evidence Vault</h1><div className="flex gap-2"><Button size="sm" variant="outline"><Download className="h-4 w-4 mr-1"/>Export</Button><Button size="sm"><Plus className="h-4 w-4 mr-1"/>Add New</Button></div></div>
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">{statsCards.map((s:any,i:number)=>(<Card key={i}><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">{s.label}</p><p className="text-2xl font-bold">{s.value}</p></div><s.icon className="h-8 w-8 text-emerald-500"/></div></CardContent></Card>))}</div>
+  <Card><CardHeader><CardTitle>Overview</CardTitle></CardHeader><CardContent><ResponsiveContainer width="100%" height={250}><BarChart data={ch}><XAxis dataKey="name" fontSize={12}/><YAxis fontSize={12}/><Tooltip/><Bar dataKey="value" fill="#10b981" radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></CardContent></Card>
+  <Card><CardHeader><div className="flex items-center justify-between"><CardTitle>Records</CardTitle><div className="flex gap-2"><div className="relative"><Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"/><Input placeholder="Search..." value={search} onChange={(e)=>setSearch(e.target.value)} className="pl-8 w-64"/></div><select className="border rounded px-3 py-1.5 text-sm bg-background" value={sf} onChange={(e)=>setSf(e.target.value)}>{sts.map(s=><option key={s} value={s}>{s==="all"?"All":s}</option>)}</select></div></div></CardHeader><CardContent><div className="border rounded-lg overflow-hidden"><table className="w-full"><thead className="bg-muted/50"><tr>{columns.map((c:any)=><th key={c.key} className="text-left p-3 text-sm font-medium">{c.label}</th>)}<th className="text-left p-3 text-sm font-medium">Actions</th></tr></thead><tbody>{filt.map((row:any,i:number)=>(<tr key={i} className="border-t hover:bg-muted/30 cursor-pointer" onClick={()=>{setSel(row);setOpen(true);}}>{columns.map((c:any)=>(<td key={c.key} className="p-3 text-sm">{c.key==="status"||c.key==="severity"?(<Badge variant={row[c.key]==="critical"||row[c.key]==="high"?"destructive":row[c.key]==="compliant"||row[c.key]==="active"||row[c.key]==="low"?"default":"secondary"}>{row[c.key]}</Badge>):String(row[c.key]??"")}</td>))}<td className="p-3"><Button size="sm" variant="ghost" onClick={(e)=>{e.stopPropagation();setSel(row);setOpen(true);}}>View</Button></td></tr>))}</tbody></table></div><p className="text-sm text-muted-foreground mt-2">{filt.length} of {mockData.length} records</p></CardContent></Card>
+  <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{sel?.name||sel?.title||"Detail"}</DialogTitle></DialogHeader><div className="space-y-3">{sel&&Object.entries(sel).map(([k,v])=>(<div key={k} className="flex justify-between border-b pb-2"><span className="text-sm text-muted-foreground capitalize">{k}</span><span className="text-sm font-medium">{String(v)}</span></div>))}<div className="flex gap-2 pt-2"><Button size="sm">Edit</Button><Button size="sm" variant="outline">Archive</Button><Button size="sm" variant="destructive">Delete</Button></div></div></DialogContent></Dialog></div>);
 }

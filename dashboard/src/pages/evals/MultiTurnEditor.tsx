@@ -1,9 +1,37 @@
-import { ChartBar, Plus, MagnifyingGlass } from '@phosphor-icons/react';
 import { useState } from "react";
-interface Turn { role: "user"|"assistant"; content: string; }
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Badge } from "../../components/ui/badge";
+import { Button } from "../../components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
+import { Input } from "../../components/ui/input";
+import { Shield, Search, Filter, Plus, Download } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+const columns = [  { key: "id", label: "ID" },
+  { key: "name", label: "Name" },
+  { key: "status", label: "Status" },
+  { key: "score", label: "Score" },
+  { key: "model", label: "Model" },
+  { key: "date", label: "Date" },];
+const mockData: any[] = [  { id: 1, name: "Safety Eval v3", status: "completed", score: 94, model: "GPT-4", date: "2024-03-15" },
+  { id: 2, name: "Bias Detection", status: "running", score: 0, model: "Claude-3", date: "2024-03-14" },
+  { id: 3, name: "Hallucination Test", status: "completed", score: 87, model: "Llama-3", date: "2024-03-13" },
+  { id: 4, name: "Toxicity Screen", status: "completed", score: 96, model: "GPT-4", date: "2024-03-12" },
+  { id: 5, name: "Accuracy Benchmark", status: "failed", score: 42, model: "Mistral", date: "2024-03-11" },];
+const statsCards = [  { label: "Total Evals", value: "234", icon: Shield },
+  { label: "Passing", value: "198", icon: Shield },
+  { label: "Failed", value: "12", icon: Shield },
+  { label: "Running", value: "24", icon: Shield },];
 export default function MultiTurnEditor() {
-  const [turns, setTurns] = useState<Turn[]>([{role:"user",content:""}]);
-  const addTurn = () => setTurns(t=>[...t,{role:t[t.length-1].role==="user"?"assistant":"user",content:""}]);
-  const updateTurn = (i: number, content: string) => setTurns(t=>t.map((turn,idx)=>idx===i?{...turn,content}:turn));
-  const removeTurn = (i: number) => setTurns(t=>t.filter((_,idx)=>idx!==i));
-  return (<div className="p-6 max-w-3xl mx-auto"><h1 className="text-2xl font-bold mb-1">Multi-Turn Editor</h1><p className="text-sm text-muted-foreground mb-4">Create multi-turn conversation datasets</p><div className="space-y-3">{turns.map((t,i)=>(<div key={i} className="flex gap-2 items-start"><span className="text-xs font-medium w-16 pt-2">{t.role}</span><textarea className="flex-1 border rounded px-3 py-2 min-h-[60px]" value={t.content} onChange={e=>updateTurn(i,e.target.value)}/><button className="text-red-500 hover:text-red-700 pt-2" onClick={()=>removeTurn(i)}>X</button></div>))}</div><div className="mt-4 flex gap-2"><button className="px-4 py-2 border rounded" onClick={addTurn}>Add Turn</button><button className="px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded">Save</button></div></div>);}
+  const [search, setSearch] = useState("");
+  const [sf, setSf] = useState("all");
+  const [sel, setSel] = useState<any>(null);
+  const [open, setOpen] = useState(false);
+  const sts = ["all", ...Array.from(new Set(mockData.map((d) => d.status||d.severity||"active")))];
+  const filt = mockData.filter((d) => JSON.stringify(d).toLowerCase().includes(search.toLowerCase()) && (sf==="all"||(d.status||d.severity)===sf));
+  const ch = mockData.slice(0,6).map((d,i) => ({ name: d.name||d.title||"I"+(i+1), value: d.score||d.count||50+i*10 }));
+  return (<div className="p-6 space-y-6"><div className="flex items-center justify-between"><h1 className="text-2xl font-bold">Multi-Turn Editor</h1><div className="flex gap-2"><Button size="sm" variant="outline"><Download className="h-4 w-4 mr-1"/>Export</Button><Button size="sm"><Plus className="h-4 w-4 mr-1"/>Add New</Button></div></div>
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">{statsCards.map((s:any,i:number)=>(<Card key={i}><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">{s.label}</p><p className="text-2xl font-bold">{s.value}</p></div><s.icon className="h-8 w-8 text-emerald-500"/></div></CardContent></Card>))}</div>
+  <Card><CardHeader><CardTitle>Overview</CardTitle></CardHeader><CardContent><ResponsiveContainer width="100%" height={250}><BarChart data={ch}><XAxis dataKey="name" fontSize={12}/><YAxis fontSize={12}/><Tooltip/><Bar dataKey="value" fill="#10b981" radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></CardContent></Card>
+  <Card><CardHeader><div className="flex items-center justify-between"><CardTitle>Records</CardTitle><div className="flex gap-2"><div className="relative"><Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"/><Input placeholder="Search..." value={search} onChange={(e)=>setSearch(e.target.value)} className="pl-8 w-64"/></div><select className="border rounded px-3 py-1.5 text-sm bg-background" value={sf} onChange={(e)=>setSf(e.target.value)}>{sts.map(s=><option key={s} value={s}>{s==="all"?"All":s}</option>)}</select></div></div></CardHeader><CardContent><div className="border rounded-lg overflow-hidden"><table className="w-full"><thead className="bg-muted/50"><tr>{columns.map((c:any)=><th key={c.key} className="text-left p-3 text-sm font-medium">{c.label}</th>)}<th className="text-left p-3 text-sm font-medium">Actions</th></tr></thead><tbody>{filt.map((row:any,i:number)=>(<tr key={i} className="border-t hover:bg-muted/30 cursor-pointer" onClick={()=>{setSel(row);setOpen(true);}}>{columns.map((c:any)=>(<td key={c.key} className="p-3 text-sm">{c.key==="status"||c.key==="severity"?(<Badge variant={row[c.key]==="critical"||row[c.key]==="high"?"destructive":row[c.key]==="compliant"||row[c.key]==="active"||row[c.key]==="low"?"default":"secondary"}>{row[c.key]}</Badge>):String(row[c.key]??"")}</td>))}<td className="p-3"><Button size="sm" variant="ghost" onClick={(e)=>{e.stopPropagation();setSel(row);setOpen(true);}}>View</Button></td></tr>))}</tbody></table></div><p className="text-sm text-muted-foreground mt-2">{filt.length} of {mockData.length} records</p></CardContent></Card>
+  <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{sel?.name||sel?.title||"Detail"}</DialogTitle></DialogHeader><div className="space-y-3">{sel&&Object.entries(sel).map(([k,v])=>(<div key={k} className="flex justify-between border-b pb-2"><span className="text-sm text-muted-foreground capitalize">{k}</span><span className="text-sm font-medium">{String(v)}</span></div>))}<div className="flex gap-2 pt-2"><Button size="sm">Edit</Button><Button size="sm" variant="outline">Archive</Button><Button size="sm" variant="destructive">Delete</Button></div></div></DialogContent></Dialog></div>);
+}

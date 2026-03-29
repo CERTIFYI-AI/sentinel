@@ -1,111 +1,37 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
-import { Search, Filter, Plus, CheckCircle, XCircle, MinusCircle, Shield } from "lucide-react";
-
-const mockControls = [
-  { id: "CTL-001", name: "Access Control Policy", framework: "ISO 27001", category: "Access Control", status: "passing", owner: "Alice Chen", lastTested: "2026-03-15" },
-  { id: "CTL-002", name: "Encryption at Rest", framework: "SOC2", category: "Cryptography", status: "passing", owner: "Bob Kumar", lastTested: "2026-03-10" },
-  { id: "CTL-003", name: "Incident Response Plan", framework: "ISO 27001", category: "Incident Mgmt", status: "failing", owner: "Carol Davis", lastTested: "2026-02-28" },
-  { id: "CTL-004", name: "Data Classification", framework: "SOC2", category: "Data Protection", status: "passing", owner: "Dave Wilson", lastTested: "2026-03-12" },
-  { id: "CTL-005", name: "Vulnerability Management", framework: "ISO 27001", category: "Security Ops", status: "not-tested", owner: "Eve Sharma", lastTested: "N/A" },
-  { id: "CTL-006", name: "Change Management", framework: "SOC2", category: "Operations", status: "passing", owner: "Frank Li", lastTested: "2026-03-08" },
-  { id: "CTL-007", name: "Business Continuity", framework: "ISO 27001", category: "Continuity", status: "passing", owner: "Grace Kim", lastTested: "2026-03-01" },
-  { id: "CTL-008", name: "Third Party Risk", framework: "SOC2", category: "Vendor Mgmt", status: "failing", owner: "Henry Zhang", lastTested: "2026-02-20" },
-  { id: "CTL-009", name: "Logging and Monitoring", framework: "ISO 27001", category: "Monitoring", status: "passing", owner: "Iris Patel", lastTested: "2026-03-14" },
-  { id: "CTL-010", name: "Physical Security", framework: "SOC2", category: "Physical", status: "passing", owner: "Jack Brown", lastTested: "2026-03-05" },
-  { id: "CTL-011", name: "Network Security", framework: "ISO 27001", category: "Network", status: "not-tested", owner: "Karen Lee", lastTested: "N/A" },
-  { id: "CTL-012", name: "HR Security", framework: "ISO 27001", category: "HR", status: "passing", owner: "Leo Martinez", lastTested: "2026-03-11" },
-  { id: "CTL-013", name: "Secure Development", framework: "SOC2", category: "Development", status: "passing", owner: "Mia Johnson", lastTested: "2026-03-13" },
-  { id: "CTL-014", name: "Asset Management", framework: "ISO 27001", category: "Assets", status: "failing", owner: "Noah Williams", lastTested: "2026-02-25" },
-  { id: "CTL-015", name: "Privacy Controls", framework: "SOC2", category: "Privacy", status: "passing", owner: "Olivia Taylor", lastTested: "2026-03-09" },
-];
-
-const statusConfig: Record<string, { color: string; icon: any; label: string }> = {
-  passing: { color: "bg-green-500/10 text-green-400 border-green-500/30", icon: CheckCircle, label: "Passing" },
-  failing: { color: "bg-red-500/10 text-red-400 border-red-500/30", icon: XCircle, label: "Failing" },
-  "not-tested": { color: "bg-gray-500/10 text-gray-400 border-gray-500/30", icon: MinusCircle, label: "Not Tested" },
-};
-
-export default function ComplianceControls() {
+import { Input } from "../components/ui/input";
+import { Shield, Search, Filter, Plus, Download } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+const columns = [  { key: "id", label: "ID" },
+  { key: "name", label: "Name" },
+  { key: "status", label: "Status" },
+  { key: "type", label: "Type" },
+  { key: "score", label: "Score" },
+  { key: "date", label: "Date" },];
+const mockData: any[] = [  { id: 1, name: "Record A", status: "active", type: "Core", score: 92, date: "2024-03-15" },
+  { id: 2, name: "Record B", status: "compliant", type: "Extended", score: 87, date: "2024-03-14" },
+  { id: 3, name: "Record C", status: "pending", type: "Core", score: 71, date: "2024-03-13" },
+  { id: 4, name: "Record D", status: "active", type: "Custom", score: 95, date: "2024-03-12" },
+  { id: 5, name: "Record E", status: "review", type: "Extended", score: 63, date: "2024-03-11" },];
+const statsCards = [  { label: "Total", value: "278", icon: Shield },
+  { label: "Active", value: "201", icon: Shield },
+  { label: "Gaps", value: "15", icon: Shield },
+  { label: "Score", value: "88%", icon: Shield },];
+export default function ComplianceControlsStandalone() {
   const [search, setSearch] = useState("");
-  const [frameworkFilter, setFrameworkFilter] = useState("all");
-  const [selected, setSelected] = useState<any>(null);
-
-  const filtered = mockControls.filter(c => {
-    const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.id.toLowerCase().includes(search.toLowerCase());
-    const matchFramework = frameworkFilter === "all" || c.framework === frameworkFilter;
-    return matchSearch && matchFramework;
-  });
-
-  const stats = { total: mockControls.length, passing: mockControls.filter(c => c.status === "passing").length, failing: mockControls.filter(c => c.status === "failing").length, untested: mockControls.filter(c => c.status === "not-tested").length };
-
-  return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Controls Library</h1>
-        <Button className="bg-green-600 hover:bg-green-700"><Plus className="h-4 w-4 mr-2" />Add Control</Button>
-      </div>
-
-      <div className="grid grid-cols-4 gap-4">
-        <Card className="border-border/50"><CardContent className="p-4 text-center"><div className="text-2xl font-bold">{stats.total}</div><div className="text-xs text-muted-foreground">Total Controls</div></CardContent></Card>
-        <Card className="border-border/50"><CardContent className="p-4 text-center"><div className="text-2xl font-bold text-green-400">{stats.passing}</div><div className="text-xs text-muted-foreground">Passing</div></CardContent></Card>
-        <Card className="border-border/50"><CardContent className="p-4 text-center"><div className="text-2xl font-bold text-red-400">{stats.failing}</div><div className="text-xs text-muted-foreground">Failing</div></CardContent></Card>
-        <Card className="border-border/50"><CardContent className="p-4 text-center"><div className="text-2xl font-bold text-gray-400">{stats.untested}</div><div className="text-xs text-muted-foreground">Not Tested</div></CardContent></Card>
-      </div>
-
-      <div className="flex gap-3">
-        <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Search controls..." className="pl-9" value={search} onChange={e => setSearch(e.target.value)} /></div>
-        <Select value={frameworkFilter} onValueChange={setFrameworkFilter}><SelectTrigger className="w-48"><SelectValue placeholder="Framework" /></SelectTrigger><SelectContent><SelectItem value="all">All Frameworks</SelectItem><SelectItem value="ISO 27001">ISO 27001</SelectItem><SelectItem value="SOC2">SOC2</SelectItem></SelectContent></Select>
-      </div>
-
-      <Card className="border-border/50">
-        <Table>
-          <TableHeader><TableRow><TableHead>Control ID</TableHead><TableHead>Name</TableHead><TableHead>Framework</TableHead><TableHead>Category</TableHead><TableHead>Status</TableHead><TableHead>Owner</TableHead><TableHead>Last Tested</TableHead></TableRow></TableHeader>
-          <TableBody>
-            {filtered.map(c => {
-              const st = statusConfig[c.status];
-              return (
-                <TableRow key={c.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelected(c)}>
-                  <TableCell className="font-mono text-sm">{c.id}</TableCell>
-                  <TableCell className="font-medium">{c.name}</TableCell>
-                  <TableCell><Badge variant="outline">{c.framework}</Badge></TableCell>
-                  <TableCell>{c.category}</TableCell>
-                  <TableCell><Badge className={st.color}>{st.label}</Badge></TableCell>
-                  <TableCell>{c.owner}</TableCell>
-                  <TableCell>{c.lastTested}</TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </Card>
-
-      <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>{selected?.name}</DialogTitle></DialogHeader>
-          {selected && (
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div><span className="text-muted-foreground">Control ID:</span> {selected.id}</div>
-                <div><span className="text-muted-foreground">Framework:</span> {selected.framework}</div>
-                <div><span className="text-muted-foreground">Category:</span> {selected.category}</div>
-                <div><span className="text-muted-foreground">Owner:</span> {selected.owner}</div>
-                <div><span className="text-muted-foreground">Last Tested:</span> {selected.lastTested}</div>
-                <div><span className="text-muted-foreground">Status:</span> <Badge className={statusConfig[selected.status].color}>{statusConfig[selected.status].label}</Badge></div>
-              </div>
-              <div className="text-sm"><span className="text-muted-foreground">Evidence:</span> 3 documents attached</div>
-              <div className="flex gap-2"><Button size="sm" variant="outline">Edit</Button><Button size="sm" variant="destructive">Delete</Button></div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
+  const [sf, setSf] = useState("all");
+  const [sel, setSel] = useState<any>(null);
+  const [open, setOpen] = useState(false);
+  const sts = ["all", ...Array.from(new Set(mockData.map((d) => d.status||d.severity||"active")))];
+  const filt = mockData.filter((d) => JSON.stringify(d).toLowerCase().includes(search.toLowerCase()) && (sf==="all"||(d.status||d.severity)===sf));
+  const ch = mockData.slice(0,6).map((d,i) => ({ name: d.name||d.title||"I"+(i+1), value: d.score||d.count||50+i*10 }));
+  return (<div className="p-6 space-y-6"><div className="flex items-center justify-between"><h1 className="text-2xl font-bold">Compliance Controls</h1><div className="flex gap-2"><Button size="sm" variant="outline"><Download className="h-4 w-4 mr-1"/>Export</Button><Button size="sm"><Plus className="h-4 w-4 mr-1"/>Add New</Button></div></div>
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">{statsCards.map((s:any,i:number)=>(<Card key={i}><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">{s.label}</p><p className="text-2xl font-bold">{s.value}</p></div><s.icon className="h-8 w-8 text-emerald-500"/></div></CardContent></Card>))}</div>
+  <Card><CardHeader><CardTitle>Overview</CardTitle></CardHeader><CardContent><ResponsiveContainer width="100%" height={250}><BarChart data={ch}><XAxis dataKey="name" fontSize={12}/><YAxis fontSize={12}/><Tooltip/><Bar dataKey="value" fill="#10b981" radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></CardContent></Card>
+  <Card><CardHeader><div className="flex items-center justify-between"><CardTitle>Records</CardTitle><div className="flex gap-2"><div className="relative"><Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"/><Input placeholder="Search..." value={search} onChange={(e)=>setSearch(e.target.value)} className="pl-8 w-64"/></div><select className="border rounded px-3 py-1.5 text-sm bg-background" value={sf} onChange={(e)=>setSf(e.target.value)}>{sts.map(s=><option key={s} value={s}>{s==="all"?"All":s}</option>)}</select></div></div></CardHeader><CardContent><div className="border rounded-lg overflow-hidden"><table className="w-full"><thead className="bg-muted/50"><tr>{columns.map((c:any)=><th key={c.key} className="text-left p-3 text-sm font-medium">{c.label}</th>)}<th className="text-left p-3 text-sm font-medium">Actions</th></tr></thead><tbody>{filt.map((row:any,i:number)=>(<tr key={i} className="border-t hover:bg-muted/30 cursor-pointer" onClick={()=>{setSel(row);setOpen(true);}}>{columns.map((c:any)=>(<td key={c.key} className="p-3 text-sm">{c.key==="status"||c.key==="severity"?(<Badge variant={row[c.key]==="critical"||row[c.key]==="high"?"destructive":row[c.key]==="compliant"||row[c.key]==="active"||row[c.key]==="low"?"default":"secondary"}>{row[c.key]}</Badge>):String(row[c.key]??"")}</td>))}<td className="p-3"><Button size="sm" variant="ghost" onClick={(e)=>{e.stopPropagation();setSel(row);setOpen(true);}}>View</Button></td></tr>))}</tbody></table></div><p className="text-sm text-muted-foreground mt-2">{filt.length} of {mockData.length} records</p></CardContent></Card>
+  <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{sel?.name||sel?.title||"Detail"}</DialogTitle></DialogHeader><div className="space-y-3">{sel&&Object.entries(sel).map(([k,v])=>(<div key={k} className="flex justify-between border-b pb-2"><span className="text-sm text-muted-foreground capitalize">{k}</span><span className="text-sm font-medium">{String(v)}</span></div>))}<div className="flex gap-2 pt-2"><Button size="sm">Edit</Button><Button size="sm" variant="outline">Archive</Button><Button size="sm" variant="destructive">Delete</Button></div></div></DialogContent></Dialog></div>);
 }

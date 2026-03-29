@@ -1,85 +1,37 @@
-
 import { useState } from "react";
-import { Card, CardContent } from "../components/ui/card";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
-import { Input } from "../components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
-import { Search, Plus, Shield, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
-
-const mockControls = [
-  { id: "CTL-001", name: "Access Control Policy", framework: "SOC 2", controlId: "CC-6.1", status: "passing", severity: "high", owner: "alice@company.com", lastTested: "2026-01-10", evidence: 3, description: "Logical and physical access controls are in place" },
-  { id: "CTL-002", name: "Change Management", framework: "SOC 2", controlId: "CC-8.1", status: "passing", severity: "high", owner: "bob@company.com", lastTested: "2026-01-08", evidence: 2, description: "Changes to infrastructure and software are authorized" },
-  { id: "CTL-003", name: "Risk Assessment", framework: "ISO 27001", controlId: "A.8.1", status: "failing", severity: "critical", owner: "carol@company.com", lastTested: "2025-12-20", evidence: 1, description: "Regular risk assessments of information assets" },
-  { id: "CTL-004", name: "Data Classification", framework: "GDPR", controlId: "Art.5", status: "passing", severity: "medium", owner: "dave@company.com", lastTested: "2026-01-05", evidence: 4, description: "Personal data is classified and labeled" },
-  { id: "CTL-005", name: "Model Transparency", framework: "AI Act", controlId: "AI-T-01", status: "failing", severity: "high", owner: "eve@company.com", lastTested: "2026-01-12", evidence: 0, description: "AI model decision-making is transparent and documented" },
-  { id: "CTL-006", name: "Incident Response", framework: "SOC 2", controlId: "CC-7.3", status: "passing", severity: "critical", owner: "frank@company.com", lastTested: "2026-01-11", evidence: 5, description: "Security incidents are identified and responded to" },
-  { id: "CTL-007", name: "Encryption at Rest", framework: "ISO 27001", controlId: "A.10.1", status: "passing", severity: "high", owner: "alice@company.com", lastTested: "2026-01-09", evidence: 2, description: "Data at rest is encrypted using AES-256" },
-  { id: "CTL-008", name: "Bias Monitoring", framework: "AI Act", controlId: "AI-B-01", status: "warning", severity: "high", owner: "bob@company.com", lastTested: "2026-01-14", evidence: 1, description: "AI models are monitored for bias and fairness" },
-  { id: "CTL-009", name: "Vendor Due Diligence", framework: "SOC 2", controlId: "CC-9.2", status: "passing", severity: "medium", owner: "carol@company.com", lastTested: "2025-12-15", evidence: 3, description: "Third-party vendors undergo security assessment" },
-  { id: "CTL-010", name: "Data Retention", framework: "GDPR", controlId: "Art.17", status: "warning", severity: "medium", owner: "dave@company.com", lastTested: "2025-11-30", evidence: 2, description: "Data retention policies are enforced" },
-];
-
-const statusColor = (s:string) => s==="passing" ? "bg-green-500/10 text-green-400 border-green-500/30" : s==="failing" ? "bg-red-500/10 text-red-400 border-red-500/30" : "bg-yellow-500/10 text-yellow-400 border-yellow-500/30";
-const severityColor = (s:string) => s==="critical" ? "text-red-400" : s==="high" ? "text-orange-400" : "text-yellow-400";
-
-export default function Controls() {
+import { Input } from "../components/ui/input";
+import { Shield, Search, Filter, Plus, Download } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+const columns = [  { key: "id", label: "ID" },
+  { key: "name", label: "Name" },
+  { key: "status", label: "Status" },
+  { key: "type", label: "Type" },
+  { key: "score", label: "Score" },
+  { key: "date", label: "Date" },];
+const mockData: any[] = [  { id: 1, name: "Record A", status: "active", type: "Core", score: 92, date: "2024-03-15" },
+  { id: 2, name: "Record B", status: "compliant", type: "Extended", score: 87, date: "2024-03-14" },
+  { id: 3, name: "Record C", status: "pending", type: "Core", score: 71, date: "2024-03-13" },
+  { id: 4, name: "Record D", status: "active", type: "Custom", score: 95, date: "2024-03-12" },
+  { id: 5, name: "Record E", status: "review", type: "Extended", score: 63, date: "2024-03-11" },];
+const statsCards = [  { label: "Total", value: "278", icon: Shield },
+  { label: "Active", value: "201", icon: Shield },
+  { label: "Gaps", value: "15", icon: Shield },
+  { label: "Score", value: "88%", icon: Shield },];
+export default function ControlsPage() {
   const [search, setSearch] = useState("");
-  const [framework, setFramework] = useState("All");
-  const [status, setStatus] = useState("All");
-  const [selected, setSelected] = useState<any>(null);
-  const frameworks = ["All", ...Array.from(new Set(mockControls.map(c => c.framework)))];
-  const statuses = ["All", "passing", "failing", "warning"];
-  const filtered = mockControls.filter(c =>
-    (framework === "All" || c.framework === framework) &&
-    (status === "All" || c.status === status) &&
-    (c.name.toLowerCase().includes(search.toLowerCase()) || c.controlId.toLowerCase().includes(search.toLowerCase()))
-  );
-  return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div><h1 className="text-2xl font-bold text-white">Controls Library</h1><p className="text-sm text-gray-400">Manage compliance controls across frameworks</p></div>
-        <Button className="bg-green-600 hover:bg-green-700 text-white"><Plus className="w-4 h-4 mr-2" />Add Control</Button>
-      </div>
-      <div className="grid grid-cols-4 gap-4">
-        {[{label:"Total Controls",value:mockControls.length,color:"text-white"},{label:"Passing",value:mockControls.filter(c=>c.status==="passing").length,color:"text-green-400"},{label:"Failing",value:mockControls.filter(c=>c.status==="failing").length,color:"text-red-400"},{label:"Warning",value:mockControls.filter(c=>c.status==="warning").length,color:"text-yellow-400"}].map(s=>(
-          <Card key={s.label} className="bg-gray-900 border-gray-800"><CardContent className="p-4"><p className="text-xs text-gray-400">{s.label}</p><p className={`text-2xl font-bold ${s.color}`}>{s.value}</p></CardContent></Card>
-        ))}
-      </div>
-      <Card className="bg-gray-900 border-gray-800"><CardContent className="p-4 space-y-4">
-        <div className="flex gap-3 flex-wrap">
-          <div className="relative flex-1 min-w-48"><Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" /><Input placeholder="Search controls..." value={search} onChange={e=>setSearch(e.target.value)} className="pl-9 bg-gray-800 border-gray-700 text-white" /></div>
-          <select value={framework} onChange={e=>setFramework(e.target.value)} className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-white">{frameworks.map(f=><option key={f}>{f}</option>)}</select>
-          <select value={status} onChange={e=>setStatus(e.target.value)} className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-white">{statuses.map(s=><option key={s}>{s}</option>)}</select>
-        </div>
-        <Table>
-          <TableHeader><TableRow className="border-gray-800"><TableHead className="text-gray-400">Control ID</TableHead><TableHead className="text-gray-400">Name</TableHead><TableHead className="text-gray-400">Framework</TableHead><TableHead className="text-gray-400">Severity</TableHead><TableHead className="text-gray-400">Status</TableHead><TableHead className="text-gray-400">Last Tested</TableHead><TableHead className="text-gray-400">Evidence</TableHead></TableRow></TableHeader>
-          <TableBody>{filtered.map(c=>(
-            <TableRow key={c.id} className="border-gray-800 hover:bg-gray-800/50 cursor-pointer" onClick={()=>setSelected(c)}>
-              <TableCell className="text-green-400 font-mono text-xs">{c.controlId}</TableCell>
-              <TableCell className="text-white font-medium">{c.name}</TableCell>
-              <TableCell><span className="text-xs px-2 py-0.5 rounded bg-gray-700 text-gray-300">{c.framework}</span></TableCell>
-              <TableCell><span className={`text-xs font-medium ${severityColor(c.severity)}`}>{c.severity}</span></TableCell>
-              <TableCell><span className={`text-xs px-2 py-0.5 rounded border ${statusColor(c.status)}`}>{c.status}</span></TableCell>
-              <TableCell className="text-gray-400 text-xs">{c.lastTested}</TableCell>
-              <TableCell className="text-gray-300 text-xs">{c.evidence} items</TableCell>
-            </TableRow>
-          ))}</TableBody>
-        </Table>
-      </CardContent></Card>
-      <Dialog open={!!selected} onOpenChange={()=>setSelected(null)}>
-        <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-lg">
-          <DialogHeader><DialogTitle>{selected?.name}</DialogTitle></DialogHeader>
-          {selected && <div className="space-y-3 text-sm">
-            <p className="text-gray-400">{selected.description}</p>
-            <div className="grid grid-cols-2 gap-3">
-              {[["Control ID",selected.controlId],["Framework",selected.framework],["Status",selected.status],["Severity",selected.severity],["Owner",selected.owner],["Last Tested",selected.lastTested],["Evidence",selected.evidence+" items"]].map(([k,v])=>(
-                <div key={k}><p className="text-gray-400 text-xs">{k}</p><p className="text-white">{String(v)}</p></div>
-              ))}
-            </div>
-          </div>}
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
+  const [sf, setSf] = useState("all");
+  const [sel, setSel] = useState<any>(null);
+  const [open, setOpen] = useState(false);
+  const sts = ["all", ...Array.from(new Set(mockData.map((d) => d.status||d.severity||"active")))];
+  const filt = mockData.filter((d) => JSON.stringify(d).toLowerCase().includes(search.toLowerCase()) && (sf==="all"||(d.status||d.severity)===sf));
+  const ch = mockData.slice(0,6).map((d,i) => ({ name: d.name||d.title||"I"+(i+1), value: d.score||d.count||50+i*10 }));
+  return (<div className="p-6 space-y-6"><div className="flex items-center justify-between"><h1 className="text-2xl font-bold">Controls</h1><div className="flex gap-2"><Button size="sm" variant="outline"><Download className="h-4 w-4 mr-1"/>Export</Button><Button size="sm"><Plus className="h-4 w-4 mr-1"/>Add New</Button></div></div>
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">{statsCards.map((s:any,i:number)=>(<Card key={i}><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">{s.label}</p><p className="text-2xl font-bold">{s.value}</p></div><s.icon className="h-8 w-8 text-emerald-500"/></div></CardContent></Card>))}</div>
+  <Card><CardHeader><CardTitle>Overview</CardTitle></CardHeader><CardContent><ResponsiveContainer width="100%" height={250}><BarChart data={ch}><XAxis dataKey="name" fontSize={12}/><YAxis fontSize={12}/><Tooltip/><Bar dataKey="value" fill="#10b981" radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></CardContent></Card>
+  <Card><CardHeader><div className="flex items-center justify-between"><CardTitle>Records</CardTitle><div className="flex gap-2"><div className="relative"><Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"/><Input placeholder="Search..." value={search} onChange={(e)=>setSearch(e.target.value)} className="pl-8 w-64"/></div><select className="border rounded px-3 py-1.5 text-sm bg-background" value={sf} onChange={(e)=>setSf(e.target.value)}>{sts.map(s=><option key={s} value={s}>{s==="all"?"All":s}</option>)}</select></div></div></CardHeader><CardContent><div className="border rounded-lg overflow-hidden"><table className="w-full"><thead className="bg-muted/50"><tr>{columns.map((c:any)=><th key={c.key} className="text-left p-3 text-sm font-medium">{c.label}</th>)}<th className="text-left p-3 text-sm font-medium">Actions</th></tr></thead><tbody>{filt.map((row:any,i:number)=>(<tr key={i} className="border-t hover:bg-muted/30 cursor-pointer" onClick={()=>{setSel(row);setOpen(true);}}>{columns.map((c:any)=>(<td key={c.key} className="p-3 text-sm">{c.key==="status"||c.key==="severity"?(<Badge variant={row[c.key]==="critical"||row[c.key]==="high"?"destructive":row[c.key]==="compliant"||row[c.key]==="active"||row[c.key]==="low"?"default":"secondary"}>{row[c.key]}</Badge>):String(row[c.key]??"")}</td>))}<td className="p-3"><Button size="sm" variant="ghost" onClick={(e)=>{e.stopPropagation();setSel(row);setOpen(true);}}>View</Button></td></tr>))}</tbody></table></div><p className="text-sm text-muted-foreground mt-2">{filt.length} of {mockData.length} records</p></CardContent></Card>
+  <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{sel?.name||sel?.title||"Detail"}</DialogTitle></DialogHeader><div className="space-y-3">{sel&&Object.entries(sel).map(([k,v])=>(<div key={k} className="flex justify-between border-b pb-2"><span className="text-sm text-muted-foreground capitalize">{k}</span><span className="text-sm font-medium">{String(v)}</span></div>))}<div className="flex gap-2 pt-2"><Button size="sm">Edit</Button><Button size="sm" variant="outline">Archive</Button><Button size="sm" variant="destructive">Delete</Button></div></div></DialogContent></Dialog></div>);
 }
