@@ -1,78 +1,37 @@
-import { Wrench, Plus, MagnifyingGlass } from '@phosphor-icons/react';
-import {useState} from "react";
-import {Wrench,CheckCircle,Clock,Warning,User,Calendar,ArrowUpRight,Funnel} from "@phosphor-icons/react";
-import {Card,CardContent} from "@/components/ui/card";
-
-type RemediationItem = {
-  id:string; title:string; description:string; framework:string; control:string;
-  priority:"critical"|"high"|"medium"|"low"; status:"open"|"in-progress"|"resolved"|"deferred";
-  assignee:string; dueDate:string; createdAt:string;
-};
-
-const items:RemediationItem[] = [
-  {id:"1",title:"Implement bias testing pipeline",description:"Set up automated bias detection for all production LLMs per EU AI Act Art. 10",framework:"EU AI Act",control:"ART-10.2",priority:"critical",status:"in-progress",assignee:"Sarah Chen",dueDate:"2024-06-20",createdAt:"2024-06-01"},
-  {id:"2",title:"Add human oversight controls",description:"Deploy HITL queue for high-risk decisions in automated hiring system",framework:"EU AI Act",control:"ART-14.1",priority:"high",status:"open",assignee:"Mike Ross",dueDate:"2024-06-25",createdAt:"2024-06-05"},
-  {id:"3",title:"Update model documentation",description:"Complete technical documentation for all Annex IV requirements",framework:"EU AI Act",control:"ART-11.1",priority:"medium",status:"in-progress",assignee:"Lisa Park",dueDate:"2024-07-01",createdAt:"2024-05-20"},
-  {id:"4",title:"PII data retention policy",description:"Implement 30-day data retention limit for training data with PII",framework:"NIST AI RMF",control:"MAP-1.5",priority:"high",status:"resolved",assignee:"Dev Team",dueDate:"2024-06-10",createdAt:"2024-05-15"},
-  {id:"5",title:"Incident response playbook",description:"Create and test incident response procedures for AI system failures",framework:"ISO 42001",control:"A.8.4",priority:"medium",status:"open",assignee:"Ops Team",dueDate:"2024-07-15",createdAt:"2024-06-10"},
-  {id:"6",title:"Vendor security assessment",description:"Complete security questionnaire for all third-party model providers",framework:"SOC 2",control:"CC9.2",priority:"low",status:"deferred",assignee:"Security",dueDate:"2024-08-01",createdAt:"2024-06-12"},
-];
-
-const priorityColors:Record<string,string> = {critical:"bg-red-500/10 text-red-600",high:"bg-amber-500/10 text-amber-600",medium:"bg-emerald-600/10 text-emerald-600",low:"bg-slate-200 text-slate-600"};
-const statusColors:Record<string,string> = {open:"bg-slate-200 text-slate-600","in-progress":"bg-emerald-600/10 text-emerald-600",resolved:"bg-emerald-500/10 text-emerald-600",deferred:"bg-amber-500/10 text-amber-600"};
-
-export default function Remediation(){
-  const [filterStatus,setFunnelStatus] = useState("all");
-  const filtered = filterStatus==="all"?items:items.filter(i=>i.status===filterStatus);
-  const stats = {open:items.filter(i=>i.status==="open").length,inProgress:items.filter(i=>i.status==="in-progress").length,resolved:items.filter(i=>i.status==="resolved").length,total:items.length};
-
-  return (
-    <div className="p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
-      <div className="flex items-center gap-3 mb-6">
-        <Wrench size={24} className="text-emerald-600"/>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-foreground">Remediation Tracker</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm">Track and manage compliance gaps and remediation actions</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        {[{l:"Total",v:stats.total,c:"text-slate-900"},{l:"Open",v:stats.open,c:"text-amber-600"},{l:"In Progress",v:stats.inProgress,c:"text-emerald-600"},{l:"Resolved",v:stats.resolved,c:"text-emerald-600"}].map((s,i)=>(
-          <Card key={i}><CardContent className="p-4"><div className="text-xs text-slate-500 mb-1">{s.l}</div><div className={`text-2xl font-bold ${s.c} dark:text-foreground`}>{s.v}</div></CardContent></Card>
-        ))}
-      </div>
-
-      <div className="flex items-center gap-3 mb-4">
-        <Funnel size={14} className="text-slate-400"/>
-        {["all","open","in-progress","resolved","deferred"].map(s=>(
-          <button key={s} onClick={()=>setFunnelStatus(s)} className={`px-3 py-1.5 text-xs rounded-full capitalize ${filterStatus===s?"bg-emerald-600 text-foreground":"bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"}`}>{s}</button>
-        ))}
-      </div>
-
-      <div className="space-y-3">
-        {filtered.map(item=>(
-          <Card key={item.id} className="hover:ring-1 hover:ring-blue-500/30 transition">
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-slate-900 dark:text-foreground text-sm">{item.title}</h3>
-                    <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${priorityColors[item.priority]}`}>{item.priority}</span>
-                    <span className={`px-2 py-0.5 text-xs rounded-full ${statusColors[item.status]}`}>{item.status}</span>
-                  </div>
-                  <p className="text-xs text-slate-500 mb-2">{item.description}</p>
-                  <div className="flex items-center gap-4 text-xs text-slate-400">
-                    <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">{item.framework} / {item.control}</span>
-                    <span className="flex items-center gap-1"><User size={10}/> {item.assignee}</span>
-                    <span className="flex items-center gap-1"><Calendar size={10}/> Due: {item.dueDate}</span>
-                  </div>
-                </div>
-                <button className="p-2 rounded-none hover:bg-slate-100 dark:hover:bg-slate-800"><ArrowUpRight size={14} className="text-slate-400"/></button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
+import { Button } from "../components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
+import { Input } from "../components/ui/input";
+import { Shield, Search, Filter, Plus, Download } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+const columns = [  { key: "id", label: "ID" },
+  { key: "name", label: "Name" },
+  { key: "status", label: "Status" },
+  { key: "type", label: "Type" },
+  { key: "score", label: "Score" },
+  { key: "date", label: "Date" },];
+const mockData: any[] = [  { id: 1, name: "Item One", status: "active", type: "Primary", score: 90, date: "2024-03-15" },
+  { id: 2, name: "Item Two", status: "completed", type: "Secondary", score: 82, date: "2024-03-14" },
+  { id: 3, name: "Item Three", status: "pending", type: "Primary", score: 75, date: "2024-03-13" },
+  { id: 4, name: "Item Four", status: "active", type: "Tertiary", score: 88, date: "2024-03-12" },
+  { id: 5, name: "Item Five", status: "archived", type: "Secondary", score: 65, date: "2024-03-11" },];
+const statsCards = [  { label: "Total", value: "312", icon: Shield },
+  { label: "Active", value: "245", icon: Shield },
+  { label: "Pending", value: "42", icon: Shield },
+  { label: "Completed", value: "25", icon: Shield },];
+export default function Remediation() {
+  const [search, setSearch] = useState("");
+  const [sf, setSf] = useState("all");
+  const [sel, setSel] = useState<any>(null);
+  const [open, setOpen] = useState(false);
+  const sts = ["all", ...Array.from(new Set(mockData.map((d) => d.status||d.severity||"active")))];
+  const filt = mockData.filter((d) => JSON.stringify(d).toLowerCase().includes(search.toLowerCase()) && (sf==="all"||(d.status||d.severity)===sf));
+  const ch = mockData.slice(0,6).map((d,i) => ({ name: d.name||d.title||"I"+(i+1), value: d.score||d.count||50+i*10 }));
+  return (<div className="p-6 space-y-6"><div className="flex items-center justify-between"><h1 className="text-2xl font-bold">Remediation</h1><div className="flex gap-2"><Button size="sm" variant="outline"><Download className="h-4 w-4 mr-1"/>Export</Button><Button size="sm"><Plus className="h-4 w-4 mr-1"/>Add New</Button></div></div>
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">{statsCards.map((s:any,i:number)=>(<Card key={i}><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">{s.label}</p><p className="text-2xl font-bold">{s.value}</p></div><s.icon className="h-8 w-8 text-emerald-500"/></div></CardContent></Card>))}</div>
+  <Card><CardHeader><CardTitle>Overview</CardTitle></CardHeader><CardContent><ResponsiveContainer width="100%" height={250}><BarChart data={ch}><XAxis dataKey="name" fontSize={12}/><YAxis fontSize={12}/><Tooltip/><Bar dataKey="value" fill="#10b981" radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></CardContent></Card>
+  <Card><CardHeader><div className="flex items-center justify-between"><CardTitle>Records</CardTitle><div className="flex gap-2"><div className="relative"><Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"/><Input placeholder="Search..." value={search} onChange={(e)=>setSearch(e.target.value)} className="pl-8 w-64"/></div><select className="border rounded px-3 py-1.5 text-sm bg-background" value={sf} onChange={(e)=>setSf(e.target.value)}>{sts.map(s=><option key={s} value={s}>{s==="all"?"All":s}</option>)}</select></div></div></CardHeader><CardContent><div className="border rounded-lg overflow-hidden"><table className="w-full"><thead className="bg-muted/50"><tr>{columns.map((c:any)=><th key={c.key} className="text-left p-3 text-sm font-medium">{c.label}</th>)}<th className="text-left p-3 text-sm font-medium">Actions</th></tr></thead><tbody>{filt.map((row:any,i:number)=>(<tr key={i} className="border-t hover:bg-muted/30 cursor-pointer" onClick={()=>{setSel(row);setOpen(true);}}>{columns.map((c:any)=>(<td key={c.key} className="p-3 text-sm">{c.key==="status"||c.key==="severity"?(<Badge variant={row[c.key]==="critical"||row[c.key]==="high"?"destructive":row[c.key]==="compliant"||row[c.key]==="active"||row[c.key]==="low"?"default":"secondary"}>{row[c.key]}</Badge>):String(row[c.key]??"")}</td>))}<td className="p-3"><Button size="sm" variant="ghost" onClick={(e)=>{e.stopPropagation();setSel(row);setOpen(true);}}>View</Button></td></tr>))}</tbody></table></div><p className="text-sm text-muted-foreground mt-2">{filt.length} of {mockData.length} records</p></CardContent></Card>
+  <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{sel?.name||sel?.title||"Detail"}</DialogTitle></DialogHeader><div className="space-y-3">{sel&&Object.entries(sel).map(([k,v])=>(<div key={k} className="flex justify-between border-b pb-2"><span className="text-sm text-muted-foreground capitalize">{k}</span><span className="text-sm font-medium">{String(v)}</span></div>))}<div className="flex gap-2 pt-2"><Button size="sm">Edit</Button><Button size="sm" variant="outline">Archive</Button><Button size="sm" variant="destructive">Delete</Button></div></div></DialogContent></Dialog></div>);
 }

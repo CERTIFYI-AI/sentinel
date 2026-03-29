@@ -16,6 +16,7 @@ const NAV = [
     { label: 'Notifications', to: '/notifications', icon: Bell },
   ]},
   { title: 'GOVERNANCE', items: [
+    { label: 'Compliance', to: '/compliance', icon: Shield },
     { label: 'Policy Manager', to: '/compliance/policies', icon: FileText },
     { label: 'Controls', to: '/compliance/controls', icon: Shield },
     { label: 'Frameworks', to: '/frameworks', icon: BookOpen },
@@ -99,7 +100,7 @@ export default function Sidebar() {
                   const Icon = item.icon
                   const active = isActive(item.to)
                   return (
-                    <NavLink key={item.to} to={item.to}
+                    <NavLink key={item.to} to={item.to} end
                       className={cn(
                         'flex items-center gap-3 px-3 py-2 text-sm transition-colors group',
                         active ? 'bg-emerald-600/15 text-emerald-400' : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100',

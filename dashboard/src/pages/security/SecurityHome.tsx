@@ -1,46 +1,36 @@
-
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
-import { Shield, AlertTriangle, Bug, Activity, Lock, Scan, Swords, FileText } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-
-const alerts = [
-  { time: "10 min ago", msg: "Critical CVE detected in model serving layer", severity: "critical" },
-  { time: "25 min ago", msg: "Unusual API access pattern from 203.45.x.x", severity: "high" },
-  { time: "1 hr ago", msg: "Failed penetration test on /api/models endpoint", severity: "medium" },
-  { time: "2 hr ago", msg: "SSL certificate expiring in 14 days", severity: "low" },
-  { time: "3 hr ago", msg: "New vulnerability scan completed", severity: "info" },
-];
-const sevColor = (s: string) => ({ critical: "text-red-400 bg-red-500/10", high: "text-orange-400 bg-orange-500/10", medium: "text-yellow-400 bg-yellow-500/10", low: "text-blue-400 bg-blue-500/10", info: "text-green-400 bg-green-500/10" })[s] || "";
-
+import { Badge } from "../../components/ui/badge";
+import { Button } from "../../components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
+import { Input } from "../../components/ui/input";
+import { Shield, Search, Filter, Plus, Download } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+const columns = [  { key: "id", label: "ID" },
+  { key: "name", label: "Module" },
+  { key: "status", label: "Status" },
+  { key: "score", label: "Score" },
+  { key: "lastScan", label: "Last Scan" },];
+const mockData: any[] = [  { id: 1, name: "Vulnerability Scanner", status: "active", score: 92, lastScan: "2024-03-15" },
+  { id: 2, name: "Threat Intelligence", status: "active", score: 88, lastScan: "2024-03-14" },
+  { id: 3, name: "Attack Surface", status: "warning", score: 71, lastScan: "2024-03-13" },
+  { id: 4, name: "Red Team Lab", status: "active", score: 95, lastScan: "2024-03-12" },
+  { id: 5, name: "Policy Firewall", status: "active", score: 89, lastScan: "2024-03-11" },];
+const statsCards = [  { label: "Security Score", value: "89%", icon: Shield },
+  { label: "Active Threats", value: "3", icon: Shield },
+  { label: "Scans Today", value: "24", icon: Shield },
+  { label: "Vulnerabilities", value: "47", icon: Shield },];
 export default function SecurityHome() {
-  return (
-    <div className="p-6 space-y-6">
-      <div><h1 className="text-2xl font-bold">Security Operations Center</h1><p className="text-muted-foreground">AI infrastructure security posture overview</p></div>
-      <Card className="border-green-500/30"><CardContent className="pt-6 flex items-center gap-6">
-        <div className="w-20 h-20 rounded-full border-4 border-green-500 flex items-center justify-center"><span className="text-2xl font-bold">76</span></div>
-        <div><div className="text-lg font-semibold">Security Posture Score</div><p className="text-sm text-muted-foreground">Based on vulnerability scans, policy compliance, and incident response</p></div>
-      </CardContent></Card>
-      <div className="grid grid-cols-4 gap-4">
-        <Card><CardContent className="pt-6"><div className="flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-red-400" /><div><div className="text-sm text-muted-foreground">Critical Vulns</div><div className="text-2xl font-bold text-red-400">3</div></div></div></CardContent></Card>
-        <Card><CardContent className="pt-6"><div className="flex items-center gap-2"><Bug className="w-5 h-5 text-yellow-400" /><div><div className="text-sm text-muted-foreground">Open CVEs</div><div className="text-2xl font-bold text-yellow-400">8</div></div></div></CardContent></Card>
-        <Card><CardContent className="pt-6"><div className="flex items-center gap-2"><Scan className="w-5 h-5 text-orange-400" /><div><div className="text-sm text-muted-foreground">Failed Scans</div><div className="text-2xl font-bold text-orange-400">2</div></div></div></CardContent></Card>
-        <Card><CardContent className="pt-6"><div className="flex items-center gap-2"><Shield className="w-5 h-5 text-blue-400" /><div><div className="text-sm text-muted-foreground">Security Incidents</div><div className="text-2xl font-bold">5</div></div></div></CardContent></Card>
-      </div>
-      <div className="grid grid-cols-2 gap-6">
-        <Card><CardHeader><CardTitle>Recent Alerts</CardTitle></CardHeader><CardContent className="space-y-3">
-          {alerts.map((a, i) => (<div key={i} className="flex items-center gap-3 p-2 rounded border border-border/50">
-            <span className={`px-2 py-0.5 rounded text-xs ${sevColor(a.severity)}`}>{a.severity}</span>
-            <span className="text-sm flex-1">{a.msg}</span>
-            <span className="text-xs text-muted-foreground">{a.time}</span>
-          </div>))}
-        </CardContent></Card>
-        <Card><CardHeader><CardTitle>Quick Actions</CardTitle></CardHeader><CardContent className="grid grid-cols-2 gap-3">
-          {[["Attack Surface","Map exposure points",Swords],["Vulnerability Scan","Run security scan",Scan],["Red Team Lab","Adversarial testing",Bug],["Security Reports","Generate reports",FileText]].map(([title, desc, Icon]: any, i: number) => (
-            <div key={i} className="p-4 rounded-lg border border-border/50 hover:border-green-500/30 cursor-pointer transition-colors">
-              <Icon className="w-6 h-6 text-green-400 mb-2" /><div className="font-medium text-sm">{title}</div><div className="text-xs text-muted-foreground">{desc}</div>
-            </div>
-          ))}
-        </CardContent></Card>
-      </div>
-    </div>);
+  const [search, setSearch] = useState("");
+  const [sf, setSf] = useState("all");
+  const [sel, setSel] = useState<any>(null);
+  const [open, setOpen] = useState(false);
+  const sts = ["all", ...Array.from(new Set(mockData.map((d) => d.status||d.severity||"active")))];
+  const filt = mockData.filter((d) => JSON.stringify(d).toLowerCase().includes(search.toLowerCase()) && (sf==="all"||(d.status||d.severity)===sf));
+  const ch = mockData.slice(0,6).map((d,i) => ({ name: d.name||d.title||"I"+(i+1), value: d.score||d.count||50+i*10 }));
+  return (<div className="p-6 space-y-6"><div className="flex items-center justify-between"><h1 className="text-2xl font-bold">Security Home</h1><div className="flex gap-2"><Button size="sm" variant="outline"><Download className="h-4 w-4 mr-1"/>Export</Button><Button size="sm"><Plus className="h-4 w-4 mr-1"/>Add New</Button></div></div>
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">{statsCards.map((s:any,i:number)=>(<Card key={i}><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">{s.label}</p><p className="text-2xl font-bold">{s.value}</p></div><s.icon className="h-8 w-8 text-emerald-500"/></div></CardContent></Card>))}</div>
+  <Card><CardHeader><CardTitle>Overview</CardTitle></CardHeader><CardContent><ResponsiveContainer width="100%" height={250}><BarChart data={ch}><XAxis dataKey="name" fontSize={12}/><YAxis fontSize={12}/><Tooltip/><Bar dataKey="value" fill="#10b981" radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></CardContent></Card>
+  <Card><CardHeader><div className="flex items-center justify-between"><CardTitle>Records</CardTitle><div className="flex gap-2"><div className="relative"><Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"/><Input placeholder="Search..." value={search} onChange={(e)=>setSearch(e.target.value)} className="pl-8 w-64"/></div><select className="border rounded px-3 py-1.5 text-sm bg-background" value={sf} onChange={(e)=>setSf(e.target.value)}>{sts.map(s=><option key={s} value={s}>{s==="all"?"All":s}</option>)}</select></div></div></CardHeader><CardContent><div className="border rounded-lg overflow-hidden"><table className="w-full"><thead className="bg-muted/50"><tr>{columns.map((c:any)=><th key={c.key} className="text-left p-3 text-sm font-medium">{c.label}</th>)}<th className="text-left p-3 text-sm font-medium">Actions</th></tr></thead><tbody>{filt.map((row:any,i:number)=>(<tr key={i} className="border-t hover:bg-muted/30 cursor-pointer" onClick={()=>{setSel(row);setOpen(true);}}>{columns.map((c:any)=>(<td key={c.key} className="p-3 text-sm">{c.key==="status"||c.key==="severity"?(<Badge variant={row[c.key]==="critical"||row[c.key]==="high"?"destructive":row[c.key]==="compliant"||row[c.key]==="active"||row[c.key]==="low"?"default":"secondary"}>{row[c.key]}</Badge>):String(row[c.key]??"")}</td>))}<td className="p-3"><Button size="sm" variant="ghost" onClick={(e)=>{e.stopPropagation();setSel(row);setOpen(true);}}>View</Button></td></tr>))}</tbody></table></div><p className="text-sm text-muted-foreground mt-2">{filt.length} of {mockData.length} records</p></CardContent></Card>
+  <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{sel?.name||sel?.title||"Detail"}</DialogTitle></DialogHeader><div className="space-y-3">{sel&&Object.entries(sel).map(([k,v])=>(<div key={k} className="flex justify-between border-b pb-2"><span className="text-sm text-muted-foreground capitalize">{k}</span><span className="text-sm font-medium">{String(v)}</span></div>))}<div className="flex gap-2 pt-2"><Button size="sm">Edit</Button><Button size="sm" variant="outline">Archive</Button><Button size="sm" variant="destructive">Delete</Button></div></div></DialogContent></Dialog></div>);
 }

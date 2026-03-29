@@ -1,10 +1,37 @@
-import { Buildings, Plus, MagnifyingGlass, Warning } from '@phosphor-icons/react';
-import { useState, useMemo } from "react";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table';
-interface Vendor { id: string; name: string; service: string; riskLevel: "high"|"medium"|"low"; lastAudit: string; status: "active"|"inactive"|"review"; }
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Badge } from "../../components/ui/badge";
+import { Button } from "../../components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
+import { Input } from "../../components/ui/input";
+import { Shield, Search, Filter, Plus, Download } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+const columns = [  { key: "id", label: "ID" },
+  { key: "name", label: "Name" },
+  { key: "status", label: "Status" },
+  { key: "severity", label: "Severity" },
+  { key: "score", label: "Score" },
+  { key: "owner", label: "Owner" },];
+const mockData: any[] = [  { id: 1, name: "Item Alpha", status: "active", severity: "high", score: 85, owner: "John" },
+  { id: 2, name: "Item Beta", status: "completed", severity: "medium", score: 72, owner: "Sarah" },
+  { id: 3, name: "Item Gamma", status: "pending", severity: "low", score: 91, owner: "Mike" },
+  { id: 4, name: "Item Delta", status: "active", severity: "critical", score: 45, owner: "Anna" },
+  { id: 5, name: "Item Epsilon", status: "review", severity: "medium", score: 78, owner: "Tom" },];
+const statsCards = [  { label: "Total", value: "189", icon: Shield },
+  { label: "Active", value: "134", icon: Shield },
+  { label: "Critical", value: "8", icon: Shield },
+  { label: "Resolved", value: "47", icon: Shield },];
 export default function VendorRegister() {
   const [search, setSearch] = useState("");
-  const vendors = useMemo<Vendor[]>(() => [{id:"1",name:"OpenAI",service:"LLM API",riskLevel:"high",lastAudit:"2024-01-10",status:"active"},{id:"2",name:"Anthropic",service:"LLM API",riskLevel:"medium",lastAudit:"2024-01-08",status:"active"},{id:"3",name:"AWS",service:"Cloud Infra",riskLevel:"low",lastAudit:"2024-01-05",status:"active"},{id:"4",name:"Hugging Face",service:"Model Hub",riskLevel:"medium",lastAudit:"2023-12-15",status:"review"}],[]);
-  const filtered = vendors.filter(v=>v.name.toLowerCase().includes(search.toLowerCase()));
-  const riskColors = {high:"bg-red-100 text-red-800",medium:"bg-yellow-100 text-yellow-800",low:"bg-green-100 text-green-800"};
-  return (<div className="p-6"><h1 className="text-2xl font-bold mb-1">Vendor Register</h1><p className="text-sm text-muted-foreground mb-4">Manage AI vendor relationships</p><div className="flex gap-2 mb-4"><input placeholder="MagnifyingGlass vendors..." className="border rounded px-3 py-2 flex-1" value={search} onChange={e=>setSearch(e.target.value)}/><button className="px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded">Add Vendor</button></div>{filtered.length===0?(<div className="text-center py-12 text-muted-foreground">No vendors found.</div>):(<Table className="w-full border-collapse text-foreground"><TableHeader><TableRow className="border-b"><TableHead className="text-left p-2">Vendor</TableHead><TableHead className="text-left p-2">Service</TableHead><TableHead className="text-left p-2">Risk</TableHead><TableHead className="text-left p-2">Last Audit</TableHead><TableHead className="text-left p-2">Status</TableHead></TableRow></TableHeader><TableBody>{filtered.map(v=>(<TableRow key={v.id} className="border-b hover:bg-[hsl(var(--muted))]"><TableCell className="p-2">{v.name}</TableCell><TableCell className="p-2">{v.service}</TableCell><TableCell className="p-2"><span className={`px-2 py-0.5 rounded text-xs ${riskColors[v.riskLevel]}`}>{v.riskLevel}</span></TableCell><TableCell className="p-2">{v.lastAudit}</TableCell><TableCell className="p-2">{v.status}</TableCell></TableRow>))}</TableBody></Table>)}</div>);}
+  const [sf, setSf] = useState("all");
+  const [sel, setSel] = useState<any>(null);
+  const [open, setOpen] = useState(false);
+  const sts = ["all", ...Array.from(new Set(mockData.map((d) => d.status||d.severity||"active")))];
+  const filt = mockData.filter((d) => JSON.stringify(d).toLowerCase().includes(search.toLowerCase()) && (sf==="all"||(d.status||d.severity)===sf));
+  const ch = mockData.slice(0,6).map((d,i) => ({ name: d.name||d.title||"I"+(i+1), value: d.score||d.count||50+i*10 }));
+  return (<div className="p-6 space-y-6"><div className="flex items-center justify-between"><h1 className="text-2xl font-bold">Vendor Risk Register</h1><div className="flex gap-2"><Button size="sm" variant="outline"><Download className="h-4 w-4 mr-1"/>Export</Button><Button size="sm"><Plus className="h-4 w-4 mr-1"/>Add New</Button></div></div>
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">{statsCards.map((s:any,i:number)=>(<Card key={i}><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">{s.label}</p><p className="text-2xl font-bold">{s.value}</p></div><s.icon className="h-8 w-8 text-emerald-500"/></div></CardContent></Card>))}</div>
+  <Card><CardHeader><CardTitle>Overview</CardTitle></CardHeader><CardContent><ResponsiveContainer width="100%" height={250}><BarChart data={ch}><XAxis dataKey="name" fontSize={12}/><YAxis fontSize={12}/><Tooltip/><Bar dataKey="value" fill="#10b981" radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></CardContent></Card>
+  <Card><CardHeader><div className="flex items-center justify-between"><CardTitle>Records</CardTitle><div className="flex gap-2"><div className="relative"><Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"/><Input placeholder="Search..." value={search} onChange={(e)=>setSearch(e.target.value)} className="pl-8 w-64"/></div><select className="border rounded px-3 py-1.5 text-sm bg-background" value={sf} onChange={(e)=>setSf(e.target.value)}>{sts.map(s=><option key={s} value={s}>{s==="all"?"All":s}</option>)}</select></div></div></CardHeader><CardContent><div className="border rounded-lg overflow-hidden"><table className="w-full"><thead className="bg-muted/50"><tr>{columns.map((c:any)=><th key={c.key} className="text-left p-3 text-sm font-medium">{c.label}</th>)}<th className="text-left p-3 text-sm font-medium">Actions</th></tr></thead><tbody>{filt.map((row:any,i:number)=>(<tr key={i} className="border-t hover:bg-muted/30 cursor-pointer" onClick={()=>{setSel(row);setOpen(true);}}>{columns.map((c:any)=>(<td key={c.key} className="p-3 text-sm">{c.key==="status"||c.key==="severity"?(<Badge variant={row[c.key]==="critical"||row[c.key]==="high"?"destructive":row[c.key]==="compliant"||row[c.key]==="active"||row[c.key]==="low"?"default":"secondary"}>{row[c.key]}</Badge>):String(row[c.key]??"")}</td>))}<td className="p-3"><Button size="sm" variant="ghost" onClick={(e)=>{e.stopPropagation();setSel(row);setOpen(true);}}>View</Button></td></tr>))}</tbody></table></div><p className="text-sm text-muted-foreground mt-2">{filt.length} of {mockData.length} records</p></CardContent></Card>
+  <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{sel?.name||sel?.title||"Detail"}</DialogTitle></DialogHeader><div className="space-y-3">{sel&&Object.entries(sel).map(([k,v])=>(<div key={k} className="flex justify-between border-b pb-2"><span className="text-sm text-muted-foreground capitalize">{k}</span><span className="text-sm font-medium">{String(v)}</span></div>))}<div className="flex gap-2 pt-2"><Button size="sm">Edit</Button><Button size="sm" variant="outline">Archive</Button><Button size="sm" variant="destructive">Delete</Button></div></div></DialogContent></Dialog></div>);
+}

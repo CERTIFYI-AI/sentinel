@@ -1,56 +1,37 @@
-
 import { useState } from "react";
-import { Card, CardContent } from "../components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
-import { Shield, CheckCircle, AlertTriangle, XCircle, TrendingUp } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-
-const frameworkScores = [
-  { name: "SOC 2", score: 87, controls: 62, passing: 54, failing: 8 },
-  { name: "ISO 27001", score: 74, controls: 93, passing: 69, failing: 24 },
-  { name: "GDPR", score: 91, controls: 45, passing: 41, failing: 4 },
-  { name: "AI Act", score: 68, controls: 38, passing: 26, failing: 12 },
-  { name: "NIST AI RMF", score: 72, controls: 55, passing: 40, failing: 15 },
-  { name: "HIPAA", score: 95, controls: 44, passing: 42, failing: 2 },
-];
-
-const overallPie = [
-  { name: "Passing", value: 272, color: "#16a34a" },
-  { name: "Failing", value: 65, color: "#ef4444" },
-];
-
-const monthlyTrend = [
-  { month: "Aug", score: 71 }, { month: "Sep", score: 74 }, { month: "Oct", score: 76 },
-  { month: "Nov", score: 79 }, { month: "Dec", score: 81 }, { month: "Jan", score: 83 },
-];
-
-export default function ComplianceDashboard() {
-  return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div><h1 className="text-2xl font-bold text-white">Compliance Dashboard</h1><p className="text-sm text-gray-400">Cross-framework compliance posture overview</p></div>
-        <Button className="bg-green-600 hover:bg-green-700 text-white"><TrendingUp className="w-4 h-4 mr-2" />Generate Report</Button>
-      </div>
-      <div className="grid grid-cols-4 gap-4">
-        {[{label:"Overall Score",value:"83%",color:"text-green-400",icon:Shield},{label:"Total Controls",value:"337",color:"text-white",icon:CheckCircle},{label:"Passing",value:"272",color:"text-green-400",icon:CheckCircle},{label:"Failing",value:"65",color:"text-red-400",icon:XCircle}].map(s=>(
-          <Card key={s.label} className="bg-gray-900 border-gray-800"><CardContent className="p-4 flex items-center gap-3"><s.icon className={`w-8 h-8 ${s.color}`} /><div><p className="text-xs text-gray-400">{s.label}</p><p className={`text-2xl font-bold ${s.color}`}>{s.value}</p></div></CardContent></Card>
-        ))}
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <Card className="bg-gray-900 border-gray-800"><CardContent className="p-4"><h3 className="text-white font-medium mb-4">Compliance Score by Framework</h3><ResponsiveContainer width="100%" height={300}><BarChart data={frameworkScores}><CartesianGrid strokeDasharray="3 3" stroke="#374151" /><XAxis dataKey="name" tick={{fill:"#9ca3af",fontSize:12}} /><YAxis tick={{fill:"#9ca3af",fontSize:12}} domain={[0,100]} /><Tooltip contentStyle={{backgroundColor:"#1f2937",border:"1px solid #374151",color:"#fff"}} /><Bar dataKey="score" fill="#16a34a" radius={[4,4,0,0]} /></BarChart></ResponsiveContainer></CardContent></Card>
-        <Card className="bg-gray-900 border-gray-800"><CardContent className="p-4"><h3 className="text-white font-medium mb-4">Control Status Distribution</h3><ResponsiveContainer width="100%" height={300}><PieChart><Pie data={overallPie} cx="50%" cy="50%" innerRadius={60} outerRadius={100} dataKey="value" label={({name,value})=>`${name}: ${value}`}>{overallPie.map((e,i)=><Cell key={i} fill={e.color} />)}</Pie><Tooltip contentStyle={{backgroundColor:"#1f2937",border:"1px solid #374151",color:"#fff"}} /></PieChart></ResponsiveContainer></CardContent></Card>
-      </div>
-      <Card className="bg-gray-900 border-gray-800"><CardContent className="p-4">
-        <h3 className="text-white font-medium mb-4">Framework Breakdown</h3>
-        <div className="space-y-3">{frameworkScores.map(f=>(
-          <div key={f.name} className="flex items-center gap-4 p-3 bg-gray-800/50 rounded-lg">
-            <div className="w-24 text-sm font-medium text-white">{f.name}</div>
-            <div className="flex-1 bg-gray-700 rounded-full h-3"><div className="h-3 rounded-full" style={{width:`${f.score}%`,backgroundColor:f.score>=80?"#16a34a":f.score>=70?"#eab308":"#ef4444"}} /></div>
-            <div className="w-12 text-right text-sm font-bold" style={{color:f.score>=80?"#16a34a":f.score>=70?"#eab308":"#ef4444"}}>{f.score}%</div>
-            <div className="text-xs text-gray-400 w-32">{f.passing}/{f.controls} controls</div>
-          </div>
-        ))}</div>
-      </CardContent></Card>
-    </div>
-  );
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
+import { Input } from "../components/ui/input";
+import { Shield, Search, Filter, Plus, Download } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+const columns = [  { key: "id", label: "ID" },
+  { key: "name", label: "Name" },
+  { key: "status", label: "Status" },
+  { key: "type", label: "Type" },
+  { key: "score", label: "Score" },
+  { key: "date", label: "Date" },];
+const mockData: any[] = [  { id: 1, name: "Record A", status: "active", type: "Core", score: 92, date: "2024-03-15" },
+  { id: 2, name: "Record B", status: "compliant", type: "Extended", score: 87, date: "2024-03-14" },
+  { id: 3, name: "Record C", status: "pending", type: "Core", score: 71, date: "2024-03-13" },
+  { id: 4, name: "Record D", status: "active", type: "Custom", score: 95, date: "2024-03-12" },
+  { id: 5, name: "Record E", status: "review", type: "Extended", score: 63, date: "2024-03-11" },];
+const statsCards = [  { label: "Total", value: "278", icon: Shield },
+  { label: "Active", value: "201", icon: Shield },
+  { label: "Gaps", value: "15", icon: Shield },
+  { label: "Score", value: "88%", icon: Shield },];
+export default function ComplianceDashboardStandalone() {
+  const [search, setSearch] = useState("");
+  const [sf, setSf] = useState("all");
+  const [sel, setSel] = useState<any>(null);
+  const [open, setOpen] = useState(false);
+  const sts = ["all", ...Array.from(new Set(mockData.map((d) => d.status||d.severity||"active")))];
+  const filt = mockData.filter((d) => JSON.stringify(d).toLowerCase().includes(search.toLowerCase()) && (sf==="all"||(d.status||d.severity)===sf));
+  const ch = mockData.slice(0,6).map((d,i) => ({ name: d.name||d.title||"I"+(i+1), value: d.score||d.count||50+i*10 }));
+  return (<div className="p-6 space-y-6"><div className="flex items-center justify-between"><h1 className="text-2xl font-bold">Compliance Dashboard</h1><div className="flex gap-2"><Button size="sm" variant="outline"><Download className="h-4 w-4 mr-1"/>Export</Button><Button size="sm"><Plus className="h-4 w-4 mr-1"/>Add New</Button></div></div>
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">{statsCards.map((s:any,i:number)=>(<Card key={i}><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">{s.label}</p><p className="text-2xl font-bold">{s.value}</p></div><s.icon className="h-8 w-8 text-emerald-500"/></div></CardContent></Card>))}</div>
+  <Card><CardHeader><CardTitle>Overview</CardTitle></CardHeader><CardContent><ResponsiveContainer width="100%" height={250}><BarChart data={ch}><XAxis dataKey="name" fontSize={12}/><YAxis fontSize={12}/><Tooltip/><Bar dataKey="value" fill="#10b981" radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></CardContent></Card>
+  <Card><CardHeader><div className="flex items-center justify-between"><CardTitle>Records</CardTitle><div className="flex gap-2"><div className="relative"><Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"/><Input placeholder="Search..." value={search} onChange={(e)=>setSearch(e.target.value)} className="pl-8 w-64"/></div><select className="border rounded px-3 py-1.5 text-sm bg-background" value={sf} onChange={(e)=>setSf(e.target.value)}>{sts.map(s=><option key={s} value={s}>{s==="all"?"All":s}</option>)}</select></div></div></CardHeader><CardContent><div className="border rounded-lg overflow-hidden"><table className="w-full"><thead className="bg-muted/50"><tr>{columns.map((c:any)=><th key={c.key} className="text-left p-3 text-sm font-medium">{c.label}</th>)}<th className="text-left p-3 text-sm font-medium">Actions</th></tr></thead><tbody>{filt.map((row:any,i:number)=>(<tr key={i} className="border-t hover:bg-muted/30 cursor-pointer" onClick={()=>{setSel(row);setOpen(true);}}>{columns.map((c:any)=>(<td key={c.key} className="p-3 text-sm">{c.key==="status"||c.key==="severity"?(<Badge variant={row[c.key]==="critical"||row[c.key]==="high"?"destructive":row[c.key]==="compliant"||row[c.key]==="active"||row[c.key]==="low"?"default":"secondary"}>{row[c.key]}</Badge>):String(row[c.key]??"")}</td>))}<td className="p-3"><Button size="sm" variant="ghost" onClick={(e)=>{e.stopPropagation();setSel(row);setOpen(true);}}>View</Button></td></tr>))}</tbody></table></div><p className="text-sm text-muted-foreground mt-2">{filt.length} of {mockData.length} records</p></CardContent></Card>
+  <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{sel?.name||sel?.title||"Detail"}</DialogTitle></DialogHeader><div className="space-y-3">{sel&&Object.entries(sel).map(([k,v])=>(<div key={k} className="flex justify-between border-b pb-2"><span className="text-sm text-muted-foreground capitalize">{k}</span><span className="text-sm font-medium">{String(v)}</span></div>))}<div className="flex gap-2 pt-2"><Button size="sm">Edit</Button><Button size="sm" variant="outline">Archive</Button><Button size="sm" variant="destructive">Delete</Button></div></div></DialogContent></Dialog></div>);
 }
