@@ -1,65 +1,134 @@
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { AlertTriangle, Shield, Brain, FileWarning, Briefcase, FileText, Users, Database, Layers, Clock } from "lucide-react";
 
-import { Card, CardContent } from "../components/ui/card";
-import { Shield, AlertTriangle, CheckCircle, TrendingUp, Activity, Users, FileText, Zap } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
+const complianceData = [
+  { framework: "ISO 27001", score: 87 },
+  { framework: "SOC2", score: 82 },
+  { framework: "EU AI Act", score: 71 },
+  { framework: "NIST", score: 79 },
+  { framework: "OWASP LLM", score: 68 },
+];
 
-const riskTrend = [{month:"Aug",risks:18},{month:"Sep",risks:16},{month:"Oct",risks:15},{month:"Nov",risks:14},{month:"Dec",risks:13},{month:"Jan",risks:12}];
-const frameworkData = [{name:"SOC 2",score:87},{name:"ISO 27001",score:74},{name:"GDPR",score:91},{name:"AI Act",score:68},{name:"NIST",score:72}];
-const incidentPie = [{name:"Open",value:3,color:"#ef4444"},{name:"Investigating",value:2,color:"#eab308"},{name:"Resolved",value:5,color:"#16a34a"}];
+const riskTrend = [
+  { month: "Oct", risks: 18 },
+  { month: "Nov", risks: 22 },
+  { month: "Dec", risks: 19 },
+  { month: "Jan", risks: 15 },
+  { month: "Feb", risks: 14 },
+  { month: "Mar", risks: 12 },
+];
+
+const recentActivity = [
+  { id: 1, action: "Control CTL-007 passed re-test", user: "Alice Chen", time: "10 min ago", type: "success" },
+  { id: 2, action: "New risk RSK-021 identified: API rate limit bypass", user: "Bob Kumar", time: "25 min ago", type: "warning" },
+  { id: 3, action: "Incident INC-008 resolved: Model hallucination", user: "Carol Davis", time: "1 hr ago", type: "info" },
+  { id: 4, action: "Policy POL-003 updated to v2.1", user: "Dave Wilson", time: "2 hrs ago", type: "info" },
+  { id: 5, action: "Bias audit completed for GPT-4-Turbo", user: "Eve Sharma", time: "3 hrs ago", type: "success" },
+];
+
+const overdueTasks = [
+  { id: 1, title: "Review EU AI Act gap analysis", due: "2 days overdue", assignee: "Alice Chen" },
+  { id: 2, title: "Update data retention policy", due: "5 days overdue", assignee: "Bob Kumar" },
+  { id: 3, title: "Complete SOC2 evidence collection", due: "1 day overdue", assignee: "Carol Davis" },
+];
+
+const kpis = [
+  { label: "Open Tasks", value: 8, icon: Clock, color: "text-blue-400" },
+  { label: "Open Risks", value: 12, icon: AlertTriangle, color: "text-yellow-400" },
+  { label: "Active Models", value: 23, icon: Brain, color: "text-purple-400" },
+  { label: "Critical Incidents", value: 3, icon: FileWarning, color: "text-red-400" },
+  { label: "Use Cases", value: 15, icon: Briefcase, color: "text-cyan-400" },
+  { label: "Active Policies", value: 31, icon: FileText, color: "text-green-400" },
+  { label: "Vendors", value: 7, icon: Users, color: "text-orange-400" },
+  { label: "Datasets", value: 44, icon: Database, color: "text-indigo-400" },
+  { label: "Frameworks", value: 5, icon: Layers, color: "text-emerald-400" },
+];
 
 export default function Overview() {
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white">GRC Executive Dashboard</h1>
-        <p className="text-sm text-gray-400">AI Governance, Risk & Compliance overview</p>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">GRC Executive Dashboard</h1>
+        <Badge className="bg-green-500/10 text-green-400 border-green-500/30">Live</Badge>
       </div>
-      <div className="grid grid-cols-4 gap-4">
-        {[{label:"Open Tasks",value:8,color:"text-yellow-400",icon:Activity,sub:"2 overdue"},{label:"Open Risks",value:12,color:"text-red-400",icon:AlertTriangle,sub:"3 critical"},{label:"Compliance Score",value:"83%",color:"text-green-400",icon:Shield,sub:"+2% this month"},{label:"Active Models",value:7,color:"text-blue-400",icon:Zap,sub:"2 under review"}].map(s=>(
-          <Card key={s.label} className="bg-gray-900 border-gray-800"><CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2"><p className="text-xs text-gray-400">{s.label}</p><s.icon className={`w-5 h-5 ${s.color}`} /></div>
-            <p className={`text-3xl font-bold ${s.color}`}>{s.value}</p>
-            <p className="text-xs text-gray-500 mt-1">{s.sub}</p>
-          </CardContent></Card>
+
+      <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-3">
+        {kpis.map((kpi) => (
+          <Card key={kpi.label} className="border-border/50">
+            <CardContent className="p-3 text-center">
+              <kpi.icon className={`h-5 w-5 mx-auto mb-1 ${kpi.color}`} />
+              <div className="text-xl font-bold">{kpi.value}</div>
+              <div className="text-[10px] text-muted-foreground">{kpi.label}</div>
+            </CardContent>
+          </Card>
         ))}
       </div>
-      <div className="grid grid-cols-3 gap-4">
-        {[{label:"Vendors",value:8,color:"text-purple-400",icon:Users,sub:"1 under-review"},{label:"Open Incidents",value:5,color:"text-red-400",icon:AlertTriangle,sub:"2 critical"},{label:"Evidence Items",value:24,color:"text-green-400",icon:FileText,sub:"3 expiring"}].map(s=>(
-          <Card key={s.label} className="bg-gray-900 border-gray-800"><CardContent className="p-4">
-            <div className="flex items-center gap-3"><s.icon className={`w-8 h-8 ${s.color}`} /><div><p className="text-xs text-gray-400">{s.label}</p><p className={`text-2xl font-bold ${s.color}`}>{s.value}</p><p className="text-xs text-gray-500">{s.sub}</p></div></div>
-          </CardContent></Card>
-        ))}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="border-border/50">
+          <CardHeader><CardTitle className="text-sm">Compliance Score by Framework</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={complianceData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                <XAxis dataKey="framework" tick={{ fontSize: 11, fill: '#888' }} />
+                <YAxis tick={{ fontSize: 11, fill: '#888' }} domain={[0, 100]} />
+                <Tooltip />
+                <Bar dataKey="score" fill="#16a34a" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/50">
+          <CardHeader><CardTitle className="text-sm">Risk Trend (Last 6 Months)</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={riskTrend}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#888' }} />
+                <YAxis tick={{ fontSize: 11, fill: '#888' }} />
+                <Tooltip />
+                <Line type="monotone" dataKey="risks" stroke="#f59e0b" strokeWidth={2} dot={{ fill: '#f59e0b' }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
       </div>
-      <div className="grid grid-cols-2 gap-4">
-        <Card className="bg-gray-900 border-gray-800"><CardContent className="p-4">
-          <h3 className="text-white font-medium mb-4">Risk Trend (6 months)</h3>
-          <ResponsiveContainer width="100%" height={220}><LineChart data={riskTrend}><CartesianGrid strokeDasharray="3 3" stroke="#374151" /><XAxis dataKey="month" tick={{fill:"#9ca3af",fontSize:12}} /><YAxis tick={{fill:"#9ca3af",fontSize:12}} /><Tooltip contentStyle={{backgroundColor:"#1f2937",border:"1px solid #374151",color:"#fff"}} /><Line type="monotone" dataKey="risks" stroke="#ef4444" strokeWidth={2} dot={{fill:"#ef4444"}} /></LineChart></ResponsiveContainer>
-        </CardContent></Card>
-        <Card className="bg-gray-900 border-gray-800"><CardContent className="p-4">
-          <h3 className="text-white font-medium mb-4">Compliance by Framework</h3>
-          <ResponsiveContainer width="100%" height={220}><BarChart data={frameworkData}><CartesianGrid strokeDasharray="3 3" stroke="#374151" /><XAxis dataKey="name" tick={{fill:"#9ca3af",fontSize:11}} /><YAxis tick={{fill:"#9ca3af",fontSize:12}} domain={[0,100]} /><Tooltip contentStyle={{backgroundColor:"#1f2937",border:"1px solid #374151",color:"#fff"}} /><Bar dataKey="score" fill="#16a34a" radius={[4,4,0,0]} /></BarChart></ResponsiveContainer>
-        </CardContent></Card>
-      </div>
-      <div className="grid grid-cols-3 gap-4">
-        <Card className="bg-gray-900 border-gray-800"><CardContent className="p-4">
-          <h3 className="text-white font-medium mb-3">Incident Status</h3>
-          <ResponsiveContainer width="100%" height={160}><PieChart><Pie data={incidentPie} cx="50%" cy="50%" outerRadius={60} dataKey="value" label={({name,value})=>`${name}: ${value}`} labelLine={false}>{incidentPie.map((e,i)=><Cell key={i} fill={e.color} />)}</Pie></PieChart></ResponsiveContainer>
-        </CardContent></Card>
-        <Card className="bg-gray-900 border-gray-800 col-span-2"><CardContent className="p-4">
-          <h3 className="text-white font-medium mb-3">Recent Activity</h3>
-          <div className="space-y-2">{[
-            {text:"Model GPT-4 deployed to production",time:"2h ago",color:"text-blue-400"},
-            {text:"Risk RISK-042 accepted by Dave",time:"4h ago",color:"text-yellow-400"},
-            {text:"Incident INC-004 opened: Bias detected",time:"5h ago",color:"text-red-400"},
-            {text:"Evidence EVD-008 uploaded",time:"8h ago",color:"text-green-400"},
-            {text:"Vendor HuggingFace flagged for review",time:"1d ago",color:"text-orange-400"},
-          ].map((a,i)=>(
-            <div key={i} className="flex items-center justify-between py-1.5 border-b border-gray-800">
-              <span className={`text-sm ${a.color}`}>{a.text}</span>
-              <span className="text-xs text-gray-500">{a.time}</span>
-            </div>
-          ))}</div>
-        </CardContent></Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="border-border/50">
+          <CardHeader><CardTitle className="text-sm">Recent Activity</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            {recentActivity.map((item) => (
+              <div key={item.id} className="flex items-start gap-3 text-sm">
+                <div className={`w-2 h-2 rounded-full mt-1.5 ${item.type === 'success' ? 'bg-green-400' : item.type === 'warning' ? 'bg-yellow-400' : 'bg-blue-400'}`} />
+                <div className="flex-1">
+                  <div>{item.action}</div>
+                  <div className="text-xs text-muted-foreground">{item.user} · {item.time}</div>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/50 border-red-500/20">
+          <CardHeader><CardTitle className="text-sm text-red-400">Overdue Tasks</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            {overdueTasks.map((task) => (
+              <div key={task.id} className="flex items-center justify-between text-sm p-2 rounded bg-red-500/5 border border-red-500/10">
+                <div>
+                  <div className="font-medium">{task.title}</div>
+                  <div className="text-xs text-muted-foreground">{task.assignee}</div>
+                </div>
+                <Badge variant="destructive" className="text-[10px]">{task.due}</Badge>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
