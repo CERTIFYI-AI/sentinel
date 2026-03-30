@@ -1,37 +1,19 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
-import { Badge } from "../../components/ui/badge";
-import { Button } from "../../components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
-import { Input } from "../../components/ui/input";
-import { Shield, Search, Filter, Plus, Download } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-const columns = [  { key: "id", label: "ID" },
-  { key: "name", label: "Name" },
-  { key: "role", label: "Role" },
-  { key: "status", label: "Status" },
-  { key: "permissions", label: "Permissions" },
-  { key: "lastActive", label: "Last Active" },];
-const mockData: any[] = [  { id: 1, name: "Admin User", role: "Super Admin", status: "active", permissions: 48, lastActive: "2024-03-15" },
-  { id: 2, name: "Compliance Lead", role: "Compliance Manager", status: "active", permissions: 32, lastActive: "2024-03-14" },
-  { id: 3, name: "Security Analyst", role: "Security Viewer", status: "active", permissions: 18, lastActive: "2024-03-13" },
-  { id: 4, name: "Auditor", role: "External Auditor", status: "inactive", permissions: 12, lastActive: "2024-02-28" },
-  { id: 5, name: "Developer", role: "Dev Read-Only", status: "active", permissions: 8, lastActive: "2024-03-15" },];
-const statsCards = [  { label: "Total Users", value: "42", icon: Shield },
-  { label: "Active Roles", value: "8", icon: Shield },
-  { label: "Permissions", value: "156", icon: Shield },
-  { label: "Sessions", value: "28", icon: Shield },];
-export default function RoleManager() {
-  const [search, setSearch] = useState("");
-  const [sf, setSf] = useState("all");
-  const [sel, setSel] = useState<any>(null);
-  const [open, setOpen] = useState(false);
-  const sts = ["all", ...Array.from(new Set(mockData.map((d) => d.status||d.severity||"active")))];
-  const filt = mockData.filter((d) => JSON.stringify(d).toLowerCase().includes(search.toLowerCase()) && (sf==="all"||(d.status||d.severity)===sf));
-  const ch = mockData.slice(0,6).map((d,i) => ({ name: d.name||d.title||"I"+(i+1), value: d.score||d.count||50+i*10 }));
-  return (<div className="p-6 space-y-6"><div className="flex items-center justify-between"><h1 className="text-2xl font-bold">Role Manager</h1><div className="flex gap-2"><Button size="sm" variant="outline"><Download className="h-4 w-4 mr-1"/>Export</Button><Button size="sm"><Plus className="h-4 w-4 mr-1"/>Add New</Button></div></div>
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">{statsCards.map((s:any,i:number)=>(<Card key={i}><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">{s.label}</p><p className="text-2xl font-bold">{s.value}</p></div><s.icon className="h-8 w-8 text-emerald-500"/></div></CardContent></Card>))}</div>
-  <Card><CardHeader><CardTitle>Overview</CardTitle></CardHeader><CardContent><ResponsiveContainer width="100%" height={250}><BarChart data={ch}><XAxis dataKey="name" fontSize={12}/><YAxis fontSize={12}/><Tooltip/><Bar dataKey="value" fill="#10b981" radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></CardContent></Card>
-  <Card><CardHeader><div className="flex items-center justify-between"><CardTitle>Records</CardTitle><div className="flex gap-2"><div className="relative"><Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"/><Input placeholder="Search..." value={search} onChange={(e)=>setSearch(e.target.value)} className="pl-8 w-64"/></div><select className="border rounded px-3 py-1.5 text-sm bg-background" value={sf} onChange={(e)=>setSf(e.target.value)}>{sts.map(s=><option key={s} value={s}>{s==="all"?"All":s}</option>)}</select></div></div></CardHeader><CardContent><div className="border rounded-lg overflow-hidden"><table className="w-full"><thead className="bg-muted/50"><tr>{columns.map((c:any)=><th key={c.key} className="text-left p-3 text-sm font-medium">{c.label}</th>)}<th className="text-left p-3 text-sm font-medium">Actions</th></tr></thead><tbody>{filt.map((row:any,i:number)=>(<tr key={i} className="border-t hover:bg-muted/30 cursor-pointer" onClick={()=>{setSel(row);setOpen(true);}}>{columns.map((c:any)=>(<td key={c.key} className="p-3 text-sm">{c.key==="status"||c.key==="severity"?(<Badge variant={row[c.key]==="critical"||row[c.key]==="high"?"destructive":row[c.key]==="compliant"||row[c.key]==="active"||row[c.key]==="low"?"default":"secondary"}>{row[c.key]}</Badge>):String(row[c.key]??"")}</td>))}<td className="p-3"><Button size="sm" variant="ghost" onClick={(e)=>{e.stopPropagation();setSel(row);setOpen(true);}}>View</Button></td></tr>))}</tbody></table></div><p className="text-sm text-muted-foreground mt-2">{filt.length} of {mockData.length} records</p></CardContent></Card>
-  <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{sel?.name||sel?.title||"Detail"}</DialogTitle></DialogHeader><div className="space-y-3">{sel&&Object.entries(sel).map(([k,v])=>(<div key={k} className="flex justify-between border-b pb-2"><span className="text-sm text-muted-foreground capitalize">{k}</span><span className="text-sm font-medium">{String(v)}</span></div>))}<div className="flex gap-2 pt-2"><Button size="sm">Edit</Button><Button size="sm" variant="outline">Archive</Button><Button size="sm" variant="destructive">Delete</Button></div></div></DialogContent></Dialog></div>);
-}
+import{useState}from"react";import{Card,CardContent}from"../../components/ui/card";import{Badge}from"../../components/ui/badge";import{Button}from"../../components/ui/button";import{Plus,Shield,Edit,Trash2}from"lucide-react";
+const roles=[{id:"R-001",name:"CISO",users:2,permissions:["view_all","edit_all","delete_all","admin"],type:"system"},{id:"R-002",name:"Compliance Analyst",users:5,permissions:["view_compliance","edit_compliance","create_reports"],type:"system"},{id:"R-003",name:"Risk Manager",users:3,permissions:["view_risks","edit_risks","approve_controls"],type:"system"},{id:"R-004",name:"Auditor",users:4,permissions:["view_all","create_audits","export_data"],type:"system"},{id:"R-005",name:"Developer",users:6,permissions:["view_agents","edit_agents","deploy_agents"],type:"custom"},{id:"R-006",name:"Viewer",users:12,permissions:["view_dashboard","view_reports"],type:"system"}];
+export default function RoleManager(){return(<div className="space-y-6">
+  <div className="flex items-center justify-between"><div><h1 className="text-2xl font-bold">Role Manager</h1><p className="text-muted-foreground">Define and manage RBAC roles and permission sets</p></div><Button className="bg-green-600 hover:bg-green-700"><Plus className="w-4 h-4 mr-2"/>Create Role</Button></div>
+  <div className="grid grid-cols-3 gap-4">
+    <Card><CardContent className="pt-4 text-center"><div className="text-3xl font-bold">{roles.length}</div><div className="text-sm text-muted-foreground">Total Roles</div></CardContent></Card>
+    <Card><CardContent className="pt-4 text-center"><div className="text-3xl font-bold">{roles.reduce((a,r)=>a+r.users,0)}</div><div className="text-sm text-muted-foreground">Total Users</div></CardContent></Card>
+    <Card><CardContent className="pt-4 text-center"><div className="text-3xl font-bold">{new Set(roles.flatMap(r=>r.permissions)).size}</div><div className="text-sm text-muted-foreground">Unique Permissions</div></CardContent></Card>
+  </div>
+  <div className="grid grid-cols-2 gap-4">{roles.map(role=>(
+    <Card key={role.id}><CardContent className="p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2"><Shield className="w-4 h-4 text-green-400"/><div><div className="text-sm font-medium">{role.name}</div><div className="text-xs text-muted-foreground">{role.users} users | {role.id}</div></div></div>
+        <div className="flex items-center gap-2"><Badge className={role.type==="system"?"bg-blue-500/20 text-blue-400":"bg-purple-500/20 text-purple-400"}>{role.type}</Badge><Button size="sm" variant="outline" className="h-7"><Edit className="w-3 h-3"/></Button></div>
+      </div>
+      <div className="flex flex-wrap gap-1">{role.permissions.map(p=><span key={p} className="text-xs bg-muted px-2 py-0.5 rounded font-mono">{p}</span>)}</div>
+    </CardContent></Card>
+  ))}</div>
+</div>);}

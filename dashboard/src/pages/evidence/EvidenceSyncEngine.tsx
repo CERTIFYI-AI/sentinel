@@ -1,37 +1,29 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
-import { Badge } from "../../components/ui/badge";
-import { Button } from "../../components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
-import { Input } from "../../components/ui/input";
-import { Shield, Search, Filter, Plus, Download } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-const columns = [  { key: "id", label: "ID" },
-  { key: "name", label: "Name" },
-  { key: "status", label: "Status" },
-  { key: "type", label: "Type" },
-  { key: "score", label: "Score" },
-  { key: "date", label: "Date" },];
-const mockData: any[] = [  { id: 1, name: "Record One", status: "active", type: "Primary", score: 92, date: "2024-03-15" },
-  { id: 2, name: "Record Two", status: "completed", type: "Secondary", score: 85, date: "2024-03-14" },
-  { id: 3, name: "Record Three", status: "pending", type: "Primary", score: 78, date: "2024-03-13" },
-  { id: 4, name: "Record Four", status: "active", type: "Tertiary", score: 91, date: "2024-03-12" },
-  { id: 5, name: "Record Five", status: "archived", type: "Secondary", score: 67, date: "2024-03-11" },];
-const statsCards = [  { label: "Total", value: "245", icon: Shield },
-  { label: "Active", value: "178", icon: Shield },
-  { label: "Pending", value: "34", icon: Shield },
-  { label: "Archived", value: "33", icon: Shield },];
-export default function EvidenceSyncEngine() {
-  const [search, setSearch] = useState("");
-  const [sf, setSf] = useState("all");
-  const [sel, setSel] = useState<any>(null);
-  const [open, setOpen] = useState(false);
-  const sts = ["all", ...Array.from(new Set(mockData.map((d) => d.status||d.severity||"active")))];
-  const filt = mockData.filter((d) => JSON.stringify(d).toLowerCase().includes(search.toLowerCase()) && (sf==="all"||(d.status||d.severity)===sf));
-  const ch = mockData.slice(0,6).map((d,i) => ({ name: d.name||d.title||"I"+(i+1), value: d.score||d.count||50+i*10 }));
-  return (<div className="p-6 space-y-6"><div className="flex items-center justify-between"><h1 className="text-2xl font-bold">Evidence Sync Engine</h1><div className="flex gap-2"><Button size="sm" variant="outline"><Download className="h-4 w-4 mr-1"/>Export</Button><Button size="sm"><Plus className="h-4 w-4 mr-1"/>Add New</Button></div></div>
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">{statsCards.map((s:any,i:number)=>(<Card key={i}><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">{s.label}</p><p className="text-2xl font-bold">{s.value}</p></div><s.icon className="h-8 w-8 text-emerald-500"/></div></CardContent></Card>))}</div>
-  <Card><CardHeader><CardTitle>Overview</CardTitle></CardHeader><CardContent><ResponsiveContainer width="100%" height={250}><BarChart data={ch}><XAxis dataKey="name" fontSize={12}/><YAxis fontSize={12}/><Tooltip/><Bar dataKey="value" fill="#10b981" radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></CardContent></Card>
-  <Card><CardHeader><div className="flex items-center justify-between"><CardTitle>Records</CardTitle><div className="flex gap-2"><div className="relative"><Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"/><Input placeholder="Search..." value={search} onChange={(e)=>setSearch(e.target.value)} className="pl-8 w-64"/></div><select className="border rounded px-3 py-1.5 text-sm bg-background" value={sf} onChange={(e)=>setSf(e.target.value)}>{sts.map(s=><option key={s} value={s}>{s==="all"?"All":s}</option>)}</select></div></div></CardHeader><CardContent><div className="border rounded-lg overflow-hidden"><table className="w-full"><thead className="bg-muted/50"><tr>{columns.map((c:any)=><th key={c.key} className="text-left p-3 text-sm font-medium">{c.label}</th>)}<th className="text-left p-3 text-sm font-medium">Actions</th></tr></thead><tbody>{filt.map((row:any,i:number)=>(<tr key={i} className="border-t hover:bg-muted/30 cursor-pointer" onClick={()=>{setSel(row);setOpen(true);}}>{columns.map((c:any)=>(<td key={c.key} className="p-3 text-sm">{c.key==="status"||c.key==="severity"?(<Badge variant={row[c.key]==="critical"||row[c.key]==="high"?"destructive":row[c.key]==="compliant"||row[c.key]==="active"||row[c.key]==="low"?"default":"secondary"}>{row[c.key]}</Badge>):String(row[c.key]??"")}</td>))}<td className="p-3"><Button size="sm" variant="ghost" onClick={(e)=>{e.stopPropagation();setSel(row);setOpen(true);}}>View</Button></td></tr>))}</tbody></table></div><p className="text-sm text-muted-foreground mt-2">{filt.length} of {mockData.length} records</p></CardContent></Card>
-  <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{sel?.name||sel?.title||"Detail"}</DialogTitle></DialogHeader><div className="space-y-3">{sel&&Object.entries(sel).map(([k,v])=>(<div key={k} className="flex justify-between border-b pb-2"><span className="text-sm text-muted-foreground capitalize">{k}</span><span className="text-sm font-medium">{String(v)}</span></div>))}<div className="flex gap-2 pt-2"><Button size="sm">Edit</Button><Button size="sm" variant="outline">Archive</Button><Button size="sm" variant="destructive">Delete</Button></div></div></DialogContent></Dialog></div>);
+import{useState}from"react";import{Card,CardContent}from"../../components/ui/card";import{Badge}from"../../components/ui/badge";import{Button}from"../../components/ui/button";import{Input}from"../../components/ui/input";import{Search,RefreshCw,Upload,Link,CheckCircle,XCircle,Clock,Database}from"lucide-react";
+const evidence=[{id:"EV-001",title:"SOC 2 Type II Report 2025",source:"Drata",framework:"SOC 2",control:"CC6.1",status:"synced",lastSync:"2026-03-14 09:00",size:"2.4 MB",type:"PDF",expires:"2026-12-31"},{id:"EV-002",title:"ISO 27001 Certificate",source:"Manual Upload",framework:"ISO 27001",control:"A.18.1",status:"synced",lastSync:"2026-03-10 14:30",size:"0.8 MB",type:"PDF",expires:"2027-03-01"},{id:"EV-003",title:"Pen Test Results Q1",source:"Cobalt.io",framework:"SOC 2",control:"CC7.1",status:"pending",lastSync:"2026-03-12 11:00",size:"5.1 MB",type:"PDF",expires:"2026-06-30"},{id:"EV-004",title:"Access Review Log Mar",source:"Okta",framework:"ISO 27001",control:"A.9.2",status:"synced",lastSync:"2026-03-15 08:00",size:"1.2 MB",type:"CSV",expires:"2026-04-30"},{id:"EV-005",title:"GDPR DPA Agreement",source:"Manual Upload",framework:"GDPR",control:"Art. 28",status:"expired",lastSync:"2025-12-01 10:00",size:"0.5 MB",type:"PDF",expires:"2026-01-01"},{id:"EV-006",title:"AI Model Risk Assessment",source:"Internal",framework:"EU AI Act",control:"Art. 9",status:"synced",lastSync:"2026-03-13 16:00",size:"3.2 MB",type:"DOCX",expires:"2026-09-30"}];
+const sc:Record<string,string>={synced:"bg-green-500/20 text-green-400",pending:"bg-yellow-500/20 text-yellow-400",expired:"bg-red-500/20 text-red-400",failed:"bg-red-500/20 text-red-400"};
+export default function EvidenceSyncEngine(){
+  const[search,setSearch]=useState("");const[filter,setFilter]=useState("all");
+  const filtered=evidence.filter(e=>(filter==="all"||e.status===filter)&&(e.title.toLowerCase().includes(search.toLowerCase())||e.framework.toLowerCase().includes(search.toLowerCase())));
+  return(<div className="space-y-6">
+    <div className="flex items-center justify-between"><div><h1 className="text-2xl font-bold">Evidence Sync Engine</h1><p className="text-muted-foreground">Sync and manage compliance evidence from connected sources</p></div><div className="flex gap-2"><Button variant="outline"><RefreshCw className="w-4 h-4 mr-2"/>Sync All</Button><Button className="bg-green-600 hover:bg-green-700"><Upload className="w-4 h-4 mr-2"/>Upload</Button></div></div>
+    <div className="grid grid-cols-4 gap-4">
+      <Card><CardContent className="pt-4 text-center"><div className="text-3xl font-bold">{evidence.length}</div><div className="text-sm text-muted-foreground">Total Evidence</div></CardContent></Card>
+      <Card><CardContent className="pt-4 text-center"><div className="text-3xl font-bold text-green-400">{evidence.filter(e=>e.status==="synced").length}</div><div className="text-sm text-muted-foreground">Synced</div></CardContent></Card>
+      <Card><CardContent className="pt-4 text-center"><div className="text-3xl font-bold text-yellow-400">{evidence.filter(e=>e.status==="pending").length}</div><div className="text-sm text-muted-foreground">Pending</div></CardContent></Card>
+      <Card><CardContent className="pt-4 text-center"><div className="text-3xl font-bold text-red-400">{evidence.filter(e=>e.status==="expired").length}</div><div className="text-sm text-muted-foreground">Expired</div></CardContent></Card>
+    </div>
+    <div className="flex gap-3">
+      <div className="relative flex-1"><Search className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground"/><Input placeholder="Search evidence..." value={search} onChange={e=>setSearch(e.target.value)} className="pl-9"/></div>
+      {["all","synced","pending","expired"].map(s=><Button key={s} size="sm" variant={filter===s?"default":"outline"} onClick={()=>setFilter(s)}>{s.charAt(0).toUpperCase()+s.slice(1)}</Button>)}
+    </div>
+    <Card><CardContent className="p-0"><table className="w-full"><thead><tr className="border-b border-border">
+      <th className="text-left p-3 text-sm font-medium text-muted-foreground">ID</th><th className="text-left p-3 text-sm font-medium text-muted-foreground">Title</th><th className="text-left p-3 text-sm font-medium text-muted-foreground">Source</th><th className="text-left p-3 text-sm font-medium text-muted-foreground">Framework</th><th className="text-left p-3 text-sm font-medium text-muted-foreground">Control</th><th className="text-left p-3 text-sm font-medium text-muted-foreground">Type</th><th className="text-left p-3 text-sm font-medium text-muted-foreground">Last Sync</th><th className="text-left p-3 text-sm font-medium text-muted-foreground">Status</th><th className="text-left p-3 text-sm font-medium text-muted-foreground">Actions</th>
+    </tr></thead><tbody>{filtered.map(e=>(
+      <tr key={e.id} className="border-b border-border hover:bg-muted/50">
+        <td className="p-3 text-sm font-mono">{e.id}</td><td className="p-3 text-sm font-medium">{e.title}</td><td className="p-3 text-sm">{e.source}</td><td className="p-3 text-sm">{e.framework}</td><td className="p-3 text-sm font-mono">{e.control}</td><td className="p-3"><span className="text-xs bg-muted px-2 py-1 rounded">{e.type}</span></td><td className="p-3 text-xs text-muted-foreground">{e.lastSync}</td>
+        <td className="p-3"><Badge className={sc[e.status]}>{e.status}</Badge></td>
+        <td className="p-3"><div className="flex gap-1"><Button size="sm" variant="outline" className="h-7">View</Button><Button size="sm" variant="outline" className="h-7"><RefreshCw className="w-3 h-3"/></Button></div></td>
+      </tr>
+    ))}</tbody></table></CardContent></Card>
+  </div>);
 }
