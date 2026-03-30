@@ -1,37 +1,110 @@
 import { useState } from "react";
+import { Warning, Plus, MagnifyingGlass, Export, Funnel, Eye } from "@phosphor-icons/react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
-import { Shield, Search, Filter, Plus, Download } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-const columns = [  { key: "id", label: "ID" },
-  { key: "name", label: "Name" },
-  { key: "status", label: "Status" },
-  { key: "type", label: "Type" },
-  { key: "score", label: "Score" },
-  { key: "date", label: "Date" },];
-const mockData: any[] = [  { id: 1, name: "Record A", status: "active", type: "Core", score: 92, date: "2024-03-15" },
-  { id: 2, name: "Record B", status: "compliant", type: "Extended", score: 87, date: "2024-03-14" },
-  { id: 3, name: "Record C", status: "pending", type: "Core", score: 71, date: "2024-03-13" },
-  { id: 4, name: "Record D", status: "active", type: "Custom", score: 95, date: "2024-03-12" },
-  { id: 5, name: "Record E", status: "review", type: "Extended", score: 63, date: "2024-03-11" },];
-const statsCards = [  { label: "Total", value: "278", icon: Shield },
-  { label: "Active", value: "201", icon: Shield },
-  { label: "Gaps", value: "15", icon: Shield },
-  { label: "Score", value: "88%", icon: Shield },];
-export default function RiskRegisterStandalone() {
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../components/ui/sheet";
+
+const risks = [
+  { id: "RSK-001", title: "LLM Hallucination in Credit Decisions", category: "Model Risk", likelihood: "high", impact: "critical", score: 20, owner: "Dr. Sarah Chen", status: "open", mitigation: "Implement output validation layer" },
+  { id: "RSK-002", title: "Training Data PII Leakage", category: "Data Privacy", likelihood: "medium", impact: "high", score: 15, owner: "James Wilson", status: "mitigating", mitigation: "Data anonymization pipeline" },
+  { id: "RSK-003", title: "Model Bias in Loan Approvals", category: "Fairness", likelihood: "high", impact: "high", score: 16, owner: "Dr. Sarah Chen", status: "open", mitigation: "Bias detection and debiasing" },
+  { id: "RSK-004", title: "Third-party API Data Exposure", category: "Vendor Risk", likelihood: "low", impact: "high", score: 10, owner: "Mike Johnson", status: "mitigating", mitigation: "API gateway with DLP" },
+  { id: "RSK-005", title: "EU AI Act Non-compliance Penalty", category: "Regulatory", likelihood: "medium", impact: "critical", score: 18, owner: "Lisa Park", status: "open", mitigation: "Compliance roadmap execution" },
+  { id: "RSK-006", title: "Adversarial Attack on Fraud Model", category: "Security", likelihood: "medium", impact: "high", score: 15, owner: "Alex Kumar", status: "accepted", mitigation: "Adversarial training" },
+  { id: "RSK-007", title: "Model Drift in Production", category: "Model Risk", likelihood: "high", impact: "medium", score: 12, owner: "Dr. Sarah Chen", status: "mitigating", mitigation: "Continuous monitoring alerts" },
+  { id: "RSK-008", title: "Insufficient Audit Trail", category: "Governance", likelihood: "low", impact: "medium", score: 6, owner: "Lisa Park", status: "closed", mitigation: "Implemented logging framework" },
+];
+
+export default function RiskRegister() {
   const [search, setSearch] = useState("");
-  const [sf, setSf] = useState("all");
-  const [sel, setSel] = useState<any>(null);
+  const [selected, setSelected] = useState<typeof risks[0] | null>(null);
   const [open, setOpen] = useState(false);
-  const sts = ["all", ...Array.from(new Set(mockData.map((d) => d.status||d.severity||"active")))];
-  const filt = mockData.filter((d) => JSON.stringify(d).toLowerCase().includes(search.toLowerCase()) && (sf==="all"||(d.status||d.severity)===sf));
-  const ch = mockData.slice(0,6).map((d,i) => ({ name: d.name||d.title||"I"+(i+1), value: d.score||d.count||50+i*10 }));
-  return (<div className="p-6 space-y-6"><div className="flex items-center justify-between"><h1 className="text-2xl font-bold">Risk Register</h1><div className="flex gap-2"><Button size="sm" variant="outline"><Download className="h-4 w-4 mr-1"/>Export</Button><Button size="sm"><Plus className="h-4 w-4 mr-1"/>Add New</Button></div></div>
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">{statsCards.map((s:any,i:number)=>(<Card key={i}><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">{s.label}</p><p className="text-2xl font-bold">{s.value}</p></div><s.icon className="h-8 w-8 text-emerald-500"/></div></CardContent></Card>))}</div>
-  <Card><CardHeader><CardTitle>Overview</CardTitle></CardHeader><CardContent><ResponsiveContainer width="100%" height={250}><BarChart data={ch}><XAxis dataKey="name" fontSize={12}/><YAxis fontSize={12}/><Tooltip/><Bar dataKey="value" fill="#10b981" radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></CardContent></Card>
-  <Card><CardHeader><div className="flex items-center justify-between"><CardTitle>Records</CardTitle><div className="flex gap-2"><div className="relative"><Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"/><Input placeholder="Search..." value={search} onChange={(e)=>setSearch(e.target.value)} className="pl-8 w-64"/></div><select className="border rounded px-3 py-1.5 text-sm bg-background" value={sf} onChange={(e)=>setSf(e.target.value)}>{sts.map(s=><option key={s} value={s}>{s==="all"?"All":s}</option>)}</select></div></div></CardHeader><CardContent><div className="border rounded-lg overflow-hidden"><table className="w-full"><thead className="bg-muted/50"><tr>{columns.map((c:any)=><th key={c.key} className="text-left p-3 text-sm font-medium">{c.label}</th>)}<th className="text-left p-3 text-sm font-medium">Actions</th></tr></thead><tbody>{filt.map((row:any,i:number)=>(<tr key={i} className="border-t hover:bg-muted/30 cursor-pointer" onClick={()=>{setSel(row);setOpen(true);}}>{columns.map((c:any)=>(<td key={c.key} className="p-3 text-sm">{c.key==="status"||c.key==="severity"?(<Badge variant={row[c.key]==="critical"||row[c.key]==="high"?"destructive":row[c.key]==="compliant"||row[c.key]==="active"||row[c.key]==="low"?"default":"secondary"}>{row[c.key]}</Badge>):String(row[c.key]??"")}</td>))}<td className="p-3"><Button size="sm" variant="ghost" onClick={(e)=>{e.stopPropagation();setSel(row);setOpen(true);}}>View</Button></td></tr>))}</tbody></table></div><p className="text-sm text-muted-foreground mt-2">{filt.length} of {mockData.length} records</p></CardContent></Card>
-  <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{sel?.name||sel?.title||"Detail"}</DialogTitle></DialogHeader><div className="space-y-3">{sel&&Object.entries(sel).map(([k,v])=>(<div key={k} className="flex justify-between border-b pb-2"><span className="text-sm text-muted-foreground capitalize">{k}</span><span className="text-sm font-medium">{String(v)}</span></div>))}<div className="flex gap-2 pt-2"><Button size="sm">Edit</Button><Button size="sm" variant="outline">Archive</Button><Button size="sm" variant="destructive">Delete</Button></div></div></DialogContent></Dialog></div>);
+
+  const filtered = risks.filter((r) => r.title.toLowerCase().includes(search.toLowerCase()) || r.category.toLowerCase().includes(search.toLowerCase()));
+
+  const statusColor = (s: string) => {
+    switch (s) { case "open": return "destructive"; case "mitigating": return "default"; case "accepted": return "secondary"; default: return "outline"; }
+  };
+
+  const impactColor = (i: string) => {
+    switch (i) { case "critical": return "text-red-600"; case "high": return "text-orange-600"; case "medium": return "text-yellow-600"; default: return "text-green-600"; }
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Risk Register</h1>
+          <p className="text-sm text-muted-foreground">Acme Financial Corp - AI & Operational Risk Management</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm"><Export className="h-4 w-4 mr-1" />Export</Button>
+          <Button size="sm"><Plus className="h-4 w-4 mr-1" />Add Risk</Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-4 gap-4">
+        <Card><CardContent className="pt-4"><div className="text-sm text-muted-foreground">Total Risks</div><div className="text-2xl font-bold">{risks.length}</div></CardContent></Card>
+        <Card><CardContent className="pt-4"><div className="text-sm text-muted-foreground">Open</div><div className="text-2xl font-bold text-red-600">{risks.filter(r => r.status === "open").length}</div></CardContent></Card>
+        <Card><CardContent className="pt-4"><div className="text-sm text-muted-foreground">Mitigating</div><div className="text-2xl font-bold text-blue-600">{risks.filter(r => r.status === "mitigating").length}</div></CardContent></Card>
+        <Card><CardContent className="pt-4"><div className="text-sm text-muted-foreground">Avg Score</div><div className="text-2xl font-bold">{Math.round(risks.reduce((a, r) => a + r.score, 0) / risks.length)}</div></CardContent></Card>
+      </div>
+
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1">
+          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Search risks..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+        <Button variant="outline" size="sm"><Funnel className="h-4 w-4 mr-1" />Filter</Button>
+      </div>
+
+      <Card>
+        <CardContent className="pt-4">
+          <table className="w-full text-sm">
+            <thead><tr className="border-b text-left"><th className="p-2">ID</th><th className="p-2">Risk</th><th className="p-2">Category</th><th className="p-2">Impact</th><th className="p-2">Score</th><th className="p-2">Owner</th><th className="p-2">Status</th><th className="p-2"></th></tr></thead>
+            <tbody>
+              {filtered.map((r) => (
+                <tr key={r.id} className="border-b hover:bg-muted/50 cursor-pointer" onClick={() => { setSelected(r); setOpen(true); }}>
+                  <td className="p-2 font-mono text-xs">{r.id}</td>
+                  <td className="p-2 font-medium">{r.title}</td>
+                  <td className="p-2">{r.category}</td>
+                  <td className={`p-2 font-medium ${impactColor(r.impact)}`}>{r.impact}</td>
+                  <td className="p-2"><Badge variant={r.score >= 15 ? "destructive" : r.score >= 10 ? "default" : "secondary"}>{r.score}</Badge></td>
+                  <td className="p-2">{r.owner}</td>
+                  <td className="p-2"><Badge variant={statusColor(r.status) as any}>{r.status}</Badge></td>
+                  <td className="p-2"><Button variant="ghost" size="sm"><Eye className="h-4 w-4" /></Button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </CardContent>
+      </Card>
+
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent className="max-w-lg">
+          <SheetHeader><SheetTitle>{selected?.title}</SheetTitle></SheetHeader>
+          {selected && (
+            <div className="space-y-4 mt-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div><span className="text-xs text-muted-foreground">ID</span><p className="text-sm font-medium">{selected.id}</p></div>
+                <div><span className="text-xs text-muted-foreground">Category</span><p className="text-sm font-medium">{selected.category}</p></div>
+                <div><span className="text-xs text-muted-foreground">Likelihood</span><p className="text-sm font-medium capitalize">{selected.likelihood}</p></div>
+                <div><span className="text-xs text-muted-foreground">Impact</span><p className={`text-sm font-medium ${impactColor(selected.impact)}`}>{selected.impact}</p></div>
+                <div><span className="text-xs text-muted-foreground">Risk Score</span><p className="text-sm font-medium">{selected.score}</p></div>
+                <div><span className="text-xs text-muted-foreground">Owner</span><p className="text-sm font-medium">{selected.owner}</p></div>
+              </div>
+              <div><span className="text-xs text-muted-foreground">Mitigation</span><p className="text-sm">{selected.mitigation}</p></div>
+              <div className="flex gap-2 pt-2">
+                <Button size="sm">Update Status</Button>
+                <Button size="sm" variant="outline">Edit</Button>
+                <Button size="sm" variant="destructive">Escalate</Button>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+    </div>
+  );
 }
