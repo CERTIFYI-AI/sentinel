@@ -1,37 +1,23 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
-import { Badge } from "../../components/ui/badge";
-import { Button } from "../../components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
-import { Input } from "../../components/ui/input";
-import { Shield, Search, Filter, Plus, Download } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-const columns = [  { key: "id", label: "ID" },
-  { key: "name", label: "Name" },
-  { key: "status", label: "Status" },
-  { key: "score", label: "Score" },
-  { key: "count", label: "Count" },
-  { key: "date", label: "Date" },];
-const mockData: any[] = [  { id: 1, name: "GPT-4 Policy", status: "active", score: 95, count: 1240, date: "2024-03-15" },
-  { id: 2, name: "Claude Guard", status: "active", score: 88, count: 890, date: "2024-03-14" },
-  { id: 3, name: "Llama Filter", status: "warning", score: 72, count: 456, date: "2024-03-13" },
-  { id: 4, name: "Gemini Check", status: "active", score: 91, count: 678, date: "2024-03-12" },
-  { id: 5, name: "Custom Rule", status: "disabled", score: 0, count: 0, date: "2024-03-11" },];
-const statsCards = [  { label: "Trust Score", value: "91%", icon: Shield },
-  { label: "Active Rules", value: "24", icon: Shield },
-  { label: "Violations", value: "7", icon: Shield },
-  { label: "API Calls", value: "12.4K", icon: Shield },];
-export default function TrustConfig() {
-  const [search, setSearch] = useState("");
-  const [sf, setSf] = useState("all");
-  const [sel, setSel] = useState<any>(null);
-  const [open, setOpen] = useState(false);
-  const sts = ["all", ...Array.from(new Set(mockData.map((d) => d.status||d.severity||"active")))];
-  const filt = mockData.filter((d) => JSON.stringify(d).toLowerCase().includes(search.toLowerCase()) && (sf==="all"||(d.status||d.severity)===sf));
-  const ch = mockData.slice(0,6).map((d,i) => ({ name: d.name||d.title||"I"+(i+1), value: d.score||d.count||50+i*10 }));
-  return (<div className="p-6 space-y-6"><div className="flex items-center justify-between"><h1 className="text-2xl font-bold">Trust Configuration</h1><div className="flex gap-2"><Button size="sm" variant="outline"><Download className="h-4 w-4 mr-1"/>Export</Button><Button size="sm"><Plus className="h-4 w-4 mr-1"/>Add New</Button></div></div>
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">{statsCards.map((s:any,i:number)=>(<Card key={i}><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">{s.label}</p><p className="text-2xl font-bold">{s.value}</p></div><s.icon className="h-8 w-8 text-emerald-500"/></div></CardContent></Card>))}</div>
-  <Card><CardHeader><CardTitle>Overview</CardTitle></CardHeader><CardContent><ResponsiveContainer width="100%" height={250}><BarChart data={ch}><XAxis dataKey="name" fontSize={12}/><YAxis fontSize={12}/><Tooltip/><Bar dataKey="value" fill="#10b981" radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></CardContent></Card>
-  <Card><CardHeader><div className="flex items-center justify-between"><CardTitle>Records</CardTitle><div className="flex gap-2"><div className="relative"><Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"/><Input placeholder="Search..." value={search} onChange={(e)=>setSearch(e.target.value)} className="pl-8 w-64"/></div><select className="border rounded px-3 py-1.5 text-sm bg-background" value={sf} onChange={(e)=>setSf(e.target.value)}>{sts.map(s=><option key={s} value={s}>{s==="all"?"All":s}</option>)}</select></div></div></CardHeader><CardContent><div className="border rounded-lg overflow-hidden"><table className="w-full"><thead className="bg-muted/50"><tr>{columns.map((c:any)=><th key={c.key} className="text-left p-3 text-sm font-medium">{c.label}</th>)}<th className="text-left p-3 text-sm font-medium">Actions</th></tr></thead><tbody>{filt.map((row:any,i:number)=>(<tr key={i} className="border-t hover:bg-muted/30 cursor-pointer" onClick={()=>{setSel(row);setOpen(true);}}>{columns.map((c:any)=>(<td key={c.key} className="p-3 text-sm">{c.key==="status"||c.key==="severity"?(<Badge variant={row[c.key]==="critical"||row[c.key]==="high"?"destructive":row[c.key]==="compliant"||row[c.key]==="active"||row[c.key]==="low"?"default":"secondary"}>{row[c.key]}</Badge>):String(row[c.key]??"")}</td>))}<td className="p-3"><Button size="sm" variant="ghost" onClick={(e)=>{e.stopPropagation();setSel(row);setOpen(true);}}>View</Button></td></tr>))}</tbody></table></div><p className="text-sm text-muted-foreground mt-2">{filt.length} of {mockData.length} records</p></CardContent></Card>
-  <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{sel?.name||sel?.title||"Detail"}</DialogTitle></DialogHeader><div className="space-y-3">{sel&&Object.entries(sel).map(([k,v])=>(<div key={k} className="flex justify-between border-b pb-2"><span className="text-sm text-muted-foreground capitalize">{k}</span><span className="text-sm font-medium">{String(v)}</span></div>))}<div className="flex gap-2 pt-2"><Button size="sm">Edit</Button><Button size="sm" variant="outline">Archive</Button><Button size="sm" variant="destructive">Delete</Button></div></div></DialogContent></Dialog></div>);
-}
+import{useState}from"react";import{Card,CardContent}from"../../components/ui/card";import{Badge}from"../../components/ui/badge";import{Button}from"../../components/ui/button";import{Settings,Shield,Save}from"lucide-react";
+const configs=[{id:"TC-01",name:"PII Detection",type:"Content Filter",enabled:true,threshold:0.85,action:"block"},{id:"TC-02",name:"Toxicity Filter",type:"Content Filter",enabled:true,threshold:0.7,action:"warn"},{id:"TC-03",name:"Prompt Injection",type:"Security",enabled:true,threshold:0.9,action:"block"},{id:"TC-04",name:"Data Boundary",type:"Privacy",enabled:true,threshold:0.95,action:"block"},{id:"TC-05",name:"Hallucination Check",type:"Quality",enabled:false,threshold:0.6,action:"flag"},{id:"TC-06",name:"Output Length Limit",type:"Resource",enabled:true,threshold:0.0,action:"truncate"}];
+const ac:Record<string,string>={block:"bg-red-500/20 text-red-400",warn:"bg-yellow-500/20 text-yellow-400",flag:"bg-orange-500/20 text-orange-400",truncate:"bg-blue-500/20 text-blue-400"};
+export default function TrustConfig(){return(<div className="space-y-6">
+  <div className="flex items-center justify-between"><div><h1 className="text-2xl font-bold">Trust Engine Configuration</h1><p className="text-muted-foreground">Configure guardrails, thresholds, and enforcement policies</p></div><Button className="bg-green-600 hover:bg-green-700"><Save className="w-4 h-4 mr-2"/>Save Changes</Button></div>
+  <div className="grid grid-cols-3 gap-4">
+    <Card><CardContent className="pt-4 text-center"><div className="text-3xl font-bold">{configs.length}</div><div className="text-sm text-muted-foreground">Total Rules</div></CardContent></Card>
+    <Card><CardContent className="pt-4 text-center"><div className="text-3xl font-bold text-green-400">{configs.filter(c=>c.enabled).length}</div><div className="text-sm text-muted-foreground">Active</div></CardContent></Card>
+    <Card><CardContent className="pt-4 text-center"><div className="text-3xl font-bold text-red-400">{configs.filter(c=>c.action==="block").length}</div><div className="text-sm text-muted-foreground">Blocking</div></CardContent></Card>
+  </div>
+  <Card><CardContent className="p-0"><table className="w-full"><thead><tr className="border-b border-border">
+    <th className="text-left p-3 text-sm font-medium text-muted-foreground">Rule</th><th className="text-left p-3 text-sm font-medium text-muted-foreground">Type</th><th className="text-left p-3 text-sm font-medium text-muted-foreground">Threshold</th><th className="text-left p-3 text-sm font-medium text-muted-foreground">Action</th><th className="text-left p-3 text-sm font-medium text-muted-foreground">Status</th><th className="text-left p-3 text-sm font-medium text-muted-foreground">Edit</th>
+  </tr></thead><tbody>{configs.map(c=>(
+    <tr key={c.id} className="border-b border-border hover:bg-muted/50">
+      <td className="p-3"><div><div className="text-sm font-medium">{c.name}</div><div className="text-xs text-muted-foreground">{c.id}</div></div></td>
+      <td className="p-3 text-sm">{c.type}</td>
+      <td className="p-3"><div className="flex items-center gap-2"><div className="w-20 h-2 bg-muted rounded-full"><div className="h-2 rounded-full bg-green-500" style={{width:`${c.threshold*100}%`}}/></div><span className="text-xs">{(c.threshold*100).toFixed(0)}%</span></div></td>
+      <td className="p-3"><Badge className={ac[c.action]}>{c.action}</Badge></td>
+      <td className="p-3"><Badge className={c.enabled?"bg-green-500/20 text-green-400":"bg-muted text-muted-foreground"}>{c.enabled?"Active":"Disabled"}</Badge></td>
+      <td className="p-3"><Button size="sm" variant="outline" className="h-7"><Settings className="w-3 h-3"/></Button></td>
+    </tr>
+  ))}</tbody></table></CardContent></Card>
+</div>);}
