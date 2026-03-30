@@ -1,37 +1,60 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Warning, Plus, MagnifyingGlass, Eye } from "@phosphor-icons/react";
+import { Card, CardContent } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
-import { Shield, Search, Filter, Plus, Download } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-const columns = [  { key: "id", label: "ID" },
-  { key: "name", label: "Name" },
-  { key: "status", label: "Status" },
-  { key: "type", label: "Type" },
-  { key: "score", label: "Score" },
-  { key: "date", label: "Date" },];
-const mockData: any[] = [  { id: 1, name: "Item One", status: "active", type: "Primary", score: 90, date: "2024-03-15" },
-  { id: 2, name: "Item Two", status: "completed", type: "Secondary", score: 82, date: "2024-03-14" },
-  { id: 3, name: "Item Three", status: "pending", type: "Primary", score: 75, date: "2024-03-13" },
-  { id: 4, name: "Item Four", status: "active", type: "Tertiary", score: 88, date: "2024-03-12" },
-  { id: 5, name: "Item Five", status: "archived", type: "Secondary", score: 65, date: "2024-03-11" },];
-const statsCards = [  { label: "Total", value: "312", icon: Shield },
-  { label: "Active", value: "245", icon: Shield },
-  { label: "Pending", value: "42", icon: Shield },
-  { label: "Completed", value: "25", icon: Shield },];
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../components/ui/sheet";
+
+const incidents = [
+  { id: "INC-001", title: "Model Output Anomaly Detected", severity: "high", status: "investigating", reported: "2025-01-15", reporter: "Model Monitor", category: "AI Safety", description: "ACME-LLM-v3 produced hallucinated financial data in 3 transactions" },
+  { id: "INC-002", title: "Unauthorized API Access Attempt", severity: "critical", status: "resolved", reported: "2025-01-13", reporter: "Alex Kumar", category: "Security", description: "Blocked brute force attack on model inference API" },
+  { id: "INC-003", title: "Data Pipeline Delay", severity: "medium", status: "open", reported: "2025-01-12", reporter: "James Wilson", category: "Operations", description: "Training data pipeline delayed by 4 hours" },
+  { id: "INC-004", title: "Bias Threshold Breach", severity: "high", status: "mitigating", reported: "2025-01-10", reporter: "Dr. Sarah Chen", category: "Fairness", description: "Credit model shows 8% disparity in approval rates" },
+  { id: "INC-005", title: "Compliance Report Failure", severity: "low", status: "resolved", reported: "2025-01-08", reporter: "Lisa Park", category: "Compliance", description: "Automated SOC2 report generation failed" },
+];
+
 export default function IncidentLog() {
   const [search, setSearch] = useState("");
-  const [sf, setSf] = useState("all");
-  const [sel, setSel] = useState<any>(null);
+  const [selected, setSelected] = useState<typeof incidents[0] | null>(null);
   const [open, setOpen] = useState(false);
-  const sts = ["all", ...Array.from(new Set(mockData.map((d) => d.status||d.severity||"active")))];
-  const filt = mockData.filter((d) => JSON.stringify(d).toLowerCase().includes(search.toLowerCase()) && (sf==="all"||(d.status||d.severity)===sf));
-  const ch = mockData.slice(0,6).map((d,i) => ({ name: d.name||d.title||"I"+(i+1), value: d.score||d.count||50+i*10 }));
-  return (<div className="p-6 space-y-6"><div className="flex items-center justify-between"><h1 className="text-2xl font-bold">Incident Log</h1><div className="flex gap-2"><Button size="sm" variant="outline"><Download className="h-4 w-4 mr-1"/>Export</Button><Button size="sm"><Plus className="h-4 w-4 mr-1"/>Add New</Button></div></div>
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">{statsCards.map((s:any,i:number)=>(<Card key={i}><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">{s.label}</p><p className="text-2xl font-bold">{s.value}</p></div><s.icon className="h-8 w-8 text-emerald-500"/></div></CardContent></Card>))}</div>
-  <Card><CardHeader><CardTitle>Overview</CardTitle></CardHeader><CardContent><ResponsiveContainer width="100%" height={250}><BarChart data={ch}><XAxis dataKey="name" fontSize={12}/><YAxis fontSize={12}/><Tooltip/><Bar dataKey="value" fill="#10b981" radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></CardContent></Card>
-  <Card><CardHeader><div className="flex items-center justify-between"><CardTitle>Records</CardTitle><div className="flex gap-2"><div className="relative"><Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"/><Input placeholder="Search..." value={search} onChange={(e)=>setSearch(e.target.value)} className="pl-8 w-64"/></div><select className="border rounded px-3 py-1.5 text-sm bg-background" value={sf} onChange={(e)=>setSf(e.target.value)}>{sts.map(s=><option key={s} value={s}>{s==="all"?"All":s}</option>)}</select></div></div></CardHeader><CardContent><div className="border rounded-lg overflow-hidden"><table className="w-full"><thead className="bg-muted/50"><tr>{columns.map((c:any)=><th key={c.key} className="text-left p-3 text-sm font-medium">{c.label}</th>)}<th className="text-left p-3 text-sm font-medium">Actions</th></tr></thead><tbody>{filt.map((row:any,i:number)=>(<tr key={i} className="border-t hover:bg-muted/30 cursor-pointer" onClick={()=>{setSel(row);setOpen(true);}}>{columns.map((c:any)=>(<td key={c.key} className="p-3 text-sm">{c.key==="status"||c.key==="severity"?(<Badge variant={row[c.key]==="critical"||row[c.key]==="high"?"destructive":row[c.key]==="compliant"||row[c.key]==="active"||row[c.key]==="low"?"default":"secondary"}>{row[c.key]}</Badge>):String(row[c.key]??"")}</td>))}<td className="p-3"><Button size="sm" variant="ghost" onClick={(e)=>{e.stopPropagation();setSel(row);setOpen(true);}}>View</Button></td></tr>))}</tbody></table></div><p className="text-sm text-muted-foreground mt-2">{filt.length} of {mockData.length} records</p></CardContent></Card>
-  <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{sel?.name||sel?.title||"Detail"}</DialogTitle></DialogHeader><div className="space-y-3">{sel&&Object.entries(sel).map(([k,v])=>(<div key={k} className="flex justify-between border-b pb-2"><span className="text-sm text-muted-foreground capitalize">{k}</span><span className="text-sm font-medium">{String(v)}</span></div>))}<div className="flex gap-2 pt-2"><Button size="sm">Edit</Button><Button size="sm" variant="outline">Archive</Button><Button size="sm" variant="destructive">Delete</Button></div></div></DialogContent></Dialog></div>);
+  const filtered = incidents.filter((i) => i.title.toLowerCase().includes(search.toLowerCase()));
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h1 className="text-2xl font-bold">Incident Log</h1><p className="text-sm text-muted-foreground">Acme Financial Corp - Incident Management</p></div>
+        <Button size="sm"><Plus className="h-4 w-4 mr-1" />Report Incident</Button>
+      </div>
+      <div className="grid grid-cols-4 gap-4">
+        <Card><CardContent className="pt-4"><div className="text-sm text-muted-foreground">Total</div><div className="text-2xl font-bold">{incidents.length}</div></CardContent></Card>
+        <Card><CardContent className="pt-4"><div className="text-sm text-muted-foreground">Open</div><div className="text-2xl font-bold text-red-600">{incidents.filter(i => ["open","investigating","mitigating"].includes(i.status)).length}</div></CardContent></Card>
+        <Card><CardContent className="pt-4"><div className="text-sm text-muted-foreground">Critical</div><div className="text-2xl font-bold text-red-600">{incidents.filter(i => i.severity === "critical").length}</div></CardContent></Card>
+        <Card><CardContent className="pt-4"><div className="text-sm text-muted-foreground">Resolved</div><div className="text-2xl font-bold text-green-600">{incidents.filter(i => i.status === "resolved").length}</div></CardContent></Card>
+      </div>
+      <div className="relative"><MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Search incidents..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} /></div>
+      <Card><CardContent className="pt-4">
+        <table className="w-full text-sm">
+          <thead><tr className="border-b text-left"><th className="p-2">ID</th><th className="p-2">Incident</th><th className="p-2">Severity</th><th className="p-2">Status</th><th className="p-2">Category</th><th className="p-2">Reported</th><th className="p-2"></th></tr></thead>
+          <tbody>{filtered.map((i) => (
+            <tr key={i.id} className="border-b hover:bg-muted/50 cursor-pointer" onClick={() => { setSelected(i); setOpen(true); }}>
+              <td className="p-2 font-mono text-xs">{i.id}</td><td className="p-2 font-medium">{i.title}</td>
+              <td className="p-2"><Badge variant={i.severity === "critical" ? "destructive" : i.severity === "high" ? "default" : "secondary"}>{i.severity}</Badge></td>
+              <td className="p-2"><Badge variant="outline">{i.status}</Badge></td>
+              <td className="p-2">{i.category}</td><td className="p-2">{i.reported}</td>
+              <td className="p-2"><Button variant="ghost" size="sm"><Eye className="h-4 w-4" /></Button></td>
+            </tr>))}</tbody>
+        </table>
+      </CardContent></Card>
+      <Sheet open={open} onOpenChange={setOpen}><SheetContent className="max-w-lg"><SheetHeader><SheetTitle>{selected?.title}</SheetTitle></SheetHeader>
+        {selected && (<div className="space-y-4 mt-4"><div className="grid grid-cols-2 gap-3">
+          <div><span className="text-xs text-muted-foreground">ID</span><p className="text-sm font-medium">{selected.id}</p></div>
+          <div><span className="text-xs text-muted-foreground">Severity</span><p className="text-sm"><Badge variant={selected.severity === "critical" ? "destructive" : "default"}>{selected.severity}</Badge></p></div>
+          <div><span className="text-xs text-muted-foreground">Status</span><p className="text-sm"><Badge variant="outline">{selected.status}</Badge></p></div>
+          <div><span className="text-xs text-muted-foreground">Reporter</span><p className="text-sm font-medium">{selected.reporter}</p></div>
+        </div><div><span className="text-xs text-muted-foreground">Description</span><p className="text-sm">{selected.description}</p></div>
+        <div className="flex gap-2 pt-2"><Button size="sm">Update Status</Button><Button size="sm" variant="outline">Assign</Button></div></div>)}
+      </SheetContent></Sheet>
+    </div>
+  );
 }
