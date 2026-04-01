@@ -1,10 +1,36 @@
 import { useState } from "react";
+  const [policyStatus, setPolicyStatus] = useState<PolicyLifecycleState>("Published");
+  const [showTransitionDialog, setShowTransitionDialog] = useState(false);
+  const [activeTransition, setActiveTransition] = useState<PolicyTransition | null>(null);
+  const [transitionComment, setTransitionComment] = useState("");
+  const [auditLog, setAuditLog] = useState<Array<{id:string;action:string;user:string;timestamp:string;details?:string}>>([
+    {id:"ACT-001",action:"Policy published",user:"Raj Patel",timestamp:"2026-02-15T10:30:00Z"},
+    {id:"ACT-002",action:"Approved by CISO",user:"Raj Patel",timestamp:"2026-02-14T16:00:00Z"},
+    {id:"ACT-003",action:"Review completed",user:"Lisa Wong",timestamp:"2026-02-10T09:15:00Z"},
+    {id:"ACT-004",action:"Submitted for review",user:"Emma Wilson",timestamp:"2026-02-01T11:00:00Z"},
+    {id:"ACT-005",action:"Policy created",user:"Emma Wilson",timestamp:"2026-01-15T08:00:00Z"},
+  ]);
+  const availableActions = getAvailableActions(policyStatus);
+  const handleTransition = (t: PolicyTransition) => {
+    if (t.requiresComment || t.confirmMessage) { setActiveTransition(t); setShowTransitionDialog(true); }
+    else { executeTransition(t, ""); }
+  };
+  const executeTransition = (t: PolicyTransition, comment: string) => {
+    setPolicyStatus(t.to);
+    setAuditLog(prev => [{id:"ACT-"+Date.now(),action:t.label+": "+policyStatus+" → "+t.to,user:"Bhaskar Admin",timestamp:new Date().toISOString(),details:comment||undefined},...prev]);
+    setShowTransitionDialog(false); setTransitionComment(""); setActiveTransition(null);
+  };
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Separator } from "../components/ui/separator";
 import { ChevronRight, ArrowLeft, Edit3, Eye, Send, CheckCircle, FileDown, Clock, MessageSquare, Shield, Link2 } from "lucide-react";
+import { getAvailableActions, type PolicyLifecycleState, type PolicyTransition } from "../lib/policyStateMachine";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../components/ui/dialog";
+import { Textarea } from "../components/ui/textarea";
+import { Label } from "../components/ui/label";
+
 
 const STEPS = ["Draft","Review","Approved","Published"];
 const sections = [
@@ -127,6 +153,28 @@ export default function PolicyEditor() {
           </div>
         </Card>
       </div>
+    
+      {/* Workflow Transition Dialog */}
+      <Dialog open={showTransitionDialog} onOpenChange={setShowTransitionDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{activeTransition?.label}</DialogTitle>
+            <DialogDescription>
+              {activeTransition?.confirmMessage || `This will change the policy status from ${policyStatus} to ${activeTransition?.to}.`}
+            </DialogDescription>
+          </DialogHeader>
+          {activeTransition?.requiresComment && (
+            <div className="space-y-2">
+              <Label htmlFor="transition-comment">Comment {activeTransition.requiresComment ? "(required)" : "(optional)"}</Label>
+              <Textarea id="transition-comment" placeholder="Enter your review comments..." value={transitionComment} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setTransitionComment(e.target.value)} rows={4} />
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTransitionDialog(false)}>Cancel</Button>
+            <Button onClick={() => activeTransition && executeTransition(activeTransition, transitionComment)} disabled={activeTransition?.requiresComment ? !transitionComment.trim() : false}>{activeTransition?.label}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

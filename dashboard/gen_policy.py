@@ -1,4 +1,14 @@
-import { useState, useMemo, useCallback } from "react";
+import os
+
+def w(path, content):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, 'w') as f:
+        f.write(content)
+    print(f'Written: {path} ({len(content)} bytes)')
+
+
+# ---- POLICIES.TSX ----
+policies_tsx = r'''import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
@@ -289,3 +299,7 @@ export default function Policies() {
     </div>
   );
 }
+'''
+
+w('src/pages/Policies.tsx', policies_tsx)
+print('Policies.tsx generated')
