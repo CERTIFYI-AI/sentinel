@@ -1,172 +1,60 @@
 :root {
-  /* Brand */
+  --bg-page: 240 5% 96%;
+  --bg-surface: 0 0% 100%;
+  --bg-raised: 240 5% 98%;
+  --bg-sunken: 240 5% 93%;
+  --border: 240 6% 90%;
+  --border-mid: 240 6% 82%;
+  --text-1: 240 10% 4%;
+  --text-2: 240 6% 25%;
+  --text-3: 240 4% 46%;
+  --text-4: 240 4% 64%;
   --brand: 142 47% 38%;
   --brand-hover: 142 47% 31%;
   --brand-subtle: 142 47% 96%;
-  --brand-muted: 142 40% 85%;
-  /* Backgrounds */
-  --bg-page: 240 5% 96%;
-  --bg-surface: 0 0% 100%;
-  --bg-surface-raised: 0 0% 100%;
-  --bg-surface-sunken: 240 5% 96%;
-  --bg-overlay: 240 10% 3.9% / 0.5;
-  /* Borders */
-  --border-subtle: 240 5.9% 92%;
-  --border-default: 240 5.9% 87%;
-  --border-strong: 240 5.9% 75%;
-  --border-brand: 142 47% 38%;
-  /* Text */
-  --text-primary: 240 10% 3.9%;
-  --text-secondary: 240 5.9% 25%;
-  --text-tertiary: 240 3.8% 46%;
-  --text-muted: 240 3.8% 62%;
-  --text-disabled: 240 3.8% 75%;
-  --text-inverse: 0 0% 100%;
-  --text-brand: 142 47% 32%;
-  /* Interactive */
-  --interactive-default: 142 47% 38%;
-  --interactive-hover: 142 47% 31%;
-  --interactive-pressed: 142 47% 25%;
-  --interactive-disabled: 240 3.8% 75%;
-  --interactive-focus: 142 47% 38%;
-  /* Status */
-  --status-success-bg: 142 69% 96%;
-  --status-success-text: 142 69% 30%;
-  --status-success-border: 142 69% 85%;
-  --status-success-icon: 142 47% 38%;
-  --status-warning-bg: 38 92% 96%;
-  --status-warning-text: 32 90% 35%;
-  --status-warning-border: 38 92% 80%;
-  --status-warning-icon: 32 95% 44%;
-  --status-error-bg: 0 86% 97%;
-  --status-error-text: 0 72% 35%;
-  --status-error-border: 0 86% 87%;
-  --status-error-icon: 0 72% 51%;
-  --status-info-bg: 214 100% 97%;
-  --status-info-text: 213 60% 35%;
-  --status-info-border: 213 100% 87%;
-  --status-info-icon: 217 91% 60%;
-  --status-neutral-bg: 240 5% 96%;
-  --status-neutral-text: 240 3.8% 46%;
-  --status-neutral-border: 240 5.9% 87%;
-  /* Risk */
-  --risk-critical-bg: 0 86% 97%;
-  --risk-critical-text: 0 72% 35%;
-  --risk-critical-border: 0 86% 87%;
-  --risk-high-bg: 24 100% 97%;
-  --risk-high-text: 21 80% 35%;
-  --risk-high-border: 24 100% 83%;
-  --risk-medium-bg: 38 92% 96%;
-  --risk-medium-text: 32 90% 35%;
-  --risk-medium-border: 38 92% 80%;
-  --risk-low-bg: 142 69% 96%;
-  --risk-low-text: 142 69% 30%;
-  --risk-low-border: 142 69% 85%;
-  /* Typography */
-  --font-sans: 'Outfit', system-ui, -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
-  --text-xs: 0.75rem;
-  --text-sm: 0.875rem;
-  --text-base: 1rem;
-  --text-lg: 1.125rem;
-  --text-xl: 1.25rem;
-  --text-2xl: 1.5rem;
-  --text-3xl: 1.875rem;
-  --leading-tight: 1.25;
-  --leading-snug: 1.375;
-  --leading-normal: 1.5;
-  --leading-relaxed: 1.625;
-  --font-normal: 400;
-  --font-medium: 500;
-  --font-semibold: 600;
-  --font-bold: 700;
-  /* Spacing */
-  --space-1: 0.25rem;
-  --space-2: 0.5rem;
-  --space-3: 0.75rem;
-  --space-4: 1rem;
-  --space-5: 1.25rem;
-  --space-6: 1.5rem;
-  --space-8: 2rem;
-  --space-10: 2.5rem;
-  --space-12: 3rem;
-  --space-16: 4rem;
-  /* Radius */
-  --radius-none: 0;
-  --radius-sm: 0;
-  --radius-md: 0;
-  --radius-lg: 0;
-  --radius-full: 9999px;
-  /* Shadows */
-  --shadow-none: none;
-  --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.05);
-  --shadow-sm: 0 1px 3px rgb(0 0 0 / 0.08), 0 1px 2px rgb(0 0 0 / 0.06);
-  --shadow-md: 0 4px 6px rgb(0 0 0 / 0.07), 0 2px 4px rgb(0 0 0 / 0.06);
-  --shadow-lg: 0 10px 15px rgb(0 0 0 / 0.08), 0 4px 6px rgb(0 0 0 / 0.05);
-  --shadow-xl: 0 20px 25px rgb(0 0 0 / 0.10), 0 8px 10px rgb(0 0 0 / 0.06);
-  /* Z-index */
-  --z-base: 0;
-  --z-raised: 10;
-  --z-dropdown: 50;
-  --z-sticky: 100;
-  --z-overlay: 200;
-  --z-modal: 300;
-  --z-toast: 400;
-  --z-tooltip: 500;
-  /* Transitions */
-  --duration-instant: 50ms;
-  --duration-fast: 100ms;
-  --duration-normal: 150ms;
-  --duration-slow: 200ms;
-  --duration-slower: 300ms;
-  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --s-ok-bg: 142 69% 96%; --s-ok-tx: 142 69% 28%; --s-ok-br: 142 69% 82%;
+  --s-wn-bg: 38 92% 96%; --s-wn-tx: 32 90% 33%; --s-wn-br: 38 92% 78%;
+  --s-er-bg: 0 86% 97%; --s-er-tx: 0 72% 35%; --s-er-br: 0 86% 85%;
+  --s-in-bg: 214 100% 97%; --s-in-tx: 213 60% 33%; --s-in-br: 213 100% 84%;
+  --s-nt-bg: 240 5% 96%; --s-nt-tx: 240 4% 46%; --s-nt-br: 240 6% 86%;
+  --r-cr-bg: 0 86% 97%; --r-cr-tx: 0 72% 35%; --r-cr-br: 0 86% 85%;
+  --r-hi-bg: 24 100% 97%; --r-hi-tx: 21 80% 33%; --r-hi-br: 24 100% 82%;
+  --r-md-bg: 38 92% 96%; --r-md-tx: 32 90% 33%; --r-md-br: 38 92% 78%;
+  --r-lo-bg: 142 69% 96%; --r-lo-tx: 142 69% 28%; --r-lo-br: 142 69% 82%;
+  --shadow-sm: 0 1px 3px rgb(0 0 0/8%);
+  --shadow-md: 0 4px 8px rgb(0 0 0/8%);
+  --shadow-lg: 0 10px 20px rgb(0 0 0/8%);
 }
-
 .dark {
   --bg-page: 224 15% 8%;
   --bg-surface: 224 15% 11%;
-  --bg-surface-raised: 224 15% 14%;
-  --bg-surface-sunken: 224 15% 6%;
-  --border-subtle: 224 15% 18%;
-  --border-default: 224 15% 24%;
-  --border-strong: 224 15% 35%;
-  --text-primary: 210 40% 96%;
-  --text-secondary: 215 20% 75%;
-  --text-tertiary: 215 15% 55%;
-  --text-muted: 215 12% 40%;
-  --text-disabled: 215 10% 30%;
-  --text-brand: 142 60% 55%;
-  --status-success-bg: 142 30% 12%;
-  --status-success-text: 142 60% 65%;
-  --status-success-border: 142 30% 22%;
-  --status-warning-bg: 38 30% 12%;
-  --status-warning-text: 38 80% 65%;
-  --status-warning-border: 38 30% 22%;
-  --status-error-bg: 0 30% 12%;
-  --status-error-text: 0 60% 65%;
-  --status-error-border: 0 30% 22%;
-  --status-info-bg: 214 30% 12%;
-  --status-info-text: 214 60% 65%;
-  --status-info-border: 214 30% 22%;
-  --status-neutral-bg: 224 15% 16%;
-  --status-neutral-text: 215 15% 55%;
-  --status-neutral-border: 224 15% 24%;
-  --risk-critical-bg: 0 30% 12%;
-  --risk-critical-text: 0 60% 65%;
-  --risk-critical-border: 0 30% 22%;
-  --risk-high-bg: 24 30% 12%;
-  --risk-high-text: 24 70% 65%;
-  --risk-high-border: 24 30% 22%;
-  --risk-medium-bg: 38 30% 12%;
-  --risk-medium-text: 38 80% 65%;
-  --risk-medium-border: 38 30% 22%;
-  --risk-low-bg: 142 30% 12%;
-  --risk-low-text: 142 60% 65%;
-  --risk-low-border: 142 30% 22%;
-  --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.3);
-  --shadow-sm: 0 1px 3px rgb(0 0 0 / 0.4), 0 1px 2px rgb(0 0 0 / 0.3);
-  --shadow-md: 0 4px 6px rgb(0 0 0 / 0.4), 0 2px 4px rgb(0 0 0 / 0.3);
-  --shadow-lg: 0 10px 15px rgb(0 0 0 / 0.5), 0 4px 6px rgb(0 0 0 / 0.3);
-  --shadow-xl: 0 20px 25px rgb(0 0 0 / 0.6), 0 8px 10px rgb(0 0 0 / 0.4);
+  --bg-raised: 224 15% 14%;
+  --bg-sunken: 224 15% 6%;
+  --border: 224 15% 18%;
+  --border-mid: 224 15% 24%;
+  --text-1: 210 40% 96%;
+  --text-2: 215 20% 75%;
+  --text-3: 215 15% 55%;
+  --text-4: 215 12% 38%;
+  --brand: 142 47% 50%;
+  --brand-hover: 142 47% 44%;
+  --brand-subtle: 142 20% 14%;
+  --s-ok-bg: 142 30% 12%; --s-ok-tx: 142 60% 65%; --s-ok-br: 142 30% 22%;
+  --s-wn-bg: 38 30% 12%; --s-wn-tx: 38 80% 65%; --s-wn-br: 38 30% 22%;
+  --s-er-bg: 0 30% 12%; --s-er-tx: 0 60% 65%; --s-er-br: 0 30% 22%;
+  --s-in-bg: 214 30% 12%; --s-in-tx: 214 60% 65%; --s-in-br: 214 30% 22%;
+  --s-nt-bg: 224 15% 16%; --s-nt-tx: 215 15% 55%; --s-nt-br: 224 15% 24%;
+  --r-cr-bg: 0 30% 12%; --r-cr-tx: 0 60% 65%; --r-cr-br: 0 30% 22%;
+  --r-hi-bg: 24 30% 12%; --r-hi-tx: 24 70% 65%; --r-hi-br: 24 30% 22%;
+  --r-md-bg: 38 30% 12%; --r-md-tx: 38 80% 65%; --r-md-br: 38 30% 22%;
+  --r-lo-bg: 142 30% 12%; --r-lo-tx: 142 60% 65%; --r-lo-br: 142 30% 22%;
+  --shadow-sm: 0 1px 3px rgb(0 0 0/40%);
+  --shadow-md: 0 4px 8px rgb(0 0 0/40%);
+  --shadow-lg: 0 10px 20px rgb(0 0 0/40%);
+}
+body {
+  background: hsl(var(--bg-page));
+  color: hsl(var(--text-1));
+}
+input:-webkit-autofill {
 }
