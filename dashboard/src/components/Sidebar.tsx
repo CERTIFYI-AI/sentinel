@@ -1,4 +1,3 @@
-
 import { NavLink, useLocation } from 'react-router-dom'
 import { useState } from 'react'
 import {
@@ -6,9 +5,10 @@ import {
   UserCircleCheck, Robot, Rss, Database, BuildingOffice,
   Warning, Scales, FolderOpen,
   ShieldCheck, LockOpen, Lock, Gear, Star,
-  SignOut, CaretDown, CaretRight, MoonStars, SunHorizon
+  SignOut, CaretDown, CaretRight, MoonStars, SunHorizon, Monitor
 } from '@phosphor-icons/react'
 import { cn } from '../lib/utils'
+import { useTheme } from '../providers/ThemeProvider'
 
 const NAV = [
   { title: 'OVERVIEW', items: [
@@ -50,48 +50,49 @@ export default function Sidebar() {
   const location = useLocation()
   const [collapsed, setCollapsed] = useState(false)
   const [expandedSections, setExpandedSections] = useState<string[]>(NAV.map(s => s.title))
-  const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains('dark'))
+  const { theme, setTheme, resolvedTheme } = useTheme()
 
   const isActive = (to: string) =>
     to === '/overview' ? location.pathname === '/' || location.pathname === '/overview' : location.pathname.startsWith(to)
-
   const toggleSection = (title: string) =>
     setExpandedSections(prev => prev.includes(title) ? prev.filter(t => t !== title) : [...prev, title])
-
-  const toggleDark = () => {
-    const next = !darkMode
-    setDarkMode(next)
-    document.documentElement.classList.toggle('dark', next)
-    localStorage.setItem('theme', next ? 'dark' : 'light')
+  const cycleTheme = () => {
+    if (theme === 'dark') setTheme('light')
+    else if (theme === 'light') setTheme('system')
+    else setTheme('dark')
   }
+  const themeIcon = theme === 'dark' ? SunHorizon : theme === 'light' ? MoonStars : Monitor
+  const themeLabel = theme === 'dark' ? 'Light Mode' : theme === 'light' ? 'System' : 'Dark Mode'
+  const ThemeIcon = themeIcon
 
   return (
     <aside className={cn(
-      'flex flex-col h-screen bg-zinc-950 text-zinc-100 border-r border-zinc-800 transition-all duration-200 flex-shrink-0',
+      'flex flex-col h-screen bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] border-r border-[hsl(var(--border))] transition-all duration-200 flex-shrink-0',
       collapsed ? 'w-16' : 'w-64'
     )}>
-      <div className='flex items-center gap-3 px-4 h-14 border-b border-zinc-800'>
-        <div className='w-8 h-8 bg-emerald-600 flex items-center justify-center flex-shrink-0'>
+      <div className='flex items-center gap-3 px-4 h-14 border-b border-[hsl(var(--border))]'>
+        <div className='w-8 h-8 bg-[hsl(var(--brand))] flex items-center justify-center flex-shrink-0'>
           <ShieldCheck size={18} weight='fill' className='text-white' />
         </div>
         {!collapsed && (
           <div className='flex-1 min-w-0'>
-            <p className='text-sm font-semibold text-white truncate'>Sentinel AI</p>
-            <p className='text-[10px] text-zinc-500'>GRC Platform</p>
+            <p className='text-sm font-semibold text-[hsl(var(--text-1))] truncate'>Sentinel AI</p>
+            <p className='text-[10px] text-[hsl(var(--text-4))]'>GRC Platform</p>
           </div>
         )}
-        <button onClick={() => setCollapsed(!collapsed)} className='text-zinc-500 hover:text-zinc-300 ml-auto'>
+        <button onClick={() => setCollapsed(!collapsed)} className='text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-2))] ml-auto'>
           {collapsed ? <CaretRight size={14}/> : <CaretDown size={14}/>}
         </button>
       </div>
+
       <div className='flex-1 overflow-y-auto py-2'>
         {NAV.map(section => (
           <div key={section.title} className='px-2 mb-1'>
             {!collapsed && (
               <button onClick={() => toggleSection(section.title)}
                 className='flex items-center justify-between w-full px-2 py-1'>
-                <span className='text-[10px] font-semibold tracking-wider text-zinc-500 uppercase'>{section.title}</span>
-                {expandedSections.includes(section.title) ? <CaretDown size={10} className='text-zinc-600'/> : <CaretRight size={10} className='text-zinc-600'/>}
+                <span className='text-[10px] font-semibold tracking-wider text-[hsl(var(--text-4))] uppercase'>{section.title}</span>
+                {expandedSections.includes(section.title) ? <CaretDown size={10} className='text-[hsl(var(--text-4))]'/> : <CaretRight size={10} className='text-[hsl(var(--text-4))]'/>}
               </button>
             )}
             {(collapsed || expandedSections.includes(section.title)) && (
@@ -103,16 +104,18 @@ export default function Sidebar() {
                     <NavLink key={item.to} to={item.to} end
                       className={cn(
                         'flex items-center gap-3 px-3 py-2 text-sm transition-colors group',
-                        active ? 'bg-emerald-600/15 text-emerald-400' : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100',
+                        active
+                          ? 'bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))] border-l-2 border-[hsl(var(--brand))]'
+                          : 'text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-1))]',
                         collapsed && 'justify-center px-2'
                       )}
                       title={collapsed ? item.label : undefined}>
-                      <Icon size={18} weight='duotone' className={cn('flex-shrink-0', active ? 'text-emerald-400' : 'text-zinc-500 group-hover:text-zinc-300')} />
+                      <Icon size={18} weight={active ? 'fill' : 'duotone'} className={cn('flex-shrink-0', active ? 'text-[hsl(var(--brand))]' : 'text-[hsl(var(--text-4))] group-hover:text-[hsl(var(--text-2))]')} />
                       {!collapsed && (
                         <>
                           <span className='flex-1 truncate'>{item.label}</span>
                           {item.badge && (
-                            <span className='bg-emerald-600 text-white text-[10px] px-1.5 py-0.5 font-medium min-w-[20px] text-center'>{item.badge}</span>
+                            <span className='bg-[hsl(var(--brand))] text-white text-[10px] px-1.5 py-0.5 font-medium min-w-[20px] text-center'>{item.badge}</span>
                           )}
                         </>
                       )}
@@ -124,26 +127,27 @@ export default function Sidebar() {
           </div>
         ))}
       </div>
-      <div className='border-t border-zinc-800 p-3 space-y-1'>
-        <button className={cn('flex items-center gap-3 w-full px-3 py-2 text-sm text-zinc-400 hover:bg-zinc-800 hover:text-emerald-400 transition-colors', collapsed && 'justify-center px-2')}>
-          <Star size={18} weight='duotone' className='flex-shrink-0 text-emerald-500' />
+
+      <div className='border-t border-[hsl(var(--border))] p-3 space-y-1'>
+        <button className={cn('flex items-center gap-3 w-full px-3 py-2 text-sm text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--brand))] transition-colors', collapsed && 'justify-center px-2')}>
+          <Star size={18} weight='duotone' className='flex-shrink-0 text-[hsl(var(--brand))]' />
           {!collapsed && <span>AI Advisor</span>}
         </button>
-        <button onClick={toggleDark} className={cn('flex items-center gap-3 w-full px-3 py-2 text-sm text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 transition-colors', collapsed && 'justify-center px-2')}>
-          {darkMode ? <SunHorizon size={18} weight='duotone' className='flex-shrink-0'/> : <MoonStars size={18} weight='duotone' className='flex-shrink-0'/>}
-          {!collapsed && <span>{darkMode ? 'Light Mode' : 'Dark Mode'}</span>}
+        <button onClick={cycleTheme} className={cn('flex items-center gap-3 w-full px-3 py-2 text-sm text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-1))] transition-colors', collapsed && 'justify-center px-2')}>
+          <ThemeIcon size={18} weight='duotone' className='flex-shrink-0'/>
+          {!collapsed && <span>{themeLabel}</span>}
         </button>
         <div className={cn('flex items-center gap-3 px-3 py-2', collapsed && 'justify-center px-2')}>
-          <div className='w-7 h-7 bg-emerald-600 flex items-center justify-center flex-shrink-0'>
+          <div className='w-7 h-7 bg-[hsl(var(--brand))] flex items-center justify-center flex-shrink-0' data-avatar='true'>
             <span className='text-xs font-semibold text-white'>BA</span>
           </div>
           {!collapsed && (
             <>
               <div className='flex-1 min-w-0'>
-                <p className='text-xs font-medium text-zinc-200 truncate'>Bhaskar Admin</p>
-                <p className='text-[10px] text-zinc-500'>CISO</p>
+                <p className='text-xs font-medium text-[hsl(var(--text-1))] truncate'>Bhaskar Admin</p>
+                <p className='text-[10px] text-[hsl(var(--text-4))]'>CISO</p>
               </div>
-              <button className='text-zinc-600 hover:text-zinc-300'><SignOut size={14}/></button>
+              <button className='text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-2))]'><SignOut size={14}/></button>
             </>
           )}
         </div>
