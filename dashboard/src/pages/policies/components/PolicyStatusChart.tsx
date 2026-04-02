@@ -18,7 +18,7 @@ export const PolicyStatusChart = ({ policies }: Props) => {
   ];
 
   return (
-    <div className="bg-[#111] border border-zinc-800 rounded-xl p-6">
+    <div className="bg-[#111] border border-[hsl(var(--border))] rounded-xl p-6">
       <h3 className="text-sm font-semibold text-white mb-4">Policy Reviews (Last 6 Months)</h3>
       <ResponsiveContainer width="100%" height={280}>
         <BarChart data={monthlyData} barSize={28}>

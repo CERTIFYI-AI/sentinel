@@ -146,7 +146,7 @@ export default function RBACDashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Total Users</p><p className="text-2xl font-bold">{totalUsers}</p></div><Users className="h-8 w-8 text-emerald-500" /></div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Total Users</p><p className="text-2xl font-bold">{totalUsers}</p></div><Users className="h-8 w-8 text-[hsl(var(--brand))]" /></div></CardContent></Card>
         <Card><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Active Roles</p><p className="text-2xl font-bold">{roles.filter(r => r.status === "active").length}</p></div><Key className="h-8 w-8 text-blue-500" /></div></CardContent></Card>
         <Card><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Active Sessions</p><p className="text-2xl font-bold">{activeSessions}</p></div><Activity className="h-8 w-8 text-amber-500" /></div></CardContent></Card>
         <Card><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">MFA Adoption</p><p className="text-2xl font-bold">{mfaRate}%</p></div><Shield className="h-8 w-8 text-purple-500" /></div></CardContent></Card>
@@ -175,7 +175,7 @@ export default function RBACDashboard() {
           </div>
           <Card><CardHeader><CardTitle className="flex items-center gap-2"><Activity className="h-5 w-5" />Active Sessions</CardTitle></CardHeader><CardContent>
             <div className="border rounded-lg overflow-hidden"><table className="w-full"><thead className="bg-muted/50"><tr><th className="text-left p-3 text-sm font-medium">User</th><th className="text-left p-3 text-sm font-medium">Role</th><th className="text-left p-3 text-sm font-medium">Sessions</th><th className="text-left p-3 text-sm font-medium">Last Active</th><th className="text-left p-3 text-sm font-medium">MFA</th></tr></thead>
-              <tbody>{users.filter(u => u.sessions > 0).map(u => (<tr key={u.id} className="border-t hover:bg-muted/30"><td className="p-3 text-sm font-medium">{u.name}</td><td className="p-3 text-sm">{u.role}</td><td className="p-3 text-sm"><Badge variant="secondary">{u.sessions}</Badge></td><td className="p-3 text-sm">{u.lastActive}</td><td className="p-3 text-sm">{u.mfaEnabled ? <CheckCircle className="h-4 w-4 text-emerald-500" /> : <XCircle className="h-4 w-4 text-red-400" />}</td></tr>))}</tbody></table></div>
+              <tbody>{users.filter(u => u.sessions > 0).map(u => (<tr key={u.id} className="border-t hover:bg-muted/30"><td className="p-3 text-sm font-medium">{u.name}</td><td className="p-3 text-sm">{u.role}</td><td className="p-3 text-sm"><Badge variant="secondary">{u.sessions}</Badge></td><td className="p-3 text-sm">{u.lastActive}</td><td className="p-3 text-sm">{u.mfaEnabled ? <CheckCircle className="h-4 w-4 text-[hsl(var(--brand))]" /> : <XCircle className="h-4 w-4 text-red-400" />}</td></tr>))}</tbody></table></div>
           </CardContent></Card>
         </TabsContent>
 
@@ -193,7 +193,7 @@ export default function RBACDashboard() {
           </div>
           <Card><CardHeader><CardTitle>Role-Permission Matrix</CardTitle></CardHeader><CardContent>
             <div className="border rounded-lg overflow-auto max-h-[400px]"><table className="w-full text-xs"><thead className="bg-muted/50 sticky top-0"><tr><th className="text-left p-2 font-medium min-w-[160px]">Permission</th>{roles.filter(r => r.status === "active").map(r => (<th key={r.id} className="text-center p-2 font-medium min-w-[90px]">{r.name}</th>))}</tr></thead>
-              <tbody>{ALL_PERMISSIONS.map(perm => (<tr key={perm} className="border-t hover:bg-muted/20"><td className="p-2 font-mono text-muted-foreground">{perm}</td>{roles.filter(r => r.status === "active").map(r => (<td key={r.id} className="text-center p-2">{r.permissions.includes(perm) ? <CheckCircle className="h-4 w-4 text-emerald-500 mx-auto" /> : <span className="text-muted-foreground/30">&mdash;</span>}</td>))}</tr>))}</tbody></table></div>
+              <tbody>{ALL_PERMISSIONS.map(perm => (<tr key={perm} className="border-t hover:bg-muted/20"><td className="p-2 font-mono text-muted-foreground">{perm}</td>{roles.filter(r => r.status === "active").map(r => (<td key={r.id} className="text-center p-2">{r.permissions.includes(perm) ? <CheckCircle className="h-4 w-4 text-[hsl(var(--brand))] mx-auto" /> : <span className="text-muted-foreground/30">&mdash;</span>}</td>))}</tr>))}</tbody></table></div>
           </CardContent></Card>
         </TabsContent>
 
@@ -221,12 +221,12 @@ export default function RBACDashboard() {
                   <td className="p-3 text-sm text-muted-foreground">{u.email}</td>
                   <td className="p-3 text-sm">{u.role}</td>
                   <td className="p-3 text-sm"><Badge variant={u.status === "active" ? "default" : u.status === "locked" ? "destructive" : "secondary"}>{u.status}</Badge></td>
-                  <td className="p-3 text-sm">{u.mfaEnabled ? <CheckCircle className="h-4 w-4 text-emerald-500" /> : <XCircle className="h-4 w-4 text-red-400" />}</td>
+                  <td className="p-3 text-sm">{u.mfaEnabled ? <CheckCircle className="h-4 w-4 text-[hsl(var(--brand))]" /> : <XCircle className="h-4 w-4 text-red-400" />}</td>
                   <td className="p-3 text-sm">{u.lastActive}</td>
                   <td className="p-3">
                     <div className="flex gap-1">
                       <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); openEdit(u); }}><Edit className="h-3.5 w-3.5 mr-1" />Edit</Button>
-                      <Button size="sm" variant="ghost" className={u.status === "active" ? "text-red-400 hover:text-red-300" : "text-emerald-400 hover:text-emerald-300"} onClick={(e) => { e.stopPropagation(); openDisable(u); }}>
+                      <Button size="sm" variant="ghost" className={u.status === "active" ? "text-red-400 hover:text-red-300" : "text-[hsl(var(--brand))] hover:text-emerald-300"} onClick={(e) => { e.stopPropagation(); openDisable(u); }}>
                         <Ban className="h-3.5 w-3.5 mr-1" />{u.status === "active" ? "Disable" : "Enable"}
                       </Button>
                     </div>

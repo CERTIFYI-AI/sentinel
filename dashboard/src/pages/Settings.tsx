@@ -183,7 +183,7 @@ export default function Settings() {
                       <p className="text-sm text-slate-400">Provider: {auth.ssoProvider} | SAML Endpoint configured</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">Enabled</Badge>
+                      <Badge className="bg-[hsl(var(--brand))]/10 text-[hsl(var(--brand))] border-emerald-500/20">Enabled</Badge>
                       <Switch checked={auth.ssoEnabled} />
                     </div>
                   </div>
@@ -200,7 +200,7 @@ export default function Settings() {
                       <p className="text-sm text-slate-400">Methods: {auth.mfaMethods.join(", ")}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">Required</Badge>
+                      <Badge className="bg-[hsl(var(--brand))]/10 text-[hsl(var(--brand))] border-emerald-500/20">Required</Badge>
                       <Switch checked={auth.mfaRequired} />
                     </div>
                   </div>
@@ -244,7 +244,7 @@ export default function Settings() {
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <p className="text-white font-medium">{key.name}</p>
-                          <Badge className={key.status === "Active" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-red-500/10 text-red-400 border-red-500/20"}>{key.status}</Badge>
+                          <Badge className={key.status === "Active" ? "bg-[hsl(var(--brand))]/10 text-[hsl(var(--brand))] border-emerald-500/20" : "bg-red-500/10 text-red-400 border-red-500/20"}>{key.status}</Badge>
                         </div>
                         <p className="text-sm text-slate-400 font-mono">{key.prefix}...****</p>
                         <div className="flex gap-2 mt-1">
@@ -288,7 +288,7 @@ export default function Settings() {
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">Configured</Badge>
+                            <Badge className="bg-[hsl(var(--brand))]/10 text-[hsl(var(--brand))] border-emerald-500/20">Configured</Badge>
                             <Switch checked={ch.configured} />
                           </div>
                         </div>
@@ -367,7 +367,7 @@ export default function Settings() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge className={int.status === "Connected" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-red-500/10 text-red-400 border-red-500/20"}>{int.status}</Badge>
+                        <Badge className={int.status === "Connected" ? "bg-[hsl(var(--brand))]/10 text-[hsl(var(--brand))] border-emerald-500/20" : "bg-red-500/10 text-red-400 border-red-500/20"}>{int.status}</Badge>
                         <Button variant="outline" size="sm" className="border-slate-600 text-slate-300">
                           {int.status === "Connected" ? "Configure" : "Connect"}
                         </Button>

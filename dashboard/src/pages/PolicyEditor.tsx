@@ -60,7 +60,7 @@ export default function PolicyEditor() {
   const [sectionEdits, setSectionEdits] = useState<Record<number,string>>({});
 
   const statusLabel = STEPS[currentStep];
-  const statusColor = currentStep === 0 ? "bg-yellow-500/20 text-yellow-400" : currentStep === 1 ? "bg-blue-500/20 text-blue-400" : currentStep === 2 ? "bg-emerald-500/20 text-emerald-400" : "bg-green-500/20 text-green-400";
+  const statusColor = currentStep === 0 ? "bg-yellow-500/20 text-yellow-400" : currentStep === 1 ? "bg-blue-500/20 text-blue-400" : currentStep === 2 ? "bg-[hsl(var(--brand))]/20 text-[hsl(var(--brand))]" : "bg-green-500/20 text-green-400";
 
   const handleSubmitForReview = () => {
     if (currentStep === 0) {
@@ -115,9 +115,9 @@ export default function PolicyEditor() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white p-6">
+    <div className="min-h-screen bg-[hsl(var(--bg-page))] text-white p-6">
       {/* Header */}
-      <div className="flex items-center gap-2 text-sm text-zinc-400 mb-6">
+      <div className="flex items-center gap-2 text-sm text-[hsl(var(--text-3))] mb-6">
         <button onClick={() => navigate("/compliance/policies")} className="hover:text-white flex items-center gap-1"><ArrowLeft className="w-4 h-4"/> Back</button>
         <ChevronRight className="w-4 h-4"/>
         <span>Policy Manager</span>
@@ -128,7 +128,7 @@ export default function PolicyEditor() {
       <div className="flex justify-between items-start mb-6">
         <div>
           <h1 className="text-2xl font-bold">Responsible AI Use Policy</h1>
-          <p className="text-zinc-400 text-sm mt-1">{policyId} &middot; Version 3.2 &middot; AI Governance</p>
+          <p className="text-[hsl(var(--text-3))] text-sm mt-1">{policyId} &middot; Version 3.2 &middot; AI Governance</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => setShowAuditLog(!showAuditLog)}><History className="w-4 h-4 mr-1"/>{showAuditLog ? "Hide" : "Show"} Audit Log</Button>
@@ -139,15 +139,15 @@ export default function PolicyEditor() {
 
       {/* Audit Log Panel */}
       {showAuditLog && (
-        <Card className="bg-zinc-900 border-zinc-800 p-4 mb-6">
+        <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] p-4 mb-6">
           <h3 className="text-white font-semibold mb-3 flex items-center gap-2"><History className="w-4 h-4"/>Audit Trail</h3>
           <div className="space-y-2 max-h-48 overflow-y-auto">
             {auditLog.map((entry,i) => (
-              <div key={i} className="flex items-start gap-3 text-sm border-l-2 border-zinc-700 pl-3 py-1">
-                <span className="text-zinc-500 whitespace-nowrap w-36 shrink-0">{entry.timestamp}</span>
-                <span className="text-zinc-300 w-28 shrink-0">{entry.actor}</span>
-                <Badge className="bg-zinc-800 text-zinc-300 shrink-0">{entry.action}</Badge>
-                <span className="text-zinc-400 truncate">{entry.detail}</span>
+              <div key={i} className="flex items-start gap-3 text-sm border-l-2 border-[hsl(var(--border-mid))] pl-3 py-1">
+                <span className="text-[hsl(var(--text-4))] whitespace-nowrap w-36 shrink-0">{entry.timestamp}</span>
+                <span className="text-[hsl(var(--text-2))] w-28 shrink-0">{entry.actor}</span>
+                <Badge className="bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-2))] shrink-0">{entry.action}</Badge>
+                <span className="text-[hsl(var(--text-3))] truncate">{entry.detail}</span>
               </div>
             ))}
           </div>
@@ -156,9 +156,9 @@ export default function PolicyEditor() {
 
       {/* Reject Dialog */}
       {showRejectDialog && (
-        <Card className="bg-zinc-900 border-red-800 p-4 mb-6">
+        <Card className="bg-[hsl(var(--bg-surface))] border-red-800 p-4 mb-6">
           <h3 className="text-red-400 font-semibold mb-2 flex items-center gap-2"><XCircle className="w-4 h-4"/>Reject / Request Changes</h3>
-          <Textarea placeholder="Reason for rejection (required)..." value={rejectReason} onChange={(e:React.ChangeEvent<HTMLTextAreaElement>) => setRejectReason(e.target.value)} className="bg-zinc-800 border-zinc-700 text-white mb-2"/>
+          <Textarea placeholder="Reason for rejection (required)..." value={rejectReason} onChange={(e:React.ChangeEvent<HTMLTextAreaElement>) => setRejectReason(e.target.value)} className="bg-[hsl(var(--bg-raised))] border-[hsl(var(--border-mid))] text-white mb-2"/>
           <div className="flex gap-2">
             <Button size="sm" variant="destructive" onClick={handleReject} disabled={!rejectReason.trim()}>Confirm Rejection</Button>
             <Button size="sm" variant="outline" onClick={() => setShowRejectDialog(false)}>Cancel</Button>
@@ -170,12 +170,12 @@ export default function PolicyEditor() {
         {/* Main Content - Policy Sections */}
         <div className="col-span-2 space-y-4">
           {sections.map((s,i) => (
-            <Card key={i} className="bg-zinc-900 border-zinc-800 p-4">
+            <Card key={i} className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] p-4">
               <h3 className="text-white font-semibold mb-2">{s.title}</h3>
               {editMode ? (
-                <Textarea value={sectionEdits[i] !== undefined ? sectionEdits[i] : s.content} onChange={(e:React.ChangeEvent<HTMLTextAreaElement>) => setSectionEdits(prev => ({...prev,[i]:e.target.value}))} className="bg-zinc-800 border-zinc-700 text-zinc-300 min-h-[120px]"/>
+                <Textarea value={sectionEdits[i] !== undefined ? sectionEdits[i] : s.content} onChange={(e:React.ChangeEvent<HTMLTextAreaElement>) => setSectionEdits(prev => ({...prev,[i]:e.target.value}))} className="bg-[hsl(var(--bg-raised))] border-[hsl(var(--border-mid))] text-[hsl(var(--text-2))] min-h-[120px]"/>
               ) : (
-                <p className="text-zinc-400 text-sm whitespace-pre-line">{sectionEdits[i] !== undefined ? sectionEdits[i] : s.content}</p>
+                <p className="text-[hsl(var(--text-3))] text-sm whitespace-pre-line">{sectionEdits[i] !== undefined ? sectionEdits[i] : s.content}</p>
               )}
             </Card>
           ))}
@@ -184,86 +184,86 @@ export default function PolicyEditor() {
         {/* Sidebar */}
         <div className="space-y-4">
           {/* Status & Metadata */}
-          <Card className="bg-zinc-900 border-zinc-800 p-4">
+          <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] p-4">
             <h3 className="text-white font-semibold text-sm mb-3">Policy Metadata</h3>
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between"><span className="text-zinc-400">Status</span><Badge className={statusColor}>{statusLabel}</Badge></div>
-              <div className="flex justify-between"><span className="text-zinc-400">Category</span><span className="text-zinc-200">AI Governance</span></div>
-              <div className="flex justify-between"><span className="text-zinc-400">Risk Level</span><Badge className="bg-red-500/20 text-red-400">Critical</Badge></div>
-              <div className="flex justify-between"><span className="text-zinc-400">Owner</span><span className="text-zinc-200">Dr. Sarah Mitchell</span></div>
-              <div className="flex justify-between"><span className="text-zinc-400">Framework</span><span className="text-zinc-200">EU AI Act, NIST AI RMF</span></div>
-              <div className="flex justify-between"><span className="text-zinc-400">Last Updated</span><span className="text-zinc-200">2026-03-15</span></div>
-              <div className="flex justify-between"><span className="text-zinc-400">Next Review</span><span className="text-zinc-200">2026-05-15</span></div>
+              <div className="flex justify-between"><span className="text-[hsl(var(--text-3))]">Status</span><Badge className={statusColor}>{statusLabel}</Badge></div>
+              <div className="flex justify-between"><span className="text-[hsl(var(--text-3))]">Category</span><span className="text-[hsl(var(--text-1))]">AI Governance</span></div>
+              <div className="flex justify-between"><span className="text-[hsl(var(--text-3))]">Risk Level</span><Badge className="bg-red-500/20 text-red-400">Critical</Badge></div>
+              <div className="flex justify-between"><span className="text-[hsl(var(--text-3))]">Owner</span><span className="text-[hsl(var(--text-1))]">Dr. Sarah Mitchell</span></div>
+              <div className="flex justify-between"><span className="text-[hsl(var(--text-3))]">Framework</span><span className="text-[hsl(var(--text-1))]">EU AI Act, NIST AI RMF</span></div>
+              <div className="flex justify-between"><span className="text-[hsl(var(--text-3))]">Last Updated</span><span className="text-[hsl(var(--text-1))]">2026-03-15</span></div>
+              <div className="flex justify-between"><span className="text-[hsl(var(--text-3))]">Next Review</span><span className="text-[hsl(var(--text-1))]">2026-05-15</span></div>
             </div>
           </Card>
 
           {/* Review Status Stepper */}
-          <Card className="bg-zinc-900 border-zinc-800 p-4">
+          <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] p-4">
             <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2"><Shield className="w-4 h-4"/>Review Status</h3>
             <div className="space-y-2">
               {STEPS.map((step,i) => (
                 <div key={i} className="flex items-center gap-2 text-sm">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${i <= currentStep ? "bg-emerald-500 text-white" : "bg-zinc-700 text-zinc-400"}`}>{i < currentStep ? <CheckCircle className="w-3 h-3"/> : i+1}</div>
-                  <span className={i <= currentStep ? "text-white" : "text-zinc-500"}>{step}</span>
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${i <= currentStep ? "bg-[hsl(var(--brand))] text-white" : "bg-zinc-700 text-[hsl(var(--text-3))]"}`}>{i < currentStep ? <CheckCircle className="w-3 h-3"/> : i+1}</div>
+                  <span className={i <= currentStep ? "text-white" : "text-[hsl(var(--text-4))]"}>{step}</span>
                 </div>
               ))}
             </div>
-            <Separator className="my-3 bg-zinc-800"/>
+            <Separator className="my-3 bg-[hsl(var(--bg-raised))]"/>
             <div className="space-y-2">
               {currentStep === 0 && <Button size="sm" className="w-full" onClick={handleSubmitForReview}><Send className="w-3 h-3 mr-1"/>Submit for Review</Button>}
               {currentStep === 1 && (
                 <>
-                  <Button size="sm" className="w-full bg-emerald-600 hover:bg-emerald-700" onClick={handleApprove}><CheckCircle className="w-3 h-3 mr-1"/>Approve</Button>
+                  <Button size="sm" className="w-full bg-[hsl(var(--brand))] hover:bg-emerald-700" onClick={handleApprove}><CheckCircle className="w-3 h-3 mr-1"/>Approve</Button>
                   <Button size="sm" variant="outline" className="w-full border-red-700 text-red-400 hover:bg-red-900/30" onClick={() => setShowRejectDialog(true)}><XCircle className="w-3 h-3 mr-1"/>Reject / Request Changes</Button>
                 </>
               )}
               {currentStep === 2 && <Button size="sm" className="w-full bg-green-600 hover:bg-green-700" onClick={handleApprove}><CheckCircle className="w-3 h-3 mr-1"/>Publish</Button>}
-              {currentStep === 3 && <p className="text-emerald-400 text-sm text-center">Policy is published and active.</p>}
+              {currentStep === 3 && <p className="text-[hsl(var(--brand))] text-sm text-center">Policy is published and active.</p>}
             </div>
           </Card>
 
           {/* Related Policies */}
-          <Card className="bg-zinc-900 border-zinc-800 p-4">
+          <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] p-4">
             <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2"><Link2 className="w-4 h-4"/>Related Policies</h3>
             <div className="space-y-2">
               {relatedPolicies.map((p) => (
-                <button key={p.id} onClick={() => navigate(`/policy-editor?id=${p.id}`)} className="w-full text-left flex items-center justify-between p-2 rounded hover:bg-zinc-800 transition-colors">
+                <button key={p.id} onClick={() => navigate(`/policy-editor?id=${p.id}`)} className="w-full text-left flex items-center justify-between p-2 rounded hover:bg-[hsl(var(--bg-raised))] transition-colors">
                   <div>
                     <span className="text-blue-400 text-xs">{p.id}</span>
-                    <p className="text-zinc-300 text-sm">{p.name}</p>
+                    <p className="text-[hsl(var(--text-2))] text-sm">{p.name}</p>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-zinc-500"/>
+                  <ChevronRight className="w-4 h-4 text-[hsl(var(--text-4))]"/>
                 </button>
               ))}
             </div>
           </Card>
 
           {/* Linked Controls */}
-          <Card className="bg-zinc-900 border-zinc-800 p-4">
+          <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] p-4">
             <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2"><Shield className="w-4 h-4"/>Linked Controls</h3>
             <div className="space-y-2">
               {linkedControls.map((c) => (
                 <div key={c.id} className="flex items-center justify-between text-sm">
-                  <div><span className="text-zinc-500">{c.id}</span><span className="text-zinc-300 ml-2">{c.name}</span></div>
-                  <Badge className={c.status==="Implemented"?"bg-emerald-500/20 text-emerald-400":c.status==="Partial"?"bg-yellow-500/20 text-yellow-400":"bg-zinc-700 text-zinc-400"}>{c.status}</Badge>
+                  <div><span className="text-[hsl(var(--text-4))]">{c.id}</span><span className="text-[hsl(var(--text-2))] ml-2">{c.name}</span></div>
+                  <Badge className={c.status==="Implemented"?"bg-[hsl(var(--brand))]/20 text-[hsl(var(--brand))]":c.status==="Partial"?"bg-yellow-500/20 text-yellow-400":"bg-zinc-700 text-[hsl(var(--text-3))]"}>{c.status}</Badge>
                 </div>
               ))}
             </div>
           </Card>
 
           {/* Review Comments */}
-          <Card className="bg-zinc-900 border-zinc-800 p-4">
+          <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] p-4">
             <h3 className="text-white font-semibold text-sm mb-3"><MessageSquare className="w-4 h-4 inline mr-1"/>Review Comments ({comments.length})</h3>
             <div className="mb-3">
-              <Textarea placeholder="Add a review comment..." value={newComment} onChange={(e:React.ChangeEvent<HTMLTextAreaElement>) => setNewComment(e.target.value)} className="bg-zinc-800 border-zinc-700 text-white text-sm mb-2" rows={2}/>
+              <Textarea placeholder="Add a review comment..." value={newComment} onChange={(e:React.ChangeEvent<HTMLTextAreaElement>) => setNewComment(e.target.value)} className="bg-[hsl(var(--bg-raised))] border-[hsl(var(--border-mid))] text-white text-sm mb-2" rows={2}/>
               <Button size="sm" onClick={handleAddComment} disabled={!newComment.trim()} className="w-full"><Send className="w-3 h-3 mr-1"/>Add Comment</Button>
             </div>
-            <Separator className="mb-3 bg-zinc-800"/>
+            <Separator className="mb-3 bg-[hsl(var(--bg-raised))]"/>
             <div className="space-y-3 max-h-64 overflow-y-auto">
               {comments.map((c,i) => (
-                <div key={i} className="bg-zinc-800/30 rounded-lg p-3">
-                  <div className="flex justify-between items-start"><div><p className="text-white text-xs font-medium">{c.author}</p><p className="text-zinc-500 text-xs">{c.role} &middot; {c.date}</p></div></div>
-                  <p className="text-zinc-300 text-xs mt-2">{c.text}</p>
+                <div key={i} className="bg-[hsl(var(--bg-raised))]/30 rounded-lg p-3">
+                  <div className="flex justify-between items-start"><div><p className="text-white text-xs font-medium">{c.author}</p><p className="text-[hsl(var(--text-4))] text-xs">{c.role} &middot; {c.date}</p></div></div>
+                  <p className="text-[hsl(var(--text-2))] text-xs mt-2">{c.text}</p>
                 </div>
               ))}
             </div>

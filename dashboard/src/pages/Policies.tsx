@@ -35,7 +35,7 @@ const POLICIES = [
 ];
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: any }> = {
-  "Published": { color: "text-emerald-400", bg: "bg-emerald-400/10 border-emerald-400/30", icon: CheckCircle },
+  "Published": { color: "text-[hsl(var(--brand))]", bg: "bg-emerald-400/10 border-emerald-400/30", icon: CheckCircle },
   "Draft": { color: "text-slate-400", bg: "bg-slate-400/10 border-slate-400/30", icon: FileText },
   "In Review": { color: "text-blue-400", bg: "bg-blue-400/10 border-blue-400/30", icon: Eye },
   "Pending Review": { color: "text-amber-400", bg: "bg-amber-400/10 border-amber-400/30", icon: Clock },
@@ -126,25 +126,25 @@ export default function Policies() {
 
   return (
     <div className="space-y-6">
-      {toast && <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-lg text-sm font-medium shadow-lg ${toast.type==="success"?"bg-emerald-500/90 text-white":"bg-red-500/90 text-white"}`}>{toast.msg}</div>}
+      {toast && <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-lg text-sm font-medium shadow-lg ${toast.type==="success"?"bg-[hsl(var(--brand))]/90 text-white":"bg-red-500/90 text-white"}`}>{toast.msg}</div>}
 
       {/* HEADER */}
       <div className="flex items-center justify-between">
         <div><h1 className="text-2xl font-bold text-white">Policy Manager</h1><p className="text-sm text-slate-400 mt-1">Manage AI governance policies, standards, and procedures</p></div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={()=>showToast("Exported "+filtered.length+" policies to CSV")}><Download className="w-4 h-4 mr-2" />Export</Button>
-          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={()=>setDialogOpen(true)}><Plus className="w-4 h-4 mr-2" />New Policy</Button>
+          <Button size="sm" className="bg-[hsl(var(--brand))] hover:bg-emerald-700" onClick={()=>setDialogOpen(true)}><Plus className="w-4 h-4 mr-2" />New Policy</Button>
         </div>
       </div>
 
       {/* STATS CARDS - clickable */}
       <div className="grid grid-cols-4 gap-4">
         {[{label:"Total Policies",val:POLICIES.length,sub:"All policies in system",icon:FileText,color:"text-white",click:()=>{setStatusFilter("all");setPage(1);}},
-          {label:"Published",val:statsPublished,sub:`${POLICIES.filter(p=>getStatus(p)==="Draft").length} draft, ${POLICIES.filter(p=>getStatus(p)==="Archived").length} archived`,icon:CheckCircle,color:"text-emerald-400",click:()=>{setStatusFilter("Published");setPage(1);}},
+          {label:"Published",val:statsPublished,sub:`${POLICIES.filter(p=>getStatus(p)==="Draft").length} draft, ${POLICIES.filter(p=>getStatus(p)==="Archived").length} archived`,icon:CheckCircle,color:"text-[hsl(var(--brand))]",click:()=>{setStatusFilter("Published");setPage(1);}},
           {label:"Pending Action",val:statsPending,sub:`${POLICIES.filter(p=>getStatus(p)==="In Review").length} in review, ${POLICIES.filter(p=>getStatus(p)==="Draft").length} drafts`,icon:Clock,color:"text-amber-400",click:()=>{setStatusFilter("Pending Review");setPage(1);}},
           {label:"Needs Attention",val:statsAttention,sub:`${POLICIES.filter(p=>getStatus(p)==="Expired").length} expired, ${POLICIES.filter(p=>getStatus(p)==="Archived").length} archived`,icon:AlertTriangle,color:"text-red-400",click:()=>{setStatusFilter("Expired");setPage(1);}}
         ].map((s,i) => (
-          <Card key={i} className="bg-[#1a2332] border-white/10 cursor-pointer hover:border-emerald-400/40 transition-colors" onClick={s.click}>
+          <Card key={i} className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] cursor-pointer hover:border-emerald-400/40 transition-colors" onClick={s.click}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2"><span className="text-sm text-slate-400">{s.label}</span><s.icon className={`w-5 h-5 ${s.color}`} /></div>
               <div className={`text-2xl font-bold ${s.color}`}>{s.val}</div>
@@ -156,7 +156,7 @@ export default function Policies() {
 
       {/* CHARTS */}
       <div className="grid grid-cols-2 gap-4">
-        <Card className="bg-[#1a2332] border-white/10">
+        <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
           <CardHeader className="pb-2"><CardTitle className="text-sm text-white">Policies by Category</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
@@ -165,7 +165,7 @@ export default function Policies() {
             <div className="flex flex-wrap gap-3 mt-2 justify-center">{pieData.map((d,i)=>(<span key={i} className="flex items-center gap-1 text-xs text-slate-300"><span className="w-2.5 h-2.5 rounded-full" style={{background:CHART_COLORS[i%CHART_COLORS.length]}} />{d.name}</span>))}</div>
           </CardContent>
         </Card>
-        <Card className="bg-[#1a2332] border-white/10">
+        <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
           <CardHeader className="pb-2"><CardTitle className="text-sm text-white">Policy Reviews (6 Months)</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
@@ -177,18 +177,18 @@ export default function Policies() {
 
       {/* FILTERS + SEARCH */}
       <div className="flex items-center gap-3">
-        <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" /><Input placeholder="Search policies... (/)" className="pl-9 bg-[#1a2332] border-white/10 text-white" value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}} /></div>
-        <Select value={catFilter} onValueChange={v=>{setCatFilter(v);setPage(1);}}><SelectTrigger className="w-[160px] bg-[#1a2332] border-white/10 text-white"><SelectValue /></SelectTrigger><SelectContent>{["all",...categories].map(c=><SelectItem key={c} value={c}>{c==="all"?"All Categories":c}</SelectItem>)}</SelectContent></Select>
-        <Select value={statusFilter} onValueChange={v=>{setStatusFilter(v);setPage(1);}}><SelectTrigger className="w-[160px] bg-[#1a2332] border-white/10 text-white"><SelectValue /></SelectTrigger><SelectContent>{["all",...statuses].map(s=><SelectItem key={s} value={s}>{s==="all"?"All Status":s}</SelectItem>)}</SelectContent></Select>
-        <Select value={fwFilter} onValueChange={v=>{setFwFilter(v);setPage(1);}}><SelectTrigger className="w-[160px] bg-[#1a2332] border-white/10 text-white"><SelectValue /></SelectTrigger><SelectContent>{["all",...frameworks].map(f=><SelectItem key={f} value={f}>{f==="all"?"All Frameworks":f}</SelectItem>)}</SelectContent></Select>
+        <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" /><Input placeholder="Search policies... (/)" className="pl-9 bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-white" value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}} /></div>
+        <Select value={catFilter} onValueChange={v=>{setCatFilter(v);setPage(1);}}><SelectTrigger className="w-[160px] bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-white"><SelectValue /></SelectTrigger><SelectContent>{["all",...categories].map(c=><SelectItem key={c} value={c}>{c==="all"?"All Categories":c}</SelectItem>)}</SelectContent></Select>
+        <Select value={statusFilter} onValueChange={v=>{setStatusFilter(v);setPage(1);}}><SelectTrigger className="w-[160px] bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-white"><SelectValue /></SelectTrigger><SelectContent>{["all",...statuses].map(s=><SelectItem key={s} value={s}>{s==="all"?"All Status":s}</SelectItem>)}</SelectContent></Select>
+        <Select value={fwFilter} onValueChange={v=>{setFwFilter(v);setPage(1);}}><SelectTrigger className="w-[160px] bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-white"><SelectValue /></SelectTrigger><SelectContent>{["all",...frameworks].map(f=><SelectItem key={f} value={f}>{f==="all"?"All Frameworks":f}</SelectItem>)}</SelectContent></Select>
       </div>
 
 
       {/* TABLE */}
-      <Card className="bg-[#1a2332] border-white/10">
+      <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
         <CardContent className="p-0">
           <table className="w-full">
-            <thead><tr className="border-b border-white/10">
+            <thead><tr className="border-b border-[hsl(var(--border))]">
               {[{k:"id" as SortKey,l:"ID",w:"w-20"},{k:"name" as SortKey,l:"Name",w:""},{k:"status" as SortKey,l:"Status",w:"w-36"},{k:"category" as SortKey,l:"Category",w:"w-28"},{k:"riskLevel" as SortKey,l:"Risk",w:"w-24"},{k:"updated" as SortKey,l:"Updated",w:"w-28"},{k:"nextReview" as SortKey,l:"Next Review",w:"w-28"}].map(h=>(
                 <th key={h.k} className={`px-4 py-3 text-left text-xs font-medium text-slate-400 cursor-pointer hover:text-white select-none ${h.w}`} onClick={()=>toggleSort(h.k)}>{h.l}<SortIcon col={h.k} /></th>
               ))}
@@ -196,7 +196,7 @@ export default function Policies() {
             </tr></thead>
             <tbody>
               {paged.map(p => { const st = getStatus(p); return (
-                <tr key={p.id} className="border-b border-white/5 hover:bg-white/5 cursor-pointer transition-colors" onClick={()=>{setSelected(p);setSheetOpen(true);}} title={p.name}>
+                <tr key={p.id} className="border-b border-[hsl(var(--border))] hover:bg-white/5 cursor-pointer transition-colors" onClick={()=>{setSelected(p);setSheetOpen(true);}} title={p.name}>
                   <td className="px-4 py-3 text-xs text-slate-400 font-mono">{p.id}</td>
                   <td className="px-4 py-3"><span className="text-sm text-white font-medium truncate block max-w-[260px]" title={p.name}>{p.name}</span></td>
                   <td className="px-4 py-3"><StatusBadge status={st} /></td>
@@ -210,11 +210,11 @@ export default function Policies() {
             </tbody>
           </table>
           {/* PAGINATION */}
-          <div className="flex items-center justify-between px-4 py-3 border-t border-white/10">
+          <div className="flex items-center justify-between px-4 py-3 border-t border-[hsl(var(--border))]">
             <span className="text-xs text-slate-400">Showing {(page-1)*PER_PAGE+1}-{Math.min(page*PER_PAGE, filtered.length)} of {filtered.length}</span>
             <div className="flex gap-1">
               <Button variant="outline" size="sm" disabled={page===1} onClick={()=>setPage(p=>p-1)} className="h-7 w-7 p-0 text-xs">&lt;</Button>
-              {Array.from({length:totalPages},(_,i)=>(<Button key={i} variant={page===i+1?"default":"outline"} size="sm" onClick={()=>setPage(i+1)} className={`h-7 w-7 p-0 text-xs ${page===i+1?"bg-emerald-600":""}`}>{i+1}</Button>))}
+              {Array.from({length:totalPages},(_,i)=>(<Button key={i} variant={page===i+1?"default":"outline"} size="sm" onClick={()=>setPage(i+1)} className={`h-7 w-7 p-0 text-xs ${page===i+1?"bg-[hsl(var(--brand))]":""}`}>{i+1}</Button>))}
               <Button variant="outline" size="sm" disabled={page===totalPages} onClick={()=>setPage(p=>p+1)} className="h-7 w-7 p-0 text-xs">&gt;</Button>
             </div>
           </div>
@@ -224,7 +224,7 @@ export default function Policies() {
 
       {/* DETAIL SHEET */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent className="bg-[#0f1923] border-white/10 text-white w-[500px] overflow-y-auto">
+        <SheetContent className="bg-[hsl(var(--bg-page))] border-[hsl(var(--border))] text-white w-[500px] overflow-y-auto">
           {selected && (<>
             <SheetHeader><SheetTitle className="text-white flex items-center gap-2">{selected.name}</SheetTitle></SheetHeader>
             <div className="flex flex-wrap gap-2 mt-3"><StatusBadge status={getStatus(selected)} /><Badge variant="outline" className="border-white/20 text-slate-300 text-xs">{selected.version}</Badge><Badge variant="outline" className="border-white/20 text-slate-300 text-xs">{selected.framework}</Badge><RiskBadge level={selected.riskLevel} /></div>
@@ -239,13 +239,13 @@ export default function Policies() {
                 <Separator className="bg-white/10" />
                 <div><p className="text-xs text-slate-400 mb-1">Description</p><p className="text-sm text-slate-300">{selected.description}</p></div>
                 <div><p className="text-xs text-slate-400 mb-1">Scope</p><p className="text-sm text-slate-300">{selected.scope}</p></div>
-                <Button className="w-full bg-emerald-600 hover:bg-emerald-700 mt-2" onClick={()=>{setSheetOpen(false);nav(`/policy-editor?id=${selected.id}`);}}>Open Editor</Button>
+                <Button className="w-full bg-[hsl(var(--brand))] hover:bg-emerald-700 mt-2" onClick={()=>{setSheetOpen(false);nav(`/policy-editor?id=${selected.id}`);}}>Open Editor</Button>
               </TabsContent>
               <TabsContent value="versions" className="mt-3">
                 {(VERSION_HISTORY[selected.id as keyof typeof VERSION_HISTORY] || [{v:selected.version,date:selected.updated,author:selected.owner,note:"Current version"}]).map((vh,i)=>(
-                  <div key={i} className="flex items-start gap-3 py-3 border-b border-white/5">
+                  <div key={i} className="flex items-start gap-3 py-3 border-b border-[hsl(var(--border))]">
                     <div className={`mt-1 w-2 h-2 rounded-full ${i===0?"bg-emerald-400":"bg-slate-500"}`} />
-                    <div><div className="flex items-center gap-2"><span className="text-sm text-white font-medium">{vh.v}</span>{i===0&&<Badge className="bg-emerald-400/10 text-emerald-400 text-xs">Current</Badge>}</div><p className="text-xs text-slate-400 mt-0.5">{vh.date} by {vh.author}</p><p className="text-xs text-slate-500 mt-0.5">{vh.note}</p></div>
+                    <div><div className="flex items-center gap-2"><span className="text-sm text-white font-medium">{vh.v}</span>{i===0&&<Badge className="bg-emerald-400/10 text-[hsl(var(--brand))] text-xs">Current</Badge>}</div><p className="text-xs text-slate-400 mt-0.5">{vh.date} by {vh.author}</p><p className="text-xs text-slate-500 mt-0.5">{vh.note}</p></div>
                   </div>
                 ))}
               </TabsContent>
@@ -265,23 +265,23 @@ export default function Policies() {
 
       {/* CREATE DIALOG */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-[#0f1923] border-white/10 text-white max-w-lg">
+        <DialogContent className="bg-[hsl(var(--bg-page))] border-[hsl(var(--border))] text-white max-w-lg">
           <DialogHeader><DialogTitle className="text-white">Create New Policy</DialogTitle></DialogHeader>
           <div className="space-y-4 mt-2">
-            <div><Label className="text-slate-300">Policy Name *</Label><Input placeholder="e.g. AI Model Governance Policy" className="bg-[#1a2332] border-white/10 text-white mt-1" /></div>
+            <div><Label className="text-slate-300">Policy Name *</Label><Input placeholder="e.g. AI Model Governance Policy" className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-white mt-1" /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label className="text-slate-300">Category *</Label><Select><SelectTrigger className="bg-[#1a2332] border-white/10 text-white mt-1"><SelectValue placeholder="Select" /></SelectTrigger><SelectContent>{categories.map(c=><SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
-              <div><Label className="text-slate-300">Framework *</Label><Select><SelectTrigger className="bg-[#1a2332] border-white/10 text-white mt-1"><SelectValue placeholder="Select" /></SelectTrigger><SelectContent>{frameworks.map(f=><SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent></Select></div>
+              <div><Label className="text-slate-300">Category *</Label><Select><SelectTrigger className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-white mt-1"><SelectValue placeholder="Select" /></SelectTrigger><SelectContent>{categories.map(c=><SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
+              <div><Label className="text-slate-300">Framework *</Label><Select><SelectTrigger className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-white mt-1"><SelectValue placeholder="Select" /></SelectTrigger><SelectContent>{frameworks.map(f=><SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent></Select></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label className="text-slate-300">Owner</Label><Input placeholder="Policy owner" className="bg-[#1a2332] border-white/10 text-white mt-1" /></div>
-              <div><Label className="text-slate-300">Risk Level</Label><Select><SelectTrigger className="bg-[#1a2332] border-white/10 text-white mt-1"><SelectValue placeholder="Select" /></SelectTrigger><SelectContent>{["Critical","High","Medium","Low"].map(r=><SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select></div>
+              <div><Label className="text-slate-300">Owner</Label><Input placeholder="Policy owner" className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-white mt-1" /></div>
+              <div><Label className="text-slate-300">Risk Level</Label><Select><SelectTrigger className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-white mt-1"><SelectValue placeholder="Select" /></SelectTrigger><SelectContent>{["Critical","High","Medium","Low"].map(r=><SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select></div>
             </div>
-            <div><Label className="text-slate-300">Scope</Label><Input placeholder="e.g. All AI systems" className="bg-[#1a2332] border-white/10 text-white mt-1" /></div>
-            <div><Label className="text-slate-300">Description</Label><Textarea placeholder="Policy description..." className="bg-[#1a2332] border-white/10 text-white mt-1" rows={3} /></div>
+            <div><Label className="text-slate-300">Scope</Label><Input placeholder="e.g. All AI systems" className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-white mt-1" /></div>
+            <div><Label className="text-slate-300">Description</Label><Textarea placeholder="Policy description..." className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-white mt-1" rows={3} /></div>
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={()=>setDialogOpen(false)}>Cancel</Button>
-              <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={()=>{setDialogOpen(false);showToast("Policy created successfully as Draft");}}>Create Policy</Button>
+              <Button className="bg-[hsl(var(--brand))] hover:bg-emerald-700" onClick={()=>{setDialogOpen(false);showToast("Policy created successfully as Draft");}}>Create Policy</Button>
             </div>
           </div>
         </DialogContent>

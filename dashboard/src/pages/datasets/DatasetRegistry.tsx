@@ -48,7 +48,7 @@ export default function DatasetRegistry() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm"><Download className="h-4 w-4 mr-1" />Export</Button>
-          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700"><Plus className="h-4 w-4 mr-1" />Register Dataset</Button>
+          <Button size="sm" className="bg-[hsl(var(--brand))] hover:bg-emerald-700"><Plus className="h-4 w-4 mr-1" />Register Dataset</Button>
         </div>
       </div>
 
@@ -56,7 +56,7 @@ export default function DatasetRegistry() {
         <Card className="p-4 bg-card border-border">
           <div className="flex items-center justify-between">
             <div><p className="text-xs text-muted-foreground">Total Datasets</p><p className="text-2xl font-bold">{totalDatasets}</p></div>
-            <Database className="h-8 w-8 text-emerald-400" />
+            <Database className="h-8 w-8 text-[hsl(var(--brand))]" />
           </div>
         </Card>
         <Card className="p-4 bg-card border-border">
