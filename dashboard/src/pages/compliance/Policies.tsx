@@ -12,8 +12,8 @@ import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tool
 import { FileText, CheckCircle, Clock, XCircle, Search, Plus, Download, ChevronLeft, ChevronRight, Edit, Copy, Archive, Trash2, Eye, MoreVertical, Shield } from "lucide-react";
 
 const COLORS = ["#10b981","#3b82f6","#f59e0b","#ef4444","#8b5cf6","#ec4899"];
-const STATUS_MAP: Record<string,string> = { active:"bg-emerald-500/20 text-emerald-400", review:"bg-amber-500/20 text-amber-400", expired:"bg-red-500/20 text-red-400", draft:"bg-blue-500/20 text-blue-400", archived:"bg-zinc-500/20 text-zinc-400" };
-const RISK_MAP: Record<string,string> = { High:"text-red-400 bg-red-500/20", Medium:"text-amber-400 bg-amber-500/20", Low:"text-emerald-400 bg-emerald-500/20" };
+const STATUS_MAP: Record<string,string> = { active:"bg-[hsl(var(--brand))]/20 text-[hsl(var(--brand))]", review:"bg-amber-500/20 text-amber-400", expired:"bg-red-500/20 text-red-400", draft:"bg-blue-500/20 text-blue-400", archived:"bg-zinc-500/20 text-[hsl(var(--text-3))]" };
+const RISK_MAP: Record<string,string> = { High:"text-red-400 bg-red-500/20", Medium:"text-amber-400 bg-amber-500/20", Low:"text-[hsl(var(--brand))] bg-[hsl(var(--brand))]/20" };
 const CATS = ["AI Usage","Data Privacy","Fairness","Security","Vendor Mgmt","Incident Response"];
 const FWS = ["EU AI Act","NIST AI RMF","GDPR","ISO 27001","SOC 2","OWASP LLM"];
 const OWNERS = ["Emma Wilson","Maria Santos","James Liu","Bob Kumar","Alice Chen","David Kim","Sarah Park","Raj Patel"];
@@ -63,7 +63,7 @@ export default function PolicyManagement() {
 
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
   const paged = filtered.slice((page-1)*PER_PAGE, page*PER_PAGE);
-  const stats = [{label:"Total Policies",value:policies.length,icon:"FileText",color:"text-blue-400"},{label:"Active",value:policies.filter(p=>p.status==="active").length,icon:"CheckCircle",color:"text-emerald-400"},{label:"Under Review",value:policies.filter(p=>p.status==="review").length,icon:"Clock",color:"text-amber-400"},{label:"Expired",value:policies.filter(p=>p.status==="expired").length,icon:"XCircle",color:"text-red-400"}];
+  const stats = [{label:"Total Policies",value:policies.length,icon:"FileText",color:"text-blue-400"},{label:"Active",value:policies.filter(p=>p.status==="active").length,icon:"CheckCircle",color:"text-[hsl(var(--brand))]"},{label:"Under Review",value:policies.filter(p=>p.status==="review").length,icon:"Clock",color:"text-amber-400"},{label:"Expired",value:policies.filter(p=>p.status==="expired").length,icon:"XCircle",color:"text-red-400"}];
   const iconMap: Record<string,any> = {FileText,CheckCircle,Clock,XCircle};
 
   const openCreate = () => { setForm({name:"",category:"AI Usage",framework:"EU AI Act",owner:"Emma Wilson",status:"draft",scope:"",description:"",risk:"Medium",reviewFreq:"Quarterly"}); setEditPolicy(null); setShowCreate(true); };
@@ -76,23 +76,23 @@ export default function PolicyManagement() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Policy Manager</h1>
-          <p className="text-zinc-400 text-sm">Manage AI governance policies, standards, and procedures</p>
+          <p className="text-[hsl(var(--text-3))] text-sm">Manage AI governance policies, standards, and procedures</p>
         </div>
         <div className="flex gap-2 relative">
           <div className="relative">
-            <Button variant="outline" className="border-zinc-700 text-zinc-300" onClick={() => setExportMenu(!exportMenu)}><Download className="w-4 h-4 mr-2"/>Export</Button>
-            {exportMenu && <div className="absolute right-0 top-10 z-50 bg-[#1a1a2e] border border-zinc-700 rounded-lg shadow-xl py-1 w-32">{["csv","pdf","json"].map(f=><button key={f} className="w-full text-left px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-700" onClick={()=>doExport(f)}>{f.toUpperCase()}</button>)}</div>}
+            <Button variant="outline" className="border-[hsl(var(--border-mid))] text-[hsl(var(--text-2))]" onClick={() => setExportMenu(!exportMenu)}><Download className="w-4 h-4 mr-2"/>Export</Button>
+            {exportMenu && <div className="absolute right-0 top-10 z-50 bg-[#1a1a2e] border border-[hsl(var(--border-mid))] rounded-lg shadow-xl py-1 w-32">{["csv","pdf","json"].map(f=><button key={f} className="w-full text-left px-3 py-2 text-sm text-[hsl(var(--text-2))] hover:bg-zinc-700" onClick={()=>doExport(f)}>{f.toUpperCase()}</button>)}</div>}
           </div>
-          <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={openCreate}><Plus className="w-4 h-4 mr-2"/>New Policy</Button>
+          <Button className="bg-[hsl(var(--brand))] hover:bg-emerald-700 text-white" onClick={openCreate}><Plus className="w-4 h-4 mr-2"/>New Policy</Button>
         </div>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
         {stats.map((s,i) => { const Icon = iconMap[s.icon]; return (
-          <Card key={i} className="bg-[#1a1a2e] border-zinc-800 p-4">
+          <Card key={i} className="bg-[#1a1a2e] border-[hsl(var(--border))] p-4">
             <div className="flex items-center justify-between">
-              <div><p className="text-zinc-400 text-xs">{s.label}</p><p className="text-2xl font-bold text-white mt-1">{s.value}</p></div>
+              <div><p className="text-[hsl(var(--text-3))] text-xs">{s.label}</p><p className="text-2xl font-bold text-white mt-1">{s.value}</p></div>
               <Icon className={`w-8 h-8 ${s.color} opacity-80`}/>
             </div>
           </Card>
@@ -101,13 +101,13 @@ export default function PolicyManagement() {
 
       {/* Charts */}
       <div className="grid grid-cols-2 gap-4">
-        <Card className="bg-[#1a1a2e] border-zinc-800 p-4">
+        <Card className="bg-[#1a1a2e] border-[hsl(var(--border))] p-4">
           <h3 className="text-white font-semibold mb-4">Policies by Category</h3>
           <ResponsiveContainer width="100%" height={220}>
             <PieChart><Pie data={catData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" label={({name,value})=>`${name}: ${value}`}>{catData.map((_,i)=><Cell key={i} fill={COLORS[i%COLORS.length]}/>)}</Pie><Tooltip contentStyle={{background:"#1a1a2e",border:"1px solid #333",borderRadius:8}}/><Legend/></PieChart>
           </ResponsiveContainer>
         </Card>
-        <Card className="bg-[#1a1a2e] border-zinc-800 p-4">
+        <Card className="bg-[#1a1a2e] border-[hsl(var(--border))] p-4">
           <h3 className="text-white font-semibold mb-4">Policy Reviews (6 Months)</h3>
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={reviewData}><CartesianGrid strokeDasharray="3 3" stroke="#333"/><XAxis dataKey="month" stroke="#888"/><YAxis stroke="#888"/><Tooltip contentStyle={{background:"#1a1a2e",border:"1px solid #333",borderRadius:8}}/><Line type="monotone" dataKey="count" stroke="#10b981" strokeWidth={2} dot={{fill:"#10b981"}}/></LineChart>
@@ -117,37 +117,37 @@ export default function PolicyManagement() {
 
       {/* Filters */}
       <div className="flex gap-3 items-center">
-        <div className="relative flex-1"><Search className="absolute left-3 top-2.5 w-4 h-4 text-zinc-500"/><Input placeholder="Search policies..." className="pl-10 bg-[#1a1a2e] border-zinc-700 text-white" value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}}/></div>
-        <select className="bg-[#1a1a2e] border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-300" value={catFilter} onChange={e=>{setCatFilter(e.target.value);setPage(1);}}><option value="all">All Categories</option>{CATS.map(c=><option key={c} value={c}>{c}</option>)}</select>
-        <select className="bg-[#1a1a2e] border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-300" value={statusFilter} onChange={e=>{setStatusFilter(e.target.value);setPage(1);}}><option value="all">All Status</option><option value="active">Active</option><option value="review">Under Review</option><option value="expired">Expired</option><option value="draft">Draft</option><option value="archived">Archived</option></select>
-        <select className="bg-[#1a1a2e] border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-300" value={fwFilter} onChange={e=>{setFwFilter(e.target.value);setPage(1);}}><option value="all">All Frameworks</option>{FWS.map(f=><option key={f} value={f}>{f}</option>)}</select>
+        <div className="relative flex-1"><Search className="absolute left-3 top-2.5 w-4 h-4 text-[hsl(var(--text-4))]"/><Input placeholder="Search policies..." className="pl-10 bg-[#1a1a2e] border-[hsl(var(--border-mid))] text-white" value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}}/></div>
+        <select className="bg-[#1a1a2e] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-[hsl(var(--text-2))]" value={catFilter} onChange={e=>{setCatFilter(e.target.value);setPage(1);}}><option value="all">All Categories</option>{CATS.map(c=><option key={c} value={c}>{c}</option>)}</select>
+        <select className="bg-[#1a1a2e] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-[hsl(var(--text-2))]" value={statusFilter} onChange={e=>{setStatusFilter(e.target.value);setPage(1);}}><option value="all">All Status</option><option value="active">Active</option><option value="review">Under Review</option><option value="expired">Expired</option><option value="draft">Draft</option><option value="archived">Archived</option></select>
+        <select className="bg-[#1a1a2e] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-[hsl(var(--text-2))]" value={fwFilter} onChange={e=>{setFwFilter(e.target.value);setPage(1);}}><option value="all">All Frameworks</option>{FWS.map(f=><option key={f} value={f}>{f}</option>)}</select>
       </div>
 
       {/* Table */}
-      <Card className="bg-[#1a1a2e] border-zinc-800">
+      <Card className="bg-[#1a1a2e] border-[hsl(var(--border))]">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead><tr className="border-b border-zinc-800">{["ID","Name","Category","Version","Owner","Updated","Framework","Status","Actions"].map(h=><th key={h} className="px-4 py-3 text-left text-zinc-400 font-medium">{h}</th>)}</tr></thead>
+            <thead><tr className="border-b border-[hsl(var(--border))]">{["ID","Name","Category","Version","Owner","Updated","Framework","Status","Actions"].map(h=><th key={h} className="px-4 py-3 text-left text-[hsl(var(--text-3))] font-medium">{h}</th>)}</tr></thead>
             <tbody>
               {paged.map(p=>(
-                <tr key={p.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 cursor-pointer" onClick={()=>setSel(p)}>
-                  <td className="px-4 py-3 text-zinc-300 font-mono text-xs">{p.id}</td>
+                <tr key={p.id} className="border-b border-[hsl(var(--border))]/50 hover:bg-[hsl(var(--bg-raised))]/30 cursor-pointer" onClick={()=>setSel(p)}>
+                  <td className="px-4 py-3 text-[hsl(var(--text-2))] font-mono text-xs">{p.id}</td>
                   <td className="px-4 py-3 text-white font-medium">{p.name}</td>
-                  <td className="px-4 py-3 text-zinc-300">{p.category}</td>
-                  <td className="px-4 py-3 text-zinc-300">{p.version}</td>
-                  <td className="px-4 py-3 text-zinc-300">{p.owner}</td>
-                  <td className="px-4 py-3 text-zinc-400 text-xs">{p.updated}</td>
-                  <td className="px-4 py-3"><Badge variant="outline" className="text-xs border-zinc-600 text-zinc-300">{p.framework}</Badge></td>
+                  <td className="px-4 py-3 text-[hsl(var(--text-2))]">{p.category}</td>
+                  <td className="px-4 py-3 text-[hsl(var(--text-2))]">{p.version}</td>
+                  <td className="px-4 py-3 text-[hsl(var(--text-2))]">{p.owner}</td>
+                  <td className="px-4 py-3 text-[hsl(var(--text-3))] text-xs">{p.updated}</td>
+                  <td className="px-4 py-3"><Badge variant="outline" className="text-xs border-zinc-600 text-[hsl(var(--text-2))]">{p.framework}</Badge></td>
                   <td className="px-4 py-3"><span className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_MAP[p.status]||""}`}>{p.status}</span></td>
                   <td className="px-4 py-3">
                     <div className="relative">
-                      <button className="p-1 hover:bg-zinc-700 rounded" onClick={e=>{e.stopPropagation();setActionMenu(actionMenu===p.id?null:p.id);}}><MoreVertical className="w-4 h-4 text-zinc-400"/></button>
-                      {actionMenu===p.id&&<div className="absolute right-0 top-8 z-50 bg-[#1a1a2e] border border-zinc-700 rounded-lg shadow-xl py-1 w-36">
-                        <button className="w-full text-left px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-700 flex items-center gap-2" onClick={e=>{e.stopPropagation();setActionMenu(null);setSel(p);}}><Eye className="w-3 h-3"/>View</button>
-                        <button className="w-full text-left px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-700 flex items-center gap-2" onClick={e=>{e.stopPropagation();setActionMenu(null);openEdit(p);}}><Edit className="w-3 h-3"/>Edit</button>
-                        <button className="w-full text-left px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-700 flex items-center gap-2" onClick={e=>{e.stopPropagation();setActionMenu(null);nav(`/policy-editor?id=${p.id}`);}}><Eye className="w-3 h-3"/>Open Editor</button>
-                        <button className="w-full text-left px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-700 flex items-center gap-2" onClick={e=>{e.stopPropagation();setActionMenu(null);}}><Copy className="w-3 h-3"/>Clone</button>
-                        <button className="w-full text-left px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-700 flex items-center gap-2" onClick={e=>{e.stopPropagation();setActionMenu(null);}}><Archive className="w-3 h-3"/>Archive</button>
+                      <button className="p-1 hover:bg-zinc-700 rounded" onClick={e=>{e.stopPropagation();setActionMenu(actionMenu===p.id?null:p.id);}}><MoreVertical className="w-4 h-4 text-[hsl(var(--text-3))]"/></button>
+                      {actionMenu===p.id&&<div className="absolute right-0 top-8 z-50 bg-[#1a1a2e] border border-[hsl(var(--border-mid))] rounded-lg shadow-xl py-1 w-36">
+                        <button className="w-full text-left px-3 py-2 text-sm text-[hsl(var(--text-2))] hover:bg-zinc-700 flex items-center gap-2" onClick={e=>{e.stopPropagation();setActionMenu(null);setSel(p);}}><Eye className="w-3 h-3"/>View</button>
+                        <button className="w-full text-left px-3 py-2 text-sm text-[hsl(var(--text-2))] hover:bg-zinc-700 flex items-center gap-2" onClick={e=>{e.stopPropagation();setActionMenu(null);openEdit(p);}}><Edit className="w-3 h-3"/>Edit</button>
+                        <button className="w-full text-left px-3 py-2 text-sm text-[hsl(var(--text-2))] hover:bg-zinc-700 flex items-center gap-2" onClick={e=>{e.stopPropagation();setActionMenu(null);nav(`/policy-editor?id=${p.id}`);}}><Eye className="w-3 h-3"/>Open Editor</button>
+                        <button className="w-full text-left px-3 py-2 text-sm text-[hsl(var(--text-2))] hover:bg-zinc-700 flex items-center gap-2" onClick={e=>{e.stopPropagation();setActionMenu(null);}}><Copy className="w-3 h-3"/>Clone</button>
+                        <button className="w-full text-left px-3 py-2 text-sm text-[hsl(var(--text-2))] hover:bg-zinc-700 flex items-center gap-2" onClick={e=>{e.stopPropagation();setActionMenu(null);}}><Archive className="w-3 h-3"/>Archive</button>
                         <button className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-zinc-700 flex items-center gap-2" onClick={e=>{e.stopPropagation();setActionMenu(null);}}><Trash2 className="w-3 h-3"/>Delete</button>
                       </div>}
                     </div>
@@ -158,58 +158,58 @@ export default function PolicyManagement() {
           </table>
         </div>
         {/* Pagination */}
-        <div className="flex items-center justify-between px-4 py-3 border-t border-zinc-800">
-          <span className="text-zinc-400 text-sm">Showing {(page-1)*PER_PAGE+1}-{Math.min(page*PER_PAGE,filtered.length)} of {filtered.length}</span>
+        <div className="flex items-center justify-between px-4 py-3 border-t border-[hsl(var(--border))]">
+          <span className="text-[hsl(var(--text-3))] text-sm">Showing {(page-1)*PER_PAGE+1}-{Math.min(page*PER_PAGE,filtered.length)} of {filtered.length}</span>
           <div className="flex gap-1">
-            <Button variant="outline" size="sm" className="border-zinc-700 text-zinc-400" disabled={page<=1} onClick={()=>setPage(page-1)}><ChevronLeft className="w-4 h-4"/></Button>
-            {Array.from({length:totalPages},(_,i)=><Button key={i} variant={page===i+1?"default":"outline"} size="sm" className={page===i+1?"bg-emerald-600 text-white":"border-zinc-700 text-zinc-400"} onClick={()=>setPage(i+1)}>{i+1}</Button>)}
-            <Button variant="outline" size="sm" className="border-zinc-700 text-zinc-400" disabled={page>=totalPages} onClick={()=>setPage(page+1)}><ChevronRight className="w-4 h-4"/></Button>
+            <Button variant="outline" size="sm" className="border-[hsl(var(--border-mid))] text-[hsl(var(--text-3))]" disabled={page<=1} onClick={()=>setPage(page-1)}><ChevronLeft className="w-4 h-4"/></Button>
+            {Array.from({length:totalPages},(_,i)=><Button key={i} variant={page===i+1?"default":"outline"} size="sm" className={page===i+1?"bg-[hsl(var(--brand))] text-white":"border-[hsl(var(--border-mid))] text-[hsl(var(--text-3))]"} onClick={()=>setPage(i+1)}>{i+1}</Button>)}
+            <Button variant="outline" size="sm" className="border-[hsl(var(--border-mid))] text-[hsl(var(--text-3))]" disabled={page>=totalPages} onClick={()=>setPage(page+1)}><ChevronRight className="w-4 h-4"/></Button>
           </div>
         </div>
       </Card>
 
       {/* Side Sheet */}
       <Sheet open={!!sel && !showCreate} onOpenChange={()=>setSel(null)}>
-        <SheetContent className="bg-[#1a1a2e] border-zinc-800 w-[480px] sm:max-w-[480px] overflow-y-auto">
+        <SheetContent className="bg-[#1a1a2e] border-[hsl(var(--border))] w-[480px] sm:max-w-[480px] overflow-y-auto">
           <SheetHeader><SheetTitle className="text-white">{sel?.name}</SheetTitle></SheetHeader>
           {sel && <Tabs defaultValue="overview" className="mt-4">
-            <TabsList className="bg-zinc-800/50 w-full"><TabsTrigger value="overview" className="flex-1">Overview</TabsTrigger><TabsTrigger value="versions" className="flex-1">Versions</TabsTrigger><TabsTrigger value="controls" className="flex-1">Controls</TabsTrigger></TabsList>
+            <TabsList className="bg-[hsl(var(--bg-raised))]/50 w-full"><TabsTrigger value="overview" className="flex-1">Overview</TabsTrigger><TabsTrigger value="versions" className="flex-1">Versions</TabsTrigger><TabsTrigger value="controls" className="flex-1">Controls</TabsTrigger></TabsList>
             <TabsContent value="overview" className="space-y-4 mt-4">
               <div className="grid grid-cols-2 gap-3">
                 {[["Category",sel.category],["Version",sel.version],["Owner",sel.owner],["Framework",sel.framework],["Status",sel.status],["Risk Level",sel.risk],["Created",sel.created],["Last Reviewed",sel.lastReviewed],["Next Review",sel.nextReview],["Approver",sel.approver]].map(([k,v],i)=>(
-                  <div key={i} className="bg-zinc-800/30 rounded-lg p-3"><p className="text-zinc-500 text-xs">{k}</p><p className="text-white text-sm mt-1">{v}</p></div>
+                  <div key={i} className="bg-[hsl(var(--bg-raised))]/30 rounded-lg p-3"><p className="text-[hsl(var(--text-4))] text-xs">{k}</p><p className="text-white text-sm mt-1">{v}</p></div>
                 ))}
               </div>
               <Separator className="bg-zinc-700"/>
-              <div><h4 className="text-zinc-400 text-xs font-medium mb-1">Description</h4><p className="text-zinc-300 text-sm">{sel.description}</p></div>
-              <div><h4 className="text-zinc-400 text-xs font-medium mb-1">Scope</h4><p className="text-zinc-300 text-sm">{sel.scope}</p></div>
+              <div><h4 className="text-[hsl(var(--text-3))] text-xs font-medium mb-1">Description</h4><p className="text-[hsl(var(--text-2))] text-sm">{sel.description}</p></div>
+              <div><h4 className="text-[hsl(var(--text-3))] text-xs font-medium mb-1">Scope</h4><p className="text-[hsl(var(--text-2))] text-sm">{sel.scope}</p></div>
               <div className="flex gap-2 mt-4">
-                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white flex-1" onClick={()=>{setSel(null);openEdit(sel);}}>Edit Policy</Button>
-                <Button variant="outline" className="border-zinc-700 text-zinc-300 flex-1" onClick={()=>nav(`/policy-editor?id=${sel.id}`)}>Open Editor</Button>
+                <Button className="bg-[hsl(var(--brand))] hover:bg-emerald-700 text-white flex-1" onClick={()=>{setSel(null);openEdit(sel);}}>Edit Policy</Button>
+                <Button variant="outline" className="border-[hsl(var(--border-mid))] text-[hsl(var(--text-2))] flex-1" onClick={()=>nav(`/policy-editor?id=${sel.id}`)}>Open Editor</Button>
               </div>
             </TabsContent>
             <TabsContent value="versions" className="space-y-3 mt-4">
               {sel.versions.map((v,i)=>(
-                <div key={i} className="bg-zinc-800/30 rounded-lg p-3 flex items-start gap-3">
-                  <div className={`w-2 h-2 rounded-full mt-2 ${v.current?"bg-emerald-500":"bg-zinc-600"}`}/>
+                <div key={i} className="bg-[hsl(var(--bg-raised))]/30 rounded-lg p-3 flex items-start gap-3">
+                  <div className={`w-2 h-2 rounded-full mt-2 ${v.current?"bg-[hsl(var(--brand))]":"bg-zinc-600"}`}/>
                   <div className="flex-1">
-                    <div className="flex items-center justify-between"><span className="text-white text-sm font-medium">{v.ver}</span>{v.current&&<Badge className="bg-emerald-500/20 text-emerald-400 text-xs">Current</Badge>}</div>
-                    <p className="text-zinc-400 text-xs mt-1">{v.date} by {v.author}</p>
-                    <p className="text-zinc-300 text-sm mt-1">{v.summary}</p>
+                    <div className="flex items-center justify-between"><span className="text-white text-sm font-medium">{v.ver}</span>{v.current&&<Badge className="bg-[hsl(var(--brand))]/20 text-[hsl(var(--brand))] text-xs">Current</Badge>}</div>
+                    <p className="text-[hsl(var(--text-3))] text-xs mt-1">{v.date} by {v.author}</p>
+                    <p className="text-[hsl(var(--text-2))] text-sm mt-1">{v.summary}</p>
                   </div>
                 </div>
               ))}
-              <Button variant="outline" className="border-zinc-700 text-zinc-300 w-full mt-2">Compare Versions</Button>
+              <Button variant="outline" className="border-[hsl(var(--border-mid))] text-[hsl(var(--text-2))] w-full mt-2">Compare Versions</Button>
             </TabsContent>
             <TabsContent value="controls" className="space-y-3 mt-4">
               {sel.controls.map((c,i)=>(
-                <div key={i} className="bg-zinc-800/30 rounded-lg p-3">
-                  <div className="flex items-center justify-between"><span className="text-white text-sm">{c.id}</span><span className={`px-2 py-0.5 rounded text-xs ${c.status==="implemented"?"bg-emerald-500/20 text-emerald-400":c.status==="partial"?"bg-amber-500/20 text-amber-400":"bg-blue-500/20 text-blue-400"}`}>{c.status}</span></div>
-                  <p className="text-zinc-300 text-sm mt-1">{c.name}</p>
-                  {c.score>0&&<div className="mt-2"><div className="flex justify-between text-xs text-zinc-400 mb-1"><span>Effectiveness</span><span>{c.score}%</span></div><div className="w-full bg-zinc-700 rounded-full h-1.5"><div className="h-1.5 rounded-full bg-emerald-500" style={{width:`${c.score}%`}}/></div></div>}
+                <div key={i} className="bg-[hsl(var(--bg-raised))]/30 rounded-lg p-3">
+                  <div className="flex items-center justify-between"><span className="text-white text-sm">{c.id}</span><span className={`px-2 py-0.5 rounded text-xs ${c.status==="implemented"?"bg-[hsl(var(--brand))]/20 text-[hsl(var(--brand))]":c.status==="partial"?"bg-amber-500/20 text-amber-400":"bg-blue-500/20 text-blue-400"}`}>{c.status}</span></div>
+                  <p className="text-[hsl(var(--text-2))] text-sm mt-1">{c.name}</p>
+                  {c.score>0&&<div className="mt-2"><div className="flex justify-between text-xs text-[hsl(var(--text-3))] mb-1"><span>Effectiveness</span><span>{c.score}%</span></div><div className="w-full bg-zinc-700 rounded-full h-1.5"><div className="h-1.5 rounded-full bg-[hsl(var(--brand))]" style={{width:`${c.score}%`}}/></div></div>}
                 </div>
               ))}
-              <Button variant="outline" className="border-zinc-700 text-zinc-300 w-full mt-2"><Shield className="w-4 h-4 mr-2"/>Link Control</Button>
+              <Button variant="outline" className="border-[hsl(var(--border-mid))] text-[hsl(var(--text-2))] w-full mt-2"><Shield className="w-4 h-4 mr-2"/>Link Control</Button>
             </TabsContent>
           </Tabs>}
         </SheetContent>
@@ -217,22 +217,22 @@ export default function PolicyManagement() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="bg-[#1a1a2e] border-zinc-800 text-white max-w-lg">
+        <DialogContent className="bg-[#1a1a2e] border-[hsl(var(--border))] text-white max-w-lg">
           <DialogHeader><DialogTitle>{editPolicy?"Update Policy":"Create Policy"}</DialogTitle></DialogHeader>
           <div className="space-y-4 mt-2">
-            <div><label className="text-zinc-400 text-xs">Policy Name</label><Input className="bg-zinc-800 border-zinc-700 text-white mt-1" value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></div>
+            <div><label className="text-[hsl(var(--text-3))] text-xs">Policy Name</label><Input className="bg-[hsl(var(--bg-raised))] border-[hsl(var(--border-mid))] text-white mt-1" value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="text-zinc-400 text-xs">Category</label><select className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white mt-1" value={form.category} onChange={e=>setForm({...form,category:e.target.value})}>{CATS.map(c=><option key={c} value={c}>{c}</option>)}</select></div>
-              <div><label className="text-zinc-400 text-xs">Framework</label><select className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white mt-1" value={form.framework} onChange={e=>setForm({...form,framework:e.target.value})}>{FWS.map(f=><option key={f} value={f}>{f}</option>)}</select></div>
+              <div><label className="text-[hsl(var(--text-3))] text-xs">Category</label><select className="w-full bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-white mt-1" value={form.category} onChange={e=>setForm({...form,category:e.target.value})}>{CATS.map(c=><option key={c} value={c}>{c}</option>)}</select></div>
+              <div><label className="text-[hsl(var(--text-3))] text-xs">Framework</label><select className="w-full bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-white mt-1" value={form.framework} onChange={e=>setForm({...form,framework:e.target.value})}>{FWS.map(f=><option key={f} value={f}>{f}</option>)}</select></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="text-zinc-400 text-xs">Owner</label><select className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white mt-1" value={form.owner} onChange={e=>setForm({...form,owner:e.target.value})}>{OWNERS.map(o=><option key={o} value={o}>{o}</option>)}</select></div>
-              <div><label className="text-zinc-400 text-xs">Risk Level</label><select className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white mt-1" value={form.risk} onChange={e=>setForm({...form,risk:e.target.value})}>{["High","Medium","Low"].map(r=><option key={r} value={r}>{r}</option>)}</select></div>
+              <div><label className="text-[hsl(var(--text-3))] text-xs">Owner</label><select className="w-full bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-white mt-1" value={form.owner} onChange={e=>setForm({...form,owner:e.target.value})}>{OWNERS.map(o=><option key={o} value={o}>{o}</option>)}</select></div>
+              <div><label className="text-[hsl(var(--text-3))] text-xs">Risk Level</label><select className="w-full bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-white mt-1" value={form.risk} onChange={e=>setForm({...form,risk:e.target.value})}>{["High","Medium","Low"].map(r=><option key={r} value={r}>{r}</option>)}</select></div>
             </div>
-            <div><label className="text-zinc-400 text-xs">Scope</label><textarea className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white mt-1 h-16 resize-none" value={form.scope} onChange={e=>setForm({...form,scope:e.target.value})}/></div>
-            <div><label className="text-zinc-400 text-xs">Description</label><textarea className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white mt-1 h-20 resize-none" value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></div>
+            <div><label className="text-[hsl(var(--text-3))] text-xs">Scope</label><textarea className="w-full bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-white mt-1 h-16 resize-none" value={form.scope} onChange={e=>setForm({...form,scope:e.target.value})}/></div>
+            <div><label className="text-[hsl(var(--text-3))] text-xs">Description</label><textarea className="w-full bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-white mt-1 h-20 resize-none" value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></div>
           </div>
-          <DialogFooter className="mt-4"><Button variant="outline" className="border-zinc-700 text-zinc-300" onClick={()=>setShowCreate(false)}>Cancel</Button><Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={()=>setShowCreate(false)}>{editPolicy?"Update":"Create"}</Button></DialogFooter>
+          <DialogFooter className="mt-4"><Button variant="outline" className="border-[hsl(var(--border-mid))] text-[hsl(var(--text-2))]" onClick={()=>setShowCreate(false)}>Cancel</Button><Button className="bg-[hsl(var(--brand))] hover:bg-emerald-700 text-white" onClick={()=>setShowCreate(false)}>{editPolicy?"Update":"Create"}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

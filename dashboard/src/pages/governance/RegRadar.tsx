@@ -32,7 +32,7 @@ const impactColor = (level: string) => {
 
 const statusColor = (status: string) => {
   switch (status) {
-    case "Enacted": return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+    case "Enacted": return "bg-[hsl(var(--brand))]/10 text-[hsl(var(--brand))] border-emerald-500/20";
     case "Published": return "bg-blue-500/10 text-blue-400 border-blue-500/20";
     case "Upcoming": return "bg-amber-500/10 text-amber-400 border-amber-500/20";
     case "Draft": return "bg-slate-500/10 text-slate-400 border-slate-500/20";
@@ -146,7 +146,7 @@ export default function RegRadar() {
                   </div>
                 </div>
                 <div className="text-right ml-4">
-                  <div className={`text-2xl font-bold ${daysUntil(reg.effectiveDate) < 30 ? "text-red-400" : daysUntil(reg.effectiveDate) < 90 ? "text-amber-400" : "text-emerald-400"}`}>{daysUntil(reg.effectiveDate)}</div>
+                  <div className={`text-2xl font-bold ${daysUntil(reg.effectiveDate) < 30 ? "text-red-400" : daysUntil(reg.effectiveDate) < 90 ? "text-amber-400" : "text-[hsl(var(--brand))]"}`}>{daysUntil(reg.effectiveDate)}</div>
                   <div className="text-xs text-muted-foreground">days until effective</div>
                   <ChevronRight className="h-5 w-5 text-muted-foreground mt-2 ml-auto" />
                 </div>

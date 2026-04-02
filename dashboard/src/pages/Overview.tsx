@@ -44,7 +44,7 @@ const kpis = [
   { label: "Active Policies", value: 31, icon: FileText, color: "text-green-400" },
   { label: "Vendors", value: 7, icon: Users, color: "text-orange-400" },
   { label: "Datasets", value: 44, icon: Database, color: "text-indigo-400" },
-  { label: "Frameworks", value: 5, icon: Layers, color: "text-emerald-400" },
+  { label: "Frameworks", value: 5, icon: Layers, color: "text-[hsl(var(--brand))]" },
 ];
 
 export default function Overview() {

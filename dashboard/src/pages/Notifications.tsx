@@ -30,7 +30,7 @@ const chartData = [
   { day: 'Sun', compliance: 1, security: 1, model: 0, system: 1 },
 ];
 
-const sevColor: Record<string, string> = { critical: 'bg-red-600', high: 'bg-amber-600', medium: 'bg-blue-600', low: 'bg-emerald-600' };
+const sevColor: Record<string, string> = { critical: 'bg-red-600', high: 'bg-amber-600', medium: 'bg-blue-600', low: 'bg-[hsl(var(--brand))]' };
 const catColor: Record<string, string> = { compliance: 'bg-blue-600', security: 'bg-red-600', model: 'bg-amber-600', system: 'bg-zinc-600' };
 
 export default function Notifications() {
@@ -47,14 +47,14 @@ export default function Notifications() {
     { label: 'Unread', value: '14', icon: Bell, color: 'text-blue-400' },
     { label: 'Critical Alerts', value: '3', icon: Warning, color: 'text-red-400' },
     { label: 'Compliance Deadlines', value: '5', icon: ShieldCheck, color: 'text-amber-400' },
-    { label: 'System Alerts', value: '8', icon: Gear, color: 'text-emerald-400' },
+    { label: 'System Alerts', value: '8', icon: Gear, color: 'text-[hsl(var(--brand))]' },
   ];
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Notification Center</h1>
-          <p className="text-zinc-400 text-sm">Real-time alerts across compliance, security, and model operations</p>
+          <p className="text-[hsl(var(--text-3))] text-sm">Real-time alerts across compliance, security, and model operations</p>
         </div>
         <Button variant="outline" className="rounded-none border-[#1e1e1e]"><Export className="w-4 h-4 mr-2" />Export</Button>
       </div>
@@ -63,7 +63,7 @@ export default function Notifications() {
           <Card key={k.label} className="bg-[#111111] border-[#1e1e1e] rounded-none">
             <CardContent className="p-4 flex items-center gap-3">
               <k.icon className={`w-8 h-8 ${k.color}`} />
-              <div><div className="text-2xl font-bold text-white">{k.value}</div><div className="text-xs text-zinc-400">{k.label}</div></div>
+              <div><div className="text-2xl font-bold text-white">{k.value}</div><div className="text-xs text-[hsl(var(--text-3))]">{k.label}</div></div>
             </CardContent>
           </Card>
         ))}
@@ -87,13 +87,13 @@ export default function Notifications() {
       <Card className="bg-[#111111] border-[#1e1e1e] rounded-none">
         <CardContent className="p-4">
           <div className="flex items-center gap-3 mb-4">
-            <div className="relative flex-1"><MagnifyingGlass className="absolute left-3 top-2.5 w-4 h-4 text-zinc-400" /><Input placeholder="Search notifications..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 bg-[#0a0a0a] border-[#1e1e1e] rounded-none text-white" /></div>
+            <div className="relative flex-1"><MagnifyingGlass className="absolute left-3 top-2.5 w-4 h-4 text-[hsl(var(--text-3))]" /><Input placeholder="Search notifications..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 bg-[#0a0a0a] border-[#1e1e1e] rounded-none text-white" /></div>
             <select value={filter} onChange={e => setFilter(e.target.value)} className="bg-[#0a0a0a] border border-[#1e1e1e] text-white px-3 py-2 text-sm">
               {cats.map(c => <option key={c} value={c}>{c === 'all' ? 'All Categories' : c}</option>)}
             </select>
           </div>
           <table className="w-full text-sm">
-            <thead><tr className="border-b border-[#1e1e1e] text-zinc-400">
+            <thead><tr className="border-b border-[#1e1e1e] text-[hsl(var(--text-3))]">
               <th className="text-left p-2">ID</th><th className="text-left p-2">Message</th><th className="text-left p-2">Category</th>
               <th className="text-left p-2">Severity</th><th className="text-left p-2">Source</th><th className="text-left p-2">Time</th><th className="text-left p-2">Status</th>
             </tr></thead>
@@ -101,12 +101,12 @@ export default function Notifications() {
               {filtered.map(n => (
                 <tr key={n.id} onClick={() => setSelected(n)} className="border-b border-[#1e1e1e] hover:bg-[#1a1a1a] cursor-pointer">
                   <td className="p-2 text-white font-mono text-xs">{n.id}</td>
-                  <td className={`p-2 ${n.read ? 'text-zinc-400' : 'text-white font-medium'}`}>{n.message}</td>
+                  <td className={`p-2 ${n.read ? 'text-[hsl(var(--text-3))]' : 'text-white font-medium'}`}>{n.message}</td>
                   <td className="p-2"><Badge className={`${catColor[n.category]} text-white rounded-none text-xs`}>{n.category}</Badge></td>
                   <td className="p-2"><Badge className={`${sevColor[n.severity]} text-white rounded-none text-xs`}>{n.severity}</Badge></td>
-                  <td className="p-2 text-zinc-400">{n.source}</td>
-                  <td className="p-2 text-zinc-400 text-xs">{n.timestamp}</td>
-                  <td className="p-2">{n.read ? <span className="text-zinc-500">Read</span> : <Badge className="bg-emerald-600 text-white rounded-none text-xs">New</Badge>}</td>
+                  <td className="p-2 text-[hsl(var(--text-3))]">{n.source}</td>
+                  <td className="p-2 text-[hsl(var(--text-3))] text-xs">{n.timestamp}</td>
+                  <td className="p-2">{n.read ? <span className="text-[hsl(var(--text-4))]">Read</span> : <Badge className="bg-[hsl(var(--brand))] text-white rounded-none text-xs">New</Badge>}</td>
                 </tr>
               ))}
             </tbody>
@@ -122,21 +122,21 @@ export default function Notifications() {
               <TabsContent value="details" className="space-y-3 mt-3">
                 <p className="text-sm text-white">{selected.message}</p>
                 <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="text-zinc-400">Category</div><div><Badge className={`${catColor[selected.category]} text-white rounded-none`}>{selected.category}</Badge></div>
-                  <div className="text-zinc-400">Severity</div><div><Badge className={`${sevColor[selected.severity]} text-white rounded-none`}>{selected.severity}</Badge></div>
-                  <div className="text-zinc-400">Source</div><div className="text-white">{selected.source}</div>
-                  <div className="text-zinc-400">Timestamp</div><div className="text-white">{selected.timestamp}</div>
+                  <div className="text-[hsl(var(--text-3))]">Category</div><div><Badge className={`${catColor[selected.category]} text-white rounded-none`}>{selected.category}</Badge></div>
+                  <div className="text-[hsl(var(--text-3))]">Severity</div><div><Badge className={`${sevColor[selected.severity]} text-white rounded-none`}>{selected.severity}</Badge></div>
+                  <div className="text-[hsl(var(--text-3))]">Source</div><div className="text-white">{selected.source}</div>
+                  <div className="text-[hsl(var(--text-3))]">Timestamp</div><div className="text-white">{selected.timestamp}</div>
                 </div>
               </TabsContent>
               <TabsContent value="actions" className="space-y-2 mt-3">
-                <Button className="w-full bg-emerald-600 hover:bg-emerald-700 rounded-none"><Eye className="w-4 h-4 mr-2" />Mark as Read</Button>
+                <Button className="w-full bg-[hsl(var(--brand))] hover:bg-emerald-700 rounded-none"><Eye className="w-4 h-4 mr-2" />Mark as Read</Button>
                 <Button variant="outline" className="w-full rounded-none border-[#1e1e1e]"><Clock className="w-4 h-4 mr-2" />Snooze 24h</Button>
                 <Button variant="outline" className="w-full rounded-none border-red-600 text-red-400"><ArrowUp className="w-4 h-4 mr-2" />Escalate to CISO</Button>
               </TabsContent>
               <TabsContent value="history" className="mt-3">
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between border-b border-[#1e1e1e] pb-2"><span className="text-zinc-400">Alert triggered</span><span className="text-white">{selected.timestamp}</span></div>
-                  <div className="flex justify-between border-b border-[#1e1e1e] pb-2"><span className="text-zinc-400">Similar alert 7 days ago</span><span className="text-white">2026-03-22</span></div>
+                  <div className="flex justify-between border-b border-[#1e1e1e] pb-2"><span className="text-[hsl(var(--text-3))]">Alert triggered</span><span className="text-white">{selected.timestamp}</span></div>
+                  <div className="flex justify-between border-b border-[#1e1e1e] pb-2"><span className="text-[hsl(var(--text-3))]">Similar alert 7 days ago</span><span className="text-white">2026-03-22</span></div>
                 </div>
               </TabsContent>
             </Tabs>

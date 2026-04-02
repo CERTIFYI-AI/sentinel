@@ -45,7 +45,7 @@ const categoryIcon = (cat: string) => {
     case "Executive": return <BarChart3 className="h-5 w-5 text-teal-400" />;
     case "Audit": return <FileCheck className="h-5 w-5 text-blue-400" />;
     case "Regulatory": return <AlertTriangle className="h-5 w-5 text-amber-400" />;
-    case "Operational": return <Clock className="h-5 w-5 text-emerald-400" />;
+    case "Operational": return <Clock className="h-5 w-5 text-[hsl(var(--brand))]" />;
     default: return <FileText className="h-5 w-5 text-slate-400" />;
   }
 };
@@ -55,7 +55,7 @@ const categoryColor = (cat: string) => {
     case "Executive": return "bg-teal-500/10 text-teal-400 border-teal-500/20";
     case "Audit": return "bg-blue-500/10 text-blue-400 border-blue-500/20";
     case "Regulatory": return "bg-amber-500/10 text-amber-400 border-amber-500/20";
-    case "Operational": return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+    case "Operational": return "bg-[hsl(var(--brand))]/10 text-[hsl(var(--brand))] border-emerald-500/20";
     default: return "bg-slate-500/10 text-slate-400 border-slate-500/20";
   }
 };
@@ -105,7 +105,7 @@ export default function Reporting() {
               </div>
               <div className="p-2 rounded-lg bg-teal-500/10"><FileText className="h-5 w-5 text-teal-400" /></div>
             </div>
-            <p className="text-xs text-emerald-400 mt-1">+3 from last month</p>
+            <p className="text-xs text-[hsl(var(--brand))] mt-1">+3 from last month</p>
           </CardContent>
         </Card>
         <Card className="bg-card border-border">
@@ -139,9 +139,9 @@ export default function Reporting() {
                 <p className="text-sm text-muted-foreground">Avg Generation Time</p>
                 <p className="text-2xl font-bold">4.2s</p>
               </div>
-              <div className="p-2 rounded-lg bg-emerald-500/10"><Clock className="h-5 w-5 text-emerald-400" /></div>
+              <div className="p-2 rounded-lg bg-[hsl(var(--brand))]/10"><Clock className="h-5 w-5 text-[hsl(var(--brand))]" /></div>
             </div>
-            <p className="text-xs text-emerald-400 mt-1">-0.8s improvement</p>
+            <p className="text-xs text-[hsl(var(--brand))] mt-1">-0.8s improvement</p>
           </CardContent>
         </Card>
       </div>
@@ -229,7 +229,7 @@ export default function Reporting() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">{sr.status}</Badge>
+                        <Badge variant="outline" className="bg-[hsl(var(--brand))]/10 text-[hsl(var(--brand))] border-emerald-500/20">{sr.status}</Badge>
                         <span className="text-xs text-muted-foreground">{sr.delivery}</span>
                         <Button size="sm" variant="ghost"><Send className="h-3 w-3" /></Button>
                       </div>
@@ -255,7 +255,7 @@ export default function Reporting() {
                 ].map((h, i) => (
                   <div key={i} className="flex items-center justify-between p-3 rounded-lg border border-border">
                     <div className="flex items-center gap-3">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                      <CheckCircle2 className="h-4 w-4 text-[hsl(var(--brand))]" />
                       <div>
                         <p className="font-medium text-sm">{h.name}</p>
                         <p className="text-xs text-muted-foreground">{h.date}</p>
