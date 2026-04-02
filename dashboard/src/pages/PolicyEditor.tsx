@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { usePolicyStore } from "../stores/policyStore";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -7,7 +8,7 @@ import { Separator } from "../components/ui/separator";
 import { Textarea } from "../components/ui/textarea";
 import { ChevronRight, ArrowLeft, Edit3, Eye, Send, CheckCircle, FileDown, Clock, MessageSquare, Shield, Link2, AlertTriangle, XCircle, History, User } from "lucide-react";
 
-const STEPS = ["Draft","In Review","Approved","Published"];
+const STEPS = ["Draft","In Review","Approved","Published","Expired","Archived"];
 
 const sections = [
   {title:"1. Purpose & Scope",content:"This policy establishes guidelines for the responsible use of Artificial Intelligence (AI) and Machine Learning (ML) systems across the organization. It defines acceptable use boundaries, risk thresholds, and governance requirements to ensure AI systems are deployed ethically, transparently, and in compliance with applicable regulations including the EU AI Act and NIST AI RMF.\n\nScope: All employees, contractors, vendors, and third parties who develop, deploy, operate, or interact with AI/ML systems owned or managed by the organization."},
@@ -50,7 +51,12 @@ export default function PolicyEditor() {
   const [searchParams] = useSearchParams();
   const policyId = searchParams.get("id") || "POL-001";
   const [editMode, setEditMode] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
+  const { getEffectiveStatus, transitionPolicy } = usePolicyStore();
+  const effectiveStatus = getEffectiveStatus(policyId, "Draft");
+  const [currentStep, setCurrentStep] = useState(() => {
+    const idx = STEPS.indexOf(effectiveStatus);
+    return idx >= 0 ? idx : 0;
+  });
   const [comments, setComments] = useState(initialComments);
   const [newComment, setNewComment] = useState("");
   const [auditLog, setAuditLog] = useState(initialAuditLog);
@@ -60,10 +66,11 @@ export default function PolicyEditor() {
   const [sectionEdits, setSectionEdits] = useState<Record<number,string>>({});
 
   const statusLabel = STEPS[currentStep];
-  const statusColor = currentStep === 0 ? "bg-yellow-500/20 text-yellow-400" : currentStep === 1 ? "bg-blue-500/20 text-blue-400" : currentStep === 2 ? "bg-[hsl(var(--brand))]/20 text-[hsl(var(--brand))]" : "bg-green-500/20 text-green-400";
+  const statusColor = currentStep === 0 ? "bg-yellow-500/20 text-yellow-400" : currentStep === 1 ? "bg-blue-500/20 text-blue-400" : currentStep === 2 ? "bg-[hsl(var(--brand))]/20 text-[hsl(var(--brand))]" : currentStep === 4 ? "bg-red-500/20 text-red-400" : currentStep === 5 ? "bg-zinc-500/20 text-zinc-400" : "bg-green-500/20 text-green-400";
 
   const handleSubmitForReview = () => {
     if (currentStep === 0) {
+      transitionPolicy(policyId, "submit", "Current User");
       setCurrentStep(1);
       const entry = {timestamp:new Date().toISOString().slice(0,16).replace("T"," "),actor:"Current User",action:"Submitted for review",detail:`Policy ${policyId} moved from Draft to In Review`};
       setAuditLog(prev => [entry, ...prev]);
