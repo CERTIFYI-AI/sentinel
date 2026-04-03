@@ -1,7 +1,7 @@
 // dashboard/src/components/layout/Layout.tsx
 import { Outlet } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/Sidebar";
+import AppSidebar from "@/components/Sidebar";
 import { ModuleRail } from "@/components/layout/ModuleRail";
 import { TopBar } from "@/components/layout/TopBar";
 import { CommandPalette } from "@/components/ui/CommandPalette";
