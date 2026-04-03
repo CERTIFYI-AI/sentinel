@@ -35,3 +35,5 @@ export const PolicyStatsCards = ({ policies }: Props) => {
     </div>
   );
 };
+
+export default PolicyStatsCards;
