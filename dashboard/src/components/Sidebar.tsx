@@ -155,3 +155,4 @@ export default function Sidebar() {
     </aside>
   )
 }
+export { default as AppSidebar } from "./Sidebar";
