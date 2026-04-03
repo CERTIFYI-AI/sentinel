@@ -5,7 +5,7 @@ import {
   UserCircleCheck, Robot, Rss, Database, BuildingOffice,
   Warning, Scales, FolderOpen,
   ShieldCheck, LockOpen, Lock, Gear, Star,
-  SignOut, CaretDown, CaretRight, MoonStars, SunHorizon, Monitor
+  SignOut, CaretDown, CaretRight, MoonStars, SunHorizon, Monitor, Briefcase
 } from '@phosphor-icons/react'
 import { cn } from '../lib/utils'
 import { useTheme } from '../providers/ThemeProvider'
@@ -27,6 +27,7 @@ const NAV = [
     { label: 'Model Inventory', to: '/models/inventory', icon: Robot },
     { label: 'Agent Discovery', to: '/agents', icon: Rss, badge: 12 },
     { label: 'Datasets', to: '/datasets', icon: Database },
+      { label: 'Use Cases', to: '/use-cases', icon: Briefcase },
     { label: 'Vendor List', to: '/vendors', icon: BuildingOffice },
   ]},
   { title: 'RISK & COMPLIANCE', items: [
@@ -129,10 +130,10 @@ export default function Sidebar() {
       </div>
 
       <div className='border-t border-[hsl(var(--border))] p-3 space-y-1'>
-        <button className={cn('flex items-center gap-3 w-full px-3 py-2 text-sm text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--brand))] transition-colors', collapsed && 'justify-center px-2')}>
+        <NavLink to='/ai-advisor' className={cn('flex items-center gap-3 w-full px-3 py-2 text-sm text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--brand))] transition-colors', collapsed && 'justify-center px-2')}>
           <Star size={18} weight='duotone' className='flex-shrink-0 text-[hsl(var(--brand))]' />
           {!collapsed && <span>AI Advisor</span>}
-        </button>
+        </NavLink>
         <button onClick={cycleTheme} className={cn('flex items-center gap-3 w-full px-3 py-2 text-sm text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-1))] transition-colors', collapsed && 'justify-center px-2')}>
           <ThemeIcon size={18} weight='duotone' className='flex-shrink-0'/>
           {!collapsed && <span>{themeLabel}</span>}

@@ -31,3 +31,5 @@ export const PolicyStatusChart = ({ policies }: Props) => {
     </div>
   );
 };
+
+

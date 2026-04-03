@@ -25,3 +25,5 @@ export const PolicyCategoryChart = ({ policies }: Props) => {
     </div>
   );
 };
+
+
