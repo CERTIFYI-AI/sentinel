@@ -1,60 +1,74 @@
+
 :root {
-  --bg-page: 240 5% 96%;
-  --bg-surface: 0 0% 100%;
-  --bg-raised: 240 5% 98%;
-  --bg-sunken: 240 5% 93%;
-  --border: 240 6% 90%;
-  --border-mid: 240 6% 82%;
-  --text-1: 240 10% 4%;
-  --text-2: 240 6% 25%;
-  --text-3: 240 4% 46%;
-  --text-4: 240 4% 64%;
-  --brand: 142 47% 38%;
+  --bg-page:     240 5% 96%;
+  --bg-surface:  0 0% 100%;
+  --bg-raised:   240 5% 98%;
+  --bg-sunken:   240 5% 93%;
+  --border:      240 6% 90%;
+  --border-mid:  240 6% 82%;
+  --text-1:      240 10% 4%;
+  --text-2:      240 6% 25%;
+  --text-3:      240 4% 46%;
+  --text-4:      240 4% 64%;
+  --brand:       142 47% 38%;
   --brand-hover: 142 47% 31%;
-  --brand-subtle: 142 47% 96%;
+  --brand-subtle:142 47% 96%;
+
   --s-ok-bg: 142 69% 96%; --s-ok-tx: 142 69% 28%; --s-ok-br: 142 69% 82%;
-  --s-wn-bg: 38 92% 96%; --s-wn-tx: 32 90% 33%; --s-wn-br: 38 92% 78%;
-  --s-er-bg: 0 86% 97%; --s-er-tx: 0 72% 35%; --s-er-br: 0 86% 85%;
-  --s-in-bg: 214 100% 97%; --s-in-tx: 213 60% 33%; --s-in-br: 213 100% 84%;
-  --s-nt-bg: 240 5% 96%; --s-nt-tx: 240 4% 46%; --s-nt-br: 240 6% 86%;
-  --r-cr-bg: 0 86% 97%; --r-cr-tx: 0 72% 35%; --r-cr-br: 0 86% 85%;
-  --r-hi-bg: 24 100% 97%; --r-hi-tx: 21 80% 33%; --r-hi-br: 24 100% 82%;
-  --r-md-bg: 38 92% 96%; --r-md-tx: 32 90% 33%; --r-md-br: 38 92% 78%;
+  --s-wn-bg: 38 92% 96%;  --s-wn-tx: 32 90% 33%;  --s-wn-br: 38 92% 78%;
+  --s-er-bg: 0 86% 97%;   --s-er-tx: 0 72% 35%;   --s-er-br: 0 86% 85%;
+  --s-in-bg: 214 100% 97%;--s-in-tx: 213 60% 33%; --s-in-br: 213 100% 84%;
+  --s-nt-bg: 240 5% 96%;  --s-nt-tx: 240 4% 46%;  --s-nt-br: 240 6% 86%;
+
+  --r-cr-bg: 0 86% 97%;   --r-cr-tx: 0 72% 35%;   --r-cr-br: 0 86% 85%;
+  --r-hi-bg: 24 100% 97%; --r-hi-tx: 21 80% 33%;  --r-hi-br: 24 100% 82%;
+  --r-md-bg: 38 92% 96%;  --r-md-tx: 32 90% 33%;  --r-md-br: 38 92% 78%;
   --r-lo-bg: 142 69% 96%; --r-lo-tx: 142 69% 28%; --r-lo-br: 142 69% 82%;
+
   --shadow-sm: 0 1px 3px rgb(0 0 0/8%);
   --shadow-md: 0 4px 8px rgb(0 0 0/8%);
   --shadow-lg: 0 10px 20px rgb(0 0 0/8%);
 }
+
 .dark {
-  --bg-page: 224 15% 8%;
+  --bg-page:    224 15% 8%;
   --bg-surface: 224 15% 11%;
-  --bg-raised: 224 15% 14%;
-  --bg-sunken: 224 15% 6%;
-  --border: 224 15% 18%;
+  --bg-raised:  224 15% 14%;
+  --bg-sunken:  224 15% 6%;
+  --border:     224 15% 18%;
   --border-mid: 224 15% 24%;
-  --text-1: 210 40% 96%;
-  --text-2: 215 20% 75%;
-  --text-3: 215 15% 55%;
-  --text-4: 215 12% 38%;
-  --brand: 142 47% 50%;
+  --text-1:     210 40% 96%;
+  --text-2:     215 20% 75%;
+  --text-3:     215 15% 55%;
+  --text-4:     215 12% 38%;
+  --brand:       142 47% 50%;
   --brand-hover: 142 47% 44%;
-  --brand-subtle: 142 20% 14%;
+  --brand-subtle:142 20% 14%;
+
   --s-ok-bg: 142 30% 12%; --s-ok-tx: 142 60% 65%; --s-ok-br: 142 30% 22%;
-  --s-wn-bg: 38 30% 12%; --s-wn-tx: 38 80% 65%; --s-wn-br: 38 30% 22%;
-  --s-er-bg: 0 30% 12%; --s-er-tx: 0 60% 65%; --s-er-br: 0 30% 22%;
+  --s-wn-bg: 38 30% 12%;  --s-wn-tx: 38 80% 65%;  --s-wn-br: 38 30% 22%;
+  --s-er-bg: 0 30% 12%;   --s-er-tx: 0 60% 65%;   --s-er-br: 0 30% 22%;
   --s-in-bg: 214 30% 12%; --s-in-tx: 214 60% 65%; --s-in-br: 214 30% 22%;
   --s-nt-bg: 224 15% 16%; --s-nt-tx: 215 15% 55%; --s-nt-br: 224 15% 24%;
-  --r-cr-bg: 0 30% 12%; --r-cr-tx: 0 60% 65%; --r-cr-br: 0 30% 22%;
-  --r-hi-bg: 24 30% 12%; --r-hi-tx: 24 70% 65%; --r-hi-br: 24 30% 22%;
-  --r-md-bg: 38 30% 12%; --r-md-tx: 38 80% 65%; --r-md-br: 38 30% 22%;
+
+  --r-cr-bg: 0 30% 12%;   --r-cr-tx: 0 60% 65%;   --r-cr-br: 0 30% 22%;
+  --r-hi-bg: 24 30% 12%;  --r-hi-tx: 24 70% 65%;  --r-hi-br: 24 30% 22%;
+  --r-md-bg: 38 30% 12%;  --r-md-tx: 38 80% 65%;  --r-md-br: 38 30% 22%;
   --r-lo-bg: 142 30% 12%; --r-lo-tx: 142 60% 65%; --r-lo-br: 142 30% 22%;
+
   --shadow-sm: 0 1px 3px rgb(0 0 0/40%);
   --shadow-md: 0 4px 8px rgb(0 0 0/40%);
   --shadow-lg: 0 10px 20px rgb(0 0 0/40%);
 }
+
+* { border-radius: 0 !important; }
+[data-avatar] { border-radius: 9999px !important; }
 body {
+  font-family: "Outfit", sans-serif;
   background: hsl(var(--bg-page));
   color: hsl(var(--text-1));
 }
 input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 100px hsl(var(--bg-surface)) inset !important;
+  -webkit-text-fill-color: hsl(var(--text-1)) !important;
 }

@@ -1,35 +1,62 @@
-// dashboard/src/components/dashboard/TopBar.tsx
 
-import { useAuthStore } from "../../store/auth-store";
-import { useThemeStore } from "../../store/theme-store";
-import { Button } from "../ui/button";
+import { useNavigate } from 'react-router-dom';
+import { MagnifyingGlass, Bell } from '@phosphor-icons/react';
+import { ThemeToggle } from '../../providers/theme';
 
-export function TopBar() {
-  const logout = useAuthStore((s) => s.logout);
-  const { theme, setTheme } = useThemeStore();
+const routeTitles: Record<string, string> = {
+  '/overview': 'Dashboard',
+  '/tasks': 'Task Management',
+  '/notifications': 'Notifications',
+  '/compliance': 'Compliance Dashboard',
+  '/policies': 'Policy Manager',
+  '/compliance/controls': 'Controls',
+  '/compliance/frameworks': 'Frameworks',
+  '/reg-radar': 'Reg Radar',
+  '/hitl': 'HITL Reviews',
+  '/models/inventory': 'Model Inventory',
+  '/agents': 'Agent Discovery',
+  '/datasets': 'Datasets',
+  '/use-cases': 'Use Cases',
+  '/vendors': 'Vendor List',
+  '/prompt-registry': 'Prompt Registry',
+  '/risk': 'Risk Register',
+  '/bias-audits': 'Bias Audits',
+  '/evidence-sync': 'Evidence Sync',
+  '/incidents': 'Incidents',
+  '/reporting': 'Reporting',
+  '/trust-engine': 'Trust Engine',
+  '/trust-engine/guardrails': 'Guardrails',
+  '/evals': 'LLM Evals',
+  '/ai-advisor': 'AI Advisor',
+  '/access-control': 'Access Control',
+  '/settings': 'Settings',
+  '/system': 'System',
+};
 
+interface TopBarProps { pathname: string; }
+export function TopBar({ pathname }: TopBarProps) {
+  const navigate = useNavigate();
+  const title = Object.entries(routeTitles).sort((a,b) => b[0].length - a[0].length).find(([k]) => pathname.startsWith(k))?.[1] || 'Sentinel AI';
   return (
-    <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-background px-6">
-      <div className="flex-1" />
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-        aria-label="Toggle theme"
-      >
-        {theme === "dark" ? (
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-          </svg>
-        ) : (
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-          </svg>
-        )}
-      </Button>
-      <Button variant="ghost" size="sm" onClick={logout}>
-        Logout
-      </Button>
+    <header style={{ height: 48, background: 'hsl(var(--bg-surface))', borderBottom: '1px solid hsl(var(--border))', display: 'flex', alignItems: 'center', padding: '0 20px', gap: 12, flexShrink: 0 }}>
+      <span style={{ fontSize: 13, fontWeight: 500, color: 'hsl(var(--text-3))' }}>{title}</span>
+      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
+        <button
+          onClick={() => navigate('/search')}
+          style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 10px', background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-4))', fontSize: 12, cursor: 'pointer' }}
+        >
+          <MagnifyingGlass size={13}/>
+          <span>Quick search...</span>
+          <kbd style={{ background: 'hsl(var(--bg-sunken))', border: '1px solid hsl(var(--border-mid))', padding: '0 4px', fontSize: 10, color: 'hsl(var(--text-4))' }}>⌘K</kbd>
+        </button>
+        <ThemeToggle />
+        <button style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, color: 'hsl(var(--text-3))' }} onClick={() => navigate('/notifications')}>
+          <Bell size={16}/>
+        </button>
+        <div data-avatar style={{ width: 28, height: 28, background: 'hsl(var(--brand))', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, cursor: 'pointer' }} onClick={() => navigate('/settings')}>
+          BA
+        </div>
+      </div>
     </header>
   );
 }
