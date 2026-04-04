@@ -52,17 +52,17 @@ function exportControlMatrix() {
 const FRAMEWORKS = ["All","ISO 42001","ISO 27001","SOC 2","EU AI Act","NIST AI RMF","OWASP LLM"];
 
 const statusColors: Record<string, string> = {
-  Implemented: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+  Implemented: "bg-primary/10 text-primary border-primary/20",
   Partial: "bg-amber-500/10 text-amber-400 border-amber-500/20",
   Planned: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-  "Not Applicable": "bg-zinc-500/10 text-zinc-400 border-zinc-500/20",
+  "Not Applicable": "bg-zinc-500/10 text-muted-foreground border-zinc-500/20",
 };
 
 const testIcons: Record<string, { icon: typeof CheckCircle2; color: string }> = {
-  Pass: { icon: CheckCircle2, color: "text-emerald-400" },
+  Pass: { icon: CheckCircle2, color: "text-primary" },
   Fail: { icon: XCircle, color: "text-red-400" },
   Warning: { icon: MinusCircle, color: "text-amber-400" },
-  "Not Tested": { icon: MinusCircle, color: "text-zinc-500" },
+  "Not Tested": { icon: MinusCircle, color: "text-muted-foreground" },
 };
 
 export default function ComplianceControls() {
@@ -123,7 +123,7 @@ export default function ComplianceControls() {
             <div className="text-2xl font-bold">{s.value}</div>
             <div className="flex items-center justify-between mt-1">
               <span className="text-xs text-muted-foreground">{s.sub}</span>
-              <span className={cn("text-xs",s.up?"text-emerald-400":"text-red-400")}>{s.trend}</span>
+              <span className={cn("text-xs",s.up?"text-primary":"text-red-400")}>{s.trend}</span>
             </div>
           </Card>
         ))}
@@ -256,7 +256,7 @@ export default function ComplianceControls() {
                 ))}
               </TabsContent>
               <TabsContent value="testing" className="space-y-3 mt-4">
-                <Card className="p-3"><div className="flex items-center gap-2"><Play className="h-4 w-4 text-emerald-400" /><div><div className="text-sm font-medium">Latest Test Run</div><div className="text-xs text-muted-foreground">{selectedControl.lastTested} — Result: {selectedControl.testResult}</div></div></div></Card>
+                <Card className="p-3"><div className="flex items-center gap-2"><Play className="h-4 w-4 text-primary" /><div><div className="text-sm font-medium">Latest Test Run</div><div className="text-xs text-muted-foreground">{selectedControl.lastTested} — Result: {selectedControl.testResult}</div></div></div></Card>
                 <Card className="p-3"><div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-muted-foreground" /><div><div className="text-sm font-medium">Previous Run</div><div className="text-xs text-muted-foreground">2025-12-01 — Result: Pass</div></div></div></Card>
               </TabsContent>
               <TabsContent value="mapping" className="space-y-3 mt-4">

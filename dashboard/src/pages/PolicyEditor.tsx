@@ -66,7 +66,7 @@ export default function PolicyEditor() {
   const [sectionEdits, setSectionEdits] = useState<Record<number,string>>({});
 
   const statusLabel = STEPS[currentStep];
-  const statusColor = currentStep === 0 ? "bg-yellow-500/20 text-yellow-400" : currentStep === 1 ? "bg-blue-500/20 text-blue-400" : currentStep === 2 ? "bg-[hsl(var(--brand))]/20 text-[hsl(var(--brand))]" : currentStep === 4 ? "bg-red-500/20 text-red-400" : currentStep === 5 ? "bg-zinc-500/20 text-zinc-400" : "bg-green-500/20 text-green-400";
+  const statusColor = currentStep === 0 ? "bg-yellow-500/20 text-yellow-400" : currentStep === 1 ? "bg-blue-500/20 text-blue-400" : currentStep === 2 ? "bg-[hsl(var(--brand))]/20 text-[hsl(var(--brand))]" : currentStep === 4 ? "bg-red-500/20 text-red-400" : currentStep === 5 ? "bg-zinc-500/20 text-muted-foreground" : "bg-green-500/20 text-green-400";
 
   const handleSubmitForReview = () => {
     if (currentStep === 0) {
@@ -122,14 +122,14 @@ export default function PolicyEditor() {
   };
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--bg-page))] text-white p-6">
+    <div className="min-h-screen bg-[hsl(var(--bg-page))] text-foreground p-6">
       {/* Header */}
       <div className="flex items-center gap-2 text-sm text-[hsl(var(--text-3))] mb-6">
-        <button onClick={() => navigate("/compliance/policies")} className="hover:text-white flex items-center gap-1"><ArrowLeft className="w-4 h-4"/> Back</button>
+        <button onClick={() => navigate("/compliance/policies")} className="hover:text-foreground flex items-center gap-1"><ArrowLeft className="w-4 h-4"/> Back</button>
         <ChevronRight className="w-4 h-4"/>
         <span>Policy Manager</span>
         <ChevronRight className="w-4 h-4"/>
-        <span className="text-white">{policyId}</span>
+        <span className="text-foreground">{policyId}</span>
       </div>
 
       <div className="flex justify-between items-start mb-6">
@@ -147,7 +147,7 @@ export default function PolicyEditor() {
       {/* Audit Log Panel */}
       {showAuditLog && (
         <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] p-4 mb-6">
-          <h3 className="text-white font-semibold mb-3 flex items-center gap-2"><History className="w-4 h-4"/>Audit Trail</h3>
+          <h3 className="text-foreground font-semibold mb-3 flex items-center gap-2"><History className="w-4 h-4"/>Audit Trail</h3>
           <div className="space-y-2 max-h-48 overflow-y-auto">
             {auditLog.map((entry,i) => (
               <div key={i} className="flex items-start gap-3 text-sm border-l-2 border-[hsl(var(--border-mid))] pl-3 py-1">
@@ -165,7 +165,7 @@ export default function PolicyEditor() {
       {showRejectDialog && (
         <Card className="bg-[hsl(var(--bg-surface))] border-red-800 p-4 mb-6">
           <h3 className="text-red-400 font-semibold mb-2 flex items-center gap-2"><XCircle className="w-4 h-4"/>Reject / Request Changes</h3>
-          <Textarea placeholder="Reason for rejection (required)..." value={rejectReason} onChange={(e:React.ChangeEvent<HTMLTextAreaElement>) => setRejectReason(e.target.value)} className="bg-[hsl(var(--bg-raised))] border-[hsl(var(--border-mid))] text-white mb-2"/>
+          <Textarea placeholder="Reason for rejection (required)..." value={rejectReason} onChange={(e:React.ChangeEvent<HTMLTextAreaElement>) => setRejectReason(e.target.value)} className="bg-[hsl(var(--bg-raised))] border-[hsl(var(--border-mid))] text-foreground mb-2"/>
           <div className="flex gap-2">
             <Button size="sm" variant="destructive" onClick={handleReject} disabled={!rejectReason.trim()}>Confirm Rejection</Button>
             <Button size="sm" variant="outline" onClick={() => setShowRejectDialog(false)}>Cancel</Button>
@@ -178,7 +178,7 @@ export default function PolicyEditor() {
         <div className="col-span-2 space-y-4">
           {sections.map((s,i) => (
             <Card key={i} className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] p-4">
-              <h3 className="text-white font-semibold mb-2">{s.title}</h3>
+              <h3 className="text-foreground font-semibold mb-2">{s.title}</h3>
               {editMode ? (
                 <Textarea value={sectionEdits[i] !== undefined ? sectionEdits[i] : s.content} onChange={(e:React.ChangeEvent<HTMLTextAreaElement>) => setSectionEdits(prev => ({...prev,[i]:e.target.value}))} className="bg-[hsl(var(--bg-raised))] border-[hsl(var(--border-mid))] text-[hsl(var(--text-2))] min-h-[120px]"/>
               ) : (
@@ -192,7 +192,7 @@ export default function PolicyEditor() {
         <div className="space-y-4">
           {/* Status & Metadata */}
           <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] p-4">
-            <h3 className="text-white font-semibold text-sm mb-3">Policy Metadata</h3>
+            <h3 className="text-foreground font-semibold text-sm mb-3">Policy Metadata</h3>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between"><span className="text-[hsl(var(--text-3))]">Status</span><Badge className={statusColor}>{statusLabel}</Badge></div>
               <div className="flex justify-between"><span className="text-[hsl(var(--text-3))]">Category</span><span className="text-[hsl(var(--text-1))]">AI Governance</span></div>
@@ -206,12 +206,12 @@ export default function PolicyEditor() {
 
           {/* Review Status Stepper */}
           <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] p-4">
-            <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2"><Shield className="w-4 h-4"/>Review Status</h3>
+            <h3 className="text-foreground font-semibold text-sm mb-3 flex items-center gap-2"><Shield className="w-4 h-4"/>Review Status</h3>
             <div className="space-y-2">
               {STEPS.map((step,i) => (
                 <div key={i} className="flex items-center gap-2 text-sm">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${i <= currentStep ? "bg-[hsl(var(--brand))] text-white" : "bg-zinc-700 text-[hsl(var(--text-3))]"}`}>{i < currentStep ? <CheckCircle className="w-3 h-3"/> : i+1}</div>
-                  <span className={i <= currentStep ? "text-white" : "text-[hsl(var(--text-4))]"}>{step}</span>
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${i <= currentStep ? "bg-[hsl(var(--brand))] text-foreground" : "bg-muted text-[hsl(var(--text-3))]"}`}>{i < currentStep ? <CheckCircle className="w-3 h-3"/> : i+1}</div>
+                  <span className={i <= currentStep ? "text-foreground" : "text-[hsl(var(--text-4))]"}>{step}</span>
                 </div>
               ))}
             </div>
@@ -220,7 +220,7 @@ export default function PolicyEditor() {
               {currentStep === 0 && <Button size="sm" className="w-full" onClick={handleSubmitForReview}><Send className="w-3 h-3 mr-1"/>Submit for Review</Button>}
               {currentStep === 1 && (
                 <>
-                  <Button size="sm" className="w-full bg-[hsl(var(--brand))] hover:bg-emerald-700" onClick={handleApprove}><CheckCircle className="w-3 h-3 mr-1"/>Approve</Button>
+                  <Button size="sm" className="w-full bg-[hsl(var(--brand))] hover:bg-primary/90" onClick={handleApprove}><CheckCircle className="w-3 h-3 mr-1"/>Approve</Button>
                   <Button size="sm" variant="outline" className="w-full border-red-700 text-red-400 hover:bg-red-900/30" onClick={() => setShowRejectDialog(true)}><XCircle className="w-3 h-3 mr-1"/>Reject / Request Changes</Button>
                 </>
               )}
@@ -231,7 +231,7 @@ export default function PolicyEditor() {
 
           {/* Related Policies */}
           <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] p-4">
-            <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2"><Link2 className="w-4 h-4"/>Related Policies</h3>
+            <h3 className="text-foreground font-semibold text-sm mb-3 flex items-center gap-2"><Link2 className="w-4 h-4"/>Related Policies</h3>
             <div className="space-y-2">
               {relatedPolicies.map((p) => (
                 <button key={p.id} onClick={() => navigate(`/policy-editor?id=${p.id}`)} className="w-full text-left flex items-center justify-between p-2 rounded hover:bg-[hsl(var(--bg-raised))] transition-colors">
@@ -247,12 +247,12 @@ export default function PolicyEditor() {
 
           {/* Linked Controls */}
           <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] p-4">
-            <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2"><Shield className="w-4 h-4"/>Linked Controls</h3>
+            <h3 className="text-foreground font-semibold text-sm mb-3 flex items-center gap-2"><Shield className="w-4 h-4"/>Linked Controls</h3>
             <div className="space-y-2">
               {linkedControls.map((c) => (
                 <div key={c.id} className="flex items-center justify-between text-sm">
                   <div><span className="text-[hsl(var(--text-4))]">{c.id}</span><span className="text-[hsl(var(--text-2))] ml-2">{c.name}</span></div>
-                  <Badge className={c.status==="Implemented"?"bg-[hsl(var(--brand))]/20 text-[hsl(var(--brand))]":c.status==="Partial"?"bg-yellow-500/20 text-yellow-400":"bg-zinc-700 text-[hsl(var(--text-3))]"}>{c.status}</Badge>
+                  <Badge className={c.status==="Implemented"?"bg-[hsl(var(--brand))]/20 text-[hsl(var(--brand))]":c.status==="Partial"?"bg-yellow-500/20 text-yellow-400":"bg-muted text-[hsl(var(--text-3))]"}>{c.status}</Badge>
                 </div>
               ))}
             </div>
@@ -260,16 +260,16 @@ export default function PolicyEditor() {
 
           {/* Review Comments */}
           <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] p-4">
-            <h3 className="text-white font-semibold text-sm mb-3"><MessageSquare className="w-4 h-4 inline mr-1"/>Review Comments ({comments.length})</h3>
+            <h3 className="text-foreground font-semibold text-sm mb-3"><MessageSquare className="w-4 h-4 inline mr-1"/>Review Comments ({comments.length})</h3>
             <div className="mb-3">
-              <Textarea placeholder="Add a review comment..." value={newComment} onChange={(e:React.ChangeEvent<HTMLTextAreaElement>) => setNewComment(e.target.value)} className="bg-[hsl(var(--bg-raised))] border-[hsl(var(--border-mid))] text-white text-sm mb-2" rows={2}/>
+              <Textarea placeholder="Add a review comment..." value={newComment} onChange={(e:React.ChangeEvent<HTMLTextAreaElement>) => setNewComment(e.target.value)} className="bg-[hsl(var(--bg-raised))] border-[hsl(var(--border-mid))] text-foreground text-sm mb-2" rows={2}/>
               <Button size="sm" onClick={handleAddComment} disabled={!newComment.trim()} className="w-full"><Send className="w-3 h-3 mr-1"/>Add Comment</Button>
             </div>
             <Separator className="mb-3 bg-[hsl(var(--bg-raised))]"/>
             <div className="space-y-3 max-h-64 overflow-y-auto">
               {comments.map((c,i) => (
                 <div key={i} className="bg-[hsl(var(--bg-raised))]/30 rounded-lg p-3">
-                  <div className="flex justify-between items-start"><div><p className="text-white text-xs font-medium">{c.author}</p><p className="text-[hsl(var(--text-4))] text-xs">{c.role} &middot; {c.date}</p></div></div>
+                  <div className="flex justify-between items-start"><div><p className="text-foreground text-xs font-medium">{c.author}</p><p className="text-[hsl(var(--text-4))] text-xs">{c.role} &middot; {c.date}</p></div></div>
                   <p className="text-[hsl(var(--text-2))] text-xs mt-2">{c.text}</p>
                 </div>
               ))}

@@ -61,7 +61,7 @@ export function TrustSafetySettings() {
         <div><label className="text-sm font-medium">Recovery timeout (s)</label>
           <input type="number" value={cbTimeout} onChange={e => { setCbTimeout(Number(e.target.value)); setDirty(true); }} className="mt-1 w-full h-10 rounded-none border border-input bg-background px-3 font-mono text-sm" /></div>
       </div>
-      <button onClick={save} disabled={!dirty || update.isPending} className="h-10 px-6 rounded-none bg-[#1A6B5A] text-white text-sm font-medium hover:bg-[#1A6B5A]/90 disabled:opacity-50 flex items-center gap-2">
+      <button onClick={save} disabled={!dirty || update.isPending} className="h-10 px-6 rounded-none bg-[#1A6B5A] text-foreground text-sm font-medium hover:bg-[#1A6B5A]/90 disabled:opacity-50 flex items-center gap-2">
         {update.isPending ? <SpinnerGap className="w-4 h-4 animate-spin" /> : null}FloppyDisk Trust Settings
       </button>
     </div>

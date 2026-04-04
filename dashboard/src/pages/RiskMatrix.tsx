@@ -21,7 +21,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 const TrendIcon = ({ trend }: { trend: Risk['trend'] }) => {
   if (trend === 'increasing') return <ArrowUp className="text-red-400" size={14} weight="bold" />;
   if (trend === 'decreasing') return <ArrowDown className="text-green-400" size={14} weight="bold" />;
-  return <Minus className="text-slate-400" size={14} weight="bold" />;
+  return <Minus className="text-muted-foreground" size={14} weight="bold" />;
 };
 
 export default function RiskMatrix() {
@@ -66,13 +66,13 @@ export default function RiskMatrix() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-100">Risk Matrix</h1>
-          <p className="text-sm text-slate-400 mt-1">Likelihood vs Impact heat map — {totalRisks} AI risks tracked</p>
+          <p className="text-sm text-muted-foreground mt-1">Likelihood vs Impact heat map — {totalRisks} AI risks tracked</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => navigate('/risk')} className="border-slate-700 text-slate-300 hover:bg-slate-800">
+          <Button variant="outline" size="sm" onClick={() => navigate('/risk')} className="border-border text-foreground hover:bg-muted">
             <SlidersHorizontal size={14} className="mr-1.5" /> Register View
           </Button>
-          <Button variant="outline" size="sm" className="border-slate-700 text-slate-300 hover:bg-slate-800">
+          <Button variant="outline" size="sm" className="border-border text-foreground hover:bg-muted">
             <Download size={14} className="mr-1.5" /> Export
           </Button>
         </div>
@@ -80,12 +80,12 @@ export default function RiskMatrix() {
 
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: 'Total Risks', value: totalRisks, sub: 'Tracked', color: 'text-slate-300' },
+          { label: 'Total Risks', value: totalRisks, sub: 'Tracked', color: 'text-foreground' },
           { label: 'Critical', value: criticalRisks, sub: 'Score 15+', color: 'text-red-400' },
           { label: 'High', value: highRisks, sub: 'Score 10-14', color: 'text-orange-400' },
           { label: 'Open', value: openRisks, sub: 'Unmitigated', color: 'text-yellow-400' },
         ].map(s => (
-          <Card key={s.label} className="bg-slate-900 border-slate-800">
+          <Card key={s.label} className="bg-card border-slate-800">
             <CardContent className="p-4">
               <p className="text-xs text-slate-500 uppercase tracking-wide">{s.label}</p>
               <p className={`text-3xl font-bold mt-1 ${s.color}`}>{s.value}</p>
@@ -97,7 +97,7 @@ export default function RiskMatrix() {
 
       <div className="grid grid-cols-3 gap-6">
         <div className="col-span-2">
-          <Card className="bg-slate-900 border-slate-800">
+          <Card className="bg-card border-slate-800">
             <CardHeader className="pb-3">
               <CardTitle className="text-base text-slate-200">5x5 Likelihood vs Impact Heat Map</CardTitle>
               <p className="text-xs text-slate-500">Inherent risk positions — click a cell to view risks</p>
@@ -106,7 +106,7 @@ export default function RiskMatrix() {
               <div className="flex gap-3">
                 <div className="flex flex-col justify-around pr-2">
                   {[5,4,3,2,1].map(l => (
-                    <div key={l} className="text-xs text-slate-400 w-24 text-right">
+                    <div key={l} className="text-xs text-muted-foreground w-24 text-right">
                       {LIKELIHOOD_LABELS[l-1]}
                     </div>
                   ))}
@@ -126,20 +126,20 @@ export default function RiskMatrix() {
                             onMouseLeave={() => setHoveredCell(null)}
                             onClick={() => risks.length > 0 && setSelectedRisk(risks[0])}
                           >
-                            <span className="text-[10px] font-bold text-white/80">{score}</span>
+                            <span className="text-[10px] font-bold text-foreground/80">{score}</span>
                             {risks.length > 0 && (
                               <div className="flex flex-wrap justify-center gap-0.5 px-1">
                                 {risks.slice(0, 3).map(r => (
                                   <button
                                     key={r.id}
                                     onClick={(e) => { e.stopPropagation(); setSelectedRisk(r); }}
-                                    className="text-[8px] bg-black/30 text-white px-1 rounded hover:bg-black/50 truncate max-w-full"
+                                    className="text-[8px] bg-black/30 text-foreground px-1 rounded hover:bg-black/50 truncate max-w-full"
                                     title={r.title}
                                   >
                                     {r.id}
                                   </button>
                                 ))}
-                                {risks.length > 3 && <span className="text-[8px] text-white/60">+{risks.length-3}</span>}
+                                {risks.length > 3 && <span className="text-[8px] text-foreground/60">+{risks.length-3}</span>}
                               </div>
                             )}
                           </div>
@@ -150,7 +150,7 @@ export default function RiskMatrix() {
                   <div className="flex gap-1 mt-1">
                     <div className="w-24" />
                     {[1,2,3,4,5].map(i => (
-                      <div key={i} className="flex-1 text-center text-xs text-slate-400">{IMPACT_LABELS[i-1].split(' ')[0]}</div>
+                      <div key={i} className="flex-1 text-center text-xs text-muted-foreground">{IMPACT_LABELS[i-1].split(' ')[0]}</div>
                     ))}
                   </div>
                   <p className="text-center text-xs text-slate-500 mt-1">→ Impact</p>
@@ -160,7 +160,7 @@ export default function RiskMatrix() {
                 {[{label:'Low', cls:'bg-green-500/50'},{label:'Medium', cls:'bg-yellow-500/60'},{label:'High', cls:'bg-orange-500/70'},{label:'Critical', cls:'bg-red-500/80'}].map(l => (
                   <div key={l.label} className="flex items-center gap-1.5">
                     <div className={`w-3 h-3 rounded ${l.cls}`} />
-                    <span className="text-xs text-slate-400">{l.label}</span>
+                    <span className="text-xs text-muted-foreground">{l.label}</span>
                   </div>
                 ))}
               </div>
@@ -169,7 +169,7 @@ export default function RiskMatrix() {
         </div>
 
         <div className="flex flex-col gap-4">
-          <Card className="bg-slate-900 border-slate-800">
+          <Card className="bg-card border-slate-800">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm text-slate-200">Risk by Category</CardTitle>
             </CardHeader>
@@ -187,9 +187,9 @@ export default function RiskMatrix() {
                   <div key={c.name} className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <div className="w-2 h-2 rounded-full" style={{ background: c.fill }} />
-                      <span className="text-xs text-slate-400">{c.name}</span>
+                      <span className="text-xs text-muted-foreground">{c.name}</span>
                     </div>
-                    <span className="text-xs font-medium text-slate-300">{c.value}</span>
+                    <span className="text-xs font-medium text-foreground">{c.value}</span>
                   </div>
                 ))}
               </div>
@@ -198,7 +198,7 @@ export default function RiskMatrix() {
         </div>
       </div>
 
-      <Card className="bg-slate-900 border-slate-800">
+      <Card className="bg-card border-slate-800">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm text-slate-200">Inherent vs Residual Risk Score (Top 8)</CardTitle>
           <p className="text-xs text-slate-500">Control effectiveness shown as score reduction</p>
@@ -217,13 +217,13 @@ export default function RiskMatrix() {
             </BarChart>
           </ResponsiveContainer>
           <div className="flex gap-4 justify-end mt-2">
-            <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-red-500/60" /><span className="text-xs text-slate-400">Inherent</span></div>
-            <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-blue-500/80" /><span className="text-xs text-slate-400">Residual</span></div>
+            <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-red-500/60" /><span className="text-xs text-muted-foreground">Inherent</span></div>
+            <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-blue-500/80" /><span className="text-xs text-muted-foreground">Residual</span></div>
           </div>
         </CardContent>
       </Card>
 
-      <Card className="bg-slate-900 border-slate-800">
+      <Card className="bg-card border-slate-800">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm text-slate-200">All Risks — Quick Reference</CardTitle>
         </CardHeader>
@@ -243,18 +243,18 @@ export default function RiskMatrix() {
                   return (
                     <tr
                       key={r.id}
-                      className="border-b border-slate-800/50 hover:bg-slate-800/40 cursor-pointer transition-colors"
+                      className="border-b border-slate-800/50 hover:bg-muted/40 cursor-pointer transition-colors"
                       onClick={() => setSelectedRisk(r)}
                     >
-                      <td className="px-4 py-2.5 text-xs font-mono text-slate-400">{r.id}</td>
+                      <td className="px-4 py-2.5 text-xs font-mono text-muted-foreground">{r.id}</td>
                       <td className="px-4 py-2.5 max-w-xs">
                         <span className="text-slate-200 truncate block">{r.title}</span>
                       </td>
                       <td className="px-4 py-2.5">
                         <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: CATEGORY_COLORS[r.category] + '30', color: CATEGORY_COLORS[r.category] }}>{r.category}</span>
                       </td>
-                      <td className="px-4 py-2.5 text-slate-300 text-center">{r.likelihood}</td>
-                      <td className="px-4 py-2.5 text-slate-300 text-center">{r.impact}</td>
+                      <td className="px-4 py-2.5 text-foreground text-center">{r.likelihood}</td>
+                      <td className="px-4 py-2.5 text-foreground text-center">{r.impact}</td>
                       <td className={`px-4 py-2.5 font-bold text-center ${level.color}`}>{r.inherentScore}</td>
                       <td className="px-4 py-2.5 text-blue-400 font-medium text-center">{r.residualScore}</td>
                       <td className="px-4 py-2.5">
@@ -263,10 +263,10 @@ export default function RiskMatrix() {
                       <td className="px-4 py-2.5">
                         <div className="flex items-center gap-1">
                           <TrendIcon trend={r.trend} />
-                          <span className="text-xs text-slate-400 capitalize">{r.trend}</span>
+                          <span className="text-xs text-muted-foreground capitalize">{r.trend}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-2.5 text-xs text-slate-400 whitespace-nowrap">{r.owner}</td>
+                      <td className="px-4 py-2.5 text-xs text-muted-foreground whitespace-nowrap">{r.owner}</td>
                     </tr>
                   );
                 })}
@@ -278,27 +278,27 @@ export default function RiskMatrix() {
 
       {selectedRisk && (
         <Sheet open={!!selectedRisk} onOpenChange={() => setSelectedRisk(null)}>
-          <SheetContent className="w-[520px] bg-slate-900 border-slate-800 overflow-y-auto">
+          <SheetContent className="w-[520px] bg-card border-slate-800 overflow-y-auto">
             <SheetHeader className="pb-4 border-b border-slate-800">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-xs font-mono text-slate-500 mb-1">{selectedRisk.id}</p>
                   <SheetTitle className="text-lg text-slate-100 leading-snug">{selectedRisk.title}</SheetTitle>
                 </div>
-                <button onClick={() => setSelectedRisk(null)} className="text-slate-400 hover:text-slate-200">
+                <button onClick={() => setSelectedRisk(null)} className="text-muted-foreground hover:text-slate-200">
                   <X size={18} />
                 </button>
               </div>
               <div className="flex flex-wrap gap-2 mt-3">
                 <Badge variant="outline" className={`text-xs border ${statusColor[selectedRisk.status]}`}>{selectedRisk.status}</Badge>
-                <Badge variant="outline" className="text-xs border-slate-700 text-slate-400">{selectedRisk.category}</Badge>
-                <Badge variant="outline" className="text-xs border-slate-700 text-slate-400">{selectedRisk.riskType}</Badge>
-                <div className="flex items-center gap-1"><TrendIcon trend={selectedRisk.trend} /><span className="text-xs text-slate-400 capitalize">{selectedRisk.trend}</span></div>
+                <Badge variant="outline" className="text-xs border-border text-muted-foreground">{selectedRisk.category}</Badge>
+                <Badge variant="outline" className="text-xs border-border text-muted-foreground">{selectedRisk.riskType}</Badge>
+                <div className="flex items-center gap-1"><TrendIcon trend={selectedRisk.trend} /><span className="text-xs text-muted-foreground capitalize">{selectedRisk.trend}</span></div>
               </div>
             </SheetHeader>
 
             <Tabs defaultValue="overview" className="mt-4">
-              <TabsList className="bg-slate-800 w-full">
+              <TabsList className="bg-muted w-full">
                 {['overview','scores','mitigation','controls'].map(t => (
                   <TabsTrigger key={t} value={t} className="flex-1 text-xs capitalize data-[state=active]:bg-slate-700">{t}</TabsTrigger>
                 ))}
@@ -307,7 +307,7 @@ export default function RiskMatrix() {
               <TabsContent value="overview" className="mt-4 space-y-4">
                 <div>
                   <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Description</p>
-                  <p className="text-sm text-slate-300 leading-relaxed">{selectedRisk.description}</p>
+                  <p className="text-sm text-foreground leading-relaxed">{selectedRisk.description}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {[
@@ -316,7 +316,7 @@ export default function RiskMatrix() {
                     { label: 'Created', value: selectedRisk.created },
                     { label: 'Risk Type', value: selectedRisk.riskType },
                   ].map(f => (
-                    <div key={f.label} className="bg-slate-800 rounded p-3">
+                    <div key={f.label} className="bg-muted rounded p-3">
                       <p className="text-xs text-slate-500">{f.label}</p>
                       <p className="text-sm text-slate-200 mt-0.5">{f.value}</p>
                     </div>
@@ -332,7 +332,7 @@ export default function RiskMatrix() {
                     { label: 'Inherent Score', value: selectedRisk.inherentScore, sub: getRiskLevel(selectedRisk.inherentScore).label, color: getRiskLevel(selectedRisk.inherentScore).color },
                     { label: 'Residual Score', value: selectedRisk.residualScore, sub: `${Math.round((1-selectedRisk.residualScore/selectedRisk.inherentScore)*100)}% reduction`, color: 'text-blue-400' },
                   ].map(f => (
-                    <div key={f.label} className="bg-slate-800 rounded p-3">
+                    <div key={f.label} className="bg-muted rounded p-3">
                       <p className="text-xs text-slate-500">{f.label}</p>
                       <p className={`text-2xl font-bold mt-1 ${f.color}`}>{f.value}</p>
                       <p className="text-xs text-slate-500 mt-0.5">{f.sub}</p>
@@ -342,19 +342,19 @@ export default function RiskMatrix() {
               </TabsContent>
 
               <TabsContent value="mitigation" className="mt-4">
-                <div className="bg-slate-800 rounded p-4">
+                <div className="bg-muted rounded p-4">
                   <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Mitigation Strategy</p>
-                  <p className="text-sm text-slate-300 leading-relaxed">{selectedRisk.mitigation}</p>
+                  <p className="text-sm text-foreground leading-relaxed">{selectedRisk.mitigation}</p>
                 </div>
               </TabsContent>
 
               <TabsContent value="controls" className="mt-4 space-y-2">
                 <p className="text-xs text-slate-500">{selectedRisk.controls.length} linked controls</p>
                 {selectedRisk.controls.map(c => (
-                  <div key={c} className="flex items-center justify-between bg-slate-800 rounded p-3">
+                  <div key={c} className="flex items-center justify-between bg-muted rounded p-3">
                     <div className="flex items-center gap-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
-                      <span className="text-sm font-mono text-slate-300">{c}</span>
+                      <span className="text-sm font-mono text-foreground">{c}</span>
                     </div>
                     <button className="text-xs text-blue-400 hover:text-blue-300" onClick={() => navigate('/compliance/controls')}>
                       View <ArrowRight size={12} className="inline" />

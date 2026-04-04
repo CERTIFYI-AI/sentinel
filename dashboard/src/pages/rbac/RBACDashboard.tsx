@@ -182,7 +182,7 @@ export default function RBACDashboard() {
         <TabsContent value="roles" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {roles.map(role => (
-              <Card key={role.id} className="cursor-pointer hover:border-emerald-500/50 transition-colors" onClick={() => { setSelectedRole(role); setSheetOpen(true); }}>
+              <Card key={role.id} className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => { setSelectedRole(role); setSheetOpen(true); }}>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2"><h3 className="font-semibold text-sm">{role.name}</h3><Badge variant={role.riskLevel === "high" ? "destructive" : role.riskLevel === "medium" ? "secondary" : "default"}>{role.riskLevel}</Badge></div>
                   <p className="text-xs text-muted-foreground mb-3">{role.description}</p>

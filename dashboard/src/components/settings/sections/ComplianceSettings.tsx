@@ -8,8 +8,8 @@ const FRAMEWORKS = [
   { id: "china-genai", name: "China GenAI Regulations", status: "MANDATORY LAW", sc: "text-red-400", desc: "CAC-enforced since August 2023" },
   { id: "iso42001", name: "ISO/IEC 42001:2023", status: "CERTIFIABLE", sc: "text-blue-400", desc: "Certifiable AI management system" },
   { id: "nist-ai-rmf", name: "NIST AI RMF 1.0", status: "VOLUNTARY", sc: "text-green-400", desc: "US de facto standard" },
-  { id: "oecd", name: "OECD AI Principles", status: "POLICY GUIDE", sc: "text-zinc-400", desc: "Adopted by 40+ countries" },
-  { id: "ieee7000", name: "IEEE 7000-2021", status: "TECH STANDARD", sc: "text-zinc-400", desc: "Design-time standard" },
+  { id: "oecd", name: "OECD AI Principles", status: "POLICY GUIDE", sc: "text-muted-foreground", desc: "Adopted by 40+ countries" },
+  { id: "ieee7000", name: "IEEE 7000-2021", status: "TECH STANDARD", sc: "text-muted-foreground", desc: "Design-time standard" },
 ];
 
 export function ComplianceSettings() {

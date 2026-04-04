@@ -26,7 +26,7 @@ const statsCards = [
   { label: "Compliance", value: "87%", icon: Shield, color: "text-green-400" },
   { label: "Gaps", value: "18", icon: AlertTriangle, color: "text-yellow-400" },
   { label: "Evidence", value: "1.2K", icon: FileText, color: "text-blue-400" },
-  { label: "Trend", value: "+5%", icon: TrendingUp, color: "text-emerald-400" },
+  { label: "Trend", value: "+5%", icon: TrendingUp, color: "text-primary" },
 ];
 
 const frameworkScores = [
@@ -81,7 +81,7 @@ export default function ComplianceDashboardPage() {
           <Card key={s.label}>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-400">{s.label}</span>
+                <span className="text-sm text-muted-foreground">{s.label}</span>
                 <s.icon className={`h-5 w-5 ${s.color}`} />
               </div>
               <p className="text-2xl font-bold mt-2">{s.value}</p>
@@ -106,7 +106,7 @@ export default function ComplianceDashboardPage() {
             </TableHeader>
             <TableBody>
               {frameworkScores.map((f) => (
-                <TableRow key={f.name} className="cursor-pointer hover:bg-slate-800/50"
+                <TableRow key={f.name} className="cursor-pointer hover:bg-muted/50"
                   onClick={() => nav(`/frameworks?framework=${encodeURIComponent(f.name)}`)}>
                   <TableCell className="font-medium">{f.name}</TableCell>
                   <TableCell>
@@ -142,19 +142,19 @@ export default function ComplianceDashboardPage() {
             <div className="grid grid-cols-3 gap-4">
               <Card>
                 <CardContent className="pt-4">
-                  <p className="text-sm text-slate-400">Score</p>
+                  <p className="text-sm text-muted-foreground">Score</p>
                   <p className="text-2xl font-bold">{sel?.score}%</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="pt-4">
-                  <p className="text-sm text-slate-400">Controls</p>
+                  <p className="text-sm text-muted-foreground">Controls</p>
                   <p className="text-2xl font-bold">{sel?.controls}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="pt-4">
-                  <p className="text-sm text-slate-400">Gaps</p>
+                  <p className="text-sm text-muted-foreground">Gaps</p>
                   <p className="text-2xl font-bold text-yellow-400">{sel?.gaps}</p>
                 </CardContent>
               </Card>

@@ -278,7 +278,7 @@ function FrameworkDetailSheet({
   const gaps = frameworkGapsMap[framework.id] ?? [];
 
   const statusColor = (status: string) => {
-    if (status === "Compliant" || status === "Implemented" || status === "compliant") return "text-[hsl(var(--brand))] border-emerald-500/20 bg-[hsl(var(--brand))]/10";
+    if (status === "Compliant" || status === "Implemented" || status === "compliant") return "text-[hsl(var(--brand))] border-primary/20 bg-[hsl(var(--brand))]/10";
     if (status === "Partial" || status === "partial") return "text-amber-400 border-amber-500/20 bg-amber-500/10";
     return "text-red-400 border-red-500/20 bg-red-500/10";
   };
@@ -607,7 +607,7 @@ export default function Frameworks() {
                       className={cn(
                         "text-xs",
                         f.status === "compliant"
-                          ? "bg-[hsl(var(--brand))]/10 text-[hsl(var(--brand))] border-emerald-500/20"
+                          ? "bg-[hsl(var(--brand))]/10 text-[hsl(var(--brand))] border-primary/20"
                           : f.status === "partial"
                           ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
                           : "bg-red-500/10 text-red-400 border-red-500/20"

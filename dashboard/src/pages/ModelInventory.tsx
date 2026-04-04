@@ -21,7 +21,7 @@ const models = [
 
 const statusColor = (s: string) => s==="Production"?"bg-emerald-50 text-emerald-700 border border-emerald-200":s==="Staging"?"bg-amber-50 text-amber-700 border border-amber-200":s==="Development"?"bg-blue-50 text-blue-700 border border-blue-200":"bg-red-50 text-red-700 border border-red-200";
 const riskColor = (r: string) => r==="High"?"bg-red-50 text-red-700 border border-red-200":r==="Unacceptable"?"bg-red-100 text-red-800 border border-red-300":r==="Limited"?"bg-amber-50 text-amber-700 border border-amber-200":"bg-emerald-50 text-emerald-700 border border-emerald-200";
-const driftColor = (d: string) => d==="Stable"?"text-emerald-600":d==="Warning"?"text-amber-600":"text-red-600 animate-pulse";
+const driftColor = (d: string) => d==="Stable"?"text-primary":d==="Warning"?"text-amber-600":"text-red-600 animate-pulse";
 const compColor = (s: string) => s==="Compliant"?"bg-emerald-50 text-emerald-700":s==="Partial"?"bg-amber-50 text-amber-700":s==="Review"?"bg-blue-50 text-blue-700":"bg-red-50 text-red-700";
 
 export default function ModelInventory() {
@@ -40,7 +40,7 @@ export default function ModelInventory() {
 
   const stats = [
     { label: "Total Models", value: models.length, icon: Brain, color: "text-slate-700" },
-    { label: "In Production", value: models.filter(m=>m.status==="Production").length, icon: CheckCircle, color: "text-emerald-600" },
+    { label: "In Production", value: models.filter(m=>m.status==="Production").length, icon: CheckCircle, color: "text-primary" },
     { label: "Drift Alerts", value: models.filter(m=>m.driftStatus!=="Stable").length, icon: Warning, color: "text-amber-600" },
     { label: "High Risk", value: models.filter(m=>m.riskTier==="High"||m.riskTier==="Unacceptable").length, icon: XCircle, color: "text-red-600" },
   ];
@@ -56,7 +56,7 @@ export default function ModelInventory() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" style={{borderRadius:0}}><Export weight="regular" className="h-4 w-4 mr-1"/>Export</Button>
-          <Button size="sm" className="bg-[#368F4D] hover:bg-emerald-700" style={{borderRadius:0}}><Plus weight="bold" className="h-4 w-4 mr-1"/>Register Model</Button>
+          <Button size="sm" className="bg-[#368F4D] hover:bg-primary/90" style={{borderRadius:0}}><Plus weight="bold" className="h-4 w-4 mr-1"/>Register Model</Button>
         </div>
       </div>
 
@@ -166,7 +166,7 @@ export default function ModelInventory() {
                   <div className="space-y-1"><p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Description</p><p className="text-sm text-slate-600">{selected.description}</p></div>
                   <div className="space-y-2">
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Guardrail Configuration</p>
-                    {selected.guardrails.map((g,i)=>(<div key={i} className="flex items-center justify-between p-2 border" style={{borderRadius:0}}><div className="flex items-center gap-2"><ShieldCheck weight={g.enabled?"fill":"regular"} className={g.enabled?"h-4 w-4 text-emerald-600":"h-4 w-4 text-slate-400"}/><span className="text-sm">{g.name}</span></div><span className="text-xs text-slate-500">{g.threshold}</span></div>))}
+                    {selected.guardrails.map((g,i)=>(<div key={i} className="flex items-center justify-between p-2 border" style={{borderRadius:0}}><div className="flex items-center gap-2"><ShieldCheck weight={g.enabled?"fill":"regular"} className={g.enabled?"h-4 w-4 text-primary":"h-4 w-4 text-muted-foreground"}/><span className="text-sm">{g.name}</span></div><span className="text-xs text-slate-500">{g.threshold}</span></div>))}
                   </div>
                   <div className="space-y-2">
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Compliance Mapping</p>
@@ -177,7 +177,7 @@ export default function ModelInventory() {
                 <TabsContent value="bias" className="mt-4 space-y-4">
                   <p className="text-sm text-slate-600">Fairness Score: <span className="font-semibold">{selected.fairnessScore}%</span></p>
                   <div className="space-y-3">
-                    {selected.biasMetrics.map((b,i)=>(<div key={i} className="space-y-1"><div className="flex justify-between text-sm"><span>{b.metric}</span><span className={b.status==="Pass"?"text-emerald-600 font-medium":"text-red-600 font-medium"}>{b.value} / {b.threshold}</span></div><Progress value={b.value*100} className="h-2" style={{borderRadius:0}}/></div>))}
+                    {selected.biasMetrics.map((b,i)=>(<div key={i} className="space-y-1"><div className="flex justify-between text-sm"><span>{b.metric}</span><span className={b.status==="Pass"?"text-primary font-medium":"text-red-600 font-medium"}>{b.value} / {b.threshold}</span></div><Progress value={b.value*100} className="h-2" style={{borderRadius:0}}/></div>))}
                   </div>
                   <div className="h-48">
                     <ResponsiveContainer width="100%" height="100%">

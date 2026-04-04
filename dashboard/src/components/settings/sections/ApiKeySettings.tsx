@@ -41,7 +41,7 @@ export function ApiKeySettings() {
           <h2 className="text-lg font-semibold">API Keys</h2>
           <p className="text-sm text-muted-foreground">{activeKeys.length} active keys &middot; {expiredKeys.length} expired</p>
         </div>
-        <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 h-9 px-4 rounded-none bg-[#1A6B5A] text-white text-sm">
+        <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 h-9 px-4 rounded-none bg-[#1A6B5A] text-foreground text-sm">
           <Plus className="w-4 h-4" /> Create New Key
         </button>
       </div>
@@ -72,7 +72,7 @@ export function ApiKeySettings() {
             <option value="never">Never</option>
           </select>
           <div className="flex gap-2">
-            <button onClick={handleCreate} disabled={!newKeyName || createKey.isPending} className="h-9 px-4 rounded-none bg-[#1A6B5A] text-white text-sm">
+            <button onClick={handleCreate} disabled={!newKeyName || createKey.isPending} className="h-9 px-4 rounded-none bg-[#1A6B5A] text-foreground text-sm">
               {createKey.isPending ? <SpinnerGap className="w-4 h-4 animate-spin" /> : "Create Key"}
             </button>
             <button onClick={() => setShowCreate(false)} className="h-9 px-4 rounded-none border text-sm">Cancel</button>

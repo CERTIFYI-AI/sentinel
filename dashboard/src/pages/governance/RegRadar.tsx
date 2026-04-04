@@ -26,17 +26,17 @@ const impactColor = (level: string) => {
     case "Critical": return "bg-red-500/10 text-red-400 border-red-500/20";
     case "High": return "bg-amber-500/10 text-amber-400 border-amber-500/20";
     case "Medium": return "bg-blue-500/10 text-blue-400 border-blue-500/20";
-    default: return "bg-slate-500/10 text-slate-400 border-slate-500/20";
+    default: return "bg-slate-500/10 text-muted-foreground border-slate-500/20";
   }
 };
 
 const statusColor = (status: string) => {
   switch (status) {
-    case "Enacted": return "bg-[hsl(var(--brand))]/10 text-[hsl(var(--brand))] border-emerald-500/20";
+    case "Enacted": return "bg-[hsl(var(--brand))]/10 text-[hsl(var(--brand))] border-primary/20";
     case "Published": return "bg-blue-500/10 text-blue-400 border-blue-500/20";
     case "Upcoming": return "bg-amber-500/10 text-amber-400 border-amber-500/20";
-    case "Draft": return "bg-slate-500/10 text-slate-400 border-slate-500/20";
-    default: return "bg-slate-500/10 text-slate-400 border-slate-500/20";
+    case "Draft": return "bg-slate-500/10 text-muted-foreground border-slate-500/20";
+    default: return "bg-slate-500/10 text-muted-foreground border-slate-500/20";
   }
 };
 
@@ -132,7 +132,7 @@ export default function RegRadar() {
                   <div className="flex items-center gap-2 mb-1">
                     <Badge variant="outline" className={impactColor(reg.impactLevel)}>{reg.impactLevel}</Badge>
                     <Badge variant="outline" className={statusColor(reg.status)}>{reg.status}</Badge>
-                    <Badge variant="outline" className="bg-slate-500/10 text-slate-400 border-slate-500/20">{reg.jurisdiction}</Badge>
+                    <Badge variant="outline" className="bg-slate-500/10 text-muted-foreground border-slate-500/20">{reg.jurisdiction}</Badge>
                   </div>
                   <h3 className="font-medium">{reg.name}</h3>
                   <p className="text-sm text-muted-foreground mt-1">{reg.summary}</p>
@@ -142,7 +142,7 @@ export default function RegRadar() {
                     <span>{reg.affectedModels.length} models affected</span>
                   </div>
                   <div className="flex flex-wrap gap-1 mt-2">
-                    {reg.affectedModels.map(m => <Badge key={m} variant="secondary" className="text-xs bg-slate-800">{m}</Badge>)}
+                    {reg.affectedModels.map(m => <Badge key={m} variant="secondary" className="text-xs bg-muted">{m}</Badge>)}
                   </div>
                 </div>
                 <div className="text-right ml-4">
@@ -177,14 +177,14 @@ export default function RegRadar() {
               <div>
                 <p className="text-sm font-medium mb-2">Affected Models</p>
                 <div className="flex flex-wrap gap-1">
-                  {selectedReg.affectedModels.map(m => <Badge key={m} variant="secondary" className="bg-slate-800">{m}</Badge>)}
+                  {selectedReg.affectedModels.map(m => <Badge key={m} variant="secondary" className="bg-muted">{m}</Badge>)}
                 </div>
               </div>
               <div>
                 <p className="text-sm font-medium mb-2">Required Actions</p>
                 <div className="space-y-2">
                   {selectedReg.requiredActions.map((a, i) => (
-                    <div key={i} className="flex items-center gap-2 p-2 rounded bg-slate-800/50">
+                    <div key={i} className="flex items-center gap-2 p-2 rounded bg-muted/50">
                       <input type="checkbox" className="rounded" />
                       <span className="text-sm">{a}</span>
                     </div>

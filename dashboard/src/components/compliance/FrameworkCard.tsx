@@ -33,7 +33,7 @@ export function FrameworkCard({ result }: Props) {
 
       <button
         onClick={() => setExpanded(!expanded)}
-        className="mt-3 text-xs text-emerald-600 hover:text-blue-800 font-medium"
+        className="mt-3 text-xs text-primary hover:text-blue-800 font-medium"
       >
         {expanded ? 'Hide controls' : 'Show controls'}
       </button>

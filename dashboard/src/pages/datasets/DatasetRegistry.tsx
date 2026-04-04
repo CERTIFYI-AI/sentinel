@@ -19,7 +19,7 @@ const datasets = [
 
 const sensitivityColors: Record<string, string> = { PII: 'bg-red-600', PHI: 'bg-purple-600', confidential: 'bg-orange-500', internal: 'bg-yellow-500', public: 'bg-green-500' };
 const riskColors: Record<string, string> = { critical: 'text-red-400', high: 'text-orange-400', medium: 'text-yellow-400', low: 'text-green-400' };
-const statusColors: Record<string, string> = { active: 'bg-emerald-900 text-emerald-300', review: 'bg-yellow-900 text-yellow-300', archived: 'bg-gray-700 text-gray-300' };
+const statusColors: Record<string, string> = { active: 'bg-emerald-900 text-emerald-300', review: 'bg-yellow-900 text-yellow-300', archived: 'bg-gray-700 text-foreground' };
 
 export default function DatasetRegistry() {
   const navigate = useNavigate();
@@ -48,7 +48,7 @@ export default function DatasetRegistry() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm"><Download className="h-4 w-4 mr-1" />Export</Button>
-          <Button size="sm" className="bg-[hsl(var(--brand))] hover:bg-emerald-700"><Plus className="h-4 w-4 mr-1" />Register Dataset</Button>
+          <Button size="sm" className="bg-[hsl(var(--brand))] hover:bg-primary/90"><Plus className="h-4 w-4 mr-1" />Register Dataset</Button>
         </div>
       </div>
 
@@ -119,7 +119,7 @@ export default function DatasetRegistry() {
                     <div className="text-xs text-muted-foreground">{ds.owner} | {ds.encryption}</div>
                   </td>
                   <td className="py-3 px-2 text-xs">{ds.model}</td>
-                  <td className="py-3 px-2"><span className={"px-2 py-0.5 rounded text-xs font-medium text-white " + (sensitivityColors[ds.sensitivity] || 'bg-gray-500')}>{ds.sensitivity.toUpperCase()}</span></td>
+                  <td className="py-3 px-2"><span className={"px-2 py-0.5 rounded text-xs font-medium text-foreground " + (sensitivityColors[ds.sensitivity] || 'bg-gray-500')}>{ds.sensitivity.toUpperCase()}</span></td>
                   <td className="py-3 px-2"><span className={"text-xs font-semibold " + (riskColors[ds.riskLevel] || '')}>{ds.riskLevel.toUpperCase()}</span></td>
                   <td className="py-3 px-2 text-xs">{ds.records.toLocaleString()}</td>
                   <td className="py-3 px-2"><span className={"px-2 py-0.5 rounded text-xs " + (statusColors[ds.status] || '')}>{ds.status}</span></td>

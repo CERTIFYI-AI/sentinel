@@ -46,7 +46,7 @@ const categoryIcon = (cat: string) => {
     case "Audit": return <FileCheck className="h-5 w-5 text-blue-400" />;
     case "Regulatory": return <AlertTriangle className="h-5 w-5 text-amber-400" />;
     case "Operational": return <Clock className="h-5 w-5 text-[hsl(var(--brand))]" />;
-    default: return <FileText className="h-5 w-5 text-slate-400" />;
+    default: return <FileText className="h-5 w-5 text-muted-foreground" />;
   }
 };
 
@@ -55,8 +55,8 @@ const categoryColor = (cat: string) => {
     case "Executive": return "bg-teal-500/10 text-teal-400 border-teal-500/20";
     case "Audit": return "bg-blue-500/10 text-blue-400 border-blue-500/20";
     case "Regulatory": return "bg-amber-500/10 text-amber-400 border-amber-500/20";
-    case "Operational": return "bg-[hsl(var(--brand))]/10 text-[hsl(var(--brand))] border-emerald-500/20";
-    default: return "bg-slate-500/10 text-slate-400 border-slate-500/20";
+    case "Operational": return "bg-[hsl(var(--brand))]/10 text-[hsl(var(--brand))] border-primary/20";
+    default: return "bg-slate-500/10 text-muted-foreground border-slate-500/20";
   }
 };
 
@@ -186,9 +186,9 @@ export default function Reporting() {
                   <p className="text-sm text-muted-foreground line-clamp-2">{report.description}</p>
                   <div className="flex flex-wrap gap-1">
                     {report.sections.slice(0, 3).map(s => (
-                      <Badge key={s} variant="secondary" className="text-xs bg-slate-800">{s}</Badge>
+                      <Badge key={s} variant="secondary" className="text-xs bg-muted">{s}</Badge>
                     ))}
-                    {report.sections.length > 3 && <Badge variant="secondary" className="text-xs bg-slate-800">+{report.sections.length - 3}</Badge>}
+                    {report.sections.length > 3 && <Badge variant="secondary" className="text-xs bg-muted">+{report.sections.length - 3}</Badge>}
                   </div>
                   <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border">
                     <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{report.frequency}</span>
@@ -229,7 +229,7 @@ export default function Reporting() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <Badge variant="outline" className="bg-[hsl(var(--brand))]/10 text-[hsl(var(--brand))] border-emerald-500/20">{sr.status}</Badge>
+                        <Badge variant="outline" className="bg-[hsl(var(--brand))]/10 text-[hsl(var(--brand))] border-primary/20">{sr.status}</Badge>
                         <span className="text-xs text-muted-foreground">{sr.delivery}</span>
                         <Button size="sm" variant="ghost"><Send className="h-3 w-3" /></Button>
                       </div>
@@ -292,7 +292,7 @@ export default function Reporting() {
                 <p className="text-sm font-medium mb-2">Sections</p>
                 <div className="space-y-1">
                   {selectedReport.sections.map((s, i) => (
-                    <div key={s} className="flex items-center gap-2 text-sm p-2 rounded bg-slate-800/50">
+                    <div key={s} className="flex items-center gap-2 text-sm p-2 rounded bg-muted/50">
                       <span className="text-muted-foreground w-6">{i + 1}.</span>{s}
                     </div>
                   ))}

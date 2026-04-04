@@ -6,8 +6,8 @@ import type { ModelConfig, ModelHealth } from "../../api/types";
 
 const roleBadge: Record<string, string> = {
   primary: "bg-emerald-50 text-[#1A6B5A] border-primary/30",
-  fallback: "bg-emerald-600/20 text-blue-400 border-blue-500/30",
-  evaluation: "bg-zinc-500/20 text-zinc-400 border-zinc-500/30",
+  fallback: "bg-primary/20 text-blue-400 border-blue-500/30",
+  evaluation: "bg-zinc-500/20 text-muted-foreground border-zinc-500/30",
   disabled: "bg-destructive/20 text-destructive border-destructive/30",
 };
 const cbDot: Record<string, string> = {

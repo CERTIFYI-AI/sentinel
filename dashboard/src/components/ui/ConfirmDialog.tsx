@@ -20,7 +20,7 @@ export function ConfirmDialog({ open, onClose, onConfirm, type = "info", title, 
   const typingValid = !requiresTyping || typed === requiresTyping;
   const checklistValid = !checklist || checklist.every((_, i) => checked[i]);
   const canConfirm = typingValid && checklistValid;
-  const colors = { danger: "bg-[hsl(var(--destructive))] text-white", warning: "bg-[hsl(var(--warning-bg))] text-[hsl(var(--warning))]", info: "bg-[hsl(var(--primary))] text-white" };
+  const colors = { danger: "bg-[hsl(var(--destructive))] text-foreground", warning: "bg-[hsl(var(--warning-bg))] text-[hsl(var(--warning))]", info: "bg-[hsl(var(--primary))] text-foreground" };
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />

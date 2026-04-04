@@ -30,7 +30,7 @@ export function ComplianceDashboard({ scores, loading }: Props) {
         <Card>
           <CardContent className='pt-6'>
             <div className='flex items-center gap-3'>
-              <span className="h-8 w-8 text-emerald-600">📄</span>
+              <span className="h-8 w-8 text-primary">📄</span>
               <div>
                 <p className='text-2xl font-bold'>{scores.reduce((a, s) => a + s.total, 0)}</p>
                 <p className='text-xs text-muted-foreground'>Total Policies</p>

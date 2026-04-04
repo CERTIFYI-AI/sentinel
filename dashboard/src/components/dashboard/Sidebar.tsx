@@ -66,7 +66,7 @@ export function Sidebar() {
                   className={cn(
                     "flex items-center gap-2 rounded-none px-3 py-2 text-sm transition-colors",
                     pathname === item.path
-                      ? "bg-[#1A6B5A] text-white"
+                      ? "bg-[#1A6B5A] text-foreground"
                       : "text-muted-foreground hover:bg-muted hover:text-accent-foreground"
                   )}
                 >
