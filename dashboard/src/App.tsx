@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React from 'react';
 import { lazy, Suspense } from 'react';
 import Sidebar from './components/Sidebar';
 import TopHeader from './components/TopHeader';
@@ -93,7 +94,19 @@ function Loading() {
  * useRealtimeEvents: WebSocket connection + unread notification counter.
  * useRealtimeInvalidation: maps incoming events to React Query cache invalidations.
  */
+function AuthGuard({ children }: { children: React.ReactNode }) {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  return <>{children}</>;
+}
+
 function AuthenticatedLayout() {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
   const tenantId = useAuthStore((s) => s.user?.tenantId ?? 'default');
 
   useRealtimeEvents({
@@ -161,6 +174,7 @@ function AuthenticatedLayout() {
               {/* Governance */}
               <Route path="/controls" element={<Navigate to="/compliance/controls" replace />} />
               <Route path="/frameworks" element={<Frameworks />} />
+              <Route path="/compliance/frameworks" element={<Frameworks />} />
               <Route path="/reg-radar" element={<RegRadar />} />
               {/* AI Inventory */}
               <Route path="/agents" element={<AgentDiscovery />} />
