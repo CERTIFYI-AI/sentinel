@@ -5,9 +5,7 @@ import {
   UserCircleCheck, Robot, Rss, Database, BuildingOffice,
   Warning, Scales, FolderOpen,
   ShieldCheck, LockOpen, Lock, Gear,
-  SignOut, CaretDown, CaretRight, MoonStars, SunHorizon, Monitor,
-  Eye, Crosshair, Bug, ListChecks, Sword, Key, Trophy, FileArrowDown,
-  Activity, ArrowsClockwise, Wrench, Sliders, Graph
+  SignOut, CaretDown, CaretRight, MoonStars, SunHorizon, Monitor
 } from '@phosphor-icons/react'
 import { cn } from '../lib/utils'
 import { useTheme } from '../providers/ThemeProvider'
@@ -20,17 +18,17 @@ const NAV = [
   { title: 'GOVERNANCE', items: [
     { label: 'Compliance', to: '/compliance', icon: Shield },
     { label: 'Policy Manager', to: '/compliance/policies', icon: FileText },
-    { label: 'Controls', to: '/compliance/controls', icon: ListChecks },
+    { label: 'Controls', to: '/compliance/controls', icon: Shield },
     { label: 'Frameworks', to: '/frameworks', icon: BookOpen },
     { label: 'Reg Radar', to: '/reg-radar', icon: ChartBar },
-    { label: 'Gap Analysis', to: '/compliance/gap-analysis', icon: Graph },
+    { label: 'Gap Analysis', to: '/compliance/gap-analysis', icon: ChartBar },
     { label: 'HITL Reviews', to: '/hitl', icon: UserCircleCheck, badge: 3 },
   ]},
   { title: 'AI INVENTORY', items: [
     { label: 'Model Registry', to: '/models/inventory', icon: Robot },
-    { label: 'Model Lifecycle', to: '/models/lifecycle', icon: ArrowsClockwise },
+    { label: 'Model Lifecycle', to: '/models/lifecycle', icon: Robot },
     { label: 'Agent Discovery', to: '/agents', icon: Rss, badge: 12 },
-    { label: 'Shadow AI', to: '/agents/shadow-ai', icon: Eye },
+    { label: 'Shadow AI', to: '/agents/shadow-ai', icon: Warning },
     { label: 'Datasets', to: '/datasets', icon: Database },
     { label: 'Vendor Registry', to: '/vendors', icon: BuildingOffice },
   ]},
@@ -44,28 +42,28 @@ const NAV = [
   ]},
   { title: 'SECURITY', items: [
     { label: 'Security Home', to: '/security', icon: ShieldCheck },
-    { label: 'Threat Feed', to: '/security/threats', icon: Crosshair },
-    { label: 'Scan Center', to: '/security/scanner', icon: Bug },
+    { label: 'Threat Feed', to: '/security/threats', icon: Warning },
+    { label: 'Scan Center', to: '/security/scanner', icon: Shield },
     { label: 'Vulnerabilities', to: '/security/vulnerabilities', icon: Warning },
-    { label: 'Red Team Lab', to: '/security/red-team', icon: Sword },
-    { label: 'Attack Surface', to: '/security/attack-surface', icon: Eye },
-    { label: 'Policy Firewall', to: '/security/policies', icon: Shield },
-    { label: 'Keys Vault', to: '/security/keys', icon: Key },
-    { label: 'Model Arena', to: '/security/model-arena', icon: Trophy },
+    { label: 'Red Team Lab', to: '/security/red-team', icon: Shield },
+    { label: 'Attack Surface', to: '/security/attack-surface', icon: Shield },
+    { label: 'Policy Firewall', to: '/security/policies', icon: FileText },
+    { label: 'Keys Vault', to: '/security/keys', icon: Lock },
+    { label: 'Model Arena', to: '/security/model-arena', icon: Robot },
   ]},
   { title: 'TRUST ENGINE', items: [
     { label: 'Trust Dashboard', to: '/trust-engine', icon: ShieldCheck },
     { label: 'Guardrails', to: '/trust-engine/guardrails', icon: LockOpen },
-    { label: 'Live Traces', to: '/trust-engine/traces', icon: Activity },
+    { label: 'Live Traces', to: '/trust-engine/traces', icon: Rss },
     { label: 'Cost & Tokens', to: '/trust-engine/costs', icon: ChartBar },
-    { label: 'Fallback Log', to: '/trust-engine/fallbacks', icon: ArrowsClockwise },
-    { label: 'Tool Monitor', to: '/trust-engine/tools', icon: Wrench },
-    { label: 'Configuration', to: '/trust-engine/config', icon: Sliders },
+    { label: 'Fallback Log', to: '/trust-engine/fallbacks', icon: FileText },
+    { label: 'Tool Monitor', to: '/trust-engine/tools', icon: Gear },
+    { label: 'Configuration', to: '/trust-engine/config', icon: Gear },
   ]},
   { title: 'ADMINISTRATION', items: [
     { label: 'Access Control', to: '/access-control', icon: Lock },
     { label: 'Audit Log', to: '/audit-log', icon: FileText },
-    { label: 'Export Center', to: '/export', icon: FileArrowDown },
+    { label: 'Export Center', to: '/export', icon: FolderOpen },
     { label: 'Settings', to: '/settings', icon: Gear },
   ]},
 ]
