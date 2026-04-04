@@ -12,11 +12,11 @@ const columns = [  { key: "id", label: "ID" },
   { key: "severity", label: "Severity" },
   { key: "score", label: "Score" },
   { key: "date", label: "Date" },];
-const mockData: any[] = [  { id: 1, name: "Item Alpha", status: "active", severity: "high", score: 85, date: "2024-03-15" },
-  { id: 2, name: "Item Beta", status: "resolved", severity: "medium", score: 72, date: "2024-03-14" },
-  { id: 3, name: "Item Gamma", status: "active", severity: "low", score: 91, date: "2024-03-13" },
-  { id: 4, name: "Item Delta", status: "pending", severity: "critical", score: 45, date: "2024-03-12" },
-  { id: 5, name: "Item Epsilon", status: "active", severity: "medium", score: 78, date: "2024-03-11" },];
+const mockData: any[] = [  { id: 1, name: "Item Alpha", status: "active", severity: "high", score: 85, date: "2026-03-15" },
+  { id: 2, name: "Item Beta", status: "resolved", severity: "medium", score: 72, date: "2026-03-14" },
+  { id: 3, name: "Item Gamma", status: "active", severity: "low", score: 91, date: "2026-03-13" },
+  { id: 4, name: "Item Delta", status: "pending", severity: "critical", score: 45, date: "2026-03-12" },
+  { id: 5, name: "Item Epsilon", status: "active", severity: "medium", score: 78, date: "2026-03-11" },];
 const statsCards = [  { label: "Total", value: "156", icon: Shield },
   { label: "Active", value: "89", icon: Shield },
   { label: "Critical", value: "12", icon: Shield },

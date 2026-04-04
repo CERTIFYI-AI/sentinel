@@ -77,16 +77,16 @@ export const mockLiveFeed: LiveFeedEntry[] = [
 ];
 
 export const mockAuditEntries: AuditEntry[] = [
-  { id: 'req-8f3a2c1b', timestamp: '2025-03-09 11:58:22 UTC', model: 'gpt-4o', trust_score: 0.9312, intervention: 'NONE', pii_count: 0, latency_ms: 231, cost: 0.00031, chain_hash: 'e3b0c44298fc1c14' },
-  { id: 'req-7c2b9d4e', timestamp: '2025-03-09 11:57:55 UTC', model: 'claude-3-5-sonnet', trust_score: 0.7841, intervention: 'REGENERATE', pii_count: 2, latency_ms: 418, cost: 0.00089, chain_hash: 'a87ff679a2f3f4b3' },
-  { id: 'req-6d1e0a5f', timestamp: '2025-03-09 11:57:11 UTC', model: 'llama-3.1-70b', trust_score: 0.9104, intervention: 'NONE', pii_count: 0, latency_ms: 189, cost: 0.00012, chain_hash: 'eccbc87e4b5ce2fe' },
-  { id: 'req-5a9f3c8b', timestamp: '2025-03-09 11:56:44 UTC', model: 'gpt-4o-mini', trust_score: 0.6123, intervention: 'HITL', pii_count: 1, latency_ms: 891, cost: 0.00007, chain_hash: 'c4ca4238a0b92382' },
-  { id: 'req-4b8c2e7a', timestamp: '2025-03-09 11:55:30 UTC', model: 'gpt-4o', trust_score: 0.9521, intervention: 'NONE', pii_count: 0, latency_ms: 201, cost: 0.00028, chain_hash: '1679091c5a880faf' },
-  { id: 'req-3c7d1f6b', timestamp: '2025-03-09 11:54:21 UTC', model: 'claude-3-5-sonnet', trust_score: 0.8203, intervention: 'UPGRADE', pii_count: 0, latency_ms: 344, cost: 0.00071, chain_hash: '8f14e45fceea1678' },
-  { id: 'req-2e6a0b5c', timestamp: '2025-03-09 11:53:08 UTC', model: 'gpt-4o', trust_score: 0.4891, intervention: 'BLOCKED', pii_count: 3, latency_ms: 112, cost: 0.00002, chain_hash: '45c48cce2e2d7fbd' },
-  { id: 'req-1f5b9e4d', timestamp: '2025-03-09 11:52:17 UTC', model: 'llama-3.1-70b', trust_score: 0.9789, intervention: 'NONE', pii_count: 0, latency_ms: 167, cost: 0.00009, chain_hash: 'd3d9446802a44259' },
-  { id: 'req-0g4c8d3e', timestamp: '2025-03-09 11:51:44 UTC', model: 'gpt-4o-mini', trust_score: 0.8812, intervention: 'NONE', pii_count: 0, latency_ms: 145, cost: 0.00005, chain_hash: '6512bd43d9caa6e0' },
-  { id: 'req-9h3b7c2f', timestamp: '2025-03-09 11:51:01 UTC', model: 'gpt-4o', trust_score: 0.7234, intervention: 'UPGRADE', pii_count: 0, latency_ms: 289, cost: 0.00041, chain_hash: 'c20ad4d76fe97759' },
+  { id: 'req-8f3a2c1b', timestamp: '2026-03-09 11:58:22 UTC', model: 'gpt-4o', trust_score: 0.9312, intervention: 'NONE', pii_count: 0, latency_ms: 231, cost: 0.00031, chain_hash: 'e3b0c44298fc1c14' },
+  { id: 'req-7c2b9d4e', timestamp: '2026-03-09 11:57:55 UTC', model: 'claude-3-5-sonnet', trust_score: 0.7841, intervention: 'REGENERATE', pii_count: 2, latency_ms: 418, cost: 0.00089, chain_hash: 'a87ff679a2f3f4b3' },
+  { id: 'req-6d1e0a5f', timestamp: '2026-03-09 11:57:11 UTC', model: 'llama-3.1-70b', trust_score: 0.9104, intervention: 'NONE', pii_count: 0, latency_ms: 189, cost: 0.00012, chain_hash: 'eccbc87e4b5ce2fe' },
+  { id: 'req-5a9f3c8b', timestamp: '2026-03-09 11:56:44 UTC', model: 'gpt-4o-mini', trust_score: 0.6123, intervention: 'HITL', pii_count: 1, latency_ms: 891, cost: 0.00007, chain_hash: 'c4ca4238a0b92382' },
+  { id: 'req-4b8c2e7a', timestamp: '2026-03-09 11:55:30 UTC', model: 'gpt-4o', trust_score: 0.9521, intervention: 'NONE', pii_count: 0, latency_ms: 201, cost: 0.00028, chain_hash: '1679091c5a880faf' },
+  { id: 'req-3c7d1f6b', timestamp: '2026-03-09 11:54:21 UTC', model: 'claude-3-5-sonnet', trust_score: 0.8203, intervention: 'UPGRADE', pii_count: 0, latency_ms: 344, cost: 0.00071, chain_hash: '8f14e45fceea1678' },
+  { id: 'req-2e6a0b5c', timestamp: '2026-03-09 11:53:08 UTC', model: 'gpt-4o', trust_score: 0.4891, intervention: 'BLOCKED', pii_count: 3, latency_ms: 112, cost: 0.00002, chain_hash: '45c48cce2e2d7fbd' },
+  { id: 'req-1f5b9e4d', timestamp: '2026-03-09 11:52:17 UTC', model: 'llama-3.1-70b', trust_score: 0.9789, intervention: 'NONE', pii_count: 0, latency_ms: 167, cost: 0.00009, chain_hash: 'd3d9446802a44259' },
+  { id: 'req-0g4c8d3e', timestamp: '2026-03-09 11:51:44 UTC', model: 'gpt-4o-mini', trust_score: 0.8812, intervention: 'NONE', pii_count: 0, latency_ms: 145, cost: 0.00005, chain_hash: '6512bd43d9caa6e0' },
+  { id: 'req-9h3b7c2f', timestamp: '2026-03-09 11:51:01 UTC', model: 'gpt-4o', trust_score: 0.7234, intervention: 'UPGRADE', pii_count: 0, latency_ms: 289, cost: 0.00041, chain_hash: 'c20ad4d76fe97759' },
 ];
 
 export const mockTrustHistory: TrustHistoryPoint[] = [

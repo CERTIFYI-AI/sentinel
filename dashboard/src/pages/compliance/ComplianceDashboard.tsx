@@ -39,12 +39,12 @@ const frameworkScores = [
 ];
 
 const gapsList = [
-  { id: "GAP-001", framework: "NIST CSF", control: "PR.AC-1", title: "Access Control Policy", severity: "High", owner: "IT Security", due: "2024-03-15" },
-  { id: "GAP-002", framework: "SOC 2", control: "CC6.1", title: "Logical Access Controls", severity: "Medium", owner: "DevOps", due: "2024-03-20" },
-  { id: "GAP-003", framework: "ISO 27001", control: "A.12.6.1", title: "Technical Vulnerability Mgmt", severity: "High", owner: "Security Ops", due: "2024-02-28" },
-  { id: "GAP-004", framework: "PCI DSS", control: "Req 8.3", title: "MFA Implementation", severity: "Critical", owner: "IAM Team", due: "2024-03-10" },
-  { id: "GAP-005", framework: "HIPAA", control: "164.312(a)", title: "Encryption at Rest", severity: "Medium", owner: "Data Eng", due: "2024-04-01" },
-  { id: "GAP-006", framework: "NIST CSF", control: "DE.CM-1", title: "Network Monitoring", severity: "High", owner: "SOC Team", due: "2024-03-25" },
+  { id: "GAP-001", framework: "NIST CSF", control: "PR.AC-1", title: "Access Control Policy", severity: "High", owner: "IT Security", due: "2026-03-15" },
+  { id: "GAP-002", framework: "SOC 2", control: "CC6.1", title: "Logical Access Controls", severity: "Medium", owner: "DevOps", due: "2026-03-20" },
+  { id: "GAP-003", framework: "ISO 27001", control: "A.12.6.1", title: "Technical Vulnerability Mgmt", severity: "High", owner: "Security Ops", due: "2026-02-28" },
+  { id: "GAP-004", framework: "PCI DSS", control: "Req 8.3", title: "MFA Implementation", severity: "Critical", owner: "IAM Team", due: "2026-03-10" },
+  { id: "GAP-005", framework: "HIPAA", control: "164.312(a)", title: "Encryption at Rest", severity: "Medium", owner: "Data Eng", due: "2026-04-01" },
+  { id: "GAP-006", framework: "NIST CSF", control: "DE.CM-1", title: "Network Monitoring", severity: "High", owner: "SOC Team", due: "2026-03-25" },
 ];
 
 const sevColor = (s: string) =>

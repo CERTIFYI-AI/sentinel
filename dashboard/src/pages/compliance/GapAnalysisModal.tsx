@@ -12,11 +12,11 @@ const columns = [  { key: "id", label: "ID" },
   { key: "framework", label: "Framework" },
   { key: "score", label: "Score" },
   { key: "due", label: "Due Date" },];
-const mockData: any[] = [  { id: 1, name: "Access Control Policy", status: "compliant", framework: "ISO 27001", score: 95, due: "2024-06-30" },
-  { id: 2, name: "Data Privacy", status: "partial", framework: "GDPR", score: 78, due: "2024-04-15" },
-  { id: 3, name: "Incident Response", status: "compliant", framework: "SOC 2", score: 92, due: "2024-05-01" },
-  { id: 4, name: "Risk Assessment", status: "non-compliant", framework: "NIST", score: 45, due: "2024-03-30" },
-  { id: 5, name: "Vendor Management", status: "compliant", framework: "ISO 27001", score: 88, due: "2024-07-15" },];
+const mockData: any[] = [  { id: 1, name: "Access Control Policy", status: "compliant", framework: "ISO 27001", score: 95, due: "2026-06-30" },
+  { id: 2, name: "Data Privacy", status: "partial", framework: "GDPR", score: 78, due: "2026-04-15" },
+  { id: 3, name: "Incident Response", status: "compliant", framework: "SOC 2", score: 92, due: "2026-05-01" },
+  { id: 4, name: "Risk Assessment", status: "non-compliant", framework: "NIST", score: 45, due: "2026-03-30" },
+  { id: 5, name: "Vendor Management", status: "compliant", framework: "ISO 27001", score: 88, due: "2026-07-15" },];
 const statsCards = [  { label: "Compliance", value: "87%", icon: Shield },
   { label: "Controls", value: "342", icon: Shield },
   { label: "Gaps", value: "18", icon: Shield },

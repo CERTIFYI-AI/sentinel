@@ -12,11 +12,11 @@ const columns = [  { key: "id", label: "ID" },
   { key: "status", label: "Status" },
   { key: "created", label: "Created" },
   { key: "expires", label: "Expires" },];
-const mockData: any[] = [  { id: 1, name: "API Master Key", type: "RSA-4096", status: "active", created: "2024-01-15", expires: "2025-01-15" },
-  { id: 2, name: "JWT Signing", type: "HMAC-256", status: "active", created: "2024-02-01", expires: "2024-08-01" },
-  { id: 3, name: "DB Encryption", type: "AES-256", status: "rotating", created: "2024-03-01", expires: "2024-06-01" },
-  { id: 4, name: "S3 Access Key", type: "AWS IAM", status: "active", created: "2024-01-20", expires: "2024-07-20" },
-  { id: 5, name: "OAuth Client", type: "OAuth2", status: "expired", created: "2023-06-01", expires: "2024-01-01" },];
+const mockData: any[] = [  { id: 1, name: "API Master Key", type: "RSA-4096", status: "active", created: "2026-01-15", expires: "2026-01-15" },
+  { id: 2, name: "JWT Signing", type: "HMAC-256", status: "active", created: "2026-02-01", expires: "2026-08-01" },
+  { id: 3, name: "DB Encryption", type: "AES-256", status: "rotating", created: "2026-03-01", expires: "2026-06-01" },
+  { id: 4, name: "S3 Access Key", type: "AWS IAM", status: "active", created: "2026-01-20", expires: "2026-07-20" },
+  { id: 5, name: "OAuth Client", type: "OAuth2", status: "expired", created: "2023-06-01", expires: "2026-01-01" },];
 const statsCards = [  { label: "Total Keys", value: "48", icon: Shield },
   { label: "Active", value: "42", icon: Shield },
   { label: "Expiring Soon", value: "6", icon: Shield },

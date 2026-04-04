@@ -257,7 +257,7 @@ export default function ComplianceControls() {
               </TabsContent>
               <TabsContent value="testing" className="space-y-3 mt-4">
                 <Card className="p-3"><div className="flex items-center gap-2"><Play className="h-4 w-4 text-primary" /><div><div className="text-sm font-medium">Latest Test Run</div><div className="text-xs text-muted-foreground">{selectedControl.lastTested} — Result: {selectedControl.testResult}</div></div></div></Card>
-                <Card className="p-3"><div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-muted-foreground" /><div><div className="text-sm font-medium">Previous Run</div><div className="text-xs text-muted-foreground">2025-12-01 — Result: Pass</div></div></div></Card>
+                <Card className="p-3"><div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-muted-foreground" /><div><div className="text-sm font-medium">Previous Run</div><div className="text-xs text-muted-foreground">2026-12-01 — Result: Pass</div></div></div></Card>
               </TabsContent>
               <TabsContent value="mapping" className="space-y-3 mt-4">
                 {getCrossFrameworkMappings(selectedControl).map((m, i) => (

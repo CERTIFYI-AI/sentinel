@@ -6,14 +6,14 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 
 const logs = [
-  { id: "AUD-001", action: "Model Deployed", entity: "ACME-LLM-v3", user: "Dr. Sarah Chen", timestamp: "2025-01-15T09:30:00Z", category: "model", details: "Production deployment v3.2.1" },
-  { id: "AUD-002", action: "Control Updated", entity: "CTL-003", user: "Alex Kumar", timestamp: "2025-01-15T08:15:00Z", category: "control", details: "Status changed to partial" },
-  { id: "AUD-003", action: "Evidence Uploaded", entity: "EVD-045", user: "James Wilson", timestamp: "2025-01-14T16:45:00Z", category: "evidence", details: "SOC2 access review evidence" },
-  { id: "AUD-004", action: "Risk Created", entity: "RSK-008", user: "Lisa Park", timestamp: "2025-01-14T14:20:00Z", category: "risk", details: "New governance risk identified" },
-  { id: "AUD-005", action: "Policy Approved", entity: "POL-AI-003", user: "Lisa Park", timestamp: "2025-01-14T11:00:00Z", category: "policy", details: "AI Ethics Policy v2 approved" },
-  { id: "AUD-006", action: "Bias Audit Run", entity: "ACME-Credit-v2", user: "Dr. Sarah Chen", timestamp: "2025-01-13T15:30:00Z", category: "audit", details: "Automated bias scan completed" },
-  { id: "AUD-007", action: "Vendor Assessed", entity: "VND-003", user: "Mike Johnson", timestamp: "2025-01-13T10:00:00Z", category: "vendor", details: "TrustAI Inc security review" },
-  { id: "AUD-008", action: "User Role Changed", entity: "USR-012", user: "Admin", timestamp: "2025-01-12T09:00:00Z", category: "access", details: "Promoted to Compliance Officer" },
+  { id: "AUD-001", action: "Model Deployed", entity: "ACME-LLM-v3", user: "Dr. Sarah Chen", timestamp: "2026-01-15T09:30:00Z", category: "model", details: "Production deployment v3.2.1" },
+  { id: "AUD-002", action: "Control Updated", entity: "CTL-003", user: "Alex Kumar", timestamp: "2026-01-15T08:15:00Z", category: "control", details: "Status changed to partial" },
+  { id: "AUD-003", action: "Evidence Uploaded", entity: "EVD-045", user: "James Wilson", timestamp: "2026-01-14T16:45:00Z", category: "evidence", details: "SOC2 access review evidence" },
+  { id: "AUD-004", action: "Risk Created", entity: "RSK-008", user: "Lisa Park", timestamp: "2026-01-14T14:20:00Z", category: "risk", details: "New governance risk identified" },
+  { id: "AUD-005", action: "Policy Approved", entity: "POL-AI-003", user: "Lisa Park", timestamp: "2026-01-14T11:00:00Z", category: "policy", details: "AI Ethics Policy v2 approved" },
+  { id: "AUD-006", action: "Bias Audit Run", entity: "ACME-Credit-v2", user: "Dr. Sarah Chen", timestamp: "2026-01-13T15:30:00Z", category: "audit", details: "Automated bias scan completed" },
+  { id: "AUD-007", action: "Vendor Assessed", entity: "VND-003", user: "Mike Johnson", timestamp: "2026-01-13T10:00:00Z", category: "vendor", details: "TrustAI Inc security review" },
+  { id: "AUD-008", action: "User Role Changed", entity: "USR-012", user: "Admin", timestamp: "2026-01-12T09:00:00Z", category: "access", details: "Promoted to Compliance Officer" },
 ];
 
 export default function AuditLog() {

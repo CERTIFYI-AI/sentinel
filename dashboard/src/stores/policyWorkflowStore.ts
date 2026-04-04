@@ -27,18 +27,18 @@ interface PolicyWorkflowState {
 
 const SEED_AUDIT: Record<string, AuditEntry[]> = {
   'POL-001': [
-    { id:'a1',policyId:'POL-001',timestamp:'2025-12-15T10:00:00Z',user:'Dr. Sarah Mitchell',userRole:'AI Ethics Officer',action:'Created policy',details:'Initial draft of AI Model Governance Policy' },
+    { id:'a1',policyId:'POL-001',timestamp:'2026-12-15T10:00:00Z',user:'Dr. Sarah Mitchell',userRole:'AI Ethics Officer',action:'Created policy',details:'Initial draft of AI Model Governance Policy' },
     { id:'a2',policyId:'POL-001',timestamp:'2026-01-05T14:30:00Z',user:'Dr. Sarah Mitchell',userRole:'AI Ethics Officer',action:'submitforreview',fromStatus:'Draft',toStatus:'Pending Review',comment:'Ready for initial review' },
     { id:'a3',policyId:'POL-001',timestamp:'2026-01-10T09:00:00Z',user:'Dr. Raj Patel',userRole:'Chief Risk Officer',action:'startreview',fromStatus:'Pending Review',toStatus:'In Review' },
     { id:'a4',policyId:'POL-001',timestamp:'2026-01-20T11:00:00Z',user:'Dr. Raj Patel',userRole:'Chief Risk Officer',action:'approve',fromStatus:'In Review',toStatus:'Approved',comment:'Comprehensive coverage of AI governance requirements' },
     { id:'a5',policyId:'POL-001',timestamp:'2026-02-01T08:00:00Z',user:'James Wilson',userRole:'Policy Administrator',action:'publish',fromStatus:'Approved',toStatus:'Published' },
   ],
   'POL-002': [
-    { id:'a6',policyId:'POL-002',timestamp:'2025-11-01T10:00:00Z',user:'Michael Chen',userRole:'Data Protection Officer',action:'Created policy',details:'Initial draft of Data Privacy Framework' },
-    { id:'a7',policyId:'POL-002',timestamp:'2025-12-01T09:00:00Z',user:'Michael Chen',userRole:'Data Protection Officer',action:'submitforreview',fromStatus:'Draft',toStatus:'Pending Review' },
+    { id:'a6',policyId:'POL-002',timestamp:'2026-11-01T10:00:00Z',user:'Michael Chen',userRole:'Data Protection Officer',action:'Created policy',details:'Initial draft of Data Privacy Framework' },
+    { id:'a7',policyId:'POL-002',timestamp:'2026-12-01T09:00:00Z',user:'Michael Chen',userRole:'Data Protection Officer',action:'submitforreview',fromStatus:'Draft',toStatus:'Pending Review' },
   ],
   'POL-003': [
-    { id:'a8',policyId:'POL-003',timestamp:'2025-10-15T10:00:00Z',user:'Lisa Park',userRole:'ML Engineering Lead',action:'Created policy',details:'Initial draft of Model Risk Assessment' },
+    { id:'a8',policyId:'POL-003',timestamp:'2026-10-15T10:00:00Z',user:'Lisa Park',userRole:'ML Engineering Lead',action:'Created policy',details:'Initial draft of Model Risk Assessment' },
   ],
 };
 

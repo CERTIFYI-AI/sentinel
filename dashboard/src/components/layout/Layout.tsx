@@ -11,7 +11,7 @@ export default function Layout() {
       <AppSidebar />
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
         <TopBar />
-        <main className="flex-1 overflow-y-auto bg-background">
+        <main id="main-content" className="flex-1 overflow-y-auto bg-background p-6 lg:p-8">
           <Outlet />
         </main>
       </div>

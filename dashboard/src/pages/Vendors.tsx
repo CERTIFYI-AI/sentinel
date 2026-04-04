@@ -8,14 +8,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/
 import { Search, Plus, Building2, AlertTriangle, Shield } from "lucide-react";
 
 const mockVendors = [
-  { id: "VND-001", name: "OpenAI", category: "AI Model Provider", services: "GPT-4, DALL-E, Whisper", riskTier: 1, status: "active", lastAssessment: "2025-05-15", contractExpiry: "2026-01-31", contact: "enterprise@openai.com" },
-  { id: "VND-002", name: "Anthropic", category: "AI Model Provider", services: "Claude-3 Opus/Haiku", riskTier: 1, status: "active", lastAssessment: "2025-05-20", contractExpiry: "2025-12-31", contact: "sales@anthropic.com" },
-  { id: "VND-003", name: "AWS", category: "Cloud Infrastructure", services: "Bedrock, SageMaker", riskTier: 2, status: "active", lastAssessment: "2025-04-10", contractExpiry: "2026-03-15", contact: "aws-enterprise@amazon.com" },
-  { id: "VND-004", name: "Microsoft Azure", category: "Cloud Infrastructure", services: "Azure OpenAI, Cognitive", riskTier: 2, status: "active", lastAssessment: "2025-05-01", contractExpiry: "2026-06-30", contact: "azure@microsoft.com" },
-  { id: "VND-005", name: "HuggingFace", category: "Model Hub", services: "Model Hosting, Inference API", riskTier: 2, status: "under-review", lastAssessment: "2025-03-20", contractExpiry: "2025-09-30", contact: "enterprise@huggingface.co" },
-  { id: "VND-006", name: "Pinecone", category: "Vector Database", services: "Vector Search, Embeddings", riskTier: 3, status: "active", lastAssessment: "2025-04-25", contractExpiry: "2025-11-30", contact: "sales@pinecone.io" },
-  { id: "VND-007", name: "Datadog", category: "Monitoring", services: "LLM Observability", riskTier: 3, status: "active", lastAssessment: "2025-05-10", contractExpiry: "2026-02-28", contact: "sales@datadog.com" },
-  { id: "VND-008", name: "Scale AI", category: "Data Labeling", services: "RLHF, Data Annotation", riskTier: 2, status: "inactive", lastAssessment: "2025-01-15", contractExpiry: "2025-06-30", contact: "enterprise@scale.com" },
+  { id: "VND-001", name: "OpenAI", category: "AI Model Provider", services: "GPT-4, DALL-E, Whisper", riskTier: 1, status: "active", lastAssessment: "2026-05-15", contractExpiry: "2026-01-31", contact: "enterprise@openai.com" },
+  { id: "VND-002", name: "Anthropic", category: "AI Model Provider", services: "Claude-3 Opus/Haiku", riskTier: 1, status: "active", lastAssessment: "2026-05-20", contractExpiry: "2026-12-31", contact: "sales@anthropic.com" },
+  { id: "VND-003", name: "AWS", category: "Cloud Infrastructure", services: "Bedrock, SageMaker", riskTier: 2, status: "active", lastAssessment: "2026-04-10", contractExpiry: "2026-03-15", contact: "aws-enterprise@amazon.com" },
+  { id: "VND-004", name: "Microsoft Azure", category: "Cloud Infrastructure", services: "Azure OpenAI, Cognitive", riskTier: 2, status: "active", lastAssessment: "2026-05-01", contractExpiry: "2026-06-30", contact: "azure@microsoft.com" },
+  { id: "VND-005", name: "HuggingFace", category: "Model Hub", services: "Model Hosting, Inference API", riskTier: 2, status: "under-review", lastAssessment: "2026-03-20", contractExpiry: "2026-09-30", contact: "enterprise@huggingface.co" },
+  { id: "VND-006", name: "Pinecone", category: "Vector Database", services: "Vector Search, Embeddings", riskTier: 3, status: "active", lastAssessment: "2026-04-25", contractExpiry: "2026-11-30", contact: "sales@pinecone.io" },
+  { id: "VND-007", name: "Datadog", category: "Monitoring", services: "LLM Observability", riskTier: 3, status: "active", lastAssessment: "2026-05-10", contractExpiry: "2026-02-28", contact: "sales@datadog.com" },
+  { id: "VND-008", name: "Scale AI", category: "Data Labeling", services: "RLHF, Data Annotation", riskTier: 2, status: "inactive", lastAssessment: "2026-01-15", contractExpiry: "2026-06-30", contact: "enterprise@scale.com" },
 ];
 
 const tierColor = (t: number) => t === 1 ? "bg-red-500/10 text-red-400 border-red-500/30" : t === 2 ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/30" : "bg-green-500/10 text-green-400 border-green-500/30";

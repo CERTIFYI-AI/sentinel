@@ -35,36 +35,36 @@ const ALL_PERMISSIONS = [
 ];
 
 const initialRoles: Role[] = [
-  { id: "r1", name: "Super Admin", description: "Full platform access", userCount: 2, permissions: ["manage_users", "manage_roles", "manage_policies", "manage_frameworks", "manage_settings", "view_audit_log", "manage_integrations", "export_data"], status: "active", createdAt: "2024-01-10", riskLevel: "high" },
-  { id: "r2", name: "Compliance Manager", description: "Manage compliance controls and evidence", userCount: 5, permissions: ["manage_policies", "manage_frameworks", "manage_evidence", "view_audit_log", "manage_controls", "export_data"], status: "active", createdAt: "2024-01-10", riskLevel: "medium" },
-  { id: "r3", name: "Security Analyst", description: "View and analyze security data", userCount: 8, permissions: ["view_threats", "manage_scans", "view_vulnerabilities", "view_audit_log"], status: "active", createdAt: "2024-01-15", riskLevel: "medium" },
-  { id: "r4", name: "External Auditor", description: "Read-only audit access", userCount: 3, permissions: ["view_policies", "view_evidence", "view_controls", "view_audit_log"], status: "active", createdAt: "2024-02-01", riskLevel: "low" },
-  { id: "r5", name: "Dev Read-Only", description: "Developer read access to models", userCount: 12, permissions: ["view_models", "view_datasets", "view_evals"], status: "active", createdAt: "2024-02-15", riskLevel: "low" },
-  { id: "r6", name: "Risk Manager", description: "Manage risks and incidents", userCount: 4, permissions: ["manage_risks", "manage_incidents", "manage_remediation", "view_audit_log", "export_data"], status: "active", createdAt: "2024-03-01", riskLevel: "medium" },
-  { id: "r7", name: "Model Owner", description: "Manage AI model lifecycle", userCount: 6, permissions: ["manage_models", "manage_evals", "manage_datasets", "view_audit_log"], status: "active", createdAt: "2024-03-10", riskLevel: "medium" },
-  { id: "r8", name: "Suspended", description: "Temporarily suspended", userCount: 2, permissions: [], status: "inactive", createdAt: "2024-01-10", riskLevel: "high" },
+  { id: "r1", name: "Super Admin", description: "Full platform access", userCount: 2, permissions: ["manage_users", "manage_roles", "manage_policies", "manage_frameworks", "manage_settings", "view_audit_log", "manage_integrations", "export_data"], status: "active", createdAt: "2026-01-10", riskLevel: "high" },
+  { id: "r2", name: "Compliance Manager", description: "Manage compliance controls and evidence", userCount: 5, permissions: ["manage_policies", "manage_frameworks", "manage_evidence", "view_audit_log", "manage_controls", "export_data"], status: "active", createdAt: "2026-01-10", riskLevel: "medium" },
+  { id: "r3", name: "Security Analyst", description: "View and analyze security data", userCount: 8, permissions: ["view_threats", "manage_scans", "view_vulnerabilities", "view_audit_log"], status: "active", createdAt: "2026-01-15", riskLevel: "medium" },
+  { id: "r4", name: "External Auditor", description: "Read-only audit access", userCount: 3, permissions: ["view_policies", "view_evidence", "view_controls", "view_audit_log"], status: "active", createdAt: "2026-02-01", riskLevel: "low" },
+  { id: "r5", name: "Dev Read-Only", description: "Developer read access to models", userCount: 12, permissions: ["view_models", "view_datasets", "view_evals"], status: "active", createdAt: "2026-02-15", riskLevel: "low" },
+  { id: "r6", name: "Risk Manager", description: "Manage risks and incidents", userCount: 4, permissions: ["manage_risks", "manage_incidents", "manage_remediation", "view_audit_log", "export_data"], status: "active", createdAt: "2026-03-01", riskLevel: "medium" },
+  { id: "r7", name: "Model Owner", description: "Manage AI model lifecycle", userCount: 6, permissions: ["manage_models", "manage_evals", "manage_datasets", "view_audit_log"], status: "active", createdAt: "2026-03-10", riskLevel: "medium" },
+  { id: "r8", name: "Suspended", description: "Temporarily suspended", userCount: 2, permissions: [], status: "inactive", createdAt: "2026-01-10", riskLevel: "high" },
 ];
 
 const initialUsers: RBACUser[] = [
-  { id: 1, name: "Bhaskar Admin", email: "bhaskar@certifyi.ai", role: "Super Admin", status: "active", lastActive: "2024-03-15", mfaEnabled: true, sessions: 3 },
-  { id: 2, name: "Sarah Chen", email: "sarah@certifyi.ai", role: "Compliance Manager", status: "active", lastActive: "2024-03-14", mfaEnabled: true, sessions: 1 },
-  { id: 3, name: "Mike Ross", email: "mike@certifyi.ai", role: "Security Analyst", status: "active", lastActive: "2024-03-13", mfaEnabled: true, sessions: 2 },
-  { id: 4, name: "Jane Auditor", email: "jane@external.com", role: "External Auditor", status: "inactive", lastActive: "2024-02-28", mfaEnabled: false, sessions: 0 },
-  { id: 5, name: "Dev User", email: "dev@certifyi.ai", role: "Dev Read-Only", status: "active", lastActive: "2024-03-15", mfaEnabled: false, sessions: 1 },
-  { id: 6, name: "Lisa Risk", email: "lisa@certifyi.ai", role: "Risk Manager", status: "active", lastActive: "2024-03-12", mfaEnabled: true, sessions: 1 },
-  { id: 7, name: "Tom Model", email: "tom@certifyi.ai", role: "Model Owner", status: "active", lastActive: "2024-03-14", mfaEnabled: true, sessions: 2 },
-  { id: 8, name: "Locked User", email: "locked@certifyi.ai", role: "Suspended", status: "locked", lastActive: "2024-01-20", mfaEnabled: false, sessions: 0 },
+  { id: 1, name: "Bhaskar Admin", email: "bhaskar@certifyi.ai", role: "Super Admin", status: "active", lastActive: "2026-03-15", mfaEnabled: true, sessions: 3 },
+  { id: 2, name: "Sarah Chen", email: "sarah@certifyi.ai", role: "Compliance Manager", status: "active", lastActive: "2026-03-14", mfaEnabled: true, sessions: 1 },
+  { id: 3, name: "Mike Ross", email: "mike@certifyi.ai", role: "Security Analyst", status: "active", lastActive: "2026-03-13", mfaEnabled: true, sessions: 2 },
+  { id: 4, name: "Jane Auditor", email: "jane@external.com", role: "External Auditor", status: "inactive", lastActive: "2026-02-28", mfaEnabled: false, sessions: 0 },
+  { id: 5, name: "Dev User", email: "dev@certifyi.ai", role: "Dev Read-Only", status: "active", lastActive: "2026-03-15", mfaEnabled: false, sessions: 1 },
+  { id: 6, name: "Lisa Risk", email: "lisa@certifyi.ai", role: "Risk Manager", status: "active", lastActive: "2026-03-12", mfaEnabled: true, sessions: 1 },
+  { id: 7, name: "Tom Model", email: "tom@certifyi.ai", role: "Model Owner", status: "active", lastActive: "2026-03-14", mfaEnabled: true, sessions: 2 },
+  { id: 8, name: "Locked User", email: "locked@certifyi.ai", role: "Suspended", status: "locked", lastActive: "2026-01-20", mfaEnabled: false, sessions: 0 },
 ];
 
 const initialAudit: AuditEntry[] = [
-  { id: 1, user: "Bhaskar Admin", action: "Role Modified", resource: "Compliance Manager", timestamp: "2024-03-15 14:22", result: "granted" },
-  { id: 2, user: "Sarah Chen", action: "Policy Updated", resource: "Data Retention Policy", timestamp: "2024-03-15 13:10", result: "granted" },
-  { id: 3, user: "Jane Auditor", action: "Export Attempted", resource: "Evidence Vault", timestamp: "2024-03-14 09:45", result: "denied" },
-  { id: 4, user: "Mike Ross", action: "Scan Initiated", resource: "Model Arena", timestamp: "2024-03-14 08:30", result: "granted" },
-  { id: 5, user: "Dev User", action: "Settings Change", resource: "System Config", timestamp: "2024-03-13 16:00", result: "denied" },
-  { id: 6, user: "Bhaskar Admin", action: "User Invited", resource: "new.user@certifyi.ai", timestamp: "2024-03-13 10:15", result: "granted" },
-  { id: 7, user: "Lisa Risk", action: "Risk Created", resource: "Data Breach Risk", timestamp: "2024-03-12 11:20", result: "granted" },
-  { id: 8, user: "Locked User", action: "Login Attempt", resource: "Dashboard", timestamp: "2024-03-10 08:00", result: "denied" },
+  { id: 1, user: "Bhaskar Admin", action: "Role Modified", resource: "Compliance Manager", timestamp: "2026-03-15 14:22", result: "granted" },
+  { id: 2, user: "Sarah Chen", action: "Policy Updated", resource: "Data Retention Policy", timestamp: "2026-03-15 13:10", result: "granted" },
+  { id: 3, user: "Jane Auditor", action: "Export Attempted", resource: "Evidence Vault", timestamp: "2026-03-14 09:45", result: "denied" },
+  { id: 4, user: "Mike Ross", action: "Scan Initiated", resource: "Model Arena", timestamp: "2026-03-14 08:30", result: "granted" },
+  { id: 5, user: "Dev User", action: "Settings Change", resource: "System Config", timestamp: "2026-03-13 16:00", result: "denied" },
+  { id: 6, user: "Bhaskar Admin", action: "User Invited", resource: "new.user@certifyi.ai", timestamp: "2026-03-13 10:15", result: "granted" },
+  { id: 7, user: "Lisa Risk", action: "Risk Created", resource: "Data Breach Risk", timestamp: "2026-03-12 11:20", result: "granted" },
+  { id: 8, user: "Locked User", action: "Login Attempt", resource: "Dashboard", timestamp: "2026-03-10 08:00", result: "denied" },
 ];
 
 export default function RBACDashboard() {

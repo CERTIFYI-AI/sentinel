@@ -7,11 +7,11 @@ import { Input } from "../components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../components/ui/sheet";
 
 const incidents = [
-  { id: "INC-001", title: "Model Output Anomaly Detected", severity: "high", status: "investigating", reported: "2025-01-15", reporter: "Model Monitor", category: "AI Safety", description: "ACME-LLM-v3 produced hallucinated financial data in 3 transactions" },
-  { id: "INC-002", title: "Unauthorized API Access Attempt", severity: "critical", status: "resolved", reported: "2025-01-13", reporter: "Alex Kumar", category: "Security", description: "Blocked brute force attack on model inference API" },
-  { id: "INC-003", title: "Data Pipeline Delay", severity: "medium", status: "open", reported: "2025-01-12", reporter: "James Wilson", category: "Operations", description: "Training data pipeline delayed by 4 hours" },
-  { id: "INC-004", title: "Bias Threshold Breach", severity: "high", status: "mitigating", reported: "2025-01-10", reporter: "Dr. Sarah Chen", category: "Fairness", description: "Credit model shows 8% disparity in approval rates" },
-  { id: "INC-005", title: "Compliance Report Failure", severity: "low", status: "resolved", reported: "2025-01-08", reporter: "Lisa Park", category: "Compliance", description: "Automated SOC2 report generation failed" },
+  { id: "INC-001", title: "Model Output Anomaly Detected", severity: "high", status: "investigating", reported: "2026-01-15", reporter: "Model Monitor", category: "AI Safety", description: "ACME-LLM-v3 produced hallucinated financial data in 3 transactions" },
+  { id: "INC-002", title: "Unauthorized API Access Attempt", severity: "critical", status: "resolved", reported: "2026-01-13", reporter: "Alex Kumar", category: "Security", description: "Blocked brute force attack on model inference API" },
+  { id: "INC-003", title: "Data Pipeline Delay", severity: "medium", status: "open", reported: "2026-01-12", reporter: "James Wilson", category: "Operations", description: "Training data pipeline delayed by 4 hours" },
+  { id: "INC-004", title: "Bias Threshold Breach", severity: "high", status: "mitigating", reported: "2026-01-10", reporter: "Dr. Sarah Chen", category: "Fairness", description: "Credit model shows 8% disparity in approval rates" },
+  { id: "INC-005", title: "Compliance Report Failure", severity: "low", status: "resolved", reported: "2026-01-08", reporter: "Lisa Park", category: "Compliance", description: "Automated SOC2 report generation failed" },
 ];
 
 export default function IncidentLog() {

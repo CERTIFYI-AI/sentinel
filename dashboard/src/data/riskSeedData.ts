@@ -50,7 +50,7 @@ export const riskSeedData: Risk[] = [
     mitigation: "RAG with source citation enforced via guardrail middleware, confidence thresholds at 0.85 per NIST AI RMF MEASURE 2.6, mandatory HITL review for outputs exceeding $50K transaction advice per ISO 42001 A.10.3.",
     controls: ["CTL-AI-001", "CTL-AI-002", "CTL-AI-003"],
     reviewDate: "2026-05-15",
-    created: "2025-11-01",
+    created: "2026-11-01",
     trend: "increasing",
     riskType: "AI-Specific"
   },
@@ -68,7 +68,7 @@ export const riskSeedData: Risk[] = [
     mitigation: "Data provenance validation per ISO 42001 A.7.4, cryptographic hash verification of all training datasets, statistical drift detection on input distributions with automated circuit breakers.",
     controls: ["CTL-IS-003", "CTL-AI-004"],
     reviewDate: "2026-06-01",
-    created: "2025-09-15",
+    created: "2026-09-15",
     trend: "stable",
     riskType: "AI-Specific"
   },
@@ -86,7 +86,7 @@ export const riskSeedData: Risk[] = [
     mitigation: "Conformity assessment per EU AI Act Art. 43, technical documentation per Art. 11 Annex IV, quality management system per Art. 17, registration in EU database per Art. 49.",
     controls: ["CTL-EU-001", "CTL-EU-002", "CTL-EU-003"],
     reviewDate: "2026-04-30",
-    created: "2025-08-01",
+    created: "2026-08-01",
     trend: "increasing",
     riskType: "Hybrid"
   },
@@ -104,7 +104,7 @@ export const riskSeedData: Risk[] = [
     mitigation: "Monthly disparate impact testing across all protected classes, SHAP-based explainability dashboard, independent bias audit per SR 11-7, fairness constraints integrated into model training loop.",
     controls: ["CTL-AI-005", "CTL-AI-006", "CTL-AI-007"],
     reviewDate: "2026-05-01",
-    created: "2025-06-15",
+    created: "2026-06-15",
     trend: "stable",
     riskType: "AI-Specific"
   },
@@ -122,7 +122,7 @@ export const riskSeedData: Risk[] = [
     mitigation: "Input sanitization layer, prompt hardening with system prompt isolation, output filtering for PII patterns, real-time anomaly detection on conversation flow per NIST AI RMF MANAGE 2.2.",
     controls: ["CTL-AI-008", "CTL-IS-005"],
     reviewDate: "2026-04-15",
-    created: "2025-10-01",
+    created: "2026-10-01",
     trend: "decreasing",
     riskType: "AI-Specific"
   },
@@ -140,7 +140,7 @@ export const riskSeedData: Risk[] = [
     mitigation: "Automated drift detection via PSI/KL-divergence monitoring, champion-challenger framework, weekly model performance review board, automated retraining triggers when PSI > 0.25.",
     controls: ["CTL-AI-009", "CTL-AI-010"],
     reviewDate: "2026-04-20",
-    created: "2025-12-01",
+    created: "2026-12-01",
     trend: "increasing",
     riskType: "AI-Specific"
   },
@@ -176,7 +176,7 @@ export const riskSeedData: Risk[] = [
     mitigation: "Session-scoped context isolation, PII redaction middleware before LLM ingestion, differential privacy noise injection, data retention policy enforcement per ISO 42001 A.7.5.",
     controls: ["CTL-DP-001", "CTL-DP-002", "CTL-AI-012"],
     reviewDate: "2026-05-30",
-    created: "2025-07-01",
+    created: "2026-07-01",
     trend: "decreasing",
     riskType: "AI-Specific"
   },
@@ -194,7 +194,7 @@ export const riskSeedData: Risk[] = [
     mitigation: "Multi-vendor LLM abstraction layer, Anthropic Claude as failover provider, on-premise Llama 3.1 deployment for critical path operations, quarterly vendor risk assessment per ISO 42001 A.10.5.",
     controls: ["CTL-OP-001", "CTL-OP-002"],
     reviewDate: "2026-06-15",
-    created: "2025-05-01",
+    created: "2026-05-01",
     trend: "stable",
     riskType: "Hybrid"
   },
@@ -212,7 +212,7 @@ export const riskSeedData: Risk[] = [
     mitigation: "Liveness detection layer for video KYC, multi-modal authentication combining biometric with knowledge-based factors, deepfake detection model deployed at authentication gateway.",
     controls: ["CTL-IS-007", "CTL-IS-008"],
     reviewDate: "2026-05-01",
-    created: "2025-11-15",
+    created: "2026-11-15",
     trend: "increasing",
     riskType: "AI-Specific"
   },
@@ -230,7 +230,7 @@ export const riskSeedData: Risk[] = [
     mitigation: "SHAP/LIME explanation layer integrated into decisioning API, reason code mapping compliant with adverse action notice requirements, model documentation per SR 11-7.",
     controls: ["CTL-AI-013", "CTL-AI-014"],
     reviewDate: "2026-05-15",
-    created: "2025-09-01",
+    created: "2026-09-01",
     trend: "stable",
     riskType: "AI-Specific"
   },
@@ -248,7 +248,7 @@ export const riskSeedData: Risk[] = [
     mitigation: "Consent management integration with training pipeline, automated PII scanning before ingestion, data lineage tracking per ISO 42001 A.7.4, synthetic data generation for non-consented use cases.",
     controls: ["CTL-DP-003", "CTL-DP-004"],
     reviewDate: "2026-06-01",
-    created: "2025-08-15",
+    created: "2026-08-15",
     trend: "decreasing",
     riskType: "AI-Specific"
   },
@@ -266,7 +266,7 @@ export const riskSeedData: Risk[] = [
     mitigation: "Migration to ONNX/SafeTensors format, cryptographic signing of all model artifacts, sandbox execution for model loading, supply chain verification per NIST AI RMF MAP 5.2.",
     controls: ["CTL-IS-009", "CTL-IS-010"],
     reviewDate: "2026-07-01",
-    created: "2025-04-01",
+    created: "2026-04-01",
     trend: "decreasing",
     riskType: "AI-Specific"
   },
@@ -284,7 +284,7 @@ export const riskSeedData: Risk[] = [
     mitigation: "Hard limits on autonomous transaction values ($100K ceiling), mandatory HITL approval for high-value trades, real-time position monitoring with automated circuit breakers, kill switch per ISO 42001 A.10.4.",
     controls: ["CTL-OP-003", "CTL-AI-015"],
     reviewDate: "2026-04-30",
-    created: "2025-10-15",
+    created: "2026-10-15",
     trend: "stable",
     riskType: "AI-Specific"
   },
@@ -320,7 +320,7 @@ export const riskSeedData: Risk[] = [
     mitigation: "Integrate MLOps pipeline into existing SDLC governance, implement model promotion approval workflow with segregation of duties, automated evidence collection for SOC 2 CC8.1.",
     controls: ["CTL-SC-001", "CTL-SC-002"],
     reviewDate: "2026-04-20",
-    created: "2025-12-15",
+    created: "2026-12-15",
     trend: "decreasing",
     riskType: "Hybrid"
   },
@@ -338,7 +338,7 @@ export const riskSeedData: Risk[] = [
     mitigation: "Enterprise API agreements with data exclusion clauses, prompt engineering to avoid proprietary data leakage, on-premise deployment for IP-sensitive workloads, DLP monitoring on API payloads.",
     controls: ["CTL-DP-005", "CTL-DP-006"],
     reviewDate: "2026-06-30",
-    created: "2025-07-15",
+    created: "2026-07-15",
     trend: "stable",
     riskType: "AI-Specific"
   },
@@ -374,7 +374,7 @@ export const riskSeedData: Risk[] = [
     mitigation: "CMEK encryption for all model artifacts, VPC-SC perimeter around AI endpoints, IAM least-privilege for model invocation, cloud security posture management for AI workloads.",
     controls: ["CTL-IS-011", "CTL-IS-012"],
     reviewDate: "2026-06-15",
-    created: "2025-06-01",
+    created: "2026-06-01",
     trend: "decreasing",
     riskType: "Traditional IT"
   },
