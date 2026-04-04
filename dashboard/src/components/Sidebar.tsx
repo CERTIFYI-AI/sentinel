@@ -4,8 +4,10 @@ import {
   SquaresFour, Bell, FileText, Shield, BookOpen, ChartBar,
   UserCircleCheck, Robot, Rss, Database, BuildingOffice,
   Warning, Scales, FolderOpen,
-  ShieldCheck, LockOpen, Lock, Gear, Star,
-  SignOut, CaretDown, CaretRight, MoonStars, SunHorizon, Monitor, Briefcase
+  ShieldCheck, LockOpen, Lock, Gear,
+  SignOut, CaretDown, CaretRight, MoonStars, SunHorizon, Monitor,
+  Eye, Crosshair, Bug, ListChecks, Sword, Key, Trophy, FileArrowDown,
+  Activity, ArrowsClockwise, Wrench, Sliders, Graph
 } from '@phosphor-icons/react'
 import { cn } from '../lib/utils'
 import { useTheme } from '../providers/ThemeProvider'
@@ -18,31 +20,52 @@ const NAV = [
   { title: 'GOVERNANCE', items: [
     { label: 'Compliance', to: '/compliance', icon: Shield },
     { label: 'Policy Manager', to: '/compliance/policies', icon: FileText },
-    { label: 'Controls', to: '/compliance/controls', icon: Shield },
+    { label: 'Controls', to: '/compliance/controls', icon: ListChecks },
     { label: 'Frameworks', to: '/frameworks', icon: BookOpen },
     { label: 'Reg Radar', to: '/reg-radar', icon: ChartBar },
+    { label: 'Gap Analysis', to: '/compliance/gap-analysis', icon: Graph },
     { label: 'HITL Reviews', to: '/hitl', icon: UserCircleCheck, badge: 3 },
   ]},
   { title: 'AI INVENTORY', items: [
-    { label: 'Model Inventory', to: '/models/inventory', icon: Robot },
+    { label: 'Model Registry', to: '/models/inventory', icon: Robot },
+    { label: 'Model Lifecycle', to: '/models/lifecycle', icon: ArrowsClockwise },
     { label: 'Agent Discovery', to: '/agents', icon: Rss, badge: 12 },
+    { label: 'Shadow AI', to: '/agents/shadow-ai', icon: Eye },
     { label: 'Datasets', to: '/datasets', icon: Database },
-      { label: 'Use Cases', to: '/use-cases', icon: Briefcase },
-    { label: 'Vendor List', to: '/vendors', icon: BuildingOffice },
+    { label: 'Vendor Registry', to: '/vendors', icon: BuildingOffice },
   ]},
   { title: 'RISK & COMPLIANCE', items: [
-    { label: 'Risk Map', to: '/risk', icon: Warning },
+    { label: 'Risk Register', to: '/risk', icon: Warning },
+    { label: 'Risk Matrix', to: '/risk/matrix', icon: Scales },
     { label: 'Bias Audits', to: '/bias-audits', icon: Scales },
-    { label: 'Evidence Sync', to: '/evidence-sync', icon: FolderOpen },
     { label: 'Incidents', to: '/risk/incidents', icon: Warning },
+    { label: 'Evidence Sync', to: '/evidence-sync', icon: FolderOpen },
     { label: 'Reporting', to: '/reporting', icon: ChartBar },
   ]},
+  { title: 'SECURITY', items: [
+    { label: 'Security Home', to: '/security', icon: ShieldCheck },
+    { label: 'Threat Feed', to: '/security/threats', icon: Crosshair },
+    { label: 'Scan Center', to: '/security/scanner', icon: Bug },
+    { label: 'Vulnerabilities', to: '/security/vulnerabilities', icon: Warning },
+    { label: 'Red Team Lab', to: '/security/red-team', icon: Sword },
+    { label: 'Attack Surface', to: '/security/attack-surface', icon: Eye },
+    { label: 'Policy Firewall', to: '/security/policies', icon: Shield },
+    { label: 'Keys Vault', to: '/security/keys', icon: Key },
+    { label: 'Model Arena', to: '/security/model-arena', icon: Trophy },
+  ]},
   { title: 'TRUST ENGINE', items: [
-    { label: 'Trust Engine', to: '/trust-engine', icon: ShieldCheck },
+    { label: 'Trust Dashboard', to: '/trust-engine', icon: ShieldCheck },
     { label: 'Guardrails', to: '/trust-engine/guardrails', icon: LockOpen },
+    { label: 'Live Traces', to: '/trust-engine/traces', icon: Activity },
+    { label: 'Cost & Tokens', to: '/trust-engine/costs', icon: ChartBar },
+    { label: 'Fallback Log', to: '/trust-engine/fallbacks', icon: ArrowsClockwise },
+    { label: 'Tool Monitor', to: '/trust-engine/tools', icon: Wrench },
+    { label: 'Configuration', to: '/trust-engine/config', icon: Sliders },
   ]},
   { title: 'ADMINISTRATION', items: [
     { label: 'Access Control', to: '/access-control', icon: Lock },
+    { label: 'Audit Log', to: '/audit-log', icon: FileText },
+    { label: 'Export Center', to: '/export', icon: FileArrowDown },
     { label: 'Settings', to: '/settings', icon: Gear },
   ]},
 ]
@@ -55,13 +78,16 @@ export default function Sidebar() {
 
   const isActive = (to: string) =>
     to === '/overview' ? location.pathname === '/' || location.pathname === '/overview' : location.pathname.startsWith(to)
+
   const toggleSection = (title: string) =>
     setExpandedSections(prev => prev.includes(title) ? prev.filter(t => t !== title) : [...prev, title])
+
   const cycleTheme = () => {
     if (theme === 'dark') setTheme('light')
     else if (theme === 'light') setTheme('system')
     else setTheme('dark')
   }
+
   const themeIcon = theme === 'dark' ? SunHorizon : theme === 'light' ? MoonStars : Monitor
   const themeLabel = theme === 'dark' ? 'Light Mode' : theme === 'light' ? 'System' : 'Dark Mode'
   const ThemeIcon = themeIcon
@@ -130,10 +156,6 @@ export default function Sidebar() {
       </div>
 
       <div className='border-t border-[hsl(var(--border))] p-3 space-y-1'>
-        <NavLink to='/ai-advisor' className={cn('flex items-center gap-3 w-full px-3 py-2 text-sm text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--brand))] transition-colors', collapsed && 'justify-center px-2')}>
-          <Star size={18} weight='duotone' className='flex-shrink-0 text-[hsl(var(--brand))]' />
-          {!collapsed && <span>AI Advisor</span>}
-        </NavLink>
         <button onClick={cycleTheme} className={cn('flex items-center gap-3 w-full px-3 py-2 text-sm text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-1))] transition-colors', collapsed && 'justify-center px-2')}>
           <ThemeIcon size={18} weight='duotone' className='flex-shrink-0'/>
           {!collapsed && <span>{themeLabel}</span>}
@@ -156,4 +178,5 @@ export default function Sidebar() {
     </aside>
   )
 }
+
 export { default as AppSidebar } from "./Sidebar";
