@@ -1,33 +1,15 @@
-// dashboard/src/components/ui/EmptyState.tsx
-import { Button } from "@/components/ui/button";
 
-interface EmptyStateProps {
-  icon: string;
-  title: string;
-  description: string;
-  action?: { label: string; onClick: () => void };
-  code?: string;
-}
-
-export function EmptyState({ icon, title, description, action, code }: EmptyStateProps) {
+import React from 'react';
+interface EmptyStateProps { icon?: React.ReactNode; title: string; description?: string; action?: React.ReactNode; }
+export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[400px] max-w-[480px] mx-auto text-center px-4">
-      <span className="text-5xl mb-4">{icon}</span>
-      <h3 className="text-base font-bold text-foreground mb-1">{title}</h3>
-      <p className="text-[13px] text-muted-foreground mb-4">{description}</p>
-      {action && (
-        <Button
-          onClick={action.onClick}
-          className="bg-[hsl(136,45%,38%)] hover:bg-[hsl(136,45%,32%)] text-foreground mb-4"
-        >
-          {action.label}
-        </Button>
-      )}
-      {code && (
-        <pre className="bg-card border border-border rounded-md p-3 text-xs text-left w-full overflow-x-auto">
-          <code>{code}</code>
-        </pre>
-      )}
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'48px 24px', textAlign:'center', gap:16 }}>
+      {icon && <div style={{ background:'hsl(var(--bg-raised))', padding:16, display:'inline-flex', borderRadius:0 }}>{icon}</div>}
+      <div>
+        <p style={{ fontWeight:600, color:'hsl(var(--text-1))', marginBottom:4 }}>{title}</p>
+        {description && <p style={{ fontSize:13, color:'hsl(var(--text-3))' }}>{description}</p>}
+      </div>
+      {action}
     </div>
   );
 }
