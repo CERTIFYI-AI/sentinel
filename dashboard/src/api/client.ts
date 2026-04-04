@@ -78,10 +78,10 @@ export const fetchModels = async (): Promise<ModelConfig[]> => {
     return await api<ModelConfig[]>("/models");
   } catch {
     return [
-      { id: "gpt-4o", display_name: "GPT-4o", model_name: "gpt-4o", provider: "openai", role: "primary", status: "active", created_at: "2024-01-15", version: "2024-05-13", description: "Latest multimodal model from OpenAI" },
-      { id: "claude-35-sonnet", display_name: "Claude 3.5 Sonnet", model_name: "claude-3-5-sonnet", provider: "anthropic", role: "fallback", status: "active", created_at: "2024-03-01", version: "20241022", description: "Advanced reasoning and coding model" },
-      { id: "llama-3-70b", display_name: "Llama 3 70B", model_name: "llama-3-70b", provider: "local", role: "fallback", status: "active", created_at: "2024-04-18", version: "3.0", description: "Open-source large language model" },
-      { id: "gemini-pro", display_name: "Gemini Pro", model_name: "gemini-pro", provider: "custom", role: "fallback", status: "active", created_at: "2024-02-08", version: "1.5", description: "Google multimodal AI model" },
+      { id: "gpt-4o", display_name: "GPT-4o", model_name: "gpt-4o", provider: "openai", role: "primary", status: "active", created_at: "2026-01-15", version: "2026-05-13", description: "Latest multimodal model from OpenAI" },
+      { id: "claude-35-sonnet", display_name: "Claude 3.5 Sonnet", model_name: "claude-3-5-sonnet", provider: "anthropic", role: "fallback", status: "active", created_at: "2026-03-01", version: "20241022", description: "Advanced reasoning and coding model" },
+      { id: "llama-3-70b", display_name: "Llama 3 70B", model_name: "llama-3-70b", provider: "local", role: "fallback", status: "active", created_at: "2026-04-18", version: "3.0", description: "Open-source large language model" },
+      { id: "gemini-pro", display_name: "Gemini Pro", model_name: "gemini-pro", provider: "custom", role: "fallback", status: "active", created_at: "2026-02-08", version: "1.5", description: "Google multimodal AI model" },
     ] as ModelConfig[];
   }
 };

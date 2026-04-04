@@ -9,14 +9,14 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recha
 const columns = [  { key: "id", label: "ID" },
   { key: "name", label: "Name" },
   { key: "status", label: "Status" },
-  { key: "score", label: "Score" },
-  { key: "count", label: "Count" },
-  { key: "date", label: "Date" },];
-const mockData: any[] = [  { id: 1, name: "GPT-4 Policy", status: "active", score: 95, count: 1240, date: "2024-03-15" },
-  { id: 2, name: "Claude Guard", status: "active", score: 88, count: 890, date: "2024-03-14" },
-  { id: 3, name: "Llama Filter", status: "warning", score: 72, count: 456, date: "2024-03-13" },
-  { id: 4, name: "Gemini Check", status: "active", score: 91, count: 678, date: "2024-03-12" },
-  { id: 5, name: "Custom Rule", status: "disabled", score: 0, count: 0, date: "2024-03-11" },];
+  { key: "score", label: "Trust Score" },
+  { key: "count", label: "Evaluations" },
+  { key: "date", label: "Last Evaluated" },];
+const mockData: any[] = [  { id: 1, name: "GPT-4 Policy", status: "active", score: 95, count: 1240, date: "2026-03-15" },
+  { id: 2, name: "Claude Guard", status: "active", score: 88, count: 890, date: "2026-03-14" },
+  { id: 3, name: "Llama Filter", status: "warning", score: 72, count: 456, date: "2026-03-13" },
+  { id: 4, name: "Gemini Check", status: "active", score: 91, count: 678, date: "2026-03-12" },
+  { id: 5, name: "Custom Rule", status: "disabled", score: 0, count: 0, date: "2026-03-11" },];
 const statsCards = [  { label: "Trust Score", value: "91%", icon: Shield },
   { label: "Active Rules", value: "24", icon: Shield },
   { label: "Violations", value: "7", icon: Shield },

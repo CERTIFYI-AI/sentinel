@@ -6,12 +6,12 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 
 const evidence = [
-  { id: "EVD-001", name: "Access Review Q4 2024", framework: "SOC2", control: "CTL-001", type: "PDF", size: "2.4 MB", uploaded: "2025-01-10", uploader: "Alex Kumar", status: "approved" },
-  { id: "EVD-002", name: "Encryption Configuration Audit", framework: "ISO 27001", control: "CTL-002", type: "PDF", size: "1.8 MB", uploaded: "2025-01-08", uploader: "James Wilson", status: "approved" },
-  { id: "EVD-003", name: "Bias Test Results - Credit Model", framework: "EU AI Act", control: "CTL-004", type: "CSV", size: "5.2 MB", uploaded: "2025-01-05", uploader: "Dr. Sarah Chen", status: "pending" },
-  { id: "EVD-004", name: "Incident Response Drill Report", framework: "ISO 27001", control: "CTL-005", type: "DOCX", size: "3.1 MB", uploaded: "2025-01-03", uploader: "Mike Johnson", status: "approved" },
-  { id: "EVD-005", name: "Vendor Security Questionnaire", framework: "SOC2", control: "CTL-007", type: "PDF", size: "890 KB", uploaded: "2024-12-28", uploader: "Mike Johnson", status: "approved" },
-  { id: "EVD-006", name: "Model Training Data Lineage", framework: "NIST AI RMF", control: "CTL-009", type: "JSON", size: "12.4 MB", uploaded: "2025-01-12", uploader: "Dr. Sarah Chen", status: "reviewing" },
+  { id: "EVD-001", name: "Access Review Q4 2024", framework: "SOC2", control: "CTL-001", type: "PDF", size: "2.4 MB", uploaded: "2026-01-10", uploader: "Alex Kumar", status: "approved" },
+  { id: "EVD-002", name: "Encryption Configuration Audit", framework: "ISO 27001", control: "CTL-002", type: "PDF", size: "1.8 MB", uploaded: "2026-01-08", uploader: "James Wilson", status: "approved" },
+  { id: "EVD-003", name: "Bias Test Results - Credit Model", framework: "EU AI Act", control: "CTL-004", type: "CSV", size: "5.2 MB", uploaded: "2026-01-05", uploader: "Dr. Sarah Chen", status: "pending" },
+  { id: "EVD-004", name: "Incident Response Drill Report", framework: "ISO 27001", control: "CTL-005", type: "DOCX", size: "3.1 MB", uploaded: "2026-01-03", uploader: "Mike Johnson", status: "approved" },
+  { id: "EVD-005", name: "Vendor Security Questionnaire", framework: "SOC2", control: "CTL-007", type: "PDF", size: "890 KB", uploaded: "2026-12-28", uploader: "Mike Johnson", status: "approved" },
+  { id: "EVD-006", name: "Model Training Data Lineage", framework: "NIST AI RMF", control: "CTL-009", type: "JSON", size: "12.4 MB", uploaded: "2026-01-12", uploader: "Dr. Sarah Chen", status: "reviewing" },
 ];
 
 export default function EvidenceVault() {

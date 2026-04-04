@@ -8,16 +8,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../components/ui/sheet";
 
 const controls = [
-  { id: "CTL-001", name: "AI Model Access Control", framework: "ISO 27001", category: "Access Management", status: "implemented", effectiveness: "high", owner: "Alex Kumar", lastReview: "2025-01-10" },
-  { id: "CTL-002", name: "Training Data Encryption", framework: "SOC2", category: "Data Protection", status: "implemented", effectiveness: "high", owner: "James Wilson", lastReview: "2025-01-08" },
-  { id: "CTL-003", name: "Model Output Validation", framework: "EU AI Act", category: "AI Safety", status: "partial", effectiveness: "medium", owner: "Dr. Sarah Chen", lastReview: "2025-01-05" },
-  { id: "CTL-004", name: "Bias Detection Pipeline", framework: "NIST AI RMF", category: "Fairness", status: "implemented", effectiveness: "high", owner: "Dr. Sarah Chen", lastReview: "2024-12-20" },
-  { id: "CTL-005", name: "Incident Response Plan", framework: "ISO 27001", category: "Incident Mgmt", status: "implemented", effectiveness: "high", owner: "Mike Johnson", lastReview: "2025-01-12" },
-  { id: "CTL-006", name: "Human Oversight for High-Risk AI", framework: "EU AI Act", category: "HITL", status: "partial", effectiveness: "medium", owner: "Lisa Park", lastReview: "2024-12-15" },
-  { id: "CTL-007", name: "Vendor Security Assessment", framework: "SOC2", category: "Vendor Mgmt", status: "implemented", effectiveness: "high", owner: "Mike Johnson", lastReview: "2025-01-03" },
-  { id: "CTL-008", name: "Model Explainability Documentation", framework: "EU AI Act", category: "Transparency", status: "not-implemented", effectiveness: "low", owner: "Dr. Sarah Chen", lastReview: "2024-11-30" },
-  { id: "CTL-009", name: "Data Retention Policy", framework: "ISO 27001", category: "Data Governance", status: "implemented", effectiveness: "high", owner: "James Wilson", lastReview: "2025-01-06" },
-  { id: "CTL-010", name: "Adversarial Robustness Testing", framework: "NIST AI RMF", category: "Security", status: "partial", effectiveness: "medium", owner: "Alex Kumar", lastReview: "2024-12-22" },
+  { id: "CTL-001", name: "AI Model Access Control", framework: "ISO 27001", category: "Access Management", status: "implemented", effectiveness: "high", owner: "Alex Kumar", lastReview: "2026-01-10" },
+  { id: "CTL-002", name: "Training Data Encryption", framework: "SOC2", category: "Data Protection", status: "implemented", effectiveness: "high", owner: "James Wilson", lastReview: "2026-01-08" },
+  { id: "CTL-003", name: "Model Output Validation", framework: "EU AI Act", category: "AI Safety", status: "partial", effectiveness: "medium", owner: "Dr. Sarah Chen", lastReview: "2026-01-05" },
+  { id: "CTL-004", name: "Bias Detection Pipeline", framework: "NIST AI RMF", category: "Fairness", status: "implemented", effectiveness: "high", owner: "Dr. Sarah Chen", lastReview: "2026-12-20" },
+  { id: "CTL-005", name: "Incident Response Plan", framework: "ISO 27001", category: "Incident Mgmt", status: "implemented", effectiveness: "high", owner: "Mike Johnson", lastReview: "2026-01-12" },
+  { id: "CTL-006", name: "Human Oversight for High-Risk AI", framework: "EU AI Act", category: "HITL", status: "partial", effectiveness: "medium", owner: "Lisa Park", lastReview: "2026-12-15" },
+  { id: "CTL-007", name: "Vendor Security Assessment", framework: "SOC2", category: "Vendor Mgmt", status: "implemented", effectiveness: "high", owner: "Mike Johnson", lastReview: "2026-01-03" },
+  { id: "CTL-008", name: "Model Explainability Documentation", framework: "EU AI Act", category: "Transparency", status: "not-implemented", effectiveness: "low", owner: "Dr. Sarah Chen", lastReview: "2026-11-30" },
+  { id: "CTL-009", name: "Data Retention Policy", framework: "ISO 27001", category: "Data Governance", status: "implemented", effectiveness: "high", owner: "James Wilson", lastReview: "2026-01-06" },
+  { id: "CTL-010", name: "Adversarial Robustness Testing", framework: "NIST AI RMF", category: "Security", status: "partial", effectiveness: "medium", owner: "Alex Kumar", lastReview: "2026-12-22" },
 ];
 
 export default function Controls() {

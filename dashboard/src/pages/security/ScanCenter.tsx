@@ -12,11 +12,11 @@ const columns = [  { key: "id", label: "ID" },
   { key: "status", label: "Status" },
   { key: "score", label: "Score" },
   { key: "date", label: "Date" },];
-const mockData: any[] = [  { id: 1, name: "Web App Scan", target: "app.certifyi.com", status: "completed", score: 92, date: "2024-03-15" },
-  { id: 2, name: "API Security", target: "api.certifyi.com", status: "running", score: 78, date: "2024-03-14" },
-  { id: 3, name: "Infra Scan", target: "*.internal", status: "scheduled", score: 0, date: "2024-03-16" },
-  { id: 4, name: "Container Scan", target: "registry", status: "completed", score: 85, date: "2024-03-13" },
-  { id: 5, name: "Dependency Check", target: "package.json", status: "completed", score: 71, date: "2024-03-12" },];
+const mockData: any[] = [  { id: 1, name: "Web App Scan", target: "app.certifyi.com", status: "completed", score: 92, date: "2026-03-15" },
+  { id: 2, name: "API Security", target: "api.certifyi.com", status: "running", score: 78, date: "2026-03-14" },
+  { id: 3, name: "Infra Scan", target: "*.internal", status: "scheduled", score: 0, date: "2026-03-16" },
+  { id: 4, name: "Container Scan", target: "registry", status: "completed", score: 85, date: "2026-03-13" },
+  { id: 5, name: "Dependency Check", target: "package.json", status: "completed", score: 71, date: "2026-03-12" },];
 const statsCards = [  { label: "Total Scans", value: "156", icon: Shield },
   { label: "Critical", value: "12", icon: Shield },
   { label: "Score", value: "87%", icon: Shield },

@@ -12,11 +12,11 @@ const columns = [  { key: "id", label: "ID" },
   { key: "severity", label: "Severity" },
   { key: "dueDate", label: "Due Date" },
   { key: "assignee", label: "Assignee" },];
-const mockData: any[] = [  { id: 1, name: "ISO Audit Prep", status: "overdue", severity: "critical", dueDate: "2024-03-01", assignee: "John" },
-  { id: 2, name: "SOC2 Evidence", status: "overdue", severity: "high", dueDate: "2024-03-05", assignee: "Sarah" },
-  { id: 3, name: "Policy Review", status: "overdue", severity: "medium", dueDate: "2024-03-10", assignee: "Mike" },
-  { id: 4, name: "Risk Assessment", status: "overdue", severity: "high", dueDate: "2024-03-08", assignee: "Anna" },
-  { id: 5, name: "Vendor Review", status: "overdue", severity: "low", dueDate: "2024-03-12", assignee: "Tom" },];
+const mockData: any[] = [  { id: 1, name: "ISO Audit Prep", status: "overdue", severity: "critical", dueDate: "2026-03-01", assignee: "John" },
+  { id: 2, name: "SOC2 Evidence", status: "overdue", severity: "high", dueDate: "2026-03-05", assignee: "Sarah" },
+  { id: 3, name: "Policy Review", status: "overdue", severity: "medium", dueDate: "2026-03-10", assignee: "Mike" },
+  { id: 4, name: "Risk Assessment", status: "overdue", severity: "high", dueDate: "2026-03-08", assignee: "Anna" },
+  { id: 5, name: "Vendor Review", status: "overdue", severity: "low", dueDate: "2026-03-12", assignee: "Tom" },];
 const statsCards = [  { label: "Overdue", value: "23", icon: Shield },
   { label: "Critical", value: "5", icon: Shield },
   { label: "This Week", value: "8", icon: Shield },

@@ -30,9 +30,9 @@ const authSettings = {
 };
 
 const apiKeysData = [
-  { id: "key-1", name: "Production ML Pipeline", prefix: "sk-prod-7a3f", created: "2025-08-12", lastUsed: "2026-03-30", scopes: ["models:read", "guardrails:read", "guardrails:write"], status: "Active" as const },
+  { id: "key-1", name: "Production ML Pipeline", prefix: "sk-prod-7a3f", created: "2026-08-12", lastUsed: "2026-03-30", scopes: ["models:read", "guardrails:read", "guardrails:write"], status: "Active" as const },
   { id: "key-2", name: "Staging Integration Tests", prefix: "sk-stg-2b1c", created: "2026-01-05", lastUsed: "2026-03-29", scopes: ["models:read", "models:write", "risks:read"], status: "Active" as const },
-  { id: "key-3", name: "Deprecated Legacy System", prefix: "sk-leg-9d4e", created: "2024-03-01", lastUsed: "2025-06-15", scopes: [] as string[], status: "Revoked" as const },
+  { id: "key-3", name: "Deprecated Legacy System", prefix: "sk-leg-9d4e", created: "2026-03-01", lastUsed: "2026-06-15", scopes: [] as string[], status: "Revoked" as const },
 ];
 
 const notificationChannels = [

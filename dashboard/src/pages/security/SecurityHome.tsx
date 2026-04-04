@@ -11,11 +11,11 @@ const columns = [  { key: "id", label: "ID" },
   { key: "status", label: "Status" },
   { key: "score", label: "Score" },
   { key: "lastScan", label: "Last Scan" },];
-const mockData: any[] = [  { id: 1, name: "Vulnerability Scanner", status: "active", score: 92, lastScan: "2024-03-15" },
-  { id: 2, name: "Threat Intelligence", status: "active", score: 88, lastScan: "2024-03-14" },
-  { id: 3, name: "Attack Surface", status: "warning", score: 71, lastScan: "2024-03-13" },
-  { id: 4, name: "Red Team Lab", status: "active", score: 95, lastScan: "2024-03-12" },
-  { id: 5, name: "Policy Firewall", status: "active", score: 89, lastScan: "2024-03-11" },];
+const mockData: any[] = [  { id: 1, name: "Vulnerability Scanner", status: "active", score: 92, lastScan: "2026-03-15" },
+  { id: 2, name: "Threat Intelligence", status: "active", score: 88, lastScan: "2026-03-14" },
+  { id: 3, name: "Attack Surface", status: "warning", score: 71, lastScan: "2026-03-13" },
+  { id: 4, name: "Red Team Lab", status: "active", score: 95, lastScan: "2026-03-12" },
+  { id: 5, name: "Policy Firewall", status: "active", score: 89, lastScan: "2026-03-11" },];
 const statsCards = [  { label: "Security Score", value: "89%", icon: Shield },
   { label: "Active Threats", value: "3", icon: Shield },
   { label: "Scans Today", value: "24", icon: Shield },

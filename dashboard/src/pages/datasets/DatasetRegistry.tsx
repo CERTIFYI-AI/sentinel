@@ -7,14 +7,14 @@ import { Badge } from '../../components/ui/badge';
 import { Database, Shield, AlertTriangle, CheckCircle, Search, Download, Plus, Eye, FileText, Lock } from 'lucide-react';
 
 const datasets = [
-  { id: 'DS-001', name: 'Customer PII Records', model: 'Fraud Detection v2.1', sensitivity: 'PII', status: 'active', riskLevel: 'critical', records: 245000, lastAudit: '2025-11-15', owner: 'Data Engineering', retention: '7 years', encryption: 'AES-256' },
-  { id: 'DS-002', name: 'Patient Health Records', model: 'Clinical NLP v1.4', sensitivity: 'PHI', status: 'active', riskLevel: 'critical', records: 89000, lastAudit: '2025-10-20', owner: 'Healthcare AI', retention: '10 years', encryption: 'AES-256' },
-  { id: 'DS-003', name: 'Credit Scoring Features', model: 'Credit Risk v3.0', sensitivity: 'PII', status: 'active', riskLevel: 'high', records: 1200000, lastAudit: '2025-12-01', owner: 'Risk Analytics', retention: '5 years', encryption: 'AES-256' },
-  { id: 'DS-004', name: 'Employee Performance Data', model: 'HR Attrition Model', sensitivity: 'internal', status: 'review', riskLevel: 'medium', records: 15000, lastAudit: '2025-08-10', owner: 'People Analytics', retention: '3 years', encryption: 'AES-128' },
+  { id: 'DS-001', name: 'Customer PII Records', model: 'Fraud Detection v2.1', sensitivity: 'PII', status: 'active', riskLevel: 'critical', records: 245000, lastAudit: '2026-11-15', owner: 'Data Engineering', retention: '7 years', encryption: 'AES-256' },
+  { id: 'DS-002', name: 'Patient Health Records', model: 'Clinical NLP v1.4', sensitivity: 'PHI', status: 'active', riskLevel: 'critical', records: 89000, lastAudit: '2026-10-20', owner: 'Healthcare AI', retention: '10 years', encryption: 'AES-256' },
+  { id: 'DS-003', name: 'Credit Scoring Features', model: 'Credit Risk v3.0', sensitivity: 'PII', status: 'active', riskLevel: 'high', records: 1200000, lastAudit: '2026-12-01', owner: 'Risk Analytics', retention: '5 years', encryption: 'AES-256' },
+  { id: 'DS-004', name: 'Employee Performance Data', model: 'HR Attrition Model', sensitivity: 'internal', status: 'review', riskLevel: 'medium', records: 15000, lastAudit: '2026-08-10', owner: 'People Analytics', retention: '3 years', encryption: 'AES-128' },
   { id: 'DS-005', name: 'Transaction Logs', model: 'AML Detection v2.0', sensitivity: 'confidential', status: 'active', riskLevel: 'high', records: 5400000, lastAudit: '2026-01-05', owner: 'FinCrime Unit', retention: '7 years', encryption: 'AES-256' },
   { id: 'DS-006', name: 'Social Media Sentiment', model: 'Brand Monitor v1.2', sensitivity: 'public', status: 'active', riskLevel: 'low', records: 3200000, lastAudit: '2026-02-14', owner: 'Marketing AI', retention: '2 years', encryption: 'TLS' },
-  { id: 'DS-007', name: 'Biometric Auth Logs', model: 'Identity Verify v4.0', sensitivity: 'PII', status: 'archived', riskLevel: 'critical', records: 670000, lastAudit: '2025-06-30', owner: 'Security Ops', retention: '5 years', encryption: 'AES-256' },
-  { id: 'DS-008', name: 'Insurance Claims Data', model: 'Claims Triage v2.3', sensitivity: 'PII', status: 'active', riskLevel: 'high', records: 340000, lastAudit: '2025-09-22', owner: 'Underwriting AI', retention: '10 years', encryption: 'AES-256' },
+  { id: 'DS-007', name: 'Biometric Auth Logs', model: 'Identity Verify v4.0', sensitivity: 'PII', status: 'archived', riskLevel: 'critical', records: 670000, lastAudit: '2026-06-30', owner: 'Security Ops', retention: '5 years', encryption: 'AES-256' },
+  { id: 'DS-008', name: 'Insurance Claims Data', model: 'Claims Triage v2.3', sensitivity: 'PII', status: 'active', riskLevel: 'high', records: 340000, lastAudit: '2026-09-22', owner: 'Underwriting AI', retention: '10 years', encryption: 'AES-256' },
 ];
 
 const sensitivityColors: Record<string, string> = { PII: 'bg-red-600', PHI: 'bg-purple-600', confidential: 'bg-orange-500', internal: 'bg-yellow-500', public: 'bg-green-500' };

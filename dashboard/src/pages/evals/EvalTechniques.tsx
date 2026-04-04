@@ -12,11 +12,11 @@ const columns = [  { key: "id", label: "ID" },
   { key: "score", label: "Score" },
   { key: "model", label: "Model" },
   { key: "date", label: "Date" },];
-const mockData: any[] = [  { id: 1, name: "Safety Eval v3", status: "completed", score: 94, model: "GPT-4", date: "2024-03-15" },
-  { id: 2, name: "Bias Detection", status: "running", score: 0, model: "Claude-3", date: "2024-03-14" },
-  { id: 3, name: "Hallucination Test", status: "completed", score: 87, model: "Llama-3", date: "2024-03-13" },
-  { id: 4, name: "Toxicity Screen", status: "completed", score: 96, model: "GPT-4", date: "2024-03-12" },
-  { id: 5, name: "Accuracy Benchmark", status: "failed", score: 42, model: "Mistral", date: "2024-03-11" },];
+const mockData: any[] = [  { id: 1, name: "Safety Eval v3", status: "completed", score: 94, model: "GPT-4", date: "2026-03-15" },
+  { id: 2, name: "Bias Detection", status: "running", score: 0, model: "Claude-3", date: "2026-03-14" },
+  { id: 3, name: "Hallucination Test", status: "completed", score: 87, model: "Llama-3", date: "2026-03-13" },
+  { id: 4, name: "Toxicity Screen", status: "completed", score: 96, model: "GPT-4", date: "2026-03-12" },
+  { id: 5, name: "Accuracy Benchmark", status: "failed", score: 42, model: "Mistral", date: "2026-03-11" },];
 const statsCards = [  { label: "Total Evals", value: "234", icon: Shield },
   { label: "Passing", value: "198", icon: Shield },
   { label: "Failed", value: "12", icon: Shield },

@@ -12,11 +12,11 @@ const columns = [  { key: "id", label: "ID" },
   { key: "type", label: "Type" },
   { key: "score", label: "Score" },
   { key: "date", label: "Date" },];
-const mockData: any[] = [  { id: 1, name: "Record A", status: "active", type: "Core", score: 92, date: "2024-03-15" },
-  { id: 2, name: "Record B", status: "compliant", type: "Extended", score: 87, date: "2024-03-14" },
-  { id: 3, name: "Record C", status: "pending", type: "Core", score: 71, date: "2024-03-13" },
-  { id: 4, name: "Record D", status: "active", type: "Custom", score: 95, date: "2024-03-12" },
-  { id: 5, name: "Record E", status: "review", type: "Extended", score: 63, date: "2024-03-11" },];
+const mockData: any[] = [  { id: 1, name: "Record A", status: "active", type: "Core", score: 92, date: "2026-03-15" },
+  { id: 2, name: "Record B", status: "compliant", type: "Extended", score: 87, date: "2026-03-14" },
+  { id: 3, name: "Record C", status: "pending", type: "Core", score: 71, date: "2026-03-13" },
+  { id: 4, name: "Record D", status: "active", type: "Custom", score: 95, date: "2026-03-12" },
+  { id: 5, name: "Record E", status: "review", type: "Extended", score: 63, date: "2026-03-11" },];
 const statsCards = [  { label: "Total", value: "278", icon: Shield },
   { label: "Active", value: "201", icon: Shield },
   { label: "Gaps", value: "15", icon: Shield },

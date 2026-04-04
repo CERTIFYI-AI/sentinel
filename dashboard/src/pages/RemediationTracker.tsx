@@ -12,11 +12,11 @@ const columns = [  { key: "id", label: "ID" },
   { key: "type", label: "Type" },
   { key: "score", label: "Score" },
   { key: "date", label: "Date" },];
-const mockData: any[] = [  { id: 1, name: "Item One", status: "active", type: "Primary", score: 90, date: "2024-03-15" },
-  { id: 2, name: "Item Two", status: "completed", type: "Secondary", score: 82, date: "2024-03-14" },
-  { id: 3, name: "Item Three", status: "pending", type: "Primary", score: 75, date: "2024-03-13" },
-  { id: 4, name: "Item Four", status: "active", type: "Tertiary", score: 88, date: "2024-03-12" },
-  { id: 5, name: "Item Five", status: "archived", type: "Secondary", score: 65, date: "2024-03-11" },];
+const mockData: any[] = [  { id: 1, name: "Item One", status: "active", type: "Primary", score: 90, date: "2026-03-15" },
+  { id: 2, name: "Item Two", status: "completed", type: "Secondary", score: 82, date: "2026-03-14" },
+  { id: 3, name: "Item Three", status: "pending", type: "Primary", score: 75, date: "2026-03-13" },
+  { id: 4, name: "Item Four", status: "active", type: "Tertiary", score: 88, date: "2026-03-12" },
+  { id: 5, name: "Item Five", status: "archived", type: "Secondary", score: 65, date: "2026-03-11" },];
 const statsCards = [  { label: "Total", value: "312", icon: Shield },
   { label: "Active", value: "245", icon: Shield },
   { label: "Pending", value: "42", icon: Shield },
