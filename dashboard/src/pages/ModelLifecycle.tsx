@@ -1,37 +1,65 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
-import { Button } from "../components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
-import { Input } from "../components/ui/input";
-import { Shield, Search, Filter, Plus, Download } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-const columns = [  { key: "id", label: "ID" },
-  { key: "name", label: "Name" },
-  { key: "status", label: "Status" },
-  { key: "type", label: "Type" },
-  { key: "score", label: "Score" },
-  { key: "date", label: "Date" },];
-const mockData: any[] = [  { id: 1, name: "Item One", status: "active", type: "Primary", score: 90, date: "2026-03-15" },
-  { id: 2, name: "Item Two", status: "completed", type: "Secondary", score: 82, date: "2026-03-14" },
-  { id: 3, name: "Item Three", status: "pending", type: "Primary", score: 75, date: "2026-03-13" },
-  { id: 4, name: "Item Four", status: "active", type: "Tertiary", score: 88, date: "2026-03-12" },
-  { id: 5, name: "Item Five", status: "archived", type: "Secondary", score: 65, date: "2026-03-11" },];
-const statsCards = [  { label: "Total", value: "312", icon: Shield },
-  { label: "Active", value: "245", icon: Shield },
-  { label: "Pending", value: "42", icon: Shield },
-  { label: "Completed", value: "25", icon: Shield },];
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { ArrowRight, Clock, CheckCircle2, AlertTriangle } from "lucide-react";
+
+const phases = ["Problem Definition","Data Collection","Development","Validation","Deployment","Monitoring","Retirement"] as const;
+const phaseColors = ["#6366f1","#8b5cf6","#a78bfa","#f59e0b","#10b981","#06b6d4","#6b7280"];
+const models = [
+  { name: "CreditScorer v2.1", phase: "Monitoring", entry: "2026-01-15", days: 79, nextGate: "Annual Review", owner: "Dr. Sarah Chen", status: "Active" },
+  { name: "GPT-4-Turbo (Acme)", phase: "Deployment", entry: "2026-03-01", days: 34, nextGate: "Production Readiness", owner: "James Park", status: "In Progress" },
+  { name: "HiringFilter v1.3", phase: "Validation", entry: "2026-02-20", days: 43, nextGate: "Bias Audit Sign-off", owner: "David Kim", status: "Blocked" },
+  { name: "FraudDetector v3.0", phase: "Monitoring", entry: "2025-11-10", days: 145, nextGate: "Quarterly Review", owner: "Michael Torres", status: "Active" },
+  { name: "ContentModerator v2.0", phase: "Development", entry: "2026-03-15", days: 20, nextGate: "Code Review", owner: "Amara Okafor", status: "In Progress" },
+  { name: "InsuranceRisk v1.5", phase: "Data Collection", entry: "2026-03-25", days: 10, nextGate: "Data Quality Gate", owner: "Lisa Wang", status: "In Progress" },
+];
+const pieData = phases.map((p, i) => ({ name: p, value: models.filter((m) => m.phase === p).length, color: phaseColors[i] })).filter((d) => d.value > 0);
+
 export default function ModelLifecycle() {
-  const [search, setSearch] = useState("");
-  const [sf, setSf] = useState("all");
-  const [sel, setSel] = useState<any>(null);
-  const [open, setOpen] = useState(false);
-  const sts = ["all", ...Array.from(new Set(mockData.map((d) => d.status||d.severity||"active")))];
-  const filt = mockData.filter((d) => JSON.stringify(d).toLowerCase().includes(search.toLowerCase()) && (sf==="all"||(d.status||d.severity)===sf));
-  const ch = mockData.slice(0,6).map((d,i) => ({ name: d.name||d.title||"I"+(i+1), value: d.score||d.count||50+i*10 }));
-  return (<div className="p-6 space-y-6"><div className="flex items-center justify-between"><h1 className="text-2xl font-bold">Model Lifecycle</h1><div className="flex gap-2"><Button size="sm" variant="outline"><Download className="h-4 w-4 mr-1"/>Export</Button><Button size="sm"><Plus className="h-4 w-4 mr-1"/>Add New</Button></div></div>
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">{statsCards.map((s:any,i:number)=>(<Card key={i}><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">{s.label}</p><p className="text-2xl font-bold">{s.value}</p></div><s.icon className="h-8 w-8 text-[hsl(var(--brand))]"/></div></CardContent></Card>))}</div>
-  <Card><CardHeader><CardTitle>Overview</CardTitle></CardHeader><CardContent><ResponsiveContainer width="100%" height={250}><BarChart data={ch}><XAxis dataKey="name" fontSize={12}/><YAxis fontSize={12}/><Tooltip/><Bar dataKey="value" fill="#10b981" radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></CardContent></Card>
-  <Card><CardHeader><div className="flex items-center justify-between"><CardTitle>Records</CardTitle><div className="flex gap-2"><div className="relative"><Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"/><Input placeholder="Search..." value={search} onChange={(e)=>setSearch(e.target.value)} className="pl-8 w-64"/></div><select className="border rounded px-3 py-1.5 text-sm bg-background" value={sf} onChange={(e)=>setSf(e.target.value)}>{sts.map(s=><option key={s} value={s}>{s==="all"?"All":s}</option>)}</select></div></div></CardHeader><CardContent><div className="border rounded-lg overflow-hidden"><table className="w-full"><thead className="bg-muted/50"><tr>{columns.map((c:any)=><th key={c.key} className="text-left p-3 text-sm font-medium">{c.label}</th>)}<th className="text-left p-3 text-sm font-medium">Actions</th></tr></thead><tbody>{filt.map((row:any,i:number)=>(<tr key={i} className="border-t hover:bg-muted/30 cursor-pointer" onClick={()=>{setSel(row);setOpen(true);}}>{columns.map((c:any)=>(<td key={c.key} className="p-3 text-sm">{c.key==="status"||c.key==="severity"?(<Badge variant={row[c.key]==="critical"||row[c.key]==="high"?"destructive":row[c.key]==="compliant"||row[c.key]==="active"||row[c.key]==="low"?"default":"secondary"}>{row[c.key]}</Badge>):String(row[c.key]??"")}</td>))}<td className="p-3"><Button size="sm" variant="ghost" onClick={(e)=>{e.stopPropagation();setSel(row);setOpen(true);}}>View</Button></td></tr>))}</tbody></table></div><p className="text-sm text-muted-foreground mt-2">{filt.length} of {mockData.length} records</p></CardContent></Card>
-  <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{sel?.name||sel?.title||"Detail"}</DialogTitle></DialogHeader><div className="space-y-3">{sel&&Object.entries(sel).map(([k,v])=>(<div key={k} className="flex justify-between border-b pb-2"><span className="text-sm text-muted-foreground capitalize">{k}</span><span className="text-sm font-medium">{String(v)}</span></div>))}<div className="flex gap-2 pt-2"><Button size="sm">Edit</Button><Button size="sm" variant="outline">Archive</Button><Button size="sm" variant="destructive">Delete</Button></div></div></DialogContent></Dialog></div>);
+  const [sel, setSel] = useState<string | null>(null);
+  const avgDays = Math.round(models.reduce((a, m) => a + m.days, 0) / models.length);
+  const pending = models.filter((m) => m.status !== "Active").length;
+  return (
+    <div className="p-6 space-y-6">
+      <div><h1 className="text-2xl font-bold text-white">Model Lifecycle</h1><p className="text-sm text-gray-400">Track AI models through governance lifecycle phases</p></div>
+      <div className="grid grid-cols-4 gap-4">
+        <div className="bg-[#12121a] border border-gray-800 rounded-xl p-4 col-span-1">
+          <span className="text-sm text-gray-400">Models by Phase</span>
+          <div className="h-32 mt-2"><ResponsiveContainer><PieChart><Pie data={pieData} cx="50%" cy="50%" innerRadius={30} outerRadius={50} dataKey="value" paddingAngle={3}>{pieData.map((d, i) => <Cell key={i} fill={d.color}/>)}</Pie><Tooltip contentStyle={{background:"#1a1a2e",border:"1px solid #333",borderRadius:8}} labelStyle={{color:"#fff"}} itemStyle={{color:"#ccc"}}/></PieChart></ResponsiveContainer></div>
+          <div className="space-y-1 mt-2">{pieData.map((d) => <div key={d.name} className="flex items-center gap-2 text-xs"><div className="w-2 h-2 rounded-full" style={{background:d.color}}/><span className="text-gray-400">{d.name}: {d.value}</span></div>)}</div>
+        </div>
+        {[["Total Models", models.length, "text-white"], ["Avg Days in Phase", avgDays, "text-blue-400"], ["Pending Transitions", pending, "text-amber-400"]].map(([l, v, c]: any, i) => (
+          <div key={i} className="bg-[#12121a] border border-gray-800 rounded-xl p-4"><span className="text-sm text-gray-400">{l}</span><p className={`text-2xl font-bold mt-2 ${c}`}>{v}</p></div>
+        ))}
+      </div>
+      <div className="bg-[#12121a] border border-gray-800 rounded-xl p-5">
+        <h3 className="text-sm font-medium text-gray-300 mb-4">Pipeline View</h3>
+        {models.map((m) => {
+          const idx = phases.indexOf(m.phase as any);
+          return (
+            <div key={m.name} className="mb-4 last:mb-0">
+              <div className="flex items-center gap-3 mb-2"><span className="text-sm text-white w-48 truncate">{m.name}</span><Badge variant={m.status==="Active"?"default":m.status==="Blocked"?"destructive":"secondary"} className="text-xs">{m.status}</Badge></div>
+              <div className="flex gap-1">{phases.map((p, i) => <div key={p} className={`h-2 flex-1 rounded-full ${i <= idx ? "bg-emerald-500" : "bg-gray-700"} ${i === idx ? "ring-2 ring-emerald-400/50" : ""}`} title={p}/>)}</div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="bg-[#12121a] border border-gray-800 rounded-xl overflow-hidden">
+        <table className="w-full text-sm">
+          <thead><tr className="border-b border-gray-800 text-gray-400">{["Model","Current Phase","Entry Date","Days","Next Gate","Owner","Status"].map((h) => <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>)}</tr></thead>
+          <tbody>{models.map((m) => (
+            <tr key={m.name} className="border-b border-gray-800/50 hover:bg-gray-800/30 cursor-pointer" onClick={() => setSel(sel === m.name ? null : m.name)}>
+              <td className="px-4 py-3 text-white font-medium">{m.name}</td>
+              <td className="px-4 py-3"><Badge variant="outline">{m.phase}</Badge></td>
+              <td className="px-4 py-3 text-gray-400">{m.entry}</td>
+              <td className="px-4 py-3"><span className={m.days > 60 ? "text-amber-400" : "text-gray-300"}>{m.days}d</span></td>
+              <td className="px-4 py-3 text-gray-300">{m.nextGate}</td>
+              <td className="px-4 py-3 text-gray-400">{m.owner}</td>
+              <td className="px-4 py-3"><Badge variant={m.status==="Active"?"default":m.status==="Blocked"?"destructive":"secondary"}>{m.status}</Badge></td>
+            </tr>
+          ))}</tbody>
+        </table>
+      </div>
+    </div>
+  );
 }

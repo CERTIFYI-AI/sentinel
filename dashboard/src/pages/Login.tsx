@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { Shield } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -39,9 +38,7 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-[#0a0a0f] px-4">
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
-          <div className="h-12 w-12 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-4">
-            <Shield className="h-7 w-7 text-emerald-400" />
-          </div>
+          <img src="https://dignep.com.np/wp-content/uploads/2026/03/sentinel_logo.svg" alt="Certifyi Sentinel" className="h-14 w-auto mb-2" />
           <h1 className="text-2xl font-bold text-white">Certifyi Sentinel</h1>
           <p className="text-sm text-gray-400 mt-1">AI Governance & Compliance Platform</p>
         </div>
