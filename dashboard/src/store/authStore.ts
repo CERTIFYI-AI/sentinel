@@ -1,48 +1,69 @@
-// dashboard/src/store/authStore.ts
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
-export interface AuthUser {
+export interface User {
   id: string;
+  name: string;
   email: string;
-  role: string;
+  role: 'admin' | 'auditor' | 'viewer';
+  organization: string;
   tenantId: string;
+  avatarUrl?: string;
 }
 
 interface AuthState {
+  isAuthenticated: boolean;
+  user: User | null;
   token: string | null;
   refreshToken: string | null;
-  user: AuthUser | null;
-  isLoading: boolean;
-  setTokens: (access: string, refresh: string) => void;
-  setUser: (user: AuthUser | null) => void;
-  setLoading: (loading: boolean) => void;
+  login: (email: string, password: string) => Promise<void>;
+  signup: (data: { name: string; email: string; password: string; organization: string }) => Promise<void>;
   logout: () => void;
+  setUser: (user: User) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
+      isAuthenticated: false,
+      user: null,
       token: null,
       refreshToken: null,
-      user: null,
-      isLoading: true,
-      setTokens: (access, refresh) =>
-        set({ token: access, refreshToken: refresh }),
-      setUser: (user) => set({ user, isLoading: false }),
-      setLoading: (loading) => set({ isLoading: loading }),
-      logout: () => {
-        set({ token: null, refreshToken: null, user: null, isLoading: false });
-        window.location.href = "/login";
+      login: async (email: string, _password: string) => {
+        // Simulate API call
+        await new Promise((r) => setTimeout(r, 500));
+        const user: User = {
+          id: 'usr-001',
+          name: email.split('@')[0].replace(/[^a-zA-Z]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+          email,
+          role: 'admin',
+          organization: 'Certifyi Inc.',
+          tenantId: 'tenant-001',
+        };
+        set({
+          isAuthenticated: true,
+          user,
+          token: 'tok_' + Math.random().toString(36).slice(2),
+          refreshToken: 'rtok_' + Math.random().toString(36).slice(2),
+        });
       },
+      signup: async (_data) => {
+        await new Promise((r) => setTimeout(r, 500));
+        // Signup just succeeds, user must login after
+      },
+      logout: () => {
+        set({ isAuthenticated: false, user: null, token: null, refreshToken: null });
+      },
+      setUser: (user) => set({ user }),
     }),
     {
-      name: "sentinel_auth",
+      name: 'sentinel-auth',
       partialize: (state) => ({
+        isAuthenticated: state.isAuthenticated,
+        user: state.user,
         token: state.token,
         refreshToken: state.refreshToken,
-        user: state.user,
       }),
-    },
-  ),
+    }
+  )
 );
