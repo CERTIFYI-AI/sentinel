@@ -45,6 +45,9 @@ const Settings = lazy(() => import('./pages/Settings'));
 const Vendors = lazy(() => import('./pages/Vendors'));
 const Login = lazy(() => import('./pages/Login'));
 const Signup = lazy(() => import('./pages/Signup'));
+const UseCases = lazy(() => import('./pages/UseCases'));
+const AIAdvisor = lazy(() => import('./pages/AIAdvisor'));
+const UseCaseDetail = lazy(() => import('./pages/UseCaseDetail'));
 
 const TrustEngineDashboard = lazy(() => import('./pages/trust-engine/TrustEngineDashboard'));
 const LiveTraceFeed = lazy(() => import('./pages/trust-engine/LiveTraceFeed'));
@@ -104,11 +107,12 @@ function AuthenticatedLayout() {
   useRealtimeInvalidation();
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-screen overflow-hidden bg-[hsl(var(--bg-page))]">
       <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <TopHeader />
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-y-auto">
+              <div className="p-6 max-w-[1440px] mx-auto">
           <Suspense fallback={<Loading />}>
             <Routes>
               <Route path="/" element={<Navigate to="/overview" replace />} />
@@ -191,10 +195,15 @@ function AuthenticatedLayout() {
               <Route path="/compliance/controls/:id" element={<ControlDetail />} />
 
             <Route path="/reporting" element={<Suspense fallback={<Loading />}><Reporting /></Suspense>} />
+              
+              <Route path="/use-cases" element={<UseCases />} />
+              <Route path="/use-cases/:id" element={<UseCaseDetail />} />
+              <Route path="/ai-advisor" element={<AIAdvisor />} />
               <Route path="*" element={<Suspense fallback={<Loading />}><NotFound /></Suspense>} />
             </Routes>
           </Suspense>
-        </main>
+        </div>
+            </main>
       </div>
     </div>
   );
