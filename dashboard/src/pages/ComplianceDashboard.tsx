@@ -103,7 +103,7 @@ export default function ComplianceDashboard() {
           <Card className="p-4">
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">Control Coverage</p>
-              <TrendingUp className="h-4 w-4 text-emerald-400" />
+              <TrendingUp className="h-4 w-4 text-primary" />
             </div>
             <p className="text-2xl font-bold tabular-nums mt-1">87%</p>
             <p className="text-xs text-muted-foreground mt-0.5">298 of 342 implemented</p>
@@ -176,7 +176,7 @@ export default function ComplianceDashboard() {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
-                        <div className={cn("h-full rounded-full", fw.score >= 80 ? "bg-emerald-500" : fw.score >= 60 ? "bg-amber-500" : "bg-red-500")} style={{ width: `${fw.score}%` }} />
+                        <div className={cn("h-full rounded-full", fw.score >= 80 ? "bg-primary" : fw.score >= 60 ? "bg-amber-500" : "bg-red-500")} style={{ width: `${fw.score}%` }} />
                       </div>
                       <span className="text-xs tabular-nums">{fw.score}%</span>
                     </div>
@@ -185,7 +185,7 @@ export default function ComplianceDashboard() {
                   <TableCell className="text-xs tabular-nums">{fw.gaps}</TableCell>
                   <TableCell className="text-xs tabular-nums">{fw.evidence}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className={cn("text-[10px] h-5", fw.status === "Compliant" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-amber-500/10 text-amber-400 border-amber-500/20")}>{fw.status}</Badge>
+                    <Badge variant="outline" className={cn("text-[10px] h-5", fw.status === "Compliant" ? "bg-primary/10 text-primary border-primary/20" : "bg-amber-500/10 text-amber-400 border-amber-500/20")}>{fw.status}</Badge>
                   </TableCell>
                 </TableRow>
               ))}

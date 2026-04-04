@@ -73,7 +73,7 @@ export default function Sidebar() {
     )}>
       <div className='flex items-center gap-3 px-4 h-14 border-b border-[hsl(var(--border))]'>
         <div className='w-8 h-8 bg-[hsl(var(--brand))] flex items-center justify-center flex-shrink-0'>
-          <ShieldCheck size={18} weight='fill' className='text-white' />
+          <ShieldCheck size={18} weight='fill' className='text-foreground' />
         </div>
         {!collapsed && (
           <div className='flex-1 min-w-0'>
@@ -116,7 +116,7 @@ export default function Sidebar() {
                         <>
                           <span className='flex-1 truncate'>{item.label}</span>
                           {item.badge && (
-                            <span className='bg-[hsl(var(--brand))] text-white text-[10px] px-1.5 py-0.5 font-medium min-w-[20px] text-center'>{item.badge}</span>
+                            <span className='bg-[hsl(var(--brand))] text-foreground text-[10px] px-1.5 py-0.5 font-medium min-w-[20px] text-center'>{item.badge}</span>
                           )}
                         </>
                       )}
@@ -140,7 +140,7 @@ export default function Sidebar() {
         </button>
         <div className={cn('flex items-center gap-3 px-3 py-2', collapsed && 'justify-center px-2')}>
           <div className='w-7 h-7 bg-[hsl(var(--brand))] flex items-center justify-center flex-shrink-0' data-avatar='true'>
-            <span className='text-xs font-semibold text-white'>BA</span>
+            <span className='text-xs font-semibold text-foreground'>BA</span>
           </div>
           {!collapsed && (
             <>

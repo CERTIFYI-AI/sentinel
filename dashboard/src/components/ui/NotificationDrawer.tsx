@@ -69,9 +69,9 @@ export function NotificationDrawer({ open, onOpenChange }: Props) {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-medium truncate">{n.title}</p>
-                      <span className="text-[11px] text-gray-500 shrink-0 ml-2">{n.ago}</span>
+                      <span className="text-[11px] text-muted-foreground shrink-0 ml-2">{n.ago}</span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-0.5">{n.description}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{n.description}</p>
                   </div>
                 </div>
               </button>

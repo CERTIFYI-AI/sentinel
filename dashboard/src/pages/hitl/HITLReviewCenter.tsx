@@ -57,7 +57,7 @@ export default function HITLReviewCenter() {
         </div>
         <div className="flex gap-2">
           <Button size="sm" variant="outline"><Filter className="h-4 w-4 mr-1" />Filter</Button>
-          <Button size="sm" className="bg-[hsl(var(--brand))] hover:bg-emerald-700"><Plus className="h-4 w-4 mr-1" />Add Review</Button>
+          <Button size="sm" className="bg-[hsl(var(--brand))] hover:bg-primary/90"><Plus className="h-4 w-4 mr-1" />Add Review</Button>
         </div>
       </div>
 
@@ -99,7 +99,7 @@ export default function HITLReviewCenter() {
         {["all", "pending", "in_review", "escalated", "critical", "high"].map(f => (
           <button key={f} onClick={() => setFilter(f)}
             className={`px-3 py-1 rounded text-xs font-medium border transition-colors ${
-              filter === f ? "bg-[hsl(var(--brand))] text-white border-emerald-600" : "text-muted-foreground border-border hover:border-emerald-500"
+              filter === f ? "bg-[hsl(var(--brand))] text-foreground border-primary" : "text-muted-foreground border-border hover:border-primary"
             }`}>
             {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1).replace("_", " ")}
           </button>

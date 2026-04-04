@@ -20,7 +20,7 @@ export function FrameworkSelector({ frameworks, selected, onSelect }: FrameworkS
           key={fw.id}
           onClick={() => onSelect(fw.id)}
           className={"flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border transition-colors " +
-            (selected === fw.id ? "bg-[#1A6B5A] text-white border-primary" : "hover:bg-muted")}
+            (selected === fw.id ? "bg-[#1A6B5A] text-foreground border-primary" : "hover:bg-muted")}
         >
           {fw.name}
           <Badge variant={fw.type === "mandatory" ? "destructive" : "secondary"} className="text-xs">

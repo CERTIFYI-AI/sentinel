@@ -14,7 +14,7 @@ export const PolicyStatsCards = ({ policies }: Props) => {
 
   const cards = [
     { label: 'Total Policies', value: total, icon: FileText, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
-    { label: 'Published', value: published, icon: CheckCircle, color: 'text-[hsl(var(--brand))]', bg: 'bg-[hsl(var(--brand))]/10', border: 'border-emerald-500/20' },
+    { label: 'Published', value: published, icon: CheckCircle, color: 'text-[hsl(var(--brand))]', bg: 'bg-[hsl(var(--brand))]/10', border: 'border-primary/20' },
     { label: 'In Review', value: inReview, icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
     { label: 'Draft', value: draft, icon: AlertTriangle, color: 'text-sky-400', bg: 'bg-sky-500/10', border: 'border-sky-500/20' },
     { label: 'Expired', value: expired, icon: XCircle, color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20' },

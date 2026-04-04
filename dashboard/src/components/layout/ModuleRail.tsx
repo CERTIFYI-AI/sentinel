@@ -28,7 +28,7 @@ export function ModuleRail() {
                     onClick={() => m.active && navigate(m.path)}
                     className={`w-10 h-10 flex items-center justify-center rounded-none transition-colors ${
                       isActive
-                        ? "bg-[hsl(136,45%,38%)] text-white"
+                        ? "bg-[hsl(136,45%,38%)] text-foreground"
                         : m.active
                         ? "text-muted-foreground hover:bg-muted"
                         : "text-muted-foreground/40 cursor-not-allowed"
@@ -56,7 +56,7 @@ export function ModuleRail() {
           <Tooltip>
             <TooltipTrigger asChild>
               <button onClick={() => navigate("/settings")} className={`w-10 h-10 flex items-center justify-center rounded-none transition-colors ${
-                location.pathname === "/settings" ? "bg-[hsl(136,45%,38%)] text-white" : "text-muted-foreground hover:bg-muted"
+                location.pathname === "/settings" ? "bg-[hsl(136,45%,38%)] text-foreground" : "text-muted-foreground hover:bg-muted"
               }`} aria-label="Settings">
                 <Settings className="h-5 w-5" />
               </button>

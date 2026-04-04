@@ -70,7 +70,7 @@ export function SignupForm({ onSuccess }: { onSuccess: () => void }) {
             {confirm && confirm !== password && <p className="text-xs text-destructive mt-1">Passwords do not match</p>}
           </div>
           <button onClick={() => setStep(2)} disabled={!canStep1}
-            className="w-full h-10 rounded-none bg-[#1A6B5A] text-white font-medium text-sm hover:bg-[#1A6B5A]/90 disabled:opacity-50 flex items-center justify-center gap-2">
+            className="w-full h-10 rounded-none bg-[#1A6B5A] text-foreground font-medium text-sm hover:bg-[#1A6B5A]/90 disabled:opacity-50 flex items-center justify-center gap-2">
             Continue <ArrowRight className="w-4 h-4" /></button>
         </div>
       ) : (
@@ -91,7 +91,7 @@ export function SignupForm({ onSuccess }: { onSuccess: () => void }) {
             <button onClick={() => setStep(1)} className="h-10 px-4 rounded-none border border-border text-sm hover:bg-muted flex items-center gap-2">
               <ArrowLeft className="w-4 h-4" /> Back</button>
             <button onClick={handleSubmit} disabled={loading}
-              className="flex-1 h-10 rounded-none bg-[#1A6B5A] text-white font-medium text-sm hover:bg-[#1A6B5A]/90 disabled:opacity-50 flex items-center justify-center gap-2">
+              className="flex-1 h-10 rounded-none bg-[#1A6B5A] text-foreground font-medium text-sm hover:bg-[#1A6B5A]/90 disabled:opacity-50 flex items-center justify-center gap-2">
               {loading ? <><SpinnerGap className="w-4 h-4 animate-spin" />Creating...</> : "Create account"}</button>
           </div>
         </div>

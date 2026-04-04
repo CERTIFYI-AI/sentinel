@@ -93,8 +93,8 @@ export default function Settings() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Settings</h1>
-          <p className="text-sm text-slate-400 mt-1">Manage your organization, security, and platform configuration</p>
+          <h1 className="text-2xl font-bold text-foreground">Settings</h1>
+          <p className="text-sm text-muted-foreground mt-1">Manage your organization, security, and platform configuration</p>
         </div>
       </div>
 
@@ -110,7 +110,7 @@ export default function Settings() {
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   activeTab === tab.id
                     ? "bg-teal-500/10 text-teal-400 border border-teal-500/20"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+                    : "text-muted-foreground hover:text-slate-200 hover:bg-muted/50"
                 }`}
               >
                 <Icon className="h-4 w-4" />
@@ -124,44 +124,44 @@ export default function Settings() {
         <div className="flex-1 min-w-0">
           {/* Organization Tab */}
           {activeTab === "organization" && (
-            <Card className="bg-[#1a1f2e] border-slate-700/50">
+            <Card className="bg-[#1a1f2e] border-border/50">
               <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2"><Building2 className="h-5 w-5 text-teal-400" /> Organization Profile</CardTitle>
+                <CardTitle className="text-foreground flex items-center gap-2"><Building2 className="h-5 w-5 text-teal-400" /> Organization Profile</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm text-slate-400">Company Name</label>
-                    <Input value={org.companyName} onChange={(e) => setOrg({...org, companyName: e.target.value})} className="bg-slate-800 border-slate-600 text-white mt-1" />
+                    <label className="text-sm text-muted-foreground">Company Name</label>
+                    <Input value={org.companyName} onChange={(e) => setOrg({...org, companyName: e.target.value})} className="bg-muted border-slate-600 text-foreground mt-1" />
                   </div>
                   <div>
-                    <label className="text-sm text-slate-400">Domain</label>
-                    <Input value={org.domain} onChange={(e) => setOrg({...org, domain: e.target.value})} className="bg-slate-800 border-slate-600 text-white mt-1" />
+                    <label className="text-sm text-muted-foreground">Domain</label>
+                    <Input value={org.domain} onChange={(e) => setOrg({...org, domain: e.target.value})} className="bg-muted border-slate-600 text-foreground mt-1" />
                   </div>
                   <div>
-                    <label className="text-sm text-slate-400">Industry</label>
-                    <Input value={org.industry} onChange={(e) => setOrg({...org, industry: e.target.value})} className="bg-slate-800 border-slate-600 text-white mt-1" />
+                    <label className="text-sm text-muted-foreground">Industry</label>
+                    <Input value={org.industry} onChange={(e) => setOrg({...org, industry: e.target.value})} className="bg-muted border-slate-600 text-foreground mt-1" />
                   </div>
                   <div>
-                    <label className="text-sm text-slate-400">Company Size</label>
-                    <Input value={org.companySize} onChange={(e) => setOrg({...org, companySize: e.target.value})} className="bg-slate-800 border-slate-600 text-white mt-1" />
+                    <label className="text-sm text-muted-foreground">Company Size</label>
+                    <Input value={org.companySize} onChange={(e) => setOrg({...org, companySize: e.target.value})} className="bg-muted border-slate-600 text-foreground mt-1" />
                   </div>
                   <div>
-                    <label className="text-sm text-slate-400">Primary Contact</label>
-                    <Input value={org.primaryContact} onChange={(e) => setOrg({...org, primaryContact: e.target.value})} className="bg-slate-800 border-slate-600 text-white mt-1" />
+                    <label className="text-sm text-muted-foreground">Primary Contact</label>
+                    <Input value={org.primaryContact} onChange={(e) => setOrg({...org, primaryContact: e.target.value})} className="bg-muted border-slate-600 text-foreground mt-1" />
                   </div>
                   <div>
-                    <label className="text-sm text-slate-400">Timezone</label>
-                    <Input value={org.timezone} onChange={(e) => setOrg({...org, timezone: e.target.value})} className="bg-slate-800 border-slate-600 text-white mt-1" />
+                    <label className="text-sm text-muted-foreground">Timezone</label>
+                    <Input value={org.timezone} onChange={(e) => setOrg({...org, timezone: e.target.value})} className="bg-muted border-slate-600 text-foreground mt-1" />
                   </div>
                   <div>
-                    <label className="text-sm text-slate-400">Fiscal Year Start</label>
-                    <Input value={org.fiscalYearStart} onChange={(e) => setOrg({...org, fiscalYearStart: e.target.value})} className="bg-slate-800 border-slate-600 text-white mt-1" />
+                    <label className="text-sm text-muted-foreground">Fiscal Year Start</label>
+                    <Input value={org.fiscalYearStart} onChange={(e) => setOrg({...org, fiscalYearStart: e.target.value})} className="bg-muted border-slate-600 text-foreground mt-1" />
                   </div>
                 </div>
-                <div className="flex justify-end gap-2 pt-4 border-t border-slate-700/50">
-                  <Button variant="outline" className="border-slate-600 text-slate-300">Cancel</Button>
-                  <Button onClick={handleSave} className="bg-teal-600 hover:bg-teal-700 text-white">
+                <div className="flex justify-end gap-2 pt-4 border-t border-border/50">
+                  <Button variant="outline" className="border-slate-600 text-foreground">Cancel</Button>
+                  <Button onClick={handleSave} className="bg-teal-600 hover:bg-teal-700 text-foreground">
                     {saving ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
                     {saving ? "Saving..." : "Save Changes"}
                   </Button>
@@ -171,57 +171,57 @@ export default function Settings() {
           )}
           {/* Authentication Tab */}
           {activeTab === "authentication" && (
-            <Card className="bg-[#1a1f2e] border-slate-700/50">
+            <Card className="bg-[#1a1f2e] border-border/50">
               <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2"><Shield className="h-5 w-5 text-teal-400" /> Authentication & Security</CardTitle>
+                <CardTitle className="text-foreground flex items-center gap-2"><Shield className="h-5 w-5 text-teal-400" /> Authentication & Security</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-lg">
+                  <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                     <div>
-                      <p className="text-white font-medium">Single Sign-On (SSO)</p>
-                      <p className="text-sm text-slate-400">Provider: {auth.ssoProvider} | SAML Endpoint configured</p>
+                      <p className="text-foreground font-medium">Single Sign-On (SSO)</p>
+                      <p className="text-sm text-muted-foreground">Provider: {auth.ssoProvider} | SAML Endpoint configured</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge className="bg-[hsl(var(--brand))]/10 text-[hsl(var(--brand))] border-emerald-500/20">Enabled</Badge>
+                      <Badge className="bg-[hsl(var(--brand))]/10 text-[hsl(var(--brand))] border-primary/20">Enabled</Badge>
                       <Switch checked={auth.ssoEnabled} />
                     </div>
                   </div>
-                  <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-lg">
+                  <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                     <div>
-                      <p className="text-white font-medium">SCIM Provisioning</p>
-                      <p className="text-sm text-slate-400">Auto-provision users from {auth.ssoProvider}</p>
+                      <p className="text-foreground font-medium">SCIM Provisioning</p>
+                      <p className="text-sm text-muted-foreground">Auto-provision users from {auth.ssoProvider}</p>
                     </div>
                     <Switch checked={auth.scimProvisioning} />
                   </div>
-                  <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-lg">
+                  <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                     <div>
-                      <p className="text-white font-medium">Multi-Factor Authentication</p>
-                      <p className="text-sm text-slate-400">Methods: {auth.mfaMethods.join(", ")}</p>
+                      <p className="text-foreground font-medium">Multi-Factor Authentication</p>
+                      <p className="text-sm text-muted-foreground">Methods: {auth.mfaMethods.join(", ")}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge className="bg-[hsl(var(--brand))]/10 text-[hsl(var(--brand))] border-emerald-500/20">Required</Badge>
+                      <Badge className="bg-[hsl(var(--brand))]/10 text-[hsl(var(--brand))] border-primary/20">Required</Badge>
                       <Switch checked={auth.mfaRequired} />
                     </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-700/50">
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border/50">
                   <div>
-                    <label className="text-sm text-slate-400">Session Timeout</label>
-                    <Input value={auth.sessionTimeout} className="bg-slate-800 border-slate-600 text-white mt-1" readOnly />
+                    <label className="text-sm text-muted-foreground">Session Timeout</label>
+                    <Input value={auth.sessionTimeout} className="bg-muted border-slate-600 text-foreground mt-1" readOnly />
                   </div>
                   <div>
-                    <label className="text-sm text-slate-400">Password Min Length</label>
-                    <Input value={String(auth.passwordPolicy.minLength)} className="bg-slate-800 border-slate-600 text-white mt-1" readOnly />
+                    <label className="text-sm text-muted-foreground">Password Min Length</label>
+                    <Input value={String(auth.passwordPolicy.minLength)} className="bg-muted border-slate-600 text-foreground mt-1" readOnly />
                   </div>
                   <div>
-                    <label className="text-sm text-slate-400">Password Max Age</label>
-                    <Input value={auth.passwordPolicy.maxAge} className="bg-slate-800 border-slate-600 text-white mt-1" readOnly />
+                    <label className="text-sm text-muted-foreground">Password Max Age</label>
+                    <Input value={auth.passwordPolicy.maxAge} className="bg-muted border-slate-600 text-foreground mt-1" readOnly />
                   </div>
                 </div>
-                <div className="flex justify-end gap-2 pt-4 border-t border-slate-700/50">
-                  <Button variant="outline" className="border-slate-600 text-slate-300">Cancel</Button>
-                  <Button onClick={handleSave} className="bg-teal-600 hover:bg-teal-700 text-white">
+                <div className="flex justify-end gap-2 pt-4 border-t border-border/50">
+                  <Button variant="outline" className="border-slate-600 text-foreground">Cancel</Button>
+                  <Button onClick={handleSave} className="bg-teal-600 hover:bg-teal-700 text-foreground">
                     <Save className="h-4 w-4 mr-2" /> Save Changes
                   </Button>
                 </div>
@@ -230,32 +230,32 @@ export default function Settings() {
           )}
           {/* API Keys Tab */}
           {activeTab === "api-keys" && (
-            <Card className="bg-[#1a1f2e] border-slate-700/50">
+            <Card className="bg-[#1a1f2e] border-border/50">
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-white flex items-center gap-2"><Key className="h-5 w-5 text-teal-400" /> API Keys</CardTitle>
-                <Button onClick={() => setShowKeyDialog(true)} className="bg-teal-600 hover:bg-teal-700 text-white" size="sm">
+                <CardTitle className="text-foreground flex items-center gap-2"><Key className="h-5 w-5 text-teal-400" /> API Keys</CardTitle>
+                <Button onClick={() => setShowKeyDialog(true)} className="bg-teal-600 hover:bg-teal-700 text-foreground" size="sm">
                   <Plus className="h-4 w-4 mr-1" /> Generate New Key
                 </Button>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {keys.map((key) => (
-                    <div key={key.id} className="flex items-center justify-between p-4 bg-slate-800/50 rounded-lg">
+                    <div key={key.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <p className="text-white font-medium">{key.name}</p>
-                          <Badge className={key.status === "Active" ? "bg-[hsl(var(--brand))]/10 text-[hsl(var(--brand))] border-emerald-500/20" : "bg-red-500/10 text-red-400 border-red-500/20"}>{key.status}</Badge>
+                          <p className="text-foreground font-medium">{key.name}</p>
+                          <Badge className={key.status === "Active" ? "bg-[hsl(var(--brand))]/10 text-[hsl(var(--brand))] border-primary/20" : "bg-red-500/10 text-red-400 border-red-500/20"}>{key.status}</Badge>
                         </div>
-                        <p className="text-sm text-slate-400 font-mono">{key.prefix}...****</p>
+                        <p className="text-sm text-muted-foreground font-mono">{key.prefix}...****</p>
                         <div className="flex gap-2 mt-1">
                           {key.scopes.map((s) => (
-                            <Badge key={s} variant="outline" className="text-xs border-slate-600 text-slate-400">{s}</Badge>
+                            <Badge key={s} variant="outline" className="text-xs border-slate-600 text-muted-foreground">{s}</Badge>
                           ))}
                         </div>
                         <p className="text-xs text-slate-500">Created: {key.created} | Last used: {key.lastUsed}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white"><Copy className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground"><Copy className="h-4 w-4" /></Button>
                         {key.status === "Active" && (
                           <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300"><Trash2 className="h-4 w-4" /></Button>
                         )}
@@ -270,25 +270,25 @@ export default function Settings() {
           {/* Notifications Tab */}
           {activeTab === "notifications" && (
             <div className="space-y-6">
-              <Card className="bg-[#1a1f2e] border-slate-700/50">
+              <Card className="bg-[#1a1f2e] border-border/50">
                 <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2"><Bell className="h-5 w-5 text-teal-400" /> Notification Channels</CardTitle>
+                  <CardTitle className="text-foreground flex items-center gap-2"><Bell className="h-5 w-5 text-teal-400" /> Notification Channels</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     {notificationChannels.map((ch) => {
                       const Icon = ch.icon;
                       return (
-                        <div key={ch.type} className="flex items-center justify-between p-4 bg-slate-800/50 rounded-lg">
+                        <div key={ch.type} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                           <div className="flex items-center gap-3">
-                            <Icon className="h-5 w-5 text-slate-400" />
+                            <Icon className="h-5 w-5 text-muted-foreground" />
                             <div>
-                              <p className="text-white font-medium">{ch.type}</p>
-                              <p className="text-sm text-slate-400">{ch.detail}</p>
+                              <p className="text-foreground font-medium">{ch.type}</p>
+                              <p className="text-sm text-muted-foreground">{ch.detail}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Badge className="bg-[hsl(var(--brand))]/10 text-[hsl(var(--brand))] border-emerald-500/20">Configured</Badge>
+                            <Badge className="bg-[hsl(var(--brand))]/10 text-[hsl(var(--brand))] border-primary/20">Configured</Badge>
                             <Switch checked={ch.configured} />
                           </div>
                         </div>
@@ -297,18 +297,18 @@ export default function Settings() {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="bg-[#1a1f2e] border-slate-700/50">
+              <Card className="bg-[#1a1f2e] border-border/50">
                 <CardHeader>
-                  <CardTitle className="text-white text-base">Routing Preferences</CardTitle>
+                  <CardTitle className="text-foreground text-base">Routing Preferences</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
                     {notificationPrefs.map((pref) => (
-                      <div key={pref.event} className="flex items-center justify-between p-3 bg-slate-800/30 rounded-lg">
-                        <p className="text-sm text-white">{pref.event}</p>
+                      <div key={pref.event} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                        <p className="text-sm text-foreground">{pref.event}</p>
                         <div className="flex gap-1">
                           {pref.channels.map((c) => (
-                            <Badge key={c} variant="outline" className="text-xs border-slate-600 text-slate-400">{c}</Badge>
+                            <Badge key={c} variant="outline" className="text-xs border-slate-600 text-muted-foreground">{c}</Badge>
                           ))}
                         </div>
                       </div>
@@ -320,28 +320,28 @@ export default function Settings() {
           )}
           {/* Data Retention Tab */}
           {activeTab === "data-retention" && (
-            <Card className="bg-[#1a1f2e] border-slate-700/50">
+            <Card className="bg-[#1a1f2e] border-border/50">
               <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2"><Database className="h-5 w-5 text-teal-400" /> Data Retention Policies</CardTitle>
+                <CardTitle className="text-foreground flex items-center gap-2"><Database className="h-5 w-5 text-teal-400" /> Data Retention Policies</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {retentionPolicies.map((p) => (
-                    <div key={p.dataType} className="flex items-center justify-between p-4 bg-slate-800/50 rounded-lg">
+                    <div key={p.dataType} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                       <div>
-                        <p className="text-white font-medium">{p.dataType}</p>
+                        <p className="text-foreground font-medium">{p.dataType}</p>
                         {p.note && <p className="text-xs text-slate-500">{p.note}</p>}
                       </div>
-                      <Badge variant="outline" className="border-slate-600 text-slate-300">{p.retention}</Badge>
+                      <Badge variant="outline" className="border-slate-600 text-foreground">{p.retention}</Badge>
                     </div>
                   ))}
                 </div>
-                <div className="mt-6 p-4 bg-slate-800/30 rounded-lg space-y-2">
-                  <p className="text-sm text-white font-medium">Additional Settings</p>
+                <div className="mt-6 p-4 bg-muted/30 rounded-lg space-y-2">
+                  <p className="text-sm text-foreground font-medium">Additional Settings</p>
                   <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div><span className="text-slate-400">Deletion Policy:</span> <span className="text-white">Automated purge with 30-day grace period</span></div>
-                    <div><span className="text-slate-400">Backup Frequency:</span> <span className="text-white">Daily incremental, weekly full</span></div>
-                    <div><span className="text-slate-400">Data Residency:</span> <span className="text-white">US-East primary, EU-West replica</span></div>
+                    <div><span className="text-muted-foreground">Deletion Policy:</span> <span className="text-foreground">Automated purge with 30-day grace period</span></div>
+                    <div><span className="text-muted-foreground">Backup Frequency:</span> <span className="text-foreground">Daily incremental, weekly full</span></div>
+                    <div><span className="text-muted-foreground">Data Residency:</span> <span className="text-foreground">US-East primary, EU-West replica</span></div>
                   </div>
                 </div>
               </CardContent>
@@ -350,25 +350,25 @@ export default function Settings() {
 
           {/* Integrations Tab */}
           {activeTab === "integrations" && (
-            <Card className="bg-[#1a1f2e] border-slate-700/50">
+            <Card className="bg-[#1a1f2e] border-border/50">
               <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2"><Plug className="h-5 w-5 text-teal-400" /> Connected Integrations</CardTitle>
+                <CardTitle className="text-foreground flex items-center gap-2"><Plug className="h-5 w-5 text-teal-400" /> Connected Integrations</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {integrationsData.map((int) => (
-                    <div key={int.name} className="flex items-center justify-between p-4 bg-slate-800/50 rounded-lg">
+                    <div key={int.name} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                       <div className="flex items-center gap-3">
                         <div className={`w-2 h-2 rounded-full ${int.status === "Connected" ? "bg-emerald-400" : "bg-red-400"}`} />
                         <div>
-                          <p className="text-white font-medium">{int.name}</p>
-                          <p className="text-sm text-slate-400">{int.type}</p>
+                          <p className="text-foreground font-medium">{int.name}</p>
+                          <p className="text-sm text-muted-foreground">{int.type}</p>
                           <p className="text-xs text-slate-500">Last sync: {int.lastSync} | {int.frequency}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge className={int.status === "Connected" ? "bg-[hsl(var(--brand))]/10 text-[hsl(var(--brand))] border-emerald-500/20" : "bg-red-500/10 text-red-400 border-red-500/20"}>{int.status}</Badge>
-                        <Button variant="outline" size="sm" className="border-slate-600 text-slate-300">
+                        <Badge className={int.status === "Connected" ? "bg-[hsl(var(--brand))]/10 text-[hsl(var(--brand))] border-primary/20" : "bg-red-500/10 text-red-400 border-red-500/20"}>{int.status}</Badge>
+                        <Button variant="outline" size="sm" className="border-slate-600 text-foreground">
                           {int.status === "Connected" ? "Configure" : "Connect"}
                         </Button>
                       </div>
@@ -383,20 +383,20 @@ export default function Settings() {
 
       {/* Generate Key Dialog */}
       <Dialog open={showKeyDialog} onOpenChange={setShowKeyDialog}>
-        <DialogContent className="bg-[#1a1f2e] border-slate-700">
+        <DialogContent className="bg-[#1a1f2e] border-border">
           <DialogHeader>
-            <DialogTitle className="text-white">Generate New API Key</DialogTitle>
+            <DialogTitle className="text-foreground">Generate New API Key</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm text-slate-400">Key Name</label>
-              <Input placeholder="e.g., Production Pipeline" className="bg-slate-800 border-slate-600 text-white mt-1" />
+              <label className="text-sm text-muted-foreground">Key Name</label>
+              <Input placeholder="e.g., Production Pipeline" className="bg-muted border-slate-600 text-foreground mt-1" />
             </div>
             <div>
-              <label className="text-sm text-slate-400">Scopes</label>
+              <label className="text-sm text-muted-foreground">Scopes</label>
               <div className="grid grid-cols-2 gap-2 mt-2">
                 {["models:read", "models:write", "risks:read", "risks:write", "guardrails:read", "guardrails:write", "evidence:read", "reports:read"].map((scope) => (
-                  <label key={scope} className="flex items-center gap-2 text-sm text-slate-300">
+                  <label key={scope} className="flex items-center gap-2 text-sm text-foreground">
                     <input type="checkbox" className="rounded" />
                     <span className="font-mono text-xs">{scope}</span>
                   </label>
@@ -404,12 +404,12 @@ export default function Settings() {
               </div>
             </div>
             <div>
-              <label className="text-sm text-slate-400">Expiration</label>
-              <Input type="date" className="bg-slate-800 border-slate-600 text-white mt-1" />
+              <label className="text-sm text-muted-foreground">Expiration</label>
+              <Input type="date" className="bg-muted border-slate-600 text-foreground mt-1" />
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" className="border-slate-600 text-slate-300" onClick={() => setShowKeyDialog(false)}>Cancel</Button>
-              <Button className="bg-teal-600 hover:bg-teal-700 text-white" onClick={() => setShowKeyDialog(false)}>
+              <Button variant="outline" className="border-slate-600 text-foreground" onClick={() => setShowKeyDialog(false)}>Cancel</Button>
+              <Button className="bg-teal-600 hover:bg-teal-700 text-foreground" onClick={() => setShowKeyDialog(false)}>
                 <Key className="h-4 w-4 mr-2" /> Generate Key
               </Button>
             </div>

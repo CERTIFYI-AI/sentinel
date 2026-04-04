@@ -35,7 +35,7 @@ export function AvatarPicker({ value, onChange, label }: AvatarPickerProps) {
     <div className="relative" ref={ref}>
       {label && <span className="text-[11px] text-[hsl(var(--muted-foreground))] mb-1 block">{label}</span>}
       <button type="button" onClick={() => setOpen(!open)} className="flex items-center gap-2 px-2 py-1 rounded-md border border-[hsl(var(--border))] hover:bg-[hsl(var(--surface-2))] text-sm">
-        {value ? (<><span className="w-7 h-7 rounded-full bg-[hsl(var(--primary))] text-white flex items-center justify-center text-[11px] font-medium">{value.initials}</span><span className="text-xs">{value.name}</span></>) : (<><span className="w-7 h-7 rounded-full border-2 border-dashed border-[hsl(var(--muted-foreground))]" /><span className="text-xs text-[hsl(var(--muted-foreground))]">Assign...</span></>)}
+        {value ? (<><span className="w-7 h-7 rounded-full bg-[hsl(var(--primary))] text-foreground flex items-center justify-center text-[11px] font-medium">{value.initials}</span><span className="text-xs">{value.name}</span></>) : (<><span className="w-7 h-7 rounded-full border-2 border-dashed border-[hsl(var(--muted-foreground))]" /><span className="text-xs text-[hsl(var(--muted-foreground))]">Assign...</span></>)}
       </button>
       {open && (
         <div className="absolute z-50 top-full mt-1 w-[200px] bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-lg p-1">
@@ -43,7 +43,7 @@ export function AvatarPicker({ value, onChange, label }: AvatarPickerProps) {
           <div className="max-h-[180px] overflow-y-auto">
             {filtered.map(m => (
               <button key={m.id} type="button" onClick={() => { onChange(m); setOpen(false); setSearch(""); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-[hsl(var(--surface-2))]">
-                <span className="w-6 h-6 rounded-full bg-[hsl(var(--primary))] text-white flex items-center justify-center text-[10px] font-medium shrink-0">{m.initials}</span>
+                <span className="w-6 h-6 rounded-full bg-[hsl(var(--primary))] text-foreground flex items-center justify-center text-[10px] font-medium shrink-0">{m.initials}</span>
                 <div className="text-left min-w-0"><div className="text-xs font-medium truncate">{m.name}</div><div className="text-[10px] text-[hsl(var(--muted-foreground))] truncate">{m.email}</div></div>
                 {value?.id === m.id && <svg className="w-4 h-4 ml-auto text-[hsl(var(--primary))]" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>}
               </button>

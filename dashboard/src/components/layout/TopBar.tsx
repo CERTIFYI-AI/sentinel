@@ -48,7 +48,7 @@ export function TopBar() {
           {/* HITL badge */}
           <Button variant="ghost" size="sm" onClick={() => navigate("/hitl")} className="relative h-8 px-2">
             <span className="text-xs">HITL</span>
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full h-4 min-w-[16px] flex items-center justify-center px-1">3</span>
+            <span className="absolute -top-1 -right-1 bg-red-500 text-foreground text-[10px] rounded-full h-4 min-w-[16px] flex items-center justify-center px-1">3</span>
           </Button>
 
           {/* Notifications */}
@@ -71,7 +71,7 @@ export function TopBar() {
           {/* Avatar */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="h-8 w-8 rounded-full bg-[hsl(136,45%,38%)] text-white flex items-center justify-center text-xs font-medium">
+              <button className="h-8 w-8 rounded-full bg-[hsl(136,45%,38%)] text-foreground flex items-center justify-center text-xs font-medium">
                 AK
               </button>
             </DropdownMenuTrigger>

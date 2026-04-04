@@ -36,11 +36,11 @@ const POLICIES = [
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: any }> = {
   "Published": { color: "text-[hsl(var(--brand))]", bg: "bg-emerald-400/10 border-emerald-400/30", icon: CheckCircle },
-  "Draft": { color: "text-slate-400", bg: "bg-slate-400/10 border-slate-400/30", icon: FileText },
+  "Draft": { color: "text-muted-foreground", bg: "bg-slate-400/10 border-slate-400/30", icon: FileText },
   "In Review": { color: "text-blue-400", bg: "bg-blue-400/10 border-blue-400/30", icon: Eye },
   "Pending Review": { color: "text-amber-400", bg: "bg-amber-400/10 border-amber-400/30", icon: Clock },
   "Expired": { color: "text-red-400", bg: "bg-red-400/10 border-red-400/30", icon: AlertTriangle },
-  "Archived": { color: "text-gray-500", bg: "bg-gray-500/10 border-gray-500/30", icon: XCircle },
+  "Archived": { color: "text-muted-foreground", bg: "bg-gray-500/10 border-gray-500/30", icon: XCircle },
   "Changes Requested": { color: "text-orange-400", bg: "bg-orange-400/10 border-orange-400/30", icon: Edit },
   "Approved": { color: "text-teal-400", bg: "bg-teal-400/10 border-teal-400/30", icon: CheckCircle },
 };
@@ -126,27 +126,27 @@ export default function Policies() {
 
   return (
     <div className="space-y-6">
-      {toast && <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-lg text-sm font-medium shadow-lg ${toast.type==="success"?"bg-[hsl(var(--brand))]/90 text-white":"bg-red-500/90 text-white"}`}>{toast.msg}</div>}
+      {toast && <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-lg text-sm font-medium shadow-lg ${toast.type==="success"?"bg-[hsl(var(--brand))]/90 text-foreground":"bg-red-500/90 text-foreground"}`}>{toast.msg}</div>}
 
       {/* HEADER */}
       <div className="flex items-center justify-between">
-        <div><h1 className="text-2xl font-bold text-white">Policy Manager</h1><p className="text-sm text-slate-400 mt-1">Manage AI governance policies, standards, and procedures</p></div>
+        <div><h1 className="text-2xl font-bold text-foreground">Policy Manager</h1><p className="text-sm text-muted-foreground mt-1">Manage AI governance policies, standards, and procedures</p></div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={()=>showToast("Exported "+filtered.length+" policies to CSV")}><Download className="w-4 h-4 mr-2" />Export</Button>
-          <Button size="sm" className="bg-[hsl(var(--brand))] hover:bg-emerald-700" onClick={()=>setDialogOpen(true)}><Plus className="w-4 h-4 mr-2" />New Policy</Button>
+          <Button size="sm" className="bg-[hsl(var(--brand))] hover:bg-primary/90" onClick={()=>setDialogOpen(true)}><Plus className="w-4 h-4 mr-2" />New Policy</Button>
         </div>
       </div>
 
       {/* STATS CARDS - clickable */}
       <div className="grid grid-cols-4 gap-4">
-        {[{label:"Total Policies",val:POLICIES.length,sub:"All policies in system",icon:FileText,color:"text-white",click:()=>{setStatusFilter("all");setPage(1);}},
+        {[{label:"Total Policies",val:POLICIES.length,sub:"All policies in system",icon:FileText,color:"text-foreground",click:()=>{setStatusFilter("all");setPage(1);}},
           {label:"Published",val:statsPublished,sub:`${POLICIES.filter(p=>getStatus(p)==="Draft").length} draft, ${POLICIES.filter(p=>getStatus(p)==="Archived").length} archived`,icon:CheckCircle,color:"text-[hsl(var(--brand))]",click:()=>{setStatusFilter("Published");setPage(1);}},
           {label:"Pending Action",val:statsPending,sub:`${POLICIES.filter(p=>getStatus(p)==="In Review").length} in review, ${POLICIES.filter(p=>getStatus(p)==="Draft").length} drafts`,icon:Clock,color:"text-amber-400",click:()=>{setStatusFilter("Pending Review");setPage(1);}},
           {label:"Needs Attention",val:statsAttention,sub:`${POLICIES.filter(p=>getStatus(p)==="Expired").length} expired, ${POLICIES.filter(p=>getStatus(p)==="Archived").length} archived`,icon:AlertTriangle,color:"text-red-400",click:()=>{setStatusFilter("Expired");setPage(1);}}
         ].map((s,i) => (
           <Card key={i} className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] cursor-pointer hover:border-emerald-400/40 transition-colors" onClick={s.click}>
             <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2"><span className="text-sm text-slate-400">{s.label}</span><s.icon className={`w-5 h-5 ${s.color}`} /></div>
+              <div className="flex items-center justify-between mb-2"><span className="text-sm text-muted-foreground">{s.label}</span><s.icon className={`w-5 h-5 ${s.color}`} /></div>
               <div className={`text-2xl font-bold ${s.color}`}>{s.val}</div>
               <p className="text-xs text-slate-500 mt-1">{s.sub}</p>
             </CardContent>
@@ -157,16 +157,16 @@ export default function Policies() {
       {/* CHARTS */}
       <div className="grid grid-cols-2 gap-4">
         <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-white">Policies by Category</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-foreground">Policies by Category</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
               <PieChart><Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" label={({name,value})=>`${name}: ${value}`}>{pieData.map((_,i)=><Cell key={i} fill={CHART_COLORS[i%CHART_COLORS.length]} />)}</Pie><Tooltip /></PieChart>
             </ResponsiveContainer>
-            <div className="flex flex-wrap gap-3 mt-2 justify-center">{pieData.map((d,i)=>(<span key={i} className="flex items-center gap-1 text-xs text-slate-300"><span className="w-2.5 h-2.5 rounded-full" style={{background:CHART_COLORS[i%CHART_COLORS.length]}} />{d.name}</span>))}</div>
+            <div className="flex flex-wrap gap-3 mt-2 justify-center">{pieData.map((d,i)=>(<span key={i} className="flex items-center gap-1 text-xs text-foreground"><span className="w-2.5 h-2.5 rounded-full" style={{background:CHART_COLORS[i%CHART_COLORS.length]}} />{d.name}</span>))}</div>
           </CardContent>
         </Card>
         <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-white">Policy Reviews (6 Months)</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-foreground">Policy Reviews (6 Months)</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={REVIEW_DATA}><XAxis dataKey="m" stroke="#64748b" fontSize={12} /><YAxis stroke="#64748b" fontSize={12} /><Tooltip /><Line type="monotone" dataKey="r" stroke="#10b981" strokeWidth={2} dot={{fill:"#10b981"}} name="Reviews" /></LineChart>
@@ -177,10 +177,10 @@ export default function Policies() {
 
       {/* FILTERS + SEARCH */}
       <div className="flex items-center gap-3">
-        <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" /><Input placeholder="Search policies... (/)" className="pl-9 bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-white" value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}} /></div>
-        <Select value={catFilter} onValueChange={v=>{setCatFilter(v);setPage(1);}}><SelectTrigger className="w-[160px] bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-white"><SelectValue /></SelectTrigger><SelectContent>{["all",...categories].map(c=><SelectItem key={c} value={c}>{c==="all"?"All Categories":c}</SelectItem>)}</SelectContent></Select>
-        <Select value={statusFilter} onValueChange={v=>{setStatusFilter(v);setPage(1);}}><SelectTrigger className="w-[160px] bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-white"><SelectValue /></SelectTrigger><SelectContent>{["all",...statuses].map(s=><SelectItem key={s} value={s}>{s==="all"?"All Status":s}</SelectItem>)}</SelectContent></Select>
-        <Select value={fwFilter} onValueChange={v=>{setFwFilter(v);setPage(1);}}><SelectTrigger className="w-[160px] bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-white"><SelectValue /></SelectTrigger><SelectContent>{["all",...frameworks].map(f=><SelectItem key={f} value={f}>{f==="all"?"All Frameworks":f}</SelectItem>)}</SelectContent></Select>
+        <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><Input placeholder="Search policies... (/)" className="pl-9 bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-foreground" value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}} /></div>
+        <Select value={catFilter} onValueChange={v=>{setCatFilter(v);setPage(1);}}><SelectTrigger className="w-[160px] bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-foreground"><SelectValue /></SelectTrigger><SelectContent>{["all",...categories].map(c=><SelectItem key={c} value={c}>{c==="all"?"All Categories":c}</SelectItem>)}</SelectContent></Select>
+        <Select value={statusFilter} onValueChange={v=>{setStatusFilter(v);setPage(1);}}><SelectTrigger className="w-[160px] bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-foreground"><SelectValue /></SelectTrigger><SelectContent>{["all",...statuses].map(s=><SelectItem key={s} value={s}>{s==="all"?"All Status":s}</SelectItem>)}</SelectContent></Select>
+        <Select value={fwFilter} onValueChange={v=>{setFwFilter(v);setPage(1);}}><SelectTrigger className="w-[160px] bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-foreground"><SelectValue /></SelectTrigger><SelectContent>{["all",...frameworks].map(f=><SelectItem key={f} value={f}>{f==="all"?"All Frameworks":f}</SelectItem>)}</SelectContent></Select>
       </div>
 
 
@@ -190,28 +190,28 @@ export default function Policies() {
           <table className="w-full">
             <thead><tr className="border-b border-[hsl(var(--border))]">
               {[{k:"id" as SortKey,l:"ID",w:"w-20"},{k:"name" as SortKey,l:"Name",w:""},{k:"status" as SortKey,l:"Status",w:"w-36"},{k:"category" as SortKey,l:"Category",w:"w-28"},{k:"riskLevel" as SortKey,l:"Risk",w:"w-24"},{k:"updated" as SortKey,l:"Updated",w:"w-28"},{k:"nextReview" as SortKey,l:"Next Review",w:"w-28"}].map(h=>(
-                <th key={h.k} className={`px-4 py-3 text-left text-xs font-medium text-slate-400 cursor-pointer hover:text-white select-none ${h.w}`} onClick={()=>toggleSort(h.k)}>{h.l}<SortIcon col={h.k} /></th>
+                <th key={h.k} className={`px-4 py-3 text-left text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none ${h.w}`} onClick={()=>toggleSort(h.k)}>{h.l}<SortIcon col={h.k} /></th>
               ))}
-              <th className="px-4 py-3 text-xs font-medium text-slate-400 w-24">Framework</th>
+              <th className="px-4 py-3 text-xs font-medium text-muted-foreground w-24">Framework</th>
             </tr></thead>
             <tbody>
               {paged.map(p => { const st = getStatus(p); return (
                 <tr key={p.id} className="border-b border-[hsl(var(--border))] hover:bg-white/5 cursor-pointer transition-colors" onClick={()=>{setSelected(p);setSheetOpen(true);}} title={p.name}>
-                  <td className="px-4 py-3 text-xs text-slate-400 font-mono">{p.id}</td>
-                  <td className="px-4 py-3"><span className="text-sm text-white font-medium truncate block max-w-[260px]" title={p.name}>{p.name}</span></td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground font-mono">{p.id}</td>
+                  <td className="px-4 py-3"><span className="text-sm text-foreground font-medium truncate block max-w-[260px]" title={p.name}>{p.name}</span></td>
                   <td className="px-4 py-3"><StatusBadge status={st} /></td>
-                  <td className="px-4 py-3"><Badge variant="outline" className="text-xs border-white/20 text-slate-300">{p.category}</Badge></td>
+                  <td className="px-4 py-3"><Badge variant="outline" className="text-xs border-white/20 text-foreground">{p.category}</Badge></td>
                   <td className="px-4 py-3"><RiskBadge level={p.riskLevel} /></td>
-                  <td className="px-4 py-3 text-xs text-slate-400">{p.updated}</td>
-                  <td className={`px-4 py-3 text-xs ${isOverdue(p.nextReview)?"text-red-400 font-medium":"text-slate-400"}`}>{p.nextReview}{isOverdue(p.nextReview)&&" ⚠"}</td>
-                  <td className="px-4 py-3"><Badge variant="outline" className="text-xs border-white/20 text-slate-300">{p.framework}</Badge></td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground">{p.updated}</td>
+                  <td className={`px-4 py-3 text-xs ${isOverdue(p.nextReview)?"text-red-400 font-medium":"text-muted-foreground"}`}>{p.nextReview}{isOverdue(p.nextReview)&&" ⚠"}</td>
+                  <td className="px-4 py-3"><Badge variant="outline" className="text-xs border-white/20 text-foreground">{p.framework}</Badge></td>
                 </tr>
               );})}
             </tbody>
           </table>
           {/* PAGINATION */}
           <div className="flex items-center justify-between px-4 py-3 border-t border-[hsl(var(--border))]">
-            <span className="text-xs text-slate-400">Showing {(page-1)*PER_PAGE+1}-{Math.min(page*PER_PAGE, filtered.length)} of {filtered.length}</span>
+            <span className="text-xs text-muted-foreground">Showing {(page-1)*PER_PAGE+1}-{Math.min(page*PER_PAGE, filtered.length)} of {filtered.length}</span>
             <div className="flex gap-1">
               <Button variant="outline" size="sm" disabled={page===1} onClick={()=>setPage(p=>p-1)} className="h-7 w-7 p-0 text-xs">&lt;</Button>
               {Array.from({length:totalPages},(_,i)=>(<Button key={i} variant={page===i+1?"default":"outline"} size="sm" onClick={()=>setPage(i+1)} className={`h-7 w-7 p-0 text-xs ${page===i+1?"bg-[hsl(var(--brand))]":""}`}>{i+1}</Button>))}
@@ -224,35 +224,35 @@ export default function Policies() {
 
       {/* DETAIL SHEET */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent className="bg-[hsl(var(--bg-page))] border-[hsl(var(--border))] text-white w-[500px] overflow-y-auto">
+        <SheetContent className="bg-[hsl(var(--bg-page))] border-[hsl(var(--border))] text-foreground w-[500px] overflow-y-auto">
           {selected && (<>
-            <SheetHeader><SheetTitle className="text-white flex items-center gap-2">{selected.name}</SheetTitle></SheetHeader>
-            <div className="flex flex-wrap gap-2 mt-3"><StatusBadge status={getStatus(selected)} /><Badge variant="outline" className="border-white/20 text-slate-300 text-xs">{selected.version}</Badge><Badge variant="outline" className="border-white/20 text-slate-300 text-xs">{selected.framework}</Badge><RiskBadge level={selected.riskLevel} /></div>
+            <SheetHeader><SheetTitle className="text-foreground flex items-center gap-2">{selected.name}</SheetTitle></SheetHeader>
+            <div className="flex flex-wrap gap-2 mt-3"><StatusBadge status={getStatus(selected)} /><Badge variant="outline" className="border-white/20 text-foreground text-xs">{selected.version}</Badge><Badge variant="outline" className="border-white/20 text-foreground text-xs">{selected.framework}</Badge><RiskBadge level={selected.riskLevel} /></div>
             <Tabs defaultValue="overview" className="mt-4">
               <TabsList className="bg-white/5"><TabsTrigger value="overview">Overview</TabsTrigger><TabsTrigger value="versions">Versions</TabsTrigger><TabsTrigger value="controls">Controls</TabsTrigger></TabsList>
               <TabsContent value="overview" className="space-y-4 mt-3">
                 <div className="grid grid-cols-2 gap-3">
                   {[{l:"Category",v:selected.category},{l:"Version",v:selected.version},{l:"Owner",v:selected.owner},{l:"Framework",v:selected.framework},{l:"Status",v:getStatus(selected)},{l:"Risk Level",v:selected.riskLevel},{l:"Created",v:selected.updated},{l:"Next Review",v:selected.nextReview},{l:"Approver",v:selected.approver}].map(f=>(
-                    <div key={f.l}><p className="text-xs text-slate-400">{f.l}</p><p className="text-sm text-white">{f.v}</p></div>
+                    <div key={f.l}><p className="text-xs text-muted-foreground">{f.l}</p><p className="text-sm text-foreground">{f.v}</p></div>
                   ))}
                 </div>
                 <Separator className="bg-white/10" />
-                <div><p className="text-xs text-slate-400 mb-1">Description</p><p className="text-sm text-slate-300">{selected.description}</p></div>
-                <div><p className="text-xs text-slate-400 mb-1">Scope</p><p className="text-sm text-slate-300">{selected.scope}</p></div>
-                <Button className="w-full bg-[hsl(var(--brand))] hover:bg-emerald-700 mt-2" onClick={()=>{setSheetOpen(false);nav(`/policy-editor?id=${selected.id}`);}}>Open Editor</Button>
+                <div><p className="text-xs text-muted-foreground mb-1">Description</p><p className="text-sm text-foreground">{selected.description}</p></div>
+                <div><p className="text-xs text-muted-foreground mb-1">Scope</p><p className="text-sm text-foreground">{selected.scope}</p></div>
+                <Button className="w-full bg-[hsl(var(--brand))] hover:bg-primary/90 mt-2" onClick={()=>{setSheetOpen(false);nav(`/policy-editor?id=${selected.id}`);}}>Open Editor</Button>
               </TabsContent>
               <TabsContent value="versions" className="mt-3">
                 {(VERSION_HISTORY[selected.id as keyof typeof VERSION_HISTORY] || [{v:selected.version,date:selected.updated,author:selected.owner,note:"Current version"}]).map((vh,i)=>(
                   <div key={i} className="flex items-start gap-3 py-3 border-b border-[hsl(var(--border))]">
                     <div className={`mt-1 w-2 h-2 rounded-full ${i===0?"bg-emerald-400":"bg-slate-500"}`} />
-                    <div><div className="flex items-center gap-2"><span className="text-sm text-white font-medium">{vh.v}</span>{i===0&&<Badge className="bg-emerald-400/10 text-[hsl(var(--brand))] text-xs">Current</Badge>}</div><p className="text-xs text-slate-400 mt-0.5">{vh.date} by {vh.author}</p><p className="text-xs text-slate-500 mt-0.5">{vh.note}</p></div>
+                    <div><div className="flex items-center gap-2"><span className="text-sm text-foreground font-medium">{vh.v}</span>{i===0&&<Badge className="bg-emerald-400/10 text-[hsl(var(--brand))] text-xs">Current</Badge>}</div><p className="text-xs text-muted-foreground mt-0.5">{vh.date} by {vh.author}</p><p className="text-xs text-slate-500 mt-0.5">{vh.note}</p></div>
                   </div>
                 ))}
               </TabsContent>
               <TabsContent value="controls" className="mt-3 space-y-3">
                 {(CONTROLS_MAP[selected.id] || selected.controls.map(c=>({id:c,name:c.replace("CTL-","Control "),progress:Math.floor(Math.random()*40+50)}))).map(c=>(
                   <div key={c.id} className="space-y-1">
-                    <div className="flex justify-between"><span className="text-sm text-white">{c.name}</span><span className="text-xs text-slate-400">{c.progress}%</span></div>
+                    <div className="flex justify-between"><span className="text-sm text-foreground">{c.name}</span><span className="text-xs text-muted-foreground">{c.progress}%</span></div>
                     <Progress value={c.progress} className="h-2" />
                     <p className="text-xs text-slate-500 font-mono">{c.id}</p>
                   </div>
@@ -265,23 +265,23 @@ export default function Policies() {
 
       {/* CREATE DIALOG */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-[hsl(var(--bg-page))] border-[hsl(var(--border))] text-white max-w-lg">
-          <DialogHeader><DialogTitle className="text-white">Create New Policy</DialogTitle></DialogHeader>
+        <DialogContent className="bg-[hsl(var(--bg-page))] border-[hsl(var(--border))] text-foreground max-w-lg">
+          <DialogHeader><DialogTitle className="text-foreground">Create New Policy</DialogTitle></DialogHeader>
           <div className="space-y-4 mt-2">
-            <div><Label className="text-slate-300">Policy Name *</Label><Input placeholder="e.g. AI Model Governance Policy" className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-white mt-1" /></div>
+            <div><Label className="text-foreground">Policy Name *</Label><Input placeholder="e.g. AI Model Governance Policy" className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-foreground mt-1" /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label className="text-slate-300">Category *</Label><Select><SelectTrigger className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-white mt-1"><SelectValue placeholder="Select" /></SelectTrigger><SelectContent>{categories.map(c=><SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
-              <div><Label className="text-slate-300">Framework *</Label><Select><SelectTrigger className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-white mt-1"><SelectValue placeholder="Select" /></SelectTrigger><SelectContent>{frameworks.map(f=><SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent></Select></div>
+              <div><Label className="text-foreground">Category *</Label><Select><SelectTrigger className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-foreground mt-1"><SelectValue placeholder="Select" /></SelectTrigger><SelectContent>{categories.map(c=><SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
+              <div><Label className="text-foreground">Framework *</Label><Select><SelectTrigger className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-foreground mt-1"><SelectValue placeholder="Select" /></SelectTrigger><SelectContent>{frameworks.map(f=><SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent></Select></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label className="text-slate-300">Owner</Label><Input placeholder="Policy owner" className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-white mt-1" /></div>
-              <div><Label className="text-slate-300">Risk Level</Label><Select><SelectTrigger className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-white mt-1"><SelectValue placeholder="Select" /></SelectTrigger><SelectContent>{["Critical","High","Medium","Low"].map(r=><SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select></div>
+              <div><Label className="text-foreground">Owner</Label><Input placeholder="Policy owner" className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-foreground mt-1" /></div>
+              <div><Label className="text-foreground">Risk Level</Label><Select><SelectTrigger className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-foreground mt-1"><SelectValue placeholder="Select" /></SelectTrigger><SelectContent>{["Critical","High","Medium","Low"].map(r=><SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select></div>
             </div>
-            <div><Label className="text-slate-300">Scope</Label><Input placeholder="e.g. All AI systems" className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-white mt-1" /></div>
-            <div><Label className="text-slate-300">Description</Label><Textarea placeholder="Policy description..." className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-white mt-1" rows={3} /></div>
+            <div><Label className="text-foreground">Scope</Label><Input placeholder="e.g. All AI systems" className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-foreground mt-1" /></div>
+            <div><Label className="text-foreground">Description</Label><Textarea placeholder="Policy description..." className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-foreground mt-1" rows={3} /></div>
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={()=>setDialogOpen(false)}>Cancel</Button>
-              <Button className="bg-[hsl(var(--brand))] hover:bg-emerald-700" onClick={()=>{setDialogOpen(false);showToast("Policy created successfully as Draft");}}>Create Policy</Button>
+              <Button className="bg-[hsl(var(--brand))] hover:bg-primary/90" onClick={()=>{setDialogOpen(false);showToast("Policy created successfully as Draft");}}>Create Policy</Button>
             </div>
           </div>
         </DialogContent>

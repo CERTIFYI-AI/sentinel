@@ -36,7 +36,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
     <div className="flex h-screen">
       <div className="hidden lg:flex lg:w-[55%] flex-col justify-between p-10" style={{ background: "hsl(var(--brand-subtle))" }}>
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-none flex items-center justify-center font-mono font-bold text-white" style={{ background: "hsl(var(--brand))" }}>S</div>
+          <div className="w-9 h-9 rounded-none flex items-center justify-center font-mono font-bold text-foreground" style={{ background: "hsl(var(--brand))" }}>S</div>
           <div><span className="font-semibold text-foreground">Sentinel</span> <span className="text-muted-foreground">by Certifyi</span></div>
         </div>
         <div className="flex flex-col items-center gap-10">

@@ -39,7 +39,7 @@ export function GeneralSettings() {
         </select>
       </div>
       <button onClick={() => update.mutate(form)} disabled={!dirty || update.isPending}
-        className="h-10 px-6 rounded-none bg-[#1A6B5A] text-white text-sm font-medium hover:bg-[#1A6B5A]/90 disabled:opacity-50 flex items-center gap-2">
+        className="h-10 px-6 rounded-none bg-[#1A6B5A] text-foreground text-sm font-medium hover:bg-[#1A6B5A]/90 disabled:opacity-50 flex items-center gap-2">
         {update.isPending ? <SpinnerGap className="w-4 h-4 animate-spin" /> : null}FloppyDisk Changes
       </button>
     </div>

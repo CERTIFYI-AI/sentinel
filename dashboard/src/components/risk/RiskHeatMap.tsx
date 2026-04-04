@@ -31,7 +31,7 @@ function getCellColor(impact: string, likelihood: string): string {
   const likeIdx = LIKELIHOOD.indexOf(likelihood as typeof LIKELIHOOD[number]);
   const score = (4 - impactIdx) + likeIdx;
   if (score >= 6) return "bg-destructive text-destructive-foreground";
-  if (score >= 4) return "bg-destructive/60 text-white";
+  if (score >= 4) return "bg-destructive/60 text-foreground";
   if (score >= 2) return "bg-warning text-warning-foreground";
   return "bg-muted text-muted-foreground";
 }

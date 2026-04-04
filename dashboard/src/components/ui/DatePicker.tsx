@@ -55,7 +55,7 @@ export function DatePicker({ value, onChange, placeholder = "Select date", disab
               const isPast = disablePast && new Date(dateStr) < today;
               return (
                 <button key={i} type="button" disabled={isPast} onClick={() => { onChange(dateStr); setOpen(false); }}
-                  className={`text-xs p-1.5 rounded text-center transition-colors ${isSelected ? "bg-[hsl(var(--primary))] text-white" : isToday ? "text-[hsl(var(--primary))] font-bold" : "hover:bg-[hsl(var(--surface-2))]"} ${isPast ? "opacity-30 cursor-not-allowed" : "cursor-pointer"}`}>
+                  className={`text-xs p-1.5 rounded text-center transition-colors ${isSelected ? "bg-[hsl(var(--primary))] text-foreground" : isToday ? "text-[hsl(var(--primary))] font-bold" : "hover:bg-[hsl(var(--surface-2))]"} ${isPast ? "opacity-30 cursor-not-allowed" : "cursor-pointer"}`}>
                   {d}
                 </button>
               );

@@ -53,7 +53,7 @@ export default function Notifications() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Notification Center</h1>
+          <h1 className="text-2xl font-bold text-foreground">Notification Center</h1>
           <p className="text-[hsl(var(--text-3))] text-sm">Real-time alerts across compliance, security, and model operations</p>
         </div>
         <Button variant="outline" className="rounded-none border-[#1e1e1e]"><Export className="w-4 h-4 mr-2" />Export</Button>
@@ -63,14 +63,14 @@ export default function Notifications() {
           <Card key={k.label} className="bg-[#111111] border-[#1e1e1e] rounded-none">
             <CardContent className="p-4 flex items-center gap-3">
               <k.icon className={`w-8 h-8 ${k.color}`} />
-              <div><div className="text-2xl font-bold text-white">{k.value}</div><div className="text-xs text-[hsl(var(--text-3))]">{k.label}</div></div>
+              <div><div className="text-2xl font-bold text-foreground">{k.value}</div><div className="text-xs text-[hsl(var(--text-3))]">{k.label}</div></div>
             </CardContent>
           </Card>
         ))}
       </div>
       <Card className="bg-[#111111] border-[#1e1e1e] rounded-none">
         <CardContent className="p-4">
-          <h3 className="text-white font-semibold mb-3">Notifications by Category (Last 7 Days)</h3>
+          <h3 className="text-foreground font-semibold mb-3">Notifications by Category (Last 7 Days)</h3>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={chartData}>
               <XAxis dataKey="day" stroke="#71717a" fontSize={12} />
@@ -87,8 +87,8 @@ export default function Notifications() {
       <Card className="bg-[#111111] border-[#1e1e1e] rounded-none">
         <CardContent className="p-4">
           <div className="flex items-center gap-3 mb-4">
-            <div className="relative flex-1"><MagnifyingGlass className="absolute left-3 top-2.5 w-4 h-4 text-[hsl(var(--text-3))]" /><Input placeholder="Search notifications..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 bg-[#0a0a0a] border-[#1e1e1e] rounded-none text-white" /></div>
-            <select value={filter} onChange={e => setFilter(e.target.value)} className="bg-[#0a0a0a] border border-[#1e1e1e] text-white px-3 py-2 text-sm">
+            <div className="relative flex-1"><MagnifyingGlass className="absolute left-3 top-2.5 w-4 h-4 text-[hsl(var(--text-3))]" /><Input placeholder="Search notifications..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 bg-[#0a0a0a] border-[#1e1e1e] rounded-none text-foreground" /></div>
+            <select value={filter} onChange={e => setFilter(e.target.value)} className="bg-[#0a0a0a] border border-[#1e1e1e] text-foreground px-3 py-2 text-sm">
               {cats.map(c => <option key={c} value={c}>{c === 'all' ? 'All Categories' : c}</option>)}
             </select>
           </div>
@@ -100,13 +100,13 @@ export default function Notifications() {
             <tbody>
               {filtered.map(n => (
                 <tr key={n.id} onClick={() => setSelected(n)} className="border-b border-[#1e1e1e] hover:bg-[#1a1a1a] cursor-pointer">
-                  <td className="p-2 text-white font-mono text-xs">{n.id}</td>
-                  <td className={`p-2 ${n.read ? 'text-[hsl(var(--text-3))]' : 'text-white font-medium'}`}>{n.message}</td>
-                  <td className="p-2"><Badge className={`${catColor[n.category]} text-white rounded-none text-xs`}>{n.category}</Badge></td>
-                  <td className="p-2"><Badge className={`${sevColor[n.severity]} text-white rounded-none text-xs`}>{n.severity}</Badge></td>
+                  <td className="p-2 text-foreground font-mono text-xs">{n.id}</td>
+                  <td className={`p-2 ${n.read ? 'text-[hsl(var(--text-3))]' : 'text-foreground font-medium'}`}>{n.message}</td>
+                  <td className="p-2"><Badge className={`${catColor[n.category]} text-foreground rounded-none text-xs`}>{n.category}</Badge></td>
+                  <td className="p-2"><Badge className={`${sevColor[n.severity]} text-foreground rounded-none text-xs`}>{n.severity}</Badge></td>
                   <td className="p-2 text-[hsl(var(--text-3))]">{n.source}</td>
                   <td className="p-2 text-[hsl(var(--text-3))] text-xs">{n.timestamp}</td>
-                  <td className="p-2">{n.read ? <span className="text-[hsl(var(--text-4))]">Read</span> : <Badge className="bg-[hsl(var(--brand))] text-white rounded-none text-xs">New</Badge>}</td>
+                  <td className="p-2">{n.read ? <span className="text-[hsl(var(--text-4))]">Read</span> : <Badge className="bg-[hsl(var(--brand))] text-foreground rounded-none text-xs">New</Badge>}</td>
                 </tr>
               ))}
             </tbody>
@@ -114,29 +114,29 @@ export default function Notifications() {
         </CardContent>
       </Card>
       <Sheet open={!!selected} onOpenChange={() => setSelected(null)}>
-        <SheetContent className="bg-[#111111] border-[#1e1e1e] text-white w-[500px] rounded-none">
+        <SheetContent className="bg-[#111111] border-[#1e1e1e] text-foreground w-[500px] rounded-none">
           {selected && (<>
-            <SheetHeader><SheetTitle className="text-white">{selected.id}: Notification Detail</SheetTitle></SheetHeader>
+            <SheetHeader><SheetTitle className="text-foreground">{selected.id}: Notification Detail</SheetTitle></SheetHeader>
             <Tabs defaultValue="details" className="mt-4">
               <TabsList className="bg-[#0a0a0a] rounded-none"><TabsTrigger value="details" className="rounded-none">Details</TabsTrigger><TabsTrigger value="actions" className="rounded-none">Actions</TabsTrigger><TabsTrigger value="history" className="rounded-none">History</TabsTrigger></TabsList>
               <TabsContent value="details" className="space-y-3 mt-3">
-                <p className="text-sm text-white">{selected.message}</p>
+                <p className="text-sm text-foreground">{selected.message}</p>
                 <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="text-[hsl(var(--text-3))]">Category</div><div><Badge className={`${catColor[selected.category]} text-white rounded-none`}>{selected.category}</Badge></div>
-                  <div className="text-[hsl(var(--text-3))]">Severity</div><div><Badge className={`${sevColor[selected.severity]} text-white rounded-none`}>{selected.severity}</Badge></div>
-                  <div className="text-[hsl(var(--text-3))]">Source</div><div className="text-white">{selected.source}</div>
-                  <div className="text-[hsl(var(--text-3))]">Timestamp</div><div className="text-white">{selected.timestamp}</div>
+                  <div className="text-[hsl(var(--text-3))]">Category</div><div><Badge className={`${catColor[selected.category]} text-foreground rounded-none`}>{selected.category}</Badge></div>
+                  <div className="text-[hsl(var(--text-3))]">Severity</div><div><Badge className={`${sevColor[selected.severity]} text-foreground rounded-none`}>{selected.severity}</Badge></div>
+                  <div className="text-[hsl(var(--text-3))]">Source</div><div className="text-foreground">{selected.source}</div>
+                  <div className="text-[hsl(var(--text-3))]">Timestamp</div><div className="text-foreground">{selected.timestamp}</div>
                 </div>
               </TabsContent>
               <TabsContent value="actions" className="space-y-2 mt-3">
-                <Button className="w-full bg-[hsl(var(--brand))] hover:bg-emerald-700 rounded-none"><Eye className="w-4 h-4 mr-2" />Mark as Read</Button>
+                <Button className="w-full bg-[hsl(var(--brand))] hover:bg-primary/90 rounded-none"><Eye className="w-4 h-4 mr-2" />Mark as Read</Button>
                 <Button variant="outline" className="w-full rounded-none border-[#1e1e1e]"><Clock className="w-4 h-4 mr-2" />Snooze 24h</Button>
                 <Button variant="outline" className="w-full rounded-none border-red-600 text-red-400"><ArrowUp className="w-4 h-4 mr-2" />Escalate to CISO</Button>
               </TabsContent>
               <TabsContent value="history" className="mt-3">
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between border-b border-[#1e1e1e] pb-2"><span className="text-[hsl(var(--text-3))]">Alert triggered</span><span className="text-white">{selected.timestamp}</span></div>
-                  <div className="flex justify-between border-b border-[#1e1e1e] pb-2"><span className="text-[hsl(var(--text-3))]">Similar alert 7 days ago</span><span className="text-white">2026-03-22</span></div>
+                  <div className="flex justify-between border-b border-[#1e1e1e] pb-2"><span className="text-[hsl(var(--text-3))]">Alert triggered</span><span className="text-foreground">{selected.timestamp}</span></div>
+                  <div className="flex justify-between border-b border-[#1e1e1e] pb-2"><span className="text-[hsl(var(--text-3))]">Similar alert 7 days ago</span><span className="text-foreground">2026-03-22</span></div>
                 </div>
               </TabsContent>
             </Tabs>

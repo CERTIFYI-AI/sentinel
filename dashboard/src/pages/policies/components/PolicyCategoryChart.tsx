@@ -12,7 +12,7 @@ export const PolicyCategoryChart = ({ policies }: Props) => {
 
   return (
     <div className="bg-[#111] border border-[hsl(var(--border))] rounded-xl p-6">
-      <h3 className="text-sm font-semibold text-white mb-4">Policies by Category</h3>
+      <h3 className="text-sm font-semibold text-foreground mb-4">Policies by Category</h3>
       <ResponsiveContainer width="100%" height={280}>
         <PieChart key="category-pie">
           <Pie data={data} cx="50%" cy="45%" innerRadius={60} outerRadius={90} paddingAngle={2} dataKey="value">

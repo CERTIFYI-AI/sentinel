@@ -289,7 +289,7 @@ const STATUS_COLORS: Record<RiskStatus, string> = {
   'in-progress': 'bg-blue-500/20 text-blue-400',
   mitigated: 'bg-green-500/20 text-green-400',
   accepted: 'bg-purple-500/20 text-purple-400',
-  closed: 'bg-zinc-500/20 text-zinc-400',
+  closed: 'bg-zinc-500/20 text-muted-foreground',
 };
 
 const CHART_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#6b7280'];

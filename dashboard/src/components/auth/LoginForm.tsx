@@ -76,7 +76,7 @@ export function LoginForm({ onSuccess }: { onSuccess: () => void }) {
       )}
 
       <button type="submit" disabled={loading}
-        className="w-full h-10 rounded-none bg-[#1A6B5A] text-white font-medium text-sm hover:bg-[#1A6B5A]/90 disabled:opacity-50 flex items-center justify-center gap-2">
+        className="w-full h-10 rounded-none bg-[#1A6B5A] text-foreground font-medium text-sm hover:bg-[#1A6B5A]/90 disabled:opacity-50 flex items-center justify-center gap-2">
         {loading ? <><SpinnerGap className="w-4 h-4 animate-spin" />Signing in...</> : tab === "apikey" ? "Continue" : "Sign in"}
       </button>
 
