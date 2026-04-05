@@ -18,6 +18,7 @@ interface BadgeProps {
   children: React.ReactNode;
   pulse?: boolean;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 const variantStyles: Record<string, string> = {
@@ -53,13 +54,13 @@ const sizeStyles: Record<BadgeSize, string> = {
   md: "text-xs px-2 py-0.5",
 };
 
-const Badge = ({ variant = 'default', size = 'md', pulse = false, children, className }: BadgeProps) => (
+const Badge = ({ variant = 'default', size = 'md', pulse = false, children, className, style }: BadgeProps) => (
   <span className={clsx(
     "inline-flex items-center gap-1 font-medium whitespace-nowrap rounded-sm",
     variantStyles[variant] ?? variantStyles.default,
     sizeStyles[size],
     className
-  )}>
+  )} style={style}>
     {pulse && <span className="w-[6px] h-[6px] rounded-full bg-current animate-pulse-dot flex-shrink-0" />}
     {children}
   </span>

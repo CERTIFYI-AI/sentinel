@@ -1,158 +1,290 @@
-import { useState } from "react";
-import { Card, CardContent } from "../../components/ui/card";
-import { Badge } from "../../components/ui/badge";
-import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
-import { Rss, Shield, Search, AlertTriangle, Activity, Eye } from "lucide-react";
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Eye, PencilSimple, Trash, Plus, Robot, Warning, ShieldSlash, ScanSmiley,
+  CheckCircle, Spinner, Globe
+} from '@phosphor-icons/react';
+import { Card } from '../../components/ui/card';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { AGENTS, severityColor, statusColor, formatDate, formatNumber } from '../../data/seed';
+import { useSettingsStore } from '../../stores/settingsStore';
 
-const agents = [
-  { id: "AGT-001", name: "Customer Support Chatbot", type: "Conversational", model: "GPT-4-Turbo", owner: "Product Team", status: "active", risk: "medium", calls: 12400, lastSeen: "2026-03-29", tools: ["Knowledge Base", "Ticket API", "CRM Lookup"], description: "Handles tier-1 customer inquiries via web chat and email" },
-  { id: "AGT-002", name: "Loan Underwriting Agent", type: "Decision", model: "CreditScorer v2.1", owner: "Risk Team", status: "active", risk: "high", calls: 3200, lastSeen: "2026-03-29", tools: ["Credit Bureau API", "Income Verification", "Fraud Detection"], description: "Automated loan decisioning for applications under $50K" },
-  { id: "AGT-003", name: "Code Review Assistant", type: "Developer Tool", model: "Claude-3-Sonnet", owner: "Engineering", status: "active", risk: "low", calls: 8900, lastSeen: "2026-03-28", tools: ["GitHub API", "Static Analysis", "Documentation Search"], description: "Reviews pull requests and suggests improvements" },
-  { id: "AGT-004", name: "Compliance Document Analyzer", type: "Document Processing", model: "GPT-4-Turbo", owner: "Legal", status: "active", risk: "high", calls: 1560, lastSeen: "2026-03-29", tools: ["Document Parser", "Regulation DB", "Citation Linker"], description: "Extracts compliance requirements from regulatory filings" },
-  { id: "AGT-005", name: "Internal Knowledge Search", type: "RAG", model: "Llama-3-70B", owner: "IT Operations", status: "active", risk: "low", calls: 15200, lastSeen: "2026-03-29", tools: ["Vector Store", "Confluence API", "Slack Search"], description: "Enterprise knowledge retrieval across internal documentation" },
-  { id: "AGT-006", name: "Fraud Alert Triage Bot", type: "Decision", model: "FraudDetector v3.0", owner: "Security", status: "active", risk: "critical", calls: 4800, lastSeen: "2026-03-29", tools: ["Transaction DB", "IP Geolocation", "Device Fingerprint"], description: "Real-time fraud alert classification and escalation" },
-  { id: "AGT-007", name: "Marketing Content Generator", type: "Generative", model: "Claude-3-Sonnet", owner: "Marketing", status: "paused", risk: "medium", calls: 2100, lastSeen: "2026-03-25", tools: ["Brand Guide API", "Image Generator", "SEO Analyzer"], description: "Generates marketing copy and social media content" },
-  { id: "AGT-008", name: "Shadow IT Scanner", type: "Discovery", model: "Custom Rule Engine", owner: "Security", status: "active", risk: "medium", calls: 890, lastSeen: "2026-03-29", tools: ["Network Scanner", "API Gateway Logs", "DNS Monitor"], description: "Detects unauthorized AI agent deployments across the network" },
-  { id: "AGT-009", name: "HR Onboarding Assistant", type: "Conversational", model: "GPT-4-Turbo", owner: "HR", status: "retired", risk: "low", calls: 340, lastSeen: "2026-02-15", tools: ["HRIS API", "Policy DB", "Calendar API"], description: "Guided new employee onboarding and FAQ handling" },
-  { id: "AGT-010", name: "Suspicious Activity Reporter", type: "Monitoring", model: "Gemini Pro", owner: "Compliance", status: "active", risk: "critical", calls: 6700, lastSeen: "2026-03-29", tools: ["Transaction Monitor", "AML Database", "Regulatory Filing API"], description: "Monitors transactions for suspicious activity and generates SARs" },
-  { id: "AGT-011", name: "Data Pipeline Orchestrator", type: "Automation", model: "Llama-3-70B", owner: "Data Engineering", status: "active", risk: "medium", calls: 3400, lastSeen: "2026-03-28", tools: ["Airflow API", "Data Catalog", "Quality Checker"], description: "Manages ETL pipeline scheduling and error recovery" },
-  { id: "AGT-012", name: "Vendor Risk Assessor", type: "Analysis", model: "GPT-4-Turbo", owner: "Procurement", status: "active", risk: "high", calls: 780, lastSeen: "2026-03-27", tools: ["Vendor DB", "SOC Report Parser", "Risk Scoring Engine"], description: "Evaluates third-party vendor security posture" },
-];
-
-const statsCards = [
-  { label: "Total Agents", value: "12", icon: "Rss" },
-  { label: "Active", value: "10", icon: "Shield" },
-  { label: "Shadow AI", value: "3", icon: "AlertTriangle" },
-  { label: "API Calls Today", value: "45.2K", icon: "Activity" },
-];
-
-const riskColors: Record<string, string> = { critical: "destructive", high: "destructive", medium: "default", low: "secondary" };
-const statusColors: Record<string, string> = { active: "default", paused: "secondary", retired: "outline" };
+function StatCard({ icon, value, label }: { icon: React.ReactNode; value: string | number; label: string }) {
+  return (
+    <Card className="p-4 flex items-start gap-3">
+      <div className="mt-0.5 text-[hsl(var(--brand))]">{icon}</div>
+      <div>
+        <div className="text-2xl font-bold text-[hsl(var(--text-1))]">{value}</div>
+        <div className="text-xs text-[hsl(var(--text-4))] mt-0.5">{label}</div>
+      </div>
+    </Card>
+  );
+}
 
 export default function AgentDiscovery() {
-  const [search, setSearch] = useState("");
-  const [riskFilter, setRiskFilter] = useState("all");
-  const [sel, setSel] = useState<typeof agents[0] | null>(null);
+  const orgName = useSettingsStore(s => s.orgName);
+  const navigate = useNavigate();
 
-  const filtered = agents.filter((a) => {
-    const matchSearch = JSON.stringify(a).toLowerCase().includes(search.toLowerCase());
-    const matchRisk = riskFilter === "all" || a.risk === riskFilter;
-    return matchSearch && matchRisk;
+  const [search, setSearch] = useState('');
+  const [riskFilter, setRiskFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [selected, setSelected] = useState<typeof AGENTS[0] | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<typeof AGENTS[0] | null>(null);
+  const [agents, setAgents] = useState(AGENTS);
+  const [scanning, setScanning] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', owner: '', department: '' });
+
+  const stats = {
+    total: agents.length,
+    confirmed: agents.filter(a => a.status === 'confirmed').length,
+    shadow: agents.filter(a => a.status === 'shadow').length,
+    highRisk: agents.filter(a => a.risk === 'high' || a.risk === 'critical').length,
+  };
+
+  const filtered = agents.filter(a => {
+    const q = search.toLowerCase();
+    const matchSearch = !q || a.name.toLowerCase().includes(q) || a.id.toLowerCase().includes(q) || a.owner.toLowerCase().includes(q);
+    const matchRisk = riskFilter === 'all' || a.risk === riskFilter;
+    const matchStatus = statusFilter === 'all' || a.status === statusFilter;
+    return matchSearch && matchRisk && matchStatus;
   });
 
-  const iconMap: Record<string, any> = { Rss, Shield, AlertTriangle, Activity };
+  const handleScan = () => {
+    setScanning(true);
+    setTimeout(() => setScanning(false), 2500);
+  };
+
+  const handleEdit = (a: typeof AGENTS[0]) => {
+    setEditForm({ name: a.name, owner: a.owner, department: a.department });
+    setSelected(a);
+    setEditOpen(true);
+  };
+
+  const handleSaveEdit = () => {
+    setAgents(prev => prev.map(a => a.id === selected?.id ? { ...a, ...editForm } : a));
+    setEditOpen(false);
+  };
+
+  const handleDelete = () => {
+    if (deleteTarget) {
+      setAgents(prev => prev.filter(a => a.id !== deleteTarget.id));
+      setDeleteTarget(null);
+      if (selected?.id === deleteTarget.id) setSelected(null);
+    }
+  };
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Agent Discovery</h1>
-          <p className="text-muted-foreground">Monitor and govern all AI agents across the organization</p>
+          <h1 className="text-xl font-semibold text-[hsl(var(--text-1))]">Agent Discovery</h1>
+          <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">{orgName} — AI agent discovery, classification, and risk management</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline"><Eye className="h-4 w-4 mr-2" />Scan Network</Button>
-          <Button><Rss className="h-4 w-4 mr-2" />Register Agent</Button>
+          <Button variant="outline" className="gap-2" onClick={handleScan} disabled={scanning}>
+            {scanning ? <Spinner size={16} className="animate-spin" /> : <ScanSmiley size={16} />}
+            {scanning ? 'Scanning...' : 'Scan Network'}
+          </Button>
+          <Button className="gap-2">
+            <Plus size={16} /> Register Agent
+          </Button>
         </div>
       </div>
 
+      {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
-        {statsCards.map((s) => {
-          const Icon = iconMap[s.icon];
-          return (
-            <Card key={s.label}>
-              <CardContent className="p-4 flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">{s.label}</p>
-                  <p className="text-2xl font-bold">{s.value}</p>
-                </div>
-                {Icon && <Icon className="h-8 w-8 text-muted-foreground" />}
-              </CardContent>
-            </Card>
-          );
-        })}
+        <StatCard icon={<Robot size={20} />} value={stats.total} label="Total Agents" />
+        <StatCard icon={<CheckCircle size={20} />} value={stats.confirmed} label="Confirmed" />
+        <StatCard icon={<ShieldSlash size={20} />} value={stats.shadow} label="Shadow Agents" />
+        <StatCard icon={<Warning size={20} />} value={stats.highRisk} label="High Risk" />
       </div>
 
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex gap-4 mb-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search agents by name, model, owner..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
-            </div>
-            <div className="flex gap-2">
-              {["all", "critical", "high", "medium", "low"].map((r) => (
-                <Button key={r} size="sm" variant={riskFilter === r ? "default" : "outline"} onClick={() => setRiskFilter(r)}>{r === "all" ? "All Risk" : r.charAt(0).toUpperCase() + r.slice(1)}</Button>
-              ))}
-            </div>
-          </div>
+      {/* Filters */}
+      <div className="flex gap-3">
+        <Input
+          placeholder="Search agents..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="max-w-xs"
+        />
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-40"><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="confirmed">Confirmed</SelectItem>
+            <SelectItem value="shadow">Shadow</SelectItem>
+            <SelectItem value="quarantined">Quarantined</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={riskFilter} onValueChange={setRiskFilter}>
+          <SelectTrigger className="w-36"><SelectValue placeholder="Risk" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Risks</SelectItem>
+            <SelectItem value="critical">Critical</SelectItem>
+            <SelectItem value="high">High</SelectItem>
+            <SelectItem value="medium">Medium</SelectItem>
+            <SelectItem value="low">Low</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-          <table className="w-full">
+      {/* Table */}
+      <Card>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
             <thead>
-              <tr className="border-b text-sm text-muted-foreground">
-                <th className="text-left p-3">ID</th>
-                <th className="text-left p-3">Agent Name</th>
-                <th className="text-left p-3">Type</th>
-                <th className="text-left p-3">Model</th>
-                <th className="text-left p-3">Risk</th>
-                <th className="text-left p-3">Status</th>
-                <th className="text-left p-3">API Calls</th>
-                <th className="text-left p-3">Owner</th>
-                <th className="text-left p-3">Actions</th>
+              <tr className="border-b border-[hsl(var(--border))]">
+                {['ID', 'Name', 'Type', 'Model', 'Owner', 'Department', 'Status', 'Risk', 'API Calls 7d', 'First Seen', 'Last Active', 'Actions'].map(h => (
+                  <th key={h} className="text-left px-4 py-3 text-xs font-medium text-[hsl(var(--text-4))] uppercase tracking-wide">{h}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {filtered.map((a) => (
-                <tr key={a.id} className="border-b hover:bg-muted/30 cursor-pointer" onClick={() => setSel(a)}>
-                  <td className="p-3 text-sm font-mono">{a.id}</td>
-                  <td className="p-3 font-medium">{a.name}</td>
-                  <td className="p-3 text-sm">{a.type}</td>
-                  <td className="p-3 text-sm">{a.model}</td>
-                  <td className="p-3"><Badge variant={riskColors[a.risk] as any}>{a.risk}</Badge></td>
-                  <td className="p-3"><Badge variant={statusColors[a.status] as any}>{a.status}</Badge></td>
-                  <td className="p-3 text-sm">{a.calls.toLocaleString()}</td>
-                  <td className="p-3 text-sm">{a.owner}</td>
-                  <td className="p-3"><Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setSel(a); }}>View</Button></td>
-                </tr>
-              ))}
+              {filtered.map(a => {
+                const isShadow = a.status === 'shadow';
+                const sc = statusColor(a.status);
+                const rc = severityColor(a.risk);
+                return (
+                  <tr key={a.id} className={`border-b border-[hsl(var(--border))] transition-colors ${isShadow ? 'bg-red-950/20 hover:bg-red-950/30' : 'hover:bg-[hsl(var(--bg-surface))/50]'}`}>
+                    <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--text-4))]">{a.id}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5">
+                        {isShadow && <ShieldSlash size={13} className="text-red-400" />}
+                        <span className={`font-medium ${isShadow ? 'text-red-300' : 'text-[hsl(var(--text-1))]'}`}>{a.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-[hsl(var(--text-3))]">{a.type}</td>
+                    <td className="px-4 py-3 text-[hsl(var(--text-3))]">{a.model}</td>
+                    <td className="px-4 py-3 text-[hsl(var(--text-3))]">{a.owner}</td>
+                    <td className="px-4 py-3 text-[hsl(var(--text-3))]">{a.department}</td>
+                    <td className="px-4 py-3">
+                      <span className="px-2 py-0.5 text-xs" style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}` }}>{a.status}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="px-2 py-0.5 text-xs" style={{ background: rc.bg, color: rc.text, border: `1px solid ${rc.border}` }}>{a.risk}</span>
+                    </td>
+                    <td className="px-4 py-3 text-[hsl(var(--text-3))]">{formatNumber(a.apiCalls7d)}</td>
+                    <td className="px-4 py-3 text-[hsl(var(--text-4))] text-xs">{formatDate(a.firstSeen)}</td>
+                    <td className="px-4 py-3 text-[hsl(var(--text-4))] text-xs">{formatDate(a.lastActive)}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-1">
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => navigate(`/agents/${a.id}`)}>
+                          <Eye size={14} />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleEdit(a)}>
+                          <PencilSimple size={14} />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-red-400 hover:text-red-300" onClick={() => setDeleteTarget(a)}>
+                          <Trash size={14} />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
-          <p className="text-sm text-muted-foreground mt-2">{filtered.length} of {agents.length} agents</p>
-        </CardContent>
+        </div>
       </Card>
 
-      <Dialog open={!!sel} onOpenChange={() => setSel(null)}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>{sel?.name}</DialogTitle></DialogHeader>
-          {sel && (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">{sel.description}</p>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div><span className="text-muted-foreground">ID:</span> {sel.id}</div>
-                <div><span className="text-muted-foreground">Type:</span> {sel.type}</div>
-                <div><span className="text-muted-foreground">Model:</span> {sel.model}</div>
-                <div><span className="text-muted-foreground">Owner:</span> {sel.owner}</div>
-                <div><span className="text-muted-foreground">Risk:</span> <Badge variant={riskColors[sel.risk] as any}>{sel.risk}</Badge></div>
-                <div><span className="text-muted-foreground">Status:</span> <Badge variant={statusColors[sel.status] as any}>{sel.status}</Badge></div>
-                <div><span className="text-muted-foreground">API Calls:</span> {sel.calls.toLocaleString()}</div>
-                <div><span className="text-muted-foreground">Last Seen:</span> {sel.lastSeen}</div>
-              </div>
-              <div>
-                <p className="text-sm font-medium mb-1">Connected Tools</p>
-                <div className="flex flex-wrap gap-1">
-                  {sel.tools.map((t) => (<Badge key={t} variant="outline">{t}</Badge>))}
+      {/* Detail Sheet */}
+      <Sheet open={!!selected && !editOpen} onOpenChange={o => { if (!o) setSelected(null); }}>
+        <SheetContent className="w-[600px] max-w-full overflow-y-auto" side="right">
+          {selected && (
+            <>
+              <SheetHeader className="mb-4">
+                <SheetTitle className="flex items-center gap-2">
+                  <Robot size={18} /> {selected.name}
+                  <span className="font-mono text-xs text-[hsl(var(--text-4))]">{selected.id}</span>
+                </SheetTitle>
+                <p className="text-sm text-[hsl(var(--text-4))]">{selected.description}</p>
+              </SheetHeader>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    ['Type', selected.type], ['Model', selected.model],
+                    ['Owner', selected.owner], ['Department', selected.department],
+                    ['Status', selected.status], ['Risk', selected.risk],
+                    ['API Calls 7d', formatNumber(selected.apiCalls7d)],
+                    ['First Seen', formatDate(selected.firstSeen)],
+                    ['Last Active', formatDate(selected.lastActive)],
+                  ].map(([k, v]) => (
+                    <div key={k} className="bg-[hsl(var(--bg-surface))] p-3 border border-[hsl(var(--border))]">
+                      <div className="text-xs text-[hsl(var(--text-4))]">{k}</div>
+                      <div className="text-sm font-medium text-[hsl(var(--text-1))] mt-0.5">{v}</div>
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <div className="text-xs font-medium text-[hsl(var(--text-4))] mb-2 uppercase tracking-wide">Data Access</div>
+                  <div className="flex flex-wrap gap-2">
+                    {selected.dataAccess.map(d => (
+                      <span key={d} className="px-2 py-0.5 text-xs bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{d}</span>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <Button size="sm" onClick={() => navigate(`/agents/${selected.id}`)}>
+                    View Full Detail
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => handleEdit(selected)}>
+                    <PencilSimple size={14} className="mr-1" /> Edit
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-red-400" onClick={() => setDeleteTarget(selected)}>
+                    <Trash size={14} className="mr-1" /> Delete
+                  </Button>
                 </div>
               </div>
-              <div className="flex gap-2 pt-2">
-                <Button size="sm">Audit Trail</Button>
-                <Button size="sm" variant="outline">Edit</Button>
-                <Button size="sm" variant="destructive">Disable</Button>
-              </div>
-            </div>
+            </>
           )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Agent — {selected?.id}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            {(['name', 'owner', 'department'] as const).map(field => (
+              <div key={field}>
+                <label className="text-xs text-[hsl(var(--text-4))] capitalize">{field}</label>
+                <Input value={editForm[field]} onChange={e => setEditForm(p => ({ ...p, [field]: e.target.value }))} className="mt-1" />
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveEdit}>Save Changes</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirm */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={o => { if (!o) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Agent</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{deleteTarget?.name}</strong>? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

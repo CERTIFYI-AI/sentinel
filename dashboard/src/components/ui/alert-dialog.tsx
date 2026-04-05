@@ -2,7 +2,12 @@ import * as React from "react"
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog"
 
 import { cn } from "@/lib/utils"
-import { buttonVariants } from "@/components/ui/button"
+
+function buttonVariants(opts?: { variant?: string }) {
+  const base = "inline-flex items-center justify-center whitespace-nowrap rounded-sm text-sm font-medium transition-colors focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 h-9 px-4 py-2";
+  if (opts?.variant === 'outline') return cn(base, 'border border-border bg-transparent hover:bg-muted');
+  return cn(base, 'bg-primary text-foreground hover:bg-primary/90');
+}
 
 const AlertDialog = AlertDialogPrimitive.Root
 

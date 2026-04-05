@@ -1,135 +1,312 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { AlertTriangle, Shield, Brain, FileWarning, Briefcase, FileText, Users, Database, Layers, Clock } from "lucide-react";
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
+import {
+  Clock, Warning, Brain, WarningCircle, Briefcase, FileText,
+  Users, Database, StackSimple, ArrowRight, ChartLine, CheckCircle,
+  TrendUp, TrendDown, Minus,
+} from '@phosphor-icons/react';
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer,
+  LineChart, Line, Legend,
+} from 'recharts';
+import {
+  MODELS, RISKS, AGENTS, INCIDENTS, POLICIES, FRAMEWORKS, GAPS,
+  AUDIT_LOG, VENDORS, DATASETS, severityColor, statusColor, formatDate,
+} from '../data/seed';
+import { useSettingsStore } from '../stores/settingsStore';
+import { useChartTheme } from '../hooks/useChartTheme';
 
-const complianceData = [
-  { framework: "ISO 27001", score: 87 },
-  { framework: "SOC2", score: 82 },
-  { framework: "EU AI Act", score: 71 },
-  { framework: "NIST", score: 79 },
-  { framework: "OWASP LLM", score: 68 },
+const RISK_TREND = [
+  { month: 'Oct', open: 14, critical: 4 },
+  { month: 'Nov', open: 13, critical: 3 },
+  { month: 'Dec', open: 15, critical: 5 },
+  { month: 'Jan', open: 14, critical: 4 },
+  { month: 'Feb', open: 13, critical: 4 },
+  { month: 'Mar', open: 12, critical: 3 },
 ];
 
-const riskTrend = [
-  { month: "Oct", risks: 18 },
-  { month: "Nov", risks: 22 },
-  { month: "Dec", risks: 19 },
-  { month: "Jan", risks: 15 },
-  { month: "Feb", risks: 14 },
-  { month: "Mar", risks: 12 },
-];
-
-const recentActivity = [
-  { id: 1, action: "Control CTL-007 passed re-test", user: "Alice Chen", time: "10 min ago", type: "success" },
-  { id: 2, action: "New risk RSK-021 identified: API rate limit bypass", user: "Bob Kumar", time: "25 min ago", type: "warning" },
-  { id: 3, action: "Incident INC-008 resolved: Model hallucination", user: "Carol Davis", time: "1 hr ago", type: "info" },
-  { id: 4, action: "Policy POL-003 updated to v2.1", user: "Dave Wilson", time: "2 hrs ago", type: "info" },
-  { id: 5, action: "Bias audit completed for GPT-4-Turbo", user: "Eve Sharma", time: "3 hrs ago", type: "success" },
-];
-
-const overdueTasks = [
-  { id: 1, title: "Review EU AI Act gap analysis", due: "2 days overdue", assignee: "Alice Chen" },
-  { id: 2, title: "Update data retention policy", due: "5 days overdue", assignee: "Bob Kumar" },
-  { id: 3, title: "Complete SOC2 evidence collection", due: "1 day overdue", assignee: "Carol Davis" },
-];
-
-const kpis = [
-  { label: "Open Tasks", value: 8, icon: Clock, color: "text-blue-400" },
-  { label: "Open Risks", value: 12, icon: AlertTriangle, color: "text-yellow-400" },
-  { label: "Active Models", value: 23, icon: Brain, color: "text-purple-400" },
-  { label: "Critical Incidents", value: 3, icon: FileWarning, color: "text-red-400" },
-  { label: "Use Cases", value: 15, icon: Briefcase, color: "text-cyan-400" },
-  { label: "Active Policies", value: 31, icon: FileText, color: "text-green-400" },
-  { label: "Vendors", value: 7, icon: Users, color: "text-orange-400" },
-  { label: "Datasets", value: 44, icon: Database, color: "text-indigo-400" },
-  { label: "Frameworks", value: 5, icon: Layers, color: "text-[hsl(var(--brand))]" },
-];
+function TrendIcon({ trend }: { trend: 'up' | 'down' | 'stable' }) {
+  if (trend === 'up') return <TrendUp size={14} style={{ color: '#ef4444' }} />;
+  if (trend === 'down') return <TrendDown size={14} style={{ color: '#10b981' }} />;
+  return <Minus size={14} style={{ color: '#6b7280' }} />;
+}
 
 export default function Overview() {
+  const { orgName } = useSettingsStore();
+  const ct = useChartTheme();
+
+  const openRisks = RISKS.filter(r => r.status === 'open').length;
+  const activeModels = MODELS.filter(m => m.status === 'production').length;
+  const criticalIncidents = INCIDENTS.filter(i => i.severity === 'critical').length;
+  const activePolicies = POLICIES.filter(p => p.status === 'published').length;
+  const openGaps = GAPS.length;
+  const overdueGaps = GAPS.filter(g => new Date(g.dueDate) < new Date()).length;
+
+  const kpis = [
+    { label: 'Open Tasks', value: overdueGaps + 5, icon: Clock, color: '#f97316', link: '/tasks' },
+    { label: 'Open Risks', value: openRisks, icon: Warning, color: '#ef4444', link: '/risk-register' },
+    { label: 'Active Models', value: activeModels, icon: Brain, color: '#8b5cf6', link: '/model-inventory' },
+    { label: 'Critical Incidents', value: criticalIncidents, icon: WarningCircle, color: '#ef4444', link: '/incidents' },
+    { label: 'Use Cases', value: AGENTS.length, icon: ChartLine, color: '#3b82f6', link: '/agent-discovery' },
+    { label: 'Active Policies', value: activePolicies, icon: FileText, color: '#10b981', link: '/policies' },
+    { label: 'Vendors', value: VENDORS.length, icon: Briefcase, color: '#06b6d4', link: '/vendors' },
+    { label: 'Datasets', value: DATASETS.length, icon: Database, color: '#f59e0b', link: '/datasets' },
+    { label: 'Frameworks', value: FRAMEWORKS.length, icon: StackSimple, color: '#6366f1', link: '/frameworks' },
+  ];
+
+  const frameworkChartData = FRAMEWORKS.map(f => ({
+    name: f.name.replace('ISO/IEC ', '').replace('OWASP ', '').split(' ')[0],
+    score: f.complianceScore,
+    fullName: f.name,
+  }));
+
+  const recentActivity = [...AUDIT_LOG].sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  ).slice(0, 6);
+
+  const overdueGapItems = GAPS.filter(g => new Date(g.dueDate) < new Date()).slice(0, 5);
+
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">GRC Executive Dashboard</h1>
-        <Badge className="bg-green-500/10 text-green-400 border-green-500/30">Live</Badge>
+    <div className="p-6 space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>
+            GRC Executive Dashboard
+          </h1>
+          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>
+            {orgName} · AI Governance, Risk & Compliance Overview
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Badge style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', border: '1px solid hsl(var(--s-ok-br))', borderRadius: 0, fontSize: 12 }}>
+            System Operational
+          </Badge>
+          <span className="text-xs self-center" style={{ color: 'hsl(var(--text-3))' }}>
+            Last updated: {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+          </span>
+        </div>
       </div>
 
-      <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-3">
-        {kpis.map((kpi) => (
-          <Card key={kpi.label} className="border-border/50">
-            <CardContent className="p-3 text-center">
-              <kpi.icon className={`h-5 w-5 mx-auto mb-1 ${kpi.color}`} />
-              <div className="text-xl font-bold">{kpi.value}</div>
-              <div className="text-[10px] text-muted-foreground">{kpi.label}</div>
-            </CardContent>
-          </Card>
+      {/* KPI Tiles — 9 cards, 3 rows of 3 */}
+      <div className="grid grid-cols-3 gap-4 lg:grid-cols-9 lg:gap-3">
+        {kpis.map(k => (
+          <Link key={k.label} to={k.link} style={{ textDecoration: 'none' }}>
+            <Card
+              style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', cursor: 'pointer', transition: 'border-color 0.15s' }}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = k.color)}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = 'hsl(var(--border))')}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <k.icon size={20} style={{ color: k.color }} />
+                  <ArrowRight size={12} style={{ color: 'hsl(var(--text-4))' }} />
+                </div>
+                <p className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>{k.value}</p>
+                <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-3))' }}>{k.label}</p>
+              </CardContent>
+            </Card>
+          </Link>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="border-border/50">
-          <CardHeader><CardTitle className="text-sm">Compliance Score by Framework</CardTitle></CardHeader>
+      {/* Charts row */}
+      <div className="grid grid-cols-2 gap-4">
+        {/* Compliance Score by Framework */}
+        <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+              Compliance Score by Framework
+            </CardTitle>
+          </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={complianceData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                <XAxis dataKey="framework" tick={{ fontSize: 11, fill: '#888' }} />
-                <YAxis tick={{ fontSize: 11, fill: '#888' }} domain={[0, 100]} />
-                <Tooltip />
-                <Bar dataKey="score" fill="#16a34a" radius={[4, 4, 0, 0]} />
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={frameworkChartData} barSize={28}>
+                <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+                <XAxis dataKey="name" tick={{ fontSize: 10, fill: ct.axis }} />
+                <YAxis
+                  domain={[0, 100]}
+                  tick={{ fill: ct.axis, fontSize: 11 }}
+                  label={{ value: 'Score (%)', angle: -90, position: 'insideLeft', style: { fill: ct.axis } }}
+                />
+                <Tooltip
+                  contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.tooltipText, borderRadius: 0 }}
+                  formatter={(v: number, _: string, p: any) => [v + '%', p.payload.fullName]}
+                />
+                <Bar dataKey="score" name="Score" radius={0} fill="hsl(var(--brand))" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        <Card className="border-border/50">
-          <CardHeader><CardTitle className="text-sm">Risk Trend (Last 6 Months)</CardTitle></CardHeader>
+        {/* Risk Trend */}
+        <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+              Risk Trend (6 Months)
+            </CardTitle>
+          </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={riskTrend}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#888' }} />
-                <YAxis tick={{ fontSize: 11, fill: '#888' }} />
-                <Tooltip />
-                <Line type="monotone" dataKey="risks" stroke="#f59e0b" strokeWidth={2} dot={{ fill: '#f59e0b' }} />
+            <ResponsiveContainer width="100%" height={220}>
+              <LineChart data={RISK_TREND}>
+                <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+                <XAxis dataKey="month" tick={{ fontSize: 11, fill: ct.axis }} />
+                <YAxis
+                  tick={{ fill: ct.axis, fontSize: 11 }}
+                  label={{ value: 'Count', angle: -90, position: 'insideLeft', style: { fill: ct.axis } }}
+                />
+                <Tooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.tooltipText, borderRadius: 0 }} />
+                <Legend wrapperStyle={{ fontSize: 11, color: ct.axis }} />
+                <Line type="monotone" dataKey="open" stroke="#f97316" strokeWidth={2} dot={false} name="Open Risks" />
+                <Line type="monotone" dataKey="critical" stroke="#ef4444" strokeWidth={2} dot={false} name="Critical" />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="border-border/50">
-          <CardHeader><CardTitle className="text-sm">Recent Activity</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            {recentActivity.map((item) => (
-              <div key={item.id} className="flex items-start gap-3 text-sm">
-                <div className={`w-2 h-2 rounded-full mt-1.5 ${item.type === 'success' ? 'bg-green-400' : item.type === 'warning' ? 'bg-yellow-400' : 'bg-blue-400'}`} />
-                <div className="flex-1">
-                  <div>{item.action}</div>
-                  <div className="text-xs text-muted-foreground">{item.user} · {item.time}</div>
-                </div>
-              </div>
-            ))}
+      {/* Bottom row: Activity Feed + Overdue Tasks */}
+      <div className="grid grid-cols-2 gap-4">
+        {/* Recent Activity */}
+        <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+              Recent Activity
+            </CardTitle>
+            <Link to="/audit-log">
+              <Button variant="ghost" size="sm" style={{ fontSize: 11, padding: '2px 8px' }}>
+                View All <ArrowRight size={12} className="ml-1" />
+              </Button>
+            </Link>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="divide-y" style={{ borderColor: 'hsl(var(--border))' }}>
+              {recentActivity.map(entry => {
+                const sc = statusColor(entry.category);
+                return (
+                  <div key={entry.id} className="px-4 py-3 flex items-start gap-3">
+                    <div className="w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0" style={{ background: 'hsl(var(--brand))' }} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate" style={{ color: 'hsl(var(--text-1))' }}>
+                        {entry.action}
+                      </p>
+                      <p className="text-xs truncate" style={{ color: 'hsl(var(--text-3))' }}>
+                        {entry.entity} · {entry.actor}
+                      </p>
+                    </div>
+                    <span className="text-xs flex-shrink-0" style={{ color: 'hsl(var(--text-4))' }}>
+                      {formatDate(entry.timestamp.split('T')[0])}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="border-border/50 border-red-500/20">
-          <CardHeader><CardTitle className="text-sm text-red-400">Overdue Tasks</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            {overdueTasks.map((task) => (
-              <div key={task.id} className="flex items-center justify-between text-sm p-2 rounded bg-red-500/5 border border-red-500/10">
-                <div>
-                  <div className="font-medium">{task.title}</div>
-                  <div className="text-xs text-muted-foreground">{task.assignee}</div>
-                </div>
-                <Badge variant="destructive" className="text-[10px]">{task.due}</Badge>
+        {/* Overdue Tasks from GAPS */}
+        <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+              Overdue Gap Actions
+            </CardTitle>
+            <Link to="/gap-analysis">
+              <Button variant="ghost" size="sm" style={{ fontSize: 11, padding: '2px 8px' }}>
+                View All <ArrowRight size={12} className="ml-1" />
+              </Button>
+            </Link>
+          </CardHeader>
+          <CardContent className="p-0">
+            {overdueGapItems.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-10">
+                <CheckCircle size={28} style={{ color: '#10b981' }} />
+                <p className="text-sm mt-2" style={{ color: 'hsl(var(--text-3))' }}>No overdue gaps</p>
               </div>
-            ))}
+            ) : (
+              <div className="divide-y" style={{ borderColor: 'hsl(var(--border))' }}>
+                {overdueGapItems.map(gap => {
+                  const daysOver = Math.ceil((new Date().getTime() - new Date(gap.dueDate).getTime()) / (1000 * 60 * 60 * 24));
+                  const sc = severityColor(gap.severity);
+                  return (
+                    <div key={gap.id} className="px-4 py-3 flex items-start gap-3">
+                      <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0, fontSize: 10, flexShrink: 0, alignSelf: 'flex-start', marginTop: 2 }}>
+                        {gap.severity}
+                      </Badge>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))', wordBreak: 'break-word' }}>
+                          {gap.title}
+                        </p>
+                        <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-3))' }}>
+                          {gap.framework} · {gap.owner}
+                        </p>
+                      </div>
+                      <span className="text-xs flex-shrink-0 font-medium" style={{ color: '#ef4444' }}>
+                        {daysOver}d overdue
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Open Risks Summary */}
+      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+        <CardHeader className="pb-3 flex flex-row items-center justify-between">
+          <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+            Top Open Risks
+          </CardTitle>
+          <Link to="/risk-register">
+            <Button variant="ghost" size="sm" style={{ fontSize: 11, padding: '2px 8px' }}>
+              View All <ArrowRight size={12} className="ml-1" />
+            </Button>
+          </Link>
+        </CardHeader>
+        <CardContent className="p-0">
+          <table className="w-full">
+            <thead style={{ background: 'hsl(var(--bg-muted))' }}>
+              <tr>
+                {['ID', 'Risk', 'Category', 'Severity', 'Score', 'Trend', 'Owner'].map(h => (
+                  <th key={h} className="text-left p-3 text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {RISKS.filter(r => r.status === 'open').slice(0, 5).map(r => {
+                const sc = severityColor(r.severity);
+                return (
+                  <tr key={r.id} style={{ borderTop: '1px solid hsl(var(--border))' }}>
+                    <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{r.id}</td>
+                    <td className="p-3 text-sm font-medium" style={{ color: 'hsl(var(--text-1))', maxWidth: 280 }}>
+                      <span className="line-clamp-2">{r.title}</span>
+                    </td>
+                    <td className="p-3 text-sm" style={{ color: 'hsl(var(--text-2))' }}>{r.category}</td>
+                    <td className="p-3">
+                      <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0, fontSize: 11 }}>
+                        {r.severity}
+                      </Badge>
+                    </td>
+                    <td className="p-3">
+                      <span className="text-sm font-bold" style={{ color: r.score >= 16 ? '#ef4444' : r.score >= 10 ? '#f97316' : 'hsl(var(--text-1))' }}>
+                        {r.score}
+                      </span>
+                    </td>
+                    <td className="p-3">
+                      <TrendIcon trend={r.trending} />
+                    </td>
+                    <td className="p-3 text-sm" style={{ color: 'hsl(var(--text-2))' }}>{r.owner}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </CardContent>
+      </Card>
     </div>
   );
 }

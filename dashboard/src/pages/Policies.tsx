@@ -1,291 +1,399 @@
-import { useState, useMemo, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Textarea } from "../components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../components/ui/sheet";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { Separator } from "../components/ui/separator";
-import { Progress } from "../components/ui/progress";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
-import { Shield, FileText, Clock, AlertTriangle, Search, Plus, Download, ChevronUp, ChevronDown, ArrowUpDown, CheckCircle, XCircle, Eye, Edit, MoreHorizontal, Filter } from "lucide-react";
-import { usePolicyStore } from "../stores/policyStore";
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '../components/ui/alert-dialog';
+import {
+  FileText, Plus, Eye, PencilSimple, Trash, MagnifyingGlass,
+  CheckCircle, Clock, NotePencil, Download,
+} from '@phosphor-icons/react';
+import {
+  PieChart, Pie, Cell, Tooltip, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid,
+} from 'recharts';
+import { POLICIES, Policy, statusColor, formatDate } from '../data/seed';
+import { useSettingsStore } from '../stores/settingsStore';
+import { useChartTheme } from '../hooks/useChartTheme';
 
-type SortKey = "id" | "name" | "status" | "category" | "riskLevel" | "updated" | "nextReview";
-type SortDir = "asc" | "desc";
-
-const POLICIES = [
-  { id:"POL-001", name:"Acceptable AI Use Policy", category:"AI Usage", version:"v3.2", owner:"Emma Wilson", updated:"2026-02-15", framework:"EU AI Act", status:"Published" as const, riskLevel:"High" as const, nextReview:"2026-06-15", description:"Guidelines for responsible use of AI and ML systems across the organization.", scope:"All departments using AI/ML systems", approver:"Dr. Sarah Mitchell", controls:["CTL-AI-001","CTL-AI-003","CTL-AI-007"] },
-  { id:"POL-002", name:"AI Model Risk Classification Standard", category:"AI Usage", version:"v2.1", owner:"James Chen", updated:"2026-01-20", framework:"NIST AI RMF", status:"Published" as const, riskLevel:"Critical" as const, nextReview:"2026-05-20", description:"Framework for classifying AI models by risk tier.", scope:"ML Engineering, Data Science", approver:"Chief Risk Officer", controls:["CTL-RM-001","CTL-RM-002"] },
-  { id:"POL-003", name:"Data Privacy in AI Training", category:"Data Privacy", version:"v2.0", owner:"Maria Santos", updated:"2026-03-01", framework:"GDPR", status:"Published" as const, riskLevel:"High" as const, nextReview:"2026-07-01", description:"Privacy requirements for AI training data.", scope:"Data Engineering, ML Ops", approver:"DPO", controls:["CTL-DP-001","CTL-DP-004"] },
-  { id:"POL-004", name:"AI Incident Response Procedure", category:"Incident Response", version:"v1.5", owner:"David Kim", updated:"2026-02-28", framework:"ISO 27001", status:"In Review" as const, riskLevel:"Critical" as const, nextReview:"2026-04-28", description:"Procedures for responding to AI system incidents.", scope:"Security Operations, AI Engineering", approver:"CISO", controls:["CTL-IR-001"] },
-  { id:"POL-005", name:"Algorithmic Fairness & Bias Testing", category:"Fairness", version:"v2.3", owner:"Aisha Patel", updated:"2026-01-10", framework:"EU AI Act", status:"Published" as const, riskLevel:"High" as const, nextReview:"2026-05-10", description:"Requirements for bias testing in AI systems.", scope:"All AI/ML models in production", approver:"Ethics Board", controls:["CTL-FB-001","CTL-FB-002","CTL-FB-003"] },
-  { id:"POL-006", name:"Bias Testing & Fairness Standard", category:"Fairness", version:"v1.8", owner:"Aisha Patel", updated:"2026-03-10", framework:"NIST AI RMF", status:"Published" as const, riskLevel:"Medium" as const, nextReview:"2026-07-10", description:"Standards for ongoing fairness validation.", scope:"Data Science, QA", approver:"Ethics Board", controls:["CTL-FB-004"] },
-  { id:"POL-007", name:"Human Oversight Requirements", category:"AI Usage", version:"v1.4", owner:"Robert Taylor", updated:"2026-02-05", framework:"EU AI Act", status:"Published" as const, riskLevel:"High" as const, nextReview:"2026-06-05", description:"Requirements for human-in-the-loop oversight.", scope:"All high-risk AI systems", approver:"AI Governance Board", controls:["CTL-HO-001","CTL-HO-002"] },
-  { id:"POL-008", name:"LLM Prompt Injection Prevention", category:"Security", version:"v1.2", owner:"David Kim", updated:"2026-02-28", framework:"OWASP LLM", status:"Draft" as const, riskLevel:"Critical" as const, nextReview:"2026-04-01", description:"Security controls for LLM prompt injection.", scope:"All LLM-integrated applications", approver:"CISO", controls:["CTL-SEC-001"] },
-  { id:"POL-009", name:"AI Training Data Governance", category:"Data Privacy", version:"v1.0", owner:"Maria Santos", updated:"2026-12-15", framework:"GDPR", status:"Pending Review" as const, riskLevel:"High" as const, nextReview:"2026-03-15", description:"Governance framework for AI training datasets.", scope:"Data Engineering", approver:"DPO", controls:["CTL-DG-001","CTL-DG-002"] },
-  { id:"POL-010", name:"AI Explainability & Transparency", category:"AI Usage", version:"v1.1", owner:"James Chen", updated:"2026-01-25", framework:"EU AI Act", status:"Published" as const, riskLevel:"Medium" as const, nextReview:"2026-05-25", description:"Requirements for AI decision explainability.", scope:"Customer-facing AI systems", approver:"Product VP", controls:["CTL-EX-001"] },
-  { id:"POL-011", name:"Model Monitoring & Drift Detection", category:"AI Usage", version:"v1.3", owner:"Robert Taylor", updated:"2026-03-05", framework:"NIST AI RMF", status:"Expired" as const, riskLevel:"Medium" as const, nextReview:"2026-02-01", description:"Monitoring requirements for model performance drift.", scope:"ML Ops, Production AI", approver:"CTO", controls:["CTL-MM-001","CTL-MM-002"] },
-  { id:"POL-012", name:"AI Supply Chain Security", category:"Security", version:"v1.0", owner:"Bob Kumar", updated:"2026-09-01", framework:"ISO 27001", status:"Archived" as const, riskLevel:"Medium" as const, nextReview:"2026-01-01", description:"Security requirements for AI supply chain.", scope:"Vendor Management, Procurement", approver:"CISO", controls:["CTL-SC-001"] },
+const POLICY_REVIEW_TREND = [
+  { month: 'Oct', reviews: 2 },
+  { month: 'Nov', reviews: 1 },
+  { month: 'Dec', reviews: 3 },
+  { month: 'Jan', reviews: 4 },
+  { month: 'Feb', reviews: 2 },
+  { month: 'Mar', reviews: 3 },
 ];
 
-const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: any }> = {
-  "Published": { color: "text-[hsl(var(--brand))]", bg: "bg-emerald-400/10 border-emerald-400/30", icon: CheckCircle },
-  "Draft": { color: "text-muted-foreground", bg: "bg-slate-400/10 border-slate-400/30", icon: FileText },
-  "In Review": { color: "text-blue-400", bg: "bg-blue-400/10 border-blue-400/30", icon: Eye },
-  "Pending Review": { color: "text-amber-400", bg: "bg-amber-400/10 border-amber-400/30", icon: Clock },
-  "Expired": { color: "text-red-400", bg: "bg-red-400/10 border-red-400/30", icon: AlertTriangle },
-  "Archived": { color: "text-muted-foreground", bg: "bg-gray-500/10 border-gray-500/30", icon: XCircle },
-  "Changes Requested": { color: "text-orange-400", bg: "bg-orange-400/10 border-orange-400/30", icon: Edit },
-  "Approved": { color: "text-teal-400", bg: "bg-teal-400/10 border-teal-400/30", icon: CheckCircle },
+const CATEGORY_COLORS = ['#3b82f6', '#8b5cf6', '#f97316', '#10b981', '#ec4899', '#06b6d4', '#f59e0b'];
+
+const EMPTY_POLICY: Omit<Policy, 'id'> = {
+  title: '', category: 'AI Usage', status: 'draft', version: 'v1.0',
+  owner: '', framework: '', lastReview: new Date().toISOString().split('T')[0],
+  nextReview: '', approver: '', description: '',
 };
-
-const RISK_CONFIG: Record<string, string> = { Critical: "text-red-400 bg-red-400/10 border-red-400/30", High: "text-orange-400 bg-orange-400/10 border-orange-400/30", Medium: "text-yellow-400 bg-yellow-400/10 border-yellow-400/30", Low: "text-green-400 bg-green-400/10 border-green-400/30" };
-
-const CHART_COLORS = ["#10b981","#3b82f6","#f59e0b","#ef4444","#8b5cf6","#ec4899"];
-const REVIEW_DATA = [{m:"Oct",r:2},{m:"Nov",r:3},{m:"Dec",r:2},{m:"Jan",r:5},{m:"Feb",r:6},{m:"Mar",r:8}];
-
-const VERSION_HISTORY = {
-  "POL-001": [{v:"v3.2",date:"2026-02-15",author:"Emma Wilson",note:"Updated EU AI Act references"},{v:"v3.1",date:"2026-11-20",author:"Emma Wilson",note:"Added LLM-specific guidelines"},{v:"v3.0",date:"2026-08-10",author:"James Chen",note:"Major revision for AI Act compliance"}],
-  "POL-002": [{v:"v2.1",date:"2026-01-20",author:"James Chen",note:"Risk tier refinement"},{v:"v2.0",date:"2026-09-15",author:"James Chen",note:"Added NIST alignment"},{v:"v1.1",date:"2026-04-01",author:"Robert Taylor",note:"Initial classification framework"}],
-};
-
-const CONTROLS_MAP: Record<string, {id:string;name:string;progress:number}[]> = {
-  "POL-001": [{id:"CTL-AI-001",name:"AI Usage Monitoring",progress:85},{id:"CTL-AI-003",name:"Model Registration",progress:92},{id:"CTL-AI-007",name:"AI Output Validation",progress:67}],
-  "POL-002": [{id:"CTL-RM-001",name:"Risk Assessment",progress:78},{id:"CTL-RM-002",name:"Impact Analysis",progress:60}],
-  "POL-005": [{id:"CTL-FB-001",name:"Bias Detection",progress:90},{id:"CTL-FB-002",name:"Fairness Metrics",progress:75},{id:"CTL-FB-003",name:"Disparate Impact Testing",progress:82}],
-};
-
 
 export default function Policies() {
-  const nav = useNavigate();
-  const store = usePolicyStore();
-  const [search, setSearch] = useState("");
-  const [catFilter, setCatFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [fwFilter, setFwFilter] = useState("all");
-  const [page, setPage] = useState(1);
-  const [sortKey, setSortKey] = useState<SortKey>("id");
-  const [sortDir, setSortDir] = useState<SortDir>("asc");
-  const [selected, setSelected] = useState<typeof POLICIES[0] | null>(null);
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [toast, setToast] = useState<{msg:string;type:string}|null>(null);
-  const PER_PAGE = 6;
+  const { orgName } = useSettingsStore();
+  const ct = useChartTheme();
 
-  const showToast = (msg: string, type="success") => { setToast({msg,type}); setTimeout(()=>setToast(null), 3000); };
+  const [policies, setPolicies] = useState<Policy[]>(POLICIES);
+  const [search, setSearch] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
 
-  const getStatus = (p: typeof POLICIES[0]) => store.statusOverrides[p.id] || p.status;
+  const [viewItem, setViewItem] = useState<Policy | null>(null);
+  const [editItem, setEditItem] = useState<Policy | null>(null);
+  const [deleteItem, setDeleteItem] = useState<Policy | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [formData, setFormData] = useState<Omit<Policy, 'id'>>(EMPTY_POLICY);
 
-  const categories = [...new Set(POLICIES.map(p=>p.category))];
-  const frameworks = [...new Set(POLICIES.map(p=>p.framework))];
-  const statuses = [...new Set(POLICIES.map(p=>getStatus(p)))];
+  const filtered = policies.filter(p => {
+    const q = search.toLowerCase();
+    const matchSearch = !q || p.title.toLowerCase().includes(q) || p.category.toLowerCase().includes(q) || p.owner.toLowerCase().includes(q);
+    const matchStatus = filterStatus === 'all' || p.status === filterStatus;
+    return matchSearch && matchStatus;
+  });
 
-  const filtered = useMemo(() => {
-    let list = POLICIES.filter(p => {
-      const s = getStatus(p);
-      if (search && !p.name.toLowerCase().includes(search.toLowerCase()) && !p.id.toLowerCase().includes(search.toLowerCase())) return false;
-      if (catFilter !== "all" && p.category !== catFilter) return false;
-      if (statusFilter !== "all" && s !== statusFilter) return false;
-      if (fwFilter !== "all" && p.framework !== fwFilter) return false;
-      return true;
-    });
-    list.sort((a,b) => {
-      let va: any = a[sortKey], vb: any = b[sortKey];
-      if (sortKey === "status") { va = getStatus(a); vb = getStatus(b); }
-      if (va < vb) return sortDir === "asc" ? -1 : 1;
-      if (va > vb) return sortDir === "asc" ? 1 : -1;
-      return 0;
-    });
-    return list;
-  }, [search, catFilter, statusFilter, fwFilter, sortKey, sortDir, store.statusOverrides]);
+  const categoryData = Array.from(
+    policies.reduce((acc, p) => {
+      acc.set(p.category, (acc.get(p.category) || 0) + 1);
+      return acc;
+    }, new Map<string, number>())
+  ).map(([name, value]) => ({ name, value }));
 
-  const paged = filtered.slice((page-1)*PER_PAGE, page*PER_PAGE);
-  const totalPages = Math.ceil(filtered.length / PER_PAGE);
+  const stats = [
+    { label: 'Total Policies', value: policies.length, icon: FileText, color: '#6366f1' },
+    { label: 'Published', value: policies.filter(p => p.status === 'published').length, icon: CheckCircle, color: '#10b981' },
+    { label: 'In Review', value: policies.filter(p => p.status === 'in_review').length, icon: Clock, color: '#f97316' },
+    { label: 'Draft', value: policies.filter(p => p.status === 'draft').length, icon: NotePencil, color: '#8b5cf6' },
+  ];
 
-  const toggleSort = (key: SortKey) => { if (sortKey===key) setSortDir(d=>d==="asc"?"desc":"asc"); else { setSortKey(key); setSortDir("asc"); } };
+  function handleCreate() {
+    const id = `POL-${String(policies.length + 1).padStart(3, '0')}`;
+    setPolicies(prev => [...prev, { ...formData, id }]);
+    setCreateOpen(false);
+    setFormData(EMPTY_POLICY);
+  }
 
-  const statsPublished = POLICIES.filter(p=>getStatus(p)==="Published").length;
-  const statsPending = POLICIES.filter(p=>["Pending Review","In Review","Draft"].includes(getStatus(p))).length;
-  const statsAttention = POLICIES.filter(p=>["Expired","Changes Requested"].includes(getStatus(p))).length;
+  function handleEdit() {
+    if (!editItem) return;
+    setPolicies(prev => prev.map(p => p.id === editItem.id ? editItem : p));
+    setEditItem(null);
+  }
 
-  const pieData = categories.map(c => ({ name: c, value: POLICIES.filter(p=>p.category===c).length }));
+  function handleDelete() {
+    if (!deleteItem) return;
+    setPolicies(prev => prev.filter(p => p.id !== deleteItem.id));
+    setDeleteItem(null);
+  }
 
-  const SortIcon = ({col}:{col:SortKey}) => sortKey===col ? (sortDir==="asc" ? <ChevronUp className="inline w-3 h-3 ml-1" /> : <ChevronDown className="inline w-3 h-3 ml-1" />) : <ArrowUpDown className="inline w-3 h-3 ml-1 opacity-30" />;
-
-  const StatusBadge = ({status}:{status:string}) => { const c = STATUS_CONFIG[status] || STATUS_CONFIG["Draft"]; const Icon = c.icon; return <Badge variant="outline" className={c.bg + " " + c.color + " border text-xs"}><Icon className="w-3 h-3 mr-1" />{status}</Badge>; };
-
-  const RiskBadge = ({level}:{level:string}) => <Badge variant="outline" className={RISK_CONFIG[level] + " border text-xs"}>{level}</Badge>;
-
-  const isOverdue = (d:string) => new Date(d) < new Date();
+  const selectStyle = {
+    background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))',
+    color: 'hsl(var(--text-1))', padding: '6px 10px', fontSize: 13, borderRadius: 0,
+  };
 
   return (
-    <div className="space-y-6">
-      {toast && <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-lg text-sm font-medium shadow-lg ${toast.type==="success"?"bg-[hsl(var(--brand))]/90 text-foreground":"bg-red-500/90 text-foreground"}`}>{toast.msg}</div>}
-
-      {/* HEADER */}
-      <div className="flex items-center justify-between">
-        <div><h1 className="text-2xl font-bold text-foreground">Policy Manager</h1><p className="text-sm text-muted-foreground mt-1">Manage AI governance policies, standards, and procedures</p></div>
+    <div className="p-6 space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Policy Management</h1>
+          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>
+            {orgName} · {policies.length} policies across all categories
+          </p>
+        </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={()=>showToast("Exported "+filtered.length+" policies to CSV")}><Download className="w-4 h-4 mr-2" />Export</Button>
-          <Button size="sm" className="bg-[hsl(var(--brand))] hover:bg-primary/90" onClick={()=>setDialogOpen(true)}><Plus className="w-4 h-4 mr-2" />New Policy</Button>
+          <Button variant="outline" size="sm"><Download size={14} className="mr-1" /> Export</Button>
+          <Button size="sm" onClick={() => { setFormData(EMPTY_POLICY); setCreateOpen(true); }}>
+            <Plus size={14} className="mr-1" /> New Policy
+          </Button>
         </div>
       </div>
 
-      {/* STATS CARDS - clickable */}
+      {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
-        {[{label:"Total Policies",val:POLICIES.length,sub:"All policies in system",icon:FileText,color:"text-foreground",click:()=>{setStatusFilter("all");setPage(1);}},
-          {label:"Published",val:statsPublished,sub:`${POLICIES.filter(p=>getStatus(p)==="Draft").length} draft, ${POLICIES.filter(p=>getStatus(p)==="Archived").length} archived`,icon:CheckCircle,color:"text-[hsl(var(--brand))]",click:()=>{setStatusFilter("Published");setPage(1);}},
-          {label:"Pending Action",val:statsPending,sub:`${POLICIES.filter(p=>getStatus(p)==="In Review").length} in review, ${POLICIES.filter(p=>getStatus(p)==="Draft").length} drafts`,icon:Clock,color:"text-amber-400",click:()=>{setStatusFilter("Pending Review");setPage(1);}},
-          {label:"Needs Attention",val:statsAttention,sub:`${POLICIES.filter(p=>getStatus(p)==="Expired").length} expired, ${POLICIES.filter(p=>getStatus(p)==="Archived").length} archived`,icon:AlertTriangle,color:"text-red-400",click:()=>{setStatusFilter("Expired");setPage(1);}}
-        ].map((s,i) => (
-          <Card key={i} className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] cursor-pointer hover:border-emerald-400/40 transition-colors" onClick={s.click}>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2"><span className="text-sm text-muted-foreground">{s.label}</span><s.icon className={`w-5 h-5 ${s.color}`} /></div>
-              <div className={`text-2xl font-bold ${s.color}`}>{s.val}</div>
-              <p className="text-xs text-slate-500 mt-1">{s.sub}</p>
+        {stats.map(s => (
+          <Card key={s.label} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{s.label}</p>
+                <p className="text-3xl font-bold mt-1" style={{ color: 'hsl(var(--text-1))' }}>{s.value}</p>
+              </div>
+              <s.icon size={28} style={{ color: s.color }} />
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* CHARTS */}
+      {/* Charts */}
       <div className="grid grid-cols-2 gap-4">
-        <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-foreground">Policies by Category</CardTitle></CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart><Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" label={({name,value})=>`${name}: ${value}`}>{pieData.map((_,i)=><Cell key={i} fill={CHART_COLORS[i%CHART_COLORS.length]} />)}</Pie><Tooltip /></PieChart>
+        <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Policies by Category</CardTitle>
+          </CardHeader>
+          <CardContent className="flex items-center gap-6">
+            <ResponsiveContainer width={160} height={160}>
+              <PieChart>
+                <Pie data={categoryData} cx={75} cy={75} innerRadius={42} outerRadius={70} paddingAngle={2} dataKey="value">
+                  {categoryData.map((_, i) => <Cell key={i} fill={CATEGORY_COLORS[i % CATEGORY_COLORS.length]} />)}
+                </Pie>
+                <Tooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.tooltipText, borderRadius: 0 }} />
+              </PieChart>
             </ResponsiveContainer>
-            <div className="flex flex-wrap gap-3 mt-2 justify-center">{pieData.map((d,i)=>(<span key={i} className="flex items-center gap-1 text-xs text-foreground"><span className="w-2.5 h-2.5 rounded-full" style={{background:CHART_COLORS[i%CHART_COLORS.length]}} />{d.name}</span>))}</div>
+            <div className="space-y-1.5">
+              {categoryData.map((d, i) => (
+                <div key={d.name} className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 flex-shrink-0" style={{ background: CATEGORY_COLORS[i % CATEGORY_COLORS.length] }} />
+                  <span className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>{d.name}</span>
+                  <span className="text-xs font-bold ml-auto" style={{ color: 'hsl(var(--text-1))' }}>{d.value}</span>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
-        <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-foreground">Policy Reviews (6 Months)</CardTitle></CardHeader>
+
+        <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Policy Reviews per Month</CardTitle>
+          </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={REVIEW_DATA}><XAxis dataKey="m" stroke="#64748b" fontSize={12} /><YAxis stroke="#64748b" fontSize={12} /><Tooltip /><Line type="monotone" dataKey="r" stroke="#10b981" strokeWidth={2} dot={{fill:"#10b981"}} name="Reviews" /></LineChart>
+            <ResponsiveContainer width="100%" height={160}>
+              <LineChart data={POLICY_REVIEW_TREND}>
+                <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+                <XAxis dataKey="month" tick={{ fontSize: 11, fill: ct.axis }} />
+                <YAxis tick={{ fill: ct.axis, fontSize: 11 }} label={{ value: 'Reviews', angle: -90, position: 'insideLeft', style: { fill: ct.axis } }} />
+                <Tooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.tooltipText, borderRadius: 0 }} />
+                <Line type="monotone" dataKey="reviews" stroke="hsl(var(--brand))" strokeWidth={2} dot={{ fill: 'hsl(var(--brand))' }} />
+              </LineChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
 
-      {/* FILTERS + SEARCH */}
+      {/* Filters */}
       <div className="flex items-center gap-3">
-        <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><Input placeholder="Search policies... (/)" className="pl-9 bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-foreground" value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}} /></div>
-        <Select value={catFilter} onValueChange={v=>{setCatFilter(v);setPage(1);}}><SelectTrigger className="w-[160px] bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-foreground"><SelectValue /></SelectTrigger><SelectContent>{["all",...categories].map(c=><SelectItem key={c} value={c}>{c==="all"?"All Categories":c}</SelectItem>)}</SelectContent></Select>
-        <Select value={statusFilter} onValueChange={v=>{setStatusFilter(v);setPage(1);}}><SelectTrigger className="w-[160px] bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-foreground"><SelectValue /></SelectTrigger><SelectContent>{["all",...statuses].map(s=><SelectItem key={s} value={s}>{s==="all"?"All Status":s}</SelectItem>)}</SelectContent></Select>
-        <Select value={fwFilter} onValueChange={v=>{setFwFilter(v);setPage(1);}}><SelectTrigger className="w-[160px] bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-foreground"><SelectValue /></SelectTrigger><SelectContent>{["all",...frameworks].map(f=><SelectItem key={f} value={f}>{f==="all"?"All Frameworks":f}</SelectItem>)}</SelectContent></Select>
+        <div className="relative flex-1 max-w-xs">
+          <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--text-3))' }} />
+          <Input placeholder="Search policies..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8" style={{ borderRadius: 0 }} />
+        </div>
+        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={selectStyle}>
+          <option value="all">All Statuses</option>
+          {['published', 'in_review', 'draft'].map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <span className="text-xs ml-auto" style={{ color: 'hsl(var(--text-3))' }}>{filtered.length} of {policies.length}</span>
       </div>
 
-
-      {/* TABLE */}
-      <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
+      {/* Table */}
+      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
         <CardContent className="p-0">
           <table className="w-full">
-            <thead><tr className="border-b border-[hsl(var(--border))]">
-              {[{k:"id" as SortKey,l:"ID",w:"w-20"},{k:"name" as SortKey,l:"Name",w:""},{k:"status" as SortKey,l:"Status",w:"w-36"},{k:"category" as SortKey,l:"Category",w:"w-28"},{k:"riskLevel" as SortKey,l:"Risk",w:"w-24"},{k:"updated" as SortKey,l:"Updated",w:"w-28"},{k:"nextReview" as SortKey,l:"Next Review",w:"w-28"}].map(h=>(
-                <th key={h.k} className={`px-4 py-3 text-left text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none ${h.w}`} onClick={()=>toggleSort(h.k)}>{h.l}<SortIcon col={h.k} /></th>
-              ))}
-              <th className="px-4 py-3 text-xs font-medium text-muted-foreground w-24">Framework</th>
-            </tr></thead>
+            <thead style={{ background: 'hsl(var(--bg-muted))' }}>
+              <tr>
+                {['ID', 'Title', 'Category', 'Status', 'Version', 'Owner', 'Framework', 'Next Review', 'Actions'].map(h => (
+                  <th key={h} className="text-left p-3 text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
             <tbody>
-              {paged.map(p => { const st = getStatus(p); return (
-                <tr key={p.id} className="border-b border-[hsl(var(--border))] hover:bg-white/5 cursor-pointer transition-colors" onClick={()=>{setSelected(p);setSheetOpen(true);}} title={p.name}>
-                  <td className="px-4 py-3 text-xs text-muted-foreground font-mono">{p.id}</td>
-                  <td className="px-4 py-3"><span className="text-sm text-foreground font-medium truncate block max-w-[260px]" title={p.name}>{p.name}</span></td>
-                  <td className="px-4 py-3"><StatusBadge status={st} /></td>
-                  <td className="px-4 py-3"><Badge variant="outline" className="text-xs border-white/20 text-foreground">{p.category}</Badge></td>
-                  <td className="px-4 py-3"><RiskBadge level={p.riskLevel} /></td>
-                  <td className="px-4 py-3 text-xs text-muted-foreground">{p.updated}</td>
-                  <td className={`px-4 py-3 text-xs ${isOverdue(p.nextReview)?"text-red-400 font-medium":"text-muted-foreground"}`}>{p.nextReview}{isOverdue(p.nextReview)&&" ⚠"}</td>
-                  <td className="px-4 py-3"><Badge variant="outline" className="text-xs border-white/20 text-foreground">{p.framework}</Badge></td>
-                </tr>
-              );})}
+              {filtered.map(p => {
+                const sc = statusColor(p.status);
+                return (
+                  <tr
+                    key={p.id}
+                    className="cursor-pointer"
+                    style={{ borderTop: '1px solid hsl(var(--border))' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'hsl(var(--bg-muted))')}
+                    onMouseLeave={e => (e.currentTarget.style.background = '')}
+                    onClick={() => setViewItem(p)}
+                  >
+                    <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{p.id}</td>
+                    <td className="p-3 text-sm font-medium" style={{ color: 'hsl(var(--text-1))', maxWidth: 220 }}>
+                      <span className="line-clamp-2">{p.title}</span>
+                    </td>
+                    <td className="p-3 text-sm" style={{ color: 'hsl(var(--text-2))' }}>{p.category}</td>
+                    <td className="p-3">
+                      <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0, fontSize: 11 }}>
+                        {p.status.replace('_', ' ')}
+                      </Badge>
+                    </td>
+                    <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{p.version}</td>
+                    <td className="p-3 text-sm" style={{ color: 'hsl(var(--text-2))' }}>{p.owner}</td>
+                    <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{p.framework}</td>
+                    <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{formatDate(p.nextReview)}</td>
+                    <td className="p-3">
+                      <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                        <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setViewItem(p)}>
+                          <Eye size={14} />
+                        </Button>
+                        <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setEditItem({ ...p })}>
+                          <PencilSimple size={14} />
+                        </Button>
+                        <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: '#ef4444' }} onClick={() => setDeleteItem(p)}>
+                          <Trash size={14} />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
-          {/* PAGINATION */}
-          <div className="flex items-center justify-between px-4 py-3 border-t border-[hsl(var(--border))]">
-            <span className="text-xs text-muted-foreground">Showing {(page-1)*PER_PAGE+1}-{Math.min(page*PER_PAGE, filtered.length)} of {filtered.length}</span>
-            <div className="flex gap-1">
-              <Button variant="outline" size="sm" disabled={page===1} onClick={()=>setPage(p=>p-1)} className="h-7 w-7 p-0 text-xs">&lt;</Button>
-              {Array.from({length:totalPages},(_,i)=>(<Button key={i} variant={page===i+1?"default":"outline"} size="sm" onClick={()=>setPage(i+1)} className={`h-7 w-7 p-0 text-xs ${page===i+1?"bg-[hsl(var(--brand))]":""}`}>{i+1}</Button>))}
-              <Button variant="outline" size="sm" disabled={page===totalPages} onClick={()=>setPage(p=>p+1)} className="h-7 w-7 p-0 text-xs">&gt;</Button>
-            </div>
-          </div>
         </CardContent>
       </Card>
 
-
-      {/* DETAIL SHEET */}
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent className="bg-[hsl(var(--bg-page))] border-[hsl(var(--border))] text-foreground w-[500px] overflow-y-auto">
-          {selected && (<>
-            <SheetHeader><SheetTitle className="text-foreground flex items-center gap-2">{selected.name}</SheetTitle></SheetHeader>
-            <div className="flex flex-wrap gap-2 mt-3"><StatusBadge status={getStatus(selected)} /><Badge variant="outline" className="border-white/20 text-foreground text-xs">{selected.version}</Badge><Badge variant="outline" className="border-white/20 text-foreground text-xs">{selected.framework}</Badge><RiskBadge level={selected.riskLevel} /></div>
-            <Tabs defaultValue="overview" className="mt-4">
-              <TabsList className="bg-white/5"><TabsTrigger value="overview">Overview</TabsTrigger><TabsTrigger value="versions">Versions</TabsTrigger><TabsTrigger value="controls">Controls</TabsTrigger></TabsList>
-              <TabsContent value="overview" className="space-y-4 mt-3">
-                <div className="grid grid-cols-2 gap-3">
-                  {[{l:"Category",v:selected.category},{l:"Version",v:selected.version},{l:"Owner",v:selected.owner},{l:"Framework",v:selected.framework},{l:"Status",v:getStatus(selected)},{l:"Risk Level",v:selected.riskLevel},{l:"Created",v:selected.updated},{l:"Next Review",v:selected.nextReview},{l:"Approver",v:selected.approver}].map(f=>(
-                    <div key={f.l}><p className="text-xs text-muted-foreground">{f.l}</p><p className="text-sm text-foreground">{f.v}</p></div>
-                  ))}
+      {/* View Sheet */}
+      <Sheet open={!!viewItem} onOpenChange={o => !o && setViewItem(null)}>
+        <SheetContent style={{ width: 520, background: 'hsl(var(--bg-surface))', borderRadius: 0 }}>
+          {viewItem && (
+            <>
+              <SheetHeader className="pb-4">
+                <SheetTitle style={{ color: 'hsl(var(--text-1))' }}>{viewItem.title}</SheetTitle>
+                <div className="flex gap-2">
+                  {(() => { const sc = statusColor(viewItem.status); return (
+                    <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0 }}>
+                      {viewItem.status.replace('_', ' ')}
+                    </Badge>
+                  ); })()}
+                  <Badge variant="outline" style={{ borderRadius: 0 }}>{viewItem.category}</Badge>
+                  <Badge variant="outline" style={{ borderRadius: 0 }}>{viewItem.version}</Badge>
                 </div>
-                <Separator className="bg-white/10" />
-                <div><p className="text-xs text-muted-foreground mb-1">Description</p><p className="text-sm text-foreground">{selected.description}</p></div>
-                <div><p className="text-xs text-muted-foreground mb-1">Scope</p><p className="text-sm text-foreground">{selected.scope}</p></div>
-                <Button className="w-full bg-[hsl(var(--brand))] hover:bg-primary/90 mt-2" onClick={()=>{setSheetOpen(false);nav(`/policy-editor?id=${selected.id}`);}}>Open Editor</Button>
-              </TabsContent>
-              <TabsContent value="versions" className="mt-3">
-                {(VERSION_HISTORY[selected.id as keyof typeof VERSION_HISTORY] || [{v:selected.version,date:selected.updated,author:selected.owner,note:"Current version"}]).map((vh,i)=>(
-                  <div key={i} className="flex items-start gap-3 py-3 border-b border-[hsl(var(--border))]">
-                    <div className={`mt-1 w-2 h-2 rounded-full ${i===0?"bg-emerald-400":"bg-slate-500"}`} />
-                    <div><div className="flex items-center gap-2"><span className="text-sm text-foreground font-medium">{vh.v}</span>{i===0&&<Badge className="bg-emerald-400/10 text-[hsl(var(--brand))] text-xs">Current</Badge>}</div><p className="text-xs text-muted-foreground mt-0.5">{vh.date} by {vh.author}</p><p className="text-xs text-slate-500 mt-0.5">{vh.note}</p></div>
+              </SheetHeader>
+              <div className="space-y-3 mt-2">
+                {[
+                  { label: 'Policy ID', value: viewItem.id },
+                  { label: 'Owner', value: viewItem.owner },
+                  { label: 'Framework', value: viewItem.framework },
+                  { label: 'Approver', value: viewItem.approver || 'Pending' },
+                  { label: 'Last Review', value: formatDate(viewItem.lastReview) },
+                  { label: 'Next Review', value: formatDate(viewItem.nextReview) },
+                ].map(r => (
+                  <div key={r.label} className="flex justify-between py-2" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                    <span className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>{r.label}</span>
+                    <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{r.value}</span>
                   </div>
                 ))}
-              </TabsContent>
-              <TabsContent value="controls" className="mt-3 space-y-3">
-                {(CONTROLS_MAP[selected.id] || selected.controls.map(c=>({id:c,name:c.replace("CTL-","Control "),progress:Math.floor(Math.random()*40+50)}))).map(c=>(
-                  <div key={c.id} className="space-y-1">
-                    <div className="flex justify-between"><span className="text-sm text-foreground">{c.name}</span><span className="text-xs text-muted-foreground">{c.progress}%</span></div>
-                    <Progress value={c.progress} className="h-2" />
-                    <p className="text-xs text-slate-500 font-mono">{c.id}</p>
-                  </div>
-                ))}
-              </TabsContent>
-            </Tabs>
-          </>)}
+                <div className="pt-2">
+                  <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-2))' }}>Description</p>
+                  <p className="text-sm" style={{ color: 'hsl(var(--text-2))' }}>{viewItem.description}</p>
+                </div>
+              </div>
+              <div className="flex gap-2 mt-6">
+                <Button size="sm" onClick={() => { setEditItem({ ...viewItem }); setViewItem(null); }}>
+                  <PencilSimple size={14} className="mr-1" /> Edit
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setViewItem(null)}>Close</Button>
+              </div>
+            </>
+          )}
         </SheetContent>
       </Sheet>
 
-      {/* CREATE DIALOG */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-[hsl(var(--bg-page))] border-[hsl(var(--border))] text-foreground max-w-lg">
-          <DialogHeader><DialogTitle className="text-foreground">Create New Policy</DialogTitle></DialogHeader>
-          <div className="space-y-4 mt-2">
-            <div><Label className="text-foreground">Policy Name *</Label><Input placeholder="e.g. AI Model Governance Policy" className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-foreground mt-1" /></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label className="text-foreground">Category *</Label><Select><SelectTrigger className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-foreground mt-1"><SelectValue placeholder="Select" /></SelectTrigger><SelectContent>{categories.map(c=><SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
-              <div><Label className="text-foreground">Framework *</Label><Select><SelectTrigger className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-foreground mt-1"><SelectValue placeholder="Select" /></SelectTrigger><SelectContent>{frameworks.map(f=><SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent></Select></div>
+      {/* Edit Dialog */}
+      <Dialog open={!!editItem} onOpenChange={o => !o && setEditItem(null)}>
+        <DialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0, maxWidth: 520 }}>
+          <DialogHeader>
+            <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>Edit Policy</DialogTitle>
+          </DialogHeader>
+          {editItem && (
+            <div className="space-y-3">
+              {[
+                { label: 'Title', key: 'title' },
+                { label: 'Owner', key: 'owner' },
+                { label: 'Framework', key: 'framework' },
+                { label: 'Approver', key: 'approver' },
+                { label: 'Description', key: 'description' },
+              ].map(f => (
+                <div key={f.key}>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>{f.label}</label>
+                  <Input value={(editItem as any)[f.key] || ''} onChange={e => setEditItem(prev => prev ? { ...prev, [f.key]: e.target.value } : null)} style={{ borderRadius: 0 }} />
+                </div>
+              ))}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Status</label>
+                  <select value={editItem.status} onChange={e => setEditItem(prev => prev ? { ...prev, status: e.target.value } : null)}
+                    style={{ width: '100%', ...{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 } }}>
+                    {['published', 'in_review', 'draft'].map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Category</label>
+                  <select value={editItem.category} onChange={e => setEditItem(prev => prev ? { ...prev, category: e.target.value } : null)}
+                    style={{ width: '100%', ...{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 } }}>
+                    {['AI Usage', 'Risk', 'Data Privacy', 'AI Ethics', 'Regulatory', 'Vendor', 'Security', 'Governance'].map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label className="text-foreground">Owner</Label><Input placeholder="Policy owner" className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-foreground mt-1" /></div>
-              <div><Label className="text-foreground">Risk Level</Label><Select><SelectTrigger className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-foreground mt-1"><SelectValue placeholder="Select" /></SelectTrigger><SelectContent>{["Critical","High","Medium","Low"].map(r=><SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select></div>
-            </div>
-            <div><Label className="text-foreground">Scope</Label><Input placeholder="e.g. All AI systems" className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-foreground mt-1" /></div>
-            <div><Label className="text-foreground">Description</Label><Textarea placeholder="Policy description..." className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-foreground mt-1" rows={3} /></div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={()=>setDialogOpen(false)}>Cancel</Button>
-              <Button className="bg-[hsl(var(--brand))] hover:bg-primary/90" onClick={()=>{setDialogOpen(false);showToast("Policy created successfully as Draft");}}>Create Policy</Button>
-            </div>
-          </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditItem(null)} style={{ borderRadius: 0 }}>Cancel</Button>
+            <Button onClick={handleEdit} style={{ borderRadius: 0 }}>Save Changes</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Create Dialog */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0, maxWidth: 520 }}>
+          <DialogHeader>
+            <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>New Policy</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {[
+              { label: 'Title', key: 'title' },
+              { label: 'Owner', key: 'owner' },
+              { label: 'Framework', key: 'framework' },
+              { label: 'Description', key: 'description' },
+            ].map(f => (
+              <div key={f.key}>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>{f.label}</label>
+                <Input value={(formData as any)[f.key] || ''} onChange={e => setFormData(prev => ({ ...prev, [f.key]: e.target.value }))} style={{ borderRadius: 0 }} />
+              </div>
+            ))}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Status</label>
+                <select value={formData.status} onChange={e => setFormData(prev => ({ ...prev, status: e.target.value }))}
+                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
+                  {['draft', 'in_review', 'published'].map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Category</label>
+                <select value={formData.category} onChange={e => setFormData(prev => ({ ...prev, category: e.target.value }))}
+                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
+                  {['AI Usage', 'Risk', 'Data Privacy', 'AI Ethics', 'Regulatory', 'Vendor', 'Security', 'Governance'].map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
+            <Button onClick={handleCreate} style={{ borderRadius: 0 }} disabled={!formData.title}>Create Policy</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Dialog */}
+      <AlertDialog open={!!deleteItem} onOpenChange={o => !o && setDeleteItem(null)}>
+        <AlertDialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0 }}>
+          <AlertDialogHeader>
+            <AlertDialogTitle style={{ color: 'hsl(var(--text-1))' }}>Delete Policy</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{deleteItem?.title}</strong>? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} style={{ background: '#ef4444', borderRadius: 0 }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

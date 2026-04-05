@@ -1,76 +1,438 @@
-import { useState } from "react";
-import { complianceGaps } from "../data/complianceGapData";
-import { Badge } from "../components/ui/badge";
-import { Search } from "lucide-react";
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '../components/ui/alert-dialog';
+import {
+  Warning, MagnifyingGlass, Plus, Eye, PencilSimple, Trash,
+  CheckCircle, XCircle, FunnelSimple, TrendUp,
+} from '@phosphor-icons/react';
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Cell,
+  PieChart, Pie,
+} from 'recharts';
+import { GAPS, FRAMEWORKS, Gap, Severity, severityColor, formatDate } from '../data/seed';
+import { useSettingsStore } from '../stores/settingsStore';
+import { useChartTheme } from '../hooks/useChartTheme';
+
+const EMPTY_GAP: Omit<Gap, 'id'> = {
+  title: '', framework: 'EU AI Act', controlRef: '', severity: 'medium',
+  progress: 0, dueDate: '', owner: '', description: '',
+};
+
+const SEV_COLORS: Record<string, string> = {
+  critical: '#ef4444',
+  high: '#f97316',
+  medium: '#f59e0b',
+  low: '#10b981',
+};
 
 export default function GapAnalysis() {
-  const [search, setSearch] = useState("");
-  const [fw, setFw] = useState("All");
-  const frameworks = ["All", ...Array.from(new Set(complianceGaps.map((g) => g.framework)))];
-  const filtered = complianceGaps.filter((g) =>
-    (fw === "All" || g.framework === fw) &&
-    (g.title.toLowerCase().includes(search.toLowerCase()) || g.controlRef.toLowerCase().includes(search.toLowerCase()))
-  );
-  const critical = filtered.filter((g) => g.severity === "Critical").length;
-  const high = filtered.filter((g) => g.severity === "High").length;
-  const sev = (s: string) => (s === "Critical" ? "destructive" : s === "High" ? "default" : "secondary");
+  const { orgName } = useSettingsStore();
+  const ct = useChartTheme();
+
+  const [gaps, setGaps] = useState<Gap[]>(GAPS);
+  const [search, setSearch] = useState('');
+  const [filterSeverity, setFilterSeverity] = useState('all');
+  const [filterFramework, setFilterFramework] = useState('all');
+
+  const [viewItem, setViewItem] = useState<Gap | null>(null);
+  const [editItem, setEditItem] = useState<Gap | null>(null);
+  const [deleteItem, setDeleteItem] = useState<Gap | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [formData, setFormData] = useState<Omit<Gap, 'id'>>(EMPTY_GAP);
+
+  const filtered = gaps.filter(g => {
+    const q = search.toLowerCase();
+    const matchSearch = !q || g.title.toLowerCase().includes(q) || g.framework.toLowerCase().includes(q) || g.owner.toLowerCase().includes(q);
+    const matchSev = filterSeverity === 'all' || g.severity === filterSeverity;
+    const matchFW = filterFramework === 'all' || g.framework === filterFramework;
+    return matchSearch && matchSev && matchFW;
+  });
+
+  const totalGaps = gaps.length;
+  const criticalGaps = gaps.filter(g => g.severity === 'critical').length;
+  const highGaps = gaps.filter(g => g.severity === 'high').length;
+  const avgProgress = Math.round(gaps.reduce((s, g) => s + g.progress, 0) / gaps.length);
+
+  const severityData = ['critical', 'high', 'medium', 'low'].map(sev => ({
+    name: sev,
+    count: gaps.filter(g => g.severity === sev).length,
+  }));
+
+  const frameworkData = FRAMEWORKS.map(fw => ({
+    name: fw.name.replace('ISO/IEC ', '').replace('OWASP ', '').split(' ')[0],
+    gaps: gaps.filter(g => g.framework === fw.name).length,
+    fullName: fw.name,
+  })).filter(d => d.gaps > 0);
+
+  const stats = [
+    { label: 'Total Gaps', value: totalGaps, icon: Warning, color: '#6366f1' },
+    { label: 'Critical', value: criticalGaps, icon: XCircle, color: '#ef4444' },
+    { label: 'High', value: highGaps, icon: Warning, color: '#f97316' },
+    { label: 'Avg Progress', value: avgProgress + '%', icon: TrendUp, color: '#10b981' },
+  ];
+
+  const frameworks = Array.from(new Set(gaps.map(g => g.framework)));
+
+  function handleCreate() {
+    const id = `GAP-${String(gaps.length + 1).padStart(3, '0')}`;
+    setGaps(prev => [...prev, { ...formData, id }]);
+    setCreateOpen(false);
+    setFormData(EMPTY_GAP);
+  }
+
+  function handleEdit() {
+    if (!editItem) return;
+    setGaps(prev => prev.map(g => g.id === editItem.id ? editItem : g));
+    setEditItem(null);
+  }
+
+  function handleDelete() {
+    if (!deleteItem) return;
+    setGaps(prev => prev.filter(g => g.id !== deleteItem.id));
+    setDeleteItem(null);
+  }
+
+  const selectStyle = {
+    background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))',
+    color: 'hsl(var(--text-1))', padding: '6px 10px', fontSize: 13, borderRadius: 0,
+  };
+
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-6 space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+      {/* Header */}
+      <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Gap Analysis</h1>
-          <p className="text-sm text-gray-500">Identify and track compliance gaps across frameworks</p>
+          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Gap Analysis</h1>
+          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>
+            {orgName} · {totalGaps} compliance gaps across {frameworks.length} frameworks
+          </p>
         </div>
-        <div className="flex gap-2">
-          <Badge variant="destructive">{critical} Critical</Badge>
-          <Badge variant="secondary">{high} High</Badge>
-          <Badge variant="outline">{filtered.length} Total</Badge>
-        </div>
+        <Button size="sm" onClick={() => { setFormData(EMPTY_GAP); setCreateOpen(true); }}>
+          <Plus size={14} className="mr-1" /> Create Gap
+        </Button>
       </div>
-      <div className="flex gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm" placeholder="Search gaps..." value={search} onChange={(e) => setSearch(e.target.value)} />
+
+      {/* Stats */}
+      <div className="grid grid-cols-4 gap-4">
+        {stats.map(s => (
+          <Card key={s.label} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{s.label}</p>
+                <p className="text-3xl font-bold mt-1" style={{ color: 'hsl(var(--text-1))' }}>{s.value}</p>
+              </div>
+              <s.icon size={28} style={{ color: s.color }} />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-2 gap-4">
+        <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Gaps by Severity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={severityData} barSize={36}>
+                <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: ct.axis }} />
+                <YAxis tick={{ fill: ct.axis, fontSize: 11 }} label={{ value: 'Count', angle: -90, position: 'insideLeft', style: { fill: ct.axis } }} />
+                <Tooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.tooltipText, borderRadius: 0 }} />
+                <Bar dataKey="count" name="Gaps" radius={0}>
+                  {severityData.map((d, i) => <Cell key={i} fill={SEV_COLORS[d.name] || '#6b7280'} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Gaps by Framework</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={frameworkData} barSize={28}>
+                <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+                <XAxis dataKey="name" tick={{ fontSize: 10, fill: ct.axis }} />
+                <YAxis tick={{ fill: ct.axis, fontSize: 11 }} label={{ value: 'Count', angle: -90, position: 'insideLeft', style: { fill: ct.axis } }} />
+                <Tooltip
+                  contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.tooltipText, borderRadius: 0 }}
+                  formatter={(v: number, _: string, p: any) => [v, p.payload.fullName]}
+                />
+                <Bar dataKey="gaps" fill="hsl(var(--brand))" radius={0} name="Gaps" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 max-w-xs">
+          <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--text-3))' }} />
+          <Input placeholder="Search gaps..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8" style={{ borderRadius: 0 }} />
         </div>
-        <select className="border rounded-lg px-3 py-2 text-sm bg-white" value={fw} onChange={(e) => setFw(e.target.value)}>
-          {frameworks.map((f) => (<option key={f} value={f}>{f}</option>))}
+        <FunnelSimple size={14} style={{ color: 'hsl(var(--text-3))' }} />
+        <select value={filterSeverity} onChange={e => setFilterSeverity(e.target.value)} style={selectStyle}>
+          <option value="all">All Severities</option>
+          {['critical', 'high', 'medium', 'low'].map(s => <option key={s} value={s}>{s}</option>)}
         </select>
+        <select value={filterFramework} onChange={e => setFilterFramework(e.target.value)} style={selectStyle}>
+          <option value="all">All Frameworks</option>
+          {frameworks.map(fw => <option key={fw} value={fw}>{fw}</option>)}
+        </select>
+        <span className="text-xs ml-auto" style={{ color: 'hsl(var(--text-3))' }}>{filtered.length} of {gaps.length}</span>
       </div>
-      <div className="border rounded-lg overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Gap</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Framework</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Control Ref</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Severity</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Progress</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Due Date</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Owner</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {filtered.map((g) => (
-              <tr key={g.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-4 py-3 font-medium max-w-xs truncate">{g.title}</td>
-                <td className="px-4 py-3 text-gray-500">{g.framework}</td>
-                <td className="px-4 py-3"><code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">{g.controlRef}</code></td>
-                <td className="px-4 py-3"><Badge variant={sev(g.severity) as any}>{g.severity}</Badge></td>
-                <td className="px-4 py-3 w-36">
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: g.progress + "%" }} />
-                    </div>
-                    <span className="text-xs text-gray-500 w-8">{g.progress}%</span>
+
+      {/* Table */}
+      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+        <CardContent className="p-0">
+          {filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16" style={{ color: 'hsl(var(--text-3))' }}>
+              <CheckCircle size={40} style={{ color: '#10b981' }} />
+              <p className="mt-3 text-sm font-medium">No gaps match your filters</p>
+            </div>
+          ) : (
+            <table className="w-full">
+              <thead style={{ background: 'hsl(var(--bg-muted))' }}>
+                <tr>
+                  {['ID', 'Gap Description', 'Framework', 'Control Ref', 'Severity', 'Progress', 'Due Date', 'Owner', 'Actions'].map(h => (
+                    <th key={h} className="text-left p-3 text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(g => {
+                  const sc = severityColor(g.severity);
+                  const isOverdue = new Date(g.dueDate) < new Date();
+                  return (
+                    <tr
+                      key={g.id}
+                      className="cursor-pointer"
+                      style={{ borderTop: '1px solid hsl(var(--border))' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'hsl(var(--bg-muted))')}
+                      onMouseLeave={e => (e.currentTarget.style.background = '')}
+                      onClick={() => setViewItem(g)}
+                    >
+                      <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--text-3))', whiteSpace: 'nowrap' }}>{g.id}</td>
+                      <td className="p-3" style={{ minWidth: 300 }}>
+                        <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))', whiteSpace: 'normal', wordBreak: 'break-word' }}>
+                          {g.title}
+                        </p>
+                      </td>
+                      <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))', whiteSpace: 'nowrap' }}>{g.framework}</td>
+                      <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--text-3))', whiteSpace: 'nowrap' }}>{g.controlRef}</td>
+                      <td className="p-3" style={{ whiteSpace: 'nowrap' }}>
+                        <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0, fontSize: 11 }}>
+                          {g.severity}
+                        </Badge>
+                      </td>
+                      <td className="p-3" style={{ minWidth: 120 }}>
+                        <div className="flex items-center gap-2">
+                          <div style={{ flex: 1, background: 'hsl(var(--bg-muted))', height: 6 }}>
+                            <div style={{ width: g.progress + '%', height: '100%', background: g.progress >= 70 ? '#10b981' : g.progress >= 40 ? '#f97316' : '#ef4444' }} />
+                          </div>
+                          <span className="text-xs font-bold" style={{ color: 'hsl(var(--text-1))' }}>{g.progress}%</span>
+                        </div>
+                      </td>
+                      <td className="p-3 text-xs" style={{ color: isOverdue ? '#ef4444' : 'hsl(var(--text-3))', whiteSpace: 'nowrap' }}>
+                        {formatDate(g.dueDate)}
+                        {isOverdue && <span className="ml-1 font-bold">(overdue)</span>}
+                      </td>
+                      <td className="p-3 text-sm" style={{ color: 'hsl(var(--text-2))', whiteSpace: 'nowrap' }}>{g.owner}</td>
+                      <td className="p-3" style={{ whiteSpace: 'nowrap' }}>
+                        <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                          <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setViewItem(g)}>
+                            <Eye size={14} />
+                          </Button>
+                          <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setEditItem({ ...g })}>
+                            <PencilSimple size={14} />
+                          </Button>
+                          <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: '#ef4444' }} onClick={() => setDeleteItem(g)}>
+                            <Trash size={14} />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* View Sheet */}
+      <Sheet open={!!viewItem} onOpenChange={o => !o && setViewItem(null)}>
+        <SheetContent style={{ width: 520, background: 'hsl(var(--bg-surface))', borderRadius: 0 }}>
+          {viewItem && (
+            <>
+              <SheetHeader className="pb-4">
+                <SheetTitle style={{ color: 'hsl(var(--text-1))' }}>Gap Detail</SheetTitle>
+                <div className="flex gap-2 flex-wrap">
+                  {(() => { const sc = severityColor(viewItem.severity); return (
+                    <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0 }}>
+                      {viewItem.severity}
+                    </Badge>
+                  ); })()}
+                  <Badge variant="outline" style={{ borderRadius: 0 }}>{viewItem.framework}</Badge>
+                </div>
+              </SheetHeader>
+              <div className="space-y-3">
+                <p className="text-sm" style={{ color: 'hsl(var(--text-2))' }}>{viewItem.title}</p>
+                {[
+                  { label: 'Gap ID', value: viewItem.id },
+                  { label: 'Control Ref', value: viewItem.controlRef },
+                  { label: 'Owner', value: viewItem.owner },
+                  { label: 'Due Date', value: formatDate(viewItem.dueDate) },
+                  { label: 'Progress', value: viewItem.progress + '%' },
+                ].map(r => (
+                  <div key={r.label} className="flex justify-between py-2" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                    <span className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>{r.label}</span>
+                    <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{r.value}</span>
                   </div>
-                </td>
-                <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{g.dueDate}</td>
-                <td className="px-4 py-3 text-gray-500">{g.owner}</td>
-              </tr>
+                ))}
+                {viewItem.description && (
+                  <div className="pt-2">
+                    <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-2))' }}>Description</p>
+                    <p className="text-sm" style={{ color: 'hsl(var(--text-2))' }}>{viewItem.description}</p>
+                  </div>
+                )}
+                {/* Progress bar */}
+                <div className="pt-2">
+                  <div className="flex justify-between text-xs mb-1">
+                    <span style={{ color: 'hsl(var(--text-3))' }}>Remediation Progress</span>
+                    <span style={{ color: 'hsl(var(--text-1))' }}>{viewItem.progress}%</span>
+                  </div>
+                  <div style={{ background: 'hsl(var(--bg-muted))', height: 10 }}>
+                    <div style={{ width: viewItem.progress + '%', height: '100%', background: viewItem.progress >= 70 ? '#10b981' : viewItem.progress >= 40 ? '#f97316' : '#ef4444' }} />
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2 mt-6">
+                <Button size="sm" onClick={() => { setEditItem({ ...viewItem }); setViewItem(null); }}>
+                  <PencilSimple size={14} className="mr-1" /> Edit
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setViewItem(null)}>Close</Button>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editItem} onOpenChange={o => !o && setEditItem(null)}>
+        <DialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0, maxWidth: 520 }}>
+          <DialogHeader>
+            <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>Edit Gap</DialogTitle>
+          </DialogHeader>
+          {editItem && (
+            <div className="space-y-3">
+              {[
+                { label: 'Title', key: 'title' },
+                { label: 'Control Ref', key: 'controlRef' },
+                { label: 'Owner', key: 'owner' },
+                { label: 'Description', key: 'description' },
+                { label: 'Due Date', key: 'dueDate', type: 'date' },
+              ].map(f => (
+                <div key={f.key}>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>{f.label}</label>
+                  <Input type={f.type || 'text'} value={(editItem as any)[f.key] || ''} onChange={e => setEditItem(prev => prev ? { ...prev, [f.key]: e.target.value } : null)} style={{ borderRadius: 0 }} />
+                </div>
+              ))}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Severity</label>
+                  <select value={editItem.severity} onChange={e => setEditItem(prev => prev ? { ...prev, severity: e.target.value as Severity } : null)}
+                    style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
+                    {['critical', 'high', 'medium', 'low'].map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Progress (%)</label>
+                  <Input type="number" min={0} max={100} value={editItem.progress}
+                    onChange={e => setEditItem(prev => prev ? { ...prev, progress: Number(e.target.value) } : null)}
+                    style={{ borderRadius: 0 }} />
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditItem(null)} style={{ borderRadius: 0 }}>Cancel</Button>
+            <Button onClick={handleEdit} style={{ borderRadius: 0 }}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Dialog */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0, maxWidth: 520 }}>
+          <DialogHeader>
+            <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>Create Gap</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {[
+              { label: 'Title', key: 'title' },
+              { label: 'Control Ref', key: 'controlRef' },
+              { label: 'Owner', key: 'owner' },
+              { label: 'Description', key: 'description' },
+              { label: 'Due Date', key: 'dueDate', type: 'date' },
+            ].map(f => (
+              <div key={f.key}>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>{f.label}</label>
+                <Input type={f.type || 'text'} value={(formData as any)[f.key] || ''} onChange={e => setFormData(prev => ({ ...prev, [f.key]: e.target.value }))} style={{ borderRadius: 0 }} />
+              </div>
             ))}
-          </tbody>
-        </table>
-      </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Framework</label>
+                <select value={formData.framework} onChange={e => setFormData(prev => ({ ...prev, framework: e.target.value }))}
+                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
+                  {FRAMEWORKS.map(fw => <option key={fw.id} value={fw.name}>{fw.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Severity</label>
+                <select value={formData.severity} onChange={e => setFormData(prev => ({ ...prev, severity: e.target.value as Severity }))}
+                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
+                  {['critical', 'high', 'medium', 'low'].map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
+            <Button onClick={handleCreate} disabled={!formData.title} style={{ borderRadius: 0 }}>Create Gap</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Dialog */}
+      <AlertDialog open={!!deleteItem} onOpenChange={o => !o && setDeleteItem(null)}>
+        <AlertDialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0 }}>
+          <AlertDialogHeader>
+            <AlertDialogTitle style={{ color: 'hsl(var(--text-1))' }}>Delete Gap</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this gap? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} style={{ background: '#ef4444', borderRadius: 0 }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

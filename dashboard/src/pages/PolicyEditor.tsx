@@ -6,7 +6,7 @@ import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Separator } from "../components/ui/separator";
 import { Textarea } from "../components/ui/textarea";
-import { ChevronRight, ArrowLeft, Edit3, Eye, Send, CheckCircle, FileDown, Clock, MessageSquare, Shield, Link2, AlertTriangle, XCircle, History, User } from "lucide-react";
+import { CaretRight as ChevronRight, ArrowLeft, PencilSimple as Edit3, Eye, PaperPlaneRight as Send, CheckCircle, FileArrowDown as FileDown, Clock, ChatCircle as MessageSquare, Shield, LinkSimple as Link2, Warning as AlertTriangle, XCircle, ClockCounterClockwise as History, User } from "@phosphor-icons/react";
 
 const STEPS = ["Draft","In Review","Approved","Published","Expired","Archived"];
 

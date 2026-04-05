@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Shield, AlertTriangle, FileText, TrendingUp, ChevronRight } from "lucide-react";
+import { Shield, Warning as AlertTriangle, FileText, TrendUp as TrendingUp, CaretRight as ChevronRight } from "@phosphor-icons/react";
 import { useNavigate } from "react-router-dom";
 
 const gaugeColor = (v: number) => v >= 90 ? "#22c55e" : v >= 70 ? "#eab308" : "#ef4444";

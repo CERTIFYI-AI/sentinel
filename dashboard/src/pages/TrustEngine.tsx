@@ -1,18 +1,5 @@
-import { Brain } from 'lucide-react';
+import { Navigate } from 'react-router-dom';
+
 export default function TrustEngine() {
-  return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center gap-3">
-        <Brain className="h-8 w-8 text-primary" />
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Trust Engine</h1>
-          <p className="text-muted-foreground">Manage and monitor trust engine</p>
-        </div>
-      </div>
-      <div className="rounded-lg border bg-card p-8 text-center">
-        <Brain className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-        <p className="text-muted-foreground">No trust engine data available yet.</p>
-      </div>
-    </div>
-  );
+  return <Navigate to="/trust-engine" replace />;
 }

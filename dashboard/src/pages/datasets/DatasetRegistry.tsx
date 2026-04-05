@@ -1,138 +1,317 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  Eye, PencilSimple, Trash, Plus, Database, ShieldCheck, Warning, XCircle, Lock
+} from '@phosphor-icons/react';
 import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { Badge } from '../../components/ui/badge';
-import { Database, Shield, AlertTriangle, CheckCircle, Search, Download, Plus, Eye, FileText, Lock } from 'lucide-react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { DATASETS, MODELS, severityColor, statusColor, formatDate, formatNumber } from '../../data/seed';
+import { useSettingsStore } from '../../stores/settingsStore';
 
-const datasets = [
-  { id: 'DS-001', name: 'Customer PII Records', model: 'Fraud Detection v2.1', sensitivity: 'PII', status: 'active', riskLevel: 'critical', records: 245000, lastAudit: '2026-11-15', owner: 'Data Engineering', retention: '7 years', encryption: 'AES-256' },
-  { id: 'DS-002', name: 'Patient Health Records', model: 'Clinical NLP v1.4', sensitivity: 'PHI', status: 'active', riskLevel: 'critical', records: 89000, lastAudit: '2026-10-20', owner: 'Healthcare AI', retention: '10 years', encryption: 'AES-256' },
-  { id: 'DS-003', name: 'Credit Scoring Features', model: 'Credit Risk v3.0', sensitivity: 'PII', status: 'active', riskLevel: 'high', records: 1200000, lastAudit: '2026-12-01', owner: 'Risk Analytics', retention: '5 years', encryption: 'AES-256' },
-  { id: 'DS-004', name: 'Employee Performance Data', model: 'HR Attrition Model', sensitivity: 'internal', status: 'review', riskLevel: 'medium', records: 15000, lastAudit: '2026-08-10', owner: 'People Analytics', retention: '3 years', encryption: 'AES-128' },
-  { id: 'DS-005', name: 'Transaction Logs', model: 'AML Detection v2.0', sensitivity: 'confidential', status: 'active', riskLevel: 'high', records: 5400000, lastAudit: '2026-01-05', owner: 'FinCrime Unit', retention: '7 years', encryption: 'AES-256' },
-  { id: 'DS-006', name: 'Social Media Sentiment', model: 'Brand Monitor v1.2', sensitivity: 'public', status: 'active', riskLevel: 'low', records: 3200000, lastAudit: '2026-02-14', owner: 'Marketing AI', retention: '2 years', encryption: 'TLS' },
-  { id: 'DS-007', name: 'Biometric Auth Logs', model: 'Identity Verify v4.0', sensitivity: 'PII', status: 'archived', riskLevel: 'critical', records: 670000, lastAudit: '2026-06-30', owner: 'Security Ops', retention: '5 years', encryption: 'AES-256' },
-  { id: 'DS-008', name: 'Insurance Claims Data', model: 'Claims Triage v2.3', sensitivity: 'PII', status: 'active', riskLevel: 'high', records: 340000, lastAudit: '2026-09-22', owner: 'Underwriting AI', retention: '10 years', encryption: 'AES-256' },
-];
+function StatCard({ icon, value, label }: { icon: React.ReactNode; value: string | number; label: string }) {
+  return (
+    <Card className="p-4 flex items-start gap-3">
+      <div className="mt-0.5 text-[hsl(var(--brand))]">{icon}</div>
+      <div>
+        <div className="text-2xl font-bold text-[hsl(var(--text-1))]">{value}</div>
+        <div className="text-xs text-[hsl(var(--text-4))] mt-0.5">{label}</div>
+      </div>
+    </Card>
+  );
+}
 
-const sensitivityColors: Record<string, string> = { PII: 'bg-red-600', PHI: 'bg-purple-600', confidential: 'bg-orange-500', internal: 'bg-yellow-500', public: 'bg-green-500' };
-const riskColors: Record<string, string> = { critical: 'text-red-400', high: 'text-orange-400', medium: 'text-yellow-400', low: 'text-green-400' };
-const statusColors: Record<string, string> = { active: 'bg-emerald-900 text-emerald-300', review: 'bg-yellow-900 text-yellow-300', archived: 'bg-gray-700 text-foreground' };
+const sensitivityColor: Record<string, string> = {
+  PII: 'bg-red-900/30 text-red-400 border-red-700',
+  PHI: 'bg-purple-900/30 text-purple-400 border-purple-700',
+  confidential: 'bg-orange-900/30 text-orange-400 border-orange-700',
+  internal: 'bg-blue-900/30 text-blue-400 border-blue-700',
+  public: 'bg-green-900/30 text-green-400 border-green-700',
+};
+
+// Mock schema for detail view
+const mockSchema: Record<string, { column: string; type: string; pii: boolean; description: string }[]> = {
+  'DS-001': [
+    { column: 'applicant_id', type: 'UUID', pii: false, description: 'Anonymous applicant identifier' },
+    { column: 'credit_score', type: 'INT', pii: false, description: 'Credit bureau score 300-850' },
+    { column: 'annual_income', type: 'DECIMAL', pii: true, description: 'Self-reported annual income (PII)' },
+    { column: 'zip_code', type: 'VARCHAR(10)', pii: true, description: 'Geographic proxy for protected class (PII)' },
+    { column: 'loan_amount', type: 'DECIMAL', pii: false, description: 'Requested loan amount' },
+    { column: 'default_flag', type: 'BOOLEAN', pii: false, description: 'Historical default indicator' },
+  ],
+};
 
 export default function DatasetRegistry() {
+  const orgName = useSettingsStore(s => s.orgName);
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('all');
+  const [sensitFilter, setSensitFilter] = useState('all');
+  const [riskFilter, setRiskFilter] = useState('all');
+  const [selected, setSelected] = useState<typeof DATASETS[0] | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<typeof DATASETS[0] | null>(null);
+  const [datasets, setDatasets] = useState(DATASETS);
+  const [editForm, setEditForm] = useState({ name: '', owner: '', retentionPolicy: '' });
 
-  const totalDatasets = datasets.length;
-  const piiDatasets = datasets.filter(d => d.sensitivity === 'PII' || d.sensitivity === 'PHI').length;
-  const criticalRisk = datasets.filter(d => d.riskLevel === 'critical').length;
-  const needsAudit = datasets.filter(d => d.lastAudit < '2026-01-01').length;
+  const stats = {
+    total: datasets.length,
+    pii: datasets.filter(d => d.sensitivity === 'PII' || d.sensitivity === 'PHI').length,
+    critical: datasets.filter(d => d.risk === 'critical').length,
+    needsAudit: datasets.filter(d => d.status === 'under_review').length,
+  };
 
   const filtered = datasets.filter(d => {
-    const matchSearch = d.name.toLowerCase().includes(search.toLowerCase()) ||
-      d.id.toLowerCase().includes(search.toLowerCase()) ||
-      d.model.toLowerCase().includes(search.toLowerCase());
-    const matchFilter = filter === 'all' || d.riskLevel === filter || d.status === filter || d.sensitivity === filter;
-    return matchSearch && matchFilter;
+    const q = search.toLowerCase();
+    const matchSearch = !q || d.name.toLowerCase().includes(q) || d.id.toLowerCase().includes(q);
+    const matchSensit = sensitFilter === 'all' || d.sensitivity === sensitFilter;
+    const matchRisk = riskFilter === 'all' || d.risk === riskFilter;
+    return matchSearch && matchSensit && matchRisk;
   });
+
+  const handleEdit = (d: typeof DATASETS[0]) => {
+    setEditForm({ name: d.name, owner: d.owner, retentionPolicy: d.retentionPolicy });
+    setSelected(d);
+    setEditOpen(true);
+  };
+
+  const handleSaveEdit = () => {
+    setDatasets(prev => prev.map(d => d.id === selected?.id ? { ...d, ...editForm } : d));
+    setEditOpen(false);
+  };
+
+  const handleDelete = () => {
+    if (deleteTarget) {
+      setDatasets(prev => prev.filter(d => d.id !== deleteTarget.id));
+      setDeleteTarget(null);
+      if (selected?.id === deleteTarget.id) setSelected(null);
+    }
+  };
+
+  const linkedModel = (linkedId: string) => MODELS.find(m => m.id === linkedId);
 
   return (
     <div className="p-6 space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Dataset Registry</h1>
-          <p className="text-sm text-muted-foreground">AI training and inference data governance</p>
+          <h1 className="text-xl font-semibold text-[hsl(var(--text-1))]">Dataset Registry</h1>
+          <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">{orgName} — Training data governance and lineage tracking</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm"><Download className="h-4 w-4 mr-1" />Export</Button>
-          <Button size="sm" className="bg-[hsl(var(--brand))] hover:bg-primary/90"><Plus className="h-4 w-4 mr-1" />Register Dataset</Button>
-        </div>
+        <Button className="gap-2">
+          <Plus size={16} /> Register Dataset
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-4 bg-card border-border">
-          <div className="flex items-center justify-between">
-            <div><p className="text-xs text-muted-foreground">Total Datasets</p><p className="text-2xl font-bold">{totalDatasets}</p></div>
-            <Database className="h-8 w-8 text-[hsl(var(--brand))]" />
-          </div>
-        </Card>
-        <Card className="p-4 bg-card border-border">
-          <div className="flex items-center justify-between">
-            <div><p className="text-xs text-muted-foreground">PII/PHI Datasets</p><p className="text-2xl font-bold text-red-400">{piiDatasets}</p></div>
-            <Lock className="h-8 w-8 text-red-400" />
-          </div>
-        </Card>
-        <Card className="p-4 bg-card border-border">
-          <div className="flex items-center justify-between">
-            <div><p className="text-xs text-muted-foreground">Critical Risk</p><p className="text-2xl font-bold text-orange-400">{criticalRisk}</p></div>
-            <AlertTriangle className="h-8 w-8 text-orange-400" />
-          </div>
-        </Card>
-        <Card className="p-4 bg-card border-border">
-          <div className="flex items-center justify-between">
-            <div><p className="text-xs text-muted-foreground">Needs Re-Audit</p><p className="text-2xl font-bold text-yellow-400">{needsAudit}</p></div>
-            <Shield className="h-8 w-8 text-yellow-400" />
-          </div>
-        </Card>
+      {/* Stats */}
+      <div className="grid grid-cols-4 gap-4">
+        <StatCard icon={<Database size={20} />} value={stats.total} label="Total Datasets" />
+        <StatCard icon={<Lock size={20} />} value={stats.pii} label="PII / PHI Datasets" />
+        <StatCard icon={<XCircle size={20} />} value={stats.critical} label="Critical Risk" />
+        <StatCard icon={<Warning size={20} />} value={stats.needsAudit} label="Needs Re-Audit" />
       </div>
 
-      <Card className="p-4 bg-card border-border">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search datasets, models..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
-          </div>
-          <select value={filter} onChange={e => setFilter(e.target.value)} className="bg-background border border-border rounded-md px-3 py-2 text-sm">
-            <option value="all">All</option>
-            <option value="PII">PII</option>
-            <option value="PHI">PHI</option>
-            <option value="critical">Critical</option>
-            <option value="high">High Risk</option>
-            <option value="active">Active</option>
-            <option value="archived">Archived</option>
-          </select>
-        </div>
+      {/* Filters */}
+      <div className="flex gap-3">
+        <Input placeholder="Search datasets..." value={search} onChange={e => setSearch(e.target.value)} className="max-w-xs" />
+        <Select value={sensitFilter} onValueChange={setSensitFilter}>
+          <SelectTrigger className="w-40"><SelectValue placeholder="Sensitivity" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            <SelectItem value="PII">PII</SelectItem>
+            <SelectItem value="confidential">Confidential</SelectItem>
+            <SelectItem value="internal">Internal</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={riskFilter} onValueChange={setRiskFilter}>
+          <SelectTrigger className="w-36"><SelectValue placeholder="Risk" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Risks</SelectItem>
+            <SelectItem value="critical">Critical</SelectItem>
+            <SelectItem value="high">High</SelectItem>
+            <SelectItem value="medium">Medium</SelectItem>
+            <SelectItem value="low">Low</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Table */}
+      <Card>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border text-muted-foreground">
-                <th className="text-left py-3 px-2">ID</th>
-                <th className="text-left py-3 px-2">Dataset Name</th>
-                <th className="text-left py-3 px-2">Linked Model</th>
-                <th className="text-left py-3 px-2">Sensitivity</th>
-                <th className="text-left py-3 px-2">Risk Level</th>
-                <th className="text-left py-3 px-2">Records</th>
-                <th className="text-left py-3 px-2">Status</th>
-                <th className="text-left py-3 px-2">Last Audit</th>
-                <th className="text-left py-3 px-2">Actions</th>
+              <tr className="border-b border-[hsl(var(--border))]">
+                {['ID', 'Name', 'Sensitivity', 'Classification', 'Risk', 'Records', 'Linked Model', 'Encryption', 'Status', 'Last Audit', 'Actions'].map(h => (
+                  <th key={h} className="text-left px-4 py-3 text-xs font-medium text-[hsl(var(--text-4))] uppercase tracking-wide">{h}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {filtered.map(ds => (
-                <tr key={ds.id} className="border-b border-border/50 hover:bg-muted/30">
-                  <td className="py-3 px-2 font-mono text-xs">{ds.id}</td>
-                  <td className="py-3 px-2">
-                    <div className="font-medium">{ds.name}</div>
-                    <div className="text-xs text-muted-foreground">{ds.owner} | {ds.encryption}</div>
-                  </td>
-                  <td className="py-3 px-2 text-xs">{ds.model}</td>
-                  <td className="py-3 px-2"><span className={"px-2 py-0.5 rounded text-xs font-medium text-foreground " + (sensitivityColors[ds.sensitivity] || 'bg-gray-500')}>{ds.sensitivity.toUpperCase()}</span></td>
-                  <td className="py-3 px-2"><span className={"text-xs font-semibold " + (riskColors[ds.riskLevel] || '')}>{ds.riskLevel.toUpperCase()}</span></td>
-                  <td className="py-3 px-2 text-xs">{ds.records.toLocaleString()}</td>
-                  <td className="py-3 px-2"><span className={"px-2 py-0.5 rounded text-xs " + (statusColors[ds.status] || '')}>{ds.status}</span></td>
-                  <td className="py-3 px-2 text-xs">{ds.lastAudit}</td>
-                  <td className="py-3 px-2">
-                    <Button size="sm" variant="ghost" onClick={() => navigate('/datasets/' + ds.id)}><Eye className="h-3 w-3 mr-1" />View</Button>
-                  </td>
-                </tr>
-              ))}
+              {filtered.map(d => {
+                const rc = severityColor(d.risk);
+                const sc = statusColor(d.status);
+                const model = linkedModel(d.linkedModel);
+                return (
+                  <tr key={d.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-surface))/50] transition-colors">
+                    <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--text-4))]">{d.id}</td>
+                    <td className="px-4 py-3 font-medium text-[hsl(var(--text-1))]">{d.name}</td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-0.5 text-xs border ${sensitivityColor[d.sensitivity] || 'text-[hsl(var(--text-3))] border-[hsl(var(--border))]'}`}>{d.sensitivity}</span>
+                    </td>
+                    <td className="px-4 py-3 text-[hsl(var(--text-3))]">{d.classification}</td>
+                    <td className="px-4 py-3">
+                      <span className="px-2 py-0.5 text-xs" style={{ background: rc.bg, color: rc.text, border: `1px solid ${rc.border}` }}>{d.risk}</span>
+                    </td>
+                    <td className="px-4 py-3 text-[hsl(var(--text-3))]">{formatNumber(d.records)}</td>
+                    <td className="px-4 py-3 text-[hsl(var(--text-3))] text-xs">{model ? `${model.name}` : '—'}</td>
+                    <td className="px-4 py-3 text-[hsl(var(--text-3))]">{d.encryption}</td>
+                    <td className="px-4 py-3">
+                      <span className="px-2 py-0.5 text-xs" style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}` }}>{d.status}</span>
+                    </td>
+                    <td className="px-4 py-3 text-[hsl(var(--text-4))] text-xs">{formatDate(d.lastAudit)}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-1">
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => navigate(`/datasets/${d.id}`)}>
+                          <Eye size={14} />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleEdit(d)}>
+                          <PencilSimple size={14} />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-red-400 hover:text-red-300" onClick={() => setDeleteTarget(d)}>
+                          <Trash size={14} />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       </Card>
+
+      {/* Detail Sheet */}
+      <Sheet open={!!selected && !editOpen} onOpenChange={o => { if (!o) setSelected(null); }}>
+        <SheetContent className="w-[680px] max-w-full overflow-y-auto" side="right">
+          {selected && (
+            <>
+              <SheetHeader className="mb-4">
+                <SheetTitle className="flex items-center gap-2">
+                  <Database size={18} /> {selected.name}
+                  <span className="font-mono text-xs text-[hsl(var(--text-4))]">{selected.id}</span>
+                </SheetTitle>
+                <p className="text-sm text-[hsl(var(--text-4))]">{selected.description}</p>
+              </SheetHeader>
+              <Tabs defaultValue="schema">
+                <TabsList className="mb-4">
+                  <TabsTrigger value="schema">Schema</TabsTrigger>
+                  <TabsTrigger value="linked">Linked Models</TabsTrigger>
+                </TabsList>
+                <TabsContent value="schema" className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    {[
+                      ['Owner', selected.owner], ['Encryption', selected.encryption],
+                      ['Retention', selected.retentionPolicy], ['Records', formatNumber(selected.records)],
+                      ['Classification', selected.classification], ['Last Audit', formatDate(selected.lastAudit)],
+                    ].map(([k, v]) => (
+                      <div key={k} className="bg-[hsl(var(--bg-surface))] p-3 border border-[hsl(var(--border))]">
+                        <div className="text-xs text-[hsl(var(--text-4))]">{k}</div>
+                        <div className="text-sm font-medium text-[hsl(var(--text-1))] mt-0.5">{v}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="text-xs font-medium text-[hsl(var(--text-4))] mb-2 uppercase tracking-wide">Column Schema</div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-[hsl(var(--border))]">
+                          {['Column', 'Type', 'PII', 'Description'].map(h => (
+                            <th key={h} className="text-left px-3 py-2 text-xs font-medium text-[hsl(var(--text-4))]">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(mockSchema[selected.id] || mockSchema['DS-001']).map(row => (
+                          <tr key={row.column} className="border-b border-[hsl(var(--border))]">
+                            <td className="px-3 py-2 font-mono text-xs text-[hsl(var(--text-1))]">{row.column}</td>
+                            <td className="px-3 py-2 text-xs text-[hsl(var(--text-3))]">{row.type}</td>
+                            <td className="px-3 py-2">
+                              {row.pii && <span className="px-1.5 py-0.5 text-xs bg-red-900/30 text-red-400 border border-red-700">PII</span>}
+                            </td>
+                            <td className="px-3 py-2 text-xs text-[hsl(var(--text-4))]">{row.description}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </TabsContent>
+                <TabsContent value="linked" className="space-y-3">
+                  {selected.linkedModel ? (
+                    (() => {
+                      const model = linkedModel(selected.linkedModel);
+                      return model ? (
+                        <div className="border border-[hsl(var(--border))] p-4 bg-[hsl(var(--bg-surface))]">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-medium text-[hsl(var(--text-1))]">{model.name}</div>
+                              <div className="text-xs text-[hsl(var(--text-4))] mt-0.5">{model.id} · {model.type}</div>
+                              <div className="text-xs text-[hsl(var(--text-3))] mt-1">{model.description}</div>
+                            </div>
+                            <Button size="sm" variant="outline" onClick={() => navigate('/models/inventory')}>View Model</Button>
+                          </div>
+                        </div>
+                      ) : null;
+                    })()
+                  ) : (
+                    <div className="text-sm text-[hsl(var(--text-4))]">No linked models for this dataset.</div>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Dataset — {selected?.id}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            {(['name', 'owner', 'retentionPolicy'] as const).map(field => (
+              <div key={field}>
+                <label className="text-xs text-[hsl(var(--text-4))] capitalize">{field.replace(/([A-Z])/g, ' $1')}</label>
+                <Input value={editForm[field]} onChange={e => setEditForm(p => ({ ...p, [field]: e.target.value }))} className="mt-1" />
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveEdit}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirm */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={o => { if (!o) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Dataset</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{deleteTarget?.name}</strong>? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

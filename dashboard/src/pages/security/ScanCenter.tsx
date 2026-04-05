@@ -1,37 +1,437 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
-import { Badge } from "../../components/ui/badge";
-import { Button } from "../../components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
-import { Input } from "../../components/ui/input";
-import { Shield, Search, Filter, Plus, Download } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-const columns = [  { key: "id", label: "ID" },
-  { key: "name", label: "Scan Name" },
-  { key: "target", label: "Target" },
-  { key: "status", label: "Status" },
-  { key: "score", label: "Score" },
-  { key: "date", label: "Date" },];
-const mockData: any[] = [  { id: 1, name: "Web App Scan", target: "app.certifyi.com", status: "completed", score: 92, date: "2026-03-15" },
-  { id: 2, name: "API Security", target: "api.certifyi.com", status: "running", score: 78, date: "2026-03-14" },
-  { id: 3, name: "Infra Scan", target: "*.internal", status: "scheduled", score: 0, date: "2026-03-16" },
-  { id: 4, name: "Container Scan", target: "registry", status: "completed", score: 85, date: "2026-03-13" },
-  { id: 5, name: "Dependency Check", target: "package.json", status: "completed", score: 71, date: "2026-03-12" },];
-const statsCards = [  { label: "Total Scans", value: "156", icon: Shield },
-  { label: "Critical", value: "12", icon: Shield },
-  { label: "Score", value: "87%", icon: Shield },
-  { label: "Scheduled", value: "8", icon: Shield },];
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '../../components/ui/alert-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import {
+  Scan, MagnifyingGlass, Plus, Eye, PencilSimple, Trash,
+  Download, Play, Clock, CheckCircle, XCircle, CalendarBlank,
+} from '@phosphor-icons/react';
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Cell,
+} from 'recharts';
+import { severityColor, formatDate } from '../../data/seed';
+import { useSettingsStore } from '../../stores/settingsStore';
+import { useChartTheme } from '../../hooks/useChartTheme';
+
+interface SecurityScan {
+  id: string;
+  name: string;
+  type: string;
+  target: string;
+  status: 'completed' | 'running' | 'scheduled' | 'failed';
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  findings: number;
+  criticalFindings: number;
+  startedAt: string;
+  duration: string;
+  schedule: string;
+  owner: string;
+  description: string;
+}
+
+const MOCK_SCANS: SecurityScan[] = [
+  { id: 'SCN-001', name: 'Full API Security Scan', type: 'DAST', target: 'api.sentinel-grc.com', status: 'completed', severity: 'high', findings: 12, criticalFindings: 2, startedAt: '2026-03-28', duration: '4h 22m', schedule: 'Weekly', owner: 'Maria Santos', description: 'Dynamic application security testing of all API endpoints.' },
+  { id: 'SCN-002', name: 'LLM Prompt Injection Scan', type: 'AI Security', target: 'MDL-004, MDL-001', status: 'completed', severity: 'critical', findings: 7, criticalFindings: 3, startedAt: '2026-03-25', duration: '2h 10m', schedule: 'Bi-weekly', owner: 'Sarah Chen', description: 'Automated prompt injection testing across all LLM endpoints.' },
+  { id: 'SCN-003', name: 'Container Image Vulnerability Scan', type: 'SCA', target: 'prod-registry.internal', status: 'running', severity: 'medium', findings: 0, criticalFindings: 0, startedAt: '2026-04-05', duration: 'In progress', schedule: 'Daily', owner: 'David Kim', description: 'Software composition analysis of all production container images.' },
+  { id: 'SCN-004', name: 'Network Perimeter Scan', type: 'Network', target: '10.0.0.0/16', status: 'scheduled', severity: 'low', findings: 0, criticalFindings: 0, startedAt: '2026-04-07', duration: '—', schedule: 'Monthly', owner: 'Sarah Chen', description: 'Network perimeter scan for open ports and exposed services.' },
+  { id: 'SCN-005', name: 'IAM Policy Audit', type: 'Configuration', target: 'AWS IAM, GCP IAM', status: 'completed', severity: 'high', findings: 18, criticalFindings: 1, startedAt: '2026-03-20', duration: '45m', schedule: 'Weekly', owner: 'James Patel', description: 'Audit of IAM policies for overpermissioned roles and service accounts.' },
+  { id: 'SCN-006', name: 'Dependency SBOM Scan', type: 'SCA', target: 'All Repositories', status: 'failed', severity: 'medium', findings: 0, criticalFindings: 0, startedAt: '2026-04-04', duration: 'Failed after 12m', schedule: 'Daily', owner: 'Maria Santos', description: 'Software Bill of Materials generation and vulnerability correlation.' },
+];
+
+function statusStyle(status: string) {
+  switch (status) {
+    case 'completed': return { bg: '#10b98120', text: '#10b981', border: '#10b98140' };
+    case 'running': return { bg: '#3b82f620', text: '#3b82f6', border: '#3b82f640' };
+    case 'scheduled': return { bg: '#6366f120', text: '#6366f1', border: '#6366f140' };
+    case 'failed': return { bg: '#ef444420', text: '#ef4444', border: '#ef444440' };
+    default: return { bg: '#6b728020', text: '#6b7280', border: '#6b728040' };
+  }
+}
+
+function statusIcon(status: string) {
+  if (status === 'completed') return <CheckCircle size={14} style={{ color: '#10b981' }} />;
+  if (status === 'running') return <Play size={14} style={{ color: '#3b82f6' }} />;
+  if (status === 'scheduled') return <CalendarBlank size={14} style={{ color: '#6366f1' }} />;
+  return <XCircle size={14} style={{ color: '#ef4444' }} />;
+}
+
+const EMPTY_SCAN: Omit<SecurityScan, 'id'> = {
+  name: '', type: 'DAST', target: '', status: 'scheduled',
+  severity: 'medium', findings: 0, criticalFindings: 0,
+  startedAt: new Date().toISOString().split('T')[0], duration: '—',
+  schedule: 'Weekly', owner: '', description: '',
+};
+
 export default function ScanCenter() {
-  const [search, setSearch] = useState("");
-  const [sf, setSf] = useState("all");
-  const [sel, setSel] = useState<any>(null);
-  const [open, setOpen] = useState(false);
-  const sts = ["all", ...Array.from(new Set(mockData.map((d) => d.status||d.severity||"active")))];
-  const filt = mockData.filter((d) => JSON.stringify(d).toLowerCase().includes(search.toLowerCase()) && (sf==="all"||(d.status||d.severity)===sf));
-  const ch = mockData.slice(0,6).map((d,i) => ({ name: d.name||d.title||"I"+(i+1), value: d.score||d.count||50+i*10 }));
-  return (<div className="p-6 space-y-6"><div className="flex items-center justify-between"><h1 className="text-2xl font-bold">Scan Center</h1><div className="flex gap-2"><Button size="sm" variant="outline"><Download className="h-4 w-4 mr-1"/>Export</Button><Button size="sm"><Plus className="h-4 w-4 mr-1"/>Add New</Button></div></div>
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">{statsCards.map((s:any,i:number)=>(<Card key={i}><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">{s.label}</p><p className="text-2xl font-bold">{s.value}</p></div><s.icon className="h-8 w-8 text-[hsl(var(--brand))]"/></div></CardContent></Card>))}</div>
-  <Card><CardHeader><CardTitle>Overview</CardTitle></CardHeader><CardContent><ResponsiveContainer width="100%" height={250}><BarChart data={ch}><XAxis dataKey="name" fontSize={12}/><YAxis fontSize={12}/><Tooltip/><Bar dataKey="value" fill="#10b981" radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></CardContent></Card>
-  <Card><CardHeader><div className="flex items-center justify-between"><CardTitle>Records</CardTitle><div className="flex gap-2"><div className="relative"><Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"/><Input placeholder="Search..." value={search} onChange={(e)=>setSearch(e.target.value)} className="pl-8 w-64"/></div><select className="border rounded px-3 py-1.5 text-sm bg-background" value={sf} onChange={(e)=>setSf(e.target.value)}>{sts.map(s=><option key={s} value={s}>{s==="all"?"All":s}</option>)}</select></div></div></CardHeader><CardContent><div className="border rounded-lg overflow-hidden"><table className="w-full"><thead className="bg-muted/50"><tr>{columns.map((c:any)=><th key={c.key} className="text-left p-3 text-sm font-medium">{c.label}</th>)}<th className="text-left p-3 text-sm font-medium">Actions</th></tr></thead><tbody>{filt.map((row:any,i:number)=>(<tr key={i} className="border-t hover:bg-muted/30 cursor-pointer" onClick={()=>{setSel(row);setOpen(true);}}>{columns.map((c:any)=>(<td key={c.key} className="p-3 text-sm">{c.key==="status"||c.key==="severity"?(<Badge variant={row[c.key]==="critical"||row[c.key]==="high"?"destructive":row[c.key]==="compliant"||row[c.key]==="active"||row[c.key]==="low"?"default":"secondary"}>{row[c.key]}</Badge>):String(row[c.key]??"")}</td>))}<td className="p-3"><Button size="sm" variant="ghost" onClick={(e)=>{e.stopPropagation();setSel(row);setOpen(true);}}>View</Button></td></tr>))}</tbody></table></div><p className="text-sm text-muted-foreground mt-2">{filt.length} of {mockData.length} records</p></CardContent></Card>
-  <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{sel?.name||sel?.title||"Detail"}</DialogTitle></DialogHeader><div className="space-y-3">{sel&&Object.entries(sel).map(([k,v])=>(<div key={k} className="flex justify-between border-b pb-2"><span className="text-sm text-muted-foreground capitalize">{k}</span><span className="text-sm font-medium">{String(v)}</span></div>))}<div className="flex gap-2 pt-2"><Button size="sm">Edit</Button><Button size="sm" variant="outline">Archive</Button><Button size="sm" variant="destructive">Delete</Button></div></div></DialogContent></Dialog></div>);
+  const { orgName } = useSettingsStore();
+  const ct = useChartTheme();
+
+  const [scans, setScans] = useState<SecurityScan[]>(MOCK_SCANS);
+  const [search, setSearch] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterType, setFilterType] = useState('all');
+
+  const [viewItem, setViewItem] = useState<SecurityScan | null>(null);
+  const [editItem, setEditItem] = useState<SecurityScan | null>(null);
+  const [deleteItem, setDeleteItem] = useState<SecurityScan | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [formData, setFormData] = useState<Omit<SecurityScan, 'id'>>(EMPTY_SCAN);
+
+  const filtered = scans.filter(s => {
+    const q = search.toLowerCase();
+    const matchSearch = !q || s.name.toLowerCase().includes(q) || s.target.toLowerCase().includes(q) || s.type.toLowerCase().includes(q);
+    const matchStat = filterStatus === 'all' || s.status === filterStatus;
+    const matchType = filterType === 'all' || s.type === filterType;
+    return matchSearch && matchStat && matchType;
+  });
+
+  const typeData = Array.from(
+    scans.reduce((acc, s) => {
+      acc.set(s.type, (acc.get(s.type) || 0) + 1);
+      return acc;
+    }, new Map<string, number>())
+  ).map(([name, count]) => ({ name, count }));
+
+  const stats = [
+    { label: 'Total Scans', value: scans.length, icon: Scan },
+    { label: 'Running', value: scans.filter(s => s.status === 'running').length, icon: Play },
+    { label: 'Scheduled', value: scans.filter(s => s.status === 'scheduled').length, icon: Clock },
+    { label: 'Total Findings', value: scans.reduce((sum, s) => sum + s.findings, 0), icon: XCircle },
+  ];
+
+  const scanTypes = Array.from(new Set(scans.map(s => s.type)));
+
+  function handleCreate() {
+    const id = `SCN-${String(scans.length + 1).padStart(3, '0')}`;
+    setScans(prev => [...prev, { ...formData, id }]);
+    setCreateOpen(false);
+    setFormData(EMPTY_SCAN);
+  }
+
+  function handleEdit() {
+    if (!editItem) return;
+    setScans(prev => prev.map(s => s.id === editItem.id ? editItem : s));
+    setEditItem(null);
+  }
+
+  function handleDelete() {
+    if (!deleteItem) return;
+    setScans(prev => prev.filter(s => s.id !== deleteItem.id));
+    setDeleteItem(null);
+  }
+
+  function handleRun(scanId: string) {
+    setScans(prev => prev.map(s => s.id === scanId ? { ...s, status: 'running', startedAt: new Date().toISOString().split('T')[0] } : s));
+  }
+
+  return (
+    <div className="p-6 space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Scan Center</h1>
+          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>
+            {orgName} · Security scan management, scheduling & results
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm"><Download size={14} className="mr-1" /> Export</Button>
+          <Button size="sm" onClick={() => { setFormData(EMPTY_SCAN); setCreateOpen(true); }}>
+            <Plus size={14} className="mr-1" /> New Scan
+          </Button>
+        </div>
+      </div>
+
+      {/* Stat Cards */}
+      <div className="grid grid-cols-4 gap-4">
+        {stats.map(s => (
+          <Card key={s.label} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{s.label}</p>
+                <p className="text-3xl font-bold mt-1" style={{ color: 'hsl(var(--text-1))' }}>{s.value}</p>
+              </div>
+              <s.icon size={28} style={{ color: 'hsl(var(--brand))' }} />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Chart */}
+      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Scans by Type</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={typeData}>
+              <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+              <XAxis dataKey="name" tick={{ fontSize: 11, fill: ct.axis }} />
+              <YAxis tick={{ fontSize: 11, fill: ct.axis }} allowDecimals={false} label={{ value: 'Count', angle: -90, position: 'insideLeft', style: { fill: ct.axis } }} />
+              <Tooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.tooltipText, borderRadius: 0 }} />
+              <Bar dataKey="count" fill={ct.brand} radius={0} name="Scans" />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* Search + Filter */}
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 max-w-xs">
+          <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--text-3))' }} />
+          <Input placeholder="Search scans..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8" style={{ borderRadius: 0 }} />
+        </div>
+        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
+          style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', fontSize: 13, borderRadius: 0 }}>
+          <option value="all">All Statuses</option>
+          {['completed', 'running', 'scheduled', 'failed'].map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <select value={filterType} onChange={e => setFilterType(e.target.value)}
+          style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', fontSize: 13, borderRadius: 0 }}>
+          <option value="all">All Types</option>
+          {scanTypes.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+        <span className="text-xs ml-auto" style={{ color: 'hsl(var(--text-3))' }}>{filtered.length} of {scans.length} scans</span>
+      </div>
+
+      {/* Table */}
+      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+        <CardContent className="p-0">
+          {filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16" style={{ color: 'hsl(var(--text-3))' }}>
+              <Scan size={40} />
+              <p className="mt-3 text-sm font-medium">No scans match your filters</p>
+            </div>
+          ) : (
+            <table className="w-full">
+              <thead style={{ background: 'hsl(var(--bg-muted))' }}>
+                <tr>
+                  {['ID', 'Name', 'Type', 'Target', 'Status', 'Severity', 'Findings', 'Schedule', 'Actions'].map(h => (
+                    <th key={h} className="text-left p-3 text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(s => (
+                  <tr
+                    key={s.id}
+                    className="cursor-pointer"
+                    style={{ borderTop: '1px solid hsl(var(--border))' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'hsl(var(--bg-muted))')}
+                    onMouseLeave={e => (e.currentTarget.style.background = '')}
+                    onClick={() => setViewItem(s)}
+                  >
+                    <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{s.id}</td>
+                    <td className="p-3 text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{s.name}</td>
+                    <td className="p-3">
+                      <Badge variant="outline" style={{ borderRadius: 0, fontSize: 11 }}>{s.type}</Badge>
+                    </td>
+                    <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{s.target}</td>
+                    <td className="p-3">
+                      <div className="flex items-center gap-1.5">
+                        {statusIcon(s.status)}
+                        <Badge style={{ background: statusStyle(s.status).bg, color: statusStyle(s.status).text, border: `1px solid ${statusStyle(s.status).border}`, borderRadius: 0, fontSize: 11 }}>
+                          {s.status}
+                        </Badge>
+                      </div>
+                    </td>
+                    <td className="p-3">
+                      {s.status === 'completed' ? (
+                        <Badge style={{ background: severityColor(s.severity).bg, color: severityColor(s.severity).text, border: `1px solid ${severityColor(s.severity).border}`, borderRadius: 0, fontSize: 11 }}>
+                          {s.severity}
+                        </Badge>
+                      ) : <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>—</span>}
+                    </td>
+                    <td className="p-3 text-sm" style={{ color: s.findings > 0 ? '#f97316' : 'hsl(var(--text-2))' }}>
+                      {s.status === 'completed' ? `${s.findings} (${s.criticalFindings} crit)` : '—'}
+                    </td>
+                    <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{s.schedule}</td>
+                    <td className="p-3">
+                      <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                        <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setViewItem(s)}><Eye size={14} /></Button>
+                        {s.status !== 'running' && (
+                          <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: '#10b981' }} onClick={() => handleRun(s.id)}><Play size={14} /></Button>
+                        )}
+                        <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setEditItem({ ...s })}><PencilSimple size={14} /></Button>
+                        <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: '#ef4444' }} onClick={() => setDeleteItem(s)}><Trash size={14} /></Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* View Sheet */}
+      <Sheet open={!!viewItem} onOpenChange={o => !o && setViewItem(null)}>
+        <SheetContent style={{ width: 520, background: 'hsl(var(--bg-surface))', borderRadius: 0 }}>
+          {viewItem && (
+            <>
+              <SheetHeader className="pb-4">
+                <SheetTitle style={{ color: 'hsl(var(--text-1))' }}>{viewItem.name}</SheetTitle>
+                <div className="flex gap-2 flex-wrap">
+                  <Badge style={{ background: statusStyle(viewItem.status).bg, color: statusStyle(viewItem.status).text, border: `1px solid ${statusStyle(viewItem.status).border}`, borderRadius: 0 }}>{viewItem.status}</Badge>
+                  <Badge variant="outline" style={{ borderRadius: 0 }}>{viewItem.type}</Badge>
+                </div>
+              </SheetHeader>
+              <Tabs defaultValue="details">
+                <TabsList style={{ borderRadius: 0, background: 'hsl(var(--bg-muted))' }}>
+                  <TabsTrigger value="details" style={{ borderRadius: 0 }}>Details</TabsTrigger>
+                  <TabsTrigger value="results" style={{ borderRadius: 0 }}>Results</TabsTrigger>
+                </TabsList>
+                <TabsContent value="details" className="mt-4 space-y-3">
+                  {[
+                    { label: 'Scan ID', value: viewItem.id },
+                    { label: 'Target', value: viewItem.target },
+                    { label: 'Owner', value: viewItem.owner },
+                    { label: 'Schedule', value: viewItem.schedule },
+                    { label: 'Started', value: formatDate(viewItem.startedAt) },
+                    { label: 'Duration', value: viewItem.duration },
+                  ].map(r => (
+                    <div key={r.label} className="flex justify-between py-2" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                      <span className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>{r.label}</span>
+                      <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{r.value}</span>
+                    </div>
+                  ))}
+                  <p className="text-sm mt-2" style={{ color: 'hsl(var(--text-2))' }}>{viewItem.description}</p>
+                </TabsContent>
+                <TabsContent value="results" className="mt-4">
+                  {viewItem.status === 'completed' ? (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="text-center p-4" style={{ border: '1px solid hsl(var(--border))' }}>
+                          <p className="text-4xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>{viewItem.findings}</p>
+                          <p className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>Total Findings</p>
+                        </div>
+                        <div className="text-center p-4" style={{ border: '1px solid hsl(var(--border))' }}>
+                          <p className="text-4xl font-bold" style={{ color: '#ef4444' }}>{viewItem.criticalFindings}</p>
+                          <p className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>Critical</p>
+                        </div>
+                      </div>
+                      <div className="p-3" style={{ background: 'hsl(var(--bg-muted))' }}>
+                        <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-2))' }}>Max Severity</p>
+                        <Badge style={{ background: severityColor(viewItem.severity).bg, color: severityColor(viewItem.severity).text, border: `1px solid ${severityColor(viewItem.severity).border}`, borderRadius: 0 }}>
+                          {viewItem.severity}
+                        </Badge>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-8" style={{ color: 'hsl(var(--text-3))' }}>
+                      {statusIcon(viewItem.status)}
+                      <p className="mt-3 text-sm">Results not yet available</p>
+                      <p className="text-xs mt-1">Status: {viewItem.status}</p>
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
+              <div className="flex gap-2 mt-6">
+                <Button size="sm" onClick={() => { setEditItem({ ...viewItem }); setViewItem(null); }}>
+                  <PencilSimple size={14} className="mr-1" /> Edit
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setViewItem(null)}>Close</Button>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editItem} onOpenChange={o => !o && setEditItem(null)}>
+        <DialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0, maxWidth: 520 }}>
+          <DialogHeader><DialogTitle style={{ color: 'hsl(var(--text-1))' }}>Edit Scan</DialogTitle></DialogHeader>
+          {editItem && (
+            <div className="space-y-3">
+              {[{ label: 'Name', key: 'name' }, { label: 'Target', key: 'target' }, { label: 'Owner', key: 'owner' }, { label: 'Description', key: 'description' }].map(f => (
+                <div key={f.key}>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>{f.label}</label>
+                  <Input value={(editItem as any)[f.key] || ''} onChange={e => setEditItem(prev => prev ? { ...prev, [f.key]: e.target.value } : null)} style={{ borderRadius: 0 }} />
+                </div>
+              ))}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Type</label>
+                  <select value={editItem.type} onChange={e => setEditItem(prev => prev ? { ...prev, type: e.target.value } : null)}
+                    style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
+                    {['DAST', 'SAST', 'SCA', 'Network', 'AI Security', 'Configuration'].map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Schedule</label>
+                  <select value={editItem.schedule} onChange={e => setEditItem(prev => prev ? { ...prev, schedule: e.target.value } : null)}
+                    style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
+                    {['Daily', 'Weekly', 'Bi-weekly', 'Monthly', 'Manual'].map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditItem(null)} style={{ borderRadius: 0 }}>Cancel</Button>
+            <Button onClick={handleEdit} style={{ borderRadius: 0 }}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Dialog */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0, maxWidth: 520 }}>
+          <DialogHeader><DialogTitle style={{ color: 'hsl(var(--text-1))' }}>New Security Scan</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            {[{ label: 'Name', key: 'name' }, { label: 'Target', key: 'target' }, { label: 'Owner', key: 'owner' }, { label: 'Description', key: 'description' }].map(f => (
+              <div key={f.key}>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>{f.label}</label>
+                <Input value={(formData as any)[f.key] || ''} onChange={e => setFormData(prev => ({ ...prev, [f.key]: e.target.value }))} style={{ borderRadius: 0 }} />
+              </div>
+            ))}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Scan Type</label>
+                <select value={formData.type} onChange={e => setFormData(prev => ({ ...prev, type: e.target.value }))}
+                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
+                  {['DAST', 'SAST', 'SCA', 'Network', 'AI Security', 'Configuration'].map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Schedule</label>
+                <select value={formData.schedule} onChange={e => setFormData(prev => ({ ...prev, schedule: e.target.value }))}
+                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
+                  {['Daily', 'Weekly', 'Bi-weekly', 'Monthly', 'Manual'].map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
+            <Button onClick={handleCreate} style={{ borderRadius: 0 }} disabled={!formData.name}>Schedule Scan</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Dialog */}
+      <AlertDialog open={!!deleteItem} onOpenChange={o => !o && setDeleteItem(null)}>
+        <AlertDialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0 }}>
+          <AlertDialogHeader>
+            <AlertDialogTitle style={{ color: 'hsl(var(--text-1))' }}>Delete Scan</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{deleteItem?.name}</strong>? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} style={{ background: '#ef4444', borderRadius: 0 }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
 }

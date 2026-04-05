@@ -5,7 +5,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from ".
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
-import { Search, Plus, Building2, AlertTriangle, Shield } from "lucide-react";
+import { MagnifyingGlass as Search, Plus, Buildings as Building2, Warning as AlertTriangle, Shield } from "@phosphor-icons/react";
 
 const mockVendors = [
   { id: "VND-001", name: "OpenAI", category: "AI Model Provider", services: "GPT-4, DALL-E, Whisper", riskTier: 1, status: "active", lastAssessment: "2026-05-15", contractExpiry: "2026-01-31", contact: "enterprise@openai.com" },

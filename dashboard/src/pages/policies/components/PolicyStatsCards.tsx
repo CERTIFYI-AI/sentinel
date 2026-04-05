@@ -1,4 +1,4 @@
-import { FileText, CheckCircle, Clock, XCircle, AlertTriangle } from 'lucide-react';
+import { FileText, CheckCircle, Clock, XCircle, Warning as AlertTriangle } from '@phosphor-icons/react';
 import { Policy } from '../../../types/policy.types';
 
 interface Props { policies: Policy[]; }
