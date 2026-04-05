@@ -71,7 +71,7 @@ export default function PolicyManagement() {
   const doExport = (fmt: string) => { setExportMenu(false); const blob = new Blob([JSON.stringify(filtered,null,2)],{type:"application/json"}); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `policies.${fmt}`; a.click(); };
 
   return (
-    <div className="p-6 space-y-6 min-h-screen bg-[#0a0a0a]">
+    <div className="space-y-6 min-h-screen bg-[#0a0a0a]">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -81,7 +81,7 @@ export default function PolicyManagement() {
         <div className="flex gap-2 relative">
           <div className="relative">
             <Button variant="outline" className="border-[hsl(var(--border-mid))] text-[hsl(var(--text-2))]" onClick={() => setExportMenu(!exportMenu)}><Download className="w-4 h-4 mr-2"/>Export</Button>
-            {exportMenu && <div className="absolute right-0 top-10 z-50 bg-[#1a1a2e] border border-[hsl(var(--border-mid))] rounded-lg shadow-xl py-1 w-32">{["csv","pdf","json"].map(f=><button key={f} className="w-full text-left px-3 py-2 text-sm text-[hsl(var(--text-2))] hover:bg-muted" onClick={()=>doExport(f)}>{f.toUpperCase()}</button>)}</div>}
+            {exportMenu && <div className="absolute right-0 top-10 z-50 bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border-mid))] rounded-lg shadow-xl py-1 w-32">{["csv","pdf","json"].map(f=><button key={f} className="w-full text-left px-3 py-2 text-sm text-[hsl(var(--text-2))] hover:bg-muted" onClick={()=>doExport(f)}>{f.toUpperCase()}</button>)}</div>}
           </div>
           <Button className="bg-[hsl(var(--brand))] hover:bg-primary/90 text-foreground" onClick={openCreate}><Plus className="w-4 h-4 mr-2"/>New Policy</Button>
         </div>
@@ -90,7 +90,7 @@ export default function PolicyManagement() {
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
         {stats.map((s,i) => { const Icon = iconMap[s.icon]; return (
-          <Card key={i} className="bg-[#1a1a2e] border-[hsl(var(--border))] p-4">
+          <Card key={i} className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] p-4">
             <div className="flex items-center justify-between">
               <div><p className="text-[hsl(var(--text-3))] text-xs">{s.label}</p><p className="text-2xl font-bold text-foreground mt-1">{s.value}</p></div>
               <Icon className={`w-8 h-8 ${s.color} opacity-80`}/>
@@ -101,30 +101,30 @@ export default function PolicyManagement() {
 
       {/* Charts */}
       <div className="grid grid-cols-2 gap-4">
-        <Card className="bg-[#1a1a2e] border-[hsl(var(--border))] p-4">
+        <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] p-4">
           <h3 className="text-foreground font-semibold mb-4">Policies by Category</h3>
           <ResponsiveContainer width="100%" height={220}>
-            <PieChart><Pie data={catData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" label={({name,value})=>`${name}: ${value}`}>{catData.map((_,i)=><Cell key={i} fill={COLORS[i%COLORS.length]}/>)}</Pie><Tooltip contentStyle={{background:"#1a1a2e",border:"1px solid #333",borderRadius:8}}/><Legend/></PieChart>
+            <PieChart><Pie data={catData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" label={({name,value})=>`${name}: ${value}`}>{catData.map((_,i)=><Cell key={i} fill={COLORS[i%COLORS.length]}/>)}</Pie><Tooltip contentStyle={{background:"hsl(var(--bg-surface))",border:"1px solid hsl(var(--border))",borderRadius:8}}/><Legend/></PieChart>
           </ResponsiveContainer>
         </Card>
-        <Card className="bg-[#1a1a2e] border-[hsl(var(--border))] p-4">
+        <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] p-4">
           <h3 className="text-foreground font-semibold mb-4">Policy Reviews (6 Months)</h3>
           <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={reviewData}><CartesianGrid strokeDasharray="3 3" stroke="#333"/><XAxis dataKey="month" stroke="#888"/><YAxis stroke="#888"/><Tooltip contentStyle={{background:"#1a1a2e",border:"1px solid #333",borderRadius:8}}/><Line type="monotone" dataKey="count" stroke="#10b981" strokeWidth={2} dot={{fill:"#10b981"}}/></LineChart>
+            <LineChart data={reviewData}><CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--chart-grid))"/><XAxis dataKey="month" stroke="hsl(var(--chart-axis))"/><YAxis stroke="hsl(var(--chart-axis))"/><Tooltip contentStyle={{background:"hsl(var(--bg-surface))",border:"1px solid hsl(var(--border))",borderRadius:8}}/><Line type="monotone" dataKey="count" stroke="#10b981" strokeWidth={2} dot={{fill:"#10b981"}}/></LineChart>
           </ResponsiveContainer>
         </Card>
       </div>
 
       {/* Filters */}
       <div className="flex gap-3 items-center">
-        <div className="relative flex-1"><Search className="absolute left-3 top-2.5 w-4 h-4 text-[hsl(var(--text-4))]"/><Input placeholder="Search policies..." className="pl-10 bg-[#1a1a2e] border-[hsl(var(--border-mid))] text-foreground" value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}}/></div>
-        <select className="bg-[#1a1a2e] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-[hsl(var(--text-2))]" value={catFilter} onChange={e=>{setCatFilter(e.target.value);setPage(1);}}><option value="all">All Categories</option>{CATS.map(c=><option key={c} value={c}>{c}</option>)}</select>
-        <select className="bg-[#1a1a2e] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-[hsl(var(--text-2))]" value={statusFilter} onChange={e=>{setStatusFilter(e.target.value);setPage(1);}}><option value="all">All Status</option><option value="active">Active</option><option value="review">Under Review</option><option value="expired">Expired</option><option value="draft">Draft</option><option value="archived">Archived</option></select>
-        <select className="bg-[#1a1a2e] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-[hsl(var(--text-2))]" value={fwFilter} onChange={e=>{setFwFilter(e.target.value);setPage(1);}}><option value="all">All Frameworks</option>{FWS.map(f=><option key={f} value={f}>{f}</option>)}</select>
+        <div className="relative flex-1"><Search className="absolute left-3 top-2.5 w-4 h-4 text-[hsl(var(--text-4))]"/><Input placeholder="Search policies..." className="pl-10 bg-[hsl(var(--bg-surface))] border-[hsl(var(--border-mid))] text-foreground" value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}}/></div>
+        <select className="bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-[hsl(var(--text-2))]" value={catFilter} onChange={e=>{setCatFilter(e.target.value);setPage(1);}}><option value="all">All Categories</option>{CATS.map(c=><option key={c} value={c}>{c}</option>)}</select>
+        <select className="bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-[hsl(var(--text-2))]" value={statusFilter} onChange={e=>{setStatusFilter(e.target.value);setPage(1);}}><option value="all">All Status</option><option value="active">Active</option><option value="review">Under Review</option><option value="expired">Expired</option><option value="draft">Draft</option><option value="archived">Archived</option></select>
+        <select className="bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-[hsl(var(--text-2))]" value={fwFilter} onChange={e=>{setFwFilter(e.target.value);setPage(1);}}><option value="all">All Frameworks</option>{FWS.map(f=><option key={f} value={f}>{f}</option>)}</select>
       </div>
 
       {/* Table */}
-      <Card className="bg-[#1a1a2e] border-[hsl(var(--border))]">
+      <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead><tr className="border-b border-[hsl(var(--border))]">{["ID","Name","Category","Version","Owner","Updated","Framework","Status","Actions"].map(h=><th key={h} className="px-4 py-3 text-left text-[hsl(var(--text-3))] font-medium">{h}</th>)}</tr></thead>
@@ -142,7 +142,7 @@ export default function PolicyManagement() {
                   <td className="px-4 py-3">
                     <div className="relative">
                       <button className="p-1 hover:bg-muted rounded" onClick={e=>{e.stopPropagation();setActionMenu(actionMenu===p.id?null:p.id);}}><MoreVertical className="w-4 h-4 text-[hsl(var(--text-3))]"/></button>
-                      {actionMenu===p.id&&<div className="absolute right-0 top-8 z-50 bg-[#1a1a2e] border border-[hsl(var(--border-mid))] rounded-lg shadow-xl py-1 w-36">
+                      {actionMenu===p.id&&<div className="absolute right-0 top-8 z-50 bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border-mid))] rounded-lg shadow-xl py-1 w-36">
                         <button className="w-full text-left px-3 py-2 text-sm text-[hsl(var(--text-2))] hover:bg-muted flex items-center gap-2" onClick={e=>{e.stopPropagation();setActionMenu(null);setSel(p);}}><Eye className="w-3 h-3"/>View</button>
                         <button className="w-full text-left px-3 py-2 text-sm text-[hsl(var(--text-2))] hover:bg-muted flex items-center gap-2" onClick={e=>{e.stopPropagation();setActionMenu(null);openEdit(p);}}><Edit className="w-3 h-3"/>Edit</button>
                         <button className="w-full text-left px-3 py-2 text-sm text-[hsl(var(--text-2))] hover:bg-muted flex items-center gap-2" onClick={e=>{e.stopPropagation();setActionMenu(null);nav(`/policy-editor?id=${p.id}`);}}><Eye className="w-3 h-3"/>Open Editor</button>
@@ -170,7 +170,7 @@ export default function PolicyManagement() {
 
       {/* Side Sheet */}
       <Sheet open={!!sel && !showCreate} onOpenChange={()=>setSel(null)}>
-        <SheetContent className="bg-[#1a1a2e] border-[hsl(var(--border))] w-[480px] sm:max-w-[480px] overflow-y-auto">
+        <SheetContent className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] w-[480px] sm:max-w-[480px] overflow-y-auto">
           <SheetHeader><SheetTitle className="text-foreground">{sel?.name}</SheetTitle></SheetHeader>
           {sel && <Tabs defaultValue="overview" className="mt-4">
             <TabsList className="bg-[hsl(var(--bg-raised))]/50 w-full"><TabsTrigger value="overview" className="flex-1">Overview</TabsTrigger><TabsTrigger value="versions" className="flex-1">Versions</TabsTrigger><TabsTrigger value="controls" className="flex-1">Controls</TabsTrigger></TabsList>
@@ -217,7 +217,7 @@ export default function PolicyManagement() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="bg-[#1a1a2e] border-[hsl(var(--border))] text-foreground max-w-lg">
+        <DialogContent className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-foreground max-w-lg">
           <DialogHeader><DialogTitle>{editPolicy?"Update Policy":"Create Policy"}</DialogTitle></DialogHeader>
           <div className="space-y-4 mt-2">
             <div><label className="text-[hsl(var(--text-3))] text-xs">Policy Name</label><Input className="bg-[hsl(var(--bg-raised))] border-[hsl(var(--border-mid))] text-foreground mt-1" value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></div>

@@ -24,7 +24,7 @@ export const PolicyStatusChart = ({ policies }: Props) => {
         <BarChart data={monthlyData} barSize={28}>
           <XAxis dataKey="month" stroke="#52525b" tick={{ fill: "#a1a1aa", fontSize: 12 }} />
           <YAxis stroke="#52525b" tick={{ fill: "#a1a1aa", fontSize: 12 }} />
-          <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid #333", borderRadius: "8px", color: "#e2e8f0" }} />
+          <Tooltip contentStyle={{ background: "hsl(var(--bg-surface))", border: "1px solid hsl(var(--border))", borderRadius: "8px", color: "hsl(var(--text-1))" }} />
           <Bar dataKey="reviews" fill="#10b981" radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>

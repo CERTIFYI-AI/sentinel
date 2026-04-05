@@ -86,7 +86,7 @@ export default function AgentDetail() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div>
         <Button variant="outline" onClick={() => navigate('/agents')} className="gap-2 mb-4">

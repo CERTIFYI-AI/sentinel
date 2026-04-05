@@ -18,7 +18,7 @@ export const PolicyCategoryChart = ({ policies }: Props) => {
           <Pie data={data} cx="50%" cy="45%" innerRadius={60} outerRadius={90} paddingAngle={2} dataKey="value">
             {data.map((_, index) => <Cell key={index} fill={COLORS[index % COLORS.length]} />)}
           </Pie>
-          <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid #333", borderRadius: "8px", color: "#e2e8f0" }} />
+          <Tooltip contentStyle={{ background: "hsl(var(--bg-surface))", border: "1px solid hsl(var(--border))", borderRadius: "8px", color: "hsl(var(--text-1))" }} />
           <Legend wrapperStyle={{ color: "#a1a1aa", fontSize: "11px" }} />
         </PieChart>
       </ResponsiveContainer>

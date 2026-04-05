@@ -197,7 +197,7 @@ export default function VendorQuestionnaire() {
   if (submitted) {
     const color = scoreColor(scorePercent);
     return (
-      <div className="p-6 space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+      <div className="space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
         <Button variant="ghost" size="sm" onClick={() => navigate(`/vendors/${id}`)} style={{ padding: '4px 8px' }}>
           <ArrowLeft size={14} className="mr-1" /> Back to Vendor
         </Button>
@@ -243,7 +243,7 @@ export default function VendorQuestionnaire() {
   }
 
   return (
-    <div className="p-6 space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div className="space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
       <Button variant="ghost" size="sm" onClick={() => navigate(`/vendors/${id}`)} style={{ padding: '4px 8px' }}>
         <ArrowLeft size={14} className="mr-1" /> Back to {vendor.name}
       </Button>

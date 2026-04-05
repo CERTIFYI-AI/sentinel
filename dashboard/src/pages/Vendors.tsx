@@ -26,7 +26,7 @@ export default function Vendors() {
   const [sel, setSel] = useState<typeof mockVendors[0] | null>(null);
   const filtered = mockVendors.filter(v => v.name.toLowerCase().includes(search.toLowerCase()) || v.category.toLowerCase().includes(search.toLowerCase()));
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between"><div><h1 className="text-2xl font-bold">Vendor Registry</h1><p className="text-muted-foreground">Manage AI vendor relationships and risk</p></div>
         <Button className="bg-green-600 hover:bg-green-700"><Plus className="w-4 h-4 mr-2" />Add Vendor</Button></div>
       <div className="grid grid-cols-4 gap-4">

@@ -95,7 +95,7 @@ export default function ComplianceControls() {
   };
 
   return (
-    <div className="p-6 space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div className="space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
       {/* Breadcrumb */}
       <div className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>
         <Link to="/compliance" style={{ color: 'hsl(var(--text-3))', textDecoration: 'none' }}>Compliance</Link>
