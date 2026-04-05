@@ -1,37 +1,281 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
-import { Badge } from "../../components/ui/badge";
-import { Button } from "../../components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
-import { Input } from "../../components/ui/input";
-import { Shield, MagnifyingGlass as Search, Funnel as Filter, Plus, DownloadSimple as Download } from "@phosphor-icons/react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-const columns = [  { key: "id", label: "ID" },
-  { key: "name", label: "Name" },
-  { key: "status", label: "Status" },
-  { key: "severity", label: "Severity" },
-  { key: "score", label: "Score" },
-  { key: "owner", label: "Owner" },];
-const mockData: any[] = [  { id: 1, name: "Item Alpha", status: "active", severity: "high", score: 85, owner: "John" },
-  { id: 2, name: "Item Beta", status: "completed", severity: "medium", score: 72, owner: "Sarah" },
-  { id: 3, name: "Item Gamma", status: "pending", severity: "low", score: 91, owner: "Mike" },
-  { id: 4, name: "Item Delta", status: "active", severity: "critical", score: 45, owner: "Anna" },
-  { id: 5, name: "Item Epsilon", status: "review", severity: "medium", score: 78, owner: "Tom" },];
-const statsCards = [  { label: "Total", value: "189", icon: Shield },
-  { label: "Active", value: "134", icon: Shield },
-  { label: "Critical", value: "8", icon: Shield },
-  { label: "Resolved", value: "47", icon: Shield },];
+import { useParams, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
+import {
+  ArrowLeft, Warning, CheckCircle, XCircle, ClipboardText, Clock,
+  User, Brain, Shield, Plus,
+} from '@phosphor-icons/react';
+import { BIAS_AUDITS, severityColor, formatDate } from '../../data/seed';
+import { useSettingsStore } from '../../stores/settingsStore';
+
+function ScoreGauge({ score, size = 120 }: { score: number; size?: number }) {
+  const color = score >= 0.85 ? '#10b981' : score >= 0.70 ? '#f97316' : '#ef4444';
+  const pct = score * 100;
+  const radius = (size / 2) - 10;
+  const circumference = Math.PI * radius;
+  const progress = (score / 1) * circumference;
+
+  return (
+    <div style={{ position: 'relative', width: size, height: size / 2 + 24, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <svg width={size} height={size / 2 + 10} viewBox={`0 0 ${size} ${size / 2 + 10}`}>
+        <path
+          d={`M 10 ${size / 2} A ${radius} ${radius} 0 0 1 ${size - 10} ${size / 2}`}
+          fill="none" stroke="hsl(var(--bg-muted))" strokeWidth="10" strokeLinecap="butt"
+        />
+        <path
+          d={`M 10 ${size / 2} A ${radius} ${radius} 0 0 1 ${size - 10} ${size / 2}`}
+          fill="none" stroke={color} strokeWidth="10" strokeLinecap="butt"
+          strokeDasharray={`${progress} ${circumference}`}
+        />
+      </svg>
+      <div style={{ position: 'absolute', bottom: 0, textAlign: 'center' }}>
+        <p className="text-3xl font-bold" style={{ color }}>{pct.toFixed(0)}%</p>
+        <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>fairness score</p>
+      </div>
+    </div>
+  );
+}
+
+const MOCK_TIMELINE = [
+  { date: '2026-01-15', action: 'Audit scheduled', actor: 'System' },
+  { date: '2026-01-18', action: 'Dataset prepared and validated', actor: 'David Kim' },
+  { date: '2026-01-20', action: 'Audit commenced', actor: 'Maria Santos' },
+  { date: '2026-01-22', action: 'Preliminary results reviewed', actor: 'Raj Gupta' },
+  { date: '2026-01-22', action: 'Audit completed — results published', actor: 'Maria Santos' },
+];
+
 export default function BiasAuditResults() {
-  const [search, setSearch] = useState("");
-  const [sf, setSf] = useState("all");
-  const [sel, setSel] = useState<any>(null);
-  const [open, setOpen] = useState(false);
-  const sts = ["all", ...Array.from(new Set(mockData.map((d) => d.status||d.severity||"active")))];
-  const filt = mockData.filter((d) => JSON.stringify(d).toLowerCase().includes(search.toLowerCase()) && (sf==="all"||(d.status||d.severity)===sf));
-  const ch = mockData.slice(0,6).map((d,i) => ({ name: d.name||d.title||"I"+(i+1), value: d.score||d.count||50+i*10 }));
-  return (<div className="p-6 space-y-6"><div className="flex items-center justify-between"><h1 className="text-2xl font-bold">Bias Audit Results</h1><div className="flex gap-2"><Button size="sm" variant="outline"><Download size={16} className="mr-1"/>Export</Button><Button size="sm"><Plus size={16} className="mr-1"/>Add New</Button></div></div>
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">{statsCards.map((s:any,i:number)=>(<Card key={i}><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">{s.label}</p><p className="text-2xl font-bold">{s.value}</p></div><s.icon size={32} className="text-[hsl(var(--brand))]"/></div></CardContent></Card>))}</div>
-  <Card><CardHeader><CardTitle>Overview</CardTitle></CardHeader><CardContent><ResponsiveContainer width="100%" height={250}><BarChart data={ch}><XAxis dataKey="name" fontSize={12}/><YAxis fontSize={12}/><Tooltip/><Bar dataKey="value" fill="#10b981" radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></CardContent></Card>
-  <Card><CardHeader><div className="flex items-center justify-between"><CardTitle>Records</CardTitle><div className="flex gap-2"><div className="relative"><Search size={16} className="absolute left-2.5 top-2.5 text-muted-foreground"/><Input placeholder="Search..." value={search} onChange={(e)=>setSearch(e.target.value)} className="pl-8 w-64"/></div><select className="border rounded px-3 py-1.5 text-sm bg-background" value={sf} onChange={(e)=>setSf(e.target.value)}>{sts.map(s=><option key={s} value={s}>{s==="all"?"All":s}</option>)}</select></div></div></CardHeader><CardContent><div className="border rounded-lg overflow-hidden"><table className="w-full"><thead className="bg-muted/50"><tr>{columns.map((c:any)=><th key={c.key} className="text-left p-3 text-sm font-medium">{c.label}</th>)}<th className="text-left p-3 text-sm font-medium">Actions</th></tr></thead><tbody>{filt.map((row:any,i:number)=>(<tr key={i} className="border-t hover:bg-muted/30 cursor-pointer" onClick={()=>{setSel(row);setOpen(true);}}>{columns.map((c:any)=>(<td key={c.key} className="p-3 text-sm">{c.key==="status"||c.key==="severity"?(<Badge variant={row[c.key]==="critical"||row[c.key]==="high"?"destructive":row[c.key]==="compliant"||row[c.key]==="active"||row[c.key]==="low"?"default":"secondary"}>{row[c.key]}</Badge>):String(row[c.key]??"")}</td>))}<td className="p-3"><Button size="sm" variant="ghost" onClick={(e)=>{e.stopPropagation();setSel(row);setOpen(true);}}>View</Button></td></tr>))}</tbody></table></div><p className="text-sm text-muted-foreground mt-2">{filt.length} of {mockData.length} records</p></CardContent></Card>
-  <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{sel?.name||sel?.title||"Detail"}</DialogTitle></DialogHeader><div className="space-y-3">{sel&&Object.entries(sel).map(([k,v])=>(<div key={k} className="flex justify-between border-b pb-2"><span className="text-sm text-muted-foreground capitalize">{k}</span><span className="text-sm font-medium">{String(v)}</span></div>))}<div className="flex gap-2 pt-2"><Button size="sm">Edit</Button><Button size="sm" variant="outline">Archive</Button><Button size="sm" variant="destructive">Delete</Button></div></div></DialogContent></Dialog></div>);
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { orgName } = useSettingsStore();
+
+  const audit = BIAS_AUDITS.find(a => a.id === id);
+
+  if (!audit) {
+    return (
+      <div className="p-6 flex flex-col items-center justify-center" style={{ minHeight: 400 }}>
+        <Warning size={48} style={{ color: '#f97316' }} />
+        <p className="mt-4 text-lg font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Bias audit not found</p>
+        <Button className="mt-4" onClick={() => navigate('/bias-audits')} style={{ borderRadius: 0 }}>
+          <ArrowLeft size={14} className="mr-1" /> Back to Bias Audits
+        </Button>
+      </div>
+    );
+  }
+
+  const resultColor = audit.result === 'passed' ? '#10b981' : '#ef4444';
+  const sc = severityColor(audit.severity);
+  const passCount = audit.dimensions.filter(d => d.pass).length;
+  const failCount = audit.dimensions.filter(d => !d.pass).length;
+
+  return (
+    <div className="p-6 space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+      <Button variant="ghost" size="sm" onClick={() => navigate('/bias-audits')} style={{ padding: '4px 8px' }}>
+        <ArrowLeft size={14} className="mr-1" /> Back to Bias Audits
+      </Button>
+
+      {/* Failed Banner */}
+      {audit.result === 'failed' && (
+        <div style={{ background: '#ef444415', border: '1px solid #ef4444', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <XCircle size={20} style={{ color: '#ef4444', flexShrink: 0 }} />
+          <div className="flex-1">
+            <p className="text-sm font-bold" style={{ color: '#ef4444' }}>Bias Audit FAILED — Remediation Required</p>
+            <p className="text-xs mt-0.5" style={{ color: '#ef4444', opacity: 0.85 }}>
+              {failCount} dimension{failCount > 1 ? 's' : ''} below threshold. This model must not be used for high-stakes decisions until remediated.
+            </p>
+          </div>
+          <Button size="sm" style={{ background: '#ef4444', color: 'white', borderRadius: 0, flexShrink: 0 }}>
+            <Plus size={14} className="mr-1" /> Create Remediation Task
+          </Button>
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>{audit.modelName}</h1>
+          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>
+            {orgName} · Audit {audit.id} · Framework: {audit.framework}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0, fontSize: 12 }}>
+            {audit.severity} severity
+          </Badge>
+          <Badge style={{
+            background: `${resultColor}20`,
+            color: resultColor,
+            border: `1px solid ${resultColor}`,
+            borderRadius: 0,
+            fontSize: 13,
+            fontWeight: 700,
+            padding: '4px 12px',
+          }}>
+            {audit.result === 'passed' ? <CheckCircle size={12} style={{ display: 'inline', marginRight: 4 }} /> : <XCircle size={12} style={{ display: 'inline', marginRight: 4 }} />}
+            {audit.result.toUpperCase()}
+          </Badge>
+        </div>
+      </div>
+
+      {/* Meta Cards */}
+      <div className="grid grid-cols-4 gap-4">
+        {[
+          { label: 'Model ID', value: audit.modelId, icon: Brain },
+          { label: 'Dataset', value: audit.dataset, icon: ClipboardText },
+          { label: 'Auditor', value: audit.auditor, icon: User },
+          { label: 'Audit Date', value: formatDate(audit.date), icon: Clock },
+        ].map(s => (
+          <Card key={s.label} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{s.label}</p>
+                <p className="text-sm font-bold mt-1" style={{ color: 'hsl(var(--text-1))' }}>{s.value}</p>
+              </div>
+              <s.icon size={22} style={{ color: 'hsl(var(--brand))' }} />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        {/* Score Gauge */}
+        <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Overall Fairness Score</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center pb-4">
+            <ScoreGauge score={audit.overallScore} size={160} />
+            <div className="mt-3 flex gap-3 text-center">
+              <div>
+                <p className="text-2xl font-bold" style={{ color: '#10b981' }}>{passCount}</p>
+                <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Passed</p>
+              </div>
+              <div style={{ width: 1, background: 'hsl(var(--border))' }} />
+              <div>
+                <p className="text-2xl font-bold" style={{ color: '#ef4444' }}>{failCount}</p>
+                <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Failed</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Dimension Breakdown */}
+        <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', gridColumn: '2 / 4' }}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Dimension Breakdown</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <table className="w-full">
+              <thead style={{ background: 'hsl(var(--bg-muted))' }}>
+                <tr>
+                  {['Protected Attribute', 'Score', 'Threshold', 'Status', 'Gap'].map(h => (
+                    <th key={h} className="text-left p-3 text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {audit.dimensions.map(d => {
+                  const color = d.pass ? '#10b981' : '#ef4444';
+                  const gap = (d.score - d.threshold) * 100;
+                  return (
+                    <tr key={d.attribute} style={{ borderTop: '1px solid hsl(var(--border))' }}>
+                      <td className="p-3 text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{d.attribute}</td>
+                      <td className="p-3">
+                        <div className="flex items-center gap-2">
+                          <div style={{ width: 70, height: 6, background: 'hsl(var(--bg-muted))' }}>
+                            <div style={{ width: `${d.score * 100}%`, height: '100%', background: color }} />
+                          </div>
+                          <span className="text-sm font-semibold" style={{ color }}>{(d.score * 100).toFixed(0)}%</span>
+                        </div>
+                      </td>
+                      <td className="p-3 text-sm" style={{ color: 'hsl(var(--text-3))' }}>{(d.threshold * 100).toFixed(0)}%</td>
+                      <td className="p-3">
+                        <Badge style={{
+                          background: `${color}20`,
+                          color,
+                          border: `1px solid ${color}`,
+                          borderRadius: 0,
+                          fontSize: 10,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 3,
+                          width: 'fit-content',
+                        }}>
+                          {d.pass ? <CheckCircle size={10} /> : <XCircle size={10} />}
+                          {d.pass ? 'PASS' : 'FAIL'}
+                        </Badge>
+                      </td>
+                      <td className="p-3 text-xs font-semibold" style={{ color: gap < 0 ? '#ef4444' : '#10b981' }}>
+                        {gap >= 0 ? '+' : ''}{gap.toFixed(1)}%
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Protected Attributes */}
+      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Protected Attributes Tested</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            {audit.protectedAttributes.map(attr => (
+              <Badge key={attr} variant="outline" style={{ borderRadius: 0, fontSize: 12 }}>
+                <Shield size={11} className="mr-1" /> {attr}
+              </Badge>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Recommendations */}
+      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Recommendations</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="space-y-2">
+            {audit.recommendations.map((rec, i) => (
+              <li key={i} className="flex items-start gap-3">
+                <span className="text-xs font-mono font-semibold" style={{ color: 'hsl(var(--brand))', minWidth: 20, marginTop: 2 }}>{i + 1}.</span>
+                <span className="text-sm" style={{ color: 'hsl(var(--text-2))' }}>{rec}</span>
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
+
+      {/* Timeline */}
+      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Audit Timeline</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-0">
+            {MOCK_TIMELINE.map((event, i) => (
+              <div key={i} className="flex gap-4" style={{ paddingBottom: i < MOCK_TIMELINE.length - 1 ? 16 : 0, position: 'relative' }}>
+                {/* Line */}
+                {i < MOCK_TIMELINE.length - 1 && (
+                  <div style={{ position: 'absolute', left: 7, top: 16, bottom: 0, width: 2, background: 'hsl(var(--border))' }} />
+                )}
+                {/* Dot */}
+                <div style={{ width: 16, height: 16, background: i === MOCK_TIMELINE.length - 1 ? 'hsl(var(--brand))' : 'hsl(var(--bg-muted))', border: '2px solid hsl(var(--brand))', borderRadius: '50%', flexShrink: 0, marginTop: 1 }} />
+                <div>
+                  <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{event.action}</p>
+                  <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-3))' }}>{formatDate(event.date)} · {event.actor}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }

@@ -1,37 +1,379 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
-import { Badge } from "../../components/ui/badge";
-import { Button } from "../../components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
-import { Input } from "../../components/ui/input";
-import { Shield, MagnifyingGlass as Search, Funnel as Filter, Plus, DownloadSimple as Download } from "@phosphor-icons/react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-const columns = [  { key: "id", label: "ID" },
-  { key: "name", label: "Name" },
-  { key: "status", label: "Status" },
-  { key: "type", label: "Type" },
-  { key: "score", label: "Score" },
-  { key: "date", label: "Date" },];
-const mockData: any[] = [  { id: 1, name: "Record One", status: "active", type: "Primary", score: 92, date: "2026-03-15" },
-  { id: 2, name: "Record Two", status: "completed", type: "Secondary", score: 85, date: "2026-03-14" },
-  { id: 3, name: "Record Three", status: "pending", type: "Primary", score: 78, date: "2026-03-13" },
-  { id: 4, name: "Record Four", status: "active", type: "Tertiary", score: 91, date: "2026-03-12" },
-  { id: 5, name: "Record Five", status: "archived", type: "Secondary", score: 67, date: "2026-03-11" },];
-const statsCards = [  { label: "Total", value: "245", icon: Shield },
-  { label: "Active", value: "178", icon: Shield },
-  { label: "Pending", value: "34", icon: Shield },
-  { label: "Archived", value: "33", icon: Shield },];
+import { useState } from 'react';
+import { Badge } from '../../components/ui/badge';
+import {
+  ArrowRight, CheckCircle, Warning, Clock, Robot, Shield,
+  Database, Lightning, Lock, Eye, MagnifyingGlass, Funnel,
+} from '@phosphor-icons/react';
+import { AGENTS, statusColor } from '../../data/seed';
+
+// ── timeline entries ───────────────────────────────────────────────────────
+
+interface TimelineEntry {
+  id: string;
+  timestamp: string;
+  agentId: string;
+  agentName: string;
+  action: string;
+  endpoint: string;
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  status: 'success' | 'error' | 'blocked' | 'warning';
+  latencyMs: number;
+  tokensUsed?: number;
+  targetModel?: string;
+  details: string;
+  category: 'inference' | 'data_access' | 'auth' | 'guardrail' | 'admin';
+}
+
+const TIMELINE: TimelineEntry[] = [
+  {
+    id: 'ACT-001',
+    timestamp: '2026-04-05T13:47:12Z',
+    agentId: 'AGT-001',
+    agentName: 'ModelMonitor-Prod',
+    action: 'Model health check',
+    endpoint: '/api/v1/models/MDL-004/metrics',
+    method: 'GET',
+    status: 'warning',
+    latencyMs: 48,
+    targetModel: 'MDL-004',
+    details: 'Bias threshold exceeded — fairness score 0.62 below 0.85 threshold. Alert triggered.',
+    category: 'inference',
+  },
+  {
+    id: 'ACT-002',
+    timestamp: '2026-04-05T13:45:03Z',
+    agentId: 'AGT-003',
+    agentName: 'ComplianceBot-EU',
+    action: 'GDPR consent verification',
+    endpoint: '/api/v1/datasets/DS-001/consent',
+    method: 'GET',
+    status: 'error',
+    latencyMs: 120,
+    details: 'Missing consent records for 847 records. Processing halted.',
+    category: 'data_access',
+  },
+  {
+    id: 'ACT-003',
+    timestamp: '2026-04-05T13:42:55Z',
+    agentId: 'AGT-002',
+    agentName: 'DataPipeline-Orchestrator',
+    action: 'Feature pipeline run',
+    endpoint: '/api/v1/pipelines/credit-features/run',
+    method: 'POST',
+    status: 'success',
+    latencyMs: 2840,
+    details: 'Credit feature pipeline completed. 890K records processed. 3 features flagged for drift.',
+    category: 'data_access',
+  },
+  {
+    id: 'ACT-004',
+    timestamp: '2026-04-05T13:40:11Z',
+    agentId: 'AGT-010',
+    agentName: 'MarketingAgent (Shadow)',
+    action: 'Customer data query',
+    endpoint: '/api/v1/datasets/DS-003/query',
+    method: 'POST',
+    status: 'blocked',
+    latencyMs: 12,
+    details: 'BLOCKED by guardrail — unauthorized agent accessing PII dataset without approval. Incident created.',
+    category: 'guardrail',
+  },
+  {
+    id: 'ACT-005',
+    timestamp: '2026-04-05T13:38:44Z',
+    agentId: 'AGT-004',
+    agentName: 'FraudGuard-Realtime',
+    action: 'Batch inference',
+    endpoint: '/api/v1/models/MDL-002/predict/batch',
+    method: 'POST',
+    status: 'success',
+    latencyMs: 14,
+    tokensUsed: 0,
+    targetModel: 'MDL-002',
+    details: '15,400 transactions scored. FPR: 1.8% (within threshold). 4 high-confidence fraud flags.',
+    category: 'inference',
+  },
+  {
+    id: 'ACT-006',
+    timestamp: '2026-04-05T13:35:22Z',
+    agentId: 'AGT-005',
+    agentName: 'AuditLogger-Sentinel',
+    action: 'Audit log export',
+    endpoint: '/api/v1/audit/export',
+    method: 'POST',
+    status: 'success',
+    latencyMs: 680,
+    details: 'Q1 2026 audit log exported. 8 entries. Signed and archived to S3.',
+    category: 'admin',
+  },
+  {
+    id: 'ACT-007',
+    timestamp: '2026-04-05T13:32:05Z',
+    agentId: 'AGT-006',
+    agentName: 'RegulatoryRadar',
+    action: 'Regulation update check',
+    endpoint: '/api/v1/regulations/scan',
+    method: 'GET',
+    status: 'success',
+    latencyMs: 210,
+    details: 'EU AI Act enforcement timeline updated. 118 days to full enforcement. 5 action items flagged.',
+    category: 'data_access',
+  },
+  {
+    id: 'ACT-008',
+    timestamp: '2026-04-05T13:28:51Z',
+    agentId: 'AGT-001',
+    agentName: 'ModelMonitor-Prod',
+    action: 'Drift detection scan',
+    endpoint: '/api/v1/models/MDL-001/drift',
+    method: 'GET',
+    status: 'warning',
+    latencyMs: 92,
+    targetModel: 'MDL-001',
+    details: 'Input distribution drift detected on geographic features. PSI score: 0.34 (threshold: 0.20).',
+    category: 'inference',
+  },
+  {
+    id: 'ACT-009',
+    timestamp: '2026-04-05T13:25:17Z',
+    agentId: 'AGT-007',
+    agentName: 'VendorRisk-Scanner',
+    action: 'DPA expiry check',
+    endpoint: '/api/v1/vendors/dpa/status',
+    method: 'GET',
+    status: 'error',
+    latencyMs: 35,
+    details: 'OpenAI DPA expired 2025-12-01. C3.ai DPA unsigned. 2 critical vendor compliance issues.',
+    category: 'data_access',
+  },
+  {
+    id: 'ACT-010',
+    timestamp: '2026-04-05T13:20:03Z',
+    agentId: 'AGT-003',
+    agentName: 'ComplianceBot-EU',
+    action: 'LLM inference — loan explainability',
+    endpoint: '/api/v1/models/MDL-004/explain',
+    method: 'POST',
+    status: 'success',
+    latencyMs: 1240,
+    tokensUsed: 847,
+    targetModel: 'MDL-004',
+    details: 'SHAP explanation generated for loan denial case LN-48291. All adverse action factors documented.',
+    category: 'inference',
+  },
+];
+
+// ── helpers ────────────────────────────────────────────────────────────────
+
+const statusStyles: Record<string, { bg: string; text: string; border: string; icon: React.ComponentType<any>; label: string }> = {
+  success: { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))', icon: CheckCircle, label: 'Success' },
+  error:   { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))', icon: Warning, label: 'Error' },
+  blocked: { bg: 'hsl(var(--s-er-bg))', text: '#ef4444', border: '#ef444440', icon: Lock, label: 'Blocked' },
+  warning: { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))', border: 'hsl(var(--s-wn-br))', icon: Warning, label: 'Warning' },
+};
+
+const categoryConfig: Record<string, { color: string; icon: React.ComponentType<any> }> = {
+  inference:   { color: '#6366f1', icon: Robot },
+  data_access: { color: '#06b6d4', icon: Database },
+  auth:        { color: '#f59e0b', icon: Shield },
+  guardrail:   { color: '#ef4444', icon: Lock },
+  admin:       { color: '#10b981', icon: Eye },
+};
+
+const methodColors: Record<string, string> = {
+  GET: '#10b981',
+  POST: '#6366f1',
+  PUT: '#f97316',
+  DELETE: '#ef4444',
+  PATCH: '#f59e0b',
+};
+
+// ── component ──────────────────────────────────────────────────────────────
+
 export default function ActivityTimeline() {
-  const [search, setSearch] = useState("");
-  const [sf, setSf] = useState("all");
-  const [sel, setSel] = useState<any>(null);
-  const [open, setOpen] = useState(false);
-  const sts = ["all", ...Array.from(new Set(mockData.map((d) => d.status||d.severity||"active")))];
-  const filt = mockData.filter((d) => JSON.stringify(d).toLowerCase().includes(search.toLowerCase()) && (sf==="all"||(d.status||d.severity)===sf));
-  const ch = mockData.slice(0,6).map((d,i) => ({ name: d.name||d.title||"I"+(i+1), value: d.score||d.count||50+i*10 }));
-  return (<div className="p-6 space-y-6"><div className="flex items-center justify-between"><h1 className="text-2xl font-bold">Activity Timeline</h1><div className="flex gap-2"><Button size="sm" variant="outline"><Download size={16} className="mr-1"/>Export</Button><Button size="sm"><Plus size={16} className="mr-1"/>Add New</Button></div></div>
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">{statsCards.map((s:any,i:number)=>(<Card key={i}><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">{s.label}</p><p className="text-2xl font-bold">{s.value}</p></div><s.icon size={32} className="text-[hsl(var(--brand))]"/></div></CardContent></Card>))}</div>
-  <Card><CardHeader><CardTitle>Overview</CardTitle></CardHeader><CardContent><ResponsiveContainer width="100%" height={250}><BarChart data={ch}><XAxis dataKey="name" fontSize={12}/><YAxis fontSize={12}/><Tooltip/><Bar dataKey="value" fill="#10b981" radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></CardContent></Card>
-  <Card><CardHeader><div className="flex items-center justify-between"><CardTitle>Records</CardTitle><div className="flex gap-2"><div className="relative"><Search size={16} className="absolute left-2.5 top-2.5 text-muted-foreground"/><Input placeholder="Search..." value={search} onChange={(e)=>setSearch(e.target.value)} className="pl-8 w-64"/></div><select className="border rounded px-3 py-1.5 text-sm bg-background" value={sf} onChange={(e)=>setSf(e.target.value)}>{sts.map(s=><option key={s} value={s}>{s==="all"?"All":s}</option>)}</select></div></div></CardHeader><CardContent><div className="border rounded-lg overflow-hidden"><table className="w-full"><thead className="bg-muted/50"><tr>{columns.map((c:any)=><th key={c.key} className="text-left p-3 text-sm font-medium">{c.label}</th>)}<th className="text-left p-3 text-sm font-medium">Actions</th></tr></thead><tbody>{filt.map((row:any,i:number)=>(<tr key={i} className="border-t hover:bg-muted/30 cursor-pointer" onClick={()=>{setSel(row);setOpen(true);}}>{columns.map((c:any)=>(<td key={c.key} className="p-3 text-sm">{c.key==="status"||c.key==="severity"?(<Badge variant={row[c.key]==="critical"||row[c.key]==="high"?"destructive":row[c.key]==="compliant"||row[c.key]==="active"||row[c.key]==="low"?"default":"secondary"}>{row[c.key]}</Badge>):String(row[c.key]??"")}</td>))}<td className="p-3"><Button size="sm" variant="ghost" onClick={(e)=>{e.stopPropagation();setSel(row);setOpen(true);}}>View</Button></td></tr>))}</tbody></table></div><p className="text-sm text-muted-foreground mt-2">{filt.length} of {mockData.length} records</p></CardContent></Card>
-  <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{sel?.name||sel?.title||"Detail"}</DialogTitle></DialogHeader><div className="space-y-3">{sel&&Object.entries(sel).map(([k,v])=>(<div key={k} className="flex justify-between border-b pb-2"><span className="text-sm text-muted-foreground capitalize">{k}</span><span className="text-sm font-medium">{String(v)}</span></div>))}<div className="flex gap-2 pt-2"><Button size="sm">Edit</Button><Button size="sm" variant="outline">Archive</Button><Button size="sm" variant="destructive">Delete</Button></div></div></DialogContent></Dialog></div>);
+  const [search, setSearch] = useState('');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const filtered = TIMELINE.filter(e => {
+    const matchSearch = !search || [e.agentName, e.action, e.endpoint, e.agentId].some(v => v.toLowerCase().includes(search.toLowerCase()));
+    const matchStatus = filterStatus === 'all' || e.status === filterStatus;
+    const matchCat = filterCategory === 'all' || e.category === filterCategory;
+    return matchSearch && matchStatus && matchCat;
+  });
+
+  const stats = [
+    { label: 'Total Calls', value: TIMELINE.length, color: 'hsl(var(--text-2))' },
+    { label: 'Success', value: TIMELINE.filter(e => e.status === 'success').length, color: '#10b981' },
+    { label: 'Errors', value: TIMELINE.filter(e => e.status === 'error').length, color: '#ef4444' },
+    { label: 'Blocked', value: TIMELINE.filter(e => e.status === 'blocked').length, color: '#dc2626' },
+  ];
+
+  return (
+    <div style={{ fontFamily: 'Outfit, sans-serif' }}>
+      {/* Stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+        {stats.map(s => (
+          <div key={s.label} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', padding: '12px 16px' }}>
+            <div style={{ fontSize: 11, color: 'hsl(var(--text-3))', marginBottom: 4 }}>{s.label}</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: s.color }}>{s.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Filters */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 16, alignItems: 'center' }}>
+        <div style={{ position: 'relative', flex: 1, maxWidth: 280 }}>
+          <MagnifyingGlass size={13} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: 'hsl(var(--text-3))' }} />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search by agent, action, endpoint…"
+            style={{ width: '100%', padding: '6px 10px 6px 28px', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', fontSize: 12, outline: 'none' }}
+          />
+        </div>
+        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ padding: '6px 10px', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-2))', fontSize: 12 }}>
+          <option value="all">All Status</option>
+          <option value="success">Success</option>
+          <option value="error">Error</option>
+          <option value="warning">Warning</option>
+          <option value="blocked">Blocked</option>
+        </select>
+        <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} style={{ padding: '6px 10px', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-2))', fontSize: 12 }}>
+          <option value="all">All Categories</option>
+          <option value="inference">Inference</option>
+          <option value="data_access">Data Access</option>
+          <option value="guardrail">Guardrail</option>
+          <option value="admin">Admin</option>
+          <option value="auth">Auth</option>
+        </select>
+        <span style={{ fontSize: 11, color: 'hsl(var(--text-4))' }}>{filtered.length} of {TIMELINE.length}</span>
+      </div>
+
+      {/* Timeline */}
+      <div style={{ position: 'relative' }}>
+        {/* Vertical line */}
+        <div style={{ position: 'absolute', left: 18, top: 14, bottom: 14, width: 1, background: 'hsl(var(--border))' }} />
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+          {filtered.map((entry, i) => {
+            const ss = statusStyles[entry.status];
+            const StatusIcon = ss.icon;
+            const catCfg = categoryConfig[entry.category];
+            const CatIcon = catCfg.icon;
+            const isExpanded = expandedId === entry.id;
+
+            return (
+              <div key={entry.id} style={{ display: 'flex', gap: 14, paddingBottom: 12 }}>
+                {/* Timeline dot */}
+                <div style={{ width: 36, display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
+                  <div style={{
+                    width: 14, height: 14, borderRadius: '50%', marginTop: 14,
+                    background: ss.bg,
+                    border: `2px solid ${ss.text}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    zIndex: 1,
+                    flexShrink: 0,
+                  }}>
+                    <StatusIcon size={7} style={{ color: ss.text }} weight="fill" />
+                  </div>
+                </div>
+
+                {/* Entry card */}
+                <div
+                  onClick={() => setExpandedId(isExpanded ? null : entry.id)}
+                  style={{
+                    flex: 1,
+                    background: 'hsl(var(--bg-surface))',
+                    border: `1px solid ${isExpanded ? 'hsl(var(--brand))' : 'hsl(var(--border))'}`,
+                    padding: '10px 14px',
+                    cursor: 'pointer',
+                    marginTop: 6,
+                  }}
+                >
+                  {/* Top row */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+                    {/* Timestamp */}
+                    <span style={{ fontSize: 10, fontFamily: 'monospace', color: 'hsl(var(--text-4))', flexShrink: 0 }}>
+                      {new Date(entry.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    </span>
+
+                    {/* Agent */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <CatIcon size={11} style={{ color: catCfg.color }} />
+                      <span style={{ fontSize: 11, fontWeight: 600, color: 'hsl(var(--text-2))' }}>
+                        {entry.agentName}
+                      </span>
+                    </div>
+
+                    <ArrowRight size={10} style={{ color: 'hsl(var(--text-4))' }} />
+
+                    {/* Action */}
+                    <span style={{ fontSize: 12, fontWeight: 500, color: 'hsl(var(--text-1))', flex: 1 }}>
+                      {entry.action}
+                    </span>
+
+                    {/* Status badge */}
+                    <Badge style={{ background: ss.bg, color: ss.text, border: `1px solid ${ss.border}`, borderRadius: 0, fontSize: 9, flexShrink: 0 }}>
+                      {ss.label}
+                    </Badge>
+
+                    {/* Latency */}
+                    <span style={{ fontSize: 10, color: entry.latencyMs > 1000 ? '#f97316' : 'hsl(var(--text-4))', fontFamily: 'monospace', flexShrink: 0 }}>
+                      {entry.latencyMs}ms
+                    </span>
+                  </div>
+
+                  {/* Endpoint row */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: isExpanded ? 10 : 0 }}>
+                    <span style={{
+                      fontSize: 9,
+                      fontWeight: 700,
+                      padding: '1px 5px',
+                      background: methodColors[entry.method] + '20',
+                      color: methodColors[entry.method],
+                      border: `1px solid ${methodColors[entry.method]}40`,
+                      fontFamily: 'monospace',
+                    }}>
+                      {entry.method}
+                    </span>
+                    <code style={{ fontSize: 10, color: 'hsl(var(--text-3))', fontFamily: 'monospace' }}>
+                      {entry.endpoint}
+                    </code>
+                    {entry.tokensUsed !== undefined && entry.tokensUsed > 0 && (
+                      <span style={{ marginLeft: 'auto', fontSize: 10, color: '#6366f1', fontFamily: 'monospace' }}>
+                        {entry.tokensUsed} tokens
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Expanded details */}
+                  {isExpanded && (
+                    <div style={{ padding: '10px 12px', background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))' }}>
+                      <p style={{ fontSize: 12, color: 'hsl(var(--text-2))', lineHeight: 1.5, marginBottom: 8 }}>
+                        {entry.details}
+                      </p>
+                      <div style={{ display: 'flex', gap: 16, fontSize: 11, color: 'hsl(var(--text-3))' }}>
+                        <span>Agent ID: <code style={{ fontFamily: 'monospace', color: 'hsl(var(--text-2))' }}>{entry.agentId}</code></span>
+                        <span>Category: <strong style={{ color: catCfg.color }}>{entry.category.replace('_', ' ')}</strong></span>
+                        {entry.targetModel && <span>Model: <code style={{ fontFamily: 'monospace', color: 'hsl(var(--text-2))' }}>{entry.targetModel}</code></span>}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {filtered.length === 0 && (
+        <div style={{ padding: '40px', textAlign: 'center', color: 'hsl(var(--text-3))' }}>
+          <Robot size={32} style={{ margin: '0 auto 10px', opacity: 0.3 }} />
+          <p style={{ fontSize: 13 }}>No activity entries match your filters</p>
+        </div>
+      )}
+    </div>
+  );
 }

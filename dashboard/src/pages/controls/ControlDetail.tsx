@@ -1,192 +1,171 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import {
-  ArrowLeft, ShieldCheck, ClipboardText, Warning, CheckCircle,
-  XCircle, Clock, TestTube, Link as LinkIcon,
+  ArrowLeft, Warning, CheckCircle, XCircle, Clock, Shield,
+  FileText, User, CalendarBlank, TestTube, Link as LinkIcon, Paperclip,
 } from '@phosphor-icons/react';
-import { CONTROLS, EVIDENCE, RISKS, GAPS, statusColor, severityColor, formatDate } from '../../data/seed';
+import { CONTROLS, RISKS, EVIDENCE, severityColor, statusColor, formatDate } from '../../data/seed';
+import { useSettingsStore } from '../../stores/settingsStore';
 
-function testResultBadge(result: string) {
-  if (result === 'pass') return { bg: 'hsl(var(--s-ok-bg))', text: '#10b981', border: 'hsl(var(--s-ok-br))', label: 'Pass' };
-  if (result === 'fail') return { bg: 'hsl(var(--s-er-bg))', text: '#ef4444', border: 'hsl(var(--s-er-br))', label: 'Fail' };
-  return { bg: 'hsl(var(--s-nt-bg))', text: 'hsl(var(--s-nt-tx))', border: 'hsl(var(--s-nt-br))', label: 'Pending' };
-}
-
-function scoreBarColor(score: number): string {
-  if (score >= 80) return '#10b981';
-  if (score >= 60) return '#f97316';
-  return '#ef4444';
-}
-
-const TEST_HISTORY = [
-  { date: '2026-03-20', result: 'pass', tester: 'Emma Wilson', notes: 'All test cases passed. Evidence reviewed.' },
-  { date: '2026-02-18', result: 'fail', tester: 'James Patel', notes: 'Missing documentation for two sub-controls.' },
-  { date: '2026-01-15', result: 'pass', tester: 'Emma Wilson', notes: 'Quarterly review completed successfully.' },
+const MOCK_TEST_HISTORY = [
+  {
+    id: 'TEST-001',
+    date: '2026-03-20',
+    tester: 'Emma Wilson',
+    result: 'pass' as const,
+    score: 94,
+    notes: 'All test cases passed. Control operating effectively. Minor documentation gap noted.',
+    duration: '3.5 hours',
+  },
+  {
+    id: 'TEST-002',
+    date: '2025-12-15',
+    tester: 'Emma Wilson',
+    result: 'pass' as const,
+    score: 91,
+    notes: 'Control passed quarterly review. Recommend automation of evidence collection.',
+    duration: '4 hours',
+  },
+  {
+    id: 'TEST-003',
+    date: '2025-09-10',
+    tester: 'James Patel',
+    result: 'fail' as const,
+    score: 68,
+    notes: 'Control failed — documentation not updated post model deployment. Remediation required.',
+    duration: '2 hours',
+  },
 ];
+
+function ScoreCircle({ score, size = 80 }: { score: number; size?: number }) {
+  const color = score >= 85 ? '#10b981' : score >= 65 ? '#f97316' : '#ef4444';
+  return (
+    <div style={{ width: size, height: size, borderRadius: '50%', background: `${color}15`, border: `4px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+      <span style={{ fontSize: size * 0.28, fontWeight: 700, color }}>{score}</span>
+      <span style={{ fontSize: size * 0.14, color, opacity: 0.7 }}>/ 100</span>
+    </div>
+  );
+}
 
 export default function ControlDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { orgName } = useSettingsStore();
+
   const control = CONTROLS.find(c => c.id === id);
 
   if (!control) {
     return (
-      <div className="p-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
-        <Link to="/compliance/controls">
-          <Button variant="outline" size="sm" style={{ borderRadius: 0 }}>
-            <ArrowLeft size={14} className="mr-1" /> Back to Controls
-          </Button>
-        </Link>
-        <div className="flex flex-col items-center justify-center py-24">
-          <Warning size={48} style={{ color: 'hsl(var(--text-3))' }} />
-          <p className="mt-4 text-lg font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Control Not Found</p>
-          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>No control with ID: {id}</p>
-        </div>
+      <div className="p-6 flex flex-col items-center justify-center" style={{ minHeight: 400 }}>
+        <Warning size={48} style={{ color: '#f97316' }} />
+        <p className="mt-4 text-lg font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Control not found</p>
+        <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>Control ID "{id}" does not exist.</p>
+        <Button className="mt-4" onClick={() => navigate('/compliance/controls')} style={{ borderRadius: 0 }}>
+          <ArrowLeft size={14} className="mr-1" /> Back to Controls
+        </Button>
       </div>
     );
   }
 
   const sc = statusColor(control.status);
-  const tr = testResultBadge(control.testResult);
+  const trColor = control.testResult === 'pass' ? '#10b981' : control.testResult === 'fail' ? '#ef4444' : '#f97316';
+  const scoreColor = control.score >= 85 ? '#10b981' : control.score >= 65 ? '#f97316' : '#ef4444';
 
-  // Linked evidence: by framework
-  const linkedEvidence = EVIDENCE.filter(e => e.framework === control.framework);
+  // Linked evidence (same framework)
+  const linkedEvidence = EVIDENCE.filter(e => e.framework === control.framework).slice(0, 3);
 
-  // Linked risks: by category
-  const linkedRisks = RISKS.filter(r => r.category === 'Compliance' || r.category === 'AI/ML').slice(0, 3);
+  // Linked risks (same framework)
+  const linkedRisks = RISKS.filter(r => r.linkedModel !== '' || r.category === 'Compliance').slice(0, 4);
 
-  // Gap delta — decrease is green, increase is red
-  const gapDelta = control.score - 80;
+  const mockEvidence = [
+    { id: `EV-${control.id}-001`, title: `${control.title} — Test Report Q1 2026`, type: 'Report', source: 'Internal', size: '1.8 MB', date: '2026-03-20', status: 'synced' },
+    { id: `EV-${control.id}-002`, title: `${control.framework} Evidence — ${control.clause}`, type: 'Documentation', source: 'Internal', size: '890 KB', date: '2026-03-10', status: 'synced' },
+    { id: `EV-${control.id}-003`, title: `Screenshot — ${control.title} Implementation`, type: 'Screenshot', source: 'Internal', size: '230 KB', date: '2026-02-28', status: 'pending' },
+  ];
 
   return (
     <div className="p-6 space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
-      {/* Back */}
-      <Link to="/compliance/controls">
-        <Button variant="outline" size="sm" style={{ borderRadius: 0 }}>
-          <ArrowLeft size={14} className="mr-1" /> Back to Controls
-        </Button>
-      </Link>
+      <Button variant="ghost" size="sm" onClick={() => navigate('/compliance/controls')} style={{ padding: '4px 8px' }}>
+        <ArrowLeft size={14} className="mr-1" /> Back to Controls
+      </Button>
 
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <span className="text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{control.id}</span>
-            <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0 }}>
-              {control.status.replace('_', ' ')}
-            </Badge>
-            <Badge style={{ background: tr.bg, color: tr.text, border: `1px solid ${tr.border}`, borderRadius: 0 }}>
-              {tr.label}
-            </Badge>
-          </div>
           <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>{control.title}</h1>
           <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>
-            {control.framework} · {control.clause}
+            {orgName} · {control.framework} · {control.clause} · Control ID: {control.id}
           </p>
         </div>
+        <div className="flex gap-2 items-center">
+          <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0 }}>
+            {control.status}
+          </Badge>
+          <Badge style={{ background: `${trColor}20`, color: trColor, border: `1px solid ${trColor}`, borderRadius: 0 }}>
+            {control.testResult === 'pass' ? <CheckCircle size={11} style={{ display: 'inline', marginRight: 3 }} /> : control.testResult === 'fail' ? <XCircle size={11} style={{ display: 'inline', marginRight: 3 }} /> : <Clock size={11} style={{ display: 'inline', marginRight: 3 }} />}
+            {control.testResult.toUpperCase()}
+          </Badge>
+        </div>
       </div>
-
-      {/* Summary stats */}
-      <div className="grid grid-cols-4 gap-4">
-        {[
-          { label: 'Compliance Score', value: control.score + '%', icon: ShieldCheck, color: scoreBarColor(control.score) },
-          { label: 'Evidence Items', value: control.evidenceCount, icon: ClipboardText, color: '#3b82f6' },
-          { label: 'Last Tested', value: control.lastTested ? formatDate(control.lastTested) : 'Never', icon: TestTube, color: '#6366f1' },
-          { label: 'Owner', value: control.owner, icon: Warning, color: '#f97316' },
-        ].map(s => (
-          <Card key={s.label} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{s.label}</p>
-                <s.icon size={16} style={{ color: s.color }} />
-              </div>
-              <p className="text-base font-bold" style={{ color: 'hsl(var(--text-1))' }}>{s.value}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Score bar */}
-      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-        <CardContent className="p-4">
-          <div className="flex justify-between text-xs mb-2">
-            <span style={{ color: 'hsl(var(--text-2))' }}>Compliance Score</span>
-            <div className="flex items-center gap-2">
-              <span className="font-bold" style={{ color: scoreBarColor(control.score) }}>{control.score}%</span>
-              <span className="text-xs" style={{ color: gapDelta >= 0 ? '#10b981' : '#ef4444' }}>
-                {gapDelta >= 0 ? `+${gapDelta}% above target` : `${gapDelta}% below target`}
-              </span>
-            </div>
-          </div>
-          <div style={{ background: 'hsl(var(--bg-muted))', height: 12 }}>
-            <div style={{ width: control.score + '%', height: '100%', background: scoreBarColor(control.score), transition: 'width 0.3s' }} />
-          </div>
-          <div className="flex justify-between text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>
-            <span>&lt;60% Non-Compliant</span>
-            <span>60-79% Partial</span>
-            <span>≥80% Target</span>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Tabs */}
       <Tabs defaultValue="overview">
         <TabsList style={{ borderRadius: 0, background: 'hsl(var(--bg-muted))' }}>
           <TabsTrigger value="overview" style={{ borderRadius: 0 }}>Overview</TabsTrigger>
-          <TabsTrigger value="evidence" style={{ borderRadius: 0 }}>Evidence ({linkedEvidence.length})</TabsTrigger>
-          <TabsTrigger value="tests" style={{ borderRadius: 0 }}>Test History</TabsTrigger>
-          <TabsTrigger value="risks" style={{ borderRadius: 0 }}>Linked Risks ({linkedRisks.length})</TabsTrigger>
+          <TabsTrigger value="evidence" style={{ borderRadius: 0 }}>Evidence ({mockEvidence.length})</TabsTrigger>
+          <TabsTrigger value="testing" style={{ borderRadius: 0 }}>Test History</TabsTrigger>
+          <TabsTrigger value="risks" style={{ borderRadius: 0 }}>Linked Risks</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="mt-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
+            {/* Score */}
             <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Control Details</CardTitle>
+                <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Control Score</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {[
-                  { label: 'Control ID', value: control.id },
-                  { label: 'Framework', value: control.framework },
-                  { label: 'Clause', value: control.clause },
-                  { label: 'Status', value: control.status.replace('_', ' ') },
-                  { label: 'Owner', value: control.owner },
-                  { label: 'Score', value: control.score + '%' },
-                  { label: 'Evidence Items', value: control.evidenceCount.toString() },
-                  { label: 'Last Tested', value: control.lastTested ? formatDate(control.lastTested) : '—' },
-                  { label: 'Test Result', value: control.testResult },
-                ].map(r => (
-                  <div key={r.label} className="flex justify-between py-2" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                    <span className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>{r.label}</span>
-                    <span className="text-sm font-medium" style={{
-                      color: r.label === 'Test Result'
-                        ? (control.testResult === 'pass' ? '#10b981' : control.testResult === 'fail' ? '#ef4444' : 'hsl(var(--text-1))')
-                        : 'hsl(var(--text-1))'
-                    }}>
-                      {r.value}
-                    </span>
+              <CardContent className="flex flex-col items-center py-4">
+                <ScoreCircle score={control.score} size={100} />
+                <div className="mt-4 w-full space-y-2">
+                  <div className="flex justify-between text-xs" style={{ color: 'hsl(var(--text-3))' }}>
+                    <span>Score</span><span style={{ color: scoreColor, fontWeight: 700 }}>{control.score}/100</span>
                   </div>
-                ))}
+                  <div style={{ height: 6, background: 'hsl(var(--bg-muted))' }}>
+                    <div style={{ width: `${control.score}%`, height: '100%', background: scoreColor }} />
+                  </div>
+                  <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>
+                    {control.score >= 85 ? 'Operating effectively' : control.score >= 65 ? 'Partially effective — improvements needed' : 'Ineffective — immediate remediation required'}
+                  </p>
+                </div>
               </CardContent>
             </Card>
 
-            <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            {/* Details */}
+            <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', gridColumn: '2 / 4' }}>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Description</CardTitle>
+                <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Control Details</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm" style={{ color: 'hsl(var(--text-2))' }}>{control.description}</p>
-                <div className="mt-4 p-3" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))' }}>
-                  <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-2))' }}>Gap Delta vs 80% Target</p>
-                  <p className="text-lg font-bold" style={{ color: gapDelta >= 0 ? '#10b981' : '#ef4444' }}>
-                    {gapDelta >= 0 ? '+' : ''}{gapDelta}%
-                  </p>
-                  <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-3))' }}>
-                    {gapDelta >= 0 ? 'Exceeds target — well controlled' : 'Below target — remediation needed'}
-                  </p>
+                <p className="text-sm mb-4" style={{ color: 'hsl(var(--text-2))' }}>{control.description}</p>
+                <div className="grid grid-cols-2 gap-x-8">
+                  {[
+                    { label: 'Control ID', value: control.id, icon: Shield },
+                    { label: 'Framework', value: control.framework, icon: FileText },
+                    { label: 'Clause', value: control.clause, icon: LinkIcon },
+                    { label: 'Owner', value: control.owner, icon: User },
+                    { label: 'Last Tested', value: control.lastTested ? formatDate(control.lastTested) : 'Not tested', icon: CalendarBlank },
+                    { label: 'Evidence Count', value: control.evidenceCount, icon: Paperclip },
+                  ].map(r => (
+                    <div key={r.label} className="flex items-center gap-2 py-2" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                      <r.icon size={14} style={{ color: 'hsl(var(--text-3))', flexShrink: 0 }} />
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{r.label}</span>
+                      <span className="text-xs font-medium ml-auto" style={{ color: 'hsl(var(--text-1))' }}>{r.value}</span>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -195,138 +174,104 @@ export default function ControlDetail() {
 
         {/* Evidence Tab */}
         <TabsContent value="evidence" className="mt-4">
-          <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Linked Evidence</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {linkedEvidence.length === 0 ? (
-                <div className="flex flex-col items-center py-10" style={{ color: 'hsl(var(--text-3))' }}>
-                  <ClipboardText size={32} />
-                  <p className="mt-2 text-sm">No evidence linked to this control's framework</p>
-                </div>
-              ) : (
-                <table className="w-full">
-                  <thead style={{ background: 'hsl(var(--bg-muted))' }}>
-                    <tr>
-                      {['ID', 'Title', 'Type', 'Status', 'Source', 'Last Sync'].map(h => (
-                        <th key={h} className="text-left p-3 text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {linkedEvidence.map(e => {
-                      const esc = statusColor(e.status);
-                      return (
-                        <tr key={e.id} style={{ borderTop: '1px solid hsl(var(--border))' }}>
-                          <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{e.id}</td>
-                          <td className="p-3 text-sm" style={{ color: 'hsl(var(--text-1))' }}>{e.title}</td>
-                          <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{e.type}</td>
-                          <td className="p-3">
-                            <Badge style={{ background: esc.bg, color: esc.text, border: `1px solid ${esc.border}`, borderRadius: 0, fontSize: 10 }}>
-                              {e.status}
-                            </Badge>
-                          </td>
-                          <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{e.source}</td>
-                          <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{formatDate(e.lastSync)}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              )}
-            </CardContent>
-          </Card>
+          <div className="space-y-3">
+            {mockEvidence.map(ev => {
+              const evSc = statusColor(ev.status);
+              return (
+                <Card key={ev.id} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+                  <CardContent className="p-4 flex items-center gap-4">
+                    <div style={{ width: 40, height: 40, background: 'hsl(var(--bg-muted))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Paperclip size={18} style={{ color: 'hsl(var(--brand))' }} />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{ev.id}</span>
+                        <Badge variant="outline" style={{ borderRadius: 0, fontSize: 10 }}>{ev.type}</Badge>
+                        <Badge style={{ background: evSc.bg, color: evSc.text, border: `1px solid ${evSc.border}`, borderRadius: 0, fontSize: 10 }}>{ev.status}</Badge>
+                      </div>
+                      <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{ev.title}</p>
+                      <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-3))' }}>{ev.source} · {ev.size} · {formatDate(ev.date)}</p>
+                    </div>
+                    <Button size="sm" variant="outline" style={{ borderRadius: 0 }}>
+                      <FileText size={13} className="mr-1" /> View
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         </TabsContent>
 
-        {/* Test History */}
-        <TabsContent value="tests" className="mt-4">
-          <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Test History</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {TEST_HISTORY.map((t, i) => {
-                  const trb = testResultBadge(t.result);
-                  return (
-                    <div key={i} className="flex items-start gap-3 p-3" style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-muted))' }}>
-                      {t.result === 'pass' ? (
-                        <CheckCircle size={16} style={{ color: '#10b981', flexShrink: 0, marginTop: 1 }} />
-                      ) : (
-                        <XCircle size={16} style={{ color: '#ef4444', flexShrink: 0, marginTop: 1 }} />
-                      )}
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <Badge style={{ background: trb.bg, color: trb.text, border: `1px solid ${trb.border}`, borderRadius: 0, fontSize: 10 }}>
-                            {trb.label}
-                          </Badge>
-                          <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{formatDate(t.date)}</span>
+        {/* Test History Tab */}
+        <TabsContent value="testing" className="mt-4">
+          <div className="space-y-3">
+            {MOCK_TEST_HISTORY.map(test => {
+              const color = test.result === 'pass' ? '#10b981' : '#ef4444';
+              return (
+                <Card key={test.id} style={{ background: 'hsl(var(--bg-surface))', border: `1px solid ${color}40` }}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{test.id}</span>
+                          <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{formatDate(test.date)} · {test.tester} · {test.duration}</span>
                         </div>
-                        <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-2))' }}>{t.notes}</p>
-                        <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-3))' }}>Tested by: {t.tester}</p>
+                        <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+                          {control.title} — Quarterly Test
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl font-bold" style={{ color }}>{test.score}</span>
+                        <Badge style={{ background: `${color}20`, color, border: `1px solid ${color}`, borderRadius: 0, fontSize: 11 }}>
+                          {test.result === 'pass' ? <CheckCircle size={11} style={{ display: 'inline', marginRight: 3 }} /> : <XCircle size={11} style={{ display: 'inline', marginRight: 3 }} />}
+                          {test.result.toUpperCase()}
+                        </Badge>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+                    <p className="text-sm" style={{ color: 'hsl(var(--text-2))' }}>{test.notes}</p>
+                    {/* Score bar */}
+                    <div className="mt-3">
+                      <div style={{ height: 4, background: 'hsl(var(--bg-muted))' }}>
+                        <div style={{ width: `${test.score}%`, height: '100%', background: color }} />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         </TabsContent>
 
-        {/* Linked Risks */}
+        {/* Linked Risks Tab */}
         <TabsContent value="risks" className="mt-4">
-          <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Linked Risks</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {linkedRisks.length === 0 ? (
-                <div className="flex flex-col items-center py-10" style={{ color: 'hsl(var(--text-3))' }}>
-                  <CheckCircle size={32} style={{ color: '#10b981' }} />
-                  <p className="mt-2 text-sm">No risks linked</p>
-                </div>
-              ) : (
-                <table className="w-full">
-                  <thead style={{ background: 'hsl(var(--bg-muted))' }}>
-                    <tr>
-                      {['ID', 'Risk', 'Category', 'Severity', 'Score', 'Status'].map(h => (
-                        <th key={h} className="text-left p-3 text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {linkedRisks.map(r => {
-                      const rsc = severityColor(r.severity);
-                      const rstc = statusColor(r.status);
-                      return (
-                        <tr key={r.id} style={{ borderTop: '1px solid hsl(var(--border))' }}>
-                          <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{r.id}</td>
-                          <td className="p-3 text-sm" style={{ color: 'hsl(var(--text-1))', maxWidth: 200 }}>
-                            <span className="line-clamp-2">{r.title}</span>
-                          </td>
-                          <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{r.category}</td>
-                          <td className="p-3">
-                            <Badge style={{ background: rsc.bg, color: rsc.text, border: `1px solid ${rsc.border}`, borderRadius: 0, fontSize: 10 }}>
-                              {r.severity}
-                            </Badge>
-                          </td>
-                          <td className="p-3 text-sm font-bold" style={{ color: r.score >= 15 ? '#ef4444' : 'hsl(var(--text-1))' }}>
-                            {r.score}
-                          </td>
-                          <td className="p-3">
-                            <Badge style={{ background: rstc.bg, color: rstc.text, border: `1px solid ${rstc.border}`, borderRadius: 0, fontSize: 10 }}>
-                              {r.status}
-                            </Badge>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              )}
-            </CardContent>
-          </Card>
+          <div className="space-y-3">
+            {linkedRisks.map(risk => {
+              const rc = severityColor(risk.severity);
+              const rsc = statusColor(risk.status);
+              return (
+                <Card key={risk.id} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{risk.id}</span>
+                          <Badge style={{ background: rc.bg, color: rc.text, border: `1px solid ${rc.border}`, borderRadius: 0, fontSize: 10 }}>{risk.severity}</Badge>
+                          <Badge style={{ background: rsc.bg, color: rsc.text, border: `1px solid ${rsc.border}`, borderRadius: 0, fontSize: 10 }}>{risk.status}</Badge>
+                        </div>
+                        <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{risk.title}</p>
+                        <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-2))' }}>{risk.description}</p>
+                      </div>
+                      <div className="ml-4 text-right">
+                        <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Risk Score</p>
+                        <p className="text-2xl font-bold" style={{ color: rc.text }}>{risk.score}</p>
+                        <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{risk.owner}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         </TabsContent>
       </Tabs>
     </div>

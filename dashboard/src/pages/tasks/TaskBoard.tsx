@@ -1,37 +1,222 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
-import { Badge } from "../../components/ui/badge";
-import { Button } from "../../components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
-import { Input } from "../../components/ui/input";
-import { Shield, MagnifyingGlass as Search, Funnel as Filter, Plus, DownloadSimple as Download } from "@phosphor-icons/react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-const columns = [  { key: "id", label: "ID" },
-  { key: "name", label: "Name" },
-  { key: "status", label: "Status" },
-  { key: "type", label: "Type" },
-  { key: "priority", label: "Priority" },
-  { key: "date", label: "Date" },];
-const mockData: any[] = [  { id: 1, name: "Task Alpha", status: "active", type: "Review", priority: "high", date: "2026-03-15" },
-  { id: 2, name: "Task Beta", status: "completed", type: "Audit", priority: "medium", date: "2026-03-14" },
-  { id: 3, name: "Task Gamma", status: "pending", type: "Approval", priority: "critical", date: "2026-03-13" },
-  { id: 4, name: "Task Delta", status: "active", type: "Review", priority: "low", date: "2026-03-12" },
-  { id: 5, name: "Task Epsilon", status: "overdue", type: "Compliance", priority: "high", date: "2026-03-11" },];
-const statsCards = [  { label: "Total", value: "156", icon: Shield },
-  { label: "Active", value: "89", icon: Shield },
-  { label: "Overdue", value: "12", icon: Shield },
-  { label: "Completed", value: "55", icon: Shield },];
-export default function TaskBoard() {
-  const [search, setSearch] = useState("");
-  const [sf, setSf] = useState("all");
-  const [sel, setSel] = useState<any>(null);
-  const [open, setOpen] = useState(false);
-  const sts = ["all", ...Array.from(new Set(mockData.map((d) => d.status||d.severity||"active")))];
-  const filt = mockData.filter((d) => JSON.stringify(d).toLowerCase().includes(search.toLowerCase()) && (sf==="all"||(d.status||d.severity)===sf));
-  const ch = mockData.slice(0,6).map((d,i) => ({ name: d.name||d.title||"I"+(i+1), value: d.score||d.count||50+i*10 }));
-  return (<div className="p-6 space-y-6"><div className="flex items-center justify-between"><h1 className="text-2xl font-bold">Task Board</h1><div className="flex gap-2"><Button size="sm" variant="outline"><Download size={16} className="mr-1"/>Export</Button><Button size="sm"><Plus size={16} className="mr-1"/>Add New</Button></div></div>
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">{statsCards.map((s:any,i:number)=>(<Card key={i}><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">{s.label}</p><p className="text-2xl font-bold">{s.value}</p></div><s.icon size={32} className="text-[hsl(var(--brand))]"/></div></CardContent></Card>))}</div>
-  <Card><CardHeader><CardTitle>Overview</CardTitle></CardHeader><CardContent><ResponsiveContainer width="100%" height={250}><BarChart data={ch}><XAxis dataKey="name" fontSize={12}/><YAxis fontSize={12}/><Tooltip/><Bar dataKey="value" fill="#10b981" radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></CardContent></Card>
-  <Card><CardHeader><div className="flex items-center justify-between"><CardTitle>Records</CardTitle><div className="flex gap-2"><div className="relative"><Search size={16} className="absolute left-2.5 top-2.5 text-muted-foreground"/><Input placeholder="Search..." value={search} onChange={(e)=>setSearch(e.target.value)} className="pl-8 w-64"/></div><select className="border rounded px-3 py-1.5 text-sm bg-background" value={sf} onChange={(e)=>setSf(e.target.value)}>{sts.map(s=><option key={s} value={s}>{s==="all"?"All":s}</option>)}</select></div></div></CardHeader><CardContent><div className="border rounded-lg overflow-hidden"><table className="w-full"><thead className="bg-muted/50"><tr>{columns.map((c:any)=><th key={c.key} className="text-left p-3 text-sm font-medium">{c.label}</th>)}<th className="text-left p-3 text-sm font-medium">Actions</th></tr></thead><tbody>{filt.map((row:any,i:number)=>(<tr key={i} className="border-t hover:bg-muted/30 cursor-pointer" onClick={()=>{setSel(row);setOpen(true);}}>{columns.map((c:any)=>(<td key={c.key} className="p-3 text-sm">{c.key==="status"||c.key==="severity"?(<Badge variant={row[c.key]==="critical"||row[c.key]==="high"?"destructive":row[c.key]==="compliant"||row[c.key]==="active"||row[c.key]==="low"?"default":"secondary"}>{row[c.key]}</Badge>):String(row[c.key]??"")}</td>))}<td className="p-3"><Button size="sm" variant="ghost" onClick={(e)=>{e.stopPropagation();setSel(row);setOpen(true);}}>View</Button></td></tr>))}</tbody></table></div><p className="text-sm text-muted-foreground mt-2">{filt.length} of {mockData.length} records</p></CardContent></Card>
-  <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{sel?.name||sel?.title||"Detail"}</DialogTitle></DialogHeader><div className="space-y-3">{sel&&Object.entries(sel).map(([k,v])=>(<div key={k} className="flex justify-between border-b pb-2"><span className="text-sm text-muted-foreground capitalize">{k}</span><span className="text-sm font-medium">{String(v)}</span></div>))}<div className="flex gap-2 pt-2"><Button size="sm">Edit</Button><Button size="sm" variant="outline">Archive</Button><Button size="sm" variant="destructive">Delete</Button></div></div></DialogContent></Dialog></div>);
+import { useState } from 'react';
+import { Badge } from '../../components/ui/badge';
+import {
+  CalendarBlank, Warning, CheckCircle, Clock, Kanban, Plus, X,
+} from '@phosphor-icons/react';
+import { TASKS, TASK_STATUS_CONFIG, type Task, type TaskStatus } from './taskData';
+import { severityColor, formatDate } from '../../data/seed';
+import type { Severity } from '../../data/seed';
+
+function AvatarInitials({ name }: { name: string }) {
+  const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  const colors = ['#6366f1', '#f97316', '#10b981', '#06b6d4', '#a855f7', '#f59e0b'];
+  const idx = name.charCodeAt(0) % colors.length;
+  return (
+    <div title={name} style={{
+      width: 22, height: 22, borderRadius: '50%',
+      background: colors[idx],
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: 9, fontWeight: 700, color: '#fff', flexShrink: 0,
+    }}>
+      {initials}
+    </div>
+  );
+}
+
+function PriorityBadge({ priority }: { priority: Severity }) {
+  const c = severityColor(priority);
+  return (
+    <Badge style={{ background: c.bg, color: c.text, border: `1px solid ${c.border}`, borderRadius: 0, fontSize: 9 }}>
+      {priority}
+    </Badge>
+  );
+}
+
+const COLUMN_ORDER: TaskStatus[] = ['todo', 'in_progress', 'overdue', 'done'];
+
+export default function TaskBoard({ onSelectTask }: { onSelectTask?: (task: Task) => void }) {
+  const [tasks] = useState<Task[]>(TASKS);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+
+  const handleSelect = (task: Task) => {
+    setSelectedTask(task);
+    onSelectTask?.(task);
+  };
+
+  return (
+    <div style={{ fontFamily: 'Outfit, sans-serif' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+        <Kanban size={18} style={{ color: 'hsl(var(--brand))' }} />
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: 'hsl(var(--text-1))', margin: 0 }}>Task Board</h2>
+        <Badge style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))', border: '1px solid hsl(var(--border))', borderRadius: 0, fontSize: 10 }}>
+          {tasks.length} tasks
+        </Badge>
+      </div>
+
+      {/* Kanban columns */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+        {COLUMN_ORDER.map(status => {
+          const sc = TASK_STATUS_CONFIG[status];
+          const colTasks = tasks.filter(t => t.status === status);
+          const icons: Record<TaskStatus, React.ComponentType<any>> = {
+            done: CheckCircle,
+            overdue: Warning,
+            in_progress: Clock,
+            todo: Plus,
+          };
+          const IconComp = icons[status];
+
+          return (
+            <div key={status} style={{
+              background: 'hsl(var(--bg-muted))',
+              border: '1px solid hsl(var(--border))',
+              padding: 12,
+              minHeight: 400,
+            }}>
+              {/* Column header */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                marginBottom: 12, paddingBottom: 10,
+                borderBottom: '1px solid hsl(var(--border))',
+              }}>
+                <IconComp size={13} style={{ color: sc.text, flexShrink: 0 }} />
+                <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'hsl(var(--text-2))' }}>
+                  {sc.label}
+                </span>
+                <Badge style={{
+                  marginLeft: 'auto',
+                  background: sc.bg,
+                  color: sc.text,
+                  border: `1px solid ${sc.border}`,
+                  borderRadius: 0,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  minWidth: 20,
+                  textAlign: 'center',
+                }}>
+                  {colTasks.length}
+                </Badge>
+              </div>
+
+              {/* Task cards */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {colTasks.map(task => (
+                  <div
+                    key={task.id}
+                    onClick={() => handleSelect(task)}
+                    style={{
+                      background: 'hsl(var(--bg-surface))',
+                      border: `1px solid ${selectedTask?.id === task.id ? 'hsl(var(--brand))' : 'hsl(var(--border))'}`,
+                      padding: '10px 12px',
+                      cursor: 'pointer',
+                      position: 'relative',
+                    }}
+                  >
+                    {/* Left accent stripe */}
+                    <div style={{
+                      position: 'absolute', left: 0, top: 0, bottom: 0, width: 3,
+                      background: task.status === 'overdue' ? '#ef4444'
+                        : task.status === 'done' ? '#10b981'
+                        : task.status === 'in_progress' ? 'hsl(var(--brand))'
+                        : 'hsl(var(--border))',
+                    }} />
+
+                    {/* Priority + ID */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                      <PriorityBadge priority={task.priority} />
+                      <span style={{ marginLeft: 'auto', fontSize: 9, fontFamily: 'monospace', color: 'hsl(var(--text-4))' }}>
+                        {task.id}
+                      </span>
+                    </div>
+
+                    {/* Title */}
+                    <p style={{
+                      fontSize: 12, fontWeight: 500, color: 'hsl(var(--text-1))',
+                      lineHeight: 1.4, marginBottom: 8,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 3,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                    }}>
+                      {task.title}
+                    </p>
+
+                    {/* Source */}
+                    <Badge style={{
+                      background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-4))',
+                      border: '1px solid hsl(var(--border))', borderRadius: 0,
+                      fontSize: 9, fontFamily: 'monospace', marginBottom: 8,
+                    }}>
+                      {task.source}
+                    </Badge>
+
+                    {/* Bottom: avatar + due date */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <AvatarInitials name={task.assignee} />
+                      <span style={{ fontSize: 11, color: 'hsl(var(--text-3))', flex: 1 }}>
+                        {task.assignee.split(' ')[0]}
+                      </span>
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: 3,
+                        fontSize: 10,
+                        color: task.status === 'overdue' ? '#ef4444' : 'hsl(var(--text-4))',
+                      }}>
+                        <CalendarBlank size={10} />
+                        {formatDate(task.dueDate)}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {colTasks.length === 0 && (
+                  <div style={{
+                    padding: '24px 0', textAlign: 'center', color: 'hsl(var(--text-4))',
+                    fontSize: 12, border: '1px dashed hsl(var(--border))',
+                  }}>
+                    No tasks
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Selected task detail */}
+      {selectedTask && (
+        <div style={{
+          marginTop: 20,
+          background: 'hsl(var(--bg-surface))',
+          border: '1px solid hsl(var(--border))',
+          padding: 16,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <span style={{ fontSize: 11, fontFamily: 'monospace', color: 'hsl(var(--text-3))' }}>{selectedTask.id}</span>
+              <PriorityBadge priority={selectedTask.priority} />
+              <Badge style={{
+                background: TASK_STATUS_CONFIG[selectedTask.status].bg,
+                color: TASK_STATUS_CONFIG[selectedTask.status].text,
+                border: `1px solid ${TASK_STATUS_CONFIG[selectedTask.status].border}`,
+                borderRadius: 0, fontSize: 10,
+              }}>
+                {TASK_STATUS_CONFIG[selectedTask.status].label}
+              </Badge>
+            </div>
+            <button onClick={() => setSelectedTask(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'hsl(var(--text-3))' }}>
+              <X size={16} />
+            </button>
+          </div>
+          <h3 style={{ fontSize: 14, fontWeight: 600, color: 'hsl(var(--text-1))', marginBottom: 6 }}>{selectedTask.title}</h3>
+          <p style={{ fontSize: 12, color: 'hsl(var(--text-3))', lineHeight: 1.5, marginBottom: 10 }}>{selectedTask.description}</p>
+          <div style={{ display: 'flex', gap: 20, fontSize: 12, color: 'hsl(var(--text-3))' }}>
+            <span>Assignee: <strong style={{ color: 'hsl(var(--text-2))' }}>{selectedTask.assignee}</strong></span>
+            <span>Due: <strong style={{ color: 'hsl(var(--text-2))' }}>{formatDate(selectedTask.dueDate)}</strong></span>
+            <span>Source: <strong style={{ color: 'hsl(var(--text-2))', fontFamily: 'monospace' }}>{selectedTask.source}</strong></span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }

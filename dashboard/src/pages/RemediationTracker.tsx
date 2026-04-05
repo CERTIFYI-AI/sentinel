@@ -1,37 +1,312 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
-import { Button } from "../components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
-import { Input } from "../components/ui/input";
-import { Shield, MagnifyingGlass as Search, Funnel as Filter, Plus, DownloadSimple as Download } from "@phosphor-icons/react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-const columns = [  { key: "id", label: "ID" },
-  { key: "name", label: "Name" },
-  { key: "status", label: "Status" },
-  { key: "type", label: "Type" },
-  { key: "score", label: "Score" },
-  { key: "date", label: "Date" },];
-const mockData: any[] = [  { id: 1, name: "Item One", status: "active", type: "Primary", score: 90, date: "2026-03-15" },
-  { id: 2, name: "Item Two", status: "completed", type: "Secondary", score: 82, date: "2026-03-14" },
-  { id: 3, name: "Item Three", status: "pending", type: "Primary", score: 75, date: "2026-03-13" },
-  { id: 4, name: "Item Four", status: "active", type: "Tertiary", score: 88, date: "2026-03-12" },
-  { id: 5, name: "Item Five", status: "archived", type: "Secondary", score: 65, date: "2026-03-11" },];
-const statsCards = [  { label: "Total", value: "312", icon: Shield },
-  { label: "Active", value: "245", icon: Shield },
-  { label: "Pending", value: "42", icon: Shield },
-  { label: "Completed", value: "25", icon: Shield },];
+import { useState, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
+import {
+  List, ChartBar, FunnelSimple, CalendarBlank, CheckCircle, Clock, Warning, User,
+} from '@phosphor-icons/react';
+import { severityColor, statusColor } from '../data/seed';
+import { useSettingsStore } from '../stores/settingsStore';
+
+interface TrackerItem {
+  id: string;
+  title: string;
+  assignee: string;
+  priority: 'critical' | 'high' | 'medium' | 'low';
+  status: string;
+  progress: number;
+  startDate: string;
+  dueDate: string;
+  linkedRisk: string;
+}
+
+const TRACKER_ITEMS: TrackerItem[] = [
+  { id: 'REM-001', title: 'Retrain Credit Scorer — geographic proxy', assignee: 'Maria Santos', priority: 'critical', status: 'in_progress', progress: 35, startDate: '2026-03-15', dueDate: '2026-04-30', linkedRisk: 'RSK-001' },
+  { id: 'REM-002', title: 'Implement RAG pipeline for Loan Assistant', assignee: 'Raj Gupta', priority: 'high', status: 'in_progress', progress: 20, startDate: '2026-03-20', dueDate: '2026-05-15', linkedRisk: 'RSK-002' },
+  { id: 'REM-003', title: 'Obtain GDPR consent for AI processing', assignee: 'James Patel', priority: 'critical', status: 'in_progress', progress: 10, startDate: '2026-03-25', dueDate: '2026-04-15', linkedRisk: 'RSK-003' },
+  { id: 'REM-004', title: 'Negotiate amended DPA with OpenAI', assignee: 'James Patel', priority: 'critical', status: 'overdue', progress: 5, startDate: '2026-03-01', dueDate: '2026-04-10', linkedRisk: 'RSK-004' },
+  { id: 'REM-005', title: 'Quarantine and audit shadow AI agents', assignee: 'Sarah Chen', priority: 'high', status: 'overdue', progress: 65, startDate: '2026-03-10', dueDate: '2026-04-05', linkedRisk: 'RSK-006' },
+  { id: 'REM-006', title: 'Complete EU AI Act Art. 11 documentation', assignee: 'Emma Wilson', priority: 'high', status: 'in_progress', progress: 40, startDate: '2026-03-12', dueDate: '2026-05-30', linkedRisk: 'RSK-007' },
+  { id: 'REM-007', title: 'Implement SHAP explainability for credit', assignee: 'Raj Gupta', priority: 'high', status: 'in_progress', progress: 55, startDate: '2026-03-08', dueDate: '2026-04-20', linkedRisk: 'RSK-012' },
+  { id: 'REM-008', title: 'Suspend and remediate HR screening bias', assignee: 'Raj Gupta', priority: 'critical', status: 'completed', progress: 80, startDate: '2026-02-03', dueDate: '2026-04-01', linkedRisk: 'RSK-008' },
+];
+
+// Timeline bounds: earliest start to latest due
+const TIMELINE_START = new Date('2026-02-01');
+const TIMELINE_END = new Date('2026-06-30');
+const TIMELINE_DAYS = Math.ceil((TIMELINE_END.getTime() - TIMELINE_START.getTime()) / 86400000);
+
+function dateToPercent(dateStr: string): number {
+  const d = new Date(dateStr);
+  const days = Math.ceil((d.getTime() - TIMELINE_START.getTime()) / 86400000);
+  return Math.max(0, Math.min(100, (days / TIMELINE_DAYS) * 100));
+}
+
+function barWidth(start: string, end: string): number {
+  const s = dateToPercent(start);
+  const e = dateToPercent(end);
+  return Math.max(1, e - s);
+}
+
+function statusBarColor(status: string) {
+  if (status === 'completed') return '#10b981';
+  if (status === 'overdue') return '#ef4444';
+  return '#f97316';
+}
+
+const MONTH_LABELS = ['Feb', 'Mar', 'Apr', 'May', 'Jun'];
+const MONTH_DATES = ['2026-02-01', '2026-03-01', '2026-04-01', '2026-05-01', '2026-06-01'];
+
+const ASSIGNEES = Array.from(new Set(TRACKER_ITEMS.map(i => i.assignee)));
+
 export default function RemediationTracker() {
-  const [search, setSearch] = useState("");
-  const [sf, setSf] = useState("all");
-  const [sel, setSel] = useState<any>(null);
-  const [open, setOpen] = useState(false);
-  const sts = ["all", ...Array.from(new Set(mockData.map((d) => d.status||d.severity||"active")))];
-  const filt = mockData.filter((d) => JSON.stringify(d).toLowerCase().includes(search.toLowerCase()) && (sf==="all"||(d.status||d.severity)===sf));
-  const ch = mockData.slice(0,6).map((d,i) => ({ name: d.name||d.title||"I"+(i+1), value: d.score||d.count||50+i*10 }));
-  return (<div className="p-6 space-y-6"><div className="flex items-center justify-between"><h1 className="text-2xl font-bold">Remediation Tracker</h1><div className="flex gap-2"><Button size="sm" variant="outline"><Download size={16} className="mr-1"/>Export</Button><Button size="sm"><Plus size={16} className="mr-1"/>Add New</Button></div></div>
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">{statsCards.map((s:any,i:number)=>(<Card key={i}><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">{s.label}</p><p className="text-2xl font-bold">{s.value}</p></div><s.icon size={32} className="text-[hsl(var(--brand))]"/></div></CardContent></Card>))}</div>
-  <Card><CardHeader><CardTitle>Overview</CardTitle></CardHeader><CardContent><ResponsiveContainer width="100%" height={250}><BarChart data={ch}><XAxis dataKey="name" fontSize={12}/><YAxis fontSize={12}/><Tooltip/><Bar dataKey="value" fill="#10b981" radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></CardContent></Card>
-  <Card><CardHeader><div className="flex items-center justify-between"><CardTitle>Records</CardTitle><div className="flex gap-2"><div className="relative"><Search size={16} className="absolute left-2.5 top-2.5 text-muted-foreground"/><Input placeholder="Search..." value={search} onChange={(e)=>setSearch(e.target.value)} className="pl-8 w-64"/></div><select className="border rounded px-3 py-1.5 text-sm bg-background" value={sf} onChange={(e)=>setSf(e.target.value)}>{sts.map(s=><option key={s} value={s}>{s==="all"?"All":s}</option>)}</select></div></div></CardHeader><CardContent><div className="border rounded-lg overflow-hidden"><table className="w-full"><thead className="bg-muted/50"><tr>{columns.map((c:any)=><th key={c.key} className="text-left p-3 text-sm font-medium">{c.label}</th>)}<th className="text-left p-3 text-sm font-medium">Actions</th></tr></thead><tbody>{filt.map((row:any,i:number)=>(<tr key={i} className="border-t hover:bg-muted/30 cursor-pointer" onClick={()=>{setSel(row);setOpen(true);}}>{columns.map((c:any)=>(<td key={c.key} className="p-3 text-sm">{c.key==="status"||c.key==="severity"?(<Badge variant={row[c.key]==="critical"||row[c.key]==="high"?"destructive":row[c.key]==="compliant"||row[c.key]==="active"||row[c.key]==="low"?"default":"secondary"}>{row[c.key]}</Badge>):String(row[c.key]??"")}</td>))}<td className="p-3"><Button size="sm" variant="ghost" onClick={(e)=>{e.stopPropagation();setSel(row);setOpen(true);}}>View</Button></td></tr>))}</tbody></table></div><p className="text-sm text-muted-foreground mt-2">{filt.length} of {mockData.length} records</p></CardContent></Card>
-  <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{sel?.name||sel?.title||"Detail"}</DialogTitle></DialogHeader><div className="space-y-3">{sel&&Object.entries(sel).map(([k,v])=>(<div key={k} className="flex justify-between border-b pb-2"><span className="text-sm text-muted-foreground capitalize">{k}</span><span className="text-sm font-medium">{String(v)}</span></div>))}<div className="flex gap-2 pt-2"><Button size="sm">Edit</Button><Button size="sm" variant="outline">Archive</Button><Button size="sm" variant="destructive">Delete</Button></div></div></DialogContent></Dialog></div>);
+  const { orgName } = useSettingsStore();
+  const [view, setView] = useState<'gantt' | 'list'>('gantt');
+  const [filterAssignee, setFilterAssignee] = useState('all');
+  const [filterPriority, setFilterPriority] = useState('all');
+
+  const filtered = TRACKER_ITEMS.filter(item => {
+    const matchAssignee = filterAssignee === 'all' || item.assignee === filterAssignee;
+    const matchPriority = filterPriority === 'all' || item.priority === filterPriority;
+    return matchAssignee && matchPriority;
+  });
+
+  const todayPercent = dateToPercent(new Date().toISOString().split('T')[0]);
+
+  return (
+    <div className="p-6 space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Remediation Timeline Tracker</h1>
+          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>
+            {orgName} · Gantt-style timeline for remediation plans
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Legend */}
+          <div className="flex items-center gap-4 mr-4">
+            {[
+              { color: '#10b981', label: 'Completed' },
+              { color: '#f97316', label: 'In Progress' },
+              { color: '#ef4444', label: 'Overdue' },
+            ].map(l => (
+              <div key={l.label} className="flex items-center gap-1.5">
+                <div style={{ width: 10, height: 10, background: l.color }} />
+                <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{l.label}</span>
+              </div>
+            ))}
+          </div>
+          <Button
+            size="sm"
+            variant={view === 'gantt' ? 'default' : 'outline'}
+            onClick={() => setView('gantt')}
+          >
+            <ChartBar size={14} className="mr-1" /> Gantt
+          </Button>
+          <Button
+            size="sm"
+            variant={view === 'list' ? 'default' : 'outline'}
+            onClick={() => setView('list')}
+          >
+            <List size={14} className="mr-1" /> List
+          </Button>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex items-center gap-3">
+        <FunnelSimple size={14} style={{ color: 'hsl(var(--text-3))' }} />
+        <div className="flex items-center gap-2">
+          <User size={14} style={{ color: 'hsl(var(--text-3))' }} />
+          <select
+            value={filterAssignee}
+            onChange={e => setFilterAssignee(e.target.value)}
+            style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', fontSize: 13, borderRadius: 0 }}
+          >
+            <option value="all">All Assignees</option>
+            {ASSIGNEES.map(a => <option key={a} value={a}>{a}</option>)}
+          </select>
+        </div>
+        <select
+          value={filterPriority}
+          onChange={e => setFilterPriority(e.target.value)}
+          style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', fontSize: 13, borderRadius: 0 }}
+        >
+          <option value="all">All Priorities</option>
+          {['critical', 'high', 'medium', 'low'].map(s => <option key={s}>{s}</option>)}
+        </select>
+        <span className="text-xs ml-auto" style={{ color: 'hsl(var(--text-3))' }}>{filtered.length} plans</span>
+      </div>
+
+      {view === 'gantt' ? (
+        <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+          <CardContent className="p-0">
+            {/* Timeline header */}
+            <div style={{ display: 'flex', borderBottom: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-muted))' }}>
+              <div style={{ width: 300, minWidth: 300, padding: '10px 12px', borderRight: '1px solid hsl(var(--border))' }}>
+                <span className="text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>Plan</span>
+              </div>
+              <div style={{ flex: 1, position: 'relative', padding: '10px 0' }}>
+                {MONTH_LABELS.map((label, i) => (
+                  <span
+                    key={label}
+                    className="text-xs font-semibold absolute"
+                    style={{ left: `${dateToPercent(MONTH_DATES[i])}%`, color: 'hsl(var(--text-2))', transform: 'translateX(-50%)' }}
+                  >
+                    {label}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Rows */}
+            {filtered.map((item, idx) => {
+              const pc = severityColor(item.priority);
+              const barColor = statusBarColor(item.status);
+              const left = dateToPercent(item.startDate);
+              const width = barWidth(item.startDate, item.dueDate);
+
+              return (
+                <div
+                  key={item.id}
+                  style={{ display: 'flex', borderBottom: '1px solid hsl(var(--border))', minHeight: 52 }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'hsl(var(--bg-muted))')}
+                  onMouseLeave={e => (e.currentTarget.style.background = '')}
+                >
+                  {/* Label */}
+                  <div style={{ width: 300, minWidth: 300, padding: '8px 12px', borderRight: '1px solid hsl(var(--border))', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 2 }}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{item.id}</span>
+                      <Badge style={{ background: pc.bg, color: pc.text, border: `1px solid ${pc.border}`, borderRadius: 0, fontSize: 9, padding: '0 4px' }}>
+                        {item.priority}
+                      </Badge>
+                    </div>
+                    <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))', lineHeight: 1.3 }}>{item.title}</span>
+                    <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{item.assignee}</span>
+                  </div>
+
+                  {/* Bar */}
+                  <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center', padding: '0 8px' }}>
+                    {/* Grid lines */}
+                    {MONTH_DATES.map((d, i) => (
+                      <div key={i} style={{ position: 'absolute', left: `${dateToPercent(d)}%`, top: 0, bottom: 0, width: 1, background: 'hsl(var(--border))', opacity: 0.5 }} />
+                    ))}
+                    {/* Today line */}
+                    <div style={{ position: 'absolute', left: `${todayPercent}%`, top: 0, bottom: 0, width: 2, background: 'hsl(var(--brand))', opacity: 0.7 }} />
+
+                    {/* Gantt bar */}
+                    <div
+                      title={`${item.startDate} → ${item.dueDate} (${item.progress}%)`}
+                      style={{
+                        position: 'absolute',
+                        left: `${left}%`,
+                        width: `${width}%`,
+                        height: 28,
+                        background: `${barColor}25`,
+                        border: `1px solid ${barColor}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {/* Progress fill */}
+                      <div style={{ width: `${item.progress}%`, height: '100%', background: `${barColor}60`, position: 'absolute', left: 0, top: 0 }} />
+                      <span className="text-xs font-semibold relative px-1.5" style={{ color: barColor, whiteSpace: 'nowrap' }}>
+                        {item.progress}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Today label */}
+            <div style={{ display: 'flex', padding: '6px 0', background: 'hsl(var(--bg-muted))' }}>
+              <div style={{ width: 300, minWidth: 300, borderRight: '1px solid hsl(var(--border))' }} />
+              <div style={{ flex: 1, position: 'relative', paddingLeft: 8 }}>
+                <span
+                  className="text-xs font-semibold absolute"
+                  style={{ left: `${todayPercent}%`, color: 'hsl(var(--brand))', transform: 'translateX(-50%)', whiteSpace: 'nowrap' }}
+                >
+                  ▲ Today
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        /* List View */
+        <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+          <CardContent className="p-0">
+            <table className="w-full">
+              <thead style={{ background: 'hsl(var(--bg-muted))' }}>
+                <tr>
+                  {['ID', 'Title', 'Assignee', 'Priority', 'Progress', 'Start', 'Due', 'Status'].map(h => (
+                    <th key={h} className="text-left p-3 text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(item => {
+                  const pc = severityColor(item.priority);
+                  const sc = statusColor(item.status);
+                  const barColor = statusBarColor(item.status);
+                  return (
+                    <tr key={item.id} style={{ borderTop: '1px solid hsl(var(--border))' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'hsl(var(--bg-muted))')}
+                      onMouseLeave={e => (e.currentTarget.style.background = '')}>
+                      <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{item.id}</td>
+                      <td className="p-3 text-sm font-medium" style={{ color: 'hsl(var(--text-1))', maxWidth: 240 }}>
+                        <span className="block truncate">{item.title}</span>
+                      </td>
+                      <td className="p-3 text-sm" style={{ color: 'hsl(var(--text-2))' }}>{item.assignee}</td>
+                      <td className="p-3">
+                        <Badge style={{ background: pc.bg, color: pc.text, border: `1px solid ${pc.border}`, borderRadius: 0, fontSize: 11 }}>{item.priority}</Badge>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex items-center gap-2">
+                          <div style={{ width: 60, height: 6, background: 'hsl(var(--bg-muted))' }}>
+                            <div style={{ width: `${item.progress}%`, height: '100%', background: barColor }} />
+                          </div>
+                          <span className="text-xs" style={{ color: barColor }}>{item.progress}%</span>
+                        </div>
+                      </td>
+                      <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{item.startDate}</td>
+                      <td className="p-3 text-xs" style={{ color: item.status === 'overdue' ? '#ef4444' : 'hsl(var(--text-3))' }}>{item.dueDate}</td>
+                      <td className="p-3">
+                        <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0, fontSize: 11 }}>
+                          {item.status.replace('_', ' ')}
+                        </Badge>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-4 gap-4">
+        {[
+          { label: 'Total Plans', value: TRACKER_ITEMS.length, icon: CalendarBlank, color: 'hsl(var(--brand))' },
+          { label: 'In Progress', value: TRACKER_ITEMS.filter(i => i.status === 'in_progress').length, icon: Clock, color: '#f97316' },
+          { label: 'Overdue', value: TRACKER_ITEMS.filter(i => i.status === 'overdue').length, icon: Warning, color: '#ef4444' },
+          { label: 'Completed', value: TRACKER_ITEMS.filter(i => i.status === 'completed').length, icon: CheckCircle, color: '#10b981' },
+        ].map(s => (
+          <Card key={s.label} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{s.label}</p>
+                <p className="text-3xl font-bold mt-1" style={{ color: 'hsl(var(--text-1))' }}>{s.value}</p>
+              </div>
+              <s.icon size={28} style={{ color: s.color }} />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
 }
