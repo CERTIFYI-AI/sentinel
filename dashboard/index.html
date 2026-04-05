@@ -8,6 +8,22 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script>
+    // Polyfill: safe localStorage/sessionStorage for iframe environments
+    (function(){
+      function test(s){try{s.setItem('__t','1');s.removeItem('__t');return true}catch(e){return false}}
+      if(!test(window.localStorage)){
+        var m={};
+        var fake={getItem:function(k){return m[k]||null},setItem:function(k,v){m[k]=String(v)},removeItem:function(k){delete m[k]},clear:function(){m={}},get length(){return Object.keys(m).length},key:function(i){return Object.keys(m)[i]||null}};
+        try{Object.defineProperty(window,'localStorage',{value:fake,writable:false})}catch(e){}
+      }
+      if(!test(window.sessionStorage)){
+        var ms={};
+        var fakeS={getItem:function(k){return ms[k]||null},setItem:function(k,v){ms[k]=String(v)},removeItem:function(k){delete ms[k]},clear:function(){ms={}},get length(){return Object.keys(ms).length},key:function(i){return Object.keys(ms)[i]||null}};
+        try{Object.defineProperty(window,'sessionStorage',{value:fakeS,writable:false})}catch(e){}
+      }
+    })();
+  </script>
   </head>
   <body class="min-h-screen bg-background font-sans antialiased">
     <div id="root"></div>
