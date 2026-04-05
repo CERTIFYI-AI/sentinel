@@ -25,9 +25,16 @@ interface AuthState {
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      isAuthenticated: false,
-      user: null,
-      token: null,
+      isAuthenticated: true,
+      user: {
+        id: 'usr-001',
+        name: 'Bhaskar Admin',
+        email: 'admin@sentinel-grc.com',
+        role: 'admin',
+        organization: 'Sentinel Financial Corp',
+        tenantId: 'tenant-001',
+      },
+      token: 'demo_token',
       refreshToken: null,
       login: async (email: string, _password: string) => {
         // Simulate API call
