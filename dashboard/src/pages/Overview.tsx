@@ -70,7 +70,7 @@ export default function Overview() {
   const overdueGapItems = GAPS.filter(g => new Date(g.dueDate) < new Date()).slice(0, 5);
 
   return (
-    <div className="p-6 space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div className="space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>

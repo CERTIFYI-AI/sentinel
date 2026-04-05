@@ -117,11 +117,11 @@ function AuthenticatedLayout() {
   useRealtimeInvalidation();
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-screen overflow-hidden bg-[hsl(var(--bg-page))]">
       <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <TopHeader />
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-y-auto p-6">
           <Suspense fallback={<Loading />}>
             <Routes>
               <Route path="/" element={<Navigate to="/overview" replace />} />

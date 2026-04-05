@@ -78,7 +78,7 @@ export default function BiasAuditWizard() {
   const handleWizardBack = () => setWizardStep(s => Math.max(0, s - 1));
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

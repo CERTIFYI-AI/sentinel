@@ -103,7 +103,7 @@ export default function VendorRegistry() {
   const scoreColor = (s: number) => s >= 80 ? '#22c55e' : s >= 65 ? '#f59e0b' : '#ef4444';
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

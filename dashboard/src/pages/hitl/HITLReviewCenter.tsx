@@ -100,7 +100,7 @@ export default function HITLReviewCenter() {
   };
 
   return (
-    <div className="p-6 space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div className="space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
       {/* Breadcrumb */}
       <div className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>
         <span style={{ color: 'hsl(var(--text-1))' }}>HITL Reviews</span>

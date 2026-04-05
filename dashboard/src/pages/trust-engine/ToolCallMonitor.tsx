@@ -94,7 +94,7 @@ export default function ToolCallMonitor() {
   const avgLatency = Math.round(calls.reduce((s, c) => s + c.latencyMs, 0) / calls.length);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

@@ -58,7 +58,7 @@ export default function ComplianceDashboard() {
   ];
 
   return (
-    <div className="p-6 space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div className="space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>

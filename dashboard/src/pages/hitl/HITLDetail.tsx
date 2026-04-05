@@ -140,7 +140,7 @@ export default function HITLDetail() {
   const isCompleted = review.status === 'approved' || actionState !== 'idle';
 
   return (
-    <div className="p-6 space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div className="space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
       {/* Back */}
       <Link to="/hitl">
         <Button variant="outline" size="sm" style={{ borderRadius: 0 }}>

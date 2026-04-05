@@ -71,7 +71,7 @@ export default function BiasAuditResults() {
   const failCount = audit.dimensions.filter(d => !d.pass).length;
 
   return (
-    <div className="p-6 space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div className="space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
       <Button variant="ghost" size="sm" onClick={() => navigate('/bias-audits')} style={{ padding: '4px 8px' }}>
         <ArrowLeft size={14} className="mr-1" /> Back to Bias Audits
       </Button>

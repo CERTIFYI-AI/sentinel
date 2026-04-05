@@ -95,7 +95,7 @@ export default function DatasetRegistry() {
   const linkedModel = (linkedId: string) => MODELS.find(m => m.id === linkedId);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

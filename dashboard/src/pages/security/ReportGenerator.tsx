@@ -164,7 +164,7 @@ export default function ReportGenerator() {
   }
 
   return (
-    <div className="p-6 space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div className="space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>

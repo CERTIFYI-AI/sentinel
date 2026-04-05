@@ -85,7 +85,7 @@ export default function VendorDetail() {
   }
 
   return (
-    <div className="p-6 space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div className="space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
       {/* Back + Header */}
       <div>
         <Button variant="ghost" size="sm" onClick={() => navigate('/vendors')} style={{ marginBottom: 12, padding: '4px 8px' }}>

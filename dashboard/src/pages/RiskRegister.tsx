@@ -113,7 +113,7 @@ export default function RiskRegister() {
   const scoreColor = (s: number) => s >= 16 ? '#ef4444' : s >= 9 ? '#f97316' : s >= 4 ? '#f59e0b' : '#22c55e';
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

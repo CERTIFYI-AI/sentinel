@@ -158,7 +158,7 @@ export default function Settings() {
   );
 
   return (
-    <div className="p-6 space-y-6 max-w-4xl">
+    <div className="space-y-6 max-w-4xl">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Settings</h1>
