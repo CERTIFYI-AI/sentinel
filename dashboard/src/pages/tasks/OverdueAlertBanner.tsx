@@ -1,37 +1,92 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
-import { Badge } from "../../components/ui/badge";
-import { Button } from "../../components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
-import { Input } from "../../components/ui/input";
-import { Shield, MagnifyingGlass as Search, Funnel as Filter, Plus, DownloadSimple as Download } from "@phosphor-icons/react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-const columns = [  { key: "id", label: "ID" },
-  { key: "name", label: "Task" },
-  { key: "status", label: "Status" },
-  { key: "severity", label: "Severity" },
-  { key: "dueDate", label: "Due Date" },
-  { key: "assignee", label: "Assignee" },];
-const mockData: any[] = [  { id: 1, name: "ISO Audit Prep", status: "overdue", severity: "critical", dueDate: "2026-03-01", assignee: "John" },
-  { id: 2, name: "SOC2 Evidence", status: "overdue", severity: "high", dueDate: "2026-03-05", assignee: "Sarah" },
-  { id: 3, name: "Policy Review", status: "overdue", severity: "medium", dueDate: "2026-03-10", assignee: "Mike" },
-  { id: 4, name: "Risk Assessment", status: "overdue", severity: "high", dueDate: "2026-03-08", assignee: "Anna" },
-  { id: 5, name: "Vendor Review", status: "overdue", severity: "low", dueDate: "2026-03-12", assignee: "Tom" },];
-const statsCards = [  { label: "Overdue", value: "23", icon: Shield },
-  { label: "Critical", value: "5", icon: Shield },
-  { label: "This Week", value: "8", icon: Shield },
-  { label: "Escalated", value: "3", icon: Shield },];
-export default function OverdueAlertBanner() {
-  const [search, setSearch] = useState("");
-  const [sf, setSf] = useState("all");
-  const [sel, setSel] = useState<any>(null);
-  const [open, setOpen] = useState(false);
-  const sts = ["all", ...Array.from(new Set(mockData.map((d) => d.status||d.severity||"active")))];
-  const filt = mockData.filter((d) => JSON.stringify(d).toLowerCase().includes(search.toLowerCase()) && (sf==="all"||(d.status||d.severity)===sf));
-  const ch = mockData.slice(0,6).map((d,i) => ({ name: d.name||d.title||"I"+(i+1), value: d.score||d.count||50+i*10 }));
-  return (<div className="p-6 space-y-6"><div className="flex items-center justify-between"><h1 className="text-2xl font-bold">Overdue Alerts</h1><div className="flex gap-2"><Button size="sm" variant="outline"><Download size={16} className="mr-1"/>Export</Button><Button size="sm"><Plus size={16} className="mr-1"/>Add New</Button></div></div>
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">{statsCards.map((s:any,i:number)=>(<Card key={i}><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">{s.label}</p><p className="text-2xl font-bold">{s.value}</p></div><s.icon size={32} className="text-[hsl(var(--brand))]"/></div></CardContent></Card>))}</div>
-  <Card><CardHeader><CardTitle>Overview</CardTitle></CardHeader><CardContent><ResponsiveContainer width="100%" height={250}><BarChart data={ch}><XAxis dataKey="name" fontSize={12}/><YAxis fontSize={12}/><Tooltip/><Bar dataKey="value" fill="#10b981" radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></CardContent></Card>
-  <Card><CardHeader><div className="flex items-center justify-between"><CardTitle>Records</CardTitle><div className="flex gap-2"><div className="relative"><Search size={16} className="absolute left-2.5 top-2.5 text-muted-foreground"/><Input placeholder="Search..." value={search} onChange={(e)=>setSearch(e.target.value)} className="pl-8 w-64"/></div><select className="border rounded px-3 py-1.5 text-sm bg-background" value={sf} onChange={(e)=>setSf(e.target.value)}>{sts.map(s=><option key={s} value={s}>{s==="all"?"All":s}</option>)}</select></div></div></CardHeader><CardContent><div className="border rounded-lg overflow-hidden"><table className="w-full"><thead className="bg-muted/50"><tr>{columns.map((c:any)=><th key={c.key} className="text-left p-3 text-sm font-medium">{c.label}</th>)}<th className="text-left p-3 text-sm font-medium">Actions</th></tr></thead><tbody>{filt.map((row:any,i:number)=>(<tr key={i} className="border-t hover:bg-muted/30 cursor-pointer" onClick={()=>{setSel(row);setOpen(true);}}>{columns.map((c:any)=>(<td key={c.key} className="p-3 text-sm">{c.key==="status"||c.key==="severity"?(<Badge variant={row[c.key]==="critical"||row[c.key]==="high"?"destructive":row[c.key]==="compliant"||row[c.key]==="active"||row[c.key]==="low"?"default":"secondary"}>{row[c.key]}</Badge>):String(row[c.key]??"")}</td>))}<td className="p-3"><Button size="sm" variant="ghost" onClick={(e)=>{e.stopPropagation();setSel(row);setOpen(true);}}>View</Button></td></tr>))}</tbody></table></div><p className="text-sm text-muted-foreground mt-2">{filt.length} of {mockData.length} records</p></CardContent></Card>
-  <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{sel?.name||sel?.title||"Detail"}</DialogTitle></DialogHeader><div className="space-y-3">{sel&&Object.entries(sel).map(([k,v])=>(<div key={k} className="flex justify-between border-b pb-2"><span className="text-sm text-muted-foreground capitalize">{k}</span><span className="text-sm font-medium">{String(v)}</span></div>))}<div className="flex gap-2 pt-2"><Button size="sm">Edit</Button><Button size="sm" variant="outline">Archive</Button><Button size="sm" variant="destructive">Delete</Button></div></div></DialogContent></Dialog></div>);
+import { useState } from 'react';
+import { Warning, X, ArrowRight } from '@phosphor-icons/react';
+import { TASKS } from './taskData';
+
+interface OverdueAlertBannerProps {
+  /** Override the tasks list; defaults to the canonical TASKS seed. */
+  tasks?: typeof TASKS;
+  /** Callback when "View Overdue Tasks" is clicked. */
+  onViewOverdue?: () => void;
+}
+
+export default function OverdueAlertBanner({ tasks = TASKS, onViewOverdue }: OverdueAlertBannerProps) {
+  const [dismissed, setDismissed] = useState(false);
+
+  const overdue = tasks.filter(t => t.status === 'overdue');
+  const overdueCount = overdue.length;
+
+  if (overdueCount === 0 || dismissed) return null;
+
+  // Group by priority
+  const critical = overdue.filter(t => t.priority === 'critical').length;
+  const high = overdue.filter(t => t.priority === 'high').length;
+
+  return (
+    <div
+      role="alert"
+      aria-live="polite"
+      style={{
+        background: 'hsl(var(--s-er-bg))',
+        border: '1px solid hsl(var(--s-er-br))',
+        borderLeft: '4px solid #ef4444',
+        padding: '12px 16px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        fontFamily: 'Outfit, sans-serif',
+      }}
+    >
+      {/* Icon */}
+      <div style={{
+        width: 32, height: 32, borderRadius: '50%',
+        background: '#ef444420',
+        border: '1px solid #ef444440',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0,
+      }}>
+        <Warning size={16} style={{ color: '#ef4444' }} weight="fill" />
+      </div>
+
+      {/* Text */}
+      <div style={{ flex: 1 }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: 'hsl(var(--s-er-tx))' }}>
+          {overdueCount} overdue task{overdueCount > 1 ? 's' : ''} require immediate attention
+        </span>
+        <span style={{ fontSize: 12, color: 'hsl(var(--s-er-tx))', opacity: 0.75, marginLeft: 8 }}>
+          {critical > 0 && `${critical} critical`}
+          {critical > 0 && high > 0 && ' · '}
+          {high > 0 && `${high} high priority`}
+        </span>
+      </div>
+
+      {/* CTA */}
+      <button
+        onClick={onViewOverdue}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 5,
+          fontSize: 12, fontWeight: 600,
+          color: '#ef4444',
+          background: 'none', border: '1px solid #ef444440',
+          padding: '4px 12px',
+          cursor: 'pointer',
+          flexShrink: 0,
+        }}
+      >
+        View Overdue Tasks <ArrowRight size={12} />
+      </button>
+
+      {/* Dismiss */}
+      <button
+        onClick={() => setDismissed(true)}
+        title="Dismiss"
+        style={{
+          background: 'none', border: 'none', cursor: 'pointer',
+          color: 'hsl(var(--s-er-tx))', opacity: 0.6,
+          padding: 2, flexShrink: 0,
+        }}
+      >
+        <X size={14} />
+      </button>
+    </div>
+  );
 }

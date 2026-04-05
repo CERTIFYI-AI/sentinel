@@ -1,37 +1,130 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
-import { Badge } from "../../components/ui/badge";
-import { Button } from "../../components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
-import { Input } from "../../components/ui/input";
-import { Shield, MagnifyingGlass as Search, Funnel as Filter, Plus, DownloadSimple as Download } from "@phosphor-icons/react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-const columns = [  { key: "id", label: "ID" },
-  { key: "name", label: "Name" },
-  { key: "status", label: "Status" },
-  { key: "score", label: "Score" },
-  { key: "model", label: "Model" },
-  { key: "date", label: "Date" },];
-const mockData: any[] = [  { id: 1, name: "Safety Eval v3", status: "completed", score: 94, model: "GPT-4", date: "2026-03-15" },
-  { id: 2, name: "Bias Detection", status: "running", score: 0, model: "Claude-3", date: "2026-03-14" },
-  { id: 3, name: "Hallucination Test", status: "completed", score: 87, model: "Llama-3", date: "2026-03-13" },
-  { id: 4, name: "Toxicity Screen", status: "completed", score: 96, model: "GPT-4", date: "2026-03-12" },
-  { id: 5, name: "Accuracy Benchmark", status: "failed", score: 42, model: "Mistral", date: "2026-03-11" },];
-const statsCards = [  { label: "Total Evals", value: "234", icon: Shield },
-  { label: "Passing", value: "198", icon: Shield },
-  { label: "Failed", value: "12", icon: Shield },
-  { label: "Running", value: "24", icon: Shield },];
+import { ChatDots, ArrowRight, Browsers, GitBranch } from '@phosphor-icons/react';
+
+const FEATURES = [
+  {
+    icon: ChatDots,
+    title: 'Turn-by-Turn Inspection',
+    desc: 'Step through every message exchange in an evaluation run and inspect model inputs, outputs, and injected context side by side.',
+  },
+  {
+    icon: Browsers,
+    title: 'Side-by-Side Comparison',
+    desc: 'Compare two conversation runs from different models or parameter sets in a split-pane view with diff highlighting.',
+  },
+  {
+    icon: GitBranch,
+    title: 'Branching & Replay',
+    desc: 'Fork a conversation at any turn, edit the prompt, and replay from that point to explore alternative model behaviour.',
+  },
+];
+
 export default function ConversationViewer() {
-  const [search, setSearch] = useState("");
-  const [sf, setSf] = useState("all");
-  const [sel, setSel] = useState<any>(null);
-  const [open, setOpen] = useState(false);
-  const sts = ["all", ...Array.from(new Set(mockData.map((d) => d.status||d.severity||"active")))];
-  const filt = mockData.filter((d) => JSON.stringify(d).toLowerCase().includes(search.toLowerCase()) && (sf==="all"||(d.status||d.severity)===sf));
-  const ch = mockData.slice(0,6).map((d,i) => ({ name: d.name||d.title||"I"+(i+1), value: d.score||d.count||50+i*10 }));
-  return (<div className="p-6 space-y-6"><div className="flex items-center justify-between"><h1 className="text-2xl font-bold">Conversation Viewer</h1><div className="flex gap-2"><Button size="sm" variant="outline"><Download size={16} className="mr-1"/>Export</Button><Button size="sm"><Plus size={16} className="mr-1"/>Add New</Button></div></div>
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">{statsCards.map((s:any,i:number)=>(<Card key={i}><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">{s.label}</p><p className="text-2xl font-bold">{s.value}</p></div><s.icon size={32} className="text-[hsl(var(--brand))]"/></div></CardContent></Card>))}</div>
-  <Card><CardHeader><CardTitle>Overview</CardTitle></CardHeader><CardContent><ResponsiveContainer width="100%" height={250}><BarChart data={ch}><XAxis dataKey="name" fontSize={12}/><YAxis fontSize={12}/><Tooltip/><Bar dataKey="value" fill="#10b981" radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></CardContent></Card>
-  <Card><CardHeader><div className="flex items-center justify-between"><CardTitle>Records</CardTitle><div className="flex gap-2"><div className="relative"><Search size={16} className="absolute left-2.5 top-2.5 text-muted-foreground"/><Input placeholder="Search..." value={search} onChange={(e)=>setSearch(e.target.value)} className="pl-8 w-64"/></div><select className="border rounded px-3 py-1.5 text-sm bg-background" value={sf} onChange={(e)=>setSf(e.target.value)}>{sts.map(s=><option key={s} value={s}>{s==="all"?"All":s}</option>)}</select></div></div></CardHeader><CardContent><div className="border rounded-lg overflow-hidden"><table className="w-full"><thead className="bg-muted/50"><tr>{columns.map((c:any)=><th key={c.key} className="text-left p-3 text-sm font-medium">{c.label}</th>)}<th className="text-left p-3 text-sm font-medium">Actions</th></tr></thead><tbody>{filt.map((row:any,i:number)=>(<tr key={i} className="border-t hover:bg-muted/30 cursor-pointer" onClick={()=>{setSel(row);setOpen(true);}}>{columns.map((c:any)=>(<td key={c.key} className="p-3 text-sm">{c.key==="status"||c.key==="severity"?(<Badge variant={row[c.key]==="critical"||row[c.key]==="high"?"destructive":row[c.key]==="compliant"||row[c.key]==="active"||row[c.key]==="low"?"default":"secondary"}>{row[c.key]}</Badge>):String(row[c.key]??"")}</td>))}<td className="p-3"><Button size="sm" variant="ghost" onClick={(e)=>{e.stopPropagation();setSel(row);setOpen(true);}}>View</Button></td></tr>))}</tbody></table></div><p className="text-sm text-muted-foreground mt-2">{filt.length} of {mockData.length} records</p></CardContent></Card>
-  <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{sel?.name||sel?.title||"Detail"}</DialogTitle></DialogHeader><div className="space-y-3">{sel&&Object.entries(sel).map(([k,v])=>(<div key={k} className="flex justify-between border-b pb-2"><span className="text-sm text-muted-foreground capitalize">{k}</span><span className="text-sm font-medium">{String(v)}</span></div>))}<div className="flex gap-2 pt-2"><Button size="sm">Edit</Button><Button size="sm" variant="outline">Archive</Button><Button size="sm" variant="destructive">Delete</Button></div></div></DialogContent></Dialog></div>);
+  return (
+    <div style={{ padding: '2rem', maxWidth: 900, margin: '0 auto' }}>
+
+      {/* Header */}
+      <div style={{ marginBottom: '2rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+          <div style={{
+            width: 40, height: 40, borderRadius: 0,
+            background: 'hsl(var(--brand) / 0.12)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <ChatDots size={22} style={{ color: 'hsl(var(--brand))' }} weight="duotone" />
+          </div>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'hsl(var(--text-1))', margin: 0 }}>
+            Conversation Viewer
+          </h1>
+        </div>
+        <p style={{ color: 'hsl(var(--text-3))', fontSize: '0.95rem', margin: 0, lineHeight: 1.6 }}>
+          Inspect multi-turn evaluation conversations at the message level — trace inputs, outputs,
+          injected context, and tool calls for any eval run.
+        </p>
+      </div>
+
+      {/* Coming Soon card */}
+      <div style={{
+        border: '1px solid hsl(var(--border))',
+        borderRadius: 0,
+        background: 'hsl(var(--bg-surface))',
+        overflow: 'hidden',
+        marginBottom: '2rem',
+      }}>
+        {/* Banner */}
+        <div style={{
+          background: 'linear-gradient(135deg, hsl(var(--brand) / 0.08) 0%, hsl(var(--brand) / 0.02) 100%)',
+          borderBottom: '1px solid hsl(var(--border))',
+          padding: '3rem 2rem',
+          textAlign: 'center',
+        }}>
+          <div style={{
+            width: 72, height: 72, borderRadius: 0,
+            background: 'hsl(var(--brand) / 0.12)',
+            border: '1px solid hsl(var(--brand) / 0.25)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 1.25rem',
+          }}>
+            <ChatDots size={36} style={{ color: 'hsl(var(--brand))' }} weight="duotone" />
+          </div>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+            background: 'hsl(var(--s-in-bg))',
+            border: '1px solid hsl(var(--s-in-br))',
+            color: 'hsl(var(--s-in-tx))',
+            fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.06em',
+            padding: '0.25rem 0.75rem',
+            borderRadius: 0,
+            marginBottom: '1rem',
+          }}>
+            COMING SOON
+          </div>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'hsl(var(--text-1))', margin: '0 0 0.5rem' }}>
+            Conversation Viewer is in development
+          </h2>
+          <p style={{ color: 'hsl(var(--text-3))', fontSize: '0.9rem', maxWidth: 480, margin: '0 auto', lineHeight: 1.6 }}>
+            We're building a rich message-level inspector so your team can trace exactly what happened
+            inside any evaluation run — turn by turn, tool call by tool call.
+          </p>
+        </div>
+
+        {/* Feature previews */}
+        <div style={{ padding: '1.5rem 2rem' }}>
+          <p style={{ fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.07em', color: 'hsl(var(--text-3))', marginBottom: '1rem', textTransform: 'uppercase' }}>
+            What's coming
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+            {FEATURES.map(({ icon: Icon, title, desc }) => (
+              <div key={title} style={{
+                padding: '1rem',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: 0,
+                background: 'hsl(var(--bg-raised))',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <Icon size={16} style={{ color: 'hsl(var(--brand))' }} weight="duotone" />
+                  <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'hsl(var(--text-1))' }}>{title}</span>
+                </div>
+                <p style={{ fontSize: '0.8rem', color: 'hsl(var(--text-3))', margin: 0, lineHeight: 1.55 }}>{desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* CTA row */}
+        <div style={{
+          borderTop: '1px solid hsl(var(--border))',
+          padding: '1rem 2rem',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          background: 'hsl(var(--bg-muted))',
+        }}>
+          <span style={{ fontSize: '0.85rem', color: 'hsl(var(--text-3))' }}>
+            In the meantime, run evaluations from <strong style={{ color: 'hsl(var(--text-2))' }}>Eval Run Wizard</strong> and review aggregate results in <strong style={{ color: 'hsl(var(--text-2))' }}>Eval Results Viewer</strong>.
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'hsl(var(--brand))', fontSize: '0.85rem', fontWeight: 600, cursor: 'default', whiteSpace: 'nowrap' }}>
+            Learn more <ArrowRight size={14} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
