@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
 import { Separator } from "../components/ui/separator";
 import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { FileText, CheckCircle, Clock, XCircle, Search, Plus, Download, ChevronLeft, ChevronRight, Edit, Copy, Archive, Trash2, Eye, MoreVertical, Shield } from "lucide-react";
+import { FileText, CheckCircle, Clock, XCircle, MagnifyingGlass as Search, Plus, DownloadSimple as Download, CaretLeft as ChevronLeft, CaretRight as ChevronRight, PencilSimple as Edit, CopySimple as Copy, Archive, Trash as Trash2, Eye, DotsThreeVertical as MoreVertical, Shield } from "@phosphor-icons/react";
 
 const COLORS = ["#10b981","#3b82f6","#f59e0b","#ef4444","#8b5cf6","#ec4899"];
 const STATUS_MAP: Record<string,string> = { active:"bg-[hsl(var(--brand))]/20 text-[hsl(var(--brand))]", review:"bg-amber-500/20 text-amber-400", expired:"bg-red-500/20 text-red-400", draft:"bg-blue-500/20 text-blue-400", archived:"bg-zinc-500/20 text-[hsl(var(--text-3))]" };

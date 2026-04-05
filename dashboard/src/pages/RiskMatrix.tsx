@@ -1,371 +1,244 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { WarningCircle, ArrowUp, ArrowDown, Minus, X, ArrowRight, Download, SlidersHorizontal } from "@phosphor-icons/react";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
-import { Button } from "../components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../components/ui/sheet";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { riskSeedData, LIKELIHOOD_LABELS, IMPACT_LABELS, getRiskLevel, getHeatMapColor, type Risk } from "../data/riskSeedData";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
+import { useState } from 'react';
+import { Warning, FloppyDisk, TrendUp, XCircle, CheckCircle } from '@phosphor-icons/react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/sheet';
+import { Card } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { RISKS, severityColor, statusColor, formatDate } from '../data/seed';
+import { useSettingsStore } from '../stores/settingsStore';
 
-const CATEGORY_COLORS: Record<string, string> = {
-  'Model Risk': '#6366f1',
-  'Security': '#ef4444',
-  'Regulatory': '#f59e0b',
-  'Operational': '#3b82f6',
-  'Ethical': '#8b5cf6',
-  'Data Privacy': '#10b981',
+// 5x5 risk matrix: x=Likelihood(1-5), y=Impact(1-5)
+// Cell color = combined risk (L * I)
+const getCellColor = (likelihood: number, impact: number) => {
+  const score = likelihood * impact;
+  if (score >= 16) return { bg: '#7f1d1d', text: '#fca5a5', border: '#991b1b', label: 'critical' };
+  if (score >= 9) return { bg: '#7c2d12', text: '#fdba74', border: '#9a3412', label: 'high' };
+  if (score >= 4) return { bg: '#713f12', text: '#fde047', border: '#854d0e', label: 'medium' };
+  return { bg: '#14532d', text: '#86efac', border: '#166534', label: 'low' };
 };
 
-const TrendIcon = ({ trend }: { trend: Risk['trend'] }) => {
-  if (trend === 'increasing') return <ArrowUp className="text-red-400" size={14} weight="bold" />;
-  if (trend === 'decreasing') return <ArrowDown className="text-green-400" size={14} weight="bold" />;
-  return <Minus className="text-muted-foreground" size={14} weight="bold" />;
-};
+const LIKELIHOODS = [1, 2, 3, 4, 5];
+const IMPACTS = [5, 4, 3, 2, 1]; // Display top-down (high impact at top)
+const IMPACT_LABELS: Record<number, string> = { 5: 'Catastrophic', 4: 'Major', 3: 'Moderate', 2: 'Minor', 1: 'Negligible' };
+const LIKELIHOOD_LABELS: Record<number, string> = { 1: 'Rare', 2: 'Unlikely', 3: 'Possible', 4: 'Likely', 5: 'Almost Certain' };
+
+interface CellData {
+  likelihood: number;
+  impact: number;
+  risks: typeof RISKS;
+}
 
 export default function RiskMatrix() {
-  const navigate = useNavigate();
-  const [selectedRisk, setSelectedRisk] = useState<Risk | null>(null);
-  const [activeTab, setActiveTab] = useState('overview');
-  const [hoveredCell, setHoveredCell] = useState<string | null>(null);
+  const orgName = useSettingsStore(s => s.orgName);
+  const [activeCell, setActiveCell] = useState<CellData | null>(null);
+  const [savedView, setSavedView] = useState(false);
 
-  const totalRisks = riskSeedData.length;
-  const criticalRisks = riskSeedData.filter(r => r.inherentScore >= 15).length;
-  const highRisks = riskSeedData.filter(r => r.inherentScore >= 10 && r.inherentScore < 15).length;
-  const openRisks = riskSeedData.filter(r => r.status === 'open').length;
-  const avgResidual = Math.round(riskSeedData.reduce((s, r) => s + r.residualScore, 0) / totalRisks);
+  const stats = {
+    total: RISKS.length,
+    critical: RISKS.filter(r => r.severity === 'critical').length,
+    open: RISKS.filter(r => r.status === 'open').length,
+    mitigated: RISKS.filter(r => r.status === 'mitigated').length,
+    avgScore: (RISKS.reduce((s, r) => s + r.score, 0) / RISKS.length).toFixed(1),
+    trendingUp: RISKS.filter(r => r.trending === 'up').length,
+  };
 
-  const categoryData = Object.entries(
-    riskSeedData.reduce((acc, r) => {
-      acc[r.category] = (acc[r.category] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>)
-  ).map(([name, value]) => ({ name, value, fill: CATEGORY_COLORS[name] || '#64748b' }));
+  const getRisksForCell = (likelihood: number, impact: number) =>
+    RISKS.filter(r => r.likelihood === likelihood && r.impact === impact);
 
-  const inherentVsResidual = riskSeedData.map(r => ({
-    id: r.id,
-    label: r.id,
-    inherent: r.inherentScore,
-    residual: r.residualScore,
-    reduction: r.inherentScore - r.residualScore,
-  })).sort((a, b) => b.inherent - a.inherent).slice(0, 8);
+  const handleCellClick = (likelihood: number, impact: number) => {
+    const risks = getRisksForCell(likelihood, impact);
+    if (risks.length > 0) {
+      setActiveCell({ likelihood, impact, risks });
+    }
+  };
 
-  const getRisksAtCell = (likelihood: number, impact: number) =>
-    riskSeedData.filter(r => r.likelihood === likelihood && r.impact === impact);
-
-  const statusColor: Record<string, string> = {
-    open: 'bg-red-500/20 text-red-400 border-red-500/30',
-    mitigating: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-    accepted: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-    closed: 'bg-green-500/20 text-green-400 border-green-500/30',
+  const handleSaveView = () => {
+    setSavedView(true);
+    setTimeout(() => setSavedView(false), 2000);
   };
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="p-6 space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-100">Risk Matrix</h1>
-          <p className="text-sm text-muted-foreground mt-1">Likelihood vs Impact heat map — {totalRisks} AI risks tracked</p>
+          <h1 className="text-xl font-semibold text-[hsl(var(--text-1))]">Risk Matrix</h1>
+          <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">{orgName} — 5×5 likelihood × impact heat map</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => navigate('/risk')} className="border-border text-foreground hover:bg-muted">
-            <SlidersHorizontal size={14} className="mr-1.5" /> Register View
-          </Button>
-          <Button variant="outline" size="sm" className="border-border text-foreground hover:bg-muted">
-            <Download size={14} className="mr-1.5" /> Export
-          </Button>
-        </div>
+        <Button variant="outline" className="gap-2" onClick={handleSaveView}>
+          <FloppyDisk size={16} />
+          {savedView ? 'Saved!' : 'Save View'}
+        </Button>
       </div>
 
+      {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: 'Total Risks', value: totalRisks, sub: 'Tracked', color: 'text-foreground' },
-          { label: 'Critical', value: criticalRisks, sub: 'Score 15+', color: 'text-red-400' },
-          { label: 'High', value: highRisks, sub: 'Score 10-14', color: 'text-orange-400' },
-          { label: 'Open', value: openRisks, sub: 'Unmitigated', color: 'text-yellow-400' },
-        ].map(s => (
-          <Card key={s.label} className="bg-card border-slate-800">
-            <CardContent className="p-4">
-              <p className="text-xs text-slate-500 uppercase tracking-wide">{s.label}</p>
-              <p className={`text-3xl font-bold mt-1 ${s.color}`}>{s.value}</p>
-              <p className="text-xs text-slate-500 mt-1">{s.sub}</p>
-            </CardContent>
+          { icon: <Warning size={20} />, value: stats.total, label: 'Total Risks' },
+          { icon: <XCircle size={20} />, value: stats.critical, label: 'Critical', sub: `${stats.open} Open` },
+          { icon: <CheckCircle size={20} />, value: `${stats.avgScore}/25`, label: 'Avg Risk Score', sub: `${stats.mitigated} Mitigated` },
+          { icon: <TrendUp size={20} />, value: stats.trendingUp, label: 'Trending Up' },
+        ].map((s, i) => (
+          <Card key={i} className="p-4 flex items-start gap-3">
+            <div className="mt-0.5 text-[hsl(var(--brand))]">{s.icon}</div>
+            <div>
+              <div className="text-2xl font-bold text-[hsl(var(--text-1))]">{s.value}</div>
+              <div className="text-xs text-[hsl(var(--text-4))] mt-0.5">{s.label}</div>
+              {s.sub && <div className="text-xs text-[hsl(var(--text-4))]">{s.sub}</div>}
+            </div>
           </Card>
         ))}
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
-        <div className="col-span-2">
-          <Card className="bg-card border-slate-800">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base text-slate-200">5x5 Likelihood vs Impact Heat Map</CardTitle>
-              <p className="text-xs text-slate-500">Inherent risk positions — click a cell to view risks</p>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-3">
-                <div className="flex flex-col justify-around pr-2">
-                  {[5,4,3,2,1].map(l => (
-                    <div key={l} className="text-xs text-muted-foreground w-24 text-right">
-                      {LIKELIHOOD_LABELS[l-1]}
-                    </div>
-                  ))}
-                </div>
-                <div className="flex flex-col gap-1 flex-1">
-                  {[5,4,3,2,1].map(likelihood => (
-                    <div key={likelihood} className="flex gap-1">
-                      {[1,2,3,4,5].map(impact => {
-                        const score = likelihood * impact;
-                        const risks = getRisksAtCell(likelihood, impact);
-                        const cellId = `${likelihood}-${impact}`;
-                        return (
-                          <div
-                            key={impact}
-                            className={`relative flex-1 h-16 rounded cursor-pointer transition-all border-2 ${getHeatMapColor(score)} ${hoveredCell === cellId ? 'scale-105 border-white/40 z-10' : 'border-transparent'} flex flex-col items-center justify-center gap-0.5`}
-                            onMouseEnter={() => setHoveredCell(cellId)}
-                            onMouseLeave={() => setHoveredCell(null)}
-                            onClick={() => risks.length > 0 && setSelectedRisk(risks[0])}
-                          >
-                            <span className="text-[10px] font-bold text-foreground/80">{score}</span>
-                            {risks.length > 0 && (
-                              <div className="flex flex-wrap justify-center gap-0.5 px-1">
-                                {risks.slice(0, 3).map(r => (
-                                  <button
-                                    key={r.id}
-                                    onClick={(e) => { e.stopPropagation(); setSelectedRisk(r); }}
-                                    className="text-[8px] bg-black/30 text-foreground px-1 rounded hover:bg-black/50 truncate max-w-full"
-                                    title={r.title}
-                                  >
-                                    {r.id}
-                                  </button>
-                                ))}
-                                {risks.length > 3 && <span className="text-[8px] text-foreground/60">+{risks.length-3}</span>}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ))}
-                  <div className="flex gap-1 mt-1">
-                    <div className="w-24" />
-                    {[1,2,3,4,5].map(i => (
-                      <div key={i} className="flex-1 text-center text-xs text-muted-foreground">{IMPACT_LABELS[i-1].split(' ')[0]}</div>
-                    ))}
-                  </div>
-                  <p className="text-center text-xs text-slate-500 mt-1">→ Impact</p>
-                </div>
-              </div>
-              <div className="flex gap-4 mt-4 justify-end">
-                {[{label:'Low', cls:'bg-green-500/50'},{label:'Medium', cls:'bg-yellow-500/60'},{label:'High', cls:'bg-orange-500/70'},{label:'Critical', cls:'bg-red-500/80'}].map(l => (
-                  <div key={l.label} className="flex items-center gap-1.5">
-                    <div className={`w-3 h-3 rounded ${l.cls}`} />
-                    <span className="text-xs text-muted-foreground">{l.label}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="flex flex-col gap-4">
-          <Card className="bg-card border-slate-800">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-slate-200">Risk by Category</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={160}>
-                <PieChart>
-                  <Pie data={categoryData} cx="50%" cy="50%" innerRadius={40} outerRadius={65} dataKey="value" paddingAngle={2}>
-                    {categoryData.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
-                  </Pie>
-                  <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '8px', fontSize: '12px' }} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="flex flex-col gap-1 mt-2">
-                {categoryData.map(c => (
-                  <div key={c.name} className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-2 h-2 rounded-full" style={{ background: c.fill }} />
-                      <span className="text-xs text-muted-foreground">{c.name}</span>
-                    </div>
-                    <span className="text-xs font-medium text-foreground">{c.value}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+      {/* Legend */}
+      <div className="flex items-center gap-4">
+        <span className="text-xs text-[hsl(var(--text-4))]">Risk Level:</span>
+        {[
+          { bg: '#14532d', label: 'Low (1–3)' },
+          { bg: '#713f12', label: 'Medium (4–8)' },
+          { bg: '#7c2d12', label: 'High (9–15)' },
+          { bg: '#7f1d1d', label: 'Critical (16–25)' },
+        ].map(l => (
+          <div key={l.label} className="flex items-center gap-1.5">
+            <div className="w-3 h-3" style={{ background: l.bg }} />
+            <span className="text-xs text-[hsl(var(--text-3))]">{l.label}</span>
+          </div>
+        ))}
+        <span className="text-xs text-[hsl(var(--text-4))] ml-4">Click a cell to view risks</span>
       </div>
 
-      <Card className="bg-card border-slate-800">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm text-slate-200">Inherent vs Residual Risk Score (Top 8)</CardTitle>
-          <p className="text-xs text-slate-500">Control effectiveness shown as score reduction</p>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={inherentVsResidual} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-              <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} domain={[0, 25]} />
-              <Tooltip
-                contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '8px', fontSize: '12px' }}
-                formatter={(value: number, name: string) => [value, name === 'inherent' ? 'Inherent Score' : 'Residual Score']}
-              />
-              <Bar dataKey="inherent" fill="#ef4444" opacity={0.6} radius={[2,2,0,0]} name="inherent" />
-              <Bar dataKey="residual" fill="#3b82f6" opacity={0.8} radius={[2,2,0,0]} name="residual" />
-            </BarChart>
-          </ResponsiveContainer>
-          <div className="flex gap-4 justify-end mt-2">
-            <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-red-500/60" /><span className="text-xs text-muted-foreground">Inherent</span></div>
-            <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-blue-500/80" /><span className="text-xs text-muted-foreground">Residual</span></div>
+      {/* Matrix */}
+      <Card className="p-4 overflow-x-auto">
+        <div className="min-w-[700px]">
+          {/* Y-axis label */}
+          <div className="flex">
+            <div className="w-28 shrink-0" />
+            <div className="flex-1 text-center text-xs text-[hsl(var(--text-4))] mb-2 font-medium uppercase tracking-wide">
+              Likelihood →
+            </div>
           </div>
-        </CardContent>
-      </Card>
 
-      <Card className="bg-card border-slate-800">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm text-slate-200">All Risks — Quick Reference</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-800">
-                  {['ID','Title','Category','Likelihood','Impact','Inherent','Residual','Status','Trend','Owner'].map(h => (
-                    <th key={h} className="text-left text-xs text-slate-500 font-medium px-4 py-2.5 whitespace-nowrap">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {riskSeedData.sort((a,b) => b.inherentScore - a.inherentScore).map(r => {
-                  const level = getRiskLevel(r.inherentScore);
+          {/* Likelihood column headers */}
+          <div className="flex">
+            <div className="w-28 shrink-0 flex items-center justify-end pr-3">
+              <span className="text-xs text-[hsl(var(--text-4))] font-medium uppercase tracking-wide" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
+                Impact ↑
+              </span>
+            </div>
+            <div className="flex-1 grid grid-cols-5 gap-0.5 mb-0.5">
+              {LIKELIHOODS.map(l => (
+                <div key={l} className="text-center py-2">
+                  <div className="text-sm font-bold text-[hsl(var(--text-1))]">{l}</div>
+                  <div className="text-xs text-[hsl(var(--text-4))]">{LIKELIHOOD_LABELS[l]}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Matrix grid */}
+          {IMPACTS.map(impact => (
+            <div key={impact} className="flex mb-0.5">
+              {/* Impact row label */}
+              <div className="w-28 shrink-0 flex items-center justify-end pr-3">
+                <div className="text-right">
+                  <div className="text-sm font-bold text-[hsl(var(--text-1))]">{impact}</div>
+                  <div className="text-xs text-[hsl(var(--text-4))]">{IMPACT_LABELS[impact]}</div>
+                </div>
+              </div>
+
+              <div className="flex-1 grid grid-cols-5 gap-0.5">
+                {LIKELIHOODS.map(likelihood => {
+                  const cell = getCellColor(likelihood, impact);
+                  const cellRisks = getRisksForCell(likelihood, impact);
+                  const hasRisks = cellRisks.length > 0;
+                  const maxShow = 2;
+
                   return (
-                    <tr
-                      key={r.id}
-                      className="border-b border-slate-800/50 hover:bg-muted/40 cursor-pointer transition-colors"
-                      onClick={() => setSelectedRisk(r)}
+                    <div
+                      key={likelihood}
+                      className={`h-20 p-1.5 relative transition-all flex flex-col gap-0.5 ${hasRisks ? 'cursor-pointer' : ''}`}
+                      style={{
+                        background: cell.bg,
+                        border: `1px solid ${cell.border}`,
+                        opacity: hasRisks ? 1 : 0.85,
+                      }}
+                      onClick={() => handleCellClick(likelihood, impact)}
                     >
-                      <td className="px-4 py-2.5 text-xs font-mono text-muted-foreground">{r.id}</td>
-                      <td className="px-4 py-2.5 max-w-xs">
-                        <span className="text-slate-200 truncate block">{r.title}</span>
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: CATEGORY_COLORS[r.category] + '30', color: CATEGORY_COLORS[r.category] }}>{r.category}</span>
-                      </td>
-                      <td className="px-4 py-2.5 text-foreground text-center">{r.likelihood}</td>
-                      <td className="px-4 py-2.5 text-foreground text-center">{r.impact}</td>
-                      <td className={`px-4 py-2.5 font-bold text-center ${level.color}`}>{r.inherentScore}</td>
-                      <td className="px-4 py-2.5 text-blue-400 font-medium text-center">{r.residualScore}</td>
-                      <td className="px-4 py-2.5">
-                        <Badge variant="outline" className={`text-xs border ${statusColor[r.status]}`}>{r.status}</Badge>
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <div className="flex items-center gap-1">
-                          <TrendIcon trend={r.trend} />
-                          <span className="text-xs text-muted-foreground capitalize">{r.trend}</span>
+                      {/* Score */}
+                      <div className="text-xs font-bold" style={{ color: cell.text, opacity: 0.7 }}>
+                        {likelihood * impact}
+                      </div>
+
+                      {/* Risk IDs */}
+                      {cellRisks.slice(0, maxShow).map(r => (
+                        <div key={r.id} className="text-xs px-1 py-0.5 truncate font-mono" style={{ background: `${cell.text}20`, color: cell.text }}>
+                          {r.id}
                         </div>
-                      </td>
-                      <td className="px-4 py-2.5 text-xs text-muted-foreground whitespace-nowrap">{r.owner}</td>
-                    </tr>
+                      ))}
+                      {cellRisks.length > maxShow && (
+                        <div className="text-xs" style={{ color: cell.text, opacity: 0.8 }}>
+                          +{cellRisks.length - maxShow} more
+                        </div>
+                      )}
+
+                      {/* Click indicator */}
+                      {hasRisks && (
+                        <div className="absolute top-1 right-1 w-1.5 h-1.5" style={{ background: cell.text, opacity: 0.6 }} />
+                      )}
+                    </div>
                   );
                 })}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
+              </div>
+            </div>
+          ))}
+        </div>
       </Card>
 
-      {selectedRisk && (
-        <Sheet open={!!selectedRisk} onOpenChange={() => setSelectedRisk(null)}>
-          <SheetContent className="w-[520px] bg-card border-slate-800 overflow-y-auto">
-            <SheetHeader className="pb-4 border-b border-slate-800">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-mono text-slate-500 mb-1">{selectedRisk.id}</p>
-                  <SheetTitle className="text-lg text-slate-100 leading-snug">{selectedRisk.title}</SheetTitle>
+      {/* Cell Detail Sheet */}
+      <Sheet open={!!activeCell} onOpenChange={o => { if (!o) setActiveCell(null); }}>
+        <SheetContent className="w-[540px] max-w-full overflow-y-auto" side="right">
+          {activeCell && (
+            <>
+              <SheetHeader className="mb-4">
+                <SheetTitle className="flex items-center gap-2">
+                  <Warning size={18} />
+                  L{activeCell.likelihood} × I{activeCell.impact} — Score {activeCell.likelihood * activeCell.impact}
+                </SheetTitle>
+                <p className="text-sm text-[hsl(var(--text-4))]">
+                  Likelihood: {LIKELIHOOD_LABELS[activeCell.likelihood]} · Impact: {IMPACT_LABELS[activeCell.impact]}
+                </p>
+              </SheetHeader>
+              <div className="space-y-3">
+                <div className="text-xs font-medium text-[hsl(var(--text-4))] uppercase tracking-wide">
+                  {activeCell.risks.length} risk{activeCell.risks.length !== 1 ? 's' : ''} in this cell
                 </div>
-                <button onClick={() => setSelectedRisk(null)} className="text-muted-foreground hover:text-slate-200">
-                  <X size={18} />
-                </button>
+                {activeCell.risks.map(r => {
+                  const rc = severityColor(r.severity);
+                  const sc = statusColor(r.status);
+                  return (
+                    <div key={r.id} className="p-3 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] space-y-2">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="font-medium text-sm text-[hsl(var(--text-1))]">{r.title}</div>
+                          <div className="text-xs text-[hsl(var(--text-4))] mt-0.5 font-mono">{r.id}</div>
+                        </div>
+                        <div className="flex gap-1.5">
+                          <span className="px-2 py-0.5 text-xs" style={{ background: rc.bg, color: rc.text, border: `1px solid ${rc.border}` }}>{r.severity}</span>
+                          <span className="px-2 py-0.5 text-xs" style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}` }}>{r.status}</span>
+                        </div>
+                      </div>
+                      <div className="text-xs text-[hsl(var(--text-3))]">{r.description}</div>
+                      <div className="flex items-center justify-between text-xs text-[hsl(var(--text-4))]">
+                        <span>Owner: {r.owner}</span>
+                        <span>Updated: {formatDate(r.lastUpdated)}</span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-              <div className="flex flex-wrap gap-2 mt-3">
-                <Badge variant="outline" className={`text-xs border ${statusColor[selectedRisk.status]}`}>{selectedRisk.status}</Badge>
-                <Badge variant="outline" className="text-xs border-border text-muted-foreground">{selectedRisk.category}</Badge>
-                <Badge variant="outline" className="text-xs border-border text-muted-foreground">{selectedRisk.riskType}</Badge>
-                <div className="flex items-center gap-1"><TrendIcon trend={selectedRisk.trend} /><span className="text-xs text-muted-foreground capitalize">{selectedRisk.trend}</span></div>
-              </div>
-            </SheetHeader>
-
-            <Tabs defaultValue="overview" className="mt-4">
-              <TabsList className="bg-muted w-full">
-                {['overview','scores','mitigation','controls'].map(t => (
-                  <TabsTrigger key={t} value={t} className="flex-1 text-xs capitalize data-[state=active]:bg-slate-700">{t}</TabsTrigger>
-                ))}
-              </TabsList>
-
-              <TabsContent value="overview" className="mt-4 space-y-4">
-                <div>
-                  <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Description</p>
-                  <p className="text-sm text-foreground leading-relaxed">{selectedRisk.description}</p>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { label: 'Owner', value: selectedRisk.owner },
-                    { label: 'Review Date', value: selectedRisk.reviewDate },
-                    { label: 'Created', value: selectedRisk.created },
-                    { label: 'Risk Type', value: selectedRisk.riskType },
-                  ].map(f => (
-                    <div key={f.label} className="bg-muted rounded p-3">
-                      <p className="text-xs text-slate-500">{f.label}</p>
-                      <p className="text-sm text-slate-200 mt-0.5">{f.value}</p>
-                    </div>
-                  ))}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="scores" className="mt-4 space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { label: 'Likelihood', value: `${selectedRisk.likelihood}/5`, sub: LIKELIHOOD_LABELS[selectedRisk.likelihood-1], color: 'text-yellow-400' },
-                    { label: 'Impact', value: `${selectedRisk.impact}/5`, sub: IMPACT_LABELS[selectedRisk.impact-1], color: 'text-orange-400' },
-                    { label: 'Inherent Score', value: selectedRisk.inherentScore, sub: getRiskLevel(selectedRisk.inherentScore).label, color: getRiskLevel(selectedRisk.inherentScore).color },
-                    { label: 'Residual Score', value: selectedRisk.residualScore, sub: `${Math.round((1-selectedRisk.residualScore/selectedRisk.inherentScore)*100)}% reduction`, color: 'text-blue-400' },
-                  ].map(f => (
-                    <div key={f.label} className="bg-muted rounded p-3">
-                      <p className="text-xs text-slate-500">{f.label}</p>
-                      <p className={`text-2xl font-bold mt-1 ${f.color}`}>{f.value}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{f.sub}</p>
-                    </div>
-                  ))}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="mitigation" className="mt-4">
-                <div className="bg-muted rounded p-4">
-                  <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Mitigation Strategy</p>
-                  <p className="text-sm text-foreground leading-relaxed">{selectedRisk.mitigation}</p>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="controls" className="mt-4 space-y-2">
-                <p className="text-xs text-slate-500">{selectedRisk.controls.length} linked controls</p>
-                {selectedRisk.controls.map(c => (
-                  <div key={c} className="flex items-center justify-between bg-muted rounded p-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
-                      <span className="text-sm font-mono text-foreground">{c}</span>
-                    </div>
-                    <button className="text-xs text-blue-400 hover:text-blue-300" onClick={() => navigate('/compliance/controls')}>
-                      View <ArrowRight size={12} className="inline" />
-                    </button>
-                  </div>
-                ))}
-              </TabsContent>
-            </Tabs>
-          </SheetContent>
-        </Sheet>
-      )}
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

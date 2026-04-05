@@ -6,7 +6,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
-import { FileText, Download, Clock, Calendar, Send, Eye, Plus, Search, Filter, BarChart3, FileCheck, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { FileText, DownloadSimple as Download, Clock, CalendarBlank as Calendar, PaperPlaneRight as Send, Eye, Plus, MagnifyingGlass as Search, Funnel as Filter, ChartBar as BarChart3, Checks, Warning as AlertTriangle, CheckCircle as CheckCircle2 } from "@phosphor-icons/react";
 
 interface ReportTemplate {
   id: string;
@@ -43,7 +43,7 @@ const scheduledReports: ScheduledReport[] = [
 const categoryIcon = (cat: string) => {
   switch (cat) {
     case "Executive": return <BarChart3 className="h-5 w-5 text-teal-400" />;
-    case "Audit": return <FileCheck className="h-5 w-5 text-blue-400" />;
+    case "Audit": return <Checks className="h-5 w-5 text-blue-400" />;
     case "Regulatory": return <AlertTriangle className="h-5 w-5 text-amber-400" />;
     case "Operational": return <Clock className="h-5 w-5 text-[hsl(var(--brand))]" />;
     default: return <FileText className="h-5 w-5 text-muted-foreground" />;

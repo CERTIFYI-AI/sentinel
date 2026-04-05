@@ -1,37 +1,213 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
-import { Badge } from "../../components/ui/badge";
-import { Button } from "../../components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
-import { Input } from "../../components/ui/input";
-import { Shield, Search, Filter, Plus, Download } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-const columns = [  { key: "id", label: "ID" },
-  { key: "name", label: "Agent" },
-  { key: "status", label: "Status" },
-  { key: "type", label: "Type" },
-  { key: "risk", label: "Risk" },
-  { key: "calls", label: "API Calls" },];
-const mockData: any[] = [  { id: 1, name: "GPT-4 Assistant", status: "active", type: "LLM", risk: "low", calls: 12400 },
-  { id: 2, name: "Claude Analyst", status: "active", type: "LLM", risk: "medium", calls: 8900 },
-  { id: 3, name: "Custom RAG Bot", status: "warning", type: "RAG", risk: "high", calls: 3400 },
-  { id: 4, name: "Slack Bot", status: "active", type: "Integration", risk: "low", calls: 5600 },
-  { id: 5, name: "Email Parser", status: "inactive", type: "NLP", risk: "medium", calls: 0 },];
-const statsCards = [  { label: "Total Agents", value: "34", icon: Shield },
-  { label: "Active", value: "28", icon: Shield },
-  { label: "Shadow AI", value: "6", icon: Shield },
-  { label: "Calls Today", value: "45.2K", icon: Shield },];
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Eye, MagnifyingGlass, Lock, CheckCircle, ShieldSlash, Warning, Robot, Plus
+} from '@phosphor-icons/react';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+} from 'recharts';
+import { Card } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../components/ui/sheet';
+import { AGENTS, severityColor, formatDate, formatNumber } from '../../data/seed';
+import { useSettingsStore } from '../../stores/settingsStore';
+import { useChartTheme } from '../../hooks/useChartTheme';
+
+const SHADOW_IDS = ['AGT-010', 'AGT-011', 'AGT-012'];
+const shadowAgents = AGENTS.filter(a => SHADOW_IDS.includes(a.id));
+
+function StatCard({ icon, value, label }: { icon: React.ReactNode; value: string | number; label: string }) {
+  return (
+    <Card className="p-4 flex items-start gap-3">
+      <div className="mt-0.5 text-[hsl(var(--brand))]">{icon}</div>
+      <div>
+        <div className="text-2xl font-bold text-[hsl(var(--text-1))]">{value}</div>
+        <div className="text-xs text-[hsl(var(--text-4))] mt-0.5">{label}</div>
+      </div>
+    </Card>
+  );
+}
+
 export default function ShadowAI() {
-  const [search, setSearch] = useState("");
-  const [sf, setSf] = useState("all");
-  const [sel, setSel] = useState<any>(null);
-  const [open, setOpen] = useState(false);
-  const sts = ["all", ...Array.from(new Set(mockData.map((d) => d.status||d.severity||"active")))];
-  const filt = mockData.filter((d) => JSON.stringify(d).toLowerCase().includes(search.toLowerCase()) && (sf==="all"||(d.status||d.severity)===sf));
-  const ch = mockData.slice(0,6).map((d,i) => ({ name: d.name||d.title||"I"+(i+1), value: d.score||d.count||50+i*10 }));
-  return (<div className="p-6 space-y-6"><div className="flex items-center justify-between"><h1 className="text-2xl font-bold">Shadow AI</h1><div className="flex gap-2"><Button size="sm" variant="outline"><Download className="h-4 w-4 mr-1"/>Export</Button><Button size="sm"><Plus className="h-4 w-4 mr-1"/>Add New</Button></div></div>
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">{statsCards.map((s:any,i:number)=>(<Card key={i}><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">{s.label}</p><p className="text-2xl font-bold">{s.value}</p></div><s.icon className="h-8 w-8 text-[hsl(var(--brand))]"/></div></CardContent></Card>))}</div>
-  <Card><CardHeader><CardTitle>Overview</CardTitle></CardHeader><CardContent><ResponsiveContainer width="100%" height={250}><BarChart data={ch}><XAxis dataKey="name" fontSize={12}/><YAxis fontSize={12}/><Tooltip/><Bar dataKey="value" fill="#10b981" radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></CardContent></Card>
-  <Card><CardHeader><div className="flex items-center justify-between"><CardTitle>Records</CardTitle><div className="flex gap-2"><div className="relative"><Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"/><Input placeholder="Search..." value={search} onChange={(e)=>setSearch(e.target.value)} className="pl-8 w-64"/></div><select className="border rounded px-3 py-1.5 text-sm bg-background" value={sf} onChange={(e)=>setSf(e.target.value)}>{sts.map(s=><option key={s} value={s}>{s==="all"?"All":s}</option>)}</select></div></div></CardHeader><CardContent><div className="border rounded-lg overflow-hidden"><table className="w-full"><thead className="bg-muted/50"><tr>{columns.map((c:any)=><th key={c.key} className="text-left p-3 text-sm font-medium">{c.label}</th>)}<th className="text-left p-3 text-sm font-medium">Actions</th></tr></thead><tbody>{filt.map((row:any,i:number)=>(<tr key={i} className="border-t hover:bg-muted/30 cursor-pointer" onClick={()=>{setSel(row);setOpen(true);}}>{columns.map((c:any)=>(<td key={c.key} className="p-3 text-sm">{c.key==="status"||c.key==="severity"?(<Badge variant={row[c.key]==="critical"||row[c.key]==="high"?"destructive":row[c.key]==="compliant"||row[c.key]==="active"||row[c.key]==="low"?"default":"secondary"}>{row[c.key]}</Badge>):String(row[c.key]??"")}</td>))}<td className="p-3"><Button size="sm" variant="ghost" onClick={(e)=>{e.stopPropagation();setSel(row);setOpen(true);}}>View</Button></td></tr>))}</tbody></table></div><p className="text-sm text-muted-foreground mt-2">{filt.length} of {mockData.length} records</p></CardContent></Card>
-  <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{sel?.name||sel?.title||"Detail"}</DialogTitle></DialogHeader><div className="space-y-3">{sel&&Object.entries(sel).map(([k,v])=>(<div key={k} className="flex justify-between border-b pb-2"><span className="text-sm text-muted-foreground capitalize">{k}</span><span className="text-sm font-medium">{String(v)}</span></div>))}<div className="flex gap-2 pt-2"><Button size="sm">Edit</Button><Button size="sm" variant="outline">Archive</Button><Button size="sm" variant="destructive">Delete</Button></div></div></DialogContent></Dialog></div>);
+  const orgName = useSettingsStore(s => s.orgName);
+  const chart = useChartTheme();
+  const navigate = useNavigate();
+  const [selected, setSelected] = useState<typeof AGENTS[0] | null>(null);
+  const [agents, setAgents] = useState(shadowAgents);
+
+  const criticalCount = agents.filter(a => a.risk === 'critical').length;
+  const totalApiCalls = agents.reduce((s, a) => s + a.apiCalls7d, 0);
+
+  const chartData = agents.map(a => ({
+    name: a.name.replace(/-/g, ' '),
+    apiCalls: a.apiCalls7d,
+    fill: a.risk === 'critical' ? '#ef4444' : '#f97316',
+  }));
+
+  const handleQuarantine = (id: string) => {
+    setAgents(prev => prev.map(a => a.id === id ? { ...a, status: 'quarantined' as const } : a));
+  };
+
+  const handleWhitelist = (id: string) => {
+    setAgents(prev => prev.filter(a => a.id !== id));
+    if (selected?.id === id) setSelected(null);
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-[hsl(var(--text-1))]">Shadow AI Detection</h1>
+          <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">{orgName} — Unauthorized AI agents detected on network</p>
+        </div>
+        <Button className="gap-2">
+          <Plus size={16} /> Register / Whitelist
+        </Button>
+      </div>
+
+      {/* Alert Banner */}
+      <div className="border border-red-700 bg-red-950/30 p-4 flex items-center gap-3">
+        <ShieldSlash size={20} className="text-red-400 shrink-0" />
+        <div>
+          <div className="text-sm font-semibold text-red-300">Shadow AI Detected</div>
+          <div className="text-xs text-red-400 mt-0.5">
+            {agents.length} unauthorized agents found on your network. Immediate investigation recommended for critical-risk agents.
+          </div>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-4 gap-4">
+        <StatCard icon={<Robot size={20} />} value={AGENTS.length} label="Total Agents" />
+        <StatCard icon={<ShieldSlash size={20} />} value={agents.length} label="Shadow Detected" />
+        <StatCard icon={<Warning size={20} />} value={criticalCount} label="Critical Risk" />
+        <StatCard icon={<Eye size={20} />} value={`${(totalApiCalls / 1000).toFixed(1)}K`} label="API Calls 7d" />
+      </div>
+
+      {/* Bar Chart */}
+      <Card className="p-4">
+        <div className="text-sm font-medium text-[hsl(var(--text-1))] mb-4">Shadow Agent API Activity (7 Days)</div>
+        <ResponsiveContainer width="100%" height={220}>
+          <BarChart data={chartData} barSize={60}>
+            <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
+            <XAxis dataKey="name" stroke={chart.axis} tick={{ fontSize: 11 }} />
+            <YAxis stroke={chart.axis} tick={{ fontSize: 12 }} tickFormatter={v => `${(v / 1000).toFixed(1)}K`} label={{ value: 'API Calls', angle: -90, position: 'insideLeft', style: { fill: chart.axis, fontSize: 11 } }} />
+            <Tooltip
+              contentStyle={{ background: chart.tooltipBg, border: `1px solid ${chart.tooltipBorder}`, color: chart.tooltipText }}
+              formatter={(v: number) => [formatNumber(v), 'API Calls']}
+            />
+            <Bar dataKey="apiCalls" radius={0} fill="#ef4444" />
+          </BarChart>
+        </ResponsiveContainer>
+      </Card>
+
+      {/* Shadow Agent Cards */}
+      <div className="space-y-3">
+        {agents.map(agent => {
+          const rc = severityColor(agent.risk);
+          return (
+            <Card key={agent.id} className="border-red-800 bg-red-950/10">
+              <div className="p-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 p-2 bg-red-900/30 border border-red-700">
+                      <ShieldSlash size={16} className="text-red-400" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-[hsl(var(--text-1))]">{agent.name}</span>
+                        <span className="font-mono text-xs text-[hsl(var(--text-4))]">{agent.id}</span>
+                        <span className="px-2 py-0.5 text-xs" style={{ background: rc.bg, color: rc.text, border: `1px solid ${rc.border}` }}>{agent.risk}</span>
+                      </div>
+                      <div className="text-sm text-[hsl(var(--text-3))] mt-1">{agent.description}</div>
+                      <div className="flex gap-4 mt-2 text-xs text-[hsl(var(--text-4))]">
+                        <span>Model: <strong className="text-[hsl(var(--text-3))]">{agent.model}</strong></span>
+                        <span>Dept: <strong className="text-[hsl(var(--text-3))]">{agent.department}</strong></span>
+                        <span>API Calls 7d: <strong className="text-[hsl(var(--text-3))]">{formatNumber(agent.apiCalls7d)}</strong></span>
+                        <span>First Seen: <strong className="text-[hsl(var(--text-3))]">{formatDate(agent.firstSeen)}</strong></span>
+                        <span>Last Active: <strong className="text-[hsl(var(--text-3))]">{formatDate(agent.lastActive)}</strong></span>
+                      </div>
+                      <div className="flex gap-1.5 mt-2 flex-wrap">
+                        {agent.dataAccess.map(d => (
+                          <span key={d} className="px-1.5 py-0.5 text-xs bg-red-900/20 border border-red-800 text-red-400">{d}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 shrink-0 ml-4">
+                    <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setSelected(agent)}>
+                      <Eye size={14} /> View
+                    </Button>
+                    <Button size="sm" variant="outline" className="gap-1.5" onClick={() => navigate(`/agents/${agent.id}`)}>
+                      <MagnifyingGlass size={14} /> Investigate
+                    </Button>
+                    <Button size="sm" variant="outline" className="gap-1.5 border-orange-700 text-orange-400 hover:bg-orange-950/20" onClick={() => handleQuarantine(agent.id)}>
+                      <Lock size={14} /> Quarantine
+                    </Button>
+                    <Button size="sm" className="gap-1.5 bg-green-700 hover:bg-green-600 text-white" onClick={() => handleWhitelist(agent.id)}>
+                      <CheckCircle size={14} /> Whitelist
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Detail Sheet */}
+      <Sheet open={!!selected} onOpenChange={o => { if (!o) setSelected(null); }}>
+        <SheetContent className="w-[580px] max-w-full overflow-y-auto" side="right">
+          {selected && (
+            <>
+              <SheetHeader className="mb-4">
+                <SheetTitle className="flex items-center gap-2 text-red-300">
+                  <ShieldSlash size={18} /> {selected.name}
+                </SheetTitle>
+                <p className="text-sm text-[hsl(var(--text-4))]">{selected.description}</p>
+              </SheetHeader>
+              <div className="space-y-4">
+                <div className="border border-red-700 bg-red-950/30 p-3 text-sm text-red-300">
+                  <Warning size={14} className="inline mr-1.5" />
+                  This is an unauthorized shadow AI agent. No governance controls are in place.
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    ['Agent ID', selected.id], ['Model', selected.model],
+                    ['Type', selected.type], ['Department', selected.department],
+                    ['Owner', selected.owner], ['Risk Level', selected.risk],
+                    ['API Calls 7d', formatNumber(selected.apiCalls7d)],
+                    ['First Seen', formatDate(selected.firstSeen)],
+                    ['Last Active', formatDate(selected.lastActive)],
+                  ].map(([k, v]) => (
+                    <div key={k} className="bg-[hsl(var(--bg-surface))] p-3 border border-[hsl(var(--border))]">
+                      <div className="text-xs text-[hsl(var(--text-4))]">{k}</div>
+                      <div className="text-sm font-medium text-[hsl(var(--text-1))] mt-0.5">{v}</div>
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <div className="text-xs font-medium text-[hsl(var(--text-4))] mb-2 uppercase tracking-wide">Data Access (Unauthorized)</div>
+                  <div className="flex flex-wrap gap-2">
+                    {selected.dataAccess.map(d => (
+                      <span key={d} className="px-2 py-0.5 text-xs bg-red-900/20 border border-red-800 text-red-400">{d}</span>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <Button size="sm" className="bg-orange-700 hover:bg-orange-600 text-white" onClick={() => { handleQuarantine(selected.id); setSelected(null); }}>
+                    <Lock size={14} className="mr-1" /> Quarantine
+                  </Button>
+                  <Button size="sm" className="bg-green-700 hover:bg-green-600 text-white" onClick={() => handleWhitelist(selected.id)}>
+                    <CheckCircle size={14} className="mr-1" /> Whitelist
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+    </div>
+  );
 }

@@ -1,5 +1,5 @@
 import { Component, ReactNode } from 'react';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { Warning, ArrowClockwise } from '@phosphor-icons/react';
 import { Button } from '../components/ui/button';
 
 interface Props { children: ReactNode; fallbackTitle?: string; }
@@ -13,10 +13,10 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
-          <AlertTriangle className="h-12 w-12 text-destructive" />
+          <Warning size={48} className="text-destructive" />
           <h2 className="text-lg font-semibold">{this.props.fallbackTitle || 'Something went wrong'}</h2>
           <p className="text-muted-foreground text-sm max-w-md text-center">{this.state.error?.message || 'Failed to load this page.'}</p>
-          <Button onClick={this.handleRetry} variant="outline" className="gap-2"><RefreshCw className="h-4 w-4" />Retry</Button>
+          <Button onClick={this.handleRetry} variant="outline" className="gap-2"><ArrowClockwise size={16} />Retry</Button>
         </div>
       );
     }

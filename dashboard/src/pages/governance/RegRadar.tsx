@@ -1,204 +1,430 @@
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '../../components/ui/alert-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import {
+  Target, Warning, Flag, Globe, Clock, Plus, Eye, PencilSimple, Trash, CheckSquare,
+} from '@phosphor-icons/react';
+import { REGULATIONS, Regulation, Severity, severityColor, formatDate } from '../../data/seed';
+import { useSettingsStore } from '../../stores/settingsStore';
 
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
-import { Badge } from "../../components/ui/badge";
-import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
-import { Globe, AlertTriangle, Clock, CheckCircle2, Search, Filter, Calendar, ArrowRight, ExternalLink, ChevronRight, Landmark, Shield } from "lucide-react";
+const TODAY = new Date();
 
-interface Regulation {
-  id: string; name: string; jurisdiction: string; effectiveDate: string; status: string;
-  impactLevel: string; affectedFrameworks: string[]; affectedModels: string[];
-  summary: string; requiredActions: string[]; source: string;
+const EMPTY_REG: Omit<Regulation, 'id'> = {
+  name: '', jurisdiction: '', impact: 'medium', effectiveDate: '',
+  status: 'monitoring', description: '', actionItems: [], daysUntilEffective: 0,
+};
+
+function getDaysLabel(days: number): { label: string; color: string } {
+  if (days < 0) return { label: `${Math.abs(days)} days overdue`, color: '#ef4444' };
+  if (days === 0) return { label: 'Effective today', color: '#ef4444' };
+  if (days <= 30) return { label: `${days} days remaining`, color: '#f97316' };
+  return { label: `${days} days remaining`, color: '#10b981' };
 }
 
-const regulations: Regulation[] = [
-  { id: "REG-001", name: "EU AI Act Article 6 – High-Risk Classification", jurisdiction: "EU", effectiveDate: "2026-08-02", status: "Upcoming", impactLevel: "Critical", affectedFrameworks: ["EU AI Act"], affectedModels: ["GPT-4-Turbo", "CreditScorer", "HiringFilter"], summary: "Providers of high-risk AI systems must complete conformity assessments before market placement.", requiredActions: ["Complete conformity assessment", "Update technical documentation", "Register in EU database"], source: "Official Journal of the EU" },
-  { id: "REG-002", name: "NIST AI 600-1 – Generative AI Risk Profile", jurisdiction: "US", effectiveDate: "2026-04-15", status: "Published", impactLevel: "High", affectedFrameworks: ["NIST AI RMF"], affectedModels: ["GPT-4-Turbo", "Claude-3-Sonnet"], summary: "Companion resource to AI RMF addressing unique risks of GAI including hallucination, CSAM, data privacy.", requiredActions: ["Map GAI risks to controls", "Update risk register", "Implement content filtering guardrails"], source: "NIST" },
-  { id: "REG-003", name: "Colorado AI Act SB 205 – Algorithmic Discrimination", jurisdiction: "US-CO", effectiveDate: "2026-02-01", status: "Enacted", impactLevel: "High", affectedFrameworks: ["NIST AI RMF", "ISO 42001"], affectedModels: ["CreditScorer", "HiringFilter", "InsuranceRisk"], summary: "Developers and deployers of high-risk AI must use reasonable care to avoid algorithmic discrimination.", requiredActions: ["Conduct bias audit", "Publish impact assessment", "Implement consumer notification"], source: "Colorado Legislature" },
-  { id: "REG-004", name: "ISO/IEC 42001:2023 Amendment 1", jurisdiction: "International", effectiveDate: "2026-06-01", status: "Draft", impactLevel: "Medium", affectedFrameworks: ["ISO 42001"], affectedModels: ["All"], summary: "Proposed amendments to AI management system standard addressing generative AI and foundation models.", requiredActions: ["Review gap analysis", "Update AIMS documentation", "Schedule transition audit"], source: "ISO/IEC JTC 1/SC 42" },
-  { id: "REG-005", name: "Singapore AI Verify Foundation – Model Governance Framework v2", jurisdiction: "SG", effectiveDate: "2026-03-30", status: "Published", impactLevel: "Medium", affectedFrameworks: ["ISO 42001"], affectedModels: ["FraudDetector", "ChatBot-v2"], summary: "Updated testing framework for AI systems with new fairness and robustness benchmarks.", requiredActions: ["Run AI Verify toolkit", "Update model cards", "Submit assessment report"], source: "IMDA Singapore" },
-];
-
-const impactColor = (level: string) => {
-  switch (level) {
-    case "Critical": return "bg-red-500/10 text-red-400 border-red-500/20";
-    case "High": return "bg-amber-500/10 text-amber-400 border-amber-500/20";
-    case "Medium": return "bg-blue-500/10 text-blue-400 border-blue-500/20";
-    default: return "bg-slate-500/10 text-muted-foreground border-slate-500/20";
-  }
-};
-
-const statusColor = (status: string) => {
-  switch (status) {
-    case "Enacted": return "bg-[hsl(var(--brand))]/10 text-[hsl(var(--brand))] border-primary/20";
-    case "Published": return "bg-blue-500/10 text-blue-400 border-blue-500/20";
-    case "Upcoming": return "bg-amber-500/10 text-amber-400 border-amber-500/20";
-    case "Draft": return "bg-slate-500/10 text-muted-foreground border-slate-500/20";
-    default: return "bg-slate-500/10 text-muted-foreground border-slate-500/20";
-  }
-};
+function statusBadge(status: string) {
+  const map: Record<string, { bg: string; text: string; border: string }> = {
+    preparing: { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))', border: 'hsl(var(--s-wn-br))' },
+    effective: { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))' },
+    monitoring: { bg: 'hsl(var(--s-in-bg))', text: 'hsl(var(--s-in-tx))', border: 'hsl(var(--s-in-br))' },
+  };
+  return map[status] || map['monitoring'];
+}
 
 export default function RegRadar() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedJurisdiction, setSelectedJurisdiction] = useState<string>("all");
-  const [selectedImpact, setSelectedImpact] = useState<string>("all");
-  const [selectedReg, setSelectedReg] = useState<Regulation | null>(null);
-  const [showDetail, setShowDetail] = useState(false);
+  const { orgName } = useSettingsStore();
 
-  const jurisdictions = ["all", ...Array.from(new Set(regulations.map(r => r.jurisdiction)))];
+  const [regulations, setRegulations] = useState<Regulation[]>(REGULATIONS);
+  const [filterImpact, setFilterImpact] = useState('all');
+  const [filterJurisdiction, setFilterJurisdiction] = useState('all');
+
+  const [viewItem, setViewItem] = useState<Regulation | null>(null);
+  const [editItem, setEditItem] = useState<Regulation | null>(null);
+  const [deleteItem, setDeleteItem] = useState<Regulation | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [formData, setFormData] = useState<Omit<Regulation, 'id'>>(EMPTY_REG);
+
+  const jurisdictions = Array.from(new Set(regulations.map(r => r.jurisdiction)));
+  const overdueActions = regulations.filter(r => r.daysUntilEffective < 0 && r.status !== 'effective').length;
+  const criticalImpact = regulations.filter(r => r.impact === 'critical').length;
+
   const filtered = regulations.filter(r => {
-    const matchSearch = r.name.toLowerCase().includes(searchQuery.toLowerCase()) || r.summary.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchJuris = selectedJurisdiction === "all" || r.jurisdiction === selectedJurisdiction;
-    const matchImpact = selectedImpact === "all" || r.impactLevel === selectedImpact;
-    return matchSearch && matchJuris && matchImpact;
+    const matchImpact = filterImpact === 'all' || r.impact === filterImpact;
+    const matchJurisdiction = filterJurisdiction === 'all' || r.jurisdiction === filterJurisdiction;
+    return matchImpact && matchJurisdiction;
   });
 
-  const daysUntil = (date: string) => {
-    const d = Math.ceil((new Date(date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-    return d > 0 ? d : 0;
+  const stats = [
+    { label: 'Total Regulations', value: regulations.length, icon: Target, color: '#6366f1' },
+    { label: 'Critical Impact', value: criticalImpact, icon: Warning, color: '#ef4444' },
+    { label: 'Overdue Actions', value: overdueActions, icon: Clock, color: '#f97316' },
+    { label: 'Jurisdictions', value: jurisdictions.length, icon: Globe, color: '#3b82f6' },
+  ];
+
+  // Sort: overdue first, then by days remaining ascending
+  const sorted = [...filtered].sort((a, b) => a.daysUntilEffective - b.daysUntilEffective);
+
+  function handleCreate() {
+    const id = `REG-${String(regulations.length + 1).padStart(3, '0')}`;
+    const effectiveDate = formData.effectiveDate;
+    const days = effectiveDate
+      ? Math.ceil((new Date(effectiveDate).getTime() - TODAY.getTime()) / (1000 * 60 * 60 * 24))
+      : 0;
+    setRegulations(prev => [...prev, { ...formData, id, daysUntilEffective: days }]);
+    setCreateOpen(false);
+    setFormData(EMPTY_REG);
+  }
+
+  function handleEdit() {
+    if (!editItem) return;
+    const days = editItem.effectiveDate
+      ? Math.ceil((new Date(editItem.effectiveDate).getTime() - TODAY.getTime()) / (1000 * 60 * 60 * 24))
+      : editItem.daysUntilEffective;
+    setRegulations(prev => prev.map(r => r.id === editItem.id ? { ...editItem, daysUntilEffective: days } : r));
+    setEditItem(null);
+  }
+
+  function handleDelete() {
+    if (!deleteItem) return;
+    setRegulations(prev => prev.filter(r => r.id !== deleteItem.id));
+    setDeleteItem(null);
+  }
+
+  const selectStyle = {
+    background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))',
+    color: 'hsl(var(--text-1))', padding: '6px 10px', fontSize: 13, borderRadius: 0,
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-6 space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+      {/* Breadcrumb */}
+      <div className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>
+        <Link to="/governance" style={{ color: 'hsl(var(--text-3))', textDecoration: 'none' }}>Governance</Link>
+        <span className="mx-1">›</span>
+        <span style={{ color: 'hsl(var(--text-1))' }}>Regulatory Radar</span>
+      </div>
+
+      {/* Header */}
+      <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Regulatory Radar</h1>
-          <p className="text-muted-foreground">Track upcoming AI regulations, compliance deadlines, and required actions</p>
+          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Regulatory Radar</h1>
+          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>
+            {orgName} · Track incoming regulations and compliance deadlines
+          </p>
         </div>
-        <Button className="bg-teal-600 hover:bg-teal-700"><Globe className="h-4 w-4 mr-2" /> Add Regulation</Button>
+        <Button size="sm" onClick={() => { setFormData(EMPTY_REG); setCreateOpen(true); }}>
+          <Plus size={14} className="mr-1" /> Add Regulation
+        </Button>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-card border-border"><CardContent className="pt-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Total Tracked</p><p className="text-2xl font-bold">{regulations.length}</p></div><div className="p-2 rounded-lg bg-teal-500/10"><Globe className="h-5 w-5 text-teal-400" /></div></div><p className="text-xs text-muted-foreground mt-1">Across {new Set(regulations.map(r => r.jurisdiction)).size} jurisdictions</p></CardContent></Card>
-        <Card className="bg-card border-border"><CardContent className="pt-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Critical Impact</p><p className="text-2xl font-bold text-red-400">{regulations.filter(r => r.impactLevel === "Critical").length}</p></div><div className="p-2 rounded-lg bg-red-500/10"><AlertTriangle className="h-5 w-5 text-red-400" /></div></div><p className="text-xs text-red-400 mt-1">Requires immediate action</p></CardContent></Card>
-        <Card className="bg-card border-border"><CardContent className="pt-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Action Items Overdue</p><p className="text-2xl font-bold text-amber-400">3</p></div><div className="p-2 rounded-lg bg-amber-500/10"><Clock className="h-5 w-5 text-amber-400" /></div></div><p className="text-xs text-amber-400 mt-1">Colorado SB 205 actions due</p></CardContent></Card>
-        <Card className="bg-card border-border"><CardContent className="pt-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Jurisdictions</p><p className="text-2xl font-bold">{new Set(regulations.map(r => r.jurisdiction)).size}</p></div><div className="p-2 rounded-lg bg-blue-500/10"><Landmark className="h-5 w-5 text-blue-400" /></div></div><p className="text-xs text-muted-foreground mt-1">EU, US, SG, International</p></CardContent></Card>
-      </div>
-
-      {/* Timeline Chart */}
-      <Card className="bg-card border-border">
-        <CardHeader><CardTitle className="text-base">Regulatory Timeline</CardTitle></CardHeader>
-        <CardContent>
-          <div className="relative">
-            <div className="absolute left-0 right-0 top-1/2 h-0.5 bg-border" />
-            <div className="flex justify-between relative">
-              {regulations.sort((a, b) => new Date(a.effectiveDate).getTime() - new Date(b.effectiveDate).getTime()).map(reg => (
-                <div key={reg.id} className="flex flex-col items-center cursor-pointer group" onClick={() => { setSelectedReg(reg); setShowDetail(true); }}>
-                  <div className={`w-4 h-4 rounded-full border-2 z-10 group-hover:scale-125 transition-transform ${reg.impactLevel === "Critical" ? "bg-red-500 border-red-400" : reg.impactLevel === "High" ? "bg-amber-500 border-amber-400" : "bg-blue-500 border-blue-400"}`} />
-                  <div className="mt-2 text-center">
-                    <p className="text-xs font-medium max-w-[120px] truncate">{reg.name.split(" – ")[0]}</p>
-                    <p className="text-xs text-muted-foreground">{new Date(reg.effectiveDate).toLocaleDateString("en-US", { month: "short", year: "numeric" })}</p>
-                    <Badge variant="outline" className={`text-xs mt-1 ${impactColor(reg.impactLevel)}`}>{reg.impactLevel}</Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Search & Filter */}
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search regulations..." className="pl-9" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-        </div>
-        <div className="flex gap-1">
-          {jurisdictions.map(j => (
-            <Button key={j} variant={selectedJurisdiction === j ? "default" : "outline"} size="sm" onClick={() => setSelectedJurisdiction(j)} className={selectedJurisdiction === j ? "bg-teal-600" : ""}>
-              {j === "all" ? "All" : j}
-            </Button>
-          ))}
-        </div>
-        <div className="flex gap-1">
-          {["all", "Critical", "High", "Medium"].map(i => (
-            <Button key={i} variant={selectedImpact === i ? "default" : "outline"} size="sm" onClick={() => setSelectedImpact(i)} className={selectedImpact === i ? "bg-teal-600" : ""}>
-              {i === "all" ? "All Impact" : i}
-            </Button>
-          ))}
-        </div>
-      </div>
-
-      {/* Regulation Cards */}
-      <div className="space-y-3">
-        {filtered.map(reg => (
-          <Card key={reg.id} className="bg-card border-border hover:border-teal-500/30 transition-colors cursor-pointer" onClick={() => { setSelectedReg(reg); setShowDetail(true); }}>
-            <CardContent className="pt-4">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Badge variant="outline" className={impactColor(reg.impactLevel)}>{reg.impactLevel}</Badge>
-                    <Badge variant="outline" className={statusColor(reg.status)}>{reg.status}</Badge>
-                    <Badge variant="outline" className="bg-slate-500/10 text-muted-foreground border-slate-500/20">{reg.jurisdiction}</Badge>
-                  </div>
-                  <h3 className="font-medium">{reg.name}</h3>
-                  <p className="text-sm text-muted-foreground mt-1">{reg.summary}</p>
-                  <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> Effective: {new Date(reg.effectiveDate).toLocaleDateString()}</span>
-                    <span className="flex items-center gap-1"><Shield className="h-3 w-3" /> {reg.affectedFrameworks.join(", ")}</span>
-                    <span>{reg.affectedModels.length} models affected</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {reg.affectedModels.map(m => <Badge key={m} variant="secondary" className="text-xs bg-muted">{m}</Badge>)}
-                  </div>
-                </div>
-                <div className="text-right ml-4">
-                  <div className={`text-2xl font-bold ${daysUntil(reg.effectiveDate) < 30 ? "text-red-400" : daysUntil(reg.effectiveDate) < 90 ? "text-amber-400" : "text-[hsl(var(--brand))]"}`}>{daysUntil(reg.effectiveDate)}</div>
-                  <div className="text-xs text-muted-foreground">days until effective</div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground mt-2 ml-auto" />
-                </div>
+      {/* Stats */}
+      <div className="grid grid-cols-4 gap-4">
+        {stats.map(s => (
+          <Card key={s.label} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{s.label}</p>
+                <p className="text-3xl font-bold mt-1" style={{ color: 'hsl(var(--text-1))' }}>{s.value}</p>
               </div>
+              <s.icon size={28} style={{ color: s.color }} />
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Detail Dialog */}
-      <Dialog open={showDetail} onOpenChange={setShowDetail}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader><DialogTitle>{selectedReg?.name}</DialogTitle></DialogHeader>
-          {selectedReg && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className={impactColor(selectedReg.impactLevel)}>{selectedReg.impactLevel}</Badge>
-                <Badge variant="outline" className={statusColor(selectedReg.status)}>{selectedReg.status}</Badge>
-                <Badge variant="outline">{selectedReg.jurisdiction}</Badge>
-              </div>
-              <p className="text-sm text-muted-foreground">{selectedReg.summary}</p>
-              <div className="grid grid-cols-2 gap-4">
-                <div><p className="text-xs text-muted-foreground">Effective Date</p><p className="text-sm font-medium">{new Date(selectedReg.effectiveDate).toLocaleDateString()}</p></div>
-                <div><p className="text-xs text-muted-foreground">Source</p><p className="text-sm font-medium">{selectedReg.source}</p></div>
-                <div><p className="text-xs text-muted-foreground">Days Until Effective</p><p className="text-sm font-bold text-amber-400">{daysUntil(selectedReg.effectiveDate)} days</p></div>
-                <div><p className="text-xs text-muted-foreground">Frameworks</p><p className="text-sm font-medium">{selectedReg.affectedFrameworks.join(", ")}</p></div>
-              </div>
-              <div>
-                <p className="text-sm font-medium mb-2">Affected Models</p>
-                <div className="flex flex-wrap gap-1">
-                  {selectedReg.affectedModels.map(m => <Badge key={m} variant="secondary" className="bg-muted">{m}</Badge>)}
+      {/* Filters — jurisdiction separate from impact */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-2))' }}>Impact:</span>
+          <select value={filterImpact} onChange={e => setFilterImpact(e.target.value)} style={selectStyle}>
+            <option value="all">All Impact Levels</option>
+            {['critical', 'high', 'medium', 'low'].map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-2))' }}>Jurisdiction:</span>
+          <select value={filterJurisdiction} onChange={e => setFilterJurisdiction(e.target.value)} style={selectStyle}>
+            <option value="all">All Jurisdictions</option>
+            {jurisdictions.map(j => <option key={j} value={j}>{j}</option>)}
+          </select>
+        </div>
+        <span className="text-xs ml-auto" style={{ color: 'hsl(var(--text-3))' }}>
+          {filtered.length} of {regulations.length} regulations
+        </span>
+      </div>
+
+      {/* Timeline */}
+      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Regulatory Timeline</CardTitle>
+          <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>
+            Today: {TODAY.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+          </p>
+        </CardHeader>
+        <CardContent>
+          {/* Timeline horizontal bar */}
+          <div className="relative mb-6">
+            <div className="h-0.5 w-full" style={{ background: 'hsl(var(--border))' }} />
+            {/* Today marker */}
+            <div className="absolute top-0 left-0 -translate-y-1/2" style={{ left: '0%' }}>
+              <div className="w-3 h-3 rounded-full border-2" style={{ background: '#ef4444', borderColor: '#ef4444' }} />
+              <span className="text-xs font-bold absolute top-4 -translate-x-1/2" style={{ color: '#ef4444', whiteSpace: 'nowrap' }}>TODAY</span>
+            </div>
+          </div>
+
+          {/* Regulation items */}
+          <div className="space-y-3 mt-4">
+            {sorted.map(reg => {
+              const sc = severityColor(reg.impact);
+              const dayInfo = getDaysLabel(reg.daysUntilEffective);
+              const sb = statusBadge(reg.status);
+              const isOverdue = reg.daysUntilEffective < 0;
+
+              return (
+                <div
+                  key={reg.id}
+                  className="flex items-start gap-4 p-4 cursor-pointer"
+                  style={{
+                    border: `1px solid ${isOverdue ? '#ef444444' : 'hsl(var(--border))'}`,
+                    background: isOverdue ? 'hsl(var(--s-er-bg))' : 'hsl(var(--bg-muted))',
+                    transition: 'opacity 0.15s',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
+                  onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+                  onClick={() => setViewItem(reg)}
+                >
+                  {/* Left: severity dot */}
+                  <div className="w-3 h-3 rounded-full mt-1.5 flex-shrink-0" style={{ background: sc.text }} />
+
+                  {/* Middle: info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{reg.name}</p>
+                      <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0, fontSize: 10 }}>
+                        {reg.impact}
+                      </Badge>
+                      <Badge style={{ background: sb.bg, color: sb.text, border: `1px solid ${sb.border}`, borderRadius: 0, fontSize: 10 }}>
+                        {reg.status}
+                      </Badge>
+                    </div>
+                    <p className="text-xs mt-0.5 line-clamp-2" style={{ color: 'hsl(var(--text-3))' }}>{reg.description}</p>
+                    <div className="flex items-center gap-4 mt-1.5 flex-wrap">
+                      <span className="text-xs flex items-center gap-1" style={{ color: 'hsl(var(--text-3))' }}>
+                        <Globe size={11} /> {reg.jurisdiction}
+                      </span>
+                      <span className="text-xs flex items-center gap-1" style={{ color: 'hsl(var(--text-3))' }}>
+                        <Clock size={11} /> Effective: {formatDate(reg.effectiveDate)}
+                      </span>
+                      <span className="text-xs font-semibold" style={{ color: dayInfo.color }}>
+                        {dayInfo.label}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Right: actions */}
+                  <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                    <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setViewItem(reg)}>
+                      <Eye size={14} />
+                    </Button>
+                    <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setEditItem({ ...reg })}>
+                      <PencilSimple size={14} />
+                    </Button>
+                    <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: '#ef4444' }} onClick={() => setDeleteItem(reg)}>
+                      <Trash size={14} />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-              <div>
-                <p className="text-sm font-medium mb-2">Required Actions</p>
-                <div className="space-y-2">
-                  {selectedReg.requiredActions.map((a, i) => (
-                    <div key={i} className="flex items-center gap-2 p-2 rounded bg-muted/50">
-                      <input type="checkbox" className="rounded" />
-                      <span className="text-sm">{a}</span>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Detail Sheet */}
+      <Sheet open={!!viewItem} onOpenChange={o => !o && setViewItem(null)}>
+        <SheetContent style={{ width: 560, background: 'hsl(var(--bg-surface))', borderRadius: 0 }}>
+          {viewItem && (
+            <>
+              <SheetHeader className="pb-4">
+                <SheetTitle style={{ color: 'hsl(var(--text-1))' }}>{viewItem.name}</SheetTitle>
+                <div className="flex gap-2 flex-wrap">
+                  {(() => {
+                    const sc = severityColor(viewItem.impact);
+                    const dayInfo = getDaysLabel(viewItem.daysUntilEffective);
+                    return (
+                      <>
+                        <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0 }}>
+                          {viewItem.impact} impact
+                        </Badge>
+                        <Badge variant="outline" style={{ borderRadius: 0, color: dayInfo.color, borderColor: dayInfo.color }}>
+                          {dayInfo.label}
+                        </Badge>
+                      </>
+                    );
+                  })()}
+                </div>
+              </SheetHeader>
+
+              <Tabs defaultValue="overview">
+                <TabsList style={{ borderRadius: 0, background: 'hsl(var(--bg-muted))' }}>
+                  <TabsTrigger value="overview" style={{ borderRadius: 0 }}>Overview</TabsTrigger>
+                  <TabsTrigger value="actions" style={{ borderRadius: 0 }}>Action Items</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="overview" className="mt-4 space-y-3">
+                  <p className="text-sm" style={{ color: 'hsl(var(--text-2))' }}>{viewItem.description}</p>
+                  {[
+                    { label: 'Regulation ID', value: viewItem.id },
+                    { label: 'Jurisdiction', value: viewItem.jurisdiction },
+                    { label: 'Impact Level', value: viewItem.impact },
+                    { label: 'Status', value: viewItem.status },
+                    { label: 'Effective Date', value: formatDate(viewItem.effectiveDate) },
+                    { label: 'Days Remaining', value: getDaysLabel(viewItem.daysUntilEffective).label },
+                  ].map(r => (
+                    <div key={r.label} className="flex justify-between py-2" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                      <span className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>{r.label}</span>
+                      <span className="text-sm font-medium" style={{ color: r.label === 'Days Remaining' ? getDaysLabel(viewItem.daysUntilEffective).color : 'hsl(var(--text-1))' }}>
+                        {r.value}
+                      </span>
                     </div>
                   ))}
-                </div>
+                </TabsContent>
+
+                <TabsContent value="actions" className="mt-4">
+                  <p className="text-xs font-semibold mb-3" style={{ color: 'hsl(var(--text-2))' }}>Required Action Items</p>
+                  <ul className="space-y-2">
+                    {viewItem.actionItems.map((item, i) => (
+                      <li key={i} className="flex items-start gap-2 p-2" style={{ border: '1px solid hsl(var(--border))' }}>
+                        <CheckSquare size={14} style={{ color: 'hsl(var(--brand))', marginTop: 2, flexShrink: 0 }} />
+                        <span className="text-sm" style={{ color: 'hsl(var(--text-2))' }}>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-4 p-3" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))' }}>
+                    <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>
+                      {viewItem.actionItems.length} action items · Deadline: {formatDate(viewItem.effectiveDate)}
+                    </p>
+                  </div>
+                  <Link to={`/reg-radar/${viewItem.id}`} className="block mt-4">
+                    <Button size="sm" variant="outline" style={{ borderRadius: 0, width: '100%' }}>
+                      View Full Detail Page
+                    </Button>
+                  </Link>
+                </TabsContent>
+              </Tabs>
+
+              <div className="flex gap-2 mt-6">
+                <Button size="sm" onClick={() => { setEditItem({ ...viewItem }); setViewItem(null); }}>
+                  <PencilSimple size={14} className="mr-1" /> Edit
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setViewItem(null)}>Close</Button>
               </div>
-              <div className="flex gap-2 pt-2">
-                <Button className="flex-1 bg-teal-600 hover:bg-teal-700">Create Action Plan</Button>
-                <Button variant="outline" className="flex-1"><ExternalLink className="h-4 w-4 mr-2" /> View Source</Button>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editItem} onOpenChange={o => !o && setEditItem(null)}>
+        <DialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0, maxWidth: 520 }}>
+          <DialogHeader>
+            <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>Edit Regulation</DialogTitle>
+          </DialogHeader>
+          {editItem && (
+            <div className="space-y-3">
+              {[
+                { label: 'Name', key: 'name' },
+                { label: 'Jurisdiction', key: 'jurisdiction' },
+                { label: 'Description', key: 'description' },
+                { label: 'Effective Date', key: 'effectiveDate', type: 'date' },
+              ].map(f => (
+                <div key={f.key}>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>{f.label}</label>
+                  <Input type={f.type || 'text'} value={(editItem as any)[f.key] || ''} onChange={e => setEditItem(prev => prev ? { ...prev, [f.key]: e.target.value } : null)} style={{ borderRadius: 0 }} />
+                </div>
+              ))}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Impact</label>
+                  <select value={editItem.impact} onChange={e => setEditItem(prev => prev ? { ...prev, impact: e.target.value as Severity } : null)}
+                    style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
+                    {['critical', 'high', 'medium', 'low'].map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Status</label>
+                  <select value={editItem.status} onChange={e => setEditItem(prev => prev ? { ...prev, status: e.target.value } : null)}
+                    style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
+                    {['monitoring', 'preparing', 'effective'].map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
               </div>
             </div>
           )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditItem(null)} style={{ borderRadius: 0 }}>Cancel</Button>
+            <Button onClick={handleEdit} style={{ borderRadius: 0 }}>Save Changes</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Create Dialog */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0, maxWidth: 520 }}>
+          <DialogHeader>
+            <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>Add Regulation</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {[
+              { label: 'Name', key: 'name' },
+              { label: 'Jurisdiction', key: 'jurisdiction' },
+              { label: 'Description', key: 'description' },
+              { label: 'Effective Date', key: 'effectiveDate', type: 'date' },
+            ].map(f => (
+              <div key={f.key}>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>{f.label}</label>
+                <Input type={f.type || 'text'} value={(formData as any)[f.key] || ''} onChange={e => setFormData(prev => ({ ...prev, [f.key]: e.target.value }))} style={{ borderRadius: 0 }} />
+              </div>
+            ))}
+            <div>
+              <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Impact</label>
+              <select value={formData.impact} onChange={e => setFormData(prev => ({ ...prev, impact: e.target.value as Severity }))}
+                style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
+                {['critical', 'high', 'medium', 'low'].map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
+            <Button onClick={handleCreate} disabled={!formData.name} style={{ borderRadius: 0 }}>Add Regulation</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Dialog */}
+      <AlertDialog open={!!deleteItem} onOpenChange={o => !o && setDeleteItem(null)}>
+        <AlertDialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0 }}>
+          <AlertDialogHeader>
+            <AlertDialogTitle style={{ color: 'hsl(var(--text-1))' }}>Delete Regulation</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{deleteItem?.name}</strong>? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} style={{ background: '#ef4444', borderRadius: 0 }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

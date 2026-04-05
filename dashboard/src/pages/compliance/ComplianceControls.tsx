@@ -1,278 +1,408 @@
-import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { Card } from "../../components/ui/card";
-import { Badge } from "../../components/ui/badge";
-import { Button } from "../../components/ui/button";
-import { Progress } from "../../components/ui/progress";
-import { Input } from "../../components/ui/input";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "../../components/ui/sheet";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
-import { Target, Layers, AlertTriangle, FileCheck, CheckCircle2, XCircle, MinusCircle, Eye, Download, Plus, Search, Upload, Play } from "lucide-react";
-import { controlSeedData, Control } from "../../data/controlSeedData";
-import { cn } from "../../lib/utils";
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '../../components/ui/alert-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import {
+  ShieldCheck, MagnifyingGlass, Plus, Eye, PencilSimple, Trash,
+  CheckCircle, XCircle, Clock, Warning, ClipboardText,
+} from '@phosphor-icons/react';
+import { CONTROLS, FRAMEWORKS, GAPS, EVIDENCE, Control, ControlStatus, statusColor, severityColor, formatDate } from '../../data/seed';
+import { useSettingsStore } from '../../stores/settingsStore';
+import { useChartTheme } from '../../hooks/useChartTheme';
 
-interface EvidenceItem { id: string; name: string; type: "PDF"|"CSV"|"LOG"|"IMG"|"JSON"; source: string; date: string; status: "Valid"|"Expired"|"Pending"; }
-
-function generateEvidenceForControl(ctrl: Control): EvidenceItem[] {
-  const sources = ["Drata Sync","Manual Upload","Sentinel Runtime","Cobalt.io","Internal Scan","Okta Sync"];
-  const templates: { name: string; type: EvidenceItem["type"] }[] = ctrl.automationType === "Automated"
-    ? [{ name: `${ctrl.id}_runtime_test_report.pdf`, type: "PDF" }, { name: `${ctrl.id}_scan_results.json`, type: "JSON" }, { name: `${ctrl.id}_guardrail_logs_30d.csv`, type: "CSV" }]
-    : ctrl.automationType === "Semi-Automated"
-    ? [{ name: `${ctrl.id}_assessment_report.pdf`, type: "PDF" }, { name: `${ctrl.id}_monitoring_data.csv`, type: "CSV" }, { name: `${ctrl.id}_config_audit.json`, type: "JSON" }]
-    : [{ name: `${ctrl.id}_manual_review.pdf`, type: "PDF" }, { name: `${ctrl.id}_attestation_signed.pdf`, type: "PDF" }, { name: `${ctrl.id}_audit_notes.pdf`, type: "PDF" }];
-  return templates.map((t, i) => ({ id: `EV-${ctrl.id}-${String(i+1).padStart(3,"0")}`, name: t.name, type: t.type, source: sources[i % sources.length], date: `2026-03-${String(28 - i * 5).padStart(2,"0")}`, status: i === 0 ? "Valid" as const : i === templates.length - 1 ? "Pending" as const : "Valid" as const }));
-}
-
-interface CrossMapping { framework: string; clauseRef: string; requirement: string; alignment: "Full"|"Partial"|"Gap"; }
-
-function getCrossFrameworkMappings(ctrl: Control): CrossMapping[] {
-  const mappings: Record<string, CrossMapping[]> = {
-    "Risk Management": [{ framework: "ISO 42001", clauseRef: "Annex A.5.3", requirement: "AI System Risk Assessment", alignment: "Full" }, { framework: "EU AI Act", clauseRef: "Article 9", requirement: "Risk Management System", alignment: "Partial" }, { framework: "NIST AI RMF", clauseRef: "MAP 1.1", requirement: "Context Established", alignment: "Full" }, { framework: "SOC 2", clauseRef: "CC3.1", requirement: "Risk Assessment Process", alignment: "Full" }],
-    "Human Oversight": [{ framework: "ISO 42001", clauseRef: "Annex A.8.3", requirement: "Human Oversight of AI", alignment: "Full" }, { framework: "EU AI Act", clauseRef: "Article 14", requirement: "Human Oversight Measures", alignment: "Partial" }, { framework: "NIST AI RMF", clauseRef: "GOVERN 1.3", requirement: "Oversight Mechanisms", alignment: "Full" }],
-    "Access Control": [{ framework: "ISO 27001", clauseRef: "A.9.1.1", requirement: "Access Control Policy", alignment: "Full" }, { framework: "SOC 2", clauseRef: "CC6.1", requirement: "Logical Access Controls", alignment: "Full" }],
-    "Data Governance": [{ framework: "ISO 42001", clauseRef: "Annex A.7.2", requirement: "Data Quality Management", alignment: "Full" }, { framework: "EU AI Act", clauseRef: "Article 10", requirement: "Data Governance", alignment: "Partial" }, { framework: "NIST AI RMF", clauseRef: "MAP 2.3", requirement: "Data Characterization", alignment: "Full" }],
-  };
-  return [...(mappings[ctrl.category] || []), { framework: ctrl.framework, clauseRef: ctrl.clauseRef, requirement: ctrl.name, alignment: "Full" as const }].filter(m => m.framework !== ctrl.framework || m.clauseRef !== ctrl.clauseRef);
-}
-
-function exportControlMatrix() {
-  let csv = "Control ID,Name,Framework,Clause Reference,Category,Status,Score,Test Result,Risk Level,Automation,Owner,Evidence Count,Last Tested,Linked Policies,Linked Models\n";
-  controlSeedData.forEach(c => {
-    csv += `"${c.id}","${c.name}","${c.framework}","${c.clauseRef}","${c.category}","${c.status}",${c.score},"${c.testResult}","${c.riskLevel}","${c.automationType}","${c.owner}",${c.evidenceCount},"${c.lastTested}","${c.linkedPolicies.join("; ")}","${c.linkedModels.join("; ")}"\n`;
-  });
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a"); a.href = url;
-  a.download = `sentinel-control-matrix-${new Date().toISOString().split("T")[0]}.csv`;
-  a.click(); URL.revokeObjectURL(url);
-}
-
-
-const FRAMEWORKS = ["All","ISO 42001","ISO 27001","SOC 2","EU AI Act","NIST AI RMF","OWASP LLM"];
-
-const statusColors: Record<string, string> = {
-  Implemented: "bg-primary/10 text-primary border-primary/20",
-  Partial: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-  Planned: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-  "Not Applicable": "bg-zinc-500/10 text-muted-foreground border-zinc-500/20",
+const EMPTY_CONTROL: Omit<Control, 'id'> = {
+  title: '', framework: 'EU AI Act', clause: '', status: 'planned',
+  score: 0, owner: '', evidenceCount: 0, lastTested: '',
+  description: '', testResult: 'pending',
 };
 
-const testIcons: Record<string, { icon: typeof CheckCircle2; color: string }> = {
-  Pass: { icon: CheckCircle2, color: "text-primary" },
-  Fail: { icon: XCircle, color: "text-red-400" },
-  Warning: { icon: MinusCircle, color: "text-amber-400" },
-  "Not Tested": { icon: MinusCircle, color: "text-muted-foreground" },
-};
+function statusIcon(status: ControlStatus) {
+  if (status === 'implemented') return <CheckCircle size={14} style={{ color: '#10b981' }} />;
+  if (status === 'partial') return <Warning size={14} style={{ color: '#f97316' }} />;
+  if (status === 'planned') return <Clock size={14} style={{ color: '#6b7280' }} />;
+  return <XCircle size={14} style={{ color: '#9ca3af' }} />;
+}
 
 export default function ComplianceControls() {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const initialFw = searchParams.get("framework") || "All";
-  const [frameworkFilter, setFrameworkFilter] = useState(initialFw);
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [page, setPage] = useState(1);
-  const pageSize = 6;
-  const [selectedControl, setSelectedControl] = useState<Control | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
+  const { orgName } = useSettingsStore();
+  const ct = useChartTheme();
 
-  const filtered = controlSeedData.filter((c) => {
-    if (frameworkFilter !== "All" && c.framework !== frameworkFilter) return false;
-    if (statusFilter !== "All" && c.status !== statusFilter) return false;
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      if (!c.name.toLowerCase().includes(q) && !c.id.toLowerCase().includes(q) && !c.owner.toLowerCase().includes(q)) return false;
-    }
-    return true;
+  const [controls, setControls] = useState<Control[]>(CONTROLS);
+  const [search, setSearch] = useState('');
+  const [filterFramework, setFilterFramework] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
+
+  const [viewItem, setViewItem] = useState<Control | null>(null);
+  const [editItem, setEditItem] = useState<Control | null>(null);
+  const [deleteItem, setDeleteItem] = useState<Control | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [formData, setFormData] = useState<Omit<Control, 'id'>>(EMPTY_CONTROL);
+
+  const frameworks = Array.from(new Set(controls.map(c => c.framework)));
+
+  const filtered = controls.filter(c => {
+    const q = search.toLowerCase();
+    const matchSearch = !q || c.title.toLowerCase().includes(q) || c.clause.toLowerCase().includes(q) || c.owner.toLowerCase().includes(q);
+    const matchFW = filterFramework === 'all' || c.framework === filterFramework;
+    const matchStat = filterStatus === 'all' || c.status === filterStatus;
+    return matchSearch && matchFW && matchStat;
   });
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
-  const implCount = controlSeedData.filter(c => c.status === "Implemented").length;
-  const totalCount = controlSeedData.length;
-  const coverage = Math.round((implCount / totalCount) * 100);
-  const openGaps = controlSeedData.filter(c => c.status === "Partial" || c.status === "Planned").length;
-  const totalEvidence = controlSeedData.reduce((s, c) => s + c.evidenceCount, 0);
+  const totalControls = controls.length;
+  const implemented = controls.filter(c => c.status === 'implemented').length;
+  const coverage = Math.round((implemented / totalControls) * 100);
+  const openGaps = GAPS.length;
+  const evidenceTotal = controls.reduce((sum, c) => sum + c.evidenceCount, 0);
+
+  const stats = [
+    { label: 'Control Coverage', value: coverage + '%', icon: ShieldCheck, color: '#10b981' },
+    { label: 'Total Controls', value: totalControls, icon: ClipboardText, color: '#6366f1' },
+    { label: 'Open Gaps', value: openGaps, icon: Warning, color: '#f97316' },
+    { label: 'Evidence Items', value: evidenceTotal, icon: CheckCircle, color: '#3b82f6' },
+  ];
+
+  function handleCreate() {
+    const id = `CTRL-${String(controls.length + 1).padStart(3, '0')}`;
+    setControls(prev => [...prev, { ...formData, id }]);
+    setCreateOpen(false);
+    setFormData(EMPTY_CONTROL);
+  }
+
+  function handleEdit() {
+    if (!editItem) return;
+    setControls(prev => prev.map(c => c.id === editItem.id ? editItem : c));
+    setEditItem(null);
+  }
+
+  function handleDelete() {
+    if (!deleteItem) return;
+    setControls(prev => prev.filter(c => c.id !== deleteItem.id));
+    setDeleteItem(null);
+  }
+
+  const selectStyle = {
+    background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))',
+    color: 'hsl(var(--text-1))', padding: '6px 10px', fontSize: 13, borderRadius: 0,
+  };
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+      {/* Breadcrumb */}
+      <div className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>
+        <Link to="/compliance" style={{ color: 'hsl(var(--text-3))', textDecoration: 'none' }}>Compliance</Link>
+        <span className="mx-1">›</span>
+        <span style={{ color: 'hsl(var(--text-1))' }}>Controls</span>
+      </div>
+
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Control Library</h1>
-          <p className="text-muted-foreground text-sm">{totalCount} controls across 6 frameworks — real-time enforcement status</p>
+          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Compliance Controls</h1>
+          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>
+            {orgName} · {totalControls} controls across {frameworks.length} frameworks
+          </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={exportControlMatrix}><Download className="h-4 w-4 mr-1" />Export Matrix</Button>
-          <Button size="sm"><Plus className="h-4 w-4 mr-1" />Add Control</Button>
-        </div>
+        <Button size="sm" onClick={() => { setFormData(EMPTY_CONTROL); setCreateOpen(true); }}>
+          <Plus size={14} className="mr-1" /> Add Control
+        </Button>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
-        {[{label:"Control Coverage",value:`${coverage}%`,sub:`${implCount} of ${totalCount} implemented`,icon:Target,trend:"+2.3%",up:true},
-          {label:"Total Controls",value:totalCount,sub:"Across 6 frameworks",icon:Layers,trend:"+14",up:true},
-          {label:"Open Gaps",value:openGaps,sub:`${controlSeedData.filter(c=>c.status==="Planned").length} planned`,icon:AlertTriangle,trend:"-3",up:false},
-          {label:"Evidence Items",value:totalEvidence,sub:"44 pending review",icon:FileCheck,trend:"+89",up:true}].map((s,i) => (
-          <Card key={i} className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-muted-foreground">{s.label}</span>
-              <s.icon className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <div className="text-2xl font-bold">{s.value}</div>
-            <div className="flex items-center justify-between mt-1">
-              <span className="text-xs text-muted-foreground">{s.sub}</span>
-              <span className={cn("text-xs",s.up?"text-primary":"text-red-400")}>{s.trend}</span>
-            </div>
+        {stats.map(s => (
+          <Card key={s.label} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{s.label}</p>
+                <p className="text-3xl font-bold mt-1" style={{ color: 'hsl(var(--text-1))' }}>{s.value}</p>
+              </div>
+              <s.icon size={28} style={{ color: s.color }} />
+            </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex gap-1 flex-wrap">
-          {FRAMEWORKS.map(fw => {
-            const count = fw === "All" ? controlSeedData.length : controlSeedData.filter(c => c.framework === fw).length;
-            return (
-              <Button key={fw} variant={frameworkFilter === fw ? "default" : "outline"} size="sm"
-                onClick={() => { setFrameworkFilter(fw); setPage(1); }}>
-                {fw} <Badge variant="secondary" className="ml-1 text-xs">{count}</Badge>
-              </Button>
-            );
-          })}
-        </div>
-        <div className="flex gap-2 ml-auto">
-          <div className="relative">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search controls..." className="pl-8 h-9 w-[200px]" value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }} />
-          </div>
-          {["All","Implemented","Partial","Planned"].map(s => (
-            <Button key={s} variant={statusFilter === s ? "default" : "outline"} size="sm"
-              onClick={() => { setStatusFilter(s); setPage(1); }}>{s}</Button>
+      {/* Framework filter tabs */}
+      <Tabs value={filterFramework} onValueChange={setFilterFramework}>
+        <TabsList style={{ borderRadius: 0, background: 'hsl(var(--bg-muted))' }}>
+          <TabsTrigger value="all" style={{ borderRadius: 0 }}>All</TabsTrigger>
+          {frameworks.map(fw => (
+            <TabsTrigger key={fw} value={fw} style={{ borderRadius: 0 }}>
+              {fw.replace('ISO/IEC ', '').replace('OWASP ', '')}
+            </TabsTrigger>
           ))}
+        </TabsList>
+      </Tabs>
+
+      {/* Search + Status Filter */}
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 max-w-xs">
+          <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--text-3))' }} />
+          <Input placeholder="Search controls..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8" style={{ borderRadius: 0 }} />
         </div>
+        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={selectStyle}>
+          <option value="all">All Statuses</option>
+          {['implemented', 'partial', 'planned', 'not_applicable'].map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <span className="text-xs ml-auto" style={{ color: 'hsl(var(--text-3))' }}>{filtered.length} of {controls.length}</span>
       </div>
 
-      {/* Controls Table */}
-      <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[100px]">Control ID</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Framework</TableHead>
-              <TableHead>Clause</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Score</TableHead>
-              <TableHead>Test</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead className="text-right">Evidence</TableHead>
-              <TableHead className="w-[50px]"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paged.map((ctrl) => {
-              const TIcon = testIcons[ctrl.testResult] || testIcons["Not Tested"];
-              return (
-                <TableRow key={ctrl.id} className="cursor-pointer hover:bg-muted/50" onClick={() => { setSelectedControl(ctrl); setDetailOpen(true); }}>
-                  <TableCell className="font-mono text-xs">{ctrl.id}</TableCell>
-                  <TableCell>
-                    <div className="font-medium text-sm">{ctrl.name}</div>
-                    <div className="text-xs text-muted-foreground">{ctrl.category} · {ctrl.owner}</div>
-                  </TableCell>
-                  <TableCell><Badge variant="outline" className="text-xs">{ctrl.framework}</Badge></TableCell>
-                  <TableCell className="text-xs font-mono">{ctrl.clauseRef}</TableCell>
-                  <TableCell><Badge className={cn("text-xs border",statusColors[ctrl.status])}>{ctrl.status}</Badge></TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Progress value={ctrl.score} className="h-1.5 w-16" />
-                      <span className="text-xs">{ctrl.score}%</span>
-                    </div>
-                  </TableCell>
-                  <TableCell><TIcon.icon className={cn("h-4 w-4",TIcon.color)} /></TableCell>
-                  <TableCell><Badge variant="outline" className="text-xs">{ctrl.automationType}</Badge></TableCell>
-                  <TableCell className="text-right text-xs">{ctrl.evidenceCount}</TableCell>
-                  <TableCell><Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setSelectedControl(ctrl); setDetailOpen(true); }}><Eye className="h-4 w-4" /></Button></TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-        {/* Pagination */}
-        <div className="flex items-center justify-between p-4 border-t">
-          <span className="text-sm text-muted-foreground">Showing {(page-1)*pageSize+1}–{Math.min(page*pageSize,filtered.length)} of {filtered.length} controls</span>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" disabled={page<=1} onClick={() => setPage(p=>p-1)}>Previous</Button>
-            <Button variant="outline" size="sm" disabled={page>=totalPages} onClick={() => setPage(p=>p+1)}>Next</Button>
-          </div>
-        </div>
+      {/* Table */}
+      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+        <CardContent className="p-0">
+          {filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16" style={{ color: 'hsl(var(--text-3))' }}>
+              <ShieldCheck size={40} />
+              <p className="mt-3 text-sm font-medium">No controls match your filters</p>
+            </div>
+          ) : (
+            <table className="w-full">
+              <thead style={{ background: 'hsl(var(--bg-muted))' }}>
+                <tr>
+                  {['ID', 'Title', 'Framework', 'Clause', 'Status', 'Score', 'Evidence', 'Last Tested', 'Actions'].map(h => (
+                    <th key={h} className="text-left p-3 text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(c => {
+                  const sc = statusColor(c.status);
+                  return (
+                    <tr
+                      key={c.id}
+                      className="cursor-pointer"
+                      style={{ borderTop: '1px solid hsl(var(--border))' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'hsl(var(--bg-muted))')}
+                      onMouseLeave={e => (e.currentTarget.style.background = '')}
+                      onClick={() => setViewItem(c)}
+                    >
+                      <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{c.id}</td>
+                      <td className="p-3 text-sm font-medium" style={{ color: 'hsl(var(--text-1))', maxWidth: 200 }}>
+                        <span className="line-clamp-2">{c.title}</span>
+                      </td>
+                      <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{c.framework.replace('ISO/IEC ', '')}</td>
+                      <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{c.clause}</td>
+                      <td className="p-3">
+                        <div className="flex items-center gap-1.5">
+                          {statusIcon(c.status)}
+                          <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0, fontSize: 10 }}>
+                            {c.status.replace('_', ' ')}
+                          </Badge>
+                        </div>
+                      </td>
+                      <td className="p-3" style={{ minWidth: 100 }}>
+                        <div className="flex items-center gap-2">
+                          <div style={{ flex: 1, background: 'hsl(var(--bg-muted))', height: 6 }}>
+                            <div style={{
+                              width: c.score + '%',
+                              height: '100%',
+                              background: c.score >= 80 ? '#10b981' : c.score >= 60 ? '#f97316' : '#ef4444',
+                            }} />
+                          </div>
+                          <span className="text-xs font-bold" style={{ color: 'hsl(var(--text-1))' }}>{c.score}%</span>
+                        </div>
+                      </td>
+                      <td className="p-3 text-xs text-center" style={{ color: 'hsl(var(--text-2))' }}>{c.evidenceCount}</td>
+                      <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{c.lastTested ? formatDate(c.lastTested) : '—'}</td>
+                      <td className="p-3">
+                        <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                          <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setViewItem(c)}>
+                            <Eye size={14} />
+                          </Button>
+                          <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setEditItem({ ...c })}>
+                            <PencilSimple size={14} />
+                          </Button>
+                          <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: '#ef4444' }} onClick={() => setDeleteItem(c)}>
+                            <Trash size={14} />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </CardContent>
       </Card>
 
-      {/* Control Detail Sheet */}
-      <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
-        <SheetContent className="w-[560px] sm:max-w-[560px] overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>{selectedControl?.name}</SheetTitle>
-            <SheetDescription>{selectedControl?.id} — {selectedControl?.framework} {selectedControl?.clauseRef}</SheetDescription>
-          </SheetHeader>
-          {selectedControl && (
-            <Tabs defaultValue="detail" className="mt-4">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="detail">Detail</TabsTrigger>
-                <TabsTrigger value="evidence">Evidence</TabsTrigger>
-                <TabsTrigger value="testing">Testing</TabsTrigger>
-                <TabsTrigger value="mapping">Mapping</TabsTrigger>
-              </TabsList>
-              <TabsContent value="detail" className="space-y-4 mt-4">
+      {/* View Sheet */}
+      <Sheet open={!!viewItem} onOpenChange={o => !o && setViewItem(null)}>
+        <SheetContent style={{ width: 520, background: 'hsl(var(--bg-surface))', borderRadius: 0 }}>
+          {viewItem && (
+            <>
+              <SheetHeader className="pb-4">
+                <SheetTitle style={{ color: 'hsl(var(--text-1))' }}>{viewItem.title}</SheetTitle>
                 <div className="flex gap-2">
-                  <Badge className={cn("border",statusColors[selectedControl.status])}>{selectedControl.status}</Badge>
-                  <Badge variant="outline">{selectedControl.automationType}</Badge>
-                  <Badge variant="outline">{selectedControl.riskLevel} Risk</Badge>
+                  {(() => { const sc = statusColor(viewItem.status); return (
+                    <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0 }}>
+                      {viewItem.status.replace('_', ' ')}
+                    </Badge>
+                  ); })()}
+                  <Badge variant="outline" style={{ borderRadius: 0 }}>{viewItem.framework}</Badge>
                 </div>
-                <div><Progress value={selectedControl.score} className="h-2" /><span className="text-xs text-muted-foreground mt-1 block">{selectedControl.score}% implemented</span></div>
-                <p className="text-sm text-muted-foreground">{selectedControl.description}</p>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div><span className="text-muted-foreground">Owner:</span> {selectedControl.owner}</div>
-                  <div><span className="text-muted-foreground">Category:</span> {selectedControl.category}</div>
-                  <div><span className="text-muted-foreground">Last Tested:</span> {selectedControl.lastTested}</div>
-                  <div><span className="text-muted-foreground">Test Result:</span> {selectedControl.testResult}</div>
-                  <div><span className="text-muted-foreground">Evidence:</span> {selectedControl.evidenceCount} items</div>
-                  <div><span className="text-muted-foreground">Risk Level:</span> {selectedControl.riskLevel}</div>
+              </SheetHeader>
+              <div className="space-y-3">
+                {[
+                  { label: 'Control ID', value: viewItem.id },
+                  { label: 'Clause', value: viewItem.clause },
+                  { label: 'Owner', value: viewItem.owner },
+                  { label: 'Score', value: viewItem.score + '%' },
+                  { label: 'Evidence Items', value: viewItem.evidenceCount.toString() },
+                  { label: 'Last Tested', value: viewItem.lastTested ? formatDate(viewItem.lastTested) : '—' },
+                  { label: 'Test Result', value: viewItem.testResult },
+                ].map(r => (
+                  <div key={r.label} className="flex justify-between py-2" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                    <span className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>{r.label}</span>
+                    <span className="text-sm font-medium" style={{ color: r.label === 'Test Result' && viewItem.testResult === 'fail' ? '#ef4444' : viewItem.testResult === 'pass' ? '#10b981' : 'hsl(var(--text-1))' }}>
+                      {r.value}
+                    </span>
+                  </div>
+                ))}
+                <div className="pt-2">
+                  <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-2))' }}>Description</p>
+                  <p className="text-sm" style={{ color: 'hsl(var(--text-2))' }}>{viewItem.description}</p>
                 </div>
-                {selectedControl.linkedModels.length > 0 && <div><h4 className="text-sm font-medium mb-1">Linked Models</h4><div className="flex flex-wrap gap-1">{selectedControl.linkedModels.map(m => <Badge key={m} variant="secondary" className="text-xs">{m}</Badge>)}</div></div>}
-                {selectedControl.linkedPolicies.length > 0 && <div><h4 className="text-sm font-medium mb-1">Linked Policies</h4><div className="flex flex-wrap gap-1">{selectedControl.linkedPolicies.map(p => <span key={p} className="cursor-pointer" onClick={() => navigate(`/policy-editor?id=${p}`)}><Badge variant="outline" className="text-xs hover:bg-muted">{p}</Badge></span>)}</div></div>}
-              </TabsContent>
-              <TabsContent value="evidence" className="space-y-3 mt-4">
-                {generateEvidenceForControl(selectedControl).map((ev, i) => (
-                  <Card key={i} className="p-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2"><Upload className="h-4 w-4 text-muted-foreground" /><span className="text-sm font-medium">{ev.name}</span></div>
-                      <Badge variant="outline" className="text-xs">{ev.status}</Badge>
+                {/* Gap delta — decrease is green, increase is red */}
+                {(() => {
+                  const linkedGaps = GAPS.filter(g => g.controlRef && viewItem.clause && g.controlRef.includes(viewItem.clause.split(' ')[0]));
+                  const delta = viewItem.score - 80;
+                  return (
+                    <div className="pt-2 p-3" style={{ background: 'hsl(var(--bg-muted))' }}>
+                      <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-2))' }}>Gap Delta vs Target (80%)</p>
+                      <span className="text-sm font-bold" style={{ color: delta >= 0 ? '#10b981' : '#ef4444' }}>
+                        {delta >= 0 ? '+' : ''}{delta}%
+                      </span>
+                      <span className="text-xs ml-2" style={{ color: 'hsl(var(--text-3))' }}>
+                        {delta >= 0 ? 'Above target (good)' : 'Below target — action needed'}
+                      </span>
                     </div>
-                    <div className="text-xs text-muted-foreground mt-1">{ev.type} · Uploaded {ev.date}</div>
-                  </Card>
-                ))}
-              </TabsContent>
-              <TabsContent value="testing" className="space-y-3 mt-4">
-                <Card className="p-3"><div className="flex items-center gap-2"><Play className="h-4 w-4 text-primary" /><div><div className="text-sm font-medium">Latest Test Run</div><div className="text-xs text-muted-foreground">{selectedControl.lastTested} — Result: {selectedControl.testResult}</div></div></div></Card>
-                <Card className="p-3"><div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-muted-foreground" /><div><div className="text-sm font-medium">Previous Run</div><div className="text-xs text-muted-foreground">2026-12-01 — Result: Pass</div></div></div></Card>
-              </TabsContent>
-              <TabsContent value="mapping" className="space-y-3 mt-4">
-                {getCrossFrameworkMappings(selectedControl).map((m, i) => (
-                  <Card key={i} className="p-3">
-                    <div className="flex items-center justify-between">
-                      <div><div className="text-sm font-medium">{m.framework}</div><div className="text-xs text-muted-foreground">{m.clauseRef} — {m.requirement}</div></div>
-                      <Badge variant="outline" className="text-xs">{m.alignment}</Badge>
-                    </div>
-                  </Card>
-                ))}
-              </TabsContent>
-            </Tabs>
+                  );
+                })()}
+              </div>
+              <div className="flex gap-2 mt-6">
+                <Button size="sm" onClick={() => { setEditItem({ ...viewItem }); setViewItem(null); }}>
+                  <PencilSimple size={14} className="mr-1" /> Edit
+                </Button>
+                <Link to={`/controls/${viewItem.id}`} onClick={() => setViewItem(null)}>
+                  <Button size="sm" variant="outline">View Detail</Button>
+                </Link>
+                <Button size="sm" variant="outline" onClick={() => setViewItem(null)}>Close</Button>
+              </div>
+            </>
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editItem} onOpenChange={o => !o && setEditItem(null)}>
+        <DialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0, maxWidth: 520 }}>
+          <DialogHeader>
+            <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>Edit Control</DialogTitle>
+          </DialogHeader>
+          {editItem && (
+            <div className="space-y-3">
+              {[
+                { label: 'Title', key: 'title' },
+                { label: 'Clause', key: 'clause' },
+                { label: 'Owner', key: 'owner' },
+                { label: 'Description', key: 'description' },
+              ].map(f => (
+                <div key={f.key}>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>{f.label}</label>
+                  <Input value={(editItem as any)[f.key] || ''} onChange={e => setEditItem(prev => prev ? { ...prev, [f.key]: e.target.value } : null)} style={{ borderRadius: 0 }} />
+                </div>
+              ))}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Status</label>
+                  <select value={editItem.status} onChange={e => setEditItem(prev => prev ? { ...prev, status: e.target.value as ControlStatus } : null)}
+                    style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
+                    {['implemented', 'partial', 'planned', 'not_applicable'].map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Score</label>
+                  <Input type="number" min={0} max={100} value={editItem.score}
+                    onChange={e => setEditItem(prev => prev ? { ...prev, score: Number(e.target.value) } : null)}
+                    style={{ borderRadius: 0 }} />
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditItem(null)} style={{ borderRadius: 0 }}>Cancel</Button>
+            <Button onClick={handleEdit} style={{ borderRadius: 0 }}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Dialog */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0, maxWidth: 520 }}>
+          <DialogHeader>
+            <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>Add Control</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {[
+              { label: 'Title', key: 'title' },
+              { label: 'Clause', key: 'clause' },
+              { label: 'Owner', key: 'owner' },
+              { label: 'Description', key: 'description' },
+            ].map(f => (
+              <div key={f.key}>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>{f.label}</label>
+                <Input value={(formData as any)[f.key] || ''} onChange={e => setFormData(prev => ({ ...prev, [f.key]: e.target.value }))} style={{ borderRadius: 0 }} />
+              </div>
+            ))}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Framework</label>
+                <select value={formData.framework} onChange={e => setFormData(prev => ({ ...prev, framework: e.target.value }))}
+                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
+                  {FRAMEWORKS.map(fw => <option key={fw.id} value={fw.name}>{fw.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Status</label>
+                <select value={formData.status} onChange={e => setFormData(prev => ({ ...prev, status: e.target.value as ControlStatus }))}
+                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
+                  {['planned', 'partial', 'implemented'].map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
+            <Button onClick={handleCreate} style={{ borderRadius: 0 }} disabled={!formData.title}>Create Control</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Dialog */}
+      <AlertDialog open={!!deleteItem} onOpenChange={o => !o && setDeleteItem(null)}>
+        <AlertDialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0 }}>
+          <AlertDialogHeader>
+            <AlertDialogTitle style={{ color: 'hsl(var(--text-1))' }}>Delete Control</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{deleteItem?.title}</strong>? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} style={{ background: '#ef4444', borderRadius: 0 }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
