@@ -72,10 +72,10 @@ function MetricTile({ label, value, variant, icon, sub }: {
   label: string; value: string; variant: 'ok' | 'warn' | 'error' | 'info'; icon: React.ReactNode; sub?: string;
 }) {
   const vs = {
-    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(142 71% 45%)' },
-    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(45 93% 47%)' },
-    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(0 72% 51%)' },
-    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(220 90% 56%)' },
+    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(var(--s-ok-tx))' },
+    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(var(--s-wn-tx))' },
+    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(var(--destructive))' },
+    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))' },
   };
   const s = vs[variant];
   return (
@@ -101,7 +101,7 @@ function MiniSparkline({ data, trend }: { data: number[]; trend: 'up' | 'down' |
   const height = 20;
   const width = 56;
   const barW = width / data.length - 1;
-  const color = trend === 'up' ? 'hsl(142 71% 45%)' : trend === 'down' ? 'hsl(0 72% 51%)' : 'hsl(220 90% 56%)';
+  const color = trend === 'up' ? 'hsl(var(--s-ok-tx))' : trend === 'down' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))';
   return (
     <div className="flex items-center gap-1">
       <svg width={width} height={height}>
@@ -120,8 +120,8 @@ function MiniSparkline({ data, trend }: { data: number[]; trend: 'up' | 'down' |
           );
         })}
       </svg>
-      {trend === 'up' && <ArrowUp size={12} weight="bold" style={{ color: 'hsl(142 71% 45%)' }} />}
-      {trend === 'down' && <ArrowDown size={12} weight="bold" style={{ color: 'hsl(0 72% 51%)' }} />}
+      {trend === 'up' && <ArrowUp size={12} weight="bold" className="text-green-600 dark:text-green-400" />}
+      {trend === 'down' && <ArrowDown size={12} weight="bold" className="text-destructive" />}
     </div>
   );
 }
@@ -229,7 +229,7 @@ export default function TrustEngineDashboard() {
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
-            background: t.type === 'success' ? 'hsl(142 71% 45%)' : t.type === 'error' ? 'hsl(0 72% 51%)' : 'hsl(220 90% 56%)',
+            background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
             color: '#fff', borderRadius: 0, minWidth: 300,
           }}>{t.text}</div>
         ))}
@@ -252,12 +252,12 @@ export default function TrustEngineDashboard() {
       {/* Live Alert Ticker */}
       <div className="overflow-hidden relative" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0, height: 28 }}>
         <div className="flex items-center h-full px-3">
-          <Badge style={{ background: 'hsl(0 72% 51% / 0.15)', color: 'hsl(0 72% 51%)', borderRadius: 0, fontSize: 9, marginRight: 8, flexShrink: 0 }}>LIVE</Badge>
+          <Badge style={{ background: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 9, marginRight: 8, flexShrink: 0 }}>LIVE</Badge>
           <div ref={tickerRef} className="flex-1 overflow-hidden whitespace-nowrap">
             <div className="inline-block animate-marquee" style={{ animation: 'marquee 40s linear infinite' }}>
               {TICKER_MESSAGES.map((msg, i) => (
                 <span key={i} className="text-xs mx-8" style={{ color: 'hsl(var(--text-4))' }}>
-                  <Lightning size={10} weight="fill" className="inline mr-1" style={{ color: 'hsl(45 93% 47%)' }} />
+                  <Lightning size={10} weight="fill" className="inline mr-1" style={{ color: 'hsl(var(--s-wn-tx))' }} />
                   {msg}
                 </span>
               ))}
@@ -274,13 +274,13 @@ export default function TrustEngineDashboard() {
             label="Trust Score"
             value={`${trustScore}%`}
             variant="ok"
-            icon={<ShieldCheck size={16} weight="fill" style={{ color: 'hsl(142 71% 45%)' }} />}
+            icon={<ShieldCheck size={16} weight="fill" className="text-green-600 dark:text-green-400" />}
             sub="Click for breakdown"
           />
         </div>
-        <MetricTile label="Active Policies" value={String(activePolicies)} variant="ok" icon={<CheckCircle size={16} weight="fill" style={{ color: 'hsl(142 71% 45%)' }} />} />
-        <MetricTile label="Violations (7d)" value={String(violations7d)} variant="warn" icon={<Warning size={16} weight="fill" style={{ color: 'hsl(45 93% 47%)' }} />} sub="3 critical" />
-        <MetricTile label="Evaluations (Week)" value={formatNumber(totalEvals)} variant="info" icon={<Lightning size={16} weight="fill" style={{ color: 'hsl(220 90% 56%)' }} />} />
+        <MetricTile label="Active Policies" value={String(activePolicies)} variant="ok" icon={<CheckCircle size={16} weight="fill" className="text-green-600 dark:text-green-400" />} />
+        <MetricTile label="Violations (7d)" value={String(violations7d)} variant="warn" icon={<Warning size={16} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />} sub="3 critical" />
+        <MetricTile label="Evaluations (Week)" value={formatNumber(totalEvals)} variant="info" icon={<Lightning size={16} weight="fill" className="text-blue-600 dark:text-blue-400" />} />
       </div>
 
       {/* Chart */}
@@ -293,7 +293,7 @@ export default function TrustEngineDashboard() {
             <BarChart data={EVAL_TREND} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} vertical={false} />
               <XAxis dataKey="day" tick={{ fill: ct.axis, fontSize: 11 }} axisLine={{ stroke: ct.grid }} tickLine={false} />
-              <YAxis tick={{ fill: ct.axis, fontSize: 11 }} axisLine={{ stroke: ct.grid }} tickLine={false} />
+              <YAxis tick={{ fill: ct.axis, fontSize: 11 }} axisLine={{ stroke: ct.grid }} tickLine={false} label={{ value: 'Count', angle: -90, position: 'insideLeft', style: { fill: ct.axis } }} />
               <ReTooltip content={<ChartTooltipContent />} />
               <Bar dataKey="evaluations" fill={ct.brand} maxBarSize={40} />
             </BarChart>
@@ -318,7 +318,7 @@ export default function TrustEngineDashboard() {
               </thead>
               <tbody>
                 {policies.map(p => {
-                  const scoreColor = p.trustScore >= 95 ? 'hsl(142 71% 45%)' : p.trustScore >= 90 ? 'hsl(45 93% 47%)' : 'hsl(0 72% 51%)';
+                  const scoreColor = p.trustScore >= 95 ? 'hsl(var(--s-ok-tx))' : p.trustScore >= 90 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))';
                   return (
                     <tr key={p.id} style={{ borderBottom: '1px solid hsl(var(--border))' }} className="hover:bg-muted/30">
                       <td className="px-4 py-3 text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{p.id}</td>
@@ -326,13 +326,13 @@ export default function TrustEngineDashboard() {
                         <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{p.name}</span>
                       </td>
                       <td className="px-4 py-3">
-                        <Badge style={{ background: 'hsl(220 90% 56% / 0.10)', color: 'hsl(220 90% 56%)', borderRadius: 0, fontSize: 10 }}>{p.type}</Badge>
+                        <Badge style={{ background: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>{p.type}</Badge>
                       </td>
                       <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{p.target}</td>
                       <td className="px-4 py-3">
                         <span className="text-sm font-bold" style={{ color: scoreColor }}>{p.trustScore}%</span>
                         {p.trustScore < 95 && (
-                          <Badge className="ml-2" style={{ background: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 93% 47%)', borderRadius: 0, fontSize: 9 }}>
+                          <Badge className="ml-2" style={{ background: 'hsl(45 93% 47% / 0.12)', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 9 }}>
                             Below 95%
                           </Badge>
                         )}
@@ -345,7 +345,7 @@ export default function TrustEngineDashboard() {
                       <td className="px-4 py-3">
                         <Badge style={{
                           background: p.status === 'active' ? 'hsl(142 71% 45% / 0.12)' : p.status === 'testing' ? 'hsl(220 90% 56% / 0.12)' : 'hsl(var(--s-nt-bg))',
-                          color: p.status === 'active' ? 'hsl(142 71% 45%)' : p.status === 'testing' ? 'hsl(220 90% 56%)' : 'hsl(var(--s-nt-tx))',
+                          color: p.status === 'active' ? 'hsl(var(--s-ok-tx))' : p.status === 'testing' ? 'hsl(var(--s-in-tx))' : 'hsl(var(--s-nt-tx))',
                           borderRadius: 0, fontSize: 10,
                         }}>
                           {p.status.charAt(0).toUpperCase() + p.status.slice(1)}
@@ -360,14 +360,14 @@ export default function TrustEngineDashboard() {
                             <PencilSimple size={14} style={{ color: 'hsl(var(--text-4))' }} />
                           </Button>
                           <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleTestPolicy(p)}>
-                            <Play size={14} style={{ color: 'hsl(142 71% 45%)' }} />
+                            <Play size={14} className="text-green-600 dark:text-green-400" />
                           </Button>
                           <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleClone(p)}>
-                            <Copy size={14} style={{ color: 'hsl(220 90% 56%)' }} />
+                            <Copy size={14} className="text-blue-600 dark:text-blue-400" />
                           </Button>
                           {p.status === 'active' && (
                             <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setDeactivateTarget(p)}>
-                              <Pause size={14} style={{ color: 'hsl(45 93% 47%)' }} />
+                              <Pause size={14} style={{ color: 'hsl(var(--s-wn-tx))' }} />
                             </Button>
                           )}
                         </div>
@@ -389,7 +389,7 @@ export default function TrustEngineDashboard() {
           </SheetHeader>
           <div className="space-y-4 mt-4">
             <div className="p-3" style={{ background: 'hsl(220 90% 56% / 0.06)', border: '1px solid hsl(220 90% 56% / 0.2)', borderRadius: 0 }}>
-              <p className="text-xs" style={{ color: 'hsl(220 90% 56%)' }}>
+              <p className="text-xs text-blue-600 dark:text-blue-400">
                 <Info size={12} className="inline mr-1" />
                 <strong>Weighted Methodology:</strong> The composite trust score is a weighted average where each policy's contribution is proportional to its evaluation volume. Policies with more evaluations have greater influence on the overall score.
               </p>
@@ -401,7 +401,7 @@ export default function TrustEngineDashboard() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{p.name}</span>
                     <span className="text-sm font-bold" style={{
-                      color: p.trustScore >= 95 ? 'hsl(142 71% 45%)' : p.trustScore >= 90 ? 'hsl(45 93% 47%)' : 'hsl(0 72% 51%)',
+                      color: p.trustScore >= 95 ? 'hsl(var(--s-ok-tx))' : p.trustScore >= 90 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))',
                     }}>{p.trustScore}%</span>
                   </div>
                   <div className="flex items-center justify-between text-xs" style={{ color: 'hsl(var(--text-4))' }}>
@@ -411,12 +411,12 @@ export default function TrustEngineDashboard() {
                   <div className="w-full h-1.5" style={{ background: 'hsl(var(--border))', borderRadius: 0 }}>
                     <div className="h-full" style={{
                       width: `${p.trustScore}%`,
-                      background: p.trustScore >= 95 ? 'hsl(142 71% 45%)' : p.trustScore >= 90 ? 'hsl(45 93% 47%)' : 'hsl(0 72% 51%)',
+                      background: p.trustScore >= 95 ? 'hsl(var(--s-ok-tx))' : p.trustScore >= 90 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))',
                       borderRadius: 0,
                     }} />
                   </div>
                   {p.trustScore < 95 && (
-                    <p className="text-xs" style={{ color: 'hsl(45 93% 47%)' }}>
+                    <p className="text-xs" style={{ color: 'hsl(var(--s-wn-tx))' }}>
                       <Warning size={10} className="inline mr-1" />Below 95% enterprise threshold
                     </p>
                   )}
@@ -524,7 +524,7 @@ export default function TrustEngineDashboard() {
                     <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                       <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Trust Score</span>
                       <p className="text-xl font-bold mt-1" style={{
-                        color: selectedPolicy.trustScore >= 95 ? 'hsl(142 71% 45%)' : 'hsl(45 93% 47%)',
+                        color: selectedPolicy.trustScore >= 95 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))',
                       }}>{selectedPolicy.trustScore}%</p>
                     </div>
                     <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
@@ -568,7 +568,7 @@ export default function TrustEngineDashboard() {
                         {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i]}
                       </span>
                       <span className="text-xs font-bold" style={{
-                        color: score >= 95 ? 'hsl(142 71% 45%)' : score >= 90 ? 'hsl(45 93% 47%)' : 'hsl(0 72% 51%)',
+                        color: score >= 95 ? 'hsl(var(--s-ok-tx))' : score >= 90 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))',
                       }}>{score}%</span>
                     </div>
                   ))}

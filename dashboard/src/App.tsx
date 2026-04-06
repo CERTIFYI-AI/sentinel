@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import React from 'react';
 import { lazy, Suspense } from 'react';
 import Sidebar from './components/Sidebar';
@@ -88,6 +88,7 @@ const IncidentWorkflow = lazy(() => import('./pages/IncidentWorkflow'));
 const RiskDetail = lazy(() => import('./pages/risk/RiskDetail'));
 const ModelDetail = lazy(() => import('./pages/models/ModelDetail'));
 const PolicyDetail = lazy(() => import('./pages/policies/PolicyDetail'));
+
 function Loading() {
   return (
     <div className="flex items-center justify-center h-64">
@@ -99,24 +100,21 @@ function Loading() {
   );
 }
 
-/**
- * AuthenticatedLayout - mounts real-time hooks once user is in the protected area.
- * useRealtimeEvents: WebSocket connection + unread notification counter.
- * useRealtimeInvalidation: maps incoming events to React Query cache invalidations.
- */
-function AuthGuard({ children }: { children: React.ReactNode }) {
+/** Redirects authenticated users away from login/signup to the dashboard */
+function PublicRoute() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+  if (isAuthenticated) {
+    return <Navigate to="/overview" replace />;
   }
-  return <>{children}</>;
+  return <Outlet />;
 }
 
-function AuthenticatedLayout() {
+/**
+ * ProtectedLayout — wraps all authenticated routes with Sidebar + TopHeader.
+ * Mounts real-time hooks (WebSocket + React Query invalidation) once inside.
+ */
+function ProtectedLayout() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
   const tenantId = useAuthStore((s) => s.user?.tenantId ?? 'default');
 
   useRealtimeEvents({
@@ -126,6 +124,10 @@ function AuthenticatedLayout() {
 
   useRealtimeInvalidation();
 
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
   return (
     <div className="flex h-screen overflow-hidden bg-[hsl(var(--bg-page))]">
       <Sidebar />
@@ -133,101 +135,7 @@ function AuthenticatedLayout() {
         <TopHeader />
         <main className="flex-1 overflow-y-auto p-6">
           <Suspense fallback={<Loading />}>
-            <Routes>
-              <Route path="/" element={<Navigate to="/overview" replace />} />
-              <Route path="/overview" element={<Overview />} />
-              <Route path="/security" element={<SecurityHome />} />
-              <Route path="/security/overview" element={<SecurityOverview />} />
-              <Route path="/security/threats" element={<ThreatFeed />} />
-              <Route path="/security/scans" element={<ScanCenter />} />
-              <Route path="/security/scanner" element={<ScanCenter />} />
-              <Route path="/security/attack-surface" element={<AttackSurface />} />
-              <Route path="/security/vulnerabilities" element={<VulnTracker />} />
-              <Route path="/security/red-team" element={<RedTeamLab />} />
-              <Route path="/security/policies" element={<PolicyFirewall />} />
-              <Route path="/security/keys" element={<KeysVault />} />
-              <Route path="/security/model-arena" element={<ModelArena />} />
-              <Route path="/security/reports" element={<ReportGenerator />} />
-              <Route path="/security/model-auditor" element={<SecurityOverview />} />
-              <Route path="/security/campaigns" element={<ThreatFeed />} />
-              <Route path="/security/frameworks" element={<SecurityHome />} />
-              <Route path="/security/strategy" element={<SecurityHome />} />
-              <Route path="/evals" element={<QualityMetrics />} />
-              <Route path="/evals/quality-metrics" element={<QualityMetrics />} />
-              <Route path="/evals/techniques" element={<EvalTechniques />} />
-              <Route path="/evals/results" element={<QualityMetrics />} />
-              <Route path="/evals/benchmark" element={<Benchmark />} />
-              <Route path="/evals/datasets" element={<Datasets />} />
-              <Route path="/compliance" element={<ComplianceDashboard />} />
-              <Route path="/compliance/controls" element={<ComplianceControls />} />
-              <Route path="/compliance/evidence" element={<EvidenceHub />} />
-              <Route path="/compliance/gap-analysis" element={<GapAnalysis />} />
-              <Route path="/compliance/policies" element={<Policies />} />
-                <Route path="/policies" element={<Policies />} />
-              <Route path="/risk" element={<RiskRegister />} />
-              <Route path="/risk/matrix" element={<RiskMatrix />} />
-              <Route path="/risk/vendors" element={<Vendors />} />
-              <Route path="/risk/incidents" element={<IncidentLog />} />
-              <Route path="/risk/remediation" element={<Remediation />} />
-              <Route path="/models" element={<ModelInventory />} />
-              <Route path="/models/inventory" element={<ModelInventoryPage />} />
-              <Route path="/models/lifecycle" element={<ModelLifecycle />} />
-              <Route path="/audit-log" element={<AuditLog />} />
-              <Route path="/evidence-vault" element={<EvidenceVault />} />
-              <Route path="/export" element={<ExportCenter />} />
-              <Route path="/hitl-queue" element={<HitlQueue />} />
-              <Route path="/notifications" element={<Notifications />} />
-              <Route path="/policy-editor" element={<PolicyEditor />} />
-              <Route path="/remediation-tracker" element={<RemediationTracker />} />
-              <Route path="/settings" element={<Settings />} />
-
-              {/* Governance */}
-              <Route path="/controls" element={<Navigate to="/compliance/controls" replace />} />
-              <Route path="/frameworks" element={<Frameworks />} />
-              <Route path="/compliance/frameworks" element={<Frameworks />} />
-              <Route path="/reg-radar" element={<RegRadar />} />
-              {/* AI Inventory */}
-              <Route path="/agents" element={<AgentDiscovery />} />
-              <Route path="/agents/shadow-ai" element={<ShadowAI />} />
-              <Route path="/agents/:id" element={<AgentDetail />} />
-              <Route path="/datasets" element={<DatasetRegistry />} />
-              <Route path="/datasets/:id" element={<DatasetDetail />} />
-              <Route path="/vendors" element={<VendorRegistry />} />
-              <Route path="/vendors/:id" element={<VendorDetail />} />
-              <Route path="/vendors/:id/questionnaire" element={<VendorQuestionnaire />} />
-              {/* Risk & Compliance */}
-              <Route path="/bias-audits" element={<BiasAuditWizard />} />
-              <Route path="/bias-audits/:id" element={<BiasAuditResults />} />
-              <Route path="/evidence-sync" element={<EvidenceSyncEngine />} />
-              <Route path="/hitl" element={<HITLReviewCenter />} />
-              <Route path="/hitl/:id" element={<HITLDetail />} />
-              <Route path="/trust-engine" element={<TrustEngineDashboard />} />
-              <Route path="/trust-engine/guardrails" element={<GuardrailActivity />} />
-              <Route path="/trust-engine/traces" element={<LiveTraceFeed />} />
-              <Route path="/trust-engine/costs" element={<CostTokenDashboard />} />
-              <Route path="/trust-engine/fallbacks" element={<FallbackLog />} />
-              <Route path="/trust-engine/tools" element={<ToolCallMonitor />} />
-              <Route path="/trust-engine/config" element={<TrustConfig />} />
-              {/* Administration */}
-              <Route path="/access-control" element={<RBACDashboard />} />
-              <Route path="/access-control/roles" element={<RoleManager />} />
-              <Route path="/access-control/users" element={<UserManager />} />
-              <Route path="/ai-advisor" element={<Suspense fallback={null}><AiAdvisor /></Suspense>} />
-              <Route path="/compliance/policy-templates" element={<Suspense fallback={null}><PolicyTemplates /></Suspense>} />
-              <Route path="/compliance/controls/:id" element={<ControlDetail />} />
-
-            <Route path="/reporting" element={<Suspense fallback={<Loading />}><Reporting /></Suspense>} />
-              
-                <Route path="/risk/register" element={<RiskRegister />} />
-                <Route path="/risk/:id" element={<RiskDetail />} />
-                <Route path="/models/:id" element={<ModelDetail />} />
-                <Route path="/policies/:id" element={<PolicyDetail />} />
-                <Route path="/reg-radar/:id" element={<RegDetail />} />
-                <Route path="/explainability" element={<ExplainabilityCenter />} />
-                <Route path="/conformity" element={<ConformityAssessment />} />
-                <Route path="/incident-workflow" element={<IncidentWorkflow />} />
-                <Route path="*" element={<Suspense fallback={<Loading />}><NotFound /></Suspense>} />
-            </Routes>
+            <Outlet />
           </Suspense>
         </main>
       </div>
@@ -239,9 +147,112 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<Suspense fallback={<Loading />}><Login /></Suspense>} />
-        <Route path="/signup" element={<Suspense fallback={<Loading />}><Signup /></Suspense>} />
-        <Route path="/*" element={<AuthenticatedLayout />} />
+        {/* Public routes — no sidebar/header layout */}
+        <Route element={<PublicRoute />}>
+          <Route path="/login" element={<Suspense fallback={<Loading />}><Login /></Suspense>} />
+          <Route path="/signup" element={<Suspense fallback={<Loading />}><Signup /></Suspense>} />
+        </Route>
+
+        {/* Protected routes — with Sidebar + TopHeader layout */}
+        <Route element={<ProtectedLayout />}>
+          <Route path="/" element={<Navigate to="/overview" replace />} />
+          <Route path="/overview" element={<Overview />} />
+          <Route path="/security" element={<SecurityHome />} />
+          <Route path="/security/overview" element={<SecurityOverview />} />
+          <Route path="/security/threats" element={<ThreatFeed />} />
+          <Route path="/security/scans" element={<ScanCenter />} />
+          <Route path="/security/scanner" element={<ScanCenter />} />
+          <Route path="/security/attack-surface" element={<AttackSurface />} />
+          <Route path="/security/vulnerabilities" element={<VulnTracker />} />
+          <Route path="/security/red-team" element={<RedTeamLab />} />
+          <Route path="/security/policies" element={<PolicyFirewall />} />
+          <Route path="/security/keys" element={<KeysVault />} />
+          <Route path="/security/model-arena" element={<ModelArena />} />
+          <Route path="/security/reports" element={<ReportGenerator />} />
+          <Route path="/security/model-auditor" element={<SecurityOverview />} />
+          <Route path="/security/campaigns" element={<ThreatFeed />} />
+          <Route path="/security/frameworks" element={<SecurityHome />} />
+          <Route path="/security/strategy" element={<SecurityHome />} />
+          <Route path="/evals" element={<QualityMetrics />} />
+          <Route path="/evals/quality-metrics" element={<QualityMetrics />} />
+          <Route path="/evals/techniques" element={<EvalTechniques />} />
+          <Route path="/evals/results" element={<QualityMetrics />} />
+          <Route path="/evals/benchmark" element={<Benchmark />} />
+          <Route path="/evals/datasets" element={<Datasets />} />
+          <Route path="/compliance" element={<ComplianceDashboard />} />
+          <Route path="/compliance/controls" element={<ComplianceControls />} />
+          <Route path="/compliance/evidence" element={<EvidenceHub />} />
+          <Route path="/compliance/gap-analysis" element={<GapAnalysis />} />
+          <Route path="/compliance/policies" element={<Policies />} />
+          <Route path="/policies" element={<Policies />} />
+          <Route path="/risk" element={<RiskRegister />} />
+          <Route path="/risk/matrix" element={<RiskMatrix />} />
+          <Route path="/risk/vendors" element={<Vendors />} />
+          <Route path="/risk/incidents" element={<IncidentLog />} />
+          <Route path="/risk/remediation" element={<Remediation />} />
+          <Route path="/models" element={<ModelInventory />} />
+          <Route path="/models/inventory" element={<ModelInventoryPage />} />
+          <Route path="/models/inventory/:id" element={<ModelDetail />} />
+          <Route path="/models/lifecycle" element={<ModelLifecycle />} />
+          <Route path="/audit-log" element={<AuditLog />} />
+          <Route path="/evidence-vault" element={<EvidenceVault />} />
+          <Route path="/export" element={<ExportCenter />} />
+          <Route path="/hitl-queue" element={<HitlQueue />} />
+          <Route path="/notifications" element={<Notifications />} />
+          <Route path="/policy-editor" element={<PolicyEditor />} />
+          <Route path="/remediation-tracker" element={<RemediationTracker />} />
+          <Route path="/settings" element={<Settings />} />
+
+          {/* Governance */}
+          <Route path="/controls" element={<Navigate to="/compliance/controls" replace />} />
+          <Route path="/frameworks" element={<Frameworks />} />
+          <Route path="/compliance/frameworks" element={<Frameworks />} />
+          <Route path="/reg-radar" element={<RegRadar />} />
+
+          {/* AI Inventory */}
+          <Route path="/agents" element={<AgentDiscovery />} />
+          <Route path="/agents/shadow-ai" element={<ShadowAI />} />
+          <Route path="/agents/:id" element={<AgentDetail />} />
+          <Route path="/datasets" element={<DatasetRegistry />} />
+          <Route path="/datasets/:id" element={<DatasetDetail />} />
+          <Route path="/vendors" element={<VendorRegistry />} />
+          <Route path="/vendors/:id" element={<VendorDetail />} />
+          <Route path="/vendors/:id/questionnaire" element={<VendorQuestionnaire />} />
+
+          {/* Risk & Compliance */}
+          <Route path="/bias-audits" element={<BiasAuditWizard />} />
+          <Route path="/bias-audits/:id" element={<BiasAuditResults />} />
+          <Route path="/evidence-sync" element={<EvidenceSyncEngine />} />
+          <Route path="/hitl" element={<HITLReviewCenter />} />
+          <Route path="/hitl/:id" element={<HITLDetail />} />
+
+          {/* Trust Engine */}
+          <Route path="/trust-engine" element={<TrustEngineDashboard />} />
+          <Route path="/trust-engine/guardrails" element={<GuardrailActivity />} />
+          <Route path="/trust-engine/traces" element={<LiveTraceFeed />} />
+          <Route path="/trust-engine/costs" element={<CostTokenDashboard />} />
+          <Route path="/trust-engine/fallback" element={<FallbackLog />} />
+          <Route path="/trust-engine/tools" element={<ToolCallMonitor />} />
+          <Route path="/trust-engine/config" element={<TrustConfig />} />
+
+          {/* Administration */}
+          <Route path="/access-control" element={<RBACDashboard />} />
+          <Route path="/access-control/roles" element={<RoleManager />} />
+          <Route path="/access-control/users" element={<UserManager />} />
+          <Route path="/ai-advisor" element={<Suspense fallback={null}><AiAdvisor /></Suspense>} />
+          <Route path="/compliance/policy-templates" element={<Suspense fallback={null}><PolicyTemplates /></Suspense>} />
+          <Route path="/compliance/controls/:id" element={<ControlDetail />} />
+          <Route path="/reporting" element={<Suspense fallback={<Loading />}><Reporting /></Suspense>} />
+          <Route path="/risk/register" element={<RiskRegister />} />
+          <Route path="/risk/:id" element={<RiskDetail />} />
+          <Route path="/models/:id" element={<ModelDetail />} />
+          <Route path="/policies/:id" element={<PolicyDetail />} />
+          <Route path="/reg-radar/:id" element={<RegDetail />} />
+          <Route path="/explainability" element={<ExplainabilityCenter />} />
+          <Route path="/conformity" element={<ConformityAssessment />} />
+          <Route path="/incident-workflow" element={<IncidentWorkflow />} />
+          <Route path="*" element={<Suspense fallback={<Loading />}><NotFound /></Suspense>} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );

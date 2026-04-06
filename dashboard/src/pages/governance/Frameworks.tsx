@@ -6,6 +6,7 @@ import { Progress } from "../../components/ui/progress";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "../../components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { cn } from "../../lib/utils";
+import { useChartTheme } from "../../hooks/useChartTheme";
 import { MagnifyingGlass as Search, Plus, Eye } from "@phosphor-icons/react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -389,6 +390,7 @@ function FrameworkDetailSheet({
 
 // ── Main Component ─────────────────────────────────────────────────────────────
 export default function Frameworks() {
+  const ct = useChartTheme();
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedFramework, setSelectedFramework] = useState<Framework | null>(null);
@@ -479,11 +481,12 @@ export default function Frameworks() {
                     interval={0}
                   />
                   <YAxis
-                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                    tick={{ fill: ct.axis, fontSize: 12 }}
                     tickLine={false}
                     axisLine={false}
                     domain={[0, 100]}
                     tickFormatter={(v) => `${v}%`}
+                    label={{ value: 'Score (0-100)', angle: -90, position: 'insideLeft', style: { fill: ct.axis } }}
                   />
                   <Tooltip
                     contentStyle={tooltipStyle}

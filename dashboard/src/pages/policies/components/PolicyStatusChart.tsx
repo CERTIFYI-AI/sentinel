@@ -1,5 +1,6 @@
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { Policy } from '../../../types/policy.types';
+import { useChartTheme } from '../../../hooks/useChartTheme';
 
 const STATUS_COLORS: Record<string, string> = {
   "Published": "#10b981", "In Review": "#f59e0b", "Draft": "#3b82f6", "Approved": "#8b5cf6", "Archived": "#6b7280", "Expired": "#ef4444"
@@ -8,6 +9,8 @@ const STATUS_COLORS: Record<string, string> = {
 interface Props { policies: Policy[]; }
 
 export const PolicyStatusChart = ({ policies }: Props) => {
+  const ct = useChartTheme();
+
   const data = Object.entries(
     policies.reduce((acc, p) => { acc[p.status] = (acc[p.status] || 0) + 1; return acc; }, {} as Record<string, number>)
   ).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
@@ -22,9 +25,13 @@ export const PolicyStatusChart = ({ policies }: Props) => {
       <h3 className="text-sm font-semibold text-foreground mb-4">Policy Reviews (Last 6 Months)</h3>
       <ResponsiveContainer width="100%" height={280}>
         <BarChart data={monthlyData} barSize={28}>
-          <XAxis dataKey="month" stroke="#52525b" tick={{ fill: "#a1a1aa", fontSize: 12 }} />
-          <YAxis stroke="#52525b" tick={{ fill: "#a1a1aa", fontSize: 12 }} />
-          <Tooltip contentStyle={{ background: "hsl(var(--bg-surface))", border: "1px solid hsl(var(--border))", borderRadius: "8px", color: "hsl(var(--text-1))" }} />
+          <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+          <XAxis dataKey="month" tick={{ fill: ct.axis, fontSize: 12 }} />
+          <YAxis
+            tick={{ fill: ct.axis, fontSize: 12 }}
+            label={{ value: 'Count', angle: -90, position: 'insideLeft', style: { fill: ct.axis } }}
+          />
+          <Tooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, borderRadius: 0, color: ct.tooltipText }} />
           <Bar dataKey="reviews" fill="#10b981" radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>

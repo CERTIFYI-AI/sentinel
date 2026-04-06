@@ -103,9 +103,9 @@ const EXTENDED_EXERCISES: ExtExercise[] = [
 
 function campaignStatusBadge(status: string) {
   const map: Record<string, { bg: string; color: string }> = {
-    'Planning': { bg: 'hsl(220 90% 56% / 0.12)', color: 'hsl(220 90% 56%)' },
-    'Active': { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(45 93% 47%)' },
-    'Completed': { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(142 71% 45%)' },
+    'Planning': { bg: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))' },
+    'Active': { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(var(--s-wn-tx))' },
+    'Completed': { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
     'Archived': { bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))' },
   };
   const normalized = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
@@ -123,10 +123,10 @@ function MetricTile({ label, value, variant, icon, sub }: {
   label: string; value: string; variant: 'ok' | 'warn' | 'error' | 'info'; icon: React.ReactNode; sub?: string;
 }) {
   const vs = {
-    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(142 71% 45%)' },
-    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(45 93% 47%)' },
-    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(0 72% 51%)' },
-    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(220 90% 56%)' },
+    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(var(--s-ok-tx))' },
+    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(var(--s-wn-tx))' },
+    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(var(--destructive))' },
+    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))' },
   };
   const s = vs[variant];
   return (
@@ -179,7 +179,7 @@ export default function RedTeamLab() {
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
-            background: t.type === 'success' ? 'hsl(142 71% 45%)' : t.type === 'error' ? 'hsl(0 72% 51%)' : 'hsl(220 90% 56%)',
+            background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
             color: '#fff', borderRadius: 0, minWidth: 300,
           }}>{t.text}</div>
         ))}
@@ -189,7 +189,7 @@ export default function RedTeamLab() {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <Sword size={22} weight="fill" style={{ color: 'hsl(0 72% 51%)' }} />
+            <Sword size={22} weight="fill" className="text-destructive" />
             <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Red Team Lab</h1>
           </div>
           <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} — Adversarial testing campaigns and AI security exercises</p>
@@ -198,7 +198,7 @@ export default function RedTeamLab() {
           <Button variant="outline" style={{ borderRadius: 0 }}>
             <Plus size={14} className="mr-2" />Create Exercise
           </Button>
-          <Button style={{ borderRadius: 0, background: 'hsl(0 72% 51%)', color: '#fff' }}>
+          <Button style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: '#fff' }}>
             <Lightning size={14} className="mr-2" />Launch Campaign
           </Button>
         </div>
@@ -206,10 +206,10 @@ export default function RedTeamLab() {
 
       {/* Metrics */}
       <div className="grid grid-cols-4 gap-4">
-        <MetricTile label="Total Campaigns" value={String(exercises.length)} variant="info" icon={<Sword size={16} weight="fill" style={{ color: 'hsl(220 90% 56%)' }} />} />
-        <MetricTile label="Active" value={String(activeCampaigns)} variant="warn" icon={<Lightning size={16} weight="fill" style={{ color: 'hsl(45 93% 47%)' }} />} sub="In progress" />
-        <MetricTile label="Critical Findings" value={String(criticalFindings)} variant="error" icon={<Fire size={16} weight="fill" style={{ color: 'hsl(0 72% 51%)' }} />} sub="Require remediation" />
-        <MetricTile label="Mitigated Findings" value={String(mitigatedFindings)} variant="ok" icon={<CheckCircle size={16} weight="fill" style={{ color: 'hsl(142 71% 45%)' }} />} />
+        <MetricTile label="Total Campaigns" value={String(exercises.length)} variant="info" icon={<Sword size={16} weight="fill" className="text-blue-600 dark:text-blue-400" />} />
+        <MetricTile label="Active" value={String(activeCampaigns)} variant="warn" icon={<Lightning size={16} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />} sub="In progress" />
+        <MetricTile label="Critical Findings" value={String(criticalFindings)} variant="error" icon={<Fire size={16} weight="fill" className="text-destructive" />} sub="Require remediation" />
+        <MetricTile label="Mitigated Findings" value={String(mitigatedFindings)} variant="ok" icon={<CheckCircle size={16} weight="fill" className="text-green-600 dark:text-green-400" />} />
       </div>
 
       {/* Table */}
@@ -236,7 +236,7 @@ export default function RedTeamLab() {
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold" style={{ color: 'hsl(var(--text-1))' }}>{ex.findings}</span>
                         {ex.criticalFindings > 0 && (
-                          <Badge style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(0 72% 51%)', borderRadius: 0, fontSize: 9 }}>
+                          <Badge style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 9 }}>
                             {ex.criticalFindings} critical
                           </Badge>
                         )}
@@ -255,7 +255,7 @@ export default function RedTeamLab() {
                           <PencilSimple size={14} style={{ color: 'hsl(var(--text-4))' }} />
                         </Button>
                         <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setDeleteTarget(ex)}>
-                          <Trash size={14} style={{ color: 'hsl(0 72% 51%)' }} />
+                          <Trash size={14} className="text-destructive" />
                         </Button>
                       </div>
                     </td>
@@ -285,7 +285,7 @@ export default function RedTeamLab() {
             <>
               <SheetHeader>
                 <SheetTitle className="flex items-center gap-2" style={{ color: 'hsl(var(--text-1))' }}>
-                  <Sword size={18} weight="fill" style={{ color: 'hsl(0 72% 51%)' }} />
+                  <Sword size={18} weight="fill" className="text-destructive" />
                   {selected.id} — {selected.name}
                 </SheetTitle>
               </SheetHeader>
@@ -305,7 +305,7 @@ export default function RedTeamLab() {
                     </div>
                     <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                       <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Security Score</span>
-                      <p className="text-lg font-bold mt-1" style={{ color: selected.score >= 70 ? 'hsl(142 71% 45%)' : selected.score >= 50 ? 'hsl(45 93% 47%)' : 'hsl(0 72% 51%)' }}>
+                      <p className="text-lg font-bold mt-1" style={{ color: selected.score >= 70 ? 'hsl(var(--s-ok-tx))' : selected.score >= 50 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))' }}>
                         {selected.score}/100
                       </p>
                     </div>
@@ -326,7 +326,7 @@ export default function RedTeamLab() {
                     <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                       <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Total Findings</span>
                       <p className="text-lg font-bold mt-1" style={{ color: 'hsl(var(--text-1))' }}>
-                        {selected.findings} <span className="text-xs font-normal" style={{ color: 'hsl(0 72% 51%)' }}>({selected.criticalFindings} critical)</span>
+                        {selected.findings} <span className="text-xs font-normal text-destructive">({selected.criticalFindings} critical)</span>
                       </p>
                     </div>
                   </div>
@@ -339,16 +339,16 @@ export default function RedTeamLab() {
                 <TabsContent value="vectors" className="space-y-3 mt-4">
                   {selected.attackVectors.map((vec, i) => (
                     <div key={i} className="flex items-center gap-3 p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                      <Crosshair size={14} style={{ color: 'hsl(0 72% 51%)' }} />
+                      <Crosshair size={14} className="text-destructive" />
                       <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{vec}</span>
                     </div>
                   ))}
                   {selected.targetModel === 'MDL-004' && (
                     <div className="p-3 mt-2" style={{ background: 'hsl(45 93% 47% / 0.08)', border: '1px solid hsl(45 93% 47% / 0.3)', borderRadius: 0 }}>
-                      <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(45 93% 47%)' }}>OWASP LLM Top 10 Coverage</p>
+                      <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--s-wn-tx))' }}>OWASP LLM Top 10 Coverage</p>
                       <div className="flex flex-wrap gap-2">
                         {['LLM01: Prompt Injection', 'LLM02: Insecure Output', 'LLM03: Training Data Poisoning', 'LLM04: Model DoS', 'LLM06: Sensitive Info Disclosure', 'LLM07: Insecure Plugin Design'].map(cat => (
-                          <Badge key={cat} style={{ background: 'hsl(45 93% 47% / 0.15)', color: 'hsl(45 93% 47%)', borderRadius: 0, fontSize: 10 }}>{cat}</Badge>
+                          <Badge key={cat} style={{ background: 'hsl(45 93% 47% / 0.15)', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 10 }}>{cat}</Badge>
                         ))}
                       </div>
                     </div>
@@ -369,7 +369,7 @@ export default function RedTeamLab() {
                           </div>
                           <p className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{f.title}</p>
                           {f.owaspCategory && (
-                            <Badge className="mt-1" style={{ background: 'hsl(220 90% 56% / 0.10)', color: 'hsl(220 90% 56%)', borderRadius: 0, fontSize: 9 }}>
+                            <Badge className="mt-1" style={{ background: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 9 }}>
                               {f.owaspCategory}
                             </Badge>
                           )}

@@ -73,17 +73,17 @@ function timeAgo(isoDate: string): string {
 }
 
 function latencyGradeBadge(ms: number) {
-  if (ms <= 10) return <Badge style={{ background: 'hsl(142 71% 45% / 0.12)', color: 'hsl(142 71% 45%)', borderRadius: 0, fontSize: 10 }}>Good</Badge>;
-  if (ms <= 20) return <Badge style={{ background: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 93% 47%)', borderRadius: 0, fontSize: 10 }}>Fair</Badge>;
-  return <Badge style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(0 72% 51%)', borderRadius: 0, fontSize: 10 }}>Slow</Badge>;
+  if (ms <= 10) return <Badge style={{ background: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))', borderRadius: 0, fontSize: 10 }}>Good</Badge>;
+  if (ms <= 20) return <Badge style={{ background: 'hsl(45 93% 47% / 0.12)', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 10 }}>Fair</Badge>;
+  return <Badge style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>Slow</Badge>;
 }
 
 function actionBadge(action: string) {
   const map: Record<string, { bg: string; color: string }> = {
-    blocked: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(0 72% 51%)' },
-    warned: { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(45 93% 47%)' },
-    flagged: { bg: 'hsl(220 90% 56% / 0.15)', color: 'hsl(220 90% 56%)' },
-    allowed: { bg: 'hsl(142 71% 45% / 0.15)', color: 'hsl(142 71% 45%)' },
+    blocked: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))' },
+    warned: { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(var(--s-wn-tx))' },
+    flagged: { bg: 'hsl(220 90% 56% / 0.15)', color: 'hsl(var(--s-in-tx))' },
+    allowed: { bg: 'hsl(142 71% 45% / 0.15)', color: 'hsl(var(--s-ok-tx))' },
   };
   const s = map[action] || map['flagged'];
   return <Badge style={{ background: s.bg, color: s.color, borderRadius: 0, fontSize: 10 }}>{action.charAt(0).toUpperCase() + action.slice(1)}</Badge>;
@@ -95,10 +95,10 @@ function MetricTile({ label, value, variant, icon, sub }: {
   label: string; value: string; variant: 'ok' | 'warn' | 'error' | 'info'; icon: React.ReactNode; sub?: string;
 }) {
   const vs = {
-    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(142 71% 45%)' },
-    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(45 93% 47%)' },
-    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(0 72% 51%)' },
-    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(220 90% 56%)' },
+    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(var(--s-ok-tx))' },
+    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(var(--s-wn-tx))' },
+    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(var(--destructive))' },
+    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))' },
   };
   const s = vs[variant];
   return (
@@ -157,14 +157,14 @@ export default function GuardrailActivity() {
     const minutesSince = Math.floor((Date.now() - new Date(event.timestamp).getTime()) / 60000);
     if (minutesSince > 60) {
       return (
-        <span className="inline-flex items-center gap-1 text-xs font-bold animate-pulse" style={{ color: 'hsl(0 72% 51%)' }}>
+        <span className="inline-flex items-center gap-1 text-xs font-bold animate-pulse text-destructive">
           <Warning size={10} weight="fill" />SLA BREACH
         </span>
       );
     }
     if (minutesSince > 30) {
       return (
-        <span className="inline-flex items-center gap-1 text-xs font-medium" style={{ color: 'hsl(45 93% 47%)' }}>
+        <span className="inline-flex items-center gap-1 text-xs font-medium" style={{ color: 'hsl(var(--s-wn-tx))' }}>
           <Warning size={10} weight="fill" />SLA Warning
         </span>
       );
@@ -217,7 +217,7 @@ export default function GuardrailActivity() {
         <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
           {toasts.map(t => (
             <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
-              background: t.type === 'success' ? 'hsl(142 71% 45%)' : t.type === 'error' ? 'hsl(0 72% 51%)' : 'hsl(220 90% 56%)',
+              background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
               color: '#fff', borderRadius: 0, minWidth: 300,
             }}>{t.text}</div>
           ))}
@@ -244,17 +244,17 @@ export default function GuardrailActivity() {
 
         {/* Metrics */}
         <div className="grid grid-cols-4 gap-4">
-          <MetricTile label="Total Events" value={String(events.length)} variant="info" icon={<Lightning size={16} weight="fill" style={{ color: 'hsl(220 90% 56%)' }} />} />
-          <MetricTile label="Blocked" value={String(blockedCount)} variant="error" icon={<Warning size={16} weight="fill" style={{ color: 'hsl(0 72% 51%)' }} />} />
-          <MetricTile label="Avg Latency" value={`${avgLatency}ms`} variant="ok" icon={<Clock size={16} style={{ color: 'hsl(142 71% 45%)' }} />} />
-          <MetricTile label="Acknowledged" value={`${ackedCount}/${events.length}`} variant={ackedCount === events.length ? 'ok' : 'warn'} icon={<CheckCircle size={16} weight="fill" style={{ color: ackedCount === events.length ? 'hsl(142 71% 45%)' : 'hsl(45 93% 47%)' }} />} />
+          <MetricTile label="Total Events" value={String(events.length)} variant="info" icon={<Lightning size={16} weight="fill" className="text-blue-600 dark:text-blue-400" />} />
+          <MetricTile label="Blocked" value={String(blockedCount)} variant="error" icon={<Warning size={16} weight="fill" className="text-destructive" />} />
+          <MetricTile label="Avg Latency" value={`${avgLatency}ms`} variant="ok" icon={<Clock size={16} className="text-green-600 dark:text-green-400" />} />
+          <MetricTile label="Acknowledged" value={`${ackedCount}/${events.length}`} variant={ackedCount === events.length ? 'ok' : 'warn'} icon={<CheckCircle size={16} weight="fill" style={{ color: ackedCount === events.length ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))' }} />} />
         </div>
 
         {/* SLA Warning Banner */}
         {events.some(e => !e.acknowledged && (e.severity === 'critical' || e.severity === 'high')) && (
           <div className="flex items-center gap-2 px-4 py-2" style={{ background: 'hsl(45 93% 47% / 0.08)', border: '1px solid hsl(45 93% 47% / 0.3)', borderRadius: 0 }}>
-            <Warning size={14} style={{ color: 'hsl(45 93% 47%)' }} />
-            <p className="text-xs flex-1" style={{ color: 'hsl(45 93% 47%)' }}>
+            <Warning size={14} style={{ color: 'hsl(var(--s-wn-tx))' }} />
+            <p className="text-xs flex-1" style={{ color: 'hsl(var(--s-wn-tx))' }}>
               <strong>SLA Enforcement:</strong> Unacknowledged Critical events &gt;30 min → amber | &gt;60 min → red pulsing
             </p>
           </div>
@@ -341,7 +341,7 @@ export default function GuardrailActivity() {
                         <td className="px-3 py-3">{slaBadge || <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>—</span>}</td>
                         <td className="px-3 py-3">
                           {ev.acknowledged
-                            ? <Badge style={{ background: 'hsl(142 71% 45% / 0.12)', color: 'hsl(142 71% 45%)', borderRadius: 0, fontSize: 9 }}>Acked</Badge>
+                            ? <Badge style={{ background: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))', borderRadius: 0, fontSize: 9 }}>Acked</Badge>
                             : <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>—</span>}
                         </td>
                         <td className="px-3 py-3">
@@ -351,14 +351,14 @@ export default function GuardrailActivity() {
                             </Button>
                             {!ev.acknowledged && (
                               <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => { setAckTarget(ev); setAckForm({ assignee: '', note: '', rootCause: '', linkedIncident: '' }); }}>
-                                <span className="text-xs" style={{ color: 'hsl(142 71% 45%)' }}>Ack</span>
+                                <span className="text-xs text-green-600 dark:text-green-400">Ack</span>
                               </Button>
                             )}
                             <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => toast(`Escalated ${ev.id} to incident tracker`, 'info')}>
-                              <span className="text-xs" style={{ color: 'hsl(0 72% 51%)' }}>Escalate</span>
+                              <span className="text-xs text-destructive">Escalate</span>
                             </Button>
                             <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => { setSelectedEvent(ev); setSheetOpen(true); }}>
-                              <span className="text-xs" style={{ color: 'hsl(220 90% 56%)' }}>Rule</span>
+                              <span className="text-xs text-blue-600 dark:text-blue-400">Rule</span>
                             </Button>
                           </div>
                         </td>
@@ -431,7 +431,7 @@ export default function GuardrailActivity() {
                   <p className="text-sm font-semibold mb-1" style={{ color: 'hsl(var(--text-1))' }}>{tpl.name}</p>
                   <p className="text-xs mb-2" style={{ color: 'hsl(var(--text-4))' }}>{tpl.description}</p>
                   <div className="flex items-center gap-2">
-                    <Badge style={{ background: 'hsl(220 90% 56% / 0.10)', color: 'hsl(220 90% 56%)', borderRadius: 0, fontSize: 9 }}>{tpl.threshold}</Badge>
+                    <Badge style={{ background: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 9 }}>{tpl.threshold}</Badge>
                     {actionBadge(tpl.action === 'block' ? 'blocked' : tpl.action === 'warn' ? 'warned' : 'flagged')}
                   </div>
                 </div>
@@ -480,7 +480,7 @@ export default function GuardrailActivity() {
                     </div>
                     <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                       <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Input</span>
-                      <p className="text-xs font-mono mt-1" style={{ color: 'hsl(0 72% 51%)' }}>{selectedEvent.input}</p>
+                      <p className="text-xs font-mono mt-1 text-destructive">{selectedEvent.input}</p>
                     </div>
                     <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                       <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Output</span>
@@ -523,15 +523,15 @@ export default function GuardrailActivity() {
                   <TabsContent value="models" className="space-y-3 mt-4">
                     <div className="flex items-center justify-between p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                       <span className="text-sm" style={{ color: 'hsl(var(--text-1))' }}>GPT-4o</span>
-                      <Badge style={{ background: 'hsl(142 71% 45% / 0.12)', color: 'hsl(142 71% 45%)', borderRadius: 0, fontSize: 10 }}>Active</Badge>
+                      <Badge style={{ background: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))', borderRadius: 0, fontSize: 10 }}>Active</Badge>
                     </div>
                     <div className="flex items-center justify-between p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                       <span className="text-sm" style={{ color: 'hsl(var(--text-1))' }}>Claude-3-Opus</span>
-                      <Badge style={{ background: 'hsl(142 71% 45% / 0.12)', color: 'hsl(142 71% 45%)', borderRadius: 0, fontSize: 10 }}>Active</Badge>
+                      <Badge style={{ background: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))', borderRadius: 0, fontSize: 10 }}>Active</Badge>
                     </div>
                     <div className="flex items-center justify-between p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                       <span className="text-sm" style={{ color: 'hsl(var(--text-1))' }}>Internal Rule Engine</span>
-                      <Badge style={{ background: 'hsl(220 90% 56% / 0.12)', color: 'hsl(220 90% 56%)', borderRadius: 0, fontSize: 10 }}>Monitoring</Badge>
+                      <Badge style={{ background: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>Monitoring</Badge>
                     </div>
                   </TabsContent>
                 </Tabs>

@@ -25,10 +25,10 @@ interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info
 
 function causeBadge(trigger: string) {
   const map: Record<string, { bg: string; color: string; label: string }> = {
-    'Rate limit exceeded': { bg: 'hsl(220 90% 56% / 0.12)', color: 'hsl(220 90% 56%)', label: 'Rate-Limit' },
-    '30s timeout': { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(45 93% 47%)', label: 'Timeout' },
-    '503 API error': { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(0 72% 51%)', label: 'Model-Error' },
-    'Cost limit exceeded': { bg: 'hsl(25 95% 53% / 0.15)', color: 'hsl(25 95% 53%)', label: 'Content-Policy' },
+    'Rate limit exceeded': { bg: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))', label: 'Rate-Limit' },
+    '30s timeout': { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(var(--s-wn-tx))', label: 'Timeout' },
+    '503 API error': { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))', label: 'Model-Error' },
+    'Cost limit exceeded': { bg: 'hsl(25 95% 53% / 0.15)', color: 'hsl(var(--s-wn-tx))', label: 'Content-Policy' },
     'Context window exceeded': { bg: 'hsl(280 67% 56% / 0.15)', color: 'hsl(280 67% 56%)', label: 'Context-Length' },
   };
   const s = map[trigger] || { bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))', label: trigger };
@@ -41,10 +41,10 @@ function MetricTile({ label, value, variant, icon, sub }: {
   label: string; value: string; variant: 'ok' | 'warn' | 'error' | 'info'; icon: React.ReactNode; sub?: string;
 }) {
   const vs = {
-    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(142 71% 45%)' },
-    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(45 93% 47%)' },
-    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(0 72% 51%)' },
-    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(220 90% 56%)' },
+    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(var(--s-ok-tx))' },
+    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(var(--s-wn-tx))' },
+    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(var(--destructive))' },
+    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))' },
   };
   const s = vs[variant];
   return (
@@ -128,7 +128,7 @@ export default function FallbackLog() {
         <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
           {toasts.map(t => (
             <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
-              background: t.type === 'success' ? 'hsl(142 71% 45%)' : t.type === 'error' ? 'hsl(0 72% 51%)' : 'hsl(220 90% 56%)',
+              background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
               color: '#fff', borderRadius: 0, minWidth: 300,
             }}>{t.text}</div>
           ))}
@@ -151,8 +151,8 @@ export default function FallbackLog() {
         {/* Spike Alert Banner */}
         {showSpikeAlert && (
           <div className="flex items-center gap-2 px-4 py-2" style={{ background: 'hsl(45 93% 47% / 0.08)', border: '1px solid hsl(45 93% 47% / 0.3)', borderRadius: 0 }}>
-            <Warning size={14} weight="fill" style={{ color: 'hsl(45 93% 47%)' }} />
-            <p className="text-xs" style={{ color: 'hsl(45 93% 47%)' }}>
+            <Warning size={14} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />
+            <p className="text-xs" style={{ color: 'hsl(var(--s-wn-tx))' }}>
               <strong>Fallback Spike Detected:</strong> {entries.length} fallbacks in current session exceeds baseline (rate &gt; baseline + 2σ). Investigate GPT-4o reliability.
             </p>
           </div>
@@ -160,10 +160,10 @@ export default function FallbackLog() {
 
         {/* Metrics */}
         <div className="grid grid-cols-4 gap-4">
-          <MetricTile label="Total Fallbacks" value={String(entries.length)} variant="info" icon={<ArrowsClockwise size={16} style={{ color: 'hsl(220 90% 56%)' }} />} />
-          <MetricTile label="Critical (Failed)" value={String(criticalCount)} variant="error" icon={<Fire size={16} weight="fill" style={{ color: 'hsl(0 72% 51%)' }} />} sub="Requires incident" />
-          <MetricTile label="Auto-Recovered" value={String(autoRecoveredCount)} variant="ok" icon={<CheckCircle size={16} weight="fill" style={{ color: 'hsl(142 71% 45%)' }} />} />
-          <MetricTile label="Avg Recovery Time" value={`${avgRecovery}s`} variant="info" icon={<Clock size={16} style={{ color: 'hsl(220 90% 56%)' }} />} />
+          <MetricTile label="Total Fallbacks" value={String(entries.length)} variant="info" icon={<ArrowsClockwise size={16} className="text-blue-600 dark:text-blue-400" />} />
+          <MetricTile label="Critical (Failed)" value={String(criticalCount)} variant="error" icon={<Fire size={16} weight="fill" className="text-destructive" />} sub="Requires incident" />
+          <MetricTile label="Auto-Recovered" value={String(autoRecoveredCount)} variant="ok" icon={<CheckCircle size={16} weight="fill" className="text-green-600 dark:text-green-400" />} />
+          <MetricTile label="Avg Recovery Time" value={`${avgRecovery}s`} variant="info" icon={<Clock size={16} className="text-blue-600 dark:text-blue-400" />} />
         </div>
 
         {/* Filters */}
@@ -200,16 +200,16 @@ export default function FallbackLog() {
                     <tr key={entry.id} style={{ borderBottom: '1px solid hsl(var(--border))' }} className="hover:bg-muted/30">
                       <td className="px-3 py-3 text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{entry.id}</td>
                       <td className="px-3 py-3 text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{entry.agent}</td>
-                      <td className="px-3 py-3 text-xs font-mono" style={{ color: 'hsl(0 72% 51%)' }}>{entry.primaryModel}</td>
+                      <td className="px-3 py-3 text-xs font-mono text-destructive">{entry.primaryModel}</td>
                       <td className="px-3 py-3 text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{entry.fallbackModel}</td>
                       <td className="px-3 py-3">{causeBadge(entry.trigger)}</td>
-                      <td className="px-3 py-3 text-xs font-mono" style={{ color: entry.latencyMs > 10000 ? 'hsl(0 72% 51%)' : 'hsl(var(--text-1))' }}>
+                      <td className="px-3 py-3 text-xs font-mono" style={{ color: entry.latencyMs > 10000 ? 'hsl(var(--destructive))' : 'hsl(var(--text-1))' }}>
                         {(entry.latencyMs / 1000).toFixed(1)}s
                       </td>
                       <td className="px-3 py-3">
                         <Badge style={{
                           background: entry.status === 'success' ? 'hsl(142 71% 45% / 0.12)' : 'hsl(0 72% 51% / 0.12)',
-                          color: entry.status === 'success' ? 'hsl(142 71% 45%)' : 'hsl(0 72% 51%)',
+                          color: entry.status === 'success' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))',
                           borderRadius: 0, fontSize: 10,
                         }}>
                           {entry.status.charAt(0).toUpperCase() + entry.status.slice(1)}
@@ -262,7 +262,7 @@ export default function FallbackLog() {
                     <div className="grid grid-cols-2 gap-3">
                       <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                         <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Primary Model (Failed)</span>
-                        <p className="text-sm font-mono font-bold mt-1" style={{ color: 'hsl(0 72% 51%)' }}>{selectedEntry.primaryModel}</p>
+                        <p className="text-sm font-mono font-bold mt-1 text-destructive">{selectedEntry.primaryModel}</p>
                       </div>
                       <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                         <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Fallback Model</span>
@@ -277,7 +277,7 @@ export default function FallbackLog() {
                         <div className="mt-1">
                           <Badge style={{
                             background: selectedEntry.status === 'success' ? 'hsl(142 71% 45% / 0.12)' : 'hsl(0 72% 51% / 0.12)',
-                            color: selectedEntry.status === 'success' ? 'hsl(142 71% 45%)' : 'hsl(0 72% 51%)',
+                            color: selectedEntry.status === 'success' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))',
                             borderRadius: 0, fontSize: 11,
                           }}>
                             {selectedEntry.status.toUpperCase()}
@@ -286,7 +286,7 @@ export default function FallbackLog() {
                       </div>
                       <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                         <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Recovery Time</span>
-                        <p className="text-sm font-mono mt-1" style={{ color: selectedEntry.latencyMs > 10000 ? 'hsl(0 72% 51%)' : 'hsl(var(--text-1))' }}>
+                        <p className="text-sm font-mono mt-1" style={{ color: selectedEntry.latencyMs > 10000 ? 'hsl(var(--destructive))' : 'hsl(var(--text-1))' }}>
                           {(selectedEntry.latencyMs / 1000).toFixed(1)}s
                         </p>
                       </div>
@@ -297,7 +297,7 @@ export default function FallbackLog() {
                     </div>
                     {selectedEntry.status === 'failed' && (
                       <div className="p-3" style={{ background: 'hsl(0 72% 51% / 0.06)', border: '1px solid hsl(0 72% 51% / 0.3)', borderRadius: 0 }}>
-                        <p className="text-xs font-semibold" style={{ color: 'hsl(0 72% 51%)' }}>
+                        <p className="text-xs font-semibold text-destructive">
                           <Warning size={12} className="inline mr-1" weight="fill" />
                           FAILED — Fallback model also failed. Zero tokens processed. Data may have been silently dropped.
                           Auto-incident creation recommended.
@@ -321,7 +321,7 @@ export default function FallbackLog() {
                       </p>
                     </div>
                     <div className="p-3" style={{ background: 'hsl(220 90% 56% / 0.06)', border: '1px solid hsl(220 90% 56% / 0.2)', borderRadius: 0 }}>
-                      <p className="text-xs" style={{ color: 'hsl(220 90% 56%)' }}>
+                      <p className="text-xs text-blue-600 dark:text-blue-400">
                         <Info size={12} className="inline mr-1" />
                         Model quality impact: Fallback from {selectedEntry.primaryModel} to {selectedEntry.fallbackModel} may affect output quality, hallucination rate, and bias characteristics (ISO 42001 Cl. 8.4).
                       </p>
@@ -346,9 +346,9 @@ export default function FallbackLog() {
                           </div>
                         </div>
                         <div className="flex items-start gap-3 p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                          <div className="flex items-center justify-center w-5 h-5 text-xs font-bold" style={{ background: 'hsl(142 71% 45%)', color: '#fff', borderRadius: 0, minWidth: 20 }}>3</div>
+                          <div className="flex items-center justify-center w-5 h-5 text-xs font-bold" style={{ background: 'hsl(var(--s-ok-tx))', color: '#fff', borderRadius: 0, minWidth: 20 }}>3</div>
                           <div>
-                            <p className="text-xs font-medium" style={{ color: 'hsl(142 71% 45%)' }}>Recovery successful</p>
+                            <p className="text-xs font-medium text-green-600 dark:text-green-400">Recovery successful</p>
                             <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{selectedEntry.tokens} tokens processed in {(selectedEntry.latencyMs / 1000).toFixed(1)}s</p>
                           </div>
                         </div>
@@ -356,9 +356,9 @@ export default function FallbackLog() {
                     ) : (
                       <>
                         <div className="flex items-start gap-3 p-3" style={{ background: 'hsl(0 72% 51% / 0.06)', border: '1px solid hsl(0 72% 51% / 0.3)', borderRadius: 0 }}>
-                          <Warning size={14} weight="fill" style={{ color: 'hsl(0 72% 51%)' }} className="mt-0.5" />
+                          <Warning size={14} weight="fill" className="text-destructive mt-0.5" />
                           <div>
-                            <p className="text-xs font-bold" style={{ color: 'hsl(0 72% 51%)' }}>Recovery FAILED</p>
+                            <p className="text-xs font-bold text-destructive">Recovery FAILED</p>
                             <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
                               Fallback to {selectedEntry.fallbackModel} also failed. 0 tokens processed. Batch operation silently dropped.
                             </p>

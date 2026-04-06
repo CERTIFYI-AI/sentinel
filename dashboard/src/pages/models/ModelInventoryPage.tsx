@@ -1,10 +1,12 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Eye, PencilSimple, Trash, Plus, Brain, CheckCircle, Warning,
   MagnifyingGlass, Funnel, Export, Siren, ChartLine, FilePdf,
   ShieldWarning, ArrowUp, ArrowDown, Minus, Info,
 } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Skeleton } from '../../components/ui/skeleton';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -32,16 +34,16 @@ interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fairnessColor(score: number, threshold = 85) {
-  if (score < 75) return { bg: 'hsl(0 72% 51% / 0.15)', text: 'hsl(0 72% 51%)' };
-  if (score < threshold) return { bg: 'hsl(45 93% 47% / 0.15)', text: 'hsl(45 93% 47%)' };
-  return { bg: 'hsl(142 71% 45% / 0.15)', text: 'hsl(142 71% 45%)' };
+  if (score < 75) return { bg: 'hsl(0 72% 51% / 0.15)', text: 'hsl(var(--destructive))' };
+  if (score < threshold) return { bg: 'hsl(45 93% 47% / 0.15)', text: 'hsl(var(--s-wn-tx))' };
+  return { bg: 'hsl(142 71% 45% / 0.15)', text: 'hsl(var(--s-ok-tx))' };
 }
 
 function driftBadge(d: Model['driftStatus']) {
   const map: Record<string, { bg: string; color: string }> = {
-    stable: { bg: 'hsl(142 71% 45% / 0.15)', color: 'hsl(142 71% 45%)' },
-    warning: { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(45 93% 47%)' },
-    critical: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(0 72% 51%)' },
+    stable: { bg: 'hsl(142 71% 45% / 0.15)', color: 'hsl(var(--s-ok-tx))' },
+    warning: { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(var(--s-wn-tx))' },
+    critical: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))' },
   };
   const s = map[d];
   return (
@@ -53,10 +55,10 @@ function driftBadge(d: Model['driftStatus']) {
 
 function riskTierBadge(tier: Model['riskTier']) {
   const map: Record<string, { bg: string; color: string }> = {
-    unacceptable: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(0 72% 51%)' },
-    high: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(0 72% 51%)' },
-    limited: { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(45 93% 47%)' },
-    minimal: { bg: 'hsl(142 71% 45% / 0.15)', color: 'hsl(142 71% 45%)' },
+    unacceptable: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))' },
+    high: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))' },
+    limited: { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(var(--s-wn-tx))' },
+    minimal: { bg: 'hsl(142 71% 45% / 0.15)', color: 'hsl(var(--s-ok-tx))' },
   };
   const s = map[tier];
   return (
@@ -71,6 +73,7 @@ function riskTierBadge(tier: Model['riskTier']) {
 export default function ModelInventoryPage() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
+  const navigate = useNavigate();
 
   const [models, setModels] = useState<Model[]>(MODELS);
   const [search, setSearch] = useState('');
@@ -82,6 +85,12 @@ export default function ModelInventoryPage() {
   const [deleteTarget, setDeleteTarget] = useState<Model | null>(null);
   const [registerOpen, setRegisterOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const t = setTimeout(() => setIsLoading(false), 600);
+    return () => clearTimeout(t);
+  }, []);
 
   const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
     const id = Date.now();
@@ -115,13 +124,30 @@ export default function ModelInventoryPage() {
   // Drift performance data for the detail chart (12 months)
   const monthLabels = ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'];
 
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2"><Skeleton className="h-8 w-64" /><Skeleton className="h-4 w-48" /></div>
+          <Skeleton className="h-9 w-36" />
+        </div>
+        <div className="grid grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
+        </div>
+        <div className="space-y-2">
+          {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Toast layer */}
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
-            background: t.type === 'success' ? 'hsl(142 71% 45%)' : t.type === 'error' ? 'hsl(0 72% 51%)' : 'hsl(220 90% 56%)',
+            background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
             color: '#fff', borderRadius: 0, minWidth: 300
           }}>{t.text}</div>
         ))}
@@ -142,9 +168,9 @@ export default function ModelInventoryPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'Total Models', value: totalModels, color: 'hsl(var(--text-1))', icon: Brain },
-          { label: 'Production', value: production, color: 'hsl(142 71% 45%)', icon: CheckCircle },
-          { label: 'Drift Alerts', value: driftAlerts, color: 'hsl(45 93% 47%)', icon: Warning },
-          { label: 'High-Risk (EU AI Act)', value: highRisk, color: 'hsl(0 72% 51%)', icon: ShieldWarning },
+          { label: 'Production', value: production, color: 'hsl(var(--s-ok-tx))', icon: CheckCircle },
+          { label: 'Drift Alerts', value: driftAlerts, color: 'hsl(var(--s-wn-tx))', icon: Warning },
+          { label: 'High-Risk (EU AI Act)', value: highRisk, color: 'hsl(var(--destructive))', icon: ShieldWarning },
         ].map(stat => (
           <Card key={stat.label} style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
             <CardContent className="pt-4 pb-4">
@@ -161,9 +187,9 @@ export default function ModelInventoryPage() {
       {/* Critical Drift Banner */}
       {driftAlerts > 0 && (
         <div className="p-4 flex items-start gap-3" style={{ background: 'hsl(0 72% 51% / 0.08)', border: '1px solid hsl(0 72% 51% / 0.3)' }}>
-          <Siren size={20} style={{ color: 'hsl(0 72% 51%)', flexShrink: 0, marginTop: 1 }} />
+          <Siren size={20} style={{ color: 'hsl(var(--destructive))', flexShrink: 0, marginTop: 1 }} />
           <div>
-            <p className="text-sm font-semibold" style={{ color: 'hsl(0 72% 51%)' }}>
+            <p className="text-sm font-semibold text-destructive">
               {driftAlerts} models require immediate attention — EU AI Act Art. 9 obligations triggered
             </p>
             <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-2))' }}>
@@ -255,7 +281,8 @@ export default function ModelInventoryPage() {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1">
                             <Button variant="ghost" size="sm" className="h-7 w-7 p-0"
-                              onClick={() => { setSelectedModel(m); setDetailTab('card'); }}>
+                              title="View model detail"
+                              onClick={() => navigate(`/models/inventory/${m.id}`)}>
                               <Eye size={14} />
                             </Button>
                             <Button variant="ghost" size="sm" className="h-7 w-7 p-0"
@@ -267,7 +294,7 @@ export default function ModelInventoryPage() {
                               <Trash size={14} />
                             </Button>
                             {isCritical && (
-                              <Button size="sm" className="h-7 px-2 text-xs" style={{ borderRadius: 0, background: 'hsl(0 72% 51%)', color: '#fff' }}
+                              <Button size="sm" className="h-7 px-2 text-xs" style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: '#fff' }}
                                 onClick={() => toast(`Review initiated for ${m.name}`, 'info')}>
                                 Initiate Review
                               </Button>
@@ -425,7 +452,7 @@ export default function ModelInventoryPage() {
                         <YAxis domain={[0, 0.4]} tick={{ fill: ct.axis, fontSize: 10 }}
                           label={{ value: 'Drift Score', angle: -90, position: 'insideLeft', style: { fill: ct.axis, fontSize: 10 } }} />
                         <RechartsTooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.tooltipText, borderRadius: 0 }} />
-                        <ReferenceLine y={0.20} stroke="hsl(0 72% 51%)" strokeDasharray="5 5" label={{ value: 'Threshold', fill: 'hsl(0 72% 51%)', fontSize: 10 }} />
+                        <ReferenceLine y={0.20} stroke="hsl(0 72% 51%)" strokeDasharray="5 5" label={{ value: 'Threshold', fill: 'hsl(var(--destructive))', fontSize: 10 }} />
                         <Line type="monotone" dataKey="drift" stroke="hsl(45 93% 47%)" strokeWidth={2} dot={false} name="Drift Score" />
                       </LineChart>
                     </ResponsiveContainer>
@@ -443,12 +470,12 @@ export default function ModelInventoryPage() {
                           <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Threshold: {bm.threshold}</p>
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className="text-sm font-bold" style={{ color: bm.status === 'Pass' ? 'hsl(142 71% 45%)' : 'hsl(0 72% 51%)' }}>
+                          <span className="text-sm font-bold" style={{ color: bm.status === 'Pass' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))' }}>
                             {bm.value}
                           </span>
                           <Badge style={{
                             background: bm.status === 'Pass' ? 'hsl(142 71% 45% / 0.15)' : 'hsl(0 72% 51% / 0.15)',
-                            color: bm.status === 'Pass' ? 'hsl(142 71% 45%)' : 'hsl(0 72% 51%)',
+                            color: bm.status === 'Pass' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))',
                             borderRadius: 0, fontSize: 10,
                           }}>
                             {bm.status}
@@ -483,7 +510,7 @@ export default function ModelInventoryPage() {
                             <span style={{ color: 'hsl(var(--text-1))' }}>{g.name}: {g.threshold}</span>
                             <Badge style={{
                               background: g.enabled ? 'hsl(142 71% 45% / 0.15)' : 'hsl(var(--s-nt-bg))',
-                              color: g.enabled ? 'hsl(142 71% 45%)' : 'hsl(var(--s-nt-tx))',
+                              color: g.enabled ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-nt-tx))',
                               borderRadius: 0, fontSize: 10,
                             }}>
                               {g.enabled ? 'Enabled' : 'Disabled'}
@@ -514,7 +541,7 @@ export default function ModelInventoryPage() {
                               <Badge style={{ background: sc.bg, color: sc.text, borderRadius: 0, fontSize: 10 }}>{inc.severity}</Badge>
                               <Badge style={{
                                 background: inc.resolved ? 'hsl(142 71% 45% / 0.15)' : 'hsl(0 72% 51% / 0.15)',
-                                color: inc.resolved ? 'hsl(142 71% 45%)' : 'hsl(0 72% 51%)',
+                                color: inc.resolved ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))',
                                 borderRadius: 0, fontSize: 10,
                               }}>
                                 {inc.resolved ? 'Resolved' : 'Open'}

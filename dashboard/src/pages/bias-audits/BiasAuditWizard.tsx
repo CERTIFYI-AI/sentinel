@@ -231,7 +231,7 @@ export default function BiasAuditWizard() {
                   contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, borderRadius: 0, color: ct.tooltipText, fontSize: 12 }}
                 />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <ReferenceLine y={0.80} stroke="hsl(45 93% 47%)" strokeDasharray="6 3" label={{ value: 'Threshold 0.80', fill: 'hsl(45 93% 47%)', fontSize: 10 }} />
+                <ReferenceLine y={0.80} stroke="hsl(45 93% 47%)" strokeDasharray="6 3" label={{ value: 'Threshold 0.80', fill: 'hsl(var(--s-wn-tx))', fontSize: 10 }} />
                 <Line type="monotone" dataKey="MDL-001" stroke="hsl(0 72% 51%)" strokeWidth={2} dot={{ r: 3 }} name="MDL-001 (Credit Risk)" />
                 <Line type="monotone" dataKey="MDL-002" stroke="hsl(142 71% 45%)" strokeWidth={2} dot={{ r: 3 }} name="MDL-002 (Fraud Detection)" />
                 <Line type="monotone" dataKey="MDL-004" stroke="hsl(220 90% 56%)" strokeWidth={2} dot={{ r: 3 }} name="MDL-004 (Loan Assistant)" />
@@ -355,7 +355,7 @@ export default function BiasAuditWizard() {
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => deleteAudit(audit.id)} style={{ borderRadius: 0, background: 'hsl(0 72% 51%)' }}>
+                                  <AlertDialogAction onClick={() => deleteAudit(audit.id)} style={{ borderRadius: 0, background: 'hsl(var(--destructive))' }}>
                                     Delete
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
