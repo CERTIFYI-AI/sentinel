@@ -1,4 +1,123 @@
-import { NavLink, useLocation } from 'react-router-dom'
+import os
+B = os.path.dirname(os.path.abspath(__file__))
+def w(p, c):
+    f = os.path.join(B, p)
+    os.makedirs(os.path.dirname(f), exist_ok=True)
+    open(f, 'w').write(c)
+    print(f'OK: {p}')
+
+# P0: DataTable.tsx
+w('components/ui/DataTable.tsx', r'''import React, { useState, useMemo } from "react"
+import { Eye, PencilSimple, Trash, MagnifyingGlass, CaretUp, CaretDown } from "@phosphor-icons/react"
+import { cn } from "@/lib/utils"
+
+export interface Column<T> {
+  key: string
+  header: string
+  render?: (row: T) => React.ReactNode
+  sortable?: boolean
+  className?: string
+}
+
+interface Props<T> {
+  data: T[]
+  columns: Column<T>[]
+  onView?: (row: T) => void
+  onEdit?: (row: T) => void
+  onDelete?: (row: T) => void
+  onRowClick?: (row: T) => void
+  searchPlaceholder?: string
+  searchKey?: string
+  actions?: (row: T) => React.ReactNode
+  emptyMessage?: string
+  getRowClassName?: (row: T) => string
+}
+
+export function DataTable<T extends Record<string, any>>({
+  data, columns, onView, onEdit, onDelete, onRowClick,
+  searchPlaceholder = "Search...", searchKey = "name",
+  actions, emptyMessage = "No records found.", getRowClassName,
+}: Props<T>) {
+  const [search, setSearch] = useState("")
+  const [sortKey, setSortKey] = useState<string | null>(null)
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc")
+  const filtered = useMemo(() => {
+    let d = data
+    if (search) d = d.filter(r => String(r[searchKey] ?? "").toLowerCase().includes(search.toLowerCase()))
+    if (sortKey) d = [...d].sort((a, b) => {
+      const cmp = String(a[sortKey] ?? "").localeCompare(String(b[sortKey] ?? ""), undefined, { numeric: true })
+      return sortDir === "asc" ? cmp : -cmp
+    })
+    return d
+  }, [data, search, sortKey, sortDir, searchKey])
+  const toggleSort = (key: string) => {
+    if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc")
+    else { setSortKey(key); setSortDir("asc") }
+  }
+  const hasActions = onView || onEdit || onDelete || actions
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1 max-w-xs">
+          <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder={searchPlaceholder}
+            className="w-full h-8 pl-8 pr-3 text-xs bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--brand))]" />
+        </div>
+      </div>
+      <div className="border border-[hsl(var(--border))] overflow-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-[hsl(var(--bg-raised))] border-b border-[hsl(var(--border))]">
+              {columns.map(col => (
+                <th key={col.key} className={cn("px-4 py-2.5 text-left text-xs font-medium text-[hsl(var(--text-4))] uppercase tracking-wider", col.sortable && "cursor-pointer select-none hover:text-[hsl(var(--text-2))]", col.className)}
+                  onClick={() => col.sortable && toggleSort(col.key)}>
+                  <span className="flex items-center gap-1">
+                    {col.header}
+                    {col.sortable && sortKey === col.key && (sortDir === "asc" ? <CaretUp size={12}/> : <CaretDown size={12}/>)}
+                  </span>
+                </th>
+              ))}
+              {hasActions && <th className="px-4 py-2.5 text-right text-xs font-medium text-[hsl(var(--text-4))] uppercase tracking-wider w-28">Actions</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
+              <tr><td colSpan={columns.length + (hasActions ? 1 : 0)} className="px-4 py-8 text-center text-sm text-[hsl(var(--text-4))]">{emptyMessage}</td></tr>
+            ) : filtered.map((row, i) => (
+              <tr key={i} onClick={() => onRowClick?.(row)}
+                className={cn("group border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))] transition-colors", onRowClick && "cursor-pointer", getRowClassName?.(row))}>
+                {columns.map(col => (
+                  <td key={col.key} className={cn("px-4 py-3 text-[hsl(var(--text-2))]", col.className)}>
+                    {col.render ? col.render(row) : String(row[col.key] ?? "")}
+                  </td>
+                ))}
+                {hasActions && (
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {actions ? actions(row) : (<>
+                        {onView && <button onClick={e => { e.stopPropagation(); onView(row) }} className="p-1.5 hover:bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))] transition-colors" title="View"><Eye size={16} weight="duotone"/></button>}
+                        {onEdit && <button onClick={e => { e.stopPropagation(); onEdit(row) }} className="p-1.5 hover:bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-1))] transition-colors" title="Edit"><PencilSimple size={16} weight="duotone"/></button>}
+                        {onDelete && <button onClick={e => { e.stopPropagation(); onDelete(row) }} className="p-1.5 hover:bg-[hsl(var(--s-er-bg))] text-[hsl(var(--text-4))] hover:text-[hsl(var(--s-er-text))] transition-colors" title="Delete"><Trash size={16} weight="duotone"/></button>}
+                      </>)}
+                    </div>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-xs text-[hsl(var(--text-4))]">{filtered.length} of {data.length} records</p>
+    </div>
+  )
+}
+export default DataTable
+''')
+print('Done')
+
+
+# P0: Sidebar fix - theme toggle icon-only + localStorage persistence
+w('components/Sidebar.tsx', r'''import { NavLink, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import {
   SquaresFour, Bell, FileText, Shield, BookOpen, ChartBar,
@@ -144,3 +263,7 @@ export default function Sidebar() {
   )
 }
 export { default as AppSidebar } from "./Sidebar"
+''')
+
+
+print('=== All fixes generated ===')
