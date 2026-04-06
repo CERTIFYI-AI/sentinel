@@ -1,261 +1,347 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  ShieldCheck, ShieldWarning, Bug, Crosshair, Sword, Scan,
+  Lightning, Warning, Clock, ArrowRight, Fire, Eye, Globe,
+  Lock, Target, CaretRight,
+} from '@phosphor-icons/react';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
+  ResponsiveContainer, Cell,
+} from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
-import {
-  ShieldCheck, Bug, Sword, Scan, Globe, Funnel,
-  Key, Robot, FileText, Warning, CheckCircle, Clock,
-  ArrowRight, TrendUp, TrendDown, Minus,
-} from '@phosphor-icons/react';
-import {
-  RadialBarChart, RadialBar, ResponsiveContainer,
-  LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
-} from 'recharts';
-import { THREATS, VULNERABILITIES, RED_TEAM_EXERCISES, ATTACK_SURFACE, severityColor, formatDate } from '../../data/seed';
+import { THREATS, VULNERABILITIES, severityColor, statusColor, formatDate } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useChartTheme } from '../../hooks/useChartTheme';
 
-const modules = [
-  { label: 'Threat Feed', path: '/security/threats', icon: Warning, count: 6, status: 'active', color: '#ef4444', desc: 'Active threats & intel' },
-  { label: 'Vuln Tracker', path: '/security/vulns', icon: Bug, count: 6, status: 'open', color: '#f97316', desc: 'CVEs & patch status' },
-  { label: 'Red Team Lab', path: '/security/redteam', icon: Sword, count: 4, status: 'active', color: '#8b5cf6', desc: 'Adversarial exercises' },
-  { label: 'Scan Center', path: '/security/scans', icon: Scan, count: 6, status: 'scheduled', color: '#3b82f6', desc: 'Security scans & schedules' },
-  { label: 'Attack Surface', path: '/security/attack-surface', icon: Globe, count: 8, status: 'monitored', color: '#06b6d4', desc: 'Asset exposure map' },
-  { label: 'Policy Firewall', path: '/security/firewall', icon: Funnel, count: 8, status: 'active', color: '#10b981', desc: 'AI safety guardrails' },
-  { label: 'Keys Vault', path: '/security/keys', icon: Key, count: 8, status: 'secure', color: '#f59e0b', desc: 'API keys & secrets' },
-  { label: 'Model Arena', path: '/security/models', icon: Robot, count: 6, status: 'evaluated', color: '#ec4899', desc: 'Security benchmarks' },
-  { label: 'Report Generator', path: '/security/reports', icon: FileText, count: 6, status: 'ready', color: '#6366f1', desc: 'Compliance reporting' },
+// ── Security Score Data ───────────────────────────────────────────────────────
+
+const SECURITY_SCORES = [
+  { module: 'Vulnerability', score: 72, color: 'hsl(45 93% 47%)' },
+  { module: 'Threat Intel', score: 68, color: 'hsl(25 95% 53%)' },
+  { module: 'Red Team', score: 61, color: 'hsl(0 72% 51%)' },
+  { module: 'Attack Surface', score: 75, color: 'hsl(45 93% 47%)' },
+  { module: 'Access Control', score: 79, color: 'hsl(142 71% 45%)' },
 ];
 
-const trendData = [
-  { month: 'Oct', threats: 4, vulns: 8, score: 71 },
-  { month: 'Nov', threats: 6, vulns: 7, score: 73 },
-  { month: 'Dec', threats: 3, vulns: 9, score: 75 },
-  { month: 'Jan', threats: 5, vulns: 6, score: 74 },
-  { month: 'Feb', threats: 4, vulns: 5, score: 78 },
-  { month: 'Mar', threats: 6, vulns: 6, score: 76 },
-];
+// ── Metric Tiles ──────────────────────────────────────────────────────────────
 
-const securityScore = 76;
-
-function ScoreBadge({ value }: { value: number }) {
-  if (value >= 80) return <span style={{ color: '#10b981' }}>Good</span>;
-  if (value >= 65) return <span style={{ color: '#f59e0b' }}>Fair</span>;
-  return <span style={{ color: '#ef4444' }}>At Risk</span>;
+interface MetricTileProps {
+  label: string;
+  value: string;
+  variant: 'ok' | 'warn' | 'error' | 'info';
+  icon: React.ReactNode;
+  sub?: string;
 }
 
-export default function SecurityHome() {
+function MetricTile({ label, value, variant, icon, sub }: MetricTileProps) {
+  const variantStyles = {
+    ok: { bg: 'hsl(142 71% 45% / 0.10)', border: 'hsl(142 71% 45% / 0.3)', color: 'hsl(142 71% 45%)' },
+    warn: { bg: 'hsl(45 93% 47% / 0.10)', border: 'hsl(45 93% 47% / 0.3)', color: 'hsl(45 93% 47%)' },
+    error: { bg: 'hsl(0 72% 51% / 0.10)', border: 'hsl(0 72% 51% / 0.3)', color: 'hsl(0 72% 51%)' },
+    info: { bg: 'hsl(220 90% 56% / 0.10)', border: 'hsl(220 90% 56% / 0.3)', color: 'hsl(220 90% 56%)' },
+  };
+  const s = variantStyles[variant];
+  return (
+    <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-4))' }}>{label}</span>
+          <div className="p-1.5" style={{ background: s.bg, borderRadius: 0 }}>{icon}</div>
+        </div>
+        <div className="text-2xl font-bold" style={{ color: s.color }}>{value}</div>
+        {sub && <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>{sub}</p>}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Sub-Navigation Cards ──────────────────────────────────────────────────────
+
+interface SubNavCardProps {
+  title: string;
+  description: string;
+  path: string;
+  icon: React.ReactNode;
+  statusLabel: string;
+  statusVariant: string;
+  count: number;
+  countLabel: string;
+}
+
+function SubNavCard({ title, description, path, icon, statusLabel, statusVariant, count, countLabel }: SubNavCardProps) {
   const navigate = useNavigate();
+  const sc = statusColor(statusVariant);
+  return (
+    <Card
+      className="cursor-pointer transition-all hover:shadow-md group"
+      style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}
+      onClick={() => navigate(path)}
+    >
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            {icon}
+            <span className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{title}</span>
+          </div>
+          <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0, fontSize: 10 }}>
+            {statusLabel}
+          </Badge>
+        </div>
+        <p className="text-xs mb-3" style={{ color: 'hsl(var(--text-4))' }}>{description}</p>
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-4))' }}>
+            <span className="text-sm font-bold" style={{ color: 'hsl(var(--text-1))' }}>{count}</span> {countLabel}
+          </span>
+          <CaretRight size={14} className="group-hover:translate-x-1 transition-transform" style={{ color: 'hsl(var(--brand))' }} />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Recent Security Events ────────────────────────────────────────────────────
+
+function getRecentEvents() {
+  const threatEvents = THREATS.slice(0, 3).map(t => ({
+    id: t.id,
+    icon: <Lightning size={14} weight="fill" style={{ color: severityColor(t.severity).text }} />,
+    severity: t.severity,
+    title: t.name,
+    target: t.affectedModels.length > 0 ? t.affectedModels.join(', ') : 'Platform',
+    date: t.detected,
+    type: 'Threat' as const,
+  }));
+  const vulnEvents = VULNERABILITIES.slice(0, 3).map(v => ({
+    id: v.id,
+    icon: <Bug size={14} weight="fill" style={{ color: severityColor(v.severity).text }} />,
+    severity: v.severity,
+    title: v.title,
+    target: v.component,
+    date: v.discovered,
+    type: 'Vulnerability' as const,
+  }));
+  return [...threatEvents, ...vulnEvents]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 5);
+}
+
+// ── Custom Chart Tooltip ──────────────────────────────────────────────────────
+
+function ChartTooltipContent({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="px-3 py-2 text-xs shadow-lg" style={{
+      background: 'hsl(var(--bg-surface))',
+      border: '1px solid hsl(var(--border))',
+      borderRadius: 0,
+      color: 'hsl(var(--text-1))',
+    }}>
+      <p className="font-semibold mb-1">{label}</p>
+      <p>Score: <span className="font-bold">{payload[0].value}</span>/100</p>
+    </div>
+  );
+}
+
+// ── Main Component ────────────────────────────────────────────────────────────
+
+export default function SecurityHome() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
+  const recentEvents = getRecentEvents();
 
-  const activeThreats = THREATS.filter(t => t.status === 'active').length;
-  const criticalVulns = VULNERABILITIES.filter(v => v.severity === 'critical').length;
-  const openVulns = VULNERABILITIES.filter(v => v.status === 'open' || v.status === 'in_progress').length;
-  const activeExercises = RED_TEAM_EXERCISES.filter(e => e.status === 'active').length;
-  const highRiskAssets = ATTACK_SURFACE.filter(a => a.risk === 'critical' || a.risk === 'high').length;
-
-  const recentEvents = [
-    ...THREATS.map(t => ({ id: t.id, title: t.name, type: 'Threat', severity: t.severity, date: t.detected, status: t.status })),
-    ...VULNERABILITIES.map(v => ({ id: v.id, title: v.title, type: 'Vuln', severity: v.severity, date: v.discovered, status: v.status })),
-  ]
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 8);
-
-  const radialData = [{ name: 'Security Score', value: securityScore, fill: '#3b82f6' }];
-
-  const stats = [
-    { label: 'Security Score', value: `${securityScore}%`, icon: ShieldCheck, trend: '+2%', up: true },
-    { label: 'Active Threats', value: String(activeThreats), icon: Warning, trend: '+1', up: false },
-    { label: 'Open Vulns', value: String(openVulns), icon: Bug, trend: '-2', up: true },
-    { label: 'High-Risk Assets', value: String(highRiskAssets), icon: Globe, trend: '0', up: null },
+  const subNavItems: SubNavCardProps[] = [
+    {
+      title: 'Threat Intelligence',
+      description: 'Monitor and investigate active threats, attack vectors, and MITRE ATT&CK mappings.',
+      path: '/security/threats',
+      icon: <Lightning size={16} weight="fill" style={{ color: 'hsl(0 72% 51%)' }} />,
+      statusLabel: '3 Active',
+      statusVariant: 'open',
+      count: 6,
+      countLabel: 'tracked threats',
+    },
+    {
+      title: 'Vulnerability Tracker',
+      description: 'Track CVEs, CVSS scores, patch status, and remediation timelines.',
+      path: '/security/vulnerabilities',
+      icon: <Bug size={16} weight="fill" style={{ color: 'hsl(25 95% 53%)' }} />,
+      statusLabel: '2 Open',
+      statusVariant: 'in_review',
+      count: 6,
+      countLabel: 'vulnerabilities',
+    },
+    {
+      title: 'Red Team Lab',
+      description: 'Adversarial testing campaigns, jailbreak tests, and attack simulations.',
+      path: '/security/red-team',
+      icon: <Sword size={16} weight="fill" style={{ color: 'hsl(0 72% 51%)' }} />,
+      statusLabel: '1 Active',
+      statusVariant: 'running',
+      count: 4,
+      countLabel: 'campaigns',
+    },
+    {
+      title: 'Attack Surface',
+      description: 'External and internal asset exposure monitoring and risk assessment.',
+      path: '/security/attack-surface',
+      icon: <Globe size={16} style={{ color: 'hsl(45 93% 47%)' }} />,
+      statusLabel: '3 Exposed',
+      statusVariant: 'in_review',
+      count: 8,
+      countLabel: 'assets monitored',
+    },
+    {
+      title: 'Security Scanner',
+      description: 'Automated vulnerability scanning, compliance checks, and policy enforcement.',
+      path: '/security/scanner',
+      icon: <Scan size={16} style={{ color: 'hsl(var(--brand))' }} />,
+      statusLabel: 'Operational',
+      statusVariant: 'active',
+      count: 24,
+      countLabel: 'scans today',
+    },
   ];
 
   return (
-    <div className="space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>
-            Security Overview
-          </h1>
-          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>
-            {orgName} · AI-native security posture monitoring
+          <div className="flex items-center gap-3 mb-1">
+            <ShieldCheck size={22} weight="fill" style={{ color: 'hsl(var(--brand))' }} />
+            <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Security Hub</h1>
+          </div>
+          <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>
+            {orgName} — Unified security posture, threat intelligence, and vulnerability management
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => navigate('/security/scans')}>
-            <Scan size={14} className="mr-1" /> Run Scan
-          </Button>
-          <Button size="sm" onClick={() => navigate('/security/reports')}>
-            <FileText size={14} className="mr-1" /> Generate Report
-          </Button>
+        <div className="flex items-center gap-2 text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+          <Clock size={13} />
+          <span>Last scan: {formatDate('2026-04-05')} at 23:45 UTC</span>
         </div>
       </div>
 
-      {/* Stat Cards */}
+      {/* Metric Tiles */}
       <div className="grid grid-cols-4 gap-4">
-        {stats.map((s) => (
-          <Card key={s.label} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>{s.label}</p>
-                  <p className="text-3xl font-bold mt-1" style={{ color: 'hsl(var(--text-1))' }}>{s.value}</p>
-                  <div className="flex items-center gap-1 mt-1">
-                    {s.up === true && <TrendUp size={12} style={{ color: '#10b981' }} />}
-                    {s.up === false && <TrendDown size={12} style={{ color: '#ef4444' }} />}
-                    {s.up === null && <Minus size={12} style={{ color: 'hsl(var(--text-3))' }} />}
-                    <span className="text-xs" style={{ color: s.up === true ? '#10b981' : s.up === false ? '#ef4444' : 'hsl(var(--text-3))' }}>
-                      {s.trend} vs last month
-                    </span>
-                  </div>
-                </div>
-                <div className="p-2" style={{ background: 'hsl(var(--bg-muted))', borderRadius: 0 }}>
-                  <s.icon size={20} style={{ color: 'hsl(var(--brand))' }} />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        <MetricTile
+          label="Overall Security Score"
+          value="79%"
+          variant="warn"
+          icon={<ShieldWarning size={16} weight="fill" style={{ color: 'hsl(45 93% 47%)' }} />}
+          sub="Target: 85%"
+        />
+        <MetricTile
+          label="Active Threats"
+          value="3"
+          variant="error"
+          icon={<Fire size={16} weight="fill" style={{ color: 'hsl(0 72% 51%)' }} />}
+          sub="2 critical, 1 high"
+        />
+        <MetricTile
+          label="Open Vulnerabilities"
+          value="5"
+          variant="warn"
+          icon={<Bug size={16} weight="fill" style={{ color: 'hsl(45 93% 47%)' }} />}
+          sub="1 critical CVSS 9.1"
+        />
+        <MetricTile
+          label="Scans Today"
+          value="24"
+          variant="ok"
+          icon={<Scan size={16} style={{ color: 'hsl(142 71% 45%)' }} />}
+          sub="All passed"
+        />
       </div>
 
-      {/* Score + Trend */}
+      {/* Security Score Chart + Recent Events */}
       <div className="grid grid-cols-3 gap-4">
-        {/* Security Score Gauge */}
-        <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+        {/* Security Score per Module Chart */}
+        <Card className="col-span-2" style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Security Score</CardTitle>
+            <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+              Security Score per Module
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col items-center">
-              <div style={{ width: 180, height: 140 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadialBarChart cx="50%" cy="80%" innerRadius="60%" outerRadius="90%" startAngle={180} endAngle={0} data={radialData}>
-                    <RadialBar dataKey="value" background={{ fill: 'hsl(var(--bg-muted))' }} />
-                  </RadialBarChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="text-center -mt-6">
-                <p className="text-4xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>{securityScore}</p>
-                <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>
-                  Rating: <ScoreBadge value={securityScore} />
-                </p>
-              </div>
-              <div className="grid grid-cols-3 gap-2 mt-4 w-full text-center">
-                {[{ label: 'Critical', val: criticalVulns, color: '#ef4444' }, { label: 'Active', val: activeThreats, color: '#f97316' }, { label: 'RT Active', val: activeExercises, color: '#8b5cf6' }].map(item => (
-                  <div key={item.label}>
-                    <p className="text-lg font-bold" style={{ color: item.color }}>{item.val}</p>
-                    <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{item.label}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Trend Chart */}
-        <Card className="col-span-2" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>6-Month Trend</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={trendData}>
-                <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
-                <XAxis dataKey="month" tick={{ fontSize: 11, fill: ct.axis }} />
-                <YAxis tick={{ fontSize: 11, fill: ct.axis }} label={{ value: 'Count', angle: -90, position: 'insideLeft', style: { fill: ct.axis } }} />
-                <Tooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.tooltipText, borderRadius: 0 }} />
-                <Line type="monotone" dataKey="threats" stroke="#ef4444" strokeWidth={2} dot={false} name="Threats" />
-                <Line type="monotone" dataKey="vulns" stroke="#f97316" strokeWidth={2} dot={false} name="Vulns" />
-                <Line type="monotone" dataKey="score" stroke={ct.brand} strokeWidth={2} dot={false} name="Score" />
-              </LineChart>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={SECURITY_SCORES} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} vertical={false} />
+                <XAxis
+                  dataKey="module"
+                  tick={{ fill: ct.axis, fontSize: 11 }}
+                  axisLine={{ stroke: ct.grid }}
+                  tickLine={false}
+                />
+                <YAxis
+                  label={{ value: 'Security Score (0-100)', angle: -90, position: 'insideLeft', offset: 10, style: { fill: ct.axis, fontSize: 11 } }}
+                  tick={{ fill: ct.axis, fontSize: 11 }}
+                  axisLine={{ stroke: ct.grid }}
+                  tickLine={false}
+                  domain={[0, 100]}
+                />
+                <ReTooltip content={<ChartTooltipContent />} />
+                <Bar dataKey="score" maxBarSize={48}>
+                  {SECURITY_SCORES.map((entry, idx) => (
+                    <Cell key={idx} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
+
+        {/* Recent Security Events Feed */}
+        <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+              Recent Security Events
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="divide-y" style={{ borderColor: 'hsl(var(--border))' }}>
+              {recentEvents.map(ev => {
+                const sc = severityColor(ev.severity);
+                const daysAgo = Math.floor((Date.now() - new Date(ev.date).getTime()) / 86400000);
+                return (
+                  <div key={ev.id} className="px-4 py-3 flex items-start gap-3">
+                    <div className="mt-0.5 p-1" style={{ background: sc.bg, borderRadius: 0 }}>
+                      {ev.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0, fontSize: 9, padding: '1px 5px' }}>
+                          {ev.severity.toUpperCase()}
+                        </Badge>
+                        <span className="text-xs font-mono" style={{ color: 'hsl(var(--text-4))' }}>{ev.type}</span>
+                      </div>
+                      <p className="text-xs font-medium truncate" style={{ color: 'hsl(var(--text-1))' }}>{ev.title}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+                          <Target size={10} className="inline mr-1" />{ev.target}
+                        </span>
+                        <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{daysAgo}d ago</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Module Cards */}
+      {/* Sub-Navigation Cards */}
       <div>
-        <h2 className="text-sm font-semibold mb-3" style={{ color: 'hsl(var(--text-2))' }}>Security Modules</h2>
-        <div className="grid grid-cols-3 gap-3">
-          {modules.map((mod) => (
-            <Card
-              key={mod.label}
-              className="cursor-pointer transition-colors"
-              style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderLeft: `3px solid ${mod.color}` }}
-              onClick={() => navigate(mod.path)}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="p-1.5" style={{ background: `${mod.color}20` }}>
-                      <mod.icon size={16} style={{ color: mod.color }} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{mod.label}</p>
-                      <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{mod.desc}</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <span className="text-lg font-bold" style={{ color: mod.color }}>{mod.count}</span>
-                    <ArrowRight size={14} style={{ color: 'hsl(var(--text-3))' }} />
-                  </div>
-                </div>
-                <div className="mt-2">
-                  <Badge style={{ background: `${mod.color}20`, color: mod.color, border: `1px solid ${mod.color}40`, fontSize: 10 }}>
-                    {mod.status}
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
+        <h2 className="text-sm font-semibold mb-3" style={{ color: 'hsl(var(--text-1))' }}>Security Modules</h2>
+        <div className="grid grid-cols-5 gap-4">
+          {subNavItems.map(item => (
+            <SubNavCard key={item.path} {...item} />
           ))}
         </div>
       </div>
-
-      {/* Recent Events */}
-      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Recent Security Events</CardTitle>
-            <Button variant="ghost" size="sm" onClick={() => navigate('/security/threats')}>
-              View All <ArrowRight size={12} className="ml-1" />
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-0">
-            {recentEvents.map((event, i) => (
-              <div
-                key={event.id}
-                className="flex items-center justify-between py-2 cursor-pointer"
-                style={{
-                  borderBottom: i < recentEvents.length - 1 ? '1px solid hsl(var(--border))' : 'none',
-                }}
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-1.5 h-1.5"
-                    style={{ background: severityColor(event.severity as any).bg, borderRadius: 0 }}
-                  />
-                  <div>
-                    <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{event.title}</p>
-                    <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{event.id} · {formatDate(event.date)}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge style={{ background: severityColor(event.severity as any).bg, color: severityColor(event.severity as any).text, border: `1px solid ${severityColor(event.severity as any).border}`, fontSize: 10 }}>
-                    {event.severity}
-                  </Badge>
-                  <Badge variant="outline" style={{ fontSize: 10 }}>{event.type}</Badge>
-                  <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{event.status}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

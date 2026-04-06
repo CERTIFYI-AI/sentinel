@@ -37,6 +37,7 @@ const GapAnalysis = lazy(() => import('./pages/GapAnalysis'));
 const HitlQueue = lazy(() => import('./pages/HitlQueue'));
 const IncidentLog = lazy(() => import('./pages/IncidentLog'));
 const ModelInventory = lazy(() => import('./pages/ModelInventory'));
+const ModelInventoryPage = lazy(() => import('./pages/models/ModelInventoryPage'));
 const ModelLifecycle = lazy(() => import('./pages/ModelLifecycle'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const PolicyEditor = lazy(() => import('./pages/PolicyEditor'));
@@ -169,7 +170,7 @@ function AuthenticatedLayout() {
               <Route path="/risk/incidents" element={<IncidentLog />} />
               <Route path="/risk/remediation" element={<Remediation />} />
               <Route path="/models" element={<ModelInventory />} />
-              <Route path="/models/inventory" element={<ModelInventory />} />
+              <Route path="/models/inventory" element={<ModelInventoryPage />} />
               <Route path="/models/lifecycle" element={<ModelLifecycle />} />
               <Route path="/audit-log" element={<AuditLog />} />
               <Route path="/evidence-vault" element={<EvidenceVault />} />
