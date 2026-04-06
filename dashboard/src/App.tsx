@@ -67,6 +67,8 @@ const VendorDetail = lazy(() => import('./pages/vendors/VendorDetail'));
 const VendorQuestionnaire = lazy(() => import('./pages/vendors/VendorQuestionnaire'));
 const HITLReviewCenter = lazy(() => import('./pages/hitl/HITLReviewCenter'));
 const HITLDetail = lazy(() => import('./pages/hitl/HITLDetail'));
+const AiAdvisor = lazy(() => import('./pages/AiAdvisor'))
+const PolicyTemplates = lazy(() => import('./pages/PolicyTemplates'))
 const BiasAuditWizard = lazy(() => import('./pages/bias-audits/BiasAuditWizard'));
 const BiasAuditResults = lazy(() => import('./pages/bias-audits/BiasAuditResults'));
 const ControlsList = lazy(() => import('./pages/Controls'));
@@ -202,6 +204,8 @@ function AuthenticatedLayout() {
               <Route path="/access-control" element={<RBACDashboard />} />
               <Route path="/access-control/roles" element={<RoleManager />} />
               <Route path="/access-control/users" element={<UserManager />} />
+              <Route path="/ai-advisor" element={<Suspense fallback={null}><AiAdvisor /></Suspense>} />
+              <Route path="/compliance/policy-templates" element={<Suspense fallback={null}><PolicyTemplates /></Suspense>} />
               <Route path="/compliance/controls/:id" element={<ControlDetail />} />
 
             <Route path="/reporting" element={<Suspense fallback={<Loading />}><Reporting /></Suspense>} />
