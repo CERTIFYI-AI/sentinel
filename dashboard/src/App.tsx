@@ -80,6 +80,13 @@ const RegRadar = lazy(() => import('./pages/governance/RegRadar'));
 const RegDetail = lazy(() => import('./pages/governance/RegDetail'));
 const Frameworks = lazy(() => import('./pages/Frameworks'));
 
+
+const ExplainabilityCenter = lazy(() => import('./pages/ExplainabilityCenter'));
+const ConformityAssessment = lazy(() => import('./pages/ConformityAssessment'));
+const IncidentWorkflow = lazy(() => import('./pages/IncidentWorkflow'));
+const RiskDetail = lazy(() => import('./pages/risk/RiskDetail'));
+const ModelDetail = lazy(() => import('./pages/models/ModelDetail'));
+const PolicyDetail = lazy(() => import('./pages/policies/PolicyDetail'));
 function Loading() {
   return (
     <div className="flex items-center justify-center h-64">
@@ -209,7 +216,16 @@ function AuthenticatedLayout() {
               <Route path="/compliance/controls/:id" element={<ControlDetail />} />
 
             <Route path="/reporting" element={<Suspense fallback={<Loading />}><Reporting /></Suspense>} />
-              <Route path="*" element={<Suspense fallback={<Loading />}><NotFound /></Suspense>} />
+              
+                <Route path="/risk/register" element={<RiskRegister />} />
+                <Route path="/risk/:id" element={<RiskDetail />} />
+                <Route path="/models/:id" element={<ModelDetail />} />
+                <Route path="/policies/:id" element={<PolicyDetail />} />
+                <Route path="/reg-radar/:id" element={<RegDetail />} />
+                <Route path="/explainability" element={<ExplainabilityCenter />} />
+                <Route path="/conformity" element={<ConformityAssessment />} />
+                <Route path="/incident-workflow" element={<IncidentWorkflow />} />
+                <Route path="*" element={<Suspense fallback={<Loading />}><NotFound /></Suspense>} />
             </Routes>
           </Suspense>
         </main>
