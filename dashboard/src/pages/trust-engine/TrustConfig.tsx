@@ -113,9 +113,9 @@ const DEFAULT_PER_MODEL: PerModelConfig[] = [
 
 function actionBadge(action: GuardrailConfig['action']) {
   const map = {
-    block: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(0 72% 51%)' },
-    warn: { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(45 93% 47%)' },
-    flag: { bg: 'hsl(220 90% 56% / 0.15)', color: 'hsl(220 90% 56%)' },
+    block: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))' },
+    warn: { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(var(--s-wn-tx))' },
+    flag: { bg: 'hsl(220 90% 56% / 0.15)', color: 'hsl(var(--s-in-tx))' },
   };
   const s = map[action];
   return <Badge style={{ background: s.bg, color: s.color, borderRadius: 0, fontSize: 11 }}>{action.charAt(0).toUpperCase() + action.slice(1)}</Badge>;
@@ -123,9 +123,9 @@ function actionBadge(action: GuardrailConfig['action']) {
 
 function severityBadge(severity: AlertThreshold['severity']) {
   const map = {
-    critical: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(0 72% 51%)' },
-    high: { bg: 'hsl(25 95% 53% / 0.15)', color: 'hsl(25 95% 53%)' },
-    medium: { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(45 93% 47%)' },
+    critical: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))' },
+    high: { bg: 'hsl(25 95% 53% / 0.15)', color: 'hsl(var(--s-wn-tx))' },
+    medium: { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(var(--s-wn-tx))' },
   };
   const s = map[severity];
   return <Badge style={{ background: s.bg, color: s.color, borderRadius: 0, fontSize: 11 }}>{severity.charAt(0).toUpperCase() + severity.slice(1)}</Badge>;
@@ -227,7 +227,7 @@ export default function TrustConfig() {
         <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
           {toasts.map(t => (
             <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
-              background: t.type === 'success' ? 'hsl(142 71% 45%)' : t.type === 'error' ? 'hsl(0 72% 51%)' : 'hsl(220 90% 56%)',
+              background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
               color: '#fff', borderRadius: 0, minWidth: 300,
             }}>{t.text}</div>
           ))}
@@ -238,12 +238,12 @@ export default function TrustConfig() {
           <div>
             <div className="flex items-center gap-3 mb-1">
               <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Trust Configuration</h1>
-              <Badge style={{ background: 'hsl(0 72% 51% / 0.15)', color: 'hsl(0 72% 51%)', borderRadius: 0, fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>PRODUCTION</Badge>
+              <Badge style={{ background: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>PRODUCTION</Badge>
             </div>
             <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} · Guardrails, cost limits, fallback chains, alert thresholds</p>
           </div>
           <div className="flex items-center gap-3">
-            {dirty && <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: 'hsl(45 93% 47%)' }}><Warning size={14} />Unsaved changes</span>}
+            {dirty && <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: 'hsl(var(--s-wn-tx))' }}><Warning size={14} />Unsaved changes</span>}
             <Button variant="outline" onClick={() => setShowAuditLog(s => !s)} style={{ borderRadius: 0 }}>
               <Clock className="h-4 w-4 mr-2" />Audit Log ({auditLog.length})
             </Button>
@@ -263,8 +263,8 @@ export default function TrustConfig() {
 
         {/* Production Warning */}
         <div className="flex items-center gap-2 px-4 py-2" style={{ background: 'hsl(0 72% 51% / 0.08)', border: '1px solid hsl(0 72% 51% / 0.3)', borderRadius: 0 }}>
-          <Warning size={14} style={{ color: 'hsl(0 72% 51%)' }} />
-          <p className="text-xs" style={{ color: 'hsl(0 72% 51%)' }}>
+          <Warning size={14} className="text-destructive" />
+          <p className="text-xs text-destructive">
             <strong>PRODUCTION environment.</strong> Changes take effect immediately. All saves create an immutable audit entry (SOC 2 CC6.1, ISO 27001 A.12.1.2).
           </p>
         </div>
@@ -422,10 +422,10 @@ export default function TrustConfig() {
                         <td className="px-4 py-2"><Switch checked={g.enabled} onCheckedChange={() => toggleGuardrail(g.id)} /></td>
                         <td className="px-4 py-2">
                           <AlertDialog>
-                            <AlertDialogTrigger asChild><Button variant="ghost" size="sm" className="h-7 w-7 p-0" style={{ color: 'hsl(0 72% 51%)' }}><Trash size={13} /></Button></AlertDialogTrigger>
+                            <AlertDialogTrigger asChild><Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive"><Trash size={13} /></Button></AlertDialogTrigger>
                             <AlertDialogContent style={{ borderRadius: 0 }}>
                               <AlertDialogHeader><AlertDialogTitle>Delete Guardrail</AlertDialogTitle><AlertDialogDescription>Delete "{g.name}"? This creates an audit entry.</AlertDialogDescription></AlertDialogHeader>
-                              <AlertDialogFooter><AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => deleteGuardrail(g.id)} style={{ borderRadius: 0, background: 'hsl(0 72% 51%)' }}>Delete</AlertDialogAction></AlertDialogFooter>
+                              <AlertDialogFooter><AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => deleteGuardrail(g.id)} style={{ borderRadius: 0, background: 'hsl(var(--destructive))' }}>Delete</AlertDialogAction></AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
                         </td>
@@ -484,7 +484,7 @@ export default function TrustConfig() {
                         {currentModelConfig.linkedPolicies.map(p => {
                           const policy = TRUST_POLICIES.find(tp => tp.id === p);
                           return (
-                            <Badge key={p} style={{ background: 'hsl(220 90% 56% / 0.10)', color: 'hsl(220 90% 56%)', borderRadius: 0, fontSize: 10 }}>
+                            <Badge key={p} style={{ background: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>
                               {policy?.name || p}
                             </Badge>
                           );
@@ -532,7 +532,7 @@ export default function TrustConfig() {
                         <td className="px-4 py-3">
                           <Badge style={{
                             background: th.status === 'meets' ? 'hsl(142 71% 45% / 0.12)' : 'hsl(45 93% 47% / 0.12)',
-                            color: th.status === 'meets' ? 'hsl(142 71% 45%)' : 'hsl(45 93% 47%)',
+                            color: th.status === 'meets' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))',
                             borderRadius: 0, fontSize: 10,
                           }}>
                             {th.status === 'meets' ? 'Meets' : 'Below'}
@@ -573,10 +573,10 @@ export default function TrustConfig() {
                         <td className="px-4 py-2"><Switch checked={a.enabled} onCheckedChange={() => toggleAlert(a.id)} /></td>
                         <td className="px-4 py-2">
                           <AlertDialog>
-                            <AlertDialogTrigger asChild><Button variant="ghost" size="sm" className="h-7 w-7 p-0" style={{ color: 'hsl(0 72% 51%)' }}><Trash size={13} /></Button></AlertDialogTrigger>
+                            <AlertDialogTrigger asChild><Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive"><Trash size={13} /></Button></AlertDialogTrigger>
                             <AlertDialogContent style={{ borderRadius: 0 }}>
                               <AlertDialogHeader><AlertDialogTitle>Delete Alert</AlertDialogTitle><AlertDialogDescription>Remove this alert threshold?</AlertDialogDescription></AlertDialogHeader>
-                              <AlertDialogFooter><AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => deleteAlert(a.id)} style={{ borderRadius: 0, background: 'hsl(0 72% 51%)' }}>Delete</AlertDialogAction></AlertDialogFooter>
+                              <AlertDialogFooter><AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => deleteAlert(a.id)} style={{ borderRadius: 0, background: 'hsl(var(--destructive))' }}>Delete</AlertDialogAction></AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
                         </td>
@@ -605,7 +605,7 @@ export default function TrustConfig() {
                       <Switch checked={int.connected} onCheckedChange={() => toggleIntegration(int.id)} />
                       <Badge style={{
                         background: int.connected ? 'hsl(142 71% 45% / 0.12)' : 'hsl(var(--s-nt-bg))',
-                        color: int.connected ? 'hsl(142 71% 45%)' : 'hsl(var(--s-nt-tx))',
+                        color: int.connected ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-nt-tx))',
                         borderRadius: 0, fontSize: 10,
                       }}>
                         {int.connected ? 'Connected' : 'Disconnected'}

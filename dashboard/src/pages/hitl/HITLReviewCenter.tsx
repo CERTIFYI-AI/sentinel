@@ -1,9 +1,10 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   Eye, MagnifyingGlass, Funnel, Clock, Warning, CheckCircle,
   XCircle, Queue, Plus, Info, ArrowRight, User, Flag,
 } from '@phosphor-icons/react';
 import { Card, CardContent } from '../../components/ui/card';
+import { Skeleton } from '../../components/ui/skeleton';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -25,11 +26,11 @@ interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info
 
 function entityTypeBadge(t: HITLItem['entityType']) {
   const map: Record<string, { bg: string; color: string }> = {
-    model: { bg: 'hsl(220 90% 56% / 0.15)', color: 'hsl(220 90% 56%)' },
+    model: { bg: 'hsl(220 90% 56% / 0.15)', color: 'hsl(var(--s-in-tx))' },
     agent: { bg: 'hsl(270 70% 56% / 0.15)', color: 'hsl(270 70% 56%)' },
-    dataset: { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(45 93% 47%)' },
+    dataset: { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(var(--s-wn-tx))' },
     vendor: { bg: 'hsl(180 60% 45% / 0.15)', color: 'hsl(180 60% 45%)' },
-    incident: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(0 72% 51%)' },
+    incident: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))' },
   };
   const s = map[t] ?? map.model;
   return (
@@ -68,16 +69,16 @@ function isOverdue(item: HITLItem): boolean {
 
 function slaDisplay(item: HITLItem) {
   if (item.status === 'approved' || item.status === 'rejected') {
-    return <span className="text-xs" style={{ color: 'hsl(142 71% 45%)' }}>Completed</span>;
+    return <span className="text-xs text-green-600 dark:text-green-400">Completed</span>;
   }
   const deadline = new Date(item.slaDeadline);
   const now = new Date();
   if (deadline < now) {
     const hoursOver = Math.round((now.getTime() - deadline.getTime()) / 3600000);
-    return <span className="text-xs font-semibold" style={{ color: 'hsl(0 72% 51%)' }}>{hoursOver}h overdue</span>;
+    return <span className="text-xs font-semibold text-destructive">{hoursOver}h overdue</span>;
   }
   const hoursLeft = Math.round((deadline.getTime() - now.getTime()) / 3600000);
-  return <span className="text-xs" style={{ color: hoursLeft < 4 ? 'hsl(45 93% 47%)' : 'hsl(var(--text-4))' }}>{hoursLeft}h remaining</span>;
+  return <span className="text-xs" style={{ color: hoursLeft < 4 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-4))' }}>{hoursLeft}h remaining</span>;
 }
 
 // ── Main Component ────────────────────────────────────────────────────────────
@@ -95,6 +96,12 @@ export default function HITLReviewCenter() {
   const [rejectReason, setRejectReason] = useState('');
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const t = setTimeout(() => setIsLoading(false), 600);
+    return () => clearTimeout(t);
+  }, []);
 
   const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
     const id = Date.now();
@@ -165,13 +172,30 @@ export default function HITLReviewCenter() {
     setRejectReason('');
   };
 
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2"><Skeleton className="h-8 w-64" /><Skeleton className="h-4 w-48" /></div>
+          <div className="flex gap-2"><Skeleton className="h-9 w-28" /><Skeleton className="h-9 w-28" /></div>
+        </div>
+        <div className="grid grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
+        </div>
+        <div className="space-y-2">
+          {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Toast layer */}
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
-            background: t.type === 'success' ? 'hsl(142 71% 45%)' : t.type === 'error' ? 'hsl(0 72% 51%)' : 'hsl(220 90% 56%)',
+            background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
             color: '#fff', borderRadius: 0, minWidth: 300
           }}>{t.text}</div>
         ))}
@@ -191,10 +215,10 @@ export default function HITLReviewCenter() {
       {/* Metric Tiles */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Pending Reviews', value: pendingCount, color: 'hsl(45 93% 47%)', icon: Clock },
-          { label: 'Overdue', value: overdueCount, color: 'hsl(0 72% 51%)', icon: Warning },
-          { label: 'Approved Today', value: approvedToday, color: 'hsl(142 71% 45%)', icon: CheckCircle },
-          { label: 'Avg Review Time', value: avgReviewTime, color: 'hsl(220 90% 56%)', icon: Info },
+          { label: 'Pending Reviews', value: pendingCount, color: 'hsl(var(--s-wn-tx))', icon: Clock },
+          { label: 'Overdue', value: overdueCount, color: 'hsl(var(--destructive))', icon: Warning },
+          { label: 'Approved Today', value: approvedToday, color: 'hsl(var(--s-ok-tx))', icon: CheckCircle },
+          { label: 'Avg Review Time', value: avgReviewTime, color: 'hsl(var(--s-in-tx))', icon: Info },
         ].map(stat => (
           <Card key={stat.label} style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
             <CardContent className="pt-4 pb-4">
@@ -325,7 +349,7 @@ export default function HITLReviewCenter() {
                   {priorityBadge(selectedItem.priority)}
                   {hitlStatusBadge(selectedItem.status)}
                   {isOverdue(selectedItem) && (
-                    <Badge style={{ background: 'hsl(0 72% 51% / 0.15)', color: 'hsl(0 72% 51%)', borderRadius: 0, fontSize: 10 }}>
+                    <Badge style={{ background: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>
                       OVERDUE
                     </Badge>
                   )}
@@ -356,9 +380,9 @@ export default function HITLReviewCenter() {
 
               {/* Trigger Alert */}
               <div className="p-3 flex gap-3" style={{ background: 'hsl(45 93% 47% / 0.08)', border: '1px solid hsl(45 93% 47% / 0.3)' }}>
-                <Warning size={18} style={{ color: 'hsl(45 93% 47%)', flexShrink: 0, marginTop: 1 }} />
+                <Warning size={18} style={{ color: 'hsl(var(--s-wn-tx))', flexShrink: 0, marginTop: 1 }} />
                 <div>
-                  <p className="text-xs font-semibold" style={{ color: 'hsl(45 93% 47%)' }}>Trigger Reason</p>
+                  <p className="text-xs font-semibold" style={{ color: 'hsl(var(--s-wn-tx))' }}>Trigger Reason</p>
                   <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selectedItem.triggerReason}</p>
                 </div>
               </div>
@@ -381,7 +405,7 @@ export default function HITLReviewCenter() {
                       }}
                       placeholder="Provide your review decision remarks..."
                     />
-                    <p className="text-xs mt-1" style={{ color: reviewRemarks.length >= 10 ? 'hsl(142 71% 45%)' : 'hsl(var(--text-4))' }}>
+                    <p className="text-xs mt-1" style={{ color: reviewRemarks.length >= 10 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-4))' }}>
                       {reviewRemarks.length}/10 characters minimum
                     </p>
                   </div>
@@ -390,7 +414,7 @@ export default function HITLReviewCenter() {
                       size="sm"
                       disabled={reviewRemarks.length < 10}
                       onClick={() => handleApprove(selectedItem)}
-                      style={{ borderRadius: 0, background: reviewRemarks.length >= 10 ? 'hsl(142 71% 45%)' : undefined, color: reviewRemarks.length >= 10 ? '#fff' : undefined }}
+                      style={{ borderRadius: 0, background: reviewRemarks.length >= 10 ? 'hsl(var(--s-ok-tx))' : undefined, color: reviewRemarks.length >= 10 ? '#fff' : undefined }}
                     >
                       <CheckCircle size={14} className="mr-1" />Approve
                     </Button>
@@ -408,7 +432,7 @@ export default function HITLReviewCenter() {
                       variant="outline"
                       disabled={reviewRemarks.length < 10}
                       onClick={() => { setRejectDialogOpen(true); setRejectReason(''); }}
-                      style={{ borderRadius: 0, color: 'hsl(0 72% 51%)' }}
+                      style={{ borderRadius: 0, color: 'hsl(var(--destructive))' }}
                     >
                       <XCircle size={14} className="mr-1" />Reject
                     </Button>
@@ -423,7 +447,7 @@ export default function HITLReviewCenter() {
                   background: selectedItem.status === 'approved' ? 'hsl(142 71% 45% / 0.05)' : 'hsl(0 72% 51% / 0.05)',
                 }}>
                   <p className="text-xs font-semibold" style={{
-                    color: selectedItem.status === 'approved' ? 'hsl(142 71% 45%)' : 'hsl(0 72% 51%)',
+                    color: selectedItem.status === 'approved' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))',
                   }}>
                     Decision: {selectedItem.status.charAt(0).toUpperCase() + selectedItem.status.slice(1)}
                   </p>
@@ -480,7 +504,7 @@ export default function HITLReviewCenter() {
               }}
               placeholder="Explain why this review item is being rejected..."
             />
-            <p className="text-xs" style={{ color: rejectReason.length >= 20 ? 'hsl(142 71% 45%)' : 'hsl(var(--text-4))' }}>
+            <p className="text-xs" style={{ color: rejectReason.length >= 20 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-4))' }}>
               {rejectReason.length}/20 characters minimum
             </p>
           </div>
@@ -489,7 +513,7 @@ export default function HITLReviewCenter() {
             <Button
               disabled={rejectReason.length < 20}
               onClick={handleReject}
-              style={{ borderRadius: 0, background: rejectReason.length >= 20 ? 'hsl(0 72% 51%)' : undefined, color: rejectReason.length >= 20 ? '#fff' : undefined }}
+              style={{ borderRadius: 0, background: rejectReason.length >= 20 ? 'hsl(var(--destructive))' : undefined, color: rejectReason.length >= 20 ? '#fff' : undefined }}
             >
               <XCircle size={14} className="mr-1" />Reject
             </Button>

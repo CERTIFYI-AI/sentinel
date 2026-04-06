@@ -41,8 +41,8 @@ const externalAssets = ATTACK_SURFACE.filter(a => a.exposure === 'public');
 const internalAssets = ATTACK_SURFACE.filter(a => a.exposure !== 'public');
 
 const EXPOSURE_CHART_DATA = [
-  ...externalAssets.map(a => ({ name: a.name.split('.')[0], score: getExposureScore(a), group: 'External', fill: 'hsl(0 72% 51%)' })),
-  ...internalAssets.map(a => ({ name: a.name.split('.')[0], score: getExposureScore(a), group: 'Internal', fill: 'hsl(220 90% 56%)' })),
+  ...externalAssets.map(a => ({ name: a.name.split('.')[0], score: getExposureScore(a), group: 'External', fill: 'hsl(var(--destructive))' })),
+  ...internalAssets.map(a => ({ name: a.name.split('.')[0], score: getExposureScore(a), group: 'Internal', fill: 'hsl(var(--s-in-tx))' })),
 ];
 
 // ── Metric Tile ───────────────────────────────────────────────────────────────
@@ -51,10 +51,10 @@ function MetricTile({ label, value, variant, icon, sub }: {
   label: string; value: string; variant: 'ok' | 'warn' | 'error' | 'info'; icon: React.ReactNode; sub?: string;
 }) {
   const vs = {
-    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(142 71% 45%)' },
-    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(45 93% 47%)' },
-    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(0 72% 51%)' },
-    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(220 90% 56%)' },
+    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(var(--s-ok-tx))' },
+    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(var(--s-wn-tx))' },
+    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(var(--destructive))' },
+    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))' },
   };
   const s = vs[variant];
   return (
@@ -134,7 +134,7 @@ export default function AttackSurface() {
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
-            background: t.type === 'success' ? 'hsl(142 71% 45%)' : t.type === 'error' ? 'hsl(0 72% 51%)' : 'hsl(220 90% 56%)',
+            background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
             color: '#fff', borderRadius: 0, minWidth: 300,
           }}>{t.text}</div>
         ))}
@@ -161,10 +161,10 @@ export default function AttackSurface() {
 
       {/* Metrics */}
       <div className="grid grid-cols-4 gap-4">
-        <MetricTile label="Total Assets" value={String(assets.length)} variant="info" icon={<Globe size={16} style={{ color: 'hsl(220 90% 56%)' }} />} />
-        <MetricTile label="Exposed (Public)" value={String(exposedCount)} variant="error" icon={<ShieldWarning size={16} weight="fill" style={{ color: 'hsl(0 72% 51%)' }} />} />
-        <MetricTile label="Critical Risk" value={String(criticalCount)} variant="error" icon={<Fire size={16} weight="fill" style={{ color: 'hsl(0 72% 51%)' }} />} sub="Immediate attention" />
-        <MetricTile label="Monitored" value={String(monitoredCount)} variant="ok" icon={<CheckCircle size={16} weight="fill" style={{ color: 'hsl(142 71% 45%)' }} />} />
+        <MetricTile label="Total Assets" value={String(assets.length)} variant="info" icon={<Globe size={16} className="text-blue-600 dark:text-blue-400" />} />
+        <MetricTile label="Exposed (Public)" value={String(exposedCount)} variant="error" icon={<ShieldWarning size={16} weight="fill" className="text-destructive" />} />
+        <MetricTile label="Critical Risk" value={String(criticalCount)} variant="error" icon={<Fire size={16} weight="fill" className="text-destructive" />} sub="Immediate attention" />
+        <MetricTile label="Monitored" value={String(monitoredCount)} variant="ok" icon={<CheckCircle size={16} weight="fill" className="text-green-600 dark:text-green-400" />} />
       </div>
 
       {/* Exposure Chart */}
@@ -174,11 +174,11 @@ export default function AttackSurface() {
             <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Exposure Risk Score by Asset</CardTitle>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3" style={{ background: 'hsl(0 72% 51%)', borderRadius: 0 }} />
+                <div className="w-3 h-3" style={{ background: 'hsl(var(--destructive))', borderRadius: 0 }} />
                 <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>External</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3" style={{ background: 'hsl(220 90% 56%)', borderRadius: 0 }} />
+                <div className="w-3 h-3" style={{ background: 'hsl(var(--s-in-tx))', borderRadius: 0 }} />
                 <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Internal</span>
               </div>
             </div>
@@ -257,7 +257,7 @@ export default function AttackSurface() {
                       <td className="px-4 py-3">
                         <Badge style={{
                           background: a.exposure === 'public' ? 'hsl(0 72% 51% / 0.12)' : a.exposure === 'restricted' ? 'hsl(45 93% 47% / 0.12)' : 'hsl(220 90% 56% / 0.12)',
-                          color: a.exposure === 'public' ? 'hsl(0 72% 51%)' : a.exposure === 'restricted' ? 'hsl(45 93% 47%)' : 'hsl(220 90% 56%)',
+                          color: a.exposure === 'public' ? 'hsl(var(--destructive))' : a.exposure === 'restricted' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-in-tx))',
                           borderRadius: 0, fontSize: 10,
                         }}>
                           {a.exposure.charAt(0).toUpperCase() + a.exposure.slice(1)}
@@ -284,7 +284,7 @@ export default function AttackSurface() {
                             <PencilSimple size={14} style={{ color: 'hsl(var(--text-4))' }} />
                           </Button>
                           <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setDeleteTarget(a)}>
-                            <Trash size={14} style={{ color: 'hsl(0 72% 51%)' }} />
+                            <Trash size={14} className="text-destructive" />
                           </Button>
                         </div>
                       </td>
@@ -335,7 +335,7 @@ export default function AttackSurface() {
                     </div>
                     <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                       <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Exposure</span>
-                      <p className="text-sm font-medium mt-1" style={{ color: selected.exposure === 'public' ? 'hsl(0 72% 51%)' : 'hsl(var(--text-1))' }}>
+                      <p className="text-sm font-medium mt-1" style={{ color: selected.exposure === 'public' ? 'hsl(var(--destructive))' : 'hsl(var(--text-1))' }}>
                         {selected.exposure.toUpperCase()}
                       </p>
                     </div>
@@ -345,7 +345,7 @@ export default function AttackSurface() {
                     </div>
                     <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                       <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Open Ports</span>
-                      <p className="text-sm font-bold mt-1" style={{ color: selected.openPorts > 2 ? 'hsl(45 93% 47%)' : 'hsl(var(--text-1))' }}>{selected.openPorts}</p>
+                      <p className="text-sm font-bold mt-1" style={{ color: selected.openPorts > 2 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-1))' }}>{selected.openPorts}</p>
                     </div>
                     <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                       <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Owner</span>
@@ -367,13 +367,13 @@ export default function AttackSurface() {
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Exposure Risk Score</span>
                       <span className="text-2xl font-bold" style={{
-                        color: getExposureScore(selected) >= 80 ? 'hsl(0 72% 51%)' : getExposureScore(selected) >= 50 ? 'hsl(45 93% 47%)' : 'hsl(142 71% 45%)',
+                        color: getExposureScore(selected) >= 80 ? 'hsl(var(--destructive))' : getExposureScore(selected) >= 50 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))',
                       }}>{getExposureScore(selected)}</span>
                     </div>
                     <div className="w-full h-2" style={{ background: 'hsl(var(--border))', borderRadius: 0 }}>
                       <div className="h-full" style={{
                         width: `${getExposureScore(selected)}%`,
-                        background: getExposureScore(selected) >= 80 ? 'hsl(0 72% 51%)' : getExposureScore(selected) >= 50 ? 'hsl(45 93% 47%)' : 'hsl(142 71% 45%)',
+                        background: getExposureScore(selected) >= 80 ? 'hsl(var(--destructive))' : getExposureScore(selected) >= 50 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))',
                         borderRadius: 0,
                       }} />
                     </div>
@@ -396,7 +396,7 @@ export default function AttackSurface() {
                       <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>Unauthorized access attempts</p>
                       <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>THR-004 linked</p>
                     </div>
-                    <Badge style={{ background: 'hsl(25 95% 53% / 0.12)', color: 'hsl(25 95% 53%)', borderRadius: 0, fontSize: 10 }}>HIGH</Badge>
+                    <Badge style={{ background: 'hsl(25 95% 53% / 0.12)', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 10 }}>HIGH</Badge>
                   </div>
                   {selected.exposure === 'public' && (
                     <div className="flex items-center justify-between p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
@@ -404,7 +404,7 @@ export default function AttackSurface() {
                         <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>DDoS / resource exhaustion</p>
                         <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Public exposure risk</p>
                       </div>
-                      <Badge style={{ background: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 93% 47%)', borderRadius: 0, fontSize: 10 }}>MEDIUM</Badge>
+                      <Badge style={{ background: 'hsl(45 93% 47% / 0.12)', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 10 }}>MEDIUM</Badge>
                     </div>
                   )}
                 </TabsContent>
@@ -412,7 +412,7 @@ export default function AttackSurface() {
                 <TabsContent value="scans" className="space-y-3 mt-4">
                   {['2026-03-28', '2026-03-21', '2026-03-14'].map((date, i) => (
                     <div key={date} className="flex items-start gap-3 p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                      <Scan size={14} style={{ color: i === 0 ? 'hsl(142 71% 45%)' : 'hsl(var(--text-4))' }} className="mt-0.5" />
+                      <Scan size={14} style={{ color: i === 0 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-4))' }} className="mt-0.5" />
                       <div>
                         <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>
                           {i === 0 ? 'Latest scan — passed' : `Scan — ${i === 1 ? '1 warning' : 'passed'}`}

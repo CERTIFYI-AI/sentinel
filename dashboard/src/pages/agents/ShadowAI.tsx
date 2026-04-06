@@ -81,7 +81,7 @@ export default function ShadowAI() {
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
-            background: t.type === 'success' ? 'hsl(142 71% 45%)' : t.type === 'error' ? 'hsl(0 72% 51%)' : 'hsl(220 90% 56%)',
+            background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
             color: '#fff', borderRadius: 0, minWidth: 300
           }}>{t.text}</div>
         ))}
@@ -98,10 +98,10 @@ export default function ShadowAI() {
       {/* Metric Tiles */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Shadow Detected', value: shadowDetected, color: 'hsl(0 72% 51%)', icon: ShieldWarning },
-          { label: 'Critical Risk', value: criticalRisk, color: 'hsl(0 72% 51%)', icon: Warning },
-          { label: 'Unauthorized API Calls (7d)', value: `${(unauthorizedCalls / 1000).toFixed(1)}K`, color: 'hsl(45 93% 47%)', icon: WifiHigh },
-          { label: 'Pending Remediation', value: pendingRemediation, color: 'hsl(45 93% 47%)', icon: Detective },
+          { label: 'Shadow Detected', value: shadowDetected, color: 'hsl(var(--destructive))', icon: ShieldWarning },
+          { label: 'Critical Risk', value: criticalRisk, color: 'hsl(var(--destructive))', icon: Warning },
+          { label: 'Unauthorized API Calls (7d)', value: `${(unauthorizedCalls / 1000).toFixed(1)}K`, color: 'hsl(var(--s-wn-tx))', icon: WifiHigh },
+          { label: 'Pending Remediation', value: pendingRemediation, color: 'hsl(var(--s-wn-tx))', icon: Detective },
         ].map(stat => (
           <Card key={stat.label} style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
             <CardContent className="pt-4 pb-4">
@@ -117,9 +117,9 @@ export default function ShadowAI() {
 
       {/* Alert Banner */}
       <div className="p-4 flex items-start gap-3" style={{ background: 'hsl(0 72% 51% / 0.08)', border: '1px solid hsl(0 72% 51% / 0.3)' }}>
-        <Siren size={20} style={{ color: 'hsl(0 72% 51%)', flexShrink: 0, marginTop: 1 }} />
+        <Siren size={20} style={{ color: 'hsl(var(--destructive))', flexShrink: 0, marginTop: 1 }} />
         <div>
-          <p className="text-sm font-semibold" style={{ color: 'hsl(0 72% 51%)' }}>
+          <p className="text-sm font-semibold text-destructive">
             {shadowDetected} unauthorized AI tools detected. Potential GDPR Art.5 violation — personal data may be processed without lawful basis.
           </p>
           <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-2))' }}>
@@ -200,8 +200,7 @@ export default function ShadowAI() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1 flex-wrap">
-                          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs"
-                            style={{ color: 'hsl(0 72% 51%)' }}
+                          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-destructive"
                             onClick={() => setQuarantineTarget(a)}>
                             <Prohibit size={12} className="mr-1" />Quarantine
                           </Button>
@@ -209,13 +208,12 @@ export default function ShadowAI() {
                             onClick={() => setInvestigateAgent(a)}>
                             <Eye size={12} className="mr-1" />Investigate
                           </Button>
-                          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs"
-                            style={{ color: 'hsl(142 71% 45%)' }}
+                          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-green-600 dark:text-green-400"
                             onClick={() => handleWhitelist(a)}>
                             <CheckCircle size={12} className="mr-1" />Whitelist
                           </Button>
                           <Button variant="ghost" size="sm" className="h-7 px-2 text-xs"
-                            style={{ color: 'hsl(45 93% 47%)' }}
+                            style={{ color: 'hsl(var(--s-wn-tx))' }}
                             onClick={() => handleRaiseIncident(a)}>
                             <Siren size={12} className="mr-1" />Incident
                           </Button>
@@ -255,7 +253,7 @@ export default function ShadowAI() {
               <div className="flex gap-2 flex-wrap">
                 <Badge style={{ ...severityColor(investigateAgent.risk), borderRadius: 0, fontSize: 10 }}>{investigateAgent.risk} risk</Badge>
                 <Badge style={{ ...statusColor(investigateAgent.status), borderRadius: 0, fontSize: 10 }}>{investigateAgent.status}</Badge>
-                <Badge style={{ background: 'hsl(0 72% 51% / 0.15)', color: 'hsl(0 72% 51%)', borderRadius: 0, fontSize: 10 }}>
+                <Badge style={{ background: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>
                   UNAUTHORIZED
                 </Badge>
               </div>
@@ -266,7 +264,7 @@ export default function ShadowAI() {
                 <div><p style={{ color: 'hsl(var(--text-4))' }}>Department</p><p className="mt-1" style={{ color: 'hsl(var(--text-1))' }}>{investigateAgent.department}</p></div>
                 <div><p style={{ color: 'hsl(var(--text-4))' }}>Model</p><p className="font-mono mt-1" style={{ color: 'hsl(var(--text-1))' }}>{investigateAgent.model}</p></div>
                 <div><p style={{ color: 'hsl(var(--text-4))' }}>First Detected</p><p className="mt-1" style={{ color: 'hsl(var(--text-1))' }}>{formatDate(investigateAgent.firstSeen)}</p></div>
-                <div><p style={{ color: 'hsl(var(--text-4))' }}>API Calls (7d)</p><p className="font-bold mt-1" style={{ color: 'hsl(0 72% 51%)' }}>{formatNumber(investigateAgent.apiCalls7d)}</p></div>
+                <div><p style={{ color: 'hsl(var(--text-4))' }}>API Calls (7d)</p><p className="font-bold mt-1 text-destructive">{formatNumber(investigateAgent.apiCalls7d)}</p></div>
               </div>
 
               {/* Evidence Collected */}
@@ -292,7 +290,7 @@ export default function ShadowAI() {
                 <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-4))' }}>Data Categories Accessed</p>
                 <div className="flex gap-2 flex-wrap">
                   {investigateAgent.dataAccess.map(d => (
-                    <Badge key={d} style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(0 72% 51%)', borderRadius: 0, fontSize: 10 }}>
+                    <Badge key={d} style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>
                       {d.replace(/_/g, ' ')}
                     </Badge>
                   ))}
@@ -326,7 +324,7 @@ export default function ShadowAI() {
                   onClick={() => { toast('Remediation plan created', 'info'); setInvestigateAgent(null); }}>
                   <Lightning size={14} className="mr-1" />Create Remediation Plan
                 </Button>
-                <Button size="sm" variant="outline" style={{ borderRadius: 0, color: 'hsl(0 72% 51%)' }}
+                <Button size="sm" variant="outline" style={{ borderRadius: 0, color: 'hsl(var(--destructive))' }}
                   onClick={() => { setInvestigateAgent(null); setQuarantineTarget(investigateAgent); }}>
                   <Prohibit size={14} className="mr-1" />Quarantine Now
                 </Button>

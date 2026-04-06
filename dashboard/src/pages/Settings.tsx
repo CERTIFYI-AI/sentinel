@@ -189,8 +189,8 @@ export default function Settings() {
                   <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Organization Details</CardTitle>
                 </div>
                 <div className="flex items-center gap-2">
-                  {orgDirty && <span className="text-xs font-medium flex items-center gap-1" style={{ color: 'hsl(45 93% 47%)' }}><Warning size={13} />Unsaved changes</span>}
-                  {orgSaved && <span className="text-xs font-medium" style={{ color: 'hsl(142 71% 45%)' }}>Saved</span>}
+                  {orgDirty && <span className="text-xs font-medium flex items-center gap-1" style={{ color: 'hsl(var(--s-wn-tx))' }}><Warning size={13} />Unsaved changes</span>}
+                  {orgSaved && <span className="text-xs font-medium text-green-600 dark:text-green-400">Saved</span>}
                   {orgDirty && <Button variant="outline" size="sm" onClick={cancelOrg} style={{ borderRadius: 0, height: 30 }}><ArrowCounterClockwise size={13} className="mr-1" />Cancel</Button>}
                   <Button size="sm" onClick={saveOrg} disabled={!orgDirty} style={{ borderRadius: 0, height: 30, background: orgDirty ? 'hsl(var(--brand))' : undefined, color: orgDirty ? '#fff' : undefined }}>
                     <FloppyDisk size={13} className="mr-1" />Save
@@ -232,7 +232,7 @@ export default function Settings() {
                 <Switch checked={mfaRequired} onCheckedChange={setMfaRequired} />
               </div>
               {!mfaRequired && (
-                <div className="flex items-center gap-2 p-2 text-xs" style={{ background: 'hsl(45 93% 47% / 0.1)', color: 'hsl(45 93% 47%)', borderRadius: 0 }}>
+                <div className="flex items-center gap-2 p-2 text-xs" style={{ background: 'hsl(45 93% 47% / 0.1)', color: 'hsl(var(--s-wn-tx))', borderRadius: 0 }}>
                   <Warning size={13} />MFA is disabled. This is a security risk.
                 </div>
               )}
@@ -325,7 +325,7 @@ export default function Settings() {
                       <td className="px-4 py-3">
                         <Badge style={{
                           background: k.status === 'Active' ? 'hsl(142 71% 45% / 0.15)' : 'hsl(var(--border) / 0.5)',
-                          color: k.status === 'Active' ? 'hsl(142 71% 45%)' : 'hsl(var(--text-4))',
+                          color: k.status === 'Active' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-4))',
                           borderRadius: 0, fontSize: 11
                         }}>{k.status}</Badge>
                       </td>
@@ -333,7 +333,7 @@ export default function Settings() {
                         {k.status === 'Active' && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" style={{ color: 'hsl(0 72% 51%)' }}>Revoke</Button>
+                              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-destructive">Revoke</Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent style={{ borderRadius: 0 }}>
                               <AlertDialogHeader>
@@ -342,7 +342,7 @@ export default function Settings() {
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => revokeKey(k.id)} style={{ borderRadius: 0, background: 'hsl(0 72% 51%)' }}>Revoke</AlertDialogAction>
+                                <AlertDialogAction onClick={() => revokeKey(k.id)} style={{ borderRadius: 0, background: 'hsl(var(--destructive))' }}>Revoke</AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
@@ -375,7 +375,7 @@ export default function Settings() {
                     </div>
                   ))}
                 </div>
-                <div className="p-2 text-xs" style={{ background: 'hsl(45 93% 47% / 0.1)', color: 'hsl(45 93% 47%)', borderRadius: 0 }}>
+                <div className="p-2 text-xs" style={{ background: 'hsl(45 93% 47% / 0.1)', color: 'hsl(var(--s-wn-tx))', borderRadius: 0 }}>
                   <Warning size={12} className="inline mr-1" />The key will only be shown once. Copy and store it securely.
                 </div>
               </div>
@@ -461,7 +461,7 @@ export default function Settings() {
                         <p className="font-semibold text-sm" style={{ color: 'hsl(var(--text-1))' }}>{intg.name}</p>
                         <Badge style={{
                           background: intg.connected ? 'hsl(142 71% 45% / 0.15)' : 'hsl(var(--border) / 0.5)',
-                          color: intg.connected ? 'hsl(142 71% 45%)' : 'hsl(var(--text-4))',
+                          color: intg.connected ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-4))',
                           borderRadius: 0, fontSize: 10, marginTop: 2
                         }}>
                           {intg.connected ? 'Connected' : 'Disconnected'}

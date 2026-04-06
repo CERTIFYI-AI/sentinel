@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
 import { Separator } from "../components/ui/separator";
 import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { useChartTheme } from "../../hooks/useChartTheme";
 import { FileText, CheckCircle, Clock, XCircle, MagnifyingGlass as Search, Plus, DownloadSimple as Download, CaretLeft as ChevronLeft, CaretRight as ChevronRight, PencilSimple as Edit, CopySimple as Copy, Archive, Trash as Trash2, Eye, DotsThreeVertical as MoreVertical, Shield } from "@phosphor-icons/react";
 
 const COLORS = ["#10b981","#3b82f6","#f59e0b","#ef4444","#8b5cf6","#ec4899"];
@@ -39,6 +40,7 @@ const policies: Policy[] = [
 
 const PER_PAGE = 6;
 export default function PolicyManagement() {
+  const ct = useChartTheme();
   const nav = useNavigate();
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("all");
@@ -110,7 +112,7 @@ export default function PolicyManagement() {
         <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] p-4">
           <h3 className="text-foreground font-semibold mb-4">Policy Reviews (6 Months)</h3>
           <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={reviewData}><CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--chart-grid))"/><XAxis dataKey="month" stroke="hsl(var(--chart-axis))"/><YAxis stroke="hsl(var(--chart-axis))"/><Tooltip contentStyle={{background:"hsl(var(--bg-surface))",border:"1px solid hsl(var(--border))",borderRadius:8}}/><Line type="monotone" dataKey="count" stroke="#10b981" strokeWidth={2} dot={{fill:"#10b981"}}/></LineChart>
+            <LineChart data={reviewData}><CartesianGrid strokeDasharray="3 3" stroke={ct.grid}/><XAxis dataKey="month" tick={{ fill: ct.axis, fontSize: 11 }}/><YAxis tick={{ fill: ct.axis, fontSize: 11 }} label={{ value: 'Count', angle: -90, position: 'insideLeft', style: { fill: ct.axis } }}/><Tooltip contentStyle={{background:ct.tooltipBg,border:`1px solid ${ct.tooltipBorder}`,borderRadius:0,color:ct.tooltipText}}/><Line type="monotone" dataKey="count" stroke="#10b981" strokeWidth={2} dot={{fill:"#10b981"}}/></LineChart>
           </ResponsiveContainer>
         </Card>
       </div>

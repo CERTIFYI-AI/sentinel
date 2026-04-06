@@ -557,7 +557,7 @@ export default function RiskRegister() {
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
                                     <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => deleteRisk(risk.id)} style={{ borderRadius: 0, background: 'hsl(0 72% 51%)' }}>
+                                    <AlertDialogAction onClick={() => deleteRisk(risk.id)} style={{ borderRadius: 0, background: 'hsl(var(--destructive))' }}>
                                       Delete
                                     </AlertDialogAction>
                                   </AlertDialogFooter>

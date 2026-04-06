@@ -33,10 +33,10 @@ const EXPORT_JOBS: ExportJob[] = [
 
 function formatBadge(format: ExportJob['format']) {
   const map: Record<string, { bg: string; color: string }> = {
-    CSV: { bg: 'hsl(142 71% 45% / 0.15)', color: 'hsl(142 71% 45%)' },
-    PDF: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(0 72% 51%)' },
-    XLSX: { bg: 'hsl(142 71% 45% / 0.15)', color: 'hsl(142 71% 45%)' },
-    ZIP: { bg: 'hsl(220 90% 56% / 0.15)', color: 'hsl(220 90% 56%)' },
+    CSV: { bg: 'hsl(142 71% 45% / 0.15)', color: 'hsl(var(--s-ok-tx))' },
+    PDF: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))' },
+    XLSX: { bg: 'hsl(142 71% 45% / 0.15)', color: 'hsl(var(--s-ok-tx))' },
+    ZIP: { bg: 'hsl(220 90% 56% / 0.15)', color: 'hsl(var(--s-in-tx))' },
   };
   const s = map[format] ?? map.CSV;
   return <Badge style={{ background: s.bg, color: s.color, borderRadius: 0, fontSize: 11, fontWeight: 700 }}>{format}</Badge>;
@@ -44,10 +44,10 @@ function formatBadge(format: ExportJob['format']) {
 
 function statusBadge(status: ExportJob['status']) {
   const map: Record<string, { bg: string; color: string; label: string }> = {
-    completed: { bg: 'hsl(142 71% 45% / 0.15)', color: 'hsl(142 71% 45%)', label: 'Completed' },
-    scheduled: { bg: 'hsl(220 90% 56% / 0.15)', color: 'hsl(220 90% 56%)', label: 'Scheduled' },
-    processing: { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(45 93% 47%)', label: 'Processing' },
-    failed: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(0 72% 51%)', label: 'Failed' },
+    completed: { bg: 'hsl(142 71% 45% / 0.15)', color: 'hsl(var(--s-ok-tx))', label: 'Completed' },
+    scheduled: { bg: 'hsl(220 90% 56% / 0.15)', color: 'hsl(var(--s-in-tx))', label: 'Scheduled' },
+    processing: { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(var(--s-wn-tx))', label: 'Processing' },
+    failed: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))', label: 'Failed' },
   };
   const s = map[status] ?? map.completed;
   return <Badge style={{ background: s.bg, color: s.color, borderRadius: 0, fontSize: 11 }}>{s.label}</Badge>;
@@ -113,8 +113,8 @@ export default function ExportCenter() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'Exports This Month', value: 8, color: 'hsl(var(--text-1))' },
-          { label: 'Scheduled', value: scheduledCount, color: 'hsl(220 90% 56%)' },
-          { label: 'Completed', value: completedCount, color: 'hsl(142 71% 45%)' },
+          { label: 'Scheduled', value: scheduledCount, color: 'hsl(var(--s-in-tx))' },
+          { label: 'Completed', value: completedCount, color: 'hsl(var(--s-ok-tx))' },
           { label: 'Avg Size', value: '2.4 MB', color: 'hsl(var(--brand))' },
         ].map(stat => (
           <Card key={stat.label} style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
@@ -171,7 +171,7 @@ export default function ExportCenter() {
                           )}
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" style={{ color: 'hsl(0 72% 51%)' }}>
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive">
                                 <Trash size={14} />
                               </Button>
                             </AlertDialogTrigger>
@@ -182,7 +182,7 @@ export default function ExportCenter() {
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDelete(j.id)} style={{ borderRadius: 0, background: 'hsl(0 72% 51%)' }}>Delete</AlertDialogAction>
+                                <AlertDialogAction onClick={() => handleDelete(j.id)} style={{ borderRadius: 0, background: 'hsl(var(--destructive))' }}>Delete</AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>

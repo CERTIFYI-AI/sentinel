@@ -76,7 +76,7 @@ export default function RiskMatrix() {
   const totalRisks = risks.length;
   const criticalCount = risks.filter(r => r.severity === 'critical').length;
   const highCount = risks.filter(r => r.severity === 'high').length;
-  const openCount = risks.filter(r => r.status === 'open' || r.status === 'accepted').length;
+  const openCount = risks.filter(r => r.status === 'open').length;
 
   // ── Build matrix data ─────────────────────────────────────────────────────
   const matrix = useMemo(() => {

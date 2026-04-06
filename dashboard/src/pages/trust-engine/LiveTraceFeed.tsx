@@ -70,9 +70,9 @@ function fullTimestamp(isoDate: string): string {
 
 function statusBadge(status: Trace['status']) {
   const map = {
-    success: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(142 71% 45%)', label: 'Success' },
-    blocked: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(0 72% 51%)', label: 'Blocked' },
-    fallback: { bg: 'hsl(25 95% 53% / 0.15)', color: 'hsl(25 95% 53%)', label: 'Fallback' },
+    success: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))', label: 'Success' },
+    blocked: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))', label: 'Blocked' },
+    fallback: { bg: 'hsl(25 95% 53% / 0.15)', color: 'hsl(var(--s-wn-tx))', label: 'Fallback' },
   };
   const s = map[status];
   return <Badge style={{ background: s.bg, color: s.color, borderRadius: 0, fontSize: 10 }}>{s.label}</Badge>;
@@ -84,10 +84,10 @@ function MetricTile({ label, value, variant, icon, sub }: {
   label: string; value: string; variant: 'ok' | 'warn' | 'error' | 'info'; icon: React.ReactNode; sub?: string;
 }) {
   const vs = {
-    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(142 71% 45%)' },
-    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(45 93% 47%)' },
-    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(0 72% 51%)' },
-    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(220 90% 56%)' },
+    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(var(--s-ok-tx))' },
+    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(var(--s-wn-tx))' },
+    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(var(--destructive))' },
+    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))' },
   };
   const s = vs[variant];
   return (
@@ -172,7 +172,7 @@ export default function LiveTraceFeed() {
         <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
           {toasts.map(t => (
             <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
-              background: t.type === 'success' ? 'hsl(142 71% 45%)' : t.type === 'error' ? 'hsl(0 72% 51%)' : 'hsl(220 90% 56%)',
+              background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
               color: '#fff', borderRadius: 0, minWidth: 300,
             }}>{t.text}</div>
           ))}
@@ -186,7 +186,7 @@ export default function LiveTraceFeed() {
               <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Live Trace Feed</h1>
               <Badge style={{
                 background: paused ? 'hsl(45 93% 47% / 0.15)' : 'hsl(142 71% 45% / 0.15)',
-                color: paused ? 'hsl(45 93% 47%)' : 'hsl(142 71% 45%)',
+                color: paused ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))',
                 borderRadius: 0, fontSize: 10,
               }}>
                 {paused ? 'PAUSED' : 'LIVE'}
@@ -207,7 +207,7 @@ export default function LiveTraceFeed() {
             <Button variant="outline" size="sm" onClick={handleExport} style={{ borderRadius: 0 }}>
               <Export size={14} className="mr-2" />Export
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setClearConfirm(true)} style={{ borderRadius: 0, color: 'hsl(0 72% 51%)' }}>
+            <Button variant="outline" size="sm" onClick={() => setClearConfirm(true)} style={{ borderRadius: 0, color: 'hsl(var(--destructive))' }}>
               <Trash size={14} className="mr-2" />Clear
             </Button>
           </div>
@@ -215,10 +215,10 @@ export default function LiveTraceFeed() {
 
         {/* Metrics */}
         <div className="grid grid-cols-4 gap-4">
-          <MetricTile label="Total Traces" value={String(traces.length)} variant="info" icon={<Lightning size={16} weight="fill" style={{ color: 'hsl(220 90% 56%)' }} />} />
-          <MetricTile label="Blocked" value={String(blockedCount)} variant="error" icon={<Warning size={16} weight="fill" style={{ color: 'hsl(0 72% 51%)' }} />} />
-          <MetricTile label="Fallbacks" value={String(fallbackCount)} variant="warn" icon={<ArrowsClockwise size={16} style={{ color: 'hsl(45 93% 47%)' }} />} />
-          <MetricTile label="Status" value={paused ? 'Paused' : 'Live'} variant={paused ? 'warn' : 'ok'} icon={paused ? <Pause size={16} weight="fill" style={{ color: 'hsl(45 93% 47%)' }} /> : <Play size={16} weight="fill" style={{ color: 'hsl(142 71% 45%)' }} />} />
+          <MetricTile label="Total Traces" value={String(traces.length)} variant="info" icon={<Lightning size={16} weight="fill" className="text-blue-600 dark:text-blue-400" />} />
+          <MetricTile label="Blocked" value={String(blockedCount)} variant="error" icon={<Warning size={16} weight="fill" className="text-destructive" />} />
+          <MetricTile label="Fallbacks" value={String(fallbackCount)} variant="warn" icon={<ArrowsClockwise size={16} style={{ color: 'hsl(var(--s-wn-tx))' }} />} />
+          <MetricTile label="Status" value={paused ? 'Paused' : 'Live'} variant={paused ? 'warn' : 'ok'} icon={paused ? <Pause size={16} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} /> : <Play size={16} weight="fill" className="text-green-600 dark:text-green-400" />} />
         </div>
 
         {/* Filters */}
@@ -281,12 +281,12 @@ export default function LiveTraceFeed() {
                       <td className="px-3 py-2.5">{statusBadge(trace.status)}</td>
                       <td className="px-3 py-2.5">
                         {trace.status === 'fallback' ? (
-                          <Badge style={{ background: 'hsl(25 95% 53% / 0.15)', color: 'hsl(25 95% 53%)', borderRadius: 0, fontSize: 10 }}>{trace.action}</Badge>
+                          <Badge style={{ background: 'hsl(25 95% 53% / 0.15)', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 10 }}>{trace.action}</Badge>
                         ) : (
                           <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{trace.action}</span>
                         )}
                       </td>
-                      <td className="px-3 py-2.5 text-xs font-mono" style={{ color: trace.latencyMs > 1000 ? 'hsl(0 72% 51%)' : 'hsl(var(--text-1))' }}>
+                      <td className="px-3 py-2.5 text-xs font-mono" style={{ color: trace.latencyMs > 1000 ? 'hsl(var(--destructive))' : 'hsl(var(--text-1))' }}>
                         {trace.latencyMs}ms
                       </td>
                       <td className="px-3 py-2.5 text-xs font-mono" style={{ color: 'hsl(var(--text-4))' }}>
@@ -356,7 +356,7 @@ export default function LiveTraceFeed() {
                       </div>
                       <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                         <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Latency</span>
-                        <p className="text-sm font-mono mt-1" style={{ color: selectedTrace.latencyMs > 1000 ? 'hsl(0 72% 51%)' : 'hsl(var(--text-1))' }}>
+                        <p className="text-sm font-mono mt-1" style={{ color: selectedTrace.latencyMs > 1000 ? 'hsl(var(--destructive))' : 'hsl(var(--text-1))' }}>
                           {selectedTrace.latencyMs}ms
                         </p>
                       </div>
@@ -403,7 +403,7 @@ export default function LiveTraceFeed() {
                           </div>
                           <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{policy?.description || 'Policy evaluation details'}</p>
                           <div className="mt-2 flex items-center gap-2">
-                            <Badge style={{ background: 'hsl(220 90% 56% / 0.10)', color: 'hsl(220 90% 56%)', borderRadius: 0, fontSize: 9 }}>
+                            <Badge style={{ background: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 9 }}>
                               Score: {policy?.trustScore || '—'}%
                             </Badge>
                             <Badge style={{ background: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))', borderRadius: 0, fontSize: 9 }}>
@@ -416,7 +416,7 @@ export default function LiveTraceFeed() {
                     <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                       <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Decision</span>
                       <p className="text-sm font-medium mt-1" style={{
-                        color: selectedTrace.status === 'blocked' ? 'hsl(0 72% 51%)' : selectedTrace.status === 'fallback' ? 'hsl(25 95% 53%)' : 'hsl(142 71% 45%)',
+                        color: selectedTrace.status === 'blocked' ? 'hsl(var(--destructive))' : selectedTrace.status === 'fallback' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))',
                       }}>
                         {selectedTrace.status === 'blocked' ? 'BLOCKED — Policy violation detected' : selectedTrace.status === 'fallback' ? 'FALLBACK — Rerouted to secondary model' : 'PASSED — All guardrail checks passed'}
                       </p>

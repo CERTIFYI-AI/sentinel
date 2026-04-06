@@ -61,10 +61,10 @@ function MetricTile({ label, value, variant, icon, sub }: {
   label: string; value: string; variant: 'ok' | 'warn' | 'error' | 'info'; icon: React.ReactNode; sub?: string;
 }) {
   const vs = {
-    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(142 71% 45%)' },
-    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(45 93% 47%)' },
-    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(0 72% 51%)' },
-    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(220 90% 56%)' },
+    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(var(--s-ok-tx))' },
+    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(var(--s-wn-tx))' },
+    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(var(--destructive))' },
+    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))' },
   };
   const s = vs[variant];
   return (
@@ -154,7 +154,7 @@ export default function ThreatFeed() {
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
-            background: t.type === 'success' ? 'hsl(142 71% 45%)' : t.type === 'error' ? 'hsl(0 72% 51%)' : 'hsl(220 90% 56%)',
+            background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
             color: '#fff', borderRadius: 0, minWidth: 300,
           }}>{t.text}</div>
         ))}
@@ -164,7 +164,7 @@ export default function ThreatFeed() {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <Lightning size={22} weight="fill" style={{ color: 'hsl(0 72% 51%)' }} />
+            <Lightning size={22} weight="fill" className="text-destructive" />
             <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Threat Intelligence</h1>
           </div>
           <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} — Active threats, attack vectors, and MITRE ATT&CK mappings</p>
@@ -181,10 +181,10 @@ export default function ThreatFeed() {
 
       {/* Metrics */}
       <div className="grid grid-cols-4 gap-4">
-        <MetricTile label="Total Threats" value={String(threats.length)} variant="info" icon={<ShieldWarning size={16} weight="fill" style={{ color: 'hsl(220 90% 56%)' }} />} />
-        <MetricTile label="Critical" value={String(criticalCount)} variant="error" icon={<Fire size={16} weight="fill" style={{ color: 'hsl(0 72% 51%)' }} />} sub="Immediate action" />
-        <MetricTile label="Open / Investigating" value={String(openCount)} variant="warn" icon={<Warning size={16} weight="fill" style={{ color: 'hsl(45 93% 47%)' }} />} />
-        <MetricTile label="Resolved" value={String(resolvedCount)} variant="ok" icon={<CheckCircle size={16} weight="fill" style={{ color: 'hsl(142 71% 45%)' }} />} />
+        <MetricTile label="Total Threats" value={String(threats.length)} variant="info" icon={<ShieldWarning size={16} weight="fill" className="text-blue-600 dark:text-blue-400" />} />
+        <MetricTile label="Critical" value={String(criticalCount)} variant="error" icon={<Fire size={16} weight="fill" className="text-destructive" />} sub="Immediate action" />
+        <MetricTile label="Open / Investigating" value={String(openCount)} variant="warn" icon={<Warning size={16} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />} />
+        <MetricTile label="Resolved" value={String(resolvedCount)} variant="ok" icon={<CheckCircle size={16} weight="fill" className="text-green-600 dark:text-green-400" />} />
       </div>
 
       {/* Chart */}
@@ -273,7 +273,7 @@ export default function ThreatFeed() {
                       <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{threat.source}</td>
                       <td className="px-4 py-3">
                         {threat.mitreId ? (
-                          <Badge style={{ background: 'hsl(220 90% 56% / 0.12)', color: 'hsl(220 90% 56%)', borderRadius: 0, fontSize: 10, fontFamily: 'monospace' }}>
+                          <Badge style={{ background: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10, fontFamily: 'monospace' }}>
                             {threat.mitreId}
                           </Badge>
                         ) : <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>—</span>}
@@ -285,12 +285,12 @@ export default function ThreatFeed() {
                           </Button>
                           {(threat.status === 'active' || threat.status === 'mitigated') && (
                             <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleInvestigate(threat)}>
-                              <Detective size={14} style={{ color: 'hsl(45 93% 47%)' }} />
+                              <Detective size={14} style={{ color: 'hsl(var(--s-wn-tx))' }} />
                             </Button>
                           )}
                           {threat.status !== 'resolved' && (
                             <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { setResolveTarget(threat); setResolveNote(''); }}>
-                              <CheckCircle size={14} style={{ color: 'hsl(142 71% 45%)' }} />
+                              <CheckCircle size={14} className="text-green-600 dark:text-green-400" />
                             </Button>
                           )}
                         </div>
@@ -381,7 +381,7 @@ export default function ThreatFeed() {
                     </div>
                     <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                       <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>MITRE ATT&CK</span>
-                      <p className="text-sm font-mono font-medium mt-1" style={{ color: 'hsl(220 90% 56%)' }}>{selectedThreat.mitreId || '—'}</p>
+                      <p className="text-sm font-mono font-medium mt-1 text-blue-600 dark:text-blue-400">{selectedThreat.mitreId || '—'}</p>
                     </div>
                   </div>
                   <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
@@ -391,7 +391,7 @@ export default function ThreatFeed() {
                   {selectedThreat.cve && (
                     <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                       <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>CVE Reference</span>
-                      <p className="text-sm font-mono mt-1" style={{ color: 'hsl(0 72% 51%)' }}>{selectedThreat.cve}</p>
+                      <p className="text-sm font-mono mt-1 text-destructive">{selectedThreat.cve}</p>
                     </div>
                   )}
                 </TabsContent>
@@ -404,7 +404,7 @@ export default function ThreatFeed() {
                           <Target size={14} style={{ color: 'hsl(var(--brand))' }} />
                           <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{m}</span>
                         </div>
-                        <Badge style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(0 72% 51%)', borderRadius: 0, fontSize: 10 }}>Impacted</Badge>
+                        <Badge style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>Impacted</Badge>
                       </div>
                     ))
                   ) : (
@@ -433,7 +433,7 @@ export default function ThreatFeed() {
                   </div>
                   {selectedThreat.status === 'mitigated' && (
                     <div className="flex items-start gap-3 p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                      <CheckCircle size={14} weight="fill" style={{ color: 'hsl(142 71% 45%)' }} className="mt-0.5" />
+                      <CheckCircle size={14} weight="fill" className="text-green-600 dark:text-green-400 mt-0.5" />
                       <div>
                         <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>Threat mitigated</p>
                         <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Remediation steps applied successfully.</p>
@@ -442,7 +442,7 @@ export default function ThreatFeed() {
                   )}
                   {selectedThreat.status === 'resolved' && (
                     <div className="flex items-start gap-3 p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                      <CheckCircle size={14} weight="fill" style={{ color: 'hsl(142 71% 45%)' }} className="mt-0.5" />
+                      <CheckCircle size={14} weight="fill" className="text-green-600 dark:text-green-400 mt-0.5" />
                       <div>
                         <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>Threat resolved</p>
                         <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Closed and archived.</p>

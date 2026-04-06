@@ -19,11 +19,11 @@ import { useChartTheme } from '../../hooks/useChartTheme';
 // ── Security Score Data ───────────────────────────────────────────────────────
 
 const SECURITY_SCORES = [
-  { module: 'Vulnerability', score: 72, color: 'hsl(45 93% 47%)' },
-  { module: 'Threat Intel', score: 68, color: 'hsl(25 95% 53%)' },
-  { module: 'Red Team', score: 61, color: 'hsl(0 72% 51%)' },
-  { module: 'Attack Surface', score: 75, color: 'hsl(45 93% 47%)' },
-  { module: 'Access Control', score: 79, color: 'hsl(142 71% 45%)' },
+  { module: 'Vulnerability', score: 72, color: 'hsl(var(--s-wn-tx))' },
+  { module: 'Threat Intel', score: 68, color: 'hsl(var(--s-wn-tx))' },
+  { module: 'Red Team', score: 61, color: 'hsl(var(--destructive))' },
+  { module: 'Attack Surface', score: 75, color: 'hsl(var(--s-wn-tx))' },
+  { module: 'Access Control', score: 79, color: 'hsl(var(--s-ok-tx))' },
 ];
 
 // ── Metric Tiles ──────────────────────────────────────────────────────────────
@@ -38,10 +38,10 @@ interface MetricTileProps {
 
 function MetricTile({ label, value, variant, icon, sub }: MetricTileProps) {
   const variantStyles = {
-    ok: { bg: 'hsl(142 71% 45% / 0.10)', border: 'hsl(142 71% 45% / 0.3)', color: 'hsl(142 71% 45%)' },
-    warn: { bg: 'hsl(45 93% 47% / 0.10)', border: 'hsl(45 93% 47% / 0.3)', color: 'hsl(45 93% 47%)' },
-    error: { bg: 'hsl(0 72% 51% / 0.10)', border: 'hsl(0 72% 51% / 0.3)', color: 'hsl(0 72% 51%)' },
-    info: { bg: 'hsl(220 90% 56% / 0.10)', border: 'hsl(220 90% 56% / 0.3)', color: 'hsl(220 90% 56%)' },
+    ok: { bg: 'hsl(142 71% 45% / 0.10)', border: 'hsl(142 71% 45% / 0.3)', color: 'hsl(var(--s-ok-tx))' },
+    warn: { bg: 'hsl(45 93% 47% / 0.10)', border: 'hsl(45 93% 47% / 0.3)', color: 'hsl(var(--s-wn-tx))' },
+    error: { bg: 'hsl(0 72% 51% / 0.10)', border: 'hsl(0 72% 51% / 0.3)', color: 'hsl(var(--destructive))' },
+    info: { bg: 'hsl(220 90% 56% / 0.10)', border: 'hsl(220 90% 56% / 0.3)', color: 'hsl(var(--s-in-tx))' },
   };
   const s = variantStyles[variant];
   return (
@@ -157,7 +157,7 @@ export default function SecurityHome() {
       title: 'Threat Intelligence',
       description: 'Monitor and investigate active threats, attack vectors, and MITRE ATT&CK mappings.',
       path: '/security/threats',
-      icon: <Lightning size={16} weight="fill" style={{ color: 'hsl(0 72% 51%)' }} />,
+      icon: <Lightning size={16} weight="fill" className="text-destructive" />,
       statusLabel: '3 Active',
       statusVariant: 'open',
       count: 6,
@@ -167,7 +167,7 @@ export default function SecurityHome() {
       title: 'Vulnerability Tracker',
       description: 'Track CVEs, CVSS scores, patch status, and remediation timelines.',
       path: '/security/vulnerabilities',
-      icon: <Bug size={16} weight="fill" style={{ color: 'hsl(25 95% 53%)' }} />,
+      icon: <Bug size={16} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />,
       statusLabel: '2 Open',
       statusVariant: 'in_review',
       count: 6,
@@ -177,7 +177,7 @@ export default function SecurityHome() {
       title: 'Red Team Lab',
       description: 'Adversarial testing campaigns, jailbreak tests, and attack simulations.',
       path: '/security/red-team',
-      icon: <Sword size={16} weight="fill" style={{ color: 'hsl(0 72% 51%)' }} />,
+      icon: <Sword size={16} weight="fill" className="text-destructive" />,
       statusLabel: '1 Active',
       statusVariant: 'running',
       count: 4,
@@ -187,7 +187,7 @@ export default function SecurityHome() {
       title: 'Attack Surface',
       description: 'External and internal asset exposure monitoring and risk assessment.',
       path: '/security/attack-surface',
-      icon: <Globe size={16} style={{ color: 'hsl(45 93% 47%)' }} />,
+      icon: <Globe size={16} style={{ color: 'hsl(var(--s-wn-tx))' }} />,
       statusLabel: '3 Exposed',
       statusVariant: 'in_review',
       count: 8,
@@ -230,28 +230,28 @@ export default function SecurityHome() {
           label="Overall Security Score"
           value="79%"
           variant="warn"
-          icon={<ShieldWarning size={16} weight="fill" style={{ color: 'hsl(45 93% 47%)' }} />}
+          icon={<ShieldWarning size={16} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />}
           sub="Target: 85%"
         />
         <MetricTile
           label="Active Threats"
           value="3"
           variant="error"
-          icon={<Fire size={16} weight="fill" style={{ color: 'hsl(0 72% 51%)' }} />}
+          icon={<Fire size={16} weight="fill" className="text-destructive" />}
           sub="2 critical, 1 high"
         />
         <MetricTile
           label="Open Vulnerabilities"
           value="5"
           variant="warn"
-          icon={<Bug size={16} weight="fill" style={{ color: 'hsl(45 93% 47%)' }} />}
+          icon={<Bug size={16} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />}
           sub="1 critical CVSS 9.1"
         />
         <MetricTile
           label="Scans Today"
           value="24"
           variant="ok"
-          icon={<Scan size={16} style={{ color: 'hsl(142 71% 45%)' }} />}
+          icon={<Scan size={16} className="text-green-600 dark:text-green-400" />}
           sub="All passed"
         />
       </div>

@@ -27,10 +27,10 @@ function MetricTile({ label, value, variant, icon, sub }: {
   label: string; value: string; variant: 'ok' | 'warn' | 'error' | 'info'; icon: React.ReactNode; sub?: string;
 }) {
   const vs = {
-    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(142 71% 45%)' },
-    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(45 93% 47%)' },
-    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(0 72% 51%)' },
-    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(220 90% 56%)' },
+    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(var(--s-ok-tx))' },
+    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(var(--s-wn-tx))' },
+    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(var(--destructive))' },
+    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))' },
   };
   const s = vs[variant];
   return (
@@ -51,10 +51,10 @@ function MetricTile({ label, value, variant, icon, sub }: {
 
 function cvssBadge(cvss: number) {
   let bg: string, color: string, fontWeight = 400;
-  if (cvss >= 9.0) { bg = 'hsl(0 72% 51% / 0.18)'; color = 'hsl(0 72% 51%)'; fontWeight = 700; }
-  else if (cvss >= 7.0) { bg = 'hsl(0 72% 51% / 0.12)'; color = 'hsl(0 72% 51%)'; }
-  else if (cvss >= 4.0) { bg = 'hsl(45 93% 47% / 0.15)'; color = 'hsl(45 93% 47%)'; }
-  else { bg = 'hsl(142 71% 45% / 0.12)'; color = 'hsl(142 71% 45%)'; }
+  if (cvss >= 9.0) { bg = 'hsl(0 72% 51% / 0.18)'; color = 'hsl(var(--destructive))'; fontWeight = 700; }
+  else if (cvss >= 7.0) { bg = 'hsl(0 72% 51% / 0.12)'; color = 'hsl(var(--destructive))'; }
+  else if (cvss >= 4.0) { bg = 'hsl(45 93% 47% / 0.15)'; color = 'hsl(var(--s-wn-tx))'; }
+  else { bg = 'hsl(142 71% 45% / 0.12)'; color = 'hsl(var(--s-ok-tx))'; }
   return (
     <Badge style={{ background: bg, color, borderRadius: 0, fontSize: 11, fontWeight, fontFamily: 'monospace' }}>
       {cvss.toFixed(1)}
@@ -120,7 +120,7 @@ export default function VulnTracker() {
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
-            background: t.type === 'success' ? 'hsl(142 71% 45%)' : t.type === 'error' ? 'hsl(0 72% 51%)' : 'hsl(220 90% 56%)',
+            background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
             color: '#fff', borderRadius: 0, minWidth: 300,
           }}>{t.text}</div>
         ))}
@@ -130,7 +130,7 @@ export default function VulnTracker() {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <Bug size={22} weight="fill" style={{ color: 'hsl(25 95% 53%)' }} />
+            <Bug size={22} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />
             <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Vulnerability Tracker</h1>
           </div>
           <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} — CVE tracking, CVSS scoring, and patch management</p>
@@ -142,10 +142,10 @@ export default function VulnTracker() {
 
       {/* Metrics */}
       <div className="grid grid-cols-4 gap-4">
-        <MetricTile label="Total Vulnerabilities" value={String(vulns.length)} variant="info" icon={<Bug size={16} weight="fill" style={{ color: 'hsl(220 90% 56%)' }} />} />
-        <MetricTile label="Critical (CVSS 9+)" value={String(criticalCount)} variant="error" icon={<Fire size={16} weight="fill" style={{ color: 'hsl(0 72% 51%)' }} />} sub="Immediate patching" />
-        <MetricTile label="High Severity" value={String(highCount)} variant="warn" icon={<Warning size={16} weight="fill" style={{ color: 'hsl(45 93% 47%)' }} />} />
-        <MetricTile label="Patched" value={String(patchedCount)} variant="ok" icon={<CheckCircle size={16} weight="fill" style={{ color: 'hsl(142 71% 45%)' }} />} />
+        <MetricTile label="Total Vulnerabilities" value={String(vulns.length)} variant="info" icon={<Bug size={16} weight="fill" className="text-blue-600 dark:text-blue-400" />} />
+        <MetricTile label="Critical (CVSS 9+)" value={String(criticalCount)} variant="error" icon={<Fire size={16} weight="fill" className="text-destructive" />} sub="Immediate patching" />
+        <MetricTile label="High Severity" value={String(highCount)} variant="warn" icon={<Warning size={16} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />} />
+        <MetricTile label="Patched" value={String(patchedCount)} variant="ok" icon={<CheckCircle size={16} weight="fill" className="text-green-600 dark:text-green-400" />} />
       </div>
 
       {/* Filters */}
@@ -195,7 +195,7 @@ export default function VulnTracker() {
                   return (
                     <tr key={v.id} style={{ borderBottom: '1px solid hsl(var(--border))' }} className="hover:bg-muted/30">
                       <td className="px-4 py-3 text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{v.id}</td>
-                      <td className="px-4 py-3 text-xs font-mono" style={{ color: 'hsl(0 72% 51%)' }}>{v.cve}</td>
+                      <td className="px-4 py-3 text-xs font-mono text-destructive">{v.cve}</td>
                       <td className="px-4 py-3">{cvssBadge(v.cvss)}</td>
                       <td className="px-4 py-3">
                         <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0, fontSize: 10 }}>
@@ -220,11 +220,11 @@ export default function VulnTracker() {
                           </Button>
                           {v.status !== 'patched' && (
                             <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { setPatchTarget(v); setPatchEvidence(''); }}>
-                              <Wrench size={14} style={{ color: 'hsl(142 71% 45%)' }} />
+                              <Wrench size={14} className="text-green-600 dark:text-green-400" />
                             </Button>
                           )}
                           <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setDeleteTarget(v)}>
-                            <Trash size={14} style={{ color: 'hsl(0 72% 51%)' }} />
+                            <Trash size={14} className="text-destructive" />
                           </Button>
                         </div>
                       </td>
@@ -340,7 +340,7 @@ export default function VulnTracker() {
                       <Target size={14} style={{ color: 'hsl(var(--brand))' }} />
                       <span className="text-sm font-mono" style={{ color: 'hsl(var(--text-1))' }}>{selectedVuln.component}</span>
                     </div>
-                    <Badge style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(0 72% 51%)', borderRadius: 0, fontSize: 10 }}>Primary</Badge>
+                    <Badge style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>Primary</Badge>
                   </div>
                   <p className="text-xs px-3" style={{ color: 'hsl(var(--text-4))' }}>Additional asset mapping requires integration with CMDB.</p>
                 </TabsContent>
@@ -367,7 +367,7 @@ export default function VulnTracker() {
                 <TabsContent value="patches" className="space-y-3 mt-4">
                   {selectedVuln.patchDate ? (
                     <div className="flex items-start gap-3 p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                      <CheckCircle size={14} weight="fill" style={{ color: 'hsl(142 71% 45%)' }} className="mt-0.5" />
+                      <CheckCircle size={14} weight="fill" className="text-green-600 dark:text-green-400 mt-0.5" />
                       <div>
                         <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>Patched on {formatDate(selectedVuln.patchDate)}</p>
                         <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>By {selectedVuln.assignee}</p>
@@ -375,9 +375,9 @@ export default function VulnTracker() {
                     </div>
                   ) : (
                     <div className="flex items-start gap-3 p-3" style={{ background: 'hsl(45 93% 47% / 0.08)', border: '1px solid hsl(45 93% 47% / 0.3)', borderRadius: 0 }}>
-                      <Warning size={14} weight="fill" style={{ color: 'hsl(45 93% 47%)' }} className="mt-0.5" />
+                      <Warning size={14} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} className="mt-0.5" />
                       <div>
-                        <p className="text-xs font-medium" style={{ color: 'hsl(45 93% 47%)' }}>Not yet patched</p>
+                        <p className="text-xs font-medium" style={{ color: 'hsl(var(--s-wn-tx))' }}>Not yet patched</p>
                         <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Assigned to {selectedVuln.assignee} — awaiting fix deployment.</p>
                       </div>
                     </div>

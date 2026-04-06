@@ -188,19 +188,19 @@ function timeAgo(iso: string): string {
 
 function resultBadge(result: ToolCall['result']) {
   const map: Record<string, { bg: string; color: string; label: string }> = {
-    success: { bg: 'hsl(142 71% 45% / 0.15)', color: 'hsl(142 71% 45%)', label: 'Success' },
-    error: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(0 72% 51%)', label: 'Error' },
-    timeout: { bg: 'hsl(25 95% 53% / 0.15)', color: 'hsl(25 95% 53%)', label: 'Timeout' },
-    blocked: { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(45 93% 47%)', label: 'Blocked' },
+    success: { bg: 'hsl(142 71% 45% / 0.15)', color: 'hsl(var(--s-ok-tx))', label: 'Success' },
+    error: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))', label: 'Error' },
+    timeout: { bg: 'hsl(25 95% 53% / 0.15)', color: 'hsl(var(--s-wn-tx))', label: 'Timeout' },
+    blocked: { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(var(--s-wn-tx))', label: 'Blocked' },
   };
   const s = map[result] ?? map.success;
   return <Badge style={{ background: s.bg, color: s.color, borderRadius: 0, fontSize: 11 }}>{s.label}</Badge>;
 }
 
 function permBadge(p: AuthRule['permission']) {
-  if (p === 'allowed') return <Badge style={{ background: 'hsl(142 71% 45% / 0.15)', color: 'hsl(142 71% 45%)', borderRadius: 0, fontSize: 10 }}>Allowed</Badge>;
-  if (p === 'blocked') return <Badge style={{ background: 'hsl(0 72% 51% / 0.15)', color: 'hsl(0 72% 51%)', borderRadius: 0, fontSize: 10 }}>Blocked</Badge>;
-  return <Badge style={{ background: 'hsl(45 93% 47% / 0.15)', color: 'hsl(45 93% 47%)', borderRadius: 0, fontSize: 10 }}>Conditional</Badge>;
+  if (p === 'allowed') return <Badge style={{ background: 'hsl(142 71% 45% / 0.15)', color: 'hsl(var(--s-ok-tx))', borderRadius: 0, fontSize: 10 }}>Allowed</Badge>;
+  if (p === 'blocked') return <Badge style={{ background: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>Blocked</Badge>;
+  return <Badge style={{ background: 'hsl(45 93% 47% / 0.15)', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 10 }}>Conditional</Badge>;
 }
 
 // ── Main Component ────────────────────────────────────────────────────────────
@@ -297,7 +297,7 @@ export default function ToolCallMonitor() {
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
-            background: t.type === 'success' ? 'hsl(142 71% 45%)' : t.type === 'error' ? 'hsl(0 72% 51%)' : 'hsl(220 90% 56%)',
+            background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
             color: '#fff', borderRadius: 0, minWidth: 300
           }}>{t.text}</div>
         ))}
@@ -316,9 +316,9 @@ export default function ToolCallMonitor() {
 
       {/* TC-002 GDPR Alert Banner */}
       <div className="flex items-start gap-3 px-4 py-3" style={{ background: 'hsl(0 72% 51% / 0.08)', border: '1px solid hsl(0 72% 51% / 0.5)', borderRadius: 0 }}>
-        <Warning size={16} className="mt-0.5 shrink-0" style={{ color: 'hsl(0 72% 51%)' }} />
+        <Warning size={16} className="mt-0.5 shrink-0 text-destructive" />
         <div>
-          <p className="text-sm font-semibold" style={{ color: 'hsl(0 72% 51%)' }}>GDPR Alert: TC-002 — Unauthorized PII Access Attempt</p>
+          <p className="text-sm font-semibold text-destructive">GDPR Alert: TC-002 — Unauthorized PII Access Attempt</p>
           <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>
             LoanAssistant attempted to access customer_id CUST-4892 with PII fields (ssn, income). Blocked by guardrail. No incident created — requires immediate GDPR Art. 33 incident report.
           </p>
@@ -329,10 +329,10 @@ export default function ToolCallMonitor() {
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {[
           { label: 'Total Calls', value: calls.length, color: 'hsl(var(--text-1))' },
-          { label: 'Success Rate', value: `${successRate}%`, color: 'hsl(142 71% 45%)' },
-          { label: 'Errors', value: errorCount, color: 'hsl(0 72% 51%)', sub: 'Integration failures' },
-          { label: 'Timeouts', value: timeoutCount, color: 'hsl(25 95% 53%)', sub: 'SLA violations' },
-          { label: 'Blocked', value: blockedCount, color: 'hsl(45 93% 47%)', sub: 'Auth denied' },
+          { label: 'Success Rate', value: `${successRate}%`, color: 'hsl(var(--s-ok-tx))' },
+          { label: 'Errors', value: errorCount, color: 'hsl(var(--destructive))', sub: 'Integration failures' },
+          { label: 'Timeouts', value: timeoutCount, color: 'hsl(var(--s-wn-tx))', sub: 'SLA violations' },
+          { label: 'Blocked', value: blockedCount, color: 'hsl(var(--s-wn-tx))', sub: 'Auth denied' },
         ].map(stat => (
           <Card key={stat.label} style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
             <CardContent className="pt-4 pb-4">
@@ -347,13 +347,13 @@ export default function ToolCallMonitor() {
       <div className="flex gap-4">
         <div className="px-3 py-2" style={{ border: '1px solid hsl(var(--border))' }}>
           <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Avg Latency (excl. timeouts)</p>
-          <p className="text-sm font-bold mt-0.5" style={{ color: avgLatencyHealthy > 500 ? 'hsl(45 93% 47%)' : 'hsl(142 71% 45%)' }}>
+          <p className="text-sm font-bold mt-0.5" style={{ color: avgLatencyHealthy > 500 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))' }}>
             {avgLatencyHealthy}ms
           </p>
         </div>
         <div className="px-3 py-2" style={{ border: '1px solid hsl(var(--border))' }}>
           <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Idempotent Calls</p>
-          <p className="text-sm font-bold mt-0.5" style={{ color: 'hsl(142 71% 45%)' }}>
+          <p className="text-sm font-bold mt-0.5 text-green-600 dark:text-green-400">
             {calls.filter(c => IDEMPOTENT_TOOLS.includes(c.tool)).length} (retryable)
           </p>
         </div>
@@ -434,11 +434,11 @@ export default function ToolCallMonitor() {
                             </span>
                           </td>
                           <td className="px-4 py-3">{resultBadge(c.result)}</td>
-                          <td className="px-4 py-3 font-mono text-xs" style={{ color: c.result === 'timeout' ? 'hsl(25 95% 53%)' : c.latencyMs > 1000 ? 'hsl(45 93% 47%)' : 'hsl(142 71% 45%)' }}>
+                          <td className="px-4 py-3 font-mono text-xs" style={{ color: c.result === 'timeout' ? 'hsl(var(--s-wn-tx))' : c.latencyMs > 1000 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))' }}>
                             {c.latencyMs >= 1000 ? `${(c.latencyMs / 1000).toFixed(1)}s` : `${c.latencyMs}ms`}
                           </td>
                           <td className="px-4 py-3">
-                            {c.traceId ? <span className="font-mono text-xs" style={{ color: 'hsl(220 90% 56%)' }}>{c.traceId}</span> : <span style={{ color: 'hsl(var(--text-4))' }}>—</span>}
+                            {c.traceId ? <span className="font-mono text-xs text-blue-600 dark:text-blue-400">{c.traceId}</span> : <span style={{ color: 'hsl(var(--text-4))' }}>—</span>}
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-1">
@@ -446,13 +446,13 @@ export default function ToolCallMonitor() {
                                 <Eye size={14} />
                               </Button>
                               {(c.result === 'error' || c.result === 'timeout') && IDEMPOTENT_TOOLS.includes(c.tool) && (
-                                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" style={{ color: 'hsl(142 71% 45%)' }}
+                                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-green-600 dark:text-green-400"
                                   onClick={() => handleRetry(c)}>
                                   <ArrowCounterClockwise size={12} className="mr-1" />Retry
                                 </Button>
                               )}
                               {(c.result === 'blocked' || c.result === 'error') && (
-                                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" style={{ color: 'hsl(0 72% 51%)' }}
+                                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-destructive"
                                   onClick={() => handleEscalate(c)}>
                                   <Lightning size={12} className="mr-1" />Escalate
                                 </Button>
@@ -528,7 +528,7 @@ export default function ToolCallMonitor() {
             <div className="mt-6 space-y-4 text-sm overflow-y-auto h-[calc(100vh-100px)]">
               <div className="flex gap-2 flex-wrap">
                 {resultBadge(viewItem.result)}
-                {viewItem.isIdempotent && <Badge style={{ background: 'hsl(142 71% 45% / 0.12)', color: 'hsl(142 71% 45%)', borderRadius: 0, fontSize: 10 }}>Idempotent (retryable)</Badge>}
+                {viewItem.isIdempotent && <Badge style={{ background: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))', borderRadius: 0, fontSize: 10 }}>Idempotent (retryable)</Badge>}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -536,7 +536,7 @@ export default function ToolCallMonitor() {
                 <div><p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Timestamp</p><p className="text-xs">{new Date(viewItem.timestamp).toLocaleString()}</p></div>
                 <div><p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Agent</p><p className="font-medium">{viewItem.agent}</p></div>
                 <div><p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Latency</p>
-                  <span className="font-mono" style={{ color: viewItem.result === 'timeout' ? 'hsl(25 95% 53%)' : viewItem.latencyMs > 1000 ? 'hsl(45 93% 47%)' : 'hsl(142 71% 45%)' }}>
+                  <span className="font-mono" style={{ color: viewItem.result === 'timeout' ? 'hsl(var(--s-wn-tx))' : viewItem.latencyMs > 1000 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))' }}>
                     {viewItem.latencyMs >= 1000 ? `${(viewItem.latencyMs / 1000).toFixed(1)}s` : `${viewItem.latencyMs}ms`}
                   </span>
                 </div>
@@ -555,8 +555,8 @@ export default function ToolCallMonitor() {
               </div>
 
               {viewItem.error && (
-                <div><p className="text-xs font-semibold mb-1" style={{ color: 'hsl(0 72% 51%)' }}>Error Details</p>
-                  <p className="p-2 text-xs" style={{ background: 'hsl(0 72% 51% / 0.08)', borderRadius: 0, color: 'hsl(0 72% 51%)', lineHeight: 1.5 }}>{viewItem.error}</p>
+                <div><p className="text-xs font-semibold mb-1 text-destructive">Error Details</p>
+                  <p className="p-2 text-xs" style={{ background: 'hsl(0 72% 51% / 0.08)', borderRadius: 0, color: 'hsl(var(--destructive))', lineHeight: 1.5 }}>{viewItem.error}</p>
                 </div>
               )}
 
@@ -565,26 +565,26 @@ export default function ToolCallMonitor() {
                   <p className="p-2 text-xs" style={{
                     background: viewItem.result === 'blocked' ? 'hsl(0 72% 51% / 0.08)' : 'hsl(142 71% 45% / 0.08)',
                     borderRadius: 0, lineHeight: 1.5,
-                    color: viewItem.result === 'blocked' ? 'hsl(0 72% 51%)' : 'hsl(142 71% 45%)'
+                    color: viewItem.result === 'blocked' ? 'hsl(var(--destructive))' : 'hsl(var(--s-ok-tx))'
                   }}>{viewItem.authCheck}</p>
                 </div>
               )}
 
               {viewItem.traceId && (
                 <div><p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Linked Trace</p>
-                  <Badge style={{ background: 'hsl(220 90% 56% / 0.12)', color: 'hsl(220 90% 56%)', borderRadius: 0 }}>{viewItem.traceId}</Badge>
+                  <Badge style={{ background: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))', borderRadius: 0 }}>{viewItem.traceId}</Badge>
                 </div>
               )}
 
               <div className="flex gap-2 pt-2 flex-wrap">
                 {(viewItem.result === 'error' || viewItem.result === 'timeout') && IDEMPOTENT_TOOLS.includes(viewItem.tool) && (
-                  <Button size="sm" style={{ borderRadius: 0, background: 'hsl(142 71% 45%)', color: '#fff' }}
+                  <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--s-ok-tx))', color: '#fff' }}
                     onClick={() => { handleRetry(viewItem); setViewItem(null); }}>
                     <ArrowCounterClockwise size={14} className="mr-1" />Retry
                   </Button>
                 )}
                 {(viewItem.result === 'blocked' || viewItem.result === 'error') && (
-                  <Button size="sm" variant="outline" style={{ borderRadius: 0, color: 'hsl(0 72% 51%)' }}
+                  <Button size="sm" variant="outline" style={{ borderRadius: 0, color: 'hsl(var(--destructive))' }}
                     onClick={() => { handleEscalate(viewItem); setViewItem(null); }}>
                     <Lightning size={14} className="mr-1" />Escalate to Incident
                   </Button>

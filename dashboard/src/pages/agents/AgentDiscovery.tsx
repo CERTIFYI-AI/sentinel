@@ -1,10 +1,11 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   Eye, PencilSimple, Trash, Plus, Robot, MagnifyingGlass, Funnel,
   Warning, CheckCircle, ShieldWarning, Scan, Prohibit, Siren,
-  Lightning, ListChecks, ArrowUp, ArrowDown, Minus, WifiHigh,
+  Lightning, ListChecks, ArrowUp, ArrowDown, Minus, WifiHigh, CircleNotch,
 } from '@phosphor-icons/react';
 import { Card, CardContent } from '../../components/ui/card';
+import { Skeleton } from '../../components/ui/skeleton';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -30,8 +31,8 @@ function trendIndicator(calls: number) {
   const priorWeek = Math.round(calls * (0.8 + Math.random() * 0.4));
   const diff = calls - priorWeek;
   const pct = priorWeek > 0 ? Math.round((diff / priorWeek) * 100) : 0;
-  if (pct > 0) return <span className="text-xs flex items-center gap-0.5" style={{ color: 'hsl(0 72% 51%)' }}><ArrowUp size={10} />+{pct}%</span>;
-  if (pct < 0) return <span className="text-xs flex items-center gap-0.5" style={{ color: 'hsl(142 71% 45%)' }}><ArrowDown size={10} />{pct}%</span>;
+  if (pct > 0) return <span className="text-xs flex items-center gap-0.5 text-destructive"><ArrowUp size={10} />+{pct}%</span>;
+  if (pct < 0) return <span className="text-xs flex items-center gap-0.5 text-green-600 dark:text-green-400"><ArrowDown size={10} />{pct}%</span>;
   return <span className="text-xs flex items-center gap-0.5" style={{ color: 'hsl(var(--text-4))' }}><Minus size={10} />0%</span>;
 }
 
@@ -49,6 +50,12 @@ export default function AgentDiscovery() {
   const [registerOpen, setRegisterOpen] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const t = setTimeout(() => setIsLoading(false), 600);
+    return () => clearTimeout(t);
+  }, []);
 
   const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
     const id = Date.now();
@@ -77,7 +84,7 @@ export default function AgentDiscovery() {
     setScanning(true);
     setTimeout(() => {
       setScanning(false);
-      toast('Scan complete — 3 shadow agents discovered', 'info');
+      toast('Scan complete — 3 new agents discovered', 'info');
     }, 2000);
   };
 
@@ -108,13 +115,30 @@ export default function AgentDiscovery() {
     setDeleteTarget(null);
   };
 
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2"><Skeleton className="h-8 w-64" /><Skeleton className="h-4 w-48" /></div>
+          <div className="flex gap-2"><Skeleton className="h-9 w-36" /><Skeleton className="h-9 w-36" /></div>
+        </div>
+        <div className="grid grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
+        </div>
+        <div className="space-y-2">
+          {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Toast layer */}
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
-            background: t.type === 'success' ? 'hsl(142 71% 45%)' : t.type === 'error' ? 'hsl(0 72% 51%)' : 'hsl(220 90% 56%)',
+            background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
             color: '#fff', borderRadius: 0, minWidth: 300
           }}>{t.text}</div>
         ))}
@@ -130,7 +154,7 @@ export default function AgentDiscovery() {
           <Button variant="outline" onClick={handleScan} disabled={scanning}
             style={{ borderRadius: 0 }}>
             {scanning ? (
-              <><span className="animate-spin mr-2">⟳</span>Scanning...</>
+              <><CircleNotch className="h-4 w-4 mr-2 animate-spin" />Scanning...</>
             ) : (
               <><Scan className="h-4 w-4 mr-2" />Scan Network</>
             )}
@@ -145,9 +169,9 @@ export default function AgentDiscovery() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'Total Agents', value: totalAgents, color: 'hsl(var(--text-1))', icon: Robot },
-          { label: 'Confirmed', value: confirmedAgents, color: 'hsl(142 71% 45%)', icon: CheckCircle },
-          { label: 'Shadow AI', value: shadowAgents, color: 'hsl(0 72% 51%)', icon: ShieldWarning },
-          { label: 'High Risk', value: highRiskAgents, color: 'hsl(45 93% 47%)', icon: Warning },
+          { label: 'Confirmed', value: confirmedAgents, color: 'hsl(var(--s-ok-tx))', icon: CheckCircle },
+          { label: 'Shadow AI', value: shadowAgents, color: 'hsl(var(--destructive))', icon: ShieldWarning },
+          { label: 'High Risk', value: highRiskAgents, color: 'hsl(var(--s-wn-tx))', icon: Warning },
         ].map(stat => (
           <Card key={stat.label} style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
             <CardContent className="pt-4 pb-4">
@@ -169,7 +193,7 @@ export default function AgentDiscovery() {
             <TabsTrigger value="confirmed" style={{ borderRadius: 0 }}>Confirmed ({confirmedAgents})</TabsTrigger>
             <TabsTrigger value="shadow" style={{ borderRadius: 0 }}>
               Shadow AI
-              <Badge className="ml-1.5" style={{ background: 'hsl(0 72% 51% / 0.2)', color: 'hsl(0 72% 51%)', borderRadius: 0, fontSize: 10, padding: '0 4px' }}>
+              <Badge className="ml-1.5" style={{ background: 'hsl(0 72% 51% / 0.2)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10, padding: '0 4px' }}>
                 {shadowAgents}
               </Badge>
             </TabsTrigger>
@@ -218,7 +242,7 @@ export default function AgentDiscovery() {
                               <div className="flex items-center gap-2">
                                 <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{a.name}</span>
                                 {isShadow && (
-                                  <Badge style={{ background: 'hsl(0 72% 51% / 0.15)', color: 'hsl(0 72% 51%)', borderRadius: 0, fontSize: 9, fontWeight: 700 }}>
+                                  <Badge style={{ background: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 9, fontWeight: 700 }}>
                                     SHADOW
                                   </Badge>
                                 )}
@@ -248,13 +272,12 @@ export default function AgentDiscovery() {
                               <div className="flex items-center gap-1 flex-wrap">
                                 {isShadow ? (
                                   <>
-                                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs"
-                                      style={{ color: 'hsl(0 72% 51%)' }}
+                                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-destructive"
                                       onClick={() => setQuarantineTarget(a)}>
                                       <Prohibit size={12} className="mr-1" />Quarantine
                                     </Button>
                                     <Button variant="ghost" size="sm" className="h-7 px-2 text-xs"
-                                      style={{ color: 'hsl(45 93% 47%)' }}
+                                      style={{ color: 'hsl(var(--s-wn-tx))' }}
                                       onClick={() => handleRaiseIncident(a)}>
                                       <Siren size={12} className="mr-1" />Incident
                                     </Button>
@@ -262,8 +285,7 @@ export default function AgentDiscovery() {
                                       onClick={() => handleRequestOwnership(a)}>
                                       <Lightning size={12} className="mr-1" />Ownership
                                     </Button>
-                                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs"
-                                      style={{ color: 'hsl(142 71% 45%)' }}
+                                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-green-600 dark:text-green-400"
                                       onClick={() => handleWhitelist(a)}>
                                       <CheckCircle size={12} className="mr-1" />Whitelist
                                     </Button>
@@ -357,7 +379,7 @@ export default function AgentDiscovery() {
 
                   {selectedAgent.status === 'shadow' && (
                     <div className="space-y-2">
-                      <p className="text-xs font-semibold" style={{ color: 'hsl(0 72% 51%)' }}>Forensic Timeline</p>
+                      <p className="text-xs font-semibold text-destructive">Forensic Timeline</p>
                       {[
                         { time: '2026-04-05T14:20:00Z', event: 'API call to customer_data endpoint detected' },
                         { time: '2026-04-05T12:15:00Z', event: 'Unauthorized model invocation via external gateway' },
@@ -365,7 +387,7 @@ export default function AgentDiscovery() {
                         { time: selectedAgent.firstSeen + 'T00:00:00Z', event: `Agent first seen — ${selectedAgent.department} department` },
                       ].map((entry, idx) => (
                         <div key={idx} className="flex gap-3 py-1.5" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                          <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ background: 'hsl(0 72% 51%)' }} />
+                          <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ background: 'hsl(var(--destructive))' }} />
                           <div>
                             <p className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{entry.event}</p>
                             <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{timeAgo(entry.time)}</p>
@@ -381,7 +403,7 @@ export default function AgentDiscovery() {
                   <div>
                     <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-4))' }}>Models Called</p>
                     <div className="flex gap-2 flex-wrap">
-                      <Badge style={{ background: 'hsl(220 90% 56% / 0.15)', color: 'hsl(220 90% 56%)', borderRadius: 0, fontSize: 10 }}>
+                      <Badge style={{ background: 'hsl(220 90% 56% / 0.15)', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>
                         {selectedAgent.model}
                       </Badge>
                     </div>
@@ -390,7 +412,7 @@ export default function AgentDiscovery() {
                     <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-4))' }}>Data Categories Transmitted</p>
                     <div className="flex gap-2 flex-wrap">
                       {selectedAgent.dataAccess.map(d => (
-                        <Badge key={d} style={{ background: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 93% 47%)', borderRadius: 0, fontSize: 10 }}>
+                        <Badge key={d} style={{ background: 'hsl(45 93% 47% / 0.12)', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 10 }}>
                           {d.replace(/_/g, ' ')}
                         </Badge>
                       ))}
@@ -444,9 +466,9 @@ export default function AgentDiscovery() {
                     <div key={idx} className="flex items-center justify-between p-3" style={{ border: '1px solid hsl(var(--border))' }}>
                       <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{check.label}</span>
                       {check.met ? (
-                        <CheckCircle size={16} style={{ color: 'hsl(142 71% 45%)' }} />
+                        <CheckCircle size={16} className="text-green-600 dark:text-green-400" />
                       ) : (
-                        <Warning size={16} style={{ color: 'hsl(0 72% 51%)' }} />
+                        <Warning size={16} className="text-destructive" />
                       )}
                     </div>
                   ))}

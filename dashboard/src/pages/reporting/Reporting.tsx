@@ -161,7 +161,7 @@ const PIE_DATA = [
   { name: 'Partial', value: 3 },
   { name: 'Non-Compliant', value: 1 },
 ];
-const PIE_COLORS = ['hsl(142 71% 45%)', 'hsl(45 93% 47%)', 'hsl(0 72% 51%)'];
+const PIE_COLORS = ['hsl(var(--s-ok-tx))', 'hsl(var(--s-wn-tx))', 'hsl(var(--destructive))'];
 
 // ═════════════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
@@ -460,7 +460,7 @@ export default function Reporting() {
                           <BarChart data={COMPLIANCE_DATA}>
                             <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
                             <XAxis dataKey="name" tick={{ fill: ct.axis, fontSize: 10 }} />
-                            <YAxis domain={[0, 100]} tick={{ fill: ct.axis, fontSize: 10 }} />
+                            <YAxis domain={[0, 100]} tick={{ fill: ct.axis, fontSize: 10 }} label={{ value: 'Score (0-100)', angle: -90, position: 'insideLeft', style: { fill: ct.axis } }} />
                             <RTooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, borderRadius: 0, color: ct.tooltipText, fontSize: 12 }} />
                             <Bar dataKey="score" fill={ct.brand} />
                           </BarChart>
@@ -476,7 +476,7 @@ export default function Reporting() {
                           <LineChart data={RISK_TREND}>
                             <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
                             <XAxis dataKey="month" tick={{ fill: ct.axis, fontSize: 10 }} />
-                            <YAxis tick={{ fill: ct.axis, fontSize: 10 }} />
+                            <YAxis tick={{ fill: ct.axis, fontSize: 10 }} label={{ value: 'Count', angle: -90, position: 'insideLeft', style: { fill: ct.axis } }} />
                             <RTooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, borderRadius: 0, color: ct.tooltipText, fontSize: 12 }} />
                             <Legend wrapperStyle={{ fontSize: 11 }} />
                             <Line type="monotone" dataKey="critical" stroke="hsl(0 72% 51%)" strokeWidth={2} name="Critical" />

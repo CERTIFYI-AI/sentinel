@@ -46,12 +46,12 @@ const DAILY_COST_TREND = [
 ];
 
 const COST_BY_MODEL = [
-  { model: 'GPT-4o', cost: 3.82, color: 'hsl(220 90% 56%)' },
-  { model: 'Claude-3-Opus', cost: 2.14, color: 'hsl(142 71% 45%)' },
-  { model: 'GPT-3.5-Turbo', cost: 1.21, color: 'hsl(45 93% 47%)' },
-  { model: 'Claude-3-Haiku', cost: 0.89, color: 'hsl(25 95% 53%)' },
+  { model: 'GPT-4o', cost: 3.82, color: 'hsl(var(--s-in-tx))' },
+  { model: 'Claude-3-Opus', cost: 2.14, color: 'hsl(var(--s-ok-tx))' },
+  { model: 'GPT-3.5-Turbo', cost: 1.21, color: 'hsl(var(--s-wn-tx))' },
+  { model: 'Claude-3-Haiku', cost: 0.89, color: 'hsl(var(--s-wn-tx))' },
   { model: 'GPT-4o-Mini', cost: 0.74, color: 'hsl(280 67% 56%)' },
-  { model: 'Mistral-7B', cost: 0.59, color: 'hsl(0 72% 51%)' },
+  { model: 'Mistral-7B', cost: 0.59, color: 'hsl(var(--destructive))' },
 ];
 
 const TOKEN_BY_AGENT = [
@@ -68,10 +68,10 @@ function MetricTile({ label, value, variant, icon, sub }: {
   label: string; value: string; variant: 'ok' | 'warn' | 'error' | 'info'; icon: React.ReactNode; sub?: string;
 }) {
   const vs = {
-    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(142 71% 45%)' },
-    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(45 93% 47%)' },
-    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(0 72% 51%)' },
-    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(220 90% 56%)' },
+    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(var(--s-ok-tx))' },
+    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(var(--s-wn-tx))' },
+    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(var(--destructive))' },
+    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))' },
   };
   const s = vs[variant];
   return (
@@ -162,7 +162,7 @@ export default function CostTokenDashboard() {
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
-            background: t.type === 'success' ? 'hsl(142 71% 45%)' : t.type === 'error' ? 'hsl(0 72% 51%)' : 'hsl(220 90% 56%)',
+            background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
             color: '#fff', borderRadius: 0, minWidth: 300,
           }}>{t.text}</div>
         ))}
@@ -198,10 +198,10 @@ export default function CostTokenDashboard() {
 
       {/* Metrics */}
       <div className="grid grid-cols-4 gap-4">
-        <MetricTile label="Tokens This Week" value={`${Math.round(totalTokens)}K`} variant="info" icon={<Lightning size={16} weight="fill" style={{ color: 'hsl(220 90% 56%)' }} />} />
-        <MetricTile label="Total Cost This Week" value={`$${totalCost.toFixed(2)}`} variant="ok" icon={<CurrencyDollar size={16} weight="fill" style={{ color: 'hsl(142 71% 45%)' }} />} sub="+12% WoW" />
-        <MetricTile label="Active Models" value="4" variant="info" icon={<Gauge size={16} style={{ color: 'hsl(220 90% 56%)' }} />} />
-        <MetricTile label="Active Agents" value="5" variant="info" icon={<ChartBar size={16} style={{ color: 'hsl(220 90% 56%)' }} />} />
+        <MetricTile label="Tokens This Week" value={`${Math.round(totalTokens)}K`} variant="info" icon={<Lightning size={16} weight="fill" className="text-blue-600 dark:text-blue-400" />} />
+        <MetricTile label="Total Cost This Week" value={`$${totalCost.toFixed(2)}`} variant="ok" icon={<CurrencyDollar size={16} weight="fill" className="text-green-600 dark:text-green-400" />} sub="+12% WoW" />
+        <MetricTile label="Active Models" value="4" variant="info" icon={<Gauge size={16} className="text-blue-600 dark:text-blue-400" />} />
+        <MetricTile label="Active Agents" value="5" variant="info" icon={<ChartBar size={16} className="text-blue-600 dark:text-blue-400" />} />
       </div>
 
       {/* Charts Row 1: Token Usage + Cost Trend */}
@@ -300,8 +300,8 @@ export default function CostTokenDashboard() {
                 type="number" placeholder="15.00" style={{ borderRadius: 0 }} />
             </div>
             <div className="flex items-center gap-2 px-3 py-2" style={{ background: 'hsl(220 90% 56% / 0.06)', border: '1px solid hsl(220 90% 56% / 0.2)', borderRadius: 0 }}>
-              <Info size={12} style={{ color: 'hsl(220 90% 56%)' }} />
-              <p className="text-xs" style={{ color: 'hsl(220 90% 56%)' }}>
+              <Info size={12} className="text-blue-600 dark:text-blue-400" />
+              <p className="text-xs text-blue-600 dark:text-blue-400">
                 Current weekly spend: <strong>${totalCost.toFixed(2)}</strong>
               </p>
             </div>

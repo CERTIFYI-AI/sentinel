@@ -132,8 +132,8 @@ export default function RBACDashboard() {
             {[
               { label: 'Total Users', value: users.length, color: 'hsl(var(--text-1))' },
               { label: 'Active Roles', value: ROLES.length, color: 'hsl(var(--brand))' },
-              { label: 'MFA Coverage', value: '63%', color: 'hsl(45 93% 47%)' },
-              { label: 'Access Denials (7d)', value: 2, color: 'hsl(0 72% 51%)' },
+              { label: 'MFA Coverage', value: '63%', color: 'hsl(var(--s-wn-tx))' },
+              { label: 'Access Denials (7d)', value: 2, color: 'hsl(var(--destructive))' },
             ].map(stat => (
               <Card key={stat.label} style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
                 <CardContent className="pt-5">
@@ -146,8 +146,8 @@ export default function RBACDashboard() {
 
           {/* MFA Warning */}
           <div className="flex items-center gap-3 p-3" style={{ background: 'hsl(45 93% 47% / 0.1)', border: '1px solid hsl(45 93% 47% / 0.3)', borderRadius: 0 }}>
-            <Warning size={16} style={{ color: 'hsl(45 93% 47%)' }} />
-            <p className="text-sm" style={{ color: 'hsl(45 93% 47%)' }}>
+            <Warning size={16} style={{ color: 'hsl(var(--s-wn-tx))' }} />
+            <p className="text-sm" style={{ color: 'hsl(var(--s-wn-tx))' }}>
               <strong>MFA at 63%</strong> — 2 users without MFA have active sessions. Consider enforcing MFA organization-wide.
             </p>
           </div>
@@ -160,7 +160,7 @@ export default function RBACDashboard() {
                 <ResponsiveContainer width="100%" height={180}>
                   <BarChart data={ROLE_DIST} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                     <XAxis dataKey="name" tick={{ fill: chart.axis, fontSize: 9 }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fill: chart.axis, fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: chart.axis, fontSize: 11 }} axisLine={false} tickLine={false} label={{ value: 'Count', angle: -90, position: 'insideLeft', style: { fill: chart.axis } }} />
                     <Tooltip {...tooltipStyle} />
                     <Bar dataKey="value" radius={0}>
                       {ROLE_DIST.map((entry, i) => <Cell key={i} fill={entry.color} />)}
@@ -208,7 +208,7 @@ export default function RBACDashboard() {
                       <td className="px-4 py-3">
                         <Badge style={{
                           background: r.riskLevel === 'high' ? 'hsl(0 72% 51% / 0.15)' : r.riskLevel === 'medium' ? 'hsl(45 93% 47% / 0.15)' : 'hsl(142 71% 45% / 0.15)',
-                          color: r.riskLevel === 'high' ? 'hsl(0 72% 51%)' : r.riskLevel === 'medium' ? 'hsl(45 93% 47%)' : 'hsl(142 71% 45%)',
+                          color: r.riskLevel === 'high' ? 'hsl(var(--destructive))' : r.riskLevel === 'medium' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))',
                           borderRadius: 0, fontSize: 11
                         }}>
                           {r.riskLevel.charAt(0).toUpperCase() + r.riskLevel.slice(1)}
@@ -251,7 +251,7 @@ export default function RBACDashboard() {
                       {ROLES.map(r => (
                         <td key={r.id} className="px-3 py-1.5 text-center">
                           {r.permissions.includes(perm) ? (
-                            <CheckCircle size={14} style={{ color: 'hsl(142 71% 45%)', margin: '0 auto' }} weight="fill" />
+                            <CheckCircle size={14} style={{ color: 'hsl(var(--s-ok-tx))', margin: '0 auto' }} weight="fill" />
                           ) : (
                             <span style={{ color: 'hsl(var(--border))' }}>—</span>
                           )}
@@ -302,8 +302,8 @@ export default function RBACDashboard() {
                           <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{u.department}</td>
                           <td className="px-4 py-3">
                             {u.mfaEnabled
-                              ? <CheckCircle size={15} style={{ color: 'hsl(142 71% 45%)' }} weight="fill" />
-                              : <XCircle size={15} style={{ color: 'hsl(45 93% 47%)' }} weight="fill" />
+                              ? <CheckCircle size={15} className="text-green-600 dark:text-green-400" weight="fill" />
+                              : <XCircle size={15} style={{ color: 'hsl(var(--s-wn-tx))' }} weight="fill" />
                             }
                           </td>
                           <td className="px-4 py-3 font-mono text-xs" style={{ color: u.sessions > 0 ? 'hsl(var(--text-1))' : 'hsl(var(--text-4))' }}>{u.sessions}</td>
@@ -311,7 +311,7 @@ export default function RBACDashboard() {
                           <td className="px-4 py-3">
                             <Badge style={{
                               background: u.status === 'active' ? 'hsl(142 71% 45% / 0.15)' : u.status === 'inactive' ? 'hsl(var(--border) / 0.5)' : 'hsl(0 72% 51% / 0.15)',
-                              color: u.status === 'active' ? 'hsl(142 71% 45%)' : u.status === 'inactive' ? 'hsl(var(--text-4))' : 'hsl(0 72% 51%)',
+                              color: u.status === 'active' ? 'hsl(var(--s-ok-tx))' : u.status === 'inactive' ? 'hsl(var(--text-4))' : 'hsl(var(--destructive))',
                               borderRadius: 0, fontSize: 11
                             }}>
                               {u.status.charAt(0).toUpperCase() + u.status.slice(1)}
@@ -322,7 +322,7 @@ export default function RBACDashboard() {
                               {u.sessions > 0 && (
                                 <AlertDialog>
                                   <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" style={{ color: 'hsl(0 72% 51%)' }}>
+                                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-destructive">
                                       Revoke
                                     </Button>
                                   </AlertDialogTrigger>
@@ -333,7 +333,7 @@ export default function RBACDashboard() {
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                       <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-                                      <AlertDialogAction onClick={() => revokeSession(u.id)} style={{ borderRadius: 0, background: 'hsl(0 72% 51%)' }}>Revoke</AlertDialogAction>
+                                      <AlertDialogAction onClick={() => revokeSession(u.id)} style={{ borderRadius: 0, background: 'hsl(var(--destructive))' }}>Revoke</AlertDialogAction>
                                     </AlertDialogFooter>
                                   </AlertDialogContent>
                                 </AlertDialog>
@@ -375,7 +375,7 @@ export default function RBACDashboard() {
                       <td className="px-4 py-3">
                         <Badge style={{
                           background: e.result === 'granted' ? 'hsl(142 71% 45% / 0.15)' : 'hsl(0 72% 51% / 0.15)',
-                          color: e.result === 'granted' ? 'hsl(142 71% 45%)' : 'hsl(0 72% 51%)',
+                          color: e.result === 'granted' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))',
                           borderRadius: 0, fontSize: 11
                         }}>
                           {e.result.charAt(0).toUpperCase() + e.result.slice(1)}

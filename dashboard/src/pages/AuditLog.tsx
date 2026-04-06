@@ -10,14 +10,14 @@ import { AUDIT_LOG, AuditEntry, formatDate } from '../data/seed';
 import { useSettingsStore } from '../stores/settingsStore';
 
 const CATEGORY_COLORS: Record<string, { bg: string; color: string }> = {
-  model: { bg: 'hsl(220 90% 56% / 0.15)', color: 'hsl(220 90% 56%)' },
-  risk: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(0 72% 51%)' },
-  policy: { bg: 'hsl(142 71% 45% / 0.15)', color: 'hsl(142 71% 45%)' },
+  model: { bg: 'hsl(220 90% 56% / 0.15)', color: 'hsl(var(--s-in-tx))' },
+  risk: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))' },
+  policy: { bg: 'hsl(142 71% 45% / 0.15)', color: 'hsl(var(--s-ok-tx))' },
   bias_audit: { bg: 'hsl(280 87% 65% / 0.15)', color: 'hsl(280 87% 65%)' },
-  vendor: { bg: 'hsl(25 95% 53% / 0.15)', color: 'hsl(25 95% 53%)' },
-  incident: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(0 72% 51%)' },
-  control: { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(45 93% 47%)' },
-  evidence: { bg: 'hsl(142 71% 45% / 0.15)', color: 'hsl(142 71% 45%)' },
+  vendor: { bg: 'hsl(25 95% 53% / 0.15)', color: 'hsl(var(--s-wn-tx))' },
+  incident: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))' },
+  control: { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(var(--s-wn-tx))' },
+  evidence: { bg: 'hsl(142 71% 45% / 0.15)', color: 'hsl(var(--s-ok-tx))' },
 };
 
 function categoryBadge(category: string) {
@@ -200,7 +200,7 @@ export default function AuditLog() {
                   {DETAIL_MAP[viewItem.id].oldValue && DETAIL_MAP[viewItem.id].oldValue !== 'N/A' && (
                     <div>
                       <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-4))' }}>Previous Value</p>
-                      <div className="p-2 text-xs font-mono" style={{ background: 'hsl(0 72% 51% / 0.08)', borderLeft: '2px solid hsl(0 72% 51%)', color: 'hsl(0 72% 51%)' }}>
+                      <div className="p-2 text-xs font-mono" style={{ background: 'hsl(0 72% 51% / 0.08)', borderLeft: '2px solid hsl(var(--destructive))', color: 'hsl(var(--destructive))' }}>
                         {DETAIL_MAP[viewItem.id].oldValue}
                       </div>
                     </div>
@@ -208,7 +208,7 @@ export default function AuditLog() {
                   {DETAIL_MAP[viewItem.id].newValue && (
                     <div>
                       <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-4))' }}>New Value</p>
-                      <div className="p-2 text-xs font-mono" style={{ background: 'hsl(142 71% 45% / 0.08)', borderLeft: '2px solid hsl(142 71% 45%)', color: 'hsl(142 71% 45%)' }}>
+                      <div className="p-2 text-xs font-mono" style={{ background: 'hsl(142 71% 45% / 0.08)', borderLeft: '2px solid hsl(var(--s-ok-tx))', color: 'hsl(var(--s-ok-tx))' }}>
                         {DETAIL_MAP[viewItem.id].newValue}
                       </div>
                     </div>

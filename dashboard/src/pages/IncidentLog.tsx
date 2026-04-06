@@ -89,8 +89,8 @@ function IncidentTimeline({ status }: { status: string }) {
               <div
                 className="flex items-center justify-center w-8 h-8 relative"
                 style={{
-                  background: isPast ? 'hsl(142 71% 45%)' : isCurrent ? 'hsl(var(--brand))' : 'hsl(var(--bg-surface))',
-                  border: `2px solid ${isPast ? 'hsl(142 71% 45%)' : isCurrent ? 'hsl(var(--brand))' : 'hsl(var(--border))'}`,
+                  background: isPast ? 'hsl(var(--s-ok-tx))' : isCurrent ? 'hsl(var(--brand))' : 'hsl(var(--bg-surface))',
+                  border: `2px solid ${isPast ? 'hsl(var(--s-ok-tx))' : isCurrent ? 'hsl(var(--brand))' : 'hsl(var(--border))'}`,
                   borderRadius: '50%',
                 }}
               >
@@ -107,7 +107,7 @@ function IncidentTimeline({ status }: { status: string }) {
               </span>
             </div>
             {i < TIMELINE_STAGES.length - 1 && (
-              <div className="flex-1 h-0.5 mx-1" style={{ background: isPast ? 'hsl(142 71% 45%)' : 'hsl(var(--border))' }} />
+              <div className="flex-1 h-0.5 mx-1" style={{ background: isPast ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--border))' }} />
             )}
           </div>
         );
@@ -371,7 +371,7 @@ export default function IncidentLog() {
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => deleteIncident(inc.id)} style={{ borderRadius: 0, background: 'hsl(0 72% 51%)' }}>
+                                  <AlertDialogAction onClick={() => deleteIncident(inc.id)} style={{ borderRadius: 0, background: 'hsl(var(--destructive))' }}>
                                     Delete
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
@@ -593,7 +593,7 @@ export default function IncidentLog() {
               <Button
                 onClick={handleResolve}
                 disabled={rootCauseInput.length < 100}
-                style={{ borderRadius: 0, background: 'hsl(142 71% 45%)', color: '#fff' }}
+                style={{ borderRadius: 0, background: 'hsl(var(--s-ok-tx))', color: '#fff' }}
               >
                 <Check size={14} className="mr-1" />Resolve Incident
               </Button>

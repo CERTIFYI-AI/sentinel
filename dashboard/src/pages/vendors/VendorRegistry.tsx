@@ -27,10 +27,10 @@ interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info
 
 function tierColor(risk: Vendor['risk']) {
   const map: Record<string, { bg: string; color: string; label: string }> = {
-    critical: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(0 72% 51%)', label: 'Tier 1' },
-    high: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(0 72% 51%)', label: 'Tier 1' },
-    medium: { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(45 93% 47%)', label: 'Tier 2' },
-    low: { bg: 'hsl(142 71% 45% / 0.15)', color: 'hsl(142 71% 45%)', label: 'Tier 3' },
+    critical: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))', label: 'Tier 1' },
+    high: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))', label: 'Tier 1' },
+    medium: { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(var(--s-wn-tx))', label: 'Tier 2' },
+    low: { bg: 'hsl(142 71% 45% / 0.15)', color: 'hsl(var(--s-ok-tx))', label: 'Tier 3' },
   };
   return map[risk] ?? map.medium;
 }
@@ -42,9 +42,9 @@ function dpaStatusBadge(dpa: string) {
 }
 
 function scoreProgressColor(score: number): string {
-  if (score >= 80) return 'hsl(142 71% 45%)';
-  if (score >= 60) return 'hsl(45 93% 47%)';
-  return 'hsl(0 72% 51%)';
+  if (score >= 80) return 'hsl(var(--s-ok-tx))';
+  if (score >= 60) return 'hsl(var(--s-wn-tx))';
+  return 'hsl(var(--destructive))';
 }
 
 // ── Main Component ────────────────────────────────────────────────────────────
@@ -110,7 +110,7 @@ export default function VendorRegistry() {
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
-            background: t.type === 'success' ? 'hsl(142 71% 45%)' : t.type === 'error' ? 'hsl(0 72% 51%)' : 'hsl(220 90% 56%)',
+            background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
             color: '#fff', borderRadius: 0, minWidth: 300
           }}>{t.text}</div>
         ))}
@@ -136,9 +136,9 @@ export default function VendorRegistry() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'Total Vendors', value: totalVendors, color: 'hsl(var(--text-1))', icon: Buildings },
-          { label: 'Approved', value: approved, color: 'hsl(142 71% 45%)', icon: CheckCircle },
-          { label: 'In Review', value: inReview, color: 'hsl(45 93% 47%)', icon: Warning },
-          { label: 'High Risk / DPA Gap', value: highRiskDpa, color: 'hsl(0 72% 51%)', icon: ShieldWarning },
+          { label: 'Approved', value: approved, color: 'hsl(var(--s-ok-tx))', icon: CheckCircle },
+          { label: 'In Review', value: inReview, color: 'hsl(var(--s-wn-tx))', icon: Warning },
+          { label: 'High Risk / DPA Gap', value: highRiskDpa, color: 'hsl(var(--destructive))', icon: ShieldWarning },
         ].map(stat => (
           <Card key={stat.label} style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
             <CardContent className="pt-4 pb-4">
@@ -155,9 +155,9 @@ export default function VendorRegistry() {
       {/* DPA Warning */}
       {dpaWarningVendors.length > 0 && (
         <div className="p-4 flex items-start gap-3" style={{ background: 'hsl(0 72% 51% / 0.08)', border: '1px solid hsl(0 72% 51% / 0.3)' }}>
-          <Siren size={20} style={{ color: 'hsl(0 72% 51%)', flexShrink: 0, marginTop: 1 }} />
+          <Siren size={20} style={{ color: 'hsl(var(--destructive))', flexShrink: 0, marginTop: 1 }} />
           <div>
-            <p className="text-sm font-semibold" style={{ color: 'hsl(0 72% 51%)' }}>
+            <p className="text-sm font-semibold text-destructive">
               {dpaWarningVendors.length} vendor{dpaWarningVendors.length > 1 ? 's' : ''} processing EU customer data without signed DPA — GDPR Art.28 violation
             </p>
             <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-2))' }}>
@@ -379,7 +379,7 @@ export default function VendorRegistry() {
                         <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{formatDate(review.date)}</p>
                         <Badge style={{
                           background: review.result === 'Approved' ? 'hsl(142 71% 45% / 0.15)' : 'hsl(45 93% 47% / 0.15)',
-                          color: review.result === 'Approved' ? 'hsl(142 71% 45%)' : 'hsl(45 93% 47%)',
+                          color: review.result === 'Approved' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))',
                           borderRadius: 0, fontSize: 10,
                         }}>{review.result}</Badge>
                       </div>
@@ -398,7 +398,7 @@ export default function VendorRegistry() {
 
                   {selectedVendor.dpaStatus === 'signed' && (
                     <div className="p-3" style={{ border: '1px solid hsl(142 71% 45% / 0.3)', background: 'hsl(142 71% 45% / 0.05)' }}>
-                      <p className="text-xs font-medium" style={{ color: 'hsl(142 71% 45%)' }}>Data Processing Agreement signed and active</p>
+                      <p className="text-xs font-medium text-green-600 dark:text-green-400">Data Processing Agreement signed and active</p>
                       <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>Signed: {formatDate(selectedVendor.lastReview)} · Valid for 12 months</p>
                     </div>
                   )}
@@ -406,7 +406,7 @@ export default function VendorRegistry() {
                   {selectedVendor.dpaStatus !== 'signed' && (
                     <>
                       <div className="p-3" style={{ border: '1px solid hsl(0 72% 51% / 0.3)', background: 'hsl(0 72% 51% / 0.05)' }}>
-                        <p className="text-xs font-medium" style={{ color: 'hsl(0 72% 51%)' }}>
+                        <p className="text-xs font-medium text-destructive">
                           {selectedVendor.dpaStatus === 'pending' ? 'DPA pending signature' : 'No DPA on file — GDPR Art. 28 violation'}
                         </p>
                         <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>
