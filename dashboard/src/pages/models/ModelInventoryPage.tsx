@@ -561,7 +561,7 @@ export default function ModelInventoryPage() {
 
       {/* Edit Dialog */}
       <Dialog open={!!editModel} onOpenChange={() => setEditModel(null)}>
-        <DialogContent style={{ borderRadius: 0, maxWidth: 520 }}>
+        <DialogContent style={{ borderRadius: 0, maxWidth: 600 }} className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit {editModel?.name}</DialogTitle>
           </DialogHeader>
@@ -606,34 +606,82 @@ function EditModelForm({ model, onSave }: { model: Model; onSave: (m: Model) => 
   const [version, setVersion] = useState(model.version);
   const [owner, setOwner] = useState(model.owner);
   const [status, setStatus] = useState(model.status);
+  const [riskTier, setRiskTier] = useState<Model['riskTier']>(model.riskTier);
+  const [intendedUse, setIntendedUse] = useState(model.description || '');
+  const [trainingData, setTrainingData] = useState('');
+  const [fairnessThreshold, setFairnessThreshold] = useState(String(model.fairnessScore || 85));
+  const [isHighRisk, setIsHighRisk] = useState(model.riskTier === 'high' || model.riskTier === 'unacceptable');
 
   return (
     <div className="space-y-3 py-2">
-      <div>
-        <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Name</label>
-        <Input value={name} onChange={e => setName(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} />
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Name</label>
+          <Input value={name} onChange={e => setName(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} />
+        </div>
+        <div>
+          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Version</label>
+          <Input value={version} onChange={e => setVersion(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Owner</label>
+          <Input value={owner} onChange={e => setOwner(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} />
+        </div>
+        <div>
+          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Status</label>
+          <Select value={status} onValueChange={v => setStatus(v as Model['status'])}>
+            <SelectTrigger className="mt-1 h-9" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+            <SelectContent style={{ borderRadius: 0 }}>
+              {['production', 'staging', 'development', 'retired'].map(s =>
+                <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
+              )}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       <div>
-        <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Version</label>
-        <Input value={version} onChange={e => setVersion(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} />
-      </div>
-      <div>
-        <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Owner</label>
-        <Input value={owner} onChange={e => setOwner(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} />
-      </div>
-      <div>
-        <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Status</label>
-        <Select value={status} onValueChange={v => setStatus(v as Model['status'])}>
+        <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Risk Classification *</label>
+        <Select value={riskTier} onValueChange={v => setRiskTier(v as Model['riskTier'])}>
           <SelectTrigger className="mt-1 h-9" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
           <SelectContent style={{ borderRadius: 0 }}>
-            {['production', 'staging', 'development', 'retired'].map(s =>
-              <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
+            {(['unacceptable', 'high', 'limited', 'minimal'] as const).map(r =>
+              <SelectItem key={r} value={r}>{r === 'unacceptable' ? 'Prohibited' : r.charAt(0).toUpperCase() + r.slice(1) + ' Risk'}</SelectItem>
             )}
           </SelectContent>
         </Select>
       </div>
+      <div>
+        <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Intended Use (max 256 chars)</label>
+        <textarea value={intendedUse} onChange={e => setIntendedUse(e.target.value.slice(0, 256))}
+          className="mt-1 w-full h-16 text-xs p-2 resize-none"
+          style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))' }}
+          placeholder="Describe the intended use of this model..." />
+        <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>{intendedUse.length}/256</p>
+      </div>
+      <div>
+        <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Training Data Sources</label>
+        <Input value={trainingData} onChange={e => setTrainingData(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} placeholder="e.g. DS-001, DS-002" />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Fairness Threshold (%)</label>
+          <Input type="number" min={0} max={100} value={fairnessThreshold} onChange={e => setFairnessThreshold(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} />
+        </div>
+      </div>
+      <div className="flex items-center gap-2 py-1">
+        <input type="checkbox" checked={isHighRisk} onChange={e => setIsHighRisk(e.target.checked)}
+          className="h-4 w-4" style={{ borderRadius: 0 }} />
+        <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>EU AI Act High-Risk AI System (Annex III)</label>
+      </div>
       <div className="flex justify-end gap-2 pt-2">
-        <Button onClick={() => onSave({ ...model, name, version, owner, status })}
+        <Button onClick={() => onSave({
+          ...model, name, version, owner, status,
+          riskTier: isHighRisk ? 'high' : riskTier,
+          description: intendedUse,
+          fairnessScore: Number(fairnessThreshold) || model.fairnessScore,
+        })}
           style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
           Save Changes
         </Button>

@@ -169,6 +169,14 @@ export default function RiskRegister() {
   const [addOpen, setAddOpen] = useState(false);
   const [editRisk, setEditRisk] = useState<Risk | null>(null);
 
+  // Treatment detail state
+  const [treatmentApprovedBy, setTreatmentApprovedBy] = useState('Sarah Chen');
+  const [treatmentEvidence, setTreatmentEvidence] = useState('');
+  const [treatmentResidual, setTreatmentResidual] = useState(3);
+  const [addMappingOpen, setAddMappingOpen] = useState(false);
+  const [pendingCtrlId, setPendingCtrlId] = useState('');
+  const [controlMappings, setControlMappings] = useState<Record<string, string[]>>({ ...RISK_CONTROL_MAP });
+
   // Add form state
   const [newTitle, setNewTitle] = useState('');
   const [newCategory, setNewCategory] = useState('AI/ML');
@@ -663,9 +671,37 @@ export default function RiskRegister() {
                          selectedRisk.status === 'accepted' ? 'Accept (Risk Retention)' : 'Mitigate (In Progress)'}
                       </span>
                     </div>
+                    {/* Approved By — dropdown from USERS */}
                     <div className="space-y-1">
-                      <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Approved By</p>
-                      <span className="text-sm" style={{ color: 'hsl(var(--text-1))' }}>Sarah Chen (CISO)</span>
+                      <Label className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Approved By</Label>
+                      <Select value={treatmentApprovedBy} onValueChange={setTreatmentApprovedBy}>
+                        <SelectTrigger className="h-8 text-xs" style={{ borderRadius: 0 }}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent style={{ borderRadius: 0 }}>
+                          {USERS.map(u => (
+                            <SelectItem key={u.id} value={u.name}>{u.name} ({u.role})</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {/* Evidence Attached — file name input */}
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Evidence Attached</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          className="h-8 text-xs flex-1"
+                          style={{ borderRadius: 0 }}
+                          placeholder="e.g. mitigation-evidence-Q1.pdf"
+                          value={treatmentEvidence}
+                          onChange={(e) => setTreatmentEvidence(e.target.value)}
+                        />
+                        {treatmentEvidence && (
+                          <Badge className="text-[10px]" style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', borderRadius: 0 }}>
+                            Attached
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Mitigation Actions</p>
@@ -676,12 +712,28 @@ export default function RiskRegister() {
                         </div>
                       ))}
                     </div>
-                    <div className="space-y-1">
+                    {/* Residual Risk After Mitigation — 1-5 slider */}
+                    <div className="space-y-2">
                       <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Residual Risk After Mitigation</p>
-                      <div className="flex items-center gap-2">
-                        <Badge style={{ ...riskScoreStyle(Math.max(1, selectedRisk.score - 6)), background: riskScoreStyle(Math.max(1, selectedRisk.score - 6)).bg, color: riskScoreStyle(Math.max(1, selectedRisk.score - 6)).text, borderRadius: 0 }}>
-                          {Math.max(1, selectedRisk.score - 6)} / 25 (estimated)
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="range" min={1} max={5} step={1}
+                          value={treatmentResidual}
+                          onChange={(e) => setTreatmentResidual(Number(e.target.value))}
+                          style={{ flex: 1, accentColor: 'hsl(var(--brand))' }}
+                        />
+                        <Badge style={{
+                          background: riskScoreStyle(treatmentResidual * treatmentResidual).bg,
+                          color: riskScoreStyle(treatmentResidual * treatmentResidual).text,
+                          borderRadius: 0, minWidth: 56, textAlign: 'center'
+                        }}>
+                          L{treatmentResidual}×I{treatmentResidual} = {treatmentResidual * treatmentResidual}
                         </Badge>
+                      </div>
+                      <div className="flex justify-between text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>
+                        {['1 — Rare', '2', '3 — Mod', '4', '5 — Critical'].map((l, i) => (
+                          <span key={i}>{l}</span>
+                        ))}
                       </div>
                     </div>
                   </TabsContent>
@@ -690,7 +742,7 @@ export default function RiskRegister() {
                   <TabsContent value="evidence" className="space-y-4 mt-4">
                     <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Evidence items linked to this risk's mitigating controls.</p>
                     <div className="space-y-2">
-                      {(RISK_CONTROL_MAP[selectedRisk.id] || []).map(ctrlId => {
+                      {(controlMappings[selectedRisk.id] || []).map(ctrlId => {
                         const ctrl = CONTROLS.find(c => c.id === ctrlId);
                         return (
                           <div key={ctrlId} className="p-2" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
@@ -709,29 +761,59 @@ export default function RiskRegister() {
 
                   {/* Linked Controls Tab */}
                   <TabsContent value="controls" className="space-y-4 mt-4">
-                    <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Controls mapped to mitigate this risk.</p>
-                    {(RISK_CONTROL_MAP[selectedRisk.id] || []).map(ctrlId => {
-                      const ctrl = CONTROLS.find(c => c.id === ctrlId);
-                      if (!ctrl) return null;
-                      const cColor = statusColor(ctrl.status);
-                      return (
-                        <div key={ctrlId} className="p-3 space-y-2" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Badge className="font-mono text-[10px]" style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0 }}>{ctrl.id}</Badge>
-                              <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{ctrl.title}</span>
-                            </div>
-                            <Badge style={{ background: cColor.bg, color: cColor.text, borderRadius: 0, fontSize: 10 }}>{ctrl.status}</Badge>
-                          </div>
-                          <div className="flex items-center gap-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>
-                            <span>{ctrl.framework} · {ctrl.clause}</span>
-                            <span>Score: {ctrl.score}%</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    {(RISK_CONTROL_MAP[selectedRisk.id] || []).length === 0 && (
-                      <p className="text-xs py-4 text-center" style={{ color: 'hsl(var(--text-4))' }}>No controls linked to this risk.</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Controls mapped to mitigate this risk.</p>
+                      <Button
+                        size="sm" variant="outline"
+                        className="h-7 text-xs"
+                        style={{ borderRadius: 0 }}
+                        onClick={() => { setPendingCtrlId(''); setAddMappingOpen(true); }}
+                      >
+                        <Plus size={12} className="mr-1" />Add Mapping
+                      </Button>
+                    </div>
+                    {/* Control table */}
+                    {(controlMappings[selectedRisk.id] || []).length > 0 ? (
+                      <div style={{ border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr style={{ borderBottom: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-surface))' }}>
+                              {['CTRL-ID', 'Title', 'Status', 'Score'].map(h => (
+                                <th key={h} className="px-2 py-2 text-left font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(controlMappings[selectedRisk.id] || []).map(ctrlId => {
+                              const ctrl = CONTROLS.find(c => c.id === ctrlId);
+                              const cColor = ctrl ? statusColor(ctrl.status) : { bg: '', text: '' };
+                              return (
+                                <tr key={ctrlId} style={{ borderBottom: '1px solid hsl(var(--border) / 0.5)' }}>
+                                  <td className="px-2 py-2">
+                                    <Badge className="font-mono text-[10px]" style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0 }}>{ctrlId}</Badge>
+                                  </td>
+                                  <td className="px-2 py-2" style={{ color: 'hsl(var(--text-1))' }}>{ctrl?.title || '—'}</td>
+                                  <td className="px-2 py-2">
+                                    {ctrl && <Badge style={{ background: cColor.bg, color: cColor.text, borderRadius: 0, fontSize: 10 }}>{ctrl.status}</Badge>}
+                                  </td>
+                                  <td className="px-2 py-2 font-mono" style={{ color: 'hsl(var(--text-1))' }}>{ctrl ? `${ctrl.score}%` : '—'}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="py-6 text-center space-y-3">
+                        <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>No controls linked to this risk.</p>
+                        <Button
+                          size="sm" variant="outline"
+                          style={{ borderRadius: 0 }}
+                          onClick={() => { setPendingCtrlId(''); setAddMappingOpen(true); }}
+                        >
+                          <Plus size={12} className="mr-1" />Add Mapping
+                        </Button>
+                      </div>
                     )}
                   </TabsContent>
 
@@ -893,6 +975,49 @@ export default function RiskRegister() {
                 style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
               >
                 {editRisk ? 'Save Changes' : 'Create Risk'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* ── Add Control Mapping Dialog ─────────────────────────────────── */}
+        <Dialog open={addMappingOpen} onOpenChange={setAddMappingOpen}>
+          <DialogContent className="sm:max-w-sm" style={{ borderRadius: 0 }}>
+            <DialogHeader>
+              <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>Add Control Mapping</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3 mt-2">
+              <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+                Linking a control to {selectedRisk?.id} — {selectedRisk?.title}
+              </p>
+              <div className="space-y-1">
+                <Label className="text-xs">Select Control</Label>
+                <Select value={pendingCtrlId} onValueChange={setPendingCtrlId}>
+                  <SelectTrigger style={{ borderRadius: 0 }}><SelectValue placeholder="Pick a control..." /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {CONTROLS.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.id} — {c.title}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter className="mt-4">
+              <Button variant="outline" onClick={() => setAddMappingOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
+              <Button
+                disabled={!pendingCtrlId || !selectedRisk}
+                onClick={() => {
+                  if (!selectedRisk || !pendingCtrlId) return;
+                  setControlMappings(prev => ({
+                    ...prev,
+                    [selectedRisk.id]: [...(prev[selectedRisk.id] || []), pendingCtrlId].filter((v, i, a) => a.indexOf(v) === i),
+                  }));
+                  setAddMappingOpen(false);
+                  setPendingCtrlId('');
+                }}
+                style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+              >
+                Add Mapping
               </Button>
             </DialogFooter>
           </DialogContent>

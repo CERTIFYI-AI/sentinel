@@ -74,6 +74,28 @@ export default function RBACDashboard() {
   const [roleSheetOpen, setRoleSheetOpen] = useState(false);
   const [addUserOpen, setAddUserOpen] = useState(false);
   const [newUser, setNewUser] = useState({ name: '', email: '', role: '', department: '' });
+  const [mfaDialogOpen, setMfaDialogOpen] = useState(false);
+  const [mfaToast, setMfaToast] = useState(false);
+
+  const enforceMFA = () => {
+    setUsers(prev => prev.map(u => ({ ...u, mfaEnabled: true })));
+    setMfaDialogOpen(false);
+    setMfaToast(true);
+    setTimeout(() => setMfaToast(false), 3000);
+  };
+
+  // Permission Matrix Data
+  const MATRIX_ROLES = ['CISO', 'VP Compliance', 'ML Engineer', 'Risk Analyst', 'Auditor', 'Model Risk'];
+  const MATRIX_MODULES = ['Models', 'Agents', 'Risks', 'Policies', 'Evidence', 'Security', 'Trust Engine', 'Reports'];
+  // ● = full, ◐ = read-only, ○ = none
+  const MATRIX_DATA: Record<string, Record<string, string>> = {
+    'CISO':         { Models: '●', Agents: '●', Risks: '●', Policies: '●', Evidence: '●', Security: '●', 'Trust Engine': '●', Reports: '●' },
+    'VP Compliance':{ Models: '◐', Agents: '◐', Risks: '◐', Policies: '●', Evidence: '●', Security: '◐', 'Trust Engine': '◐', Reports: '●' },
+    'ML Engineer':  { Models: '●', Agents: '●', Risks: '◐', Policies: '◐', Evidence: '◐', Security: '◐', 'Trust Engine': '◐', Reports: '◐' },
+    'Risk Analyst': { Models: '◐', Agents: '◐', Risks: '●', Policies: '◐', Evidence: '◐', Security: '◐', 'Trust Engine': '◐', Reports: '◐' },
+    'Auditor':      { Models: '◐', Agents: '◐', Risks: '◐', Policies: '◐', Evidence: '◐', Security: '◐', 'Trust Engine': '◐', Reports: '◐' },
+    'Model Risk':   { Models: '●', Agents: '◐', Risks: '●', Policies: '◐', Evidence: '●', Security: '◐', 'Trust Engine': '●', Reports: '●' },
+  };
 
   const filteredUsers = users.filter(u =>
     u.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -123,6 +145,7 @@ export default function RBACDashboard() {
           <TabsTrigger value="overview" style={{ borderRadius: 0 }}>Overview</TabsTrigger>
           <TabsTrigger value="roles" style={{ borderRadius: 0 }}>Roles</TabsTrigger>
           <TabsTrigger value="users" style={{ borderRadius: 0 }}>Users</TabsTrigger>
+          <TabsTrigger value="matrix" style={{ borderRadius: 0 }}>Permission Matrix</TabsTrigger>
           <TabsTrigger value="audit" style={{ borderRadius: 0 }}>Audit Log</TabsTrigger>
         </TabsList>
 
@@ -147,9 +170,17 @@ export default function RBACDashboard() {
           {/* MFA Warning */}
           <div className="flex items-center gap-3 p-3" style={{ background: 'hsl(45 93% 47% / 0.1)', border: '1px solid hsl(45 93% 47% / 0.3)', borderRadius: 0 }}>
             <Warning size={16} style={{ color: 'hsl(var(--s-wn-tx))' }} />
-            <p className="text-sm" style={{ color: 'hsl(var(--s-wn-tx))' }}>
+            <p className="text-sm flex-1" style={{ color: 'hsl(var(--s-wn-tx))' }}>
               <strong>MFA at 63%</strong> — 2 users without MFA have active sessions. Consider enforcing MFA organization-wide.
             </p>
+            <Button
+              size="sm"
+              style={{ borderRadius: 0, background: 'hsl(0 72% 51%)', color: '#fff', flexShrink: 0 }}
+              onClick={() => setMfaDialogOpen(true)}
+            >
+              <Warning size={13} className="mr-1" weight="bold" />
+              Enforce MFA for All Users
+            </Button>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -350,6 +381,65 @@ export default function RBACDashboard() {
           </Card>
         </TabsContent>
 
+        {/* PERMISSION MATRIX TAB */}
+        <TabsContent value="matrix" className="mt-4">
+          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Role × Module Permission Matrix</CardTitle>
+              <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+                ● Full access    ◐ Read-only    ○ No access
+              </p>
+            </CardHeader>
+            <CardContent className="p-0 overflow-x-auto">
+              <table className="text-sm w-full">
+                <thead>
+                  <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                    <th className="px-4 py-3 text-left text-xs font-semibold sticky left-0" style={{ color: 'hsl(var(--text-4))', background: 'hsl(var(--bg-surface))', minWidth: 130 }}>Role</th>
+                    {MATRIX_MODULES.map(mod => (
+                      <th key={mod} className="px-3 py-3 text-center text-xs font-semibold whitespace-nowrap" style={{ color: 'hsl(var(--text-4))' }}>{mod}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {MATRIX_ROLES.map((role) => (
+                    <tr key={role} style={{ borderBottom: '1px solid hsl(var(--border) / 0.5)' }} className="hover:bg-muted/20">
+                      <td className="px-4 py-3 font-semibold text-xs sticky left-0" style={{ color: 'hsl(var(--text-1))', background: 'hsl(var(--bg-surface))' }}>{role}</td>
+                      {MATRIX_MODULES.map(mod => {
+                        const val = MATRIX_DATA[role]?.[mod] || '○';
+                        const color = val === '●' ? 'hsl(var(--s-ok-tx))' : val === '◐' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--border))';
+                        const bg = val === '●' ? 'hsl(var(--s-ok-bg))' : val === '◐' ? 'hsl(var(--s-wn-bg))' : 'transparent';
+                        return (
+                          <td key={mod} className="px-3 py-3 text-center">
+                            <span
+                              style={{
+                                fontSize: 18, color,
+                                background: bg,
+                                padding: '2px 6px',
+                                borderRadius: 0,
+                                display: 'inline-block',
+                              }}
+                              title={val === '●' ? 'Full Access' : val === '◐' ? 'Read-Only' : 'No Access'}
+                            >{val}</span>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+          {/* Legend */}
+          <div className="flex items-center gap-6 mt-3 px-1">
+            {[{ sym: '●', label: 'Full Access', color: 'hsl(var(--s-ok-tx))' }, { sym: '◐', label: 'Read-Only', color: 'hsl(var(--s-wn-tx))' }, { sym: '○', label: 'No Access', color: 'hsl(var(--border))' }].map(l => (
+              <div key={l.label} className="flex items-center gap-2">
+                <span style={{ fontSize: 16, color: l.color }}>{l.sym}</span>
+                <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{l.label}</span>
+              </div>
+            ))}
+          </div>
+        </TabsContent>
+
         {/* AUDIT LOG TAB */}
         <TabsContent value="audit" className="mt-4">
           <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
@@ -432,6 +522,43 @@ export default function RBACDashboard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* MFA Enforcement Confirm Dialog */}
+      <AlertDialog open={mfaDialogOpen} onOpenChange={setMfaDialogOpen}>
+        <AlertDialogContent style={{ borderRadius: 0 }}>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Warning size={16} style={{ color: 'hsl(0 72% 51%)' }} />
+              Enforce MFA for All Users
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This will immediately require multi-factor authentication for all {users.length} users in the organization.
+              Users without MFA will be prompted to enroll on their next login. This action cannot be undone without
+              manually updating individual user settings.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={enforceMFA}
+              style={{ borderRadius: 0, background: 'hsl(0 72% 51%)', color: '#fff' }}
+            >
+              Enforce MFA
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* MFA Toast */}
+      {mfaToast && (
+        <div
+          className="fixed bottom-6 right-6 z-[100] flex items-center gap-2 px-4 py-3 shadow-xl"
+          style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--s-ok-br))', borderRadius: 0 }}
+        >
+          <CheckCircle size={16} style={{ color: 'hsl(var(--s-ok-tx))' }} weight="fill" />
+          <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>MFA enforcement policy applied</span>
+        </div>
+      )}
     </div>
   );
 }

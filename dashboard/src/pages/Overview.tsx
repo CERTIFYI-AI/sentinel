@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import {
   Clock, Warning, Brain, WarningCircle, Briefcase, FileText,
   Users, Database, StackSimple, ArrowRight, ChartLine, CheckCircle,
-  TrendUp, TrendDown, Minus,
+  TrendUp, TrendDown, Minus, ShieldCheck, Siren, Plus,
+  Robot, Scales, UserCircleCheck,
 } from '@phosphor-icons/react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer,
@@ -34,9 +35,48 @@ function TrendIcon({ trend }: { trend: 'up' | 'down' | 'stable' }) {
   return <Minus size={14} style={{ color: '#6b7280' }} />;
 }
 
+// RAG ring color helper
+function ragColor(value: number, type: 'score' | 'risk' | 'incident'): string {
+  if (type === 'incident') return value >= 2 ? '#ef4444' : value >= 1 ? '#f97316' : '#10b981';
+  if (type === 'risk') return value >= 10 ? '#f97316' : value >= 5 ? '#f97316' : '#10b981';
+  // score type: compliance %
+  if (value >= 85) return '#10b981';
+  if (value >= 60) return '#f97316';
+  return '#ef4444';
+}
+
+function ScoreRing({ value, label, color, size = 80 }: { value: number | string; label: string; color: string; size?: number }) {
+  const circumference = 2 * Math.PI * 34;
+  const numVal = typeof value === 'number' ? value : parseInt(String(value));
+  const progress = Math.min(numVal / 100, 1);
+
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <div style={{ width: size, height: size, position: 'relative' }}>
+        <svg width={size} height={size} viewBox="0 0 80 80">
+          <circle cx="40" cy="40" r="34" fill="none" stroke="hsl(var(--border))" strokeWidth="6" />
+          <circle
+            cx="40" cy="40" r="34" fill="none"
+            stroke={color} strokeWidth="6"
+            strokeDasharray={circumference}
+            strokeDashoffset={circumference * (1 - progress)}
+            strokeLinecap="butt"
+            transform="rotate(-90 40 40)"
+          />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-lg font-bold" style={{ color }}>{value}{typeof value === 'number' && label.includes('Score') ? '%' : ''}</span>
+        </div>
+      </div>
+      <span className="text-xs text-center" style={{ color: 'hsl(var(--text-3))' }}>{label}</span>
+    </div>
+  );
+}
+
 export default function Overview() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
+  const navigate = useNavigate();
 
   const openRisks = RISKS.filter(r => r.status === 'open').length;
   const activeModels = MODELS.filter(m => m.status === 'production').length;
@@ -45,20 +85,38 @@ export default function Overview() {
   const openGaps = GAPS.length;
   const overdueGaps = GAPS.filter(g => new Date(g.dueDate) < new Date()).length;
 
+  // Compliance posture
+  const avgCompliance = Math.round(FRAMEWORKS.reduce((sum, f) => sum + f.complianceScore, 0) / FRAMEWORKS.length);
+  const securityScore = 79;
+
   const kpis = [
-    { label: 'Open Tasks', value: overdueGaps + 5, icon: Clock, color: '#f97316', link: '/tasks' },
-    { label: 'Open Risks', value: openRisks, icon: Warning, color: '#ef4444', link: '/risk-register' },
-    { label: 'Active Models', value: activeModels, icon: Brain, color: '#8b5cf6', link: '/model-inventory' },
-    { label: 'Critical Incidents', value: criticalIncidents, icon: WarningCircle, color: '#ef4444', link: '/incidents' },
-    { label: 'Use Cases', value: AGENTS.length, icon: ChartLine, color: '#3b82f6', link: '/agent-discovery' },
-    { label: 'Active Policies', value: activePolicies, icon: FileText, color: '#10b981', link: '/policies' },
+    { label: 'Open Tasks', value: overdueGaps + 5, icon: Clock, color: ragColor(overdueGaps + 5, 'risk'), link: '/compliance/gap-analysis' },
+    { label: 'Open Risks', value: openRisks, icon: Warning, color: ragColor(openRisks, 'risk'), link: '/risk', ragType: 'risk' as const },
+    { label: 'Active Models', value: activeModels, icon: Brain, color: '#8b5cf6', link: '/models/inventory' },
+    { label: 'Critical Incidents', value: criticalIncidents, icon: WarningCircle, color: ragColor(criticalIncidents, 'incident'), link: '/risk/incidents', ragType: 'incident' as const },
+    { label: 'Use Cases', value: AGENTS.length, icon: ChartLine, color: '#3b82f6', link: '/agents' },
+    { label: 'Active Policies', value: activePolicies, icon: FileText, color: '#10b981', link: '/compliance/policies' },
     { label: 'Vendors', value: VENDORS.length, icon: Briefcase, color: '#06b6d4', link: '/vendors' },
     { label: 'Datasets', value: DATASETS.length, icon: Database, color: '#f59e0b', link: '/datasets' },
     { label: 'Frameworks', value: FRAMEWORKS.length, icon: StackSimple, color: '#6366f1', link: '/frameworks' },
   ];
 
+  // RAG border color for KPI tiles
+  function kpiBorderColor(k: typeof kpis[0]): string {
+    if (k.label === 'Critical Incidents') return criticalIncidents >= 2 ? '#ef4444' : criticalIncidents >= 1 ? '#f97316' : '#10b981';
+    if (k.label === 'Open Risks') return openRisks >= 10 ? '#f97316' : '#10b981';
+    if (k.label === 'Open Tasks') return (overdueGaps + 5) >= 5 ? '#f97316' : '#10b981';
+    return 'hsl(var(--border))';
+  }
+
   const frameworkChartData = FRAMEWORKS.map(f => ({
-    name: f.name.replace('ISO/IEC ', '').replace('OWASP ', '').split(' ')[0],
+    name: f.name.includes('42001') ? 'ISO 42001' :
+          f.name.includes('27001') ? 'ISO 27001' :
+          f.name.includes('SOC') ? 'SOC 2' :
+          f.name.includes('EU AI') ? 'EU AI Act' :
+          f.name.includes('NIST') ? 'NIST RMF' :
+          f.name.includes('OWASP') ? 'OWASP LLM' :
+          f.name.replace('ISO/IEC ', '').replace('OWASP ', '').split(' ')[0],
     score: f.complianceScore,
     fullName: f.name,
   }));
@@ -68,6 +126,14 @@ export default function Overview() {
   ).slice(0, 6);
 
   const overdueGapItems = GAPS.filter(g => new Date(g.dueDate) < new Date()).slice(0, 5);
+
+  const quickActions = [
+    { label: 'Register Model', icon: Robot, to: '/models/inventory', action: 'register' },
+    { label: 'Create Policy', icon: FileText, to: '/compliance/policies' },
+    { label: 'Start Audit', icon: ShieldCheck, to: '/compliance/controls' },
+    { label: 'Add Vendor', icon: Briefcase, to: '/vendors' },
+    { label: 'Queue HITL Review', icon: UserCircleCheck, to: '/hitl' },
+  ];
 
   return (
     <div className="space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
@@ -91,14 +157,66 @@ export default function Overview() {
         </div>
       </div>
 
+      {/* ═══════ COMPLIANCE POSTURE BANNER ═══════ */}
+      <Card style={{
+        background: 'linear-gradient(135deg, hsl(var(--bg-surface)) 0%, hsl(var(--bg-muted)) 100%)',
+        border: '1px solid hsl(var(--border))',
+      }}>
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between gap-6">
+            <div className="flex items-center gap-8">
+              <ScoreRing value={avgCompliance} label="Compliance Score" color={ragColor(avgCompliance, 'score')} size={90} />
+              <ScoreRing value={securityScore} label="Security Score" color={ragColor(securityScore, 'score')} size={90} />
+              <div className="flex flex-col items-center gap-1">
+                <div className="flex items-center justify-center w-[90px] h-[90px]">
+                  <span className="text-3xl font-bold" style={{ color: ragColor(openRisks, 'risk') }}>{openRisks}</span>
+                </div>
+                <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Open Risks</span>
+              </div>
+              <div className="flex flex-col items-center gap-1">
+                <div className="flex items-center justify-center w-[90px] h-[90px]">
+                  <span className="text-3xl font-bold" style={{ color: ragColor(criticalIncidents, 'incident') }}>{criticalIncidents}</span>
+                </div>
+                <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Critical Incidents</span>
+              </div>
+            </div>
+            <div className="flex-1 min-w-0 max-w-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <Siren size={16} style={{ color: '#f97316' }} />
+                <span className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Attention Required</span>
+              </div>
+              <p className="text-xs mb-3" style={{ color: 'hsl(var(--text-3))' }}>
+                3 critical items require immediate attention before next audit (Apr 20)
+              </p>
+              <Button
+                size="sm"
+                onClick={() => navigate('/risk')}
+                style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+              >
+                View All Issues <ArrowRight size={12} className="ml-1" />
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* KPI Tiles — 9 cards, 3 rows of 3 */}
       <div className="grid grid-cols-3 gap-4 lg:grid-cols-9 lg:gap-3">
         {kpis.map(k => (
           <Link key={k.label} to={k.link} style={{ textDecoration: 'none' }}>
             <Card
-              style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', cursor: 'pointer', transition: 'border-color 0.15s' }}
+              style={{
+                background: 'hsl(var(--bg-surface))',
+                border: '1px solid hsl(var(--border))',
+                borderLeft: `4px solid ${kpiBorderColor(k)}`,
+                cursor: 'pointer',
+                transition: 'border-color 0.15s',
+              }}
               onMouseEnter={e => (e.currentTarget.style.borderColor = k.color)}
-              onMouseLeave={e => (e.currentTarget.style.borderColor = 'hsl(var(--border))')}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = 'hsl(var(--border))';
+                e.currentTarget.style.borderLeftColor = kpiBorderColor(k);
+              }}
             >
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
@@ -109,6 +227,22 @@ export default function Overview() {
                 <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-3))' }}>{k.label}</p>
               </CardContent>
             </Card>
+          </Link>
+        ))}
+      </div>
+
+      {/* ═══════ QUICK ACTIONS ═══════ */}
+      <div className="flex items-center gap-3">
+        {quickActions.map(a => (
+          <Link key={a.label} to={a.to} style={{ textDecoration: 'none' }}>
+            <Button
+              variant="outline"
+              size="sm"
+              style={{ borderRadius: 0, borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}
+              className="hover:border-[hsl(var(--brand))] hover:text-[hsl(var(--brand))]"
+            >
+              <a.icon size={14} className="mr-1.5" /> {a.label}
+            </Button>
           </Link>
         ))}
       </div>
@@ -213,7 +347,7 @@ export default function Overview() {
             <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
               Overdue Gap Actions
             </CardTitle>
-            <Link to="/gap-analysis">
+            <Link to="/compliance/gap-analysis">
               <Button variant="ghost" size="sm" style={{ fontSize: 11, padding: '2px 8px' }}>
                 View All <ArrowRight size={12} className="ml-1" />
               </Button>
@@ -261,7 +395,7 @@ export default function Overview() {
           <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
             Top Open Risks
           </CardTitle>
-          <Link to="/risk-register">
+          <Link to="/risk">
             <Button variant="ghost" size="sm" style={{ fontSize: 11, padding: '2px 8px' }}>
               View All <ArrowRight size={12} className="ml-1" />
             </Button>
