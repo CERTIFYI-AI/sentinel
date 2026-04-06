@@ -8,11 +8,16 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../components/ui/s
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
 import { Separator } from "../components/ui/separator";
-import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, LabelList } from "recharts";
 import { useChartTheme } from "../../hooks/useChartTheme";
-import { FileText, CheckCircle, Clock, XCircle, MagnifyingGlass as Search, Plus, DownloadSimple as Download, CaretLeft as ChevronLeft, CaretRight as ChevronRight, PencilSimple as Edit, CopySimple as Copy, Archive, Trash as Trash2, Eye, DotsThreeVertical as MoreVertical, Shield } from "@phosphor-icons/react";
+import { FileText, CheckCircle, Clock, XCircle, MagnifyingGlass as Search, Plus, DownloadSimple as Download, CaretLeft as ChevronLeft, CaretRight as ChevronRight, PencilSimple as Edit, CopySimple as Copy, Archive, Trash as Trash2, Eye, DotsThreeVertical as MoreVertical, Shield, GitBranch, FilePdf } from "@phosphor-icons/react";
 
 const COLORS = ["#10b981","#3b82f6","#f59e0b","#ef4444","#8b5cf6","#ec4899"];
+// Status normalization — always Title Case display
+function normalizeStatus(s: string): string {
+  const map: Record<string,string> = { active: 'Published', review: 'In Review', expired: 'Archived', draft: 'Draft', archived: 'Archived' };
+  return map[s] || s.charAt(0).toUpperCase() + s.slice(1);
+}
 const STATUS_MAP: Record<string,string> = { active:"bg-[hsl(var(--brand))]/20 text-[hsl(var(--brand))]", review:"bg-amber-500/20 text-amber-400", expired:"bg-red-500/20 text-red-400", draft:"bg-blue-500/20 text-blue-400", archived:"bg-zinc-500/20 text-[hsl(var(--text-3))]" };
 const RISK_MAP: Record<string,string> = { High:"text-red-400 bg-red-500/20", Medium:"text-amber-400 bg-amber-500/20", Low:"text-[hsl(var(--brand))] bg-[hsl(var(--brand))]/20" };
 const CATS = ["AI Usage","Data Privacy","Fairness","Security","Vendor Mgmt","Incident Response"];
@@ -52,6 +57,23 @@ export default function PolicyManagement() {
   const [editPolicy, setEditPolicy] = useState<Policy|null>(null);
   const [actionMenu, setActionMenu] = useState<string|null>(null);
   const [exportMenu, setExportMenu] = useState(false);
+  const [diffOpen, setDiffOpen] = useState(false);
+  const [toastMsg, setToastMsg] = useState<string|null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 3000);
+  };
+
+  const exportPDF = (p: typeof sel) => {
+    if (!p) return;
+    const blob = new Blob([`PDF Export: ${p.name}\nVersion: ${p.version}\nStatus: ${normalizeStatus(p.status)}\nOwner: ${p.owner}\nFramework: ${p.framework}\n\n${p.description}`], { type: 'application/pdf' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${p.id}-${p.name.replace(/\s+/g,'-')}.pdf`;
+    a.click();
+    showToast(`✓ ${p.id} exported as PDF`);
+  };
   const [form, setForm] = useState({name:"",category:"AI Usage",framework:"EU AI Act",owner:"Emma Wilson",status:"draft",scope:"",description:"",risk:"Medium",reviewFreq:"Quarterly"});
 
   const filtered = useMemo(() => policies.filter(p => {
@@ -112,7 +134,15 @@ export default function PolicyManagement() {
         <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] p-4">
           <h3 className="text-foreground font-semibold mb-4">Policy Reviews (6 Months)</h3>
           <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={reviewData}><CartesianGrid strokeDasharray="3 3" stroke={ct.grid}/><XAxis dataKey="month" tick={{ fill: ct.axis, fontSize: 11 }}/><YAxis tick={{ fill: ct.axis, fontSize: 11 }} label={{ value: 'Count', angle: -90, position: 'insideLeft', style: { fill: ct.axis } }}/><Tooltip contentStyle={{background:ct.tooltipBg,border:`1px solid ${ct.tooltipBorder}`,borderRadius:0,color:ct.tooltipText}}/><Line type="monotone" dataKey="count" stroke="#10b981" strokeWidth={2} dot={{fill:"#10b981"}}/></LineChart>
+            <BarChart data={reviewData} margin={{ top: 18, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={ct.grid}/>
+              <XAxis dataKey="month" tick={{ fill: ct.axis, fontSize: 11 }} axisLine={false} tickLine={false}/>
+              <YAxis tick={{ fill: ct.axis, fontSize: 11 }} axisLine={false} tickLine={false}/>
+              <Tooltip contentStyle={{background:ct.tooltipBg,border:`1px solid ${ct.tooltipBorder}`,borderRadius:0,color:ct.tooltipText}}/>
+              <Bar dataKey="count" fill="#10b981" radius={0}>
+                <LabelList dataKey="count" position="top" style={{ fill: ct.axis, fontSize: 11, fontWeight: 600 }} />
+              </Bar>
+            </BarChart>
           </ResponsiveContainer>
         </Card>
       </div>
@@ -140,7 +170,7 @@ export default function PolicyManagement() {
                   <td className="px-4 py-3 text-[hsl(var(--text-2))]">{p.owner}</td>
                   <td className="px-4 py-3 text-[hsl(var(--text-3))] text-xs">{p.updated}</td>
                   <td className="px-4 py-3"><Badge variant="outline" className="text-xs border-zinc-600 text-[hsl(var(--text-2))]">{p.framework}</Badge></td>
-                  <td className="px-4 py-3"><span className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_MAP[p.status]||""}`}>{p.status}</span></td>
+                  <td className="px-4 py-3"><span className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_MAP[p.status]||""}`}>{normalizeStatus(p.status)}</span></td>
                   <td className="px-4 py-3">
                     <div className="relative">
                       <button className="p-1 hover:bg-muted rounded" onClick={e=>{e.stopPropagation();setActionMenu(actionMenu===p.id?null:p.id);}}><MoreVertical className="w-4 h-4 text-[hsl(var(--text-3))]"/></button>
@@ -172,50 +202,143 @@ export default function PolicyManagement() {
 
       {/* Side Sheet */}
       <Sheet open={!!sel && !showCreate} onOpenChange={()=>setSel(null)}>
-        <SheetContent className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] w-[480px] sm:max-w-[480px] overflow-y-auto">
-          <SheetHeader><SheetTitle className="text-foreground">{sel?.name}</SheetTitle></SheetHeader>
-          {sel && <Tabs defaultValue="overview" className="mt-4">
-            <TabsList className="bg-[hsl(var(--bg-raised))]/50 w-full"><TabsTrigger value="overview" className="flex-1">Overview</TabsTrigger><TabsTrigger value="versions" className="flex-1">Versions</TabsTrigger><TabsTrigger value="controls" className="flex-1">Controls</TabsTrigger></TabsList>
-            <TabsContent value="overview" className="space-y-4 mt-4">
-              <div className="grid grid-cols-2 gap-3">
-                {[["Category",sel.category],["Version",sel.version],["Owner",sel.owner],["Framework",sel.framework],["Status",sel.status],["Risk Level",sel.risk],["Created",sel.created],["Last Reviewed",sel.lastReviewed],["Next Review",sel.nextReview],["Approver",sel.approver]].map(([k,v],i)=>(
-                  <div key={i} className="bg-[hsl(var(--bg-raised))]/30 rounded-lg p-3"><p className="text-[hsl(var(--text-4))] text-xs">{k}</p><p className="text-foreground text-sm mt-1">{v}</p></div>
-                ))}
-              </div>
-              <Separator className="bg-muted"/>
-              <div><h4 className="text-[hsl(var(--text-3))] text-xs font-medium mb-1">Description</h4><p className="text-[hsl(var(--text-2))] text-sm">{sel.description}</p></div>
-              <div><h4 className="text-[hsl(var(--text-3))] text-xs font-medium mb-1">Scope</h4><p className="text-[hsl(var(--text-2))] text-sm">{sel.scope}</p></div>
-              <div className="flex gap-2 mt-4">
-                <Button className="bg-[hsl(var(--brand))] hover:bg-primary/90 text-foreground flex-1" onClick={()=>{setSel(null);openEdit(sel);}}>Edit Policy</Button>
-                <Button variant="outline" className="border-[hsl(var(--border-mid))] text-[hsl(var(--text-2))] flex-1" onClick={()=>nav(`/policy-editor?id=${sel.id}`)}>Open Editor</Button>
-              </div>
-            </TabsContent>
-            <TabsContent value="versions" className="space-y-3 mt-4">
-              {sel.versions.map((v,i)=>(
-                <div key={i} className="bg-[hsl(var(--bg-raised))]/30 rounded-lg p-3 flex items-start gap-3">
-                  <div className={`w-2 h-2 rounded-full mt-2 ${v.current?"bg-[hsl(var(--brand))]":"bg-zinc-600"}`}/>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between"><span className="text-foreground text-sm font-medium">{v.ver}</span>{v.current&&<Badge className="bg-[hsl(var(--brand))]/20 text-[hsl(var(--brand))] text-xs">Current</Badge>}</div>
-                    <p className="text-[hsl(var(--text-3))] text-xs mt-1">{v.date} by {v.author}</p>
-                    <p className="text-[hsl(var(--text-2))] text-sm mt-1">{v.summary}</p>
+        <SheetContent className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] w-[520px] sm:max-w-[520px] overflow-y-auto">
+          <SheetHeader>
+            <div className="flex items-center justify-between">
+              <SheetTitle className="text-foreground">{sel?.name}</SheetTitle>
+              {sel && (
+                <Button size="sm" variant="outline" className="border-[hsl(var(--border-mid))] text-[hsl(var(--text-2))] h-7 text-xs" onClick={()=>exportPDF(sel)}>
+                  <FilePdf className="w-3 h-3 mr-1"/>Export PDF
+                </Button>
+              )}
+            </div>
+          </SheetHeader>
+          {sel && (
+          <>
+            {/* Approval Workflow Timeline */}
+            <div className="mt-4 px-1">
+              <p className="text-[10px] font-semibold uppercase mb-3" style={{color:'hsl(var(--text-4))'}}>Approval Workflow</p>
+              {(() => {
+                const wfStages = ['Draft','In Review','Approved','Published'];
+                const statusNorm = normalizeStatus(sel.status);
+                const currentIdx = statusNorm === 'Published' ? 3 : statusNorm === 'Approved' ? 2 : statusNorm === 'In Review' ? 1 : 0;
+                return (
+                  <div className="flex items-center gap-0">
+                    {wfStages.map((stage, i) => {
+                      const isComplete = i < currentIdx;
+                      const isCurrent = i === currentIdx;
+                      return (
+                        <div key={stage} className="flex items-center">
+                          <div className="flex flex-col items-center gap-1">
+                            <div
+                              style={{
+                                width: 12, height: 12, borderRadius: '50%',
+                                background: isComplete ? 'hsl(var(--brand))' : isCurrent ? 'transparent' : 'hsl(var(--border))',
+                                border: isCurrent ? '2px solid hsl(var(--brand))' : isComplete ? 'none' : '2px solid hsl(var(--border))',
+                                boxShadow: isCurrent ? '0 0 0 3px hsl(var(--brand) / 0.25)' : 'none',
+                              }}
+                            />
+                            <span className="text-[10px] whitespace-nowrap" style={{color: isComplete || isCurrent ? 'hsl(var(--text-1))' : 'hsl(var(--text-4))'}}>{stage}</span>
+                          </div>
+                          {i < wfStages.length-1 && (
+                            <div style={{width:40,height:2,background:isComplete?'hsl(var(--brand))':'hsl(var(--border))',marginBottom:16}}/>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
+                );
+              })()}
+            </div>
+            <Tabs defaultValue="overview" className="mt-4">
+              <TabsList className="bg-[hsl(var(--bg-raised))]/50 w-full"><TabsTrigger value="overview" className="flex-1">Overview</TabsTrigger><TabsTrigger value="versions" className="flex-1">Versions</TabsTrigger><TabsTrigger value="controls" className="flex-1">Controls</TabsTrigger></TabsList>
+              <TabsContent value="overview" className="space-y-4 mt-4">
+                <div className="grid grid-cols-2 gap-3">
+                  {([['Category',sel.category],['Version',sel.version],['Owner',sel.owner],['Framework',sel.framework],['Status',normalizeStatus(sel.status)],['Risk Level',sel.risk],['Created',sel.created],['Last Reviewed',sel.lastReviewed],['Next Review',sel.nextReview],['Approver',sel.approver]] as [string,string][]).map(([k,v],i)=>(
+                    <div key={i} className="bg-[hsl(var(--bg-raised))]/30 rounded-lg p-3"><p className="text-[hsl(var(--text-4))] text-xs">{k}</p><p className="text-foreground text-sm mt-1">{v}</p></div>
+                  ))}
                 </div>
-              ))}
-              <Button variant="outline" className="border-[hsl(var(--border-mid))] text-[hsl(var(--text-2))] w-full mt-2">Compare Versions</Button>
-            </TabsContent>
-            <TabsContent value="controls" className="space-y-3 mt-4">
-              {sel.controls.map((c,i)=>(
-                <div key={i} className="bg-[hsl(var(--bg-raised))]/30 rounded-lg p-3">
-                  <div className="flex items-center justify-between"><span className="text-foreground text-sm">{c.id}</span><span className={`px-2 py-0.5 rounded text-xs ${c.status==="implemented"?"bg-[hsl(var(--brand))]/20 text-[hsl(var(--brand))]":c.status==="partial"?"bg-amber-500/20 text-amber-400":"bg-blue-500/20 text-blue-400"}`}>{c.status}</span></div>
-                  <p className="text-[hsl(var(--text-2))] text-sm mt-1">{c.name}</p>
-                  {c.score>0&&<div className="mt-2"><div className="flex justify-between text-xs text-[hsl(var(--text-3))] mb-1"><span>Effectiveness</span><span>{c.score}%</span></div><div className="w-full bg-muted rounded-full h-1.5"><div className="h-1.5 rounded-full bg-[hsl(var(--brand))]" style={{width:`${c.score}%`}}/></div></div>}
+                <Separator className="bg-muted"/>
+                <div><h4 className="text-[hsl(var(--text-3))] text-xs font-medium mb-1">Description</h4><p className="text-[hsl(var(--text-2))] text-sm">{sel.description}</p></div>
+                <div><h4 className="text-[hsl(var(--text-3))] text-xs font-medium mb-1">Scope</h4><p className="text-[hsl(var(--text-2))] text-sm">{sel.scope}</p></div>
+                <div className="flex gap-2 mt-4">
+                  <Button className="bg-[hsl(var(--brand))] hover:bg-primary/90 text-foreground flex-1" onClick={()=>{setSel(null);openEdit(sel);}}>Edit Policy</Button>
+                  <Button variant="outline" className="border-[hsl(var(--border-mid))] text-[hsl(var(--text-2))] flex-1" onClick={()=>nav(`/policy-editor?id=${sel.id}`)}>Open Editor</Button>
                 </div>
-              ))}
-              <Button variant="outline" className="border-[hsl(var(--border-mid))] text-[hsl(var(--text-2))] w-full mt-2"><Shield className="w-4 h-4 mr-2"/>Link Control</Button>
-            </TabsContent>
-          </Tabs>}
+              </TabsContent>
+              <TabsContent value="versions" className="space-y-3 mt-4">
+                {sel.versions.map((v,i)=>(
+                  <div key={i} className="bg-[hsl(var(--bg-raised))]/30 rounded-lg p-3 flex items-start gap-3">
+                    <div className={`w-2 h-2 rounded-full mt-2 ${v.current?"bg-[hsl(var(--brand))]":"bg-zinc-600"}`}/>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between"><span className="text-foreground text-sm font-medium">{v.ver}</span>{v.current&&<Badge className="bg-[hsl(var(--brand))]/20 text-[hsl(var(--brand))] text-xs">Current</Badge>}</div>
+                      <p className="text-[hsl(var(--text-3))] text-xs mt-1">{v.date} by {v.author}</p>
+                      <p className="text-[hsl(var(--text-2))] text-sm mt-1">{v.summary}</p>
+                    </div>
+                  </div>
+                ))}
+                {sel.versions.length > 1 && (
+                  <Button variant="outline" className="border-[hsl(var(--border-mid))] text-[hsl(var(--text-2))] w-full mt-2" onClick={()=>setDiffOpen(true)}>
+                    <GitBranch className="w-3 h-3 mr-2"/>Compare Versions
+                  </Button>
+                )}
+              </TabsContent>
+              <TabsContent value="controls" className="space-y-3 mt-4">
+                {sel.controls.map((c,i)=>(
+                  <div key={i} className="bg-[hsl(var(--bg-raised))]/30 rounded-lg p-3">
+                    <div className="flex items-center justify-between"><span className="text-foreground text-sm">{c.id}</span><span className={`px-2 py-0.5 rounded text-xs ${c.status==="implemented"?"bg-[hsl(var(--brand))]/20 text-[hsl(var(--brand))]":c.status==="partial"?"bg-amber-500/20 text-amber-400":"bg-blue-500/20 text-blue-400"}`}>{c.status}</span></div>
+                    <p className="text-[hsl(var(--text-2))] text-sm mt-1">{c.name}</p>
+                    {c.score>0&&<div className="mt-2"><div className="flex justify-between text-xs text-[hsl(var(--text-3))] mb-1"><span>Effectiveness</span><span>{c.score}%</span></div><div className="w-full bg-muted rounded-full h-1.5"><div className="h-1.5 rounded-full bg-[hsl(var(--brand))]" style={{width:`${c.score}%`}}/></div></div>}
+                  </div>
+                ))}
+                <Button variant="outline" className="border-[hsl(var(--border-mid))] text-[hsl(var(--text-2))] w-full mt-2"><Shield className="w-4 h-4 mr-2"/>Link Control</Button>
+              </TabsContent>
+            </Tabs>
+          </>
+          )}
         </SheetContent>
       </Sheet>
+
+      {/* Version Diff Dialog */}
+      <Dialog open={diffOpen} onOpenChange={setDiffOpen}>
+        <DialogContent className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-foreground max-w-2xl">
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><GitBranch className="w-4 h-4"/>Version Comparison — {sel?.name}</DialogTitle></DialogHeader>
+          {sel && sel.versions.length > 1 && (() => {
+            const prev = sel.versions[1];
+            const curr = sel.versions[0];
+            const prevText = `Version: ${prev.ver}\nDate: ${prev.date}\nAuthor: ${prev.author}\n\nChanges:\n${prev.summary}\n\n[This version established the ${sel.category} framework baseline for ${sel.framework}. Policy scope: ${sel.scope.slice(0,80)}...]`;
+            const currText = `Version: ${curr.ver}\nDate: ${curr.date}\nAuthor: ${curr.author}\n\nChanges:\n${curr.summary}\n\n[${sel.description.slice(0,120)}...]`;
+            return (
+              <div className="grid grid-cols-2 gap-4 mt-2">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge className="bg-zinc-700 text-zinc-300 text-xs">{prev.ver}</Badge>
+                    <span className="text-xs" style={{color:'hsl(var(--text-4))'}}>{prev.date}</span>
+                  </div>
+                  <div className="p-3 text-xs font-mono whitespace-pre-wrap" style={{background:'hsl(var(--bg-raised))',border:'1px solid hsl(var(--border))',minHeight:180,color:'hsl(var(--text-2))'}}>{prevText}</div>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge className="bg-[hsl(var(--brand))]/20 text-[hsl(var(--brand))] text-xs">{curr.ver} (Current)</Badge>
+                    <span className="text-xs" style={{color:'hsl(var(--text-4))'}}>{curr.date}</span>
+                  </div>
+                  <div className="p-3 text-xs font-mono whitespace-pre-wrap" style={{background:'hsl(var(--brand) / 0.04)',border:'1px solid hsl(var(--brand) / 0.3)',minHeight:180,color:'hsl(var(--text-1))'}}>{currText}</div>
+                </div>
+              </div>
+            );
+          })()}
+          <DialogFooter><Button variant="outline" onClick={()=>setDiffOpen(false)}>Close</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Toast */}
+      {toastMsg && (
+        <div className="fixed bottom-6 right-6 z-[100] flex items-center gap-2 px-4 py-3 shadow-xl"
+          style={{background:'hsl(var(--bg-surface))',border:'1px solid hsl(var(--brand) / 0.5)',borderRadius:0}}>
+          <CheckCircle className="w-4 h-4" style={{color:'hsl(var(--brand))'}}/>
+          <span className="text-sm" style={{color:'hsl(var(--text-1))'}}>{toastMsg}</span>
+        </div>
+      )}
 
       {/* Create/Edit Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>

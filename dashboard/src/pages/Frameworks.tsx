@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -12,6 +13,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import {
   StackSimple, Plus, PencilSimple, Trash, Info, CalendarCheck, ShieldCheck,
+  Warning, ArrowRight, Eye,
 } from '@phosphor-icons/react';
 import { FRAMEWORKS, CONTROLS, GAPS, Framework, formatDate } from '../data/seed';
 import { useSettingsStore } from '../stores/settingsStore';
@@ -28,10 +30,12 @@ function complianceBadge(score: number) {
 }
 
 function scoreBarColor(score: number): string {
-  // Color thresholds:
-  // ≥85% → green (compliant)
-  // 65–84% → orange (partial)
-  // <65% → red (non-compliant)
+  if (score >= 85) return '#10b981';
+  if (score >= 65) return '#f97316';
+  return '#ef4444';
+}
+
+function ragBorderColor(score: number): string {
   if (score >= 85) return '#10b981';
   if (score >= 65) return '#f97316';
   return '#ef4444';
@@ -46,8 +50,52 @@ const CATEGORY_COLORS: Record<string, string> = {
   'LLM Security': '#ef4444',
 };
 
+// Audit date helpers
+function auditDateStatus(dateStr: string): 'overdue' | 'due-soon' | 'normal' {
+  if (!dateStr) return 'normal';
+  const d = new Date(dateStr);
+  const now = new Date();
+  if (d < now) return 'overdue';
+  const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+  if (d <= thirtyDaysFromNow) return 'due-soon';
+  return 'normal';
+}
+
+function AuditDateDisplay({ dateStr }: { dateStr: string }) {
+  const status = auditDateStatus(dateStr);
+  if (status === 'overdue') {
+    return (
+      <div className="flex items-center gap-1">
+        <CalendarCheck size={12} style={{ color: '#ef4444' }} />
+        <span className="text-xs font-medium" style={{ color: '#ef4444' }}>{formatDate(dateStr)}</span>
+        <Badge style={{ background: '#ef444420', color: '#ef4444', border: '1px solid #ef444440', borderRadius: 0, fontSize: 9, padding: '0 4px' }}>
+          OVERDUE
+        </Badge>
+      </div>
+    );
+  }
+  if (status === 'due-soon') {
+    return (
+      <div className="flex items-center gap-1">
+        <CalendarCheck size={12} style={{ color: '#f97316' }} />
+        <span className="text-xs font-medium" style={{ color: '#f97316' }}>{formatDate(dateStr)}</span>
+        <Badge style={{ background: '#f9731620', color: '#f97316', border: '1px solid #f9731640', borderRadius: 0, fontSize: 9, padding: '0 4px' }}>
+          Due Soon
+        </Badge>
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-center gap-1">
+      <CalendarCheck size={12} style={{ color: 'hsl(var(--text-3))' }} />
+      <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{formatDate(dateStr)}</span>
+    </div>
+  );
+}
+
 export default function Frameworks() {
   const { orgName } = useSettingsStore();
+  const navigate = useNavigate();
 
   const [frameworks, setFrameworks] = useState<Framework[]>(FRAMEWORKS);
   const [viewItem, setViewItem] = useState<Framework | null>(null);
@@ -111,6 +159,8 @@ export default function Frameworks() {
           const badge = complianceBadge(fw.complianceScore);
           const controls = CONTROLS.filter(c => c.framework === fw.name);
           const categoryColor = CATEGORY_COLORS[fw.category] || 'hsl(var(--brand))';
+          const borderColor = ragBorderColor(fw.complianceScore);
+          const isNonCompliant = fw.complianceScore < 65;
 
           return (
             <Card
@@ -119,24 +169,28 @@ export default function Frameworks() {
               style={{
                 background: 'hsl(var(--bg-surface))',
                 border: '1px solid hsl(var(--border))',
+                borderLeft: `4px solid ${borderColor}`,
                 transition: 'transform 0.15s, border-color 0.15s',
               }}
               onMouseEnter={e => {
                 e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.borderColor = scoreBarColor(fw.complianceScore);
               }}
               onMouseLeave={e => {
                 e.currentTarget.style.transform = '';
-                e.currentTarget.style.borderColor = 'hsl(var(--border))';
               }}
               onClick={() => setViewItem(fw)}
             >
               <CardContent className="p-5">
-                {/* Top: category + actions */}
+                {/* Top: category + warning + actions */}
                 <div className="flex items-start justify-between mb-3">
-                  <Badge style={{ background: categoryColor + '22', color: categoryColor, border: `1px solid ${categoryColor}44`, borderRadius: 0, fontSize: 10 }}>
-                    {fw.category}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge style={{ background: categoryColor + '22', color: categoryColor, border: `1px solid ${categoryColor}44`, borderRadius: 0, fontSize: 10 }}>
+                      {fw.category}
+                    </Badge>
+                    {isNonCompliant && (
+                      <Warning size={16} style={{ color: '#ef4444' }} weight="fill" />
+                    )}
+                  </div>
                   <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                     <Button size="sm" variant="ghost" style={{ padding: '2px 6px' }} onClick={() => setEditItem({ ...fw })}>
                       <PencilSimple size={12} />
@@ -182,12 +236,20 @@ export default function Frameworks() {
                   <Badge style={{ background: badge.bg, color: badge.text, border: `1px solid ${badge.border}`, borderRadius: 0, fontSize: 10 }}>
                     {badge.label}
                   </Badge>
-                  <div className="flex items-center gap-1">
-                    <CalendarCheck size={12} style={{ color: 'hsl(var(--text-3))' }} />
-                    <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>
-                      {formatDate(fw.nextAudit)}
-                    </span>
-                  </div>
+                  <AuditDateDisplay dateStr={fw.nextAudit} />
+                </div>
+
+                {/* View Controls button */}
+                <div className="mt-3 pt-3" style={{ borderTop: '1px solid hsl(var(--border))' }} onClick={e => e.stopPropagation()}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full"
+                    style={{ borderRadius: 0, fontSize: 11 }}
+                    onClick={() => navigate(`/compliance/controls?framework=${encodeURIComponent(fw.name)}`)}
+                  >
+                    <Eye size={12} className="mr-1" /> View Controls <ArrowRight size={10} className="ml-auto" />
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -265,7 +327,12 @@ export default function Frameworks() {
                           return { color: '#6b7280', label: c.status };
                         })();
                         return (
-                          <div key={c.id} className="flex items-center justify-between p-2" style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-muted))' }}>
+                          <div
+                            key={c.id}
+                            className="flex items-center justify-between p-2 cursor-pointer hover:bg-[hsl(var(--bg-raised))] transition-colors"
+                            style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-muted))' }}
+                            onClick={() => navigate(`/compliance/controls/${c.id}`)}
+                          >
                             <div>
                               <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{c.title}</p>
                               <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{c.clause}</p>
@@ -297,6 +364,17 @@ export default function Frameworks() {
               <div className="flex gap-2 mt-6">
                 <Button size="sm" onClick={() => { setEditItem({ ...viewItem }); setViewItem(null); }}>
                   <PencilSimple size={14} className="mr-1" /> Edit
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    navigate(`/compliance/controls?framework=${encodeURIComponent(viewItem.name)}`);
+                    setViewItem(null);
+                  }}
+                  style={{ borderRadius: 0 }}
+                >
+                  <Eye size={12} className="mr-1" /> View Controls
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => setViewItem(null)}>Close</Button>
               </div>

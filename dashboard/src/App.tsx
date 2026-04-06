@@ -82,6 +82,11 @@ const RegDetail = lazy(() => import('./pages/governance/RegDetail'));
 const Frameworks = lazy(() => import('./pages/Frameworks'));
 
 
+const UseCasePage = lazy(() => import('./pages/use-cases/UseCasePage'));
+const ExplainabilityCenterNew = lazy(() => import('./pages/explainability/ExplainabilityCenter'));
+const ConformityAssessmentNew = lazy(() => import('./pages/conformity/ConformityAssessment'));
+const DataGovernancePage = lazy(() => import('./pages/data-governance/DataGovernancePage'));
+const StakeholderNotifications = lazy(() => import('./pages/notifications/StakeholderNotifications'));
 const ExplainabilityCenter = lazy(() => import('./pages/ExplainabilityCenter'));
 const ConformityAssessment = lazy(() => import('./pages/ConformityAssessment'));
 const IncidentWorkflow = lazy(() => import('./pages/IncidentWorkflow'));
@@ -228,6 +233,7 @@ export default function App() {
 
           {/* Trust Engine */}
           <Route path="/trust-engine" element={<TrustEngineDashboard />} />
+              <Route path="/trust" element={<Navigate to="/trust-engine" replace />} />
           <Route path="/trust-engine/guardrails" element={<GuardrailActivity />} />
           <Route path="/trust-engine/traces" element={<LiveTraceFeed />} />
           <Route path="/trust-engine/costs" element={<CostTokenDashboard />} />
@@ -242,14 +248,18 @@ export default function App() {
           <Route path="/ai-advisor" element={<Suspense fallback={null}><AiAdvisor /></Suspense>} />
           <Route path="/compliance/policy-templates" element={<Suspense fallback={null}><PolicyTemplates /></Suspense>} />
           <Route path="/compliance/controls/:id" element={<ControlDetail />} />
+              <Route path="/controls/:id" element={<ControlDetail />} />
           <Route path="/reporting" element={<Suspense fallback={<Loading />}><Reporting /></Suspense>} />
           <Route path="/risk/register" element={<RiskRegister />} />
           <Route path="/risk/:id" element={<RiskDetail />} />
           <Route path="/models/:id" element={<ModelDetail />} />
           <Route path="/policies/:id" element={<PolicyDetail />} />
           <Route path="/reg-radar/:id" element={<RegDetail />} />
-          <Route path="/explainability" element={<ExplainabilityCenter />} />
-          <Route path="/conformity" element={<ConformityAssessment />} />
+          <Route path="/explainability" element={<ExplainabilityCenterNew />} />
+          <Route path="/conformity" element={<ConformityAssessmentNew />} />
+          <Route path="/use-cases" element={<UseCasePage />} />
+          <Route path="/data-governance" element={<DataGovernancePage />} />
+          <Route path="/notifications/regulatory" element={<StakeholderNotifications />} />
           <Route path="/incident-workflow" element={<IncidentWorkflow />} />
           <Route path="*" element={<Suspense fallback={<Loading />}><NotFound /></Suspense>} />
         </Route>
