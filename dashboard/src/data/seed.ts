@@ -616,3 +616,63 @@ export const formatDate = (d: string): string => {
   const date = new Date(d);
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
+
+export const timeAgo = (isoDate: string): string => {
+  const diff = Date.now() - new Date(isoDate).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+};
+
+// ── HITL Items (HT-IDs for Review Center) ──────
+export type HITLStatus = 'pending' | 'approved' | 'rejected' | 'escalated' | 'info_requested';
+export interface HITLItem {
+  id: string; entityType: 'model' | 'agent' | 'dataset' | 'vendor' | 'incident';
+  entityId: string; entityName: string; triggerReason: string;
+  assignedTo: string; slaDeadline: string; priority: Severity;
+  status: HITLStatus; remarks: string; overdue: boolean;
+  createdDate: string; history: { date: string; action: string; by: string }[];
+}
+export const HITL_ITEMS: HITLItem[] = [
+  { id: 'HT-001', entityType: 'model', entityId: 'MDL-004', entityName: 'Loan Approval Assistant', triggerReason: 'Critical bias threshold exceeded — Gender Parity 0.72 < 0.85', assignedTo: 'Maria Santos', slaDeadline: '2026-04-06T18:00:00Z', priority: 'critical', status: 'pending', remarks: '', overdue: false, createdDate: '2026-04-06T08:00:00Z', history: [{ date: '2026-04-06T08:00:00Z', action: 'Review queued — automated bias detection trigger', by: 'System' }] },
+  { id: 'HT-002', entityType: 'model', entityId: 'MDL-001', entityName: 'Credit Risk Scorer', triggerReason: 'Quarterly fairness audit — scheduled review', assignedTo: 'Raj Gupta', slaDeadline: '2026-04-05T12:00:00Z', priority: 'high', status: 'pending', remarks: '', overdue: true, createdDate: '2026-04-04T09:00:00Z', history: [{ date: '2026-04-04T09:00:00Z', action: 'Quarterly audit scheduled', by: 'System' }] },
+  { id: 'HT-003', entityType: 'agent', entityId: 'AGT-010', entityName: 'LangChain-Marketing', triggerReason: 'Shadow AI detected — unauthorized agent accessing customer PII', assignedTo: 'Sarah Chen', slaDeadline: '2026-04-06T20:00:00Z', priority: 'critical', status: 'pending', remarks: '', overdue: false, createdDate: '2026-04-06T10:00:00Z', history: [{ date: '2026-04-06T10:00:00Z', action: 'Shadow AI flagged for review', by: 'System' }] },
+  { id: 'HT-004', entityType: 'incident', entityId: 'INC-005', entityName: 'LLM Hallucination — Loan Terms', triggerReason: 'Open hallucination incident requires HITL validation', assignedTo: 'James Patel', slaDeadline: '2026-04-04T10:00:00Z', priority: 'high', status: 'pending', remarks: '', overdue: true, createdDate: '2026-04-03T14:00:00Z', history: [{ date: '2026-04-03T14:00:00Z', action: 'Incident escalated to HITL queue', by: 'David Kim' }] },
+  { id: 'HT-005', entityType: 'model', entityId: 'MDL-002', entityName: 'Fraud Detection Engine', triggerReason: 'Pre-deployment review for v2.1 update', assignedTo: 'Emma Wilson', slaDeadline: '2026-04-07T16:00:00Z', priority: 'medium', status: 'approved', remarks: 'All metrics within bounds. Approved for production deployment.', overdue: false, createdDate: '2026-04-05T11:00:00Z', history: [{ date: '2026-04-05T11:00:00Z', action: 'Deployment review requested', by: 'Maria Santos' }, { date: '2026-04-06T09:00:00Z', action: 'Approved — all checks passed', by: 'Emma Wilson' }] },
+  { id: 'HT-006', entityType: 'dataset', entityId: 'DS-007', entityName: 'Employee HR Records 2023', triggerReason: 'PII dataset used in model training — ethical review required', assignedTo: 'David Kim', slaDeadline: '2026-04-08T12:00:00Z', priority: 'medium', status: 'pending', remarks: '', overdue: false, createdDate: '2026-04-05T16:00:00Z', history: [{ date: '2026-04-05T16:00:00Z', action: 'Ethical review requested for PII training data', by: 'Raj Gupta' }] },
+];
+
+// ── Fallback Log ───────────────────────────────
+export interface FallbackEntry {
+  id: string; agent: string; trigger: string; modelChain: string;
+  latencyMs: number; tokens: number; status: 'success' | 'failed'; timestamp: string;
+}
+export const FALLBACK_LOG: FallbackEntry[] = [
+  { id: 'FB-001', agent: 'RiskAnalyzer', trigger: 'Rate limit exceeded', modelChain: 'GPT-4o → Claude-3-Haiku', latencyMs: 1200, tokens: 2400, status: 'success', timestamp: '2026-04-05T14:10:00Z' },
+  { id: 'FB-002', agent: 'LoanAssistant', trigger: '30s timeout', modelChain: 'GPT-4o → GPT-3.5-Turbo', latencyMs: 31200, tokens: 1800, status: 'success', timestamp: '2026-04-05T13:45:00Z' },
+  { id: 'FB-003', agent: 'ComplianceBot', trigger: '503 API error', modelChain: 'Claude-3-Opus → Claude-3-Sonnet', latencyMs: 892, tokens: 3100, status: 'success', timestamp: '2026-04-05T12:30:00Z' },
+  { id: 'FB-004', agent: 'DataLabeler-v2', trigger: 'Cost limit exceeded', modelChain: 'GPT-4o → Mistral-7B', latencyMs: 445, tokens: 0, status: 'failed', timestamp: '2026-04-05T11:20:00Z' },
+  { id: 'FB-005', agent: 'SupportBot', trigger: 'Context window exceeded', modelChain: 'Claude-3-Opus → GPT-4o-Mini', latencyMs: 678, tokens: 4200, status: 'success', timestamp: '2026-04-05T10:05:00Z' },
+];
+
+// ── Traces ─────────────────────────────────────
+export interface Trace {
+  id: string; timestamp: string; agent: string; model: string;
+  status: 'success' | 'blocked' | 'fallback'; action: string;
+  latencyMs: number; tokens: number; policyEvaluated: string;
+}
+export const TRACES: Trace[] = [
+  { id: 'TR-001', timestamp: '2026-04-05T14:23:01Z', agent: 'ComplianceBot', model: 'Internal', status: 'blocked', action: 'PII Redaction', latencyMs: 12, tokens: 0, policyEvaluated: 'TP-001' },
+  { id: 'TR-002', timestamp: '2026-04-05T14:22:58Z', agent: 'LoanAssistant', model: 'GPT-4o', status: 'blocked', action: 'PII Redaction', latencyMs: 8, tokens: 0, policyEvaluated: 'TP-001' },
+  { id: 'TR-003', timestamp: '2026-04-05T14:22:55Z', agent: 'SupportBot', model: 'Claude-3', status: 'success', action: 'Toxicity Filter', latencyMs: 245, tokens: 1200, policyEvaluated: 'TP-002' },
+  { id: 'TR-004', timestamp: '2026-04-05T14:22:50Z', agent: 'RiskAnalyzer', model: 'GPT-4o', status: 'success', action: 'Cost Check', latencyMs: 1240, tokens: 3400, policyEvaluated: 'TP-005' },
+  { id: 'TR-005', timestamp: '2026-04-05T14:22:45Z', agent: 'LoanAssistant', model: 'GPT-4o', status: 'blocked', action: 'Hallucination Guard', latencyMs: 22, tokens: 0, policyEvaluated: 'TP-003' },
+  { id: 'TR-006', timestamp: '2026-04-05T14:22:40Z', agent: 'DataLabeler-v2', model: 'Claude-3', status: 'success', action: 'Data Boundary', latencyMs: 890, tokens: 5200, policyEvaluated: 'TP-004' },
+  { id: 'TR-007', timestamp: '2026-04-05T14:22:35Z', agent: 'FraudAlert-Watcher', model: 'N/A', status: 'blocked', action: 'Data Boundary', latencyMs: 5, tokens: 0, policyEvaluated: 'TP-004' },
+  { id: 'TR-008', timestamp: '2026-04-05T14:22:30Z', agent: 'AnalyticsAI', model: 'GPT-4o', status: 'success', action: 'Rate Limiter', latencyMs: 430, tokens: 2100, policyEvaluated: 'TP-005' },
+  { id: 'TR-009', timestamp: '2026-04-05T14:22:25Z', agent: 'ComplianceBot', model: 'Internal', status: 'success', action: 'Policy Check', latencyMs: 142, tokens: 800, policyEvaluated: 'TP-004' },
+  { id: 'TR-010', timestamp: '2026-04-05T14:22:20Z', agent: 'SupportBot', model: 'Claude-3', status: 'fallback', action: 'Context Overflow', latencyMs: 678, tokens: 4200, policyEvaluated: 'TP-005' },
+];

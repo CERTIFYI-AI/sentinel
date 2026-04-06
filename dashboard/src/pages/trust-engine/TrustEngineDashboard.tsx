@@ -1,568 +1,583 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
-  Eye, PencilSimple, Trash, Plus, ShieldCheck, Info,
-  CheckCircle, XCircle, Funnel, ArrowDown, ArrowUp,
+  ShieldCheck, Eye, PencilSimple, Trash, Plus, Copy, Play, Pause,
+  Warning, CheckCircle, ArrowUp, ArrowDown, TrendUp, TrendDown,
+  Info, Lightning, Clock,
 } from '@phosphor-icons/react';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
+  ResponsiveContainer,
+} from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-  AlertDialogTrigger,
-} from '../../components/ui/alert-dialog';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../components/ui/sheet';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '../../components/ui/select';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../components/ui/tooltip';
-import { BarChart, Bar, XAxis, YAxis, Tooltip as RTooltip, ResponsiveContainer } from 'recharts';
-import { TRUST_POLICIES, TrustPolicy, severityColor, statusColor } from '../../data/seed';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { TRUST_POLICIES, TrustPolicy, formatNumber, formatDate } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useChartTheme } from '../../hooks/useChartTheme';
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-function timeAgo(isoDate: string): string {
-  const diff = Date.now() - new Date(isoDate).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
-}
-
-const FRAMEWORKS = ['EU AI Act Art.9', 'ISO 42001', 'NIST AI RMF', 'SOC 2', 'GDPR'] as const;
-const POLICY_TYPES = ['Privacy', 'Safety', 'Accuracy', 'Security', 'Governance'] as const;
-const TARGETS = ['All Agents', 'Customer-facing', 'LLM Agents', 'External APIs'] as const;
-const ACTIONS = ['Block', 'Warn', 'Flag', 'Allow'] as const;
-
-// Map policies to simulated "live" timestamps
-const EVAL_TIMESTAMPS: Record<string, string> = {
-  'TP-001': new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-  'TP-002': new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-  'TP-003': new Date(Date.now() - 18 * 60 * 1000).toISOString(),
-  'TP-004': new Date(Date.now() - 45 * 1000).toISOString(),
-  'TP-005': new Date(Date.now() - 31 * 60 * 1000).toISOString(),
-};
-
-const FRAMEWORK_MAP: Record<string, string> = {
-  'TP-001': 'GDPR', 'TP-002': 'EU AI Act Art.9', 'TP-003': 'ISO 42001',
-  'TP-004': 'SOC 2', 'TP-005': 'NIST AI RMF',
-};
-
-// Sparkline data per policy (7 days)
-const SPARKLINES: Record<string, { v: number }[]> = {
-  'TP-001': [{ v: 96 }, { v: 97 }, { v: 98 }, { v: 97 }, { v: 98 }, { v: 98 }, { v: 98 }],
-  'TP-002': [{ v: 93 }, { v: 94 }, { v: 95 }, { v: 96 }, { v: 96 }, { v: 95 }, { v: 96 }],
-  'TP-003': [{ v: 91 }, { v: 90 }, { v: 88 }, { v: 87 }, { v: 89 }, { v: 88 }, { v: 89 }],
-  'TP-004': [{ v: 99 }, { v: 99 }, { v: 99 }, { v: 100 }, { v: 99 }, { v: 99 }, { v: 99 }],
-  'TP-005': [{ v: 92 }, { v: 93 }, { v: 94 }, { v: 93 }, { v: 94 }, { v: 95 }, { v: 94 }],
-};
-
-const EVAL_DATA = [
-  { day: 'Mon', evaluations: 18400 }, { day: 'Tue', evaluations: 21200 },
-  { day: 'Wed', evaluations: 19800 }, { day: 'Thu', evaluations: 24500 },
-  { day: 'Fri', evaluations: 22100 }, { day: 'Sat', evaluations: 14300 },
-  { day: 'Sun', evaluations: 11600 },
-];
-
-// ── Toast ─────────────────────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info' }
 
-// ── TrustGauge ────────────────────────────────────────────────────────────────
+interface ExtPolicy extends TrustPolicy {
+  framework: string;
+  clause: string;
+  trendData: number[];
+  trend: 'up' | 'down' | 'stable';
+}
 
-function TrustGauge({ score }: { score: number }) {
-  const r = 70; const cx = 90; const cy = 90;
-  const startAngle = 210; const endAngle = 330;
-  const totalDeg = 360 - startAngle + endAngle;
-  const filledDeg = (score / 100) * totalDeg;
-  const toRad = (deg: number) => (deg * Math.PI) / 180;
-  const arcPath = (start: number, end: number, radius: number) => {
-    const s = toRad(start); const e = toRad(end);
-    const x1 = cx + radius * Math.cos(s); const y1 = cy + radius * Math.sin(s);
-    const x2 = cx + radius * Math.cos(e); const y2 = cy + radius * Math.sin(e);
-    const large = end - start > 180 ? 1 : 0;
-    return `M ${x1} ${y1} A ${radius} ${radius} 0 ${large} 1 ${x2} ${y2}`;
+// ── Extended policies ─────────────────────────────────────────────────────────
+
+const EXTENDED_POLICIES: ExtPolicy[] = [
+  { ...TRUST_POLICIES[0], framework: 'GDPR', clause: 'Art. 25', trendData: [96, 97, 97, 98, 97, 98, 98], trend: 'up' },
+  { ...TRUST_POLICIES[1], framework: 'EU AI Act', clause: 'Art. 9', trendData: [94, 95, 95, 96, 96, 95, 96], trend: 'stable' },
+  { ...TRUST_POLICIES[2], framework: 'ISO 42001', clause: 'Cl. 8.4', trendData: [91, 90, 89, 88, 89, 89, 89], trend: 'down' },
+  { ...TRUST_POLICIES[3], framework: 'SOC 2', clause: 'CC6.1', trendData: [98, 99, 99, 99, 99, 99, 99], trend: 'stable' },
+  { ...TRUST_POLICIES[4], framework: 'ISO 42001', clause: 'Cl. 9.1', trendData: [92, 93, 93, 94, 94, 94, 94], trend: 'up' },
+];
+
+// ── Weekly Eval Trend Data ────────────────────────────────────────────────────
+
+const EVAL_TREND = [
+  { day: 'Mon', evaluations: 12800 },
+  { day: 'Tue', evaluations: 14200 },
+  { day: 'Wed', evaluations: 13600 },
+  { day: 'Thu', evaluations: 15100 },
+  { day: 'Fri', evaluations: 14800 },
+  { day: 'Sat', evaluations: 11200 },
+  { day: 'Sun', evaluations: 12300 },
+];
+
+// ── Alert Ticker Messages ─────────────────────────────────────────────────────
+
+const TICKER_MESSAGES = [
+  'PII detected in loan request — Redacted [14:32:01]',
+  'Hallucination Guard blocked LoanAssistant output — Confidence 0.72 [14:22:55]',
+  'Data Boundary violation: DataGuard attempted external export [14:22:50]',
+  'Cost threshold approaching for OpenAI-API-Connector (71% of weekly budget) [13:45:00]',
+  'Prompt injection attempt blocked by ComplianceBot [13:30:44]',
+];
+
+// ── Metric Tile ───────────────────────────────────────────────────────────────
+
+function MetricTile({ label, value, variant, icon, sub }: {
+  label: string; value: string; variant: 'ok' | 'warn' | 'error' | 'info'; icon: React.ReactNode; sub?: string;
+}) {
+  const vs = {
+    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(142 71% 45%)' },
+    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(45 93% 47%)' },
+    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(0 72% 51%)' },
+    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(220 90% 56%)' },
   };
-  const endFilled = startAngle + filledDeg;
-  const scoreColor = score >= 90 ? 'hsl(142 71% 45%)' : score >= 80 ? 'hsl(45 93% 47%)' : 'hsl(0 72% 51%)';
+  const s = vs[variant];
   return (
-    <svg viewBox="0 0 180 110" className="w-44 h-28">
-      <path d={arcPath(startAngle, startAngle + totalDeg, r)} fill="none" stroke="hsl(var(--border))" strokeWidth="12" strokeLinecap="round" />
-      <path d={arcPath(startAngle, endFilled, r)} fill="none" stroke={scoreColor} strokeWidth="12" strokeLinecap="round" />
-      <text x={cx} y={cy - 2} textAnchor="middle" fontSize="28" fontWeight="700" fill="hsl(var(--text-1))">{score}%</text>
-      <text x={cx} y={cy + 18} textAnchor="middle" fontSize="10" fill="hsl(var(--text-4))">Trust Score</text>
-    </svg>
+    <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-4))' }}>{label}</span>
+          <div className="p-1.5" style={{ background: s.bg, borderRadius: 0 }}>{icon}</div>
+        </div>
+        <div className="text-2xl font-bold" style={{ color: s.color }}>{value}</div>
+        {sub && <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>{sub}</p>}
+      </CardContent>
+    </Card>
   );
 }
 
-function PolicySparkline({ data, color }: { data: { v: number }[]; color: string }) {
+// ── Mini Sparkline ────────────────────────────────────────────────────────────
+
+function MiniSparkline({ data, trend }: { data: number[]; trend: 'up' | 'down' | 'stable' }) {
+  const max = Math.max(...data);
+  const min = Math.min(...data);
+  const range = max - min || 1;
+  const height = 20;
+  const width = 56;
+  const barW = width / data.length - 1;
+  const color = trend === 'up' ? 'hsl(142 71% 45%)' : trend === 'down' ? 'hsl(0 72% 51%)' : 'hsl(220 90% 56%)';
   return (
-    <ResponsiveContainer width={80} height={28}>
-      <BarChart data={data} margin={{ top: 2, right: 0, left: 0, bottom: 0 }} barSize={7}>
-        <Bar dataKey="v" fill={color} radius={0} />
-      </BarChart>
-    </ResponsiveContainer>
+    <div className="flex items-center gap-1">
+      <svg width={width} height={height}>
+        {data.map((val, i) => {
+          const barH = ((val - min) / range) * (height - 4) + 4;
+          return (
+            <rect
+              key={i}
+              x={i * (barW + 1)}
+              y={height - barH}
+              width={barW}
+              height={barH}
+              fill={color}
+              opacity={i === data.length - 1 ? 1 : 0.5}
+            />
+          );
+        })}
+      </svg>
+      {trend === 'up' && <ArrowUp size={12} weight="bold" style={{ color: 'hsl(142 71% 45%)' }} />}
+      {trend === 'down' && <ArrowDown size={12} weight="bold" style={{ color: 'hsl(0 72% 51%)' }} />}
+    </div>
   );
 }
 
-function policyStatusBadge(status: TrustPolicy['status']) {
-  if (status === 'active') return <Badge style={{ background: 'hsl(142 71% 45% / 0.15)', color: 'hsl(142 71% 45%)', borderRadius: 0 }}>Active</Badge>;
-  if (status === 'disabled') return <Badge style={{ background: 'hsl(0 72% 51% / 0.15)', color: 'hsl(0 72% 51%)', borderRadius: 0 }}>Disabled</Badge>;
-  return <Badge style={{ background: 'hsl(45 93% 47% / 0.15)', color: 'hsl(45 93% 47%)', borderRadius: 0 }}>Testing</Badge>;
+// ── Custom Chart Tooltip ──────────────────────────────────────────────────────
+
+function ChartTooltipContent({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="px-3 py-2 text-xs shadow-lg" style={{
+      background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))',
+      borderRadius: 0, color: 'hsl(var(--text-1))',
+    }}>
+      <p className="font-semibold mb-1">{label}</p>
+      <p>Evaluations: <span className="font-bold">{formatNumber(payload[0].value)}</span></p>
+    </div>
+  );
 }
-
-// ── Default form ──────────────────────────────────────────────────────────────
-
-const emptyForm = () => ({
-  name: '', type: 'Privacy' as string, target: 'All Agents' as string,
-  threshold: '95', action: 'Block' as string, description: '',
-  framework: 'EU AI Act Art.9' as string,
-});
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function TrustEngineDashboard() {
   const { orgName } = useSettingsStore();
-  const chart = useChartTheme();
-  const [policies, setPolicies] = useState<TrustPolicy[]>(TRUST_POLICIES);
-  const [search, setSearch] = useState('');
-  const [typeFilter, setTypeFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [viewItem, setViewItem] = useState<TrustPolicy | null>(null);
-  const [editItem, setEditItem] = useState<TrustPolicy | null>(null);
-  const [editForm, setEditForm] = useState<typeof emptyForm extends () => infer R ? R : never>(emptyForm());
+  const ct = useChartTheme();
+  const [policies, setPolicies] = useState<ExtPolicy[]>(EXTENDED_POLICIES);
+  const [selectedPolicy, setSelectedPolicy] = useState<ExtPolicy | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [breakdownOpen, setBreakdownOpen] = useState(false);
+  const [deactivateTarget, setDeactivateTarget] = useState<ExtPolicy | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ExtPolicy | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
-  const [newForm, setNewForm] = useState(emptyForm());
+  const [newRule, setNewRule] = useState({ name: '', type: 'Privacy', target: 'All Agents', threshold: '95%' });
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
+  const tickerRef = useRef<HTMLDivElement>(null);
 
   const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
     const id = Date.now();
     setToasts(prev => [...prev, { id, text, type }]);
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
   }, []);
 
-  const filtered = policies.filter(p => {
-    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.type.toLowerCase().includes(search.toLowerCase()) ||
-      p.target.toLowerCase().includes(search.toLowerCase());
-    const matchType = typeFilter === 'all' || p.type === typeFilter;
-    const matchStatus = statusFilter === 'all' || p.status === statusFilter;
-    return matchSearch && matchType && matchStatus;
-  });
-
-  const totalEvals = policies.reduce((s, p) => s + p.evaluations, 0);
+  // Computed metrics
+  const totalEvals = policies.reduce((a, p) => a + p.evaluations, 0);
+  const trustScore = Math.round(policies.reduce((a, p) => a + p.trustScore * p.evaluations, 0) / totalEvals);
+  const violations7d = 7;
   const activePolicies = policies.filter(p => p.status === 'active').length;
-  // Weighted trust score: Σ(score_i × evals_i) / Σ(evals_i)
-  const weightedScore = Math.round(
-    policies.reduce((s, p) => s + p.trustScore * p.evaluations, 0) /
-    policies.reduce((s, p) => s + p.evaluations, 0)
-  );
 
-  const openEdit = (p: TrustPolicy) => {
-    setEditItem(p);
-    setEditForm({
-      name: p.name, type: p.type, target: p.target,
-      threshold: '95', action: 'Block', description: p.description,
-      framework: FRAMEWORK_MAP[p.id] || 'EU AI Act Art.9',
-    });
+  // Actions
+  const handleDeactivate = () => {
+    if (!deactivateTarget) return;
+    setPolicies(prev => prev.map(p => p.id === deactivateTarget.id ? { ...p, status: 'disabled' as const } : p));
+    toast(`${deactivateTarget.name} deactivated`, 'info');
+    setDeactivateTarget(null);
   };
-  const saveEdit = () => {
-    if (!editItem) return;
-    setPolicies(prev => prev.map(p => p.id === editItem.id
-      ? { ...p, name: editForm.name, type: editForm.type, target: editForm.target, description: editForm.description } as TrustPolicy
-      : p));
-    setEditItem(null);
-    toast('Policy updated successfully');
+
+  const handleDelete = () => {
+    if (!deleteTarget) return;
+    setPolicies(prev => prev.filter(p => p.id !== deleteTarget.id));
+    toast(`Policy ${deleteTarget.id} deleted`, 'info');
+    setDeleteTarget(null);
   };
-  const handleDelete = (id: string, name: string) => {
-    setPolicies(prev => prev.filter(p => p.id !== id));
-    toast(`Policy "${name}" deleted`, 'info');
+
+  const handleClone = (policy: ExtPolicy) => {
+    const clone: ExtPolicy = {
+      ...policy,
+      id: `TP-${String(policies.length + 1).padStart(3, '0')}`,
+      name: `${policy.name} (Clone)`,
+      status: 'testing',
+      evaluations: 0,
+    };
+    setPolicies(prev => [...prev, clone]);
+    toast(`Cloned "${policy.name}" as testing policy`, 'success');
   };
-  const handleDeactivate = (id: string) => {
-    setPolicies(prev => prev.map(p => p.id === id
-      ? { ...p, status: p.status === 'active' ? 'disabled' : 'active' } as TrustPolicy
-      : p));
-    toast('Policy status updated');
+
+  const handleTestPolicy = (policy: ExtPolicy) => {
+    toast(`Running test evaluation for "${policy.name}"...`, 'info');
   };
+
   const handleCreate = () => {
-    const np: TrustPolicy = {
-      id: `TP-00${policies.length + 1}`,
-      name: newForm.name || 'New Policy',
-      type: newForm.type || 'Privacy',
-      target: newForm.target || 'All Agents',
+    const id = `TP-${String(policies.length + 1).padStart(3, '0')}`;
+    const newPolicy: ExtPolicy = {
+      id,
+      name: newRule.name || 'New Policy',
+      type: newRule.type,
+      target: newRule.target,
       status: 'testing',
       evaluations: 0,
       trustScore: 100,
-      lastEvaluated: new Date().toISOString(),
-      description: newForm.description || '',
+      lastEvaluated: new Date().toISOString().split('T')[0],
+      description: `Custom policy: ${newRule.name}`,
+      framework: 'Custom',
+      clause: '—',
+      trendData: [100, 100, 100, 100, 100, 100, 100],
+      trend: 'stable',
     };
-    setPolicies(prev => [...prev, np]);
-    setNewForm(emptyForm());
+    setPolicies(prev => [...prev, newPolicy]);
     setCreateOpen(false);
-    toast(`Policy "${np.name}" created`);
+    setNewRule({ name: '', type: 'Privacy', target: 'All Agents', threshold: '95%' });
+    toast(`Policy "${newPolicy.name}" created in testing mode`, 'success');
   };
 
-  const tooltipStyle = { contentStyle: { background: chart.tooltipBg, border: `1px solid ${chart.tooltipBorder}`, borderRadius: 0, color: chart.tooltipText, fontSize: 12 } };
-
   return (
-    <TooltipProvider>
-      <div className="space-y-6">
-
-        {/* Toast layer */}
-        <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
-          {toasts.map(t => (
-            <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
-              background: t.type === 'success' ? 'hsl(142 71% 45%)' : t.type === 'error' ? 'hsl(0 72% 51%)' : 'hsl(220 90% 56%)',
-              color: '#fff', borderRadius: 0, minWidth: 260
-            }}>{t.text}</div>
-          ))}
-        </div>
-
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Trust Engine</h1>
-            <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} · Policy evaluation & guardrail management</p>
-          </div>
-          <Button onClick={() => setCreateOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
-            <Plus className="h-4 w-4 mr-2" weight="bold" />Create Rule
-          </Button>
-        </div>
-
-        {/* Stat Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-            <CardContent className="pt-5">
-              <div className="flex flex-col items-center">
-                <TrustGauge score={weightedScore} />
-                <div className="flex items-center gap-1 mt-1">
-                  <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Weighted average</p>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button type="button"><Info size={12} style={{ color: 'hsl(var(--text-4))' }} /></button>
-                    </TooltipTrigger>
-                    <TooltipContent style={{ borderRadius: 0, maxWidth: 280 }}>
-                      <p className="text-xs">Weighted average of policy scores, weighted by evaluation volume.</p>
-                      <p className="text-xs mt-1 font-mono">Formula: Σ(score_i × evals_i) / Σ(evals_i)</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-            <CardContent className="pt-5 space-y-1">
-              <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-4))' }}>Active Policies</p>
-              <p className="text-3xl font-bold" style={{ color: 'hsl(220 90% 56%)' }}>{activePolicies}</p>
-              <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{policies.length} total configured</p>
-            </CardContent>
-          </Card>
-          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-            <CardContent className="pt-5 space-y-1">
-              <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-4))' }}>Total Evaluations</p>
-              <p className="text-3xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>{(totalEvals / 1000).toFixed(0)}K</p>
-              <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>This week</p>
-            </CardContent>
-          </Card>
-          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-            <CardContent className="pt-5 space-y-1">
-              <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-4))' }}>Avg Trust Score</p>
-              <p className="text-3xl font-bold" style={{ color: 'hsl(142 71% 45%)' }}>{weightedScore}%</p>
-              <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Across all policies</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Evaluations Chart */}
-        <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Policy Evaluations — This Week</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={EVAL_DATA} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-                <XAxis dataKey="day" tick={{ fill: chart.axis, fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: chart.axis, fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v / 1000).toFixed(0)}K`} />
-                <RTooltip {...tooltipStyle} formatter={(v: number) => [`${(v / 1000).toFixed(1)}K evals`, 'Evaluations']} />
-                <Bar dataKey="evaluations" fill="hsl(var(--brand))" radius={0} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Filters */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="relative flex-1 min-w-48 max-w-xs">
-            <Input placeholder="Search policies..." value={search} onChange={e => setSearch(e.target.value)}
-              className="h-9 text-xs" style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))' }} />
-          </div>
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-40 h-9" style={{ borderRadius: 0 }}>
-              <Funnel className="h-3 w-3 mr-1" /><SelectValue placeholder="Filter by Type" />
-            </SelectTrigger>
-            <SelectContent style={{ borderRadius: 0 }}>
-              <SelectItem value="all">All Types</SelectItem>
-              {POLICY_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-40 h-9" style={{ borderRadius: 0 }}>
-              <SelectValue placeholder="Filter by Status" />
-            </SelectTrigger>
-            <SelectContent style={{ borderRadius: 0 }}>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="disabled">Disabled</SelectItem>
-              <SelectItem value="testing">Testing</SelectItem>
-            </SelectContent>
-          </Select>
-          <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{filtered.length} of {policies.length} policies</span>
-        </div>
-
-        {/* Policy Table */}
-        <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-          <CardContent className="p-0">
-            {filtered.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12" style={{ color: 'hsl(var(--text-4))' }}>
-                <ShieldCheck size={32} className="mb-2 opacity-40" />
-                <p className="text-sm">No policies match your filters</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                      {['ID', 'Name', 'Type', 'Target', 'Framework', 'Status', 'Evaluations', 'Trust Score', 'Trend (7d)', 'Last Evaluated', 'Actions'].map(h => (
-                        <th key={h} className="px-4 py-3 text-left text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map(p => {
-                      const tsColor = p.trustScore >= 95 ? 'hsl(142 71% 45%)' : p.trustScore >= 85 ? 'hsl(45 93% 47%)' : 'hsl(0 72% 51%)';
-                      const evalTs = EVAL_TIMESTAMPS[p.id] || p.lastEvaluated;
-                      return (
-                        <tr key={p.id} style={{ borderBottom: '1px solid hsl(var(--border))' }} className="hover:bg-muted/30 transition-colors">
-                          <td className="px-4 py-3 font-mono text-xs" style={{ color: 'hsl(var(--text-4))' }}>{p.id}</td>
-                          <td className="px-4 py-3 font-medium" style={{ color: 'hsl(var(--text-1))' }}>{p.name}</td>
-                          <td className="px-4 py-3">
-                            <Badge style={{ background: 'hsl(var(--brand) / 0.12)', color: 'hsl(var(--brand))', borderRadius: 0, fontSize: 11 }}>{p.type}</Badge>
-                          </td>
-                          <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{p.target}</td>
-                          <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>
-                            {FRAMEWORK_MAP[p.id] || '—'}
-                          </td>
-                          <td className="px-4 py-3">{policyStatusBadge(p.status)}</td>
-                          <td className="px-4 py-3 font-mono text-xs" style={{ color: 'hsl(var(--text-1))' }}>{p.evaluations.toLocaleString()}</td>
-                          <td className="px-4 py-3">
-                            <span className="font-bold text-sm" style={{ color: tsColor }}>{p.trustScore}%</span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <PolicySparkline data={SPARKLINES[p.id] || []} color={tsColor} />
-                          </td>
-                          <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>
-                            {timeAgo(evalTs)}
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-1">
-                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setViewItem(p)}>
-                                <Eye size={14} />
-                              </Button>
-                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openEdit(p)}>
-                                <PencilSimple size={14} />
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" style={{ color: p.status === 'active' ? 'hsl(45 93% 47%)' : 'hsl(142 71% 45%)' }}>
-                                    {p.status === 'active' ? 'Deactivate' : 'Activate'}
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent style={{ borderRadius: 0 }}>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>{p.status === 'active' ? 'Deactivate' : 'Activate'} Policy</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      {p.status === 'active'
-                                        ? `Deactivate "${p.name}"? This will stop policy enforcement immediately.`
-                                        : `Activate "${p.name}"? Policy enforcement will resume.`}
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeactivate(p.id)} style={{ borderRadius: 0, background: 'hsl(45 93% 47%)' }}>Confirm</AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" style={{ color: 'hsl(0 72% 51%)' }}>
-                                    <Trash size={14} />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent style={{ borderRadius: 0 }}>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Delete Policy</AlertDialogTitle>
-                                    <AlertDialogDescription>Delete "{p.name}"? This cannot be undone and will stop all evaluations.</AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDelete(p.id, p.name)} style={{ borderRadius: 0, background: 'hsl(0 72% 51%)' }}>Delete</AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* View Sheet */}
-        <Sheet open={!!viewItem} onOpenChange={() => setViewItem(null)}>
-          <SheetContent style={{ borderRadius: 0 }}>
-            <SheetHeader><SheetTitle style={{ color: 'hsl(var(--text-1))' }}>Policy Detail</SheetTitle></SheetHeader>
-            {viewItem && (
-              <div className="mt-6 space-y-4 text-sm overflow-y-auto">
-                <div><p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>ID</p><p className="font-mono">{viewItem.id}</p></div>
-                <div><p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Name</p><p className="font-medium">{viewItem.name}</p></div>
-                <div><p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Type</p>
-                  <Badge style={{ background: 'hsl(var(--brand) / 0.12)', color: 'hsl(var(--brand))', borderRadius: 0 }}>{viewItem.type}</Badge>
-                </div>
-                <div><p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Target</p><p>{viewItem.target}</p></div>
-                <div><p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Framework</p><p>{FRAMEWORK_MAP[viewItem.id] || '—'}</p></div>
-                <div><p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Status</p>{policyStatusBadge(viewItem.status)}</div>
-                <div><p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Trust Score</p>
-                  <p className="text-2xl font-bold" style={{ color: viewItem.trustScore >= 95 ? 'hsl(142 71% 45%)' : viewItem.trustScore >= 85 ? 'hsl(45 93% 47%)' : 'hsl(0 72% 51%)' }}>
-                    {viewItem.trustScore}%
-                  </p>
-                </div>
-                <div><p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Total Evaluations</p><p>{viewItem.evaluations.toLocaleString()}</p></div>
-                <div><p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Last Evaluated</p>
-                  <p>{timeAgo(EVAL_TIMESTAMPS[viewItem.id] || viewItem.lastEvaluated)}</p>
-                </div>
-                <div><p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Description</p><p style={{ color: 'hsl(var(--text-4))' }}>{viewItem.description}</p></div>
-                <div className="pt-3 flex gap-2">
-                  <Button size="sm" onClick={() => { setViewItem(null); openEdit(viewItem); }} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
-                    <PencilSimple size={14} className="mr-1" />Edit Policy
-                  </Button>
-                </div>
-              </div>
-            )}
-          </SheetContent>
-        </Sheet>
-
-        {/* Edit Dialog */}
-        <Dialog open={!!editItem} onOpenChange={() => setEditItem(null)}>
-          <DialogContent style={{ borderRadius: 0, maxWidth: 520 }}>
-            <DialogHeader><DialogTitle>Edit Trust Policy</DialogTitle></DialogHeader>
-            <div className="space-y-3 py-2">
-              <div><label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Policy Name</label>
-                <Input value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} className="mt-1" style={{ borderRadius: 0 }} /></div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Type</label>
-                  <Select value={editForm.type} onValueChange={v => setEditForm(f => ({ ...f, type: v }))}>
-                    <SelectTrigger className="mt-1 h-9" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                    <SelectContent style={{ borderRadius: 0 }}>
-                      {POLICY_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                    </SelectContent>
-                  </Select></div>
-                <div><label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Target</label>
-                  <Select value={editForm.target} onValueChange={v => setEditForm(f => ({ ...f, target: v }))}>
-                    <SelectTrigger className="mt-1 h-9" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                    <SelectContent style={{ borderRadius: 0 }}>
-                      {TARGETS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                    </SelectContent>
-                  </Select></div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Threshold (%)</label>
-                  <Input value={editForm.threshold} onChange={e => setEditForm(f => ({ ...f, threshold: e.target.value }))} className="mt-1" style={{ borderRadius: 0 }} placeholder="e.g. 95" /></div>
-                <div><label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Action</label>
-                  <Select value={editForm.action} onValueChange={v => setEditForm(f => ({ ...f, action: v }))}>
-                    <SelectTrigger className="mt-1 h-9" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                    <SelectContent style={{ borderRadius: 0 }}>
-                      {ACTIONS.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
-                    </SelectContent>
-                  </Select></div>
-              </div>
-              <div><label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Framework Linkage</label>
-                <Select value={editForm.framework} onValueChange={v => setEditForm(f => ({ ...f, framework: v }))}>
-                  <SelectTrigger className="mt-1 h-9" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                  <SelectContent style={{ borderRadius: 0 }}>
-                    {FRAMEWORKS.map(fw => <SelectItem key={fw} value={fw}>{fw}</SelectItem>)}
-                  </SelectContent>
-                </Select></div>
-              <div><label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Description</label>
-                <Input value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} className="mt-1" style={{ borderRadius: 0 }} /></div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setEditItem(null)} style={{ borderRadius: 0 }}>Cancel</Button>
-              <Button onClick={saveEdit} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>Save Changes</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Create Dialog */}
-        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogContent style={{ borderRadius: 0, maxWidth: 520 }}>
-            <DialogHeader><DialogTitle>Create Trust Policy</DialogTitle></DialogHeader>
-            <div className="space-y-3 py-2">
-              <div><label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Policy Name *</label>
-                <Input value={newForm.name} onChange={e => setNewForm(f => ({ ...f, name: e.target.value }))} className="mt-1" style={{ borderRadius: 0 }} placeholder="e.g. Output Sanitization Guard" /></div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Type</label>
-                  <Select value={newForm.type} onValueChange={v => setNewForm(f => ({ ...f, type: v }))}>
-                    <SelectTrigger className="mt-1 h-9" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                    <SelectContent style={{ borderRadius: 0 }}>
-                      {POLICY_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                    </SelectContent>
-                  </Select></div>
-                <div><label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Target</label>
-                  <Select value={newForm.target} onValueChange={v => setNewForm(f => ({ ...f, target: v }))}>
-                    <SelectTrigger className="mt-1 h-9" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                    <SelectContent style={{ borderRadius: 0 }}>
-                      {TARGETS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                    </SelectContent>
-                  </Select></div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Threshold (%)</label>
-                  <Input value={newForm.threshold} onChange={e => setNewForm(f => ({ ...f, threshold: e.target.value }))} className="mt-1" style={{ borderRadius: 0 }} placeholder="95" /></div>
-                <div><label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Action</label>
-                  <Select value={newForm.action} onValueChange={v => setNewForm(f => ({ ...f, action: v }))}>
-                    <SelectTrigger className="mt-1 h-9" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                    <SelectContent style={{ borderRadius: 0 }}>
-                      {ACTIONS.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
-                    </SelectContent>
-                  </Select></div>
-              </div>
-              <div><label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Framework Linkage</label>
-                <Select value={newForm.framework} onValueChange={v => setNewForm(f => ({ ...f, framework: v }))}>
-                  <SelectTrigger className="mt-1 h-9" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                  <SelectContent style={{ borderRadius: 0 }}>
-                    {FRAMEWORKS.map(fw => <SelectItem key={fw} value={fw}>{fw}</SelectItem>)}
-                  </SelectContent>
-                </Select></div>
-              <div><label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Description</label>
-                <Input value={newForm.description} onChange={e => setNewForm(f => ({ ...f, description: e.target.value }))} className="mt-1" style={{ borderRadius: 0 }} placeholder="Policy description and purpose" /></div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setCreateOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
-              <Button onClick={handleCreate} disabled={!newForm.name} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>Create Policy</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+    <div className="space-y-6">
+      {/* Toast */}
+      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+        {toasts.map(t => (
+          <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
+            background: t.type === 'success' ? 'hsl(142 71% 45%)' : t.type === 'error' ? 'hsl(0 72% 51%)' : 'hsl(220 90% 56%)',
+            color: '#fff', borderRadius: 0, minWidth: 300,
+          }}>{t.text}</div>
+        ))}
       </div>
-    </TooltipProvider>
+
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-3 mb-1">
+            <ShieldCheck size={22} weight="fill" style={{ color: 'hsl(var(--brand))' }} />
+            <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Trust Engine Dashboard</h1>
+          </div>
+          <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} — Real-time policy governance, trust scoring, and guardrail monitoring</p>
+        </div>
+        <Button onClick={() => setCreateOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+          <Plus size={14} className="mr-2" />Create Rule
+        </Button>
+      </div>
+
+      {/* Live Alert Ticker */}
+      <div className="overflow-hidden relative" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0, height: 28 }}>
+        <div className="flex items-center h-full px-3">
+          <Badge style={{ background: 'hsl(0 72% 51% / 0.15)', color: 'hsl(0 72% 51%)', borderRadius: 0, fontSize: 9, marginRight: 8, flexShrink: 0 }}>LIVE</Badge>
+          <div ref={tickerRef} className="flex-1 overflow-hidden whitespace-nowrap">
+            <div className="inline-block animate-marquee" style={{ animation: 'marquee 40s linear infinite' }}>
+              {TICKER_MESSAGES.map((msg, i) => (
+                <span key={i} className="text-xs mx-8" style={{ color: 'hsl(var(--text-4))' }}>
+                  <Lightning size={10} weight="fill" className="inline mr-1" style={{ color: 'hsl(45 93% 47%)' }} />
+                  {msg}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+        <style>{`@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }`}</style>
+      </div>
+
+      {/* Metrics */}
+      <div className="grid grid-cols-4 gap-4">
+        <div className="cursor-pointer" onClick={() => setBreakdownOpen(true)}>
+          <MetricTile
+            label="Trust Score"
+            value={`${trustScore}%`}
+            variant="ok"
+            icon={<ShieldCheck size={16} weight="fill" style={{ color: 'hsl(142 71% 45%)' }} />}
+            sub="Click for breakdown"
+          />
+        </div>
+        <MetricTile label="Active Policies" value={String(activePolicies)} variant="ok" icon={<CheckCircle size={16} weight="fill" style={{ color: 'hsl(142 71% 45%)' }} />} />
+        <MetricTile label="Violations (7d)" value={String(violations7d)} variant="warn" icon={<Warning size={16} weight="fill" style={{ color: 'hsl(45 93% 47%)' }} />} sub="3 critical" />
+        <MetricTile label="Evaluations (Week)" value={formatNumber(totalEvals)} variant="info" icon={<Lightning size={16} weight="fill" style={{ color: 'hsl(220 90% 56%)' }} />} />
+      </div>
+
+      {/* Chart */}
+      <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Weekly Evaluation Trend</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={EVAL_TREND} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} vertical={false} />
+              <XAxis dataKey="day" tick={{ fill: ct.axis, fontSize: 11 }} axisLine={{ stroke: ct.grid }} tickLine={false} />
+              <YAxis tick={{ fill: ct.axis, fontSize: 11 }} axisLine={{ stroke: ct.grid }} tickLine={false} />
+              <ReTooltip content={<ChartTooltipContent />} />
+              <Bar dataKey="evaluations" fill={ct.brand} maxBarSize={40} />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* Policies Table */}
+      <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Trust Policies</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                  {['ID', 'Policy', 'Type', 'Target', 'Trust Score', 'Evaluations', 'Trend', 'Framework', 'Status', 'Actions'].map(h => (
+                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold whitespace-nowrap" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {policies.map(p => {
+                  const scoreColor = p.trustScore >= 95 ? 'hsl(142 71% 45%)' : p.trustScore >= 90 ? 'hsl(45 93% 47%)' : 'hsl(0 72% 51%)';
+                  return (
+                    <tr key={p.id} style={{ borderBottom: '1px solid hsl(var(--border))' }} className="hover:bg-muted/30">
+                      <td className="px-4 py-3 text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{p.id}</td>
+                      <td className="px-4 py-3">
+                        <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{p.name}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge style={{ background: 'hsl(220 90% 56% / 0.10)', color: 'hsl(220 90% 56%)', borderRadius: 0, fontSize: 10 }}>{p.type}</Badge>
+                      </td>
+                      <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{p.target}</td>
+                      <td className="px-4 py-3">
+                        <span className="text-sm font-bold" style={{ color: scoreColor }}>{p.trustScore}%</span>
+                        {p.trustScore < 95 && (
+                          <Badge className="ml-2" style={{ background: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 93% 47%)', borderRadius: 0, fontSize: 9 }}>
+                            Below 95%
+                          </Badge>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-xs font-mono" style={{ color: 'hsl(var(--text-1))' }}>{formatNumber(p.evaluations)}</td>
+                      <td className="px-4 py-3">
+                        <MiniSparkline data={p.trendData} trend={p.trend} />
+                      </td>
+                      <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{p.framework} {p.clause}</td>
+                      <td className="px-4 py-3">
+                        <Badge style={{
+                          background: p.status === 'active' ? 'hsl(142 71% 45% / 0.12)' : p.status === 'testing' ? 'hsl(220 90% 56% / 0.12)' : 'hsl(var(--s-nt-bg))',
+                          color: p.status === 'active' ? 'hsl(142 71% 45%)' : p.status === 'testing' ? 'hsl(220 90% 56%)' : 'hsl(var(--s-nt-tx))',
+                          borderRadius: 0, fontSize: 10,
+                        }}>
+                          {p.status.charAt(0).toUpperCase() + p.status.slice(1)}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { setSelectedPolicy(p); setSheetOpen(true); }}>
+                            <Eye size={14} style={{ color: 'hsl(var(--brand))' }} />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { setSelectedPolicy(p); setSheetOpen(true); }}>
+                            <PencilSimple size={14} style={{ color: 'hsl(var(--text-4))' }} />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleTestPolicy(p)}>
+                            <Play size={14} style={{ color: 'hsl(142 71% 45%)' }} />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleClone(p)}>
+                            <Copy size={14} style={{ color: 'hsl(220 90% 56%)' }} />
+                          </Button>
+                          {p.status === 'active' && (
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setDeactivateTarget(p)}>
+                              <Pause size={14} style={{ color: 'hsl(45 93% 47%)' }} />
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Trust Score Breakdown Sheet */}
+      <Sheet open={breakdownOpen} onOpenChange={setBreakdownOpen}>
+        <SheetContent className="w-[520px] sm:max-w-[520px] overflow-y-auto" style={{ borderRadius: 0 }}>
+          <SheetHeader>
+            <SheetTitle style={{ color: 'hsl(var(--text-1))' }}>Trust Score Breakdown — {trustScore}%</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-4 mt-4">
+            <div className="p-3" style={{ background: 'hsl(220 90% 56% / 0.06)', border: '1px solid hsl(220 90% 56% / 0.2)', borderRadius: 0 }}>
+              <p className="text-xs" style={{ color: 'hsl(220 90% 56%)' }}>
+                <Info size={12} className="inline mr-1" />
+                <strong>Weighted Methodology:</strong> The composite trust score is a weighted average where each policy's contribution is proportional to its evaluation volume. Policies with more evaluations have greater influence on the overall score.
+              </p>
+            </div>
+            {policies.filter(p => p.status === 'active').map(p => {
+              const weight = ((p.evaluations / totalEvals) * 100).toFixed(1);
+              return (
+                <div key={p.id} className="p-3 space-y-2" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{p.name}</span>
+                    <span className="text-sm font-bold" style={{
+                      color: p.trustScore >= 95 ? 'hsl(142 71% 45%)' : p.trustScore >= 90 ? 'hsl(45 93% 47%)' : 'hsl(0 72% 51%)',
+                    }}>{p.trustScore}%</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+                    <span>{formatNumber(p.evaluations)} evaluations · {p.framework} {p.clause}</span>
+                    <span>Weight: {weight}%</span>
+                  </div>
+                  <div className="w-full h-1.5" style={{ background: 'hsl(var(--border))', borderRadius: 0 }}>
+                    <div className="h-full" style={{
+                      width: `${p.trustScore}%`,
+                      background: p.trustScore >= 95 ? 'hsl(142 71% 45%)' : p.trustScore >= 90 ? 'hsl(45 93% 47%)' : 'hsl(0 72% 51%)',
+                      borderRadius: 0,
+                    }} />
+                  </div>
+                  {p.trustScore < 95 && (
+                    <p className="text-xs" style={{ color: 'hsl(45 93% 47%)' }}>
+                      <Warning size={10} className="inline mr-1" />Below 95% enterprise threshold
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Deactivate ConfirmDialog */}
+      <ConfirmDialog
+        open={!!deactivateTarget}
+        onClose={() => setDeactivateTarget(null)}
+        onConfirm={handleDeactivate}
+        type="warning"
+        title={`Deactivate ${deactivateTarget?.name}`}
+        message={
+          <p>
+            Deactivating <strong>{deactivateTarget?.name}</strong> will affect <strong>{formatNumber(deactivateTarget?.evaluations ?? 0)}</strong> weekly evaluations
+            and may violate <strong>{deactivateTarget?.framework} {deactivateTarget?.clause}</strong>.
+          </p>
+        }
+        confirmLabel="Deactivate Policy"
+      />
+
+      {/* Delete ConfirmDialog */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => { if (deleteTarget) { setPolicies(prev => prev.filter(p => p.id !== deleteTarget.id)); toast(`${deleteTarget.id} deleted`, 'info'); setDeleteTarget(null); } }}
+        type="danger"
+        title="Delete Policy"
+        message={<p>Delete <strong>{deleteTarget?.name}</strong>? This cannot be undone.</p>}
+        confirmLabel="Delete"
+      />
+
+      {/* Create Rule Dialog */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent style={{ borderRadius: 0, maxWidth: 480 }}>
+          <DialogHeader>
+            <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>Create Trust Rule</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div>
+              <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Policy Name</label>
+              <Input value={newRule.name} onChange={e => setNewRule({ ...newRule, name: e.target.value })}
+                placeholder="e.g., Content Safety Filter" style={{ borderRadius: 0 }} />
+            </div>
+            <div>
+              <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Type</label>
+              <Select value={newRule.type} onValueChange={v => setNewRule({ ...newRule, type: v })}>
+                <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  {['Privacy', 'Safety', 'Accuracy', 'Security', 'Governance'].map(t => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Target</label>
+              <Select value={newRule.target} onValueChange={v => setNewRule({ ...newRule, target: v })}>
+                <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  {['All Agents', 'Customer-facing', 'LLM Agents', 'External APIs', 'Internal'].map(t => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Threshold</label>
+              <Input value={newRule.threshold} onChange={e => setNewRule({ ...newRule, threshold: e.target.value })}
+                placeholder="e.g., 95%" style={{ borderRadius: 0 }} />
+            </div>
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setCreateOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
+            <Button onClick={handleCreate} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>Create Rule</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Policy Detail Sheet */}
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetContent className="w-[560px] sm:max-w-[560px] overflow-y-auto" style={{ borderRadius: 0 }}>
+          {selectedPolicy && (
+            <>
+              <SheetHeader>
+                <SheetTitle className="flex items-center gap-2" style={{ color: 'hsl(var(--text-1))' }}>
+                  <ShieldCheck size={18} weight="fill" style={{ color: 'hsl(var(--brand))' }} />
+                  {selectedPolicy.id} — {selectedPolicy.name}
+                </SheetTitle>
+              </SheetHeader>
+              <Tabs defaultValue="overview" className="mt-4">
+                <TabsList style={{ borderRadius: 0 }}>
+                  <TabsTrigger value="overview" style={{ borderRadius: 0 }}>Overview</TabsTrigger>
+                  <TabsTrigger value="config" style={{ borderRadius: 0 }}>Configuration</TabsTrigger>
+                  <TabsTrigger value="history" style={{ borderRadius: 0 }}>Evaluation History</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="overview" className="space-y-4 mt-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Trust Score</span>
+                      <p className="text-xl font-bold mt-1" style={{
+                        color: selectedPolicy.trustScore >= 95 ? 'hsl(142 71% 45%)' : 'hsl(45 93% 47%)',
+                      }}>{selectedPolicy.trustScore}%</p>
+                    </div>
+                    <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Evaluations</span>
+                      <p className="text-xl font-bold mt-1" style={{ color: 'hsl(var(--text-1))' }}>{formatNumber(selectedPolicy.evaluations)}</p>
+                    </div>
+                    <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Framework</span>
+                      <p className="text-sm font-medium mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selectedPolicy.framework} {selectedPolicy.clause}</p>
+                    </div>
+                    <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Last Evaluated</span>
+                      <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-1))' }}>{formatDate(selectedPolicy.lastEvaluated)}</p>
+                    </div>
+                  </div>
+                  <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                    <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Description</span>
+                    <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selectedPolicy.description}</p>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="config" className="space-y-3 mt-4">
+                  <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                    <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Type</span>
+                    <p className="text-sm font-medium mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selectedPolicy.type}</p>
+                  </div>
+                  <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                    <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Target</span>
+                    <p className="text-sm font-medium mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selectedPolicy.target}</p>
+                  </div>
+                  <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                    <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Status</span>
+                    <p className="text-sm font-medium mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selectedPolicy.status}</p>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="history" className="space-y-3 mt-4">
+                  {selectedPolicy.trendData.map((score, i) => (
+                    <div key={i} className="flex items-center justify-between px-3 py-2" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+                        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i]}
+                      </span>
+                      <span className="text-xs font-bold" style={{
+                        color: score >= 95 ? 'hsl(142 71% 45%)' : score >= 90 ? 'hsl(45 93% 47%)' : 'hsl(0 72% 51%)',
+                      }}>{score}%</span>
+                    </div>
+                  ))}
+                </TabsContent>
+              </Tabs>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+    </div>
   );
 }

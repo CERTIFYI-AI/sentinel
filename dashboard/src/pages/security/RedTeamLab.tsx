@@ -1,438 +1,399 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import {
+  Sword, Eye, PencilSimple, Trash, Plus, ShieldWarning, Fire,
+  CheckCircle, Warning, Lightning, Target, Clock, Flask,
+  ArrowRight, Crosshair, MagnifyingGlass,
+} from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../components/ui/sheet';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from '../../components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
-import {
-  Sword, MagnifyingGlass, Plus, Eye, PencilSimple, Trash,
-  Download, CheckCircle, Clock, Play, Target, UserFocus,
-} from '@phosphor-icons/react';
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Cell,
-} from 'recharts';
-import { RED_TEAM_EXERCISES, RedTeamExercise, severityColor, formatDate } from '../../data/seed';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { RED_TEAM_EXERCISES, RedTeamExercise, severityColor, statusColor, formatDate } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
-import { useChartTheme } from '../../hooks/useChartTheme';
 
-function statusStyle(status: string) {
-  switch (status) {
-    case 'completed': return { bg: '#10b98120', text: '#10b981', border: '#10b98140' };
-    case 'active': return { bg: '#3b82f620', text: '#3b82f6', border: '#3b82f640' };
-    case 'planned': return { bg: '#6b728020', text: '#6b7280', border: '#6b728040' };
-    default: return { bg: '#f9731620', text: '#f97316', border: '#f9731640' };
-  }
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info' }
+
+interface Finding {
+  id: string;
+  title: string;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  status: 'open' | 'mitigated' | 'accepted';
+  owaspCategory?: string;
 }
 
-function scoreColor(score: number) {
-  if (score >= 80) return '#10b981';
-  if (score >= 60) return '#eab308';
-  if (score >= 40) return '#f97316';
-  return '#ef4444';
+interface ExtExercise extends RedTeamExercise {
+  findings_list: Finding[];
+  recommendations: string[];
+  attackVectors: string[];
 }
 
-const EMPTY_EXERCISE: Omit<RedTeamExercise, 'id'> = {
-  name: '', attackVector: 'Prompt Injection', status: 'planned',
-  findings: 0, criticalFindings: 0, lead: '', startDate: '',
-  endDate: '', targetModel: '', description: '', score: 0,
-};
+// ── Extended Data ─────────────────────────────────────────────────────────────
+
+const EXTENDED_EXERCISES: ExtExercise[] = [
+  {
+    ...RED_TEAM_EXERCISES[0],
+    findings_list: [
+      { id: 'F-001', title: 'DAN prompt bypasses safety filter', severity: 'critical', status: 'mitigated', owaspCategory: 'LLM01: Prompt Injection' },
+      { id: 'F-002', title: 'AIM jailbreak extracts system prompt', severity: 'critical', status: 'open', owaspCategory: 'LLM01: Prompt Injection' },
+      { id: 'F-003', title: 'Role-play bypass leaks PII context', severity: 'critical', status: 'open', owaspCategory: 'LLM06: Sensitive Info Disclosure' },
+      { id: 'F-004', title: 'Base64 encoded injection passes filter', severity: 'high', status: 'mitigated', owaspCategory: 'LLM01: Prompt Injection' },
+      { id: 'F-005', title: 'Multi-turn attack degrades safety', severity: 'high', status: 'open', owaspCategory: 'LLM01: Prompt Injection' },
+      { id: 'F-006', title: 'Token manipulation bypasses word filter', severity: 'medium', status: 'mitigated' },
+      { id: 'F-007', title: 'System prompt extraction via completion', severity: 'high', status: 'open', owaspCategory: 'LLM07: Insecure Plugin Design' },
+      { id: 'F-008', title: 'Indirect injection via RAG context', severity: 'high', status: 'open', owaspCategory: 'LLM01: Prompt Injection' },
+      { id: 'F-009', title: 'Safety degradation after 10+ turns', severity: 'medium', status: 'open' },
+      { id: 'F-010', title: 'Prompt prefix override via markdown', severity: 'medium', status: 'mitigated' },
+      { id: 'F-011', title: 'Emoji encoding bypasses toxicity filter', severity: 'low', status: 'mitigated' },
+      { id: 'F-012', title: 'Context window stuffing weakens guard', severity: 'medium', status: 'open' },
+    ],
+    recommendations: ['Implement layered guardrail architecture', 'Add BERT-based injection classifier', 'Rotate system prompts monthly', 'Enable multi-turn safety evaluation'],
+    attackVectors: ['Prompt Injection', 'Jailbreak', 'Data Extraction', 'Model Inversion', 'Adversarial Input'],
+  },
+  {
+    ...RED_TEAM_EXERCISES[1],
+    findings_list: [
+      { id: 'F-013', title: 'Missing rate limiting on auth endpoint', severity: 'critical', status: 'mitigated' },
+      { id: 'F-014', title: 'JWT token lifetime too long (24h)', severity: 'high', status: 'open' },
+      { id: 'F-015', title: 'API key rotation not enforced', severity: 'high', status: 'mitigated' },
+      { id: 'F-016', title: 'CORS misconfiguration allows wildcard', severity: 'medium', status: 'mitigated' },
+      { id: 'F-017', title: 'Missing MFA on admin endpoints', severity: 'medium', status: 'open' },
+    ],
+    recommendations: ['Enforce JWT max lifetime of 1h', 'Implement API key rotation policy', 'Restrict CORS to known origins', 'Add MFA for privileged operations'],
+    attackVectors: ['Authentication Bypass', 'Token Manipulation', 'CORS Exploitation'],
+  },
+  {
+    ...RED_TEAM_EXERCISES[2],
+    findings_list: [
+      { id: 'F-018', title: 'DNS exfiltration not detected', severity: 'critical', status: 'open' },
+      { id: 'F-019', title: 'Large file upload bypass via chunking', severity: 'critical', status: 'mitigated' },
+      { id: 'F-020', title: 'Steganography in API responses', severity: 'high', status: 'open' },
+      { id: 'F-021', title: 'Webhook exfiltration to shadow endpoint', severity: 'high', status: 'mitigated' },
+      { id: 'F-022', title: 'Log data leakage via debug endpoints', severity: 'high', status: 'mitigated' },
+      { id: 'F-023', title: 'Timing-based data extraction', severity: 'medium', status: 'open' },
+      { id: 'F-024', title: 'Metadata exfiltration in error messages', severity: 'medium', status: 'mitigated' },
+      { id: 'F-025', title: 'Covert channel via model latency', severity: 'low', status: 'open' },
+    ],
+    recommendations: ['Implement DNS query monitoring', 'Add DLP on all egress points', 'Scrub error messages of metadata', 'Deploy network segmentation'],
+    attackVectors: ['Data Exfiltration', 'DNS Tunneling', 'Covert Channel'],
+  },
+  {
+    ...RED_TEAM_EXERCISES[3],
+    findings_list: [
+      { id: 'F-026', title: 'Direct prompt injection via user input', severity: 'critical', status: 'open', owaspCategory: 'LLM01: Prompt Injection' },
+      { id: 'F-027', title: 'Indirect injection via document upload', severity: 'critical', status: 'open', owaspCategory: 'LLM01: Prompt Injection' },
+      { id: 'F-028', title: 'Model outputs unsafe SQL in tool call', severity: 'critical', status: 'open', owaspCategory: 'LLM02: Insecure Output' },
+      { id: 'F-029', title: 'Training data extraction via probing', severity: 'critical', status: 'open', owaspCategory: 'LLM06: Sensitive Info Disclosure' },
+      { id: 'F-030', title: 'Adversarial suffix causes hallucination', severity: 'high', status: 'open', owaspCategory: 'LLM03: Training Data Poisoning' },
+      { id: 'F-031', title: 'Context manipulation via long prefix', severity: 'high', status: 'open', owaspCategory: 'LLM01: Prompt Injection' },
+      { id: 'F-032', title: 'Model inversion leaks training samples', severity: 'high', status: 'open', owaspCategory: 'LLM06: Sensitive Info Disclosure' },
+      { id: 'F-033', title: 'Recursive tool calling DoS', severity: 'medium', status: 'open', owaspCategory: 'LLM04: Model Denial of Service' },
+      { id: 'F-034', title: 'Output manipulation via format injection', severity: 'medium', status: 'open', owaspCategory: 'LLM02: Insecure Output' },
+    ],
+    recommendations: ['Deploy input/output classifier pipeline', 'Implement strict tool call authorization', 'Add adversarial input detection layer', 'Rate-limit recursive agent loops'],
+    attackVectors: ['Prompt Injection', 'Jailbreak', 'Data Extraction', 'Model Inversion', 'Adversarial Input'],
+  },
+];
+
+// ── Status Badge Colors ───────────────────────────────────────────────────────
+
+function campaignStatusBadge(status: string) {
+  const map: Record<string, { bg: string; color: string }> = {
+    'Planning': { bg: 'hsl(220 90% 56% / 0.12)', color: 'hsl(220 90% 56%)' },
+    'Active': { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(45 93% 47%)' },
+    'Completed': { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(142 71% 45%)' },
+    'Archived': { bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))' },
+  };
+  const normalized = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+  const s = map[normalized] || map['Planning'];
+  return (
+    <Badge style={{ background: s.bg, color: s.color, borderRadius: 0, fontSize: 10 }}>
+      {normalized}
+    </Badge>
+  );
+}
+
+// ── Metric Tile ───────────────────────────────────────────────────────────────
+
+function MetricTile({ label, value, variant, icon, sub }: {
+  label: string; value: string; variant: 'ok' | 'warn' | 'error' | 'info'; icon: React.ReactNode; sub?: string;
+}) {
+  const vs = {
+    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(142 71% 45%)' },
+    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(45 93% 47%)' },
+    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(0 72% 51%)' },
+    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(220 90% 56%)' },
+  };
+  const s = vs[variant];
+  return (
+    <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-4))' }}>{label}</span>
+          <div className="p-1.5" style={{ background: s.bg, borderRadius: 0 }}>{icon}</div>
+        </div>
+        <div className="text-2xl font-bold" style={{ color: s.color }}>{value}</div>
+        {sub && <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>{sub}</p>}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Main Component ────────────────────────────────────────────────────────────
 
 export default function RedTeamLab() {
   const { orgName } = useSettingsStore();
-  const ct = useChartTheme();
+  const [exercises, setExercises] = useState<ExtExercise[]>(EXTENDED_EXERCISES);
+  const [selected, setSelected] = useState<ExtExercise | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<ExtExercise | null>(null);
+  const [toasts, setToasts] = useState<ToastMsg[]>([]);
 
-  const [exercises, setExercises] = useState<RedTeamExercise[]>(RED_TEAM_EXERCISES);
-  const [search, setSearch] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, text, type }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
+  }, []);
 
-  const [viewItem, setViewItem] = useState<RedTeamExercise | null>(null);
-  const [editItem, setEditItem] = useState<RedTeamExercise | null>(null);
-  const [deleteItem, setDeleteItem] = useState<RedTeamExercise | null>(null);
-  const [createOpen, setCreateOpen] = useState(false);
-  const [formData, setFormData] = useState<Omit<RedTeamExercise, 'id'>>(EMPTY_EXERCISE);
+  const totalFindings = exercises.reduce((a, e) => a + e.findings, 0);
+  const criticalFindings = exercises.reduce((a, e) => a + e.criticalFindings, 0);
+  const activeCampaigns = exercises.filter(e => e.status === 'active').length;
+  const mitigatedFindings = exercises.reduce((a, e) => a + e.findings_list.filter(f => f.status === 'mitigated').length, 0);
 
-  const filtered = exercises.filter(e => {
-    const q = search.toLowerCase();
-    const matchSearch = !q || e.name.toLowerCase().includes(q) || e.attackVector.toLowerCase().includes(q) || e.lead.toLowerCase().includes(q);
-    const matchStat = filterStatus === 'all' || e.status === filterStatus;
-    return matchSearch && matchStat;
-  });
+  const handleDelete = () => {
+    if (!deleteTarget) return;
+    setExercises(prev => prev.filter(e => e.id !== deleteTarget.id));
+    toast(`Campaign ${deleteTarget.id} deleted`, 'info');
+    setDeleteTarget(null);
+  };
 
-  const vectorData = Array.from(
-    exercises.reduce((acc, e) => {
-      acc.set(e.attackVector, (acc.get(e.attackVector) || 0) + e.findings);
-      return acc;
-    }, new Map<string, number>())
-  ).map(([name, findings]) => ({ name, findings }));
-
-  const stats = [
-    { label: 'Total Exercises', value: exercises.length, icon: Sword },
-    { label: 'Active', value: exercises.filter(e => e.status === 'active').length, icon: Play },
-    { label: 'Total Findings', value: exercises.reduce((s, e) => s + e.findings, 0), icon: Target },
-    { label: 'Critical Findings', value: exercises.reduce((s, e) => s + e.criticalFindings, 0), icon: UserFocus },
-  ];
-
-  function handleCreate() {
-    const id = `RT-${String(exercises.length + 1).padStart(3, '0')}`;
-    setExercises(prev => [...prev, { ...formData, id }]);
-    setCreateOpen(false);
-    setFormData(EMPTY_EXERCISE);
-  }
-
-  function handleEdit() {
-    if (!editItem) return;
-    setExercises(prev => prev.map(e => e.id === editItem.id ? editItem : e));
-    setEditItem(null);
-  }
-
-  function handleDelete() {
-    if (!deleteItem) return;
-    setExercises(prev => prev.filter(e => e.id !== deleteItem.id));
-    setDeleteItem(null);
-  }
+  const openDetail = (ex: ExtExercise) => { setSelected(ex); setSheetOpen(true); };
 
   return (
-    <div className="space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div className="space-y-6">
+      {/* Toast */}
+      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+        {toasts.map(t => (
+          <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
+            background: t.type === 'success' ? 'hsl(142 71% 45%)' : t.type === 'error' ? 'hsl(0 72% 51%)' : 'hsl(220 90% 56%)',
+            color: '#fff', borderRadius: 0, minWidth: 300,
+          }}>{t.text}</div>
+        ))}
+      </div>
+
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Red Team Lab</h1>
-          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>
-            {orgName} · Adversarial testing campaigns & findings
-          </p>
+          <div className="flex items-center gap-3 mb-1">
+            <Sword size={22} weight="fill" style={{ color: 'hsl(0 72% 51%)' }} />
+            <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Red Team Lab</h1>
+          </div>
+          <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} — Adversarial testing campaigns and AI security exercises</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm"><Download size={14} className="mr-1" /> Export</Button>
-          <Button size="sm" onClick={() => { setFormData(EMPTY_EXERCISE); setCreateOpen(true); }}>
-            <Plus size={14} className="mr-1" /> New Exercise
+        <div className="flex items-center gap-3">
+          <Button variant="outline" style={{ borderRadius: 0 }}>
+            <Plus size={14} className="mr-2" />Create Exercise
+          </Button>
+          <Button style={{ borderRadius: 0, background: 'hsl(0 72% 51%)', color: '#fff' }}>
+            <Lightning size={14} className="mr-2" />Launch Campaign
           </Button>
         </div>
       </div>
 
-      {/* Stat Cards */}
+      {/* Metrics */}
       <div className="grid grid-cols-4 gap-4">
-        {stats.map(s => (
-          <Card key={s.label} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-            <CardContent className="p-4 flex items-center justify-between">
-              <div>
-                <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{s.label}</p>
-                <p className="text-3xl font-bold mt-1" style={{ color: 'hsl(var(--text-1))' }}>{s.value}</p>
-              </div>
-              <s.icon size={28} style={{ color: 'hsl(var(--brand))' }} />
-            </CardContent>
-          </Card>
-        ))}
+        <MetricTile label="Total Campaigns" value={String(exercises.length)} variant="info" icon={<Sword size={16} weight="fill" style={{ color: 'hsl(220 90% 56%)' }} />} />
+        <MetricTile label="Active" value={String(activeCampaigns)} variant="warn" icon={<Lightning size={16} weight="fill" style={{ color: 'hsl(45 93% 47%)' }} />} sub="In progress" />
+        <MetricTile label="Critical Findings" value={String(criticalFindings)} variant="error" icon={<Fire size={16} weight="fill" style={{ color: 'hsl(0 72% 51%)' }} />} sub="Require remediation" />
+        <MetricTile label="Mitigated Findings" value={String(mitigatedFindings)} variant="ok" icon={<CheckCircle size={16} weight="fill" style={{ color: 'hsl(142 71% 45%)' }} />} />
       </div>
 
-      {/* Campaign Cards */}
-      <div className="grid grid-cols-2 gap-4">
-        {exercises.map(e => (
-          <Card
-            key={e.id}
-            className="cursor-pointer"
-            style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderLeft: `3px solid ${scoreColor(e.score)}` }}
-            onClick={() => setViewItem(e)}
-          >
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{e.name}</p>
-                  <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-3))' }}>{e.attackVector}</p>
-                </div>
-                <Badge style={{ background: statusStyle(e.status).bg, color: statusStyle(e.status).text, border: `1px solid ${statusStyle(e.status).border}`, borderRadius: 0, fontSize: 11 }}>
-                  {e.status}
-                </Badge>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="text-center">
-                  <p className="text-xl font-bold" style={{ color: scoreColor(e.score) }}>{e.score}</p>
-                  <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Score</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>{e.findings}</p>
-                  <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Findings</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xl font-bold" style={{ color: '#ef4444' }}>{e.criticalFindings}</p>
-                  <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Critical</p>
-                </div>
-                <div className="flex-1">
-                  <div style={{ width: '100%', height: 6, background: 'hsl(var(--bg-muted))', borderRadius: 0 }}>
-                    <div style={{ width: `${e.score}%`, height: '100%', background: scoreColor(e.score), borderRadius: 0 }} />
-                  </div>
-                  <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-3))' }}>Lead: {e.lead}</p>
-                </div>
-              </div>
-              <div className="flex gap-2 mt-3 justify-end" onClick={ev => ev.stopPropagation()}>
-                <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setViewItem(e)}>
-                  <Eye size={13} />
-                </Button>
-                <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setEditItem({ ...e })}>
-                  <PencilSimple size={13} />
-                </Button>
-                <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: '#ef4444' }} onClick={() => setDeleteItem(e)}>
-                  <Trash size={13} />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Chart */}
-      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Findings by Attack Vector</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={vectorData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
-              <XAxis dataKey="name" tick={{ fontSize: 10, fill: ct.axis }} />
-              <YAxis tick={{ fontSize: 11, fill: ct.axis }} allowDecimals={false} label={{ value: 'Count', angle: -90, position: 'insideLeft', style: { fill: ct.axis } }} />
-              <Tooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.tooltipText, borderRadius: 0 }} />
-              <Bar dataKey="findings" fill={ct.brand} radius={0} name="Findings" />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      {/* Search + Filter + Table */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-xs">
-          <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--text-3))' }} />
-          <Input placeholder="Search exercises..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8" style={{ borderRadius: 0 }} />
-        </div>
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-          style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', fontSize: 13, borderRadius: 0 }}>
-          <option value="all">All Statuses</option>
-          {['active', 'completed', 'planned'].map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
-        <span className="text-xs ml-auto" style={{ color: 'hsl(var(--text-3))' }}>{filtered.length} of {exercises.length} exercises</span>
-      </div>
-
-      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+      {/* Table */}
+      <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
         <CardContent className="p-0">
-          {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16" style={{ color: 'hsl(var(--text-3))' }}>
-              <Sword size={40} />
-              <p className="mt-3 text-sm font-medium">No exercises match your filters</p>
-            </div>
-          ) : (
-            <table className="w-full">
-              <thead style={{ background: 'hsl(var(--bg-muted))' }}>
-                <tr>
-                  {['ID', 'Name', 'Attack Vector', 'Status', 'Score', 'Findings', 'Critical', 'Lead', 'Actions'].map(h => (
-                    <th key={h} className="text-left p-3 text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>{h}</th>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                  {['ID', 'Campaign', 'Attack Vector', 'Findings', 'Status', 'Lead', 'Started', 'Completed', 'Actions'].map(h => (
+                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold whitespace-nowrap" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(e => (
-                  <tr
-                    key={e.id}
-                    className="cursor-pointer"
-                    style={{ borderTop: '1px solid hsl(var(--border))' }}
-                    onMouseEnter={ev => (ev.currentTarget.style.background = 'hsl(var(--bg-muted))')}
-                    onMouseLeave={ev => (ev.currentTarget.style.background = '')}
-                    onClick={() => setViewItem(e)}
-                  >
-                    <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{e.id}</td>
-                    <td className="p-3 text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{e.name}</td>
-                    <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{e.attackVector}</td>
-                    <td className="p-3">
-                      <Badge style={{ background: statusStyle(e.status).bg, color: statusStyle(e.status).text, border: `1px solid ${statusStyle(e.status).border}`, borderRadius: 0, fontSize: 11 }}>
-                        {e.status}
-                      </Badge>
+                {exercises.map(ex => (
+                  <tr key={ex.id} style={{ borderBottom: '1px solid hsl(var(--border))' }} className="hover:bg-muted/30">
+                    <td className="px-4 py-3 text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{ex.id}</td>
+                    <td className="px-4 py-3">
+                      <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{ex.name}</span>
                     </td>
-                    <td className="p-3">
-                      <span className="text-sm font-bold" style={{ color: scoreColor(e.score) }}>{e.score}</span>
+                    <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{ex.attackVector}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold" style={{ color: 'hsl(var(--text-1))' }}>{ex.findings}</span>
+                        {ex.criticalFindings > 0 && (
+                          <Badge style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(0 72% 51%)', borderRadius: 0, fontSize: 9 }}>
+                            {ex.criticalFindings} critical
+                          </Badge>
+                        )}
+                      </div>
                     </td>
-                    <td className="p-3 text-sm" style={{ color: 'hsl(var(--text-1))' }}>{e.findings}</td>
-                    <td className="p-3 text-sm" style={{ color: '#ef4444' }}>{e.criticalFindings}</td>
-                    <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{e.lead}</td>
-                    <td className="p-3">
-                      <div className="flex items-center gap-1" onClick={ev => ev.stopPropagation()}>
-                        <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setViewItem(e)}><Eye size={14} /></Button>
-                        <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setEditItem({ ...e })}><PencilSimple size={14} /></Button>
-                        <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: '#ef4444' }} onClick={() => setDeleteItem(e)}><Trash size={14} /></Button>
+                    <td className="px-4 py-3">{campaignStatusBadge(ex.status)}</td>
+                    <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-1))' }}>{ex.lead}</td>
+                    <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{formatDate(ex.startDate)}</td>
+                    <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{ex.endDate ? formatDate(ex.endDate) : '—'}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openDetail(ex)}>
+                          <Eye size={14} style={{ color: 'hsl(var(--brand))' }} />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openDetail(ex)}>
+                          <PencilSimple size={14} style={{ color: 'hsl(var(--text-4))' }} />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setDeleteTarget(ex)}>
+                          <Trash size={14} style={{ color: 'hsl(0 72% 51%)' }} />
+                        </Button>
                       </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          )}
+          </div>
         </CardContent>
       </Card>
 
-      {/* View Sheet */}
-      <Sheet open={!!viewItem} onOpenChange={o => !o && setViewItem(null)}>
-        <SheetContent style={{ width: 520, background: 'hsl(var(--bg-surface))', borderRadius: 0 }}>
-          {viewItem && (
+      {/* Delete ConfirmDialog */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        type="danger"
+        title="Delete Campaign"
+        message={<p>Delete <strong>{deleteTarget?.id} — {deleteTarget?.name}</strong>? All findings and reports will be archived.</p>}
+        confirmLabel="Delete Campaign"
+      />
+
+      {/* Campaign Detail Sheet */}
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetContent className="w-[640px] sm:max-w-[640px] overflow-y-auto" style={{ borderRadius: 0 }}>
+          {selected && (
             <>
-              <SheetHeader className="pb-4">
-                <SheetTitle style={{ color: 'hsl(var(--text-1))' }}>{viewItem.name}</SheetTitle>
-                <div className="flex gap-2">
-                  <Badge style={{ background: statusStyle(viewItem.status).bg, color: statusStyle(viewItem.status).text, border: `1px solid ${statusStyle(viewItem.status).border}`, borderRadius: 0 }}>
-                    {viewItem.status}
-                  </Badge>
-                  <Badge variant="outline" style={{ borderRadius: 0 }}>Score: {viewItem.score}</Badge>
-                </div>
+              <SheetHeader>
+                <SheetTitle className="flex items-center gap-2" style={{ color: 'hsl(var(--text-1))' }}>
+                  <Sword size={18} weight="fill" style={{ color: 'hsl(0 72% 51%)' }} />
+                  {selected.id} — {selected.name}
+                </SheetTitle>
               </SheetHeader>
-              <Tabs defaultValue="details">
-                <TabsList style={{ borderRadius: 0, background: 'hsl(var(--bg-muted))' }}>
-                  <TabsTrigger value="details" style={{ borderRadius: 0 }}>Details</TabsTrigger>
+              <Tabs defaultValue="overview" className="mt-4">
+                <TabsList style={{ borderRadius: 0 }}>
+                  <TabsTrigger value="overview" style={{ borderRadius: 0 }}>Overview</TabsTrigger>
+                  <TabsTrigger value="vectors" style={{ borderRadius: 0 }}>Attack Vectors</TabsTrigger>
                   <TabsTrigger value="findings" style={{ borderRadius: 0 }}>Findings</TabsTrigger>
+                  <TabsTrigger value="recommendations" style={{ borderRadius: 0 }}>Recommendations</TabsTrigger>
                 </TabsList>
-                <TabsContent value="details" className="mt-4 space-y-3">
-                  {[
-                    { label: 'Exercise ID', value: viewItem.id },
-                    { label: 'Attack Vector', value: viewItem.attackVector },
-                    { label: 'Lead', value: viewItem.lead },
-                    { label: 'Target Model', value: viewItem.targetModel || 'All Systems' },
-                    { label: 'Start Date', value: viewItem.startDate ? formatDate(viewItem.startDate) : 'TBD' },
-                    { label: 'End Date', value: viewItem.endDate ? formatDate(viewItem.endDate) : 'In Progress' },
-                  ].map(r => (
-                    <div key={r.label} className="flex justify-between py-2" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                      <span className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>{r.label}</span>
-                      <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{r.value}</span>
+
+                <TabsContent value="overview" className="space-y-4 mt-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Status</span>
+                      <div className="mt-1">{campaignStatusBadge(selected.status)}</div>
+                    </div>
+                    <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Security Score</span>
+                      <p className="text-lg font-bold mt-1" style={{ color: selected.score >= 70 ? 'hsl(142 71% 45%)' : selected.score >= 50 ? 'hsl(45 93% 47%)' : 'hsl(0 72% 51%)' }}>
+                        {selected.score}/100
+                      </p>
+                    </div>
+                    <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Lead</span>
+                      <p className="text-sm font-medium mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selected.lead}</p>
+                    </div>
+                    <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Target Model</span>
+                      <p className="text-sm font-mono mt-1" style={{ color: 'hsl(var(--brand))' }}>{selected.targetModel || 'Platform-wide'}</p>
+                    </div>
+                    <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Duration</span>
+                      <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-1))' }}>
+                        {formatDate(selected.startDate)} — {selected.endDate ? formatDate(selected.endDate) : 'Ongoing'}
+                      </p>
+                    </div>
+                    <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Total Findings</span>
+                      <p className="text-lg font-bold mt-1" style={{ color: 'hsl(var(--text-1))' }}>
+                        {selected.findings} <span className="text-xs font-normal" style={{ color: 'hsl(0 72% 51%)' }}>({selected.criticalFindings} critical)</span>
+                      </p>
+                    </div>
+                  </div>
+                  <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                    <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Description</span>
+                    <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selected.description}</p>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="vectors" className="space-y-3 mt-4">
+                  {selected.attackVectors.map((vec, i) => (
+                    <div key={i} className="flex items-center gap-3 p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <Crosshair size={14} style={{ color: 'hsl(0 72% 51%)' }} />
+                      <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{vec}</span>
                     </div>
                   ))}
-                  <p className="text-sm mt-2" style={{ color: 'hsl(var(--text-2))' }}>{viewItem.description}</p>
+                  {selected.targetModel === 'MDL-004' && (
+                    <div className="p-3 mt-2" style={{ background: 'hsl(45 93% 47% / 0.08)', border: '1px solid hsl(45 93% 47% / 0.3)', borderRadius: 0 }}>
+                      <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(45 93% 47%)' }}>OWASP LLM Top 10 Coverage</p>
+                      <div className="flex flex-wrap gap-2">
+                        {['LLM01: Prompt Injection', 'LLM02: Insecure Output', 'LLM03: Training Data Poisoning', 'LLM04: Model DoS', 'LLM06: Sensitive Info Disclosure', 'LLM07: Insecure Plugin Design'].map(cat => (
+                          <Badge key={cat} style={{ background: 'hsl(45 93% 47% / 0.15)', color: 'hsl(45 93% 47%)', borderRadius: 0, fontSize: 10 }}>{cat}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </TabsContent>
-                <TabsContent value="findings" className="mt-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-4" style={{ border: '1px solid hsl(var(--border))' }}>
-                      <p className="text-4xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>{viewItem.findings}</p>
-                      <p className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>Total Findings</p>
+
+                <TabsContent value="findings" className="space-y-2 mt-4">
+                  {selected.findings_list.map(f => {
+                    const sc = severityColor(f.severity);
+                    const fstc = statusColor(f.status);
+                    return (
+                      <div key={f.id} className="flex items-center justify-between p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{f.id}</span>
+                            <Badge style={{ background: sc.bg, color: sc.text, borderRadius: 0, fontSize: 9 }}>{f.severity.toUpperCase()}</Badge>
+                            <Badge style={{ background: fstc.bg, color: fstc.text, borderRadius: 0, fontSize: 9 }}>{f.status}</Badge>
+                          </div>
+                          <p className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{f.title}</p>
+                          {f.owaspCategory && (
+                            <Badge className="mt-1" style={{ background: 'hsl(220 90% 56% / 0.10)', color: 'hsl(220 90% 56%)', borderRadius: 0, fontSize: 9 }}>
+                              {f.owaspCategory}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </TabsContent>
+
+                <TabsContent value="recommendations" className="space-y-3 mt-4">
+                  {selected.recommendations.map((rec, i) => (
+                    <div key={i} className="flex items-start gap-3 p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <div className="flex items-center justify-center w-5 h-5 text-xs font-bold" style={{ background: 'hsl(var(--brand))', color: '#fff', borderRadius: 0, minWidth: 20 }}>
+                        {i + 1}
+                      </div>
+                      <span className="text-sm" style={{ color: 'hsl(var(--text-1))' }}>{rec}</span>
                     </div>
-                    <div className="text-center p-4" style={{ border: '1px solid hsl(var(--border))' }}>
-                      <p className="text-4xl font-bold" style={{ color: '#ef4444' }}>{viewItem.criticalFindings}</p>
-                      <p className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>Critical</p>
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-2))' }}>Security Score</p>
-                    <div style={{ width: '100%', height: 12, background: 'hsl(var(--bg-muted))', borderRadius: 0 }}>
-                      <div style={{ width: `${viewItem.score}%`, height: '100%', background: scoreColor(viewItem.score), borderRadius: 0 }} />
-                    </div>
-                    <div className="flex justify-between text-xs mt-1" style={{ color: 'hsl(var(--text-3))' }}>
-                      <span>0 (Fail)</span><span>{viewItem.score}%</span><span>100 (Pass)</span>
-                    </div>
-                  </div>
+                  ))}
                 </TabsContent>
               </Tabs>
-              <div className="flex gap-2 mt-6">
-                <Button size="sm" onClick={() => { setEditItem({ ...viewItem }); setViewItem(null); }}>
-                  <PencilSimple size={14} className="mr-1" /> Edit
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => setViewItem(null)}>Close</Button>
-              </div>
             </>
           )}
         </SheetContent>
       </Sheet>
-
-      {/* Edit Dialog */}
-      <Dialog open={!!editItem} onOpenChange={o => !o && setEditItem(null)}>
-        <DialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0, maxWidth: 520 }}>
-          <DialogHeader><DialogTitle style={{ color: 'hsl(var(--text-1))' }}>Edit Exercise</DialogTitle></DialogHeader>
-          {editItem && (
-            <div className="space-y-3">
-              {[
-                { label: 'Name', key: 'name' }, { label: 'Attack Vector', key: 'attackVector' },
-                { label: 'Lead', key: 'lead' }, { label: 'Target Model', key: 'targetModel' },
-                { label: 'Description', key: 'description' },
-              ].map(f => (
-                <div key={f.key}>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>{f.label}</label>
-                  <Input value={(editItem as any)[f.key] || ''} onChange={e => setEditItem(prev => prev ? { ...prev, [f.key]: e.target.value } : null)} style={{ borderRadius: 0 }} />
-                </div>
-              ))}
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Status</label>
-                  <select value={editItem.status} onChange={e => setEditItem(prev => prev ? { ...prev, status: e.target.value } : null)}
-                    style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                    {['active', 'completed', 'planned'].map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Score</label>
-                  <Input type="number" min={0} max={100} value={editItem.score} onChange={e => setEditItem(prev => prev ? { ...prev, score: parseInt(e.target.value) } : null)} style={{ borderRadius: 0 }} />
-                </div>
-                <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Findings</label>
-                  <Input type="number" min={0} value={editItem.findings} onChange={e => setEditItem(prev => prev ? { ...prev, findings: parseInt(e.target.value) } : null)} style={{ borderRadius: 0 }} />
-                </div>
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditItem(null)} style={{ borderRadius: 0 }}>Cancel</Button>
-            <Button onClick={handleEdit} style={{ borderRadius: 0 }}>Save Changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Create Dialog */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0, maxWidth: 520 }}>
-          <DialogHeader><DialogTitle style={{ color: 'hsl(var(--text-1))' }}>New Red Team Exercise</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            {[
-              { label: 'Name', key: 'name' }, { label: 'Attack Vector', key: 'attackVector' },
-              { label: 'Lead', key: 'lead' }, { label: 'Target Model', key: 'targetModel' },
-              { label: 'Description', key: 'description' },
-            ].map(f => (
-              <div key={f.key}>
-                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>{f.label}</label>
-                <Input value={(formData as any)[f.key] || ''} onChange={e => setFormData(prev => ({ ...prev, [f.key]: e.target.value }))} style={{ borderRadius: 0 }} />
-              </div>
-            ))}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Start Date</label>
-                <Input type="date" value={formData.startDate} onChange={e => setFormData(prev => ({ ...prev, startDate: e.target.value }))} style={{ borderRadius: 0 }} />
-              </div>
-              <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Status</label>
-                <select value={formData.status} onChange={e => setFormData(prev => ({ ...prev, status: e.target.value }))}
-                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                  {['active', 'completed', 'planned'].map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
-            <Button onClick={handleCreate} style={{ borderRadius: 0 }} disabled={!formData.name}>Create Exercise</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Dialog */}
-      <AlertDialog open={!!deleteItem} onOpenChange={o => !o && setDeleteItem(null)}>
-        <AlertDialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0 }}>
-          <AlertDialogHeader>
-            <AlertDialogTitle style={{ color: 'hsl(var(--text-1))' }}>Delete Exercise</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete <strong>{deleteItem?.name}</strong>? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} style={{ background: '#ef4444', borderRadius: 0 }}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

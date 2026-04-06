@@ -14,7 +14,7 @@ import {
 } from 'recharts';
 import {
   MODELS, RISKS, AGENTS, INCIDENTS, POLICIES, FRAMEWORKS, GAPS,
-  AUDIT_LOG, VENDORS, DATASETS, severityColor, statusColor, formatDate,
+  AUDIT_LOG, VENDORS, DATASETS, EVIDENCE, severityColor, statusColor, formatDate,
 } from '../data/seed';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useChartTheme } from '../hooks/useChartTheme';

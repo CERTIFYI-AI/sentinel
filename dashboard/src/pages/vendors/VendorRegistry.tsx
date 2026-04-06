@@ -1,326 +1,606 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useCallback } from 'react';
 import {
-  Eye, PencilSimple, Trash, Plus, Buildings, CheckCircle, Warning, XCircle, Export
+  Eye, PencilSimple, Trash, Plus, Buildings, MagnifyingGlass, Funnel,
+  Warning, CheckCircle, ShieldWarning, Export, Handshake, Globe,
+  CloudArrowUp, Siren,
 } from '@phosphor-icons/react';
-import { Card } from '../../components/ui/card';
+import { Card, CardContent } from '../../components/ui/card';
+import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { Progress } from '../../components/ui/progress';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../components/ui/sheet';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
-import { VENDORS, severityColor, statusColor, formatDate, MODELS } from '../../data/seed';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '../../components/ui/select';
+import { Progress } from '../../components/ui/progress';
+import {
+  VENDORS, Vendor, MODELS, severityColor, statusColor, formatDate,
+} from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
 
-function StatCard({ icon, value, label }: { icon: React.ReactNode; value: string | number; label: string }) {
-  return (
-    <Card className="p-4 flex items-start gap-3">
-      <div className="mt-0.5 text-[hsl(var(--brand))]">{icon}</div>
-      <div>
-        <div className="text-2xl font-bold text-[hsl(var(--text-1))]">{value}</div>
-        <div className="text-xs text-[hsl(var(--text-4))] mt-0.5">{label}</div>
-      </div>
-    </Card>
-  );
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info' }
+
+function tierColor(risk: Vendor['risk']) {
+  const map: Record<string, { bg: string; color: string; label: string }> = {
+    critical: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(0 72% 51%)', label: 'Tier 1' },
+    high: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(0 72% 51%)', label: 'Tier 1' },
+    medium: { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(45 93% 47%)', label: 'Tier 2' },
+    low: { bg: 'hsl(142 71% 45% / 0.15)', color: 'hsl(142 71% 45%)', label: 'Tier 3' },
+  };
+  return map[risk] ?? map.medium;
 }
 
-function ScoreBar({ label, value }: { label: string; value: number }) {
-  const color = value >= 80 ? '#22c55e' : value >= 65 ? '#f59e0b' : '#ef4444';
-  return (
-    <div className="space-y-1">
-      <div className="flex justify-between text-xs">
-        <span className="text-[hsl(var(--text-3))]">{label}</span>
-        <span className="font-medium" style={{ color }}>{value}</span>
-      </div>
-      <div className="h-1.5 bg-[hsl(var(--border))]">
-        <div className="h-full transition-all" style={{ width: `${value}%`, background: color }} />
-      </div>
-    </div>
-  );
+function dpaStatusBadge(dpa: string) {
+  const sc = statusColor(dpa === 'signed' ? 'signed' : dpa === 'pending' ? 'pending' : 'not_signed');
+  const label = dpa === 'signed' ? 'DPA Signed' : dpa === 'pending' ? 'DPA Pending' : 'DPA Not Signed';
+  return <Badge style={{ background: sc.bg, color: sc.text, borderRadius: 0, fontSize: 10 }}>{label}</Badge>;
 }
+
+function scoreProgressColor(score: number): string {
+  if (score >= 80) return 'hsl(142 71% 45%)';
+  if (score >= 60) return 'hsl(45 93% 47%)';
+  return 'hsl(0 72% 51%)';
+}
+
+// ── Main Component ────────────────────────────────────────────────────────────
 
 export default function VendorRegistry() {
-  const orgName = useSettingsStore(s => s.orgName);
-  const navigate = useNavigate();
+  const { orgName } = useSettingsStore();
+  const [vendors, setVendors] = useState<Vendor[]>(VENDORS);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [selected, setSelected] = useState<typeof VENDORS[0] | null>(null);
-  const [editOpen, setEditOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<typeof VENDORS[0] | null>(null);
-  const [vendors, setVendors] = useState(VENDORS);
-  const [editForm, setEditForm] = useState({ name: '', contact: '', category: '' });
+  const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
+  const [detailTab, setDetailTab] = useState('overview');
+  const [editVendor, setEditVendor] = useState<Vendor | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Vendor | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [toasts, setToasts] = useState<ToastMsg[]>([]);
 
-  const stats = {
-    total: vendors.length,
-    approved: vendors.filter(v => v.status === 'approved').length,
-    inReview: vendors.filter(v => v.status === 'in_review').length,
-    highRisk: vendors.filter(v => v.status === 'high_risk' || v.risk === 'high').length,
-  };
+  const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, text, type }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
+  }, []);
 
+  // Metrics
+  const totalVendors = vendors.length;
+  const approved = vendors.filter(v => v.status === 'approved').length;
+  const inReview = vendors.filter(v => v.status === 'in_review').length;
+  const highRiskDpa = vendors.filter(v => v.status === 'high_risk' || v.dpaStatus === 'not_signed').length;
+
+  // DPA warning vendors
+  const dpaWarningVendors = vendors.filter(v => v.dpaStatus === 'not_signed');
+
+  // Filters
   const filtered = vendors.filter(v => {
-    const q = search.toLowerCase();
-    const matchSearch = !q || v.name.toLowerCase().includes(q) || v.id.toLowerCase().includes(q);
+    const matchSearch = v.id.toLowerCase().includes(search.toLowerCase()) ||
+      v.name.toLowerCase().includes(search.toLowerCase()) ||
+      v.category.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === 'all' || v.status === statusFilter;
-    const matchCat = categoryFilter === 'all' || v.category === categoryFilter;
-    return matchSearch && matchStatus && matchCat;
+    return matchSearch && matchStatus;
   });
 
-  const categories = [...new Set(VENDORS.map(v => v.category))];
-
-  const handleEdit = (v: typeof VENDORS[0]) => {
-    setEditForm({ name: v.name, contact: v.contact, category: v.category });
-    setSelected(v);
-    setEditOpen(true);
-  };
-
-  const handleSaveEdit = () => {
-    setVendors(prev => prev.map(v => v.id === selected?.id ? { ...v, ...editForm } : v));
-    setEditOpen(false);
-  };
-
   const handleDelete = () => {
-    if (deleteTarget) {
-      setVendors(prev => prev.filter(v => v.id !== deleteTarget.id));
-      setDeleteTarget(null);
-      if (selected?.id === deleteTarget.id) setSelected(null);
-    }
+    if (!deleteTarget) return;
+    setVendors(prev => prev.filter(v => v.id !== deleteTarget.id));
+    toast(`${deleteTarget.id} ${deleteTarget.name} removed`, 'error');
+    setDeleteTarget(null);
   };
 
   const handleExport = () => {
     const csv = [
-      ['ID', 'Name', 'Category', 'Risk', 'Score', 'Status', 'DPA Status', 'Last Review', 'Contact'],
-      ...vendors.map(v => [v.id, v.name, v.category, v.risk, v.score, v.status, v.dpaStatus, v.lastReview, v.contact]),
-    ].map(row => row.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = 'vendors.csv'; a.click();
+      ['ID', 'Name', 'Category', 'Risk', 'Score', 'DPA Status', 'Review Status', 'Last Review'].join(','),
+      ...vendors.map(v => [v.id, v.name, v.category, v.risk, v.score, v.dpaStatus, v.status, v.lastReview].join(','))
+    ].join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = `vendor-registry-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    toast('Vendor registry exported as CSV');
   };
-
-  const scoreColor = (s: number) => s >= 80 ? '#22c55e' : s >= 65 ? '#f59e0b' : '#ef4444';
 
   return (
     <div className="space-y-6">
+      {/* Toast layer */}
+      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+        {toasts.map(t => (
+          <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
+            background: t.type === 'success' ? 'hsl(142 71% 45%)' : t.type === 'error' ? 'hsl(0 72% 51%)' : 'hsl(220 90% 56%)',
+            color: '#fff', borderRadius: 0, minWidth: 300
+          }}>{t.text}</div>
+        ))}
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-[hsl(var(--text-1))]">Vendor Registry</h1>
-          <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">{orgName} — AI vendor risk assessment and DPA management</p>
+          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Vendor Registry</h1>
+          <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} · Third-party AI vendor management & risk assessment</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="gap-2" onClick={handleExport}>
-            <Export size={16} /> Export
+          <Button variant="outline" onClick={handleExport} style={{ borderRadius: 0 }}>
+            <Export className="h-4 w-4 mr-2" />Export CSV
           </Button>
-          <Button className="gap-2">
-            <Plus size={16} /> Register Vendor
+          <Button onClick={() => setAddOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+            <Plus className="h-4 w-4 mr-2" />Add Vendor
           </Button>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
-        <StatCard icon={<Buildings size={20} />} value={stats.total} label="Total Vendors" />
-        <StatCard icon={<CheckCircle size={20} />} value={stats.approved} label="Approved" />
-        <StatCard icon={<Warning size={20} />} value={stats.inReview} label="In Review" />
-        <StatCard icon={<XCircle size={20} />} value={stats.highRisk} label="High Risk" />
+      {/* Metric Tiles */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: 'Total Vendors', value: totalVendors, color: 'hsl(var(--text-1))', icon: Buildings },
+          { label: 'Approved', value: approved, color: 'hsl(142 71% 45%)', icon: CheckCircle },
+          { label: 'In Review', value: inReview, color: 'hsl(45 93% 47%)', icon: Warning },
+          { label: 'High Risk / DPA Gap', value: highRiskDpa, color: 'hsl(0 72% 51%)', icon: ShieldWarning },
+        ].map(stat => (
+          <Card key={stat.label} style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-center justify-between mb-2">
+                <stat.icon size={20} style={{ color: stat.color }} />
+              </div>
+              <p className="text-2xl font-bold" style={{ color: stat.color }}>{stat.value}</p>
+              <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>{stat.label}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
+      {/* DPA Warning */}
+      {dpaWarningVendors.length > 0 && (
+        <div className="p-4 flex items-start gap-3" style={{ background: 'hsl(0 72% 51% / 0.08)', border: '1px solid hsl(0 72% 51% / 0.3)' }}>
+          <Siren size={20} style={{ color: 'hsl(0 72% 51%)', flexShrink: 0, marginTop: 1 }} />
+          <div>
+            <p className="text-sm font-semibold" style={{ color: 'hsl(0 72% 51%)' }}>
+              {dpaWarningVendors.length} vendor{dpaWarningVendors.length > 1 ? 's' : ''} processing EU customer data without signed DPA — GDPR Art.28 violation
+            </p>
+            <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-2))' }}>
+              {dpaWarningVendors.map(v => v.name).join(', ')} require{dpaWarningVendors.length === 1 ? 's' : ''} immediate DPA execution.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Filters */}
-      <div className="flex gap-3">
-        <Input placeholder="Search vendors..." value={search} onChange={e => setSearch(e.target.value)} className="max-w-xs" />
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative min-w-52 max-w-xs">
+          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: 'hsl(var(--text-4))' }} />
+          <Input placeholder="Search vendors..." value={search} onChange={e => setSearch(e.target.value)}
+            className="pl-9 h-9" style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }} />
+        </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40"><SelectValue placeholder="Status" /></SelectTrigger>
-          <SelectContent>
+          <SelectTrigger className="w-36 h-9" style={{ borderRadius: 0 }}>
+            <Funnel className="h-3 w-3 mr-1" /><SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
             <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="approved">Approved</SelectItem>
-            <SelectItem value="in_review">In Review</SelectItem>
-            <SelectItem value="high_risk">High Risk</SelectItem>
-            <SelectItem value="blocked">Blocked</SelectItem>
+            {['approved', 'in_review', 'high_risk', 'blocked'].map(s => <SelectItem key={s} value={s}>{s.replace('_', ' ')}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-48"><SelectValue placeholder="Category" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{filtered.length} vendors</span>
       </div>
 
       {/* Table */}
-      <Card>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-[hsl(var(--border))]">
-                {['ID', 'Name', 'Category', 'Risk', 'Score', 'Status', 'DPA Status', 'Last Review', 'Contact', 'Actions'].map(h => (
-                  <th key={h} className="text-left px-4 py-3 text-xs font-medium text-[hsl(var(--text-4))] uppercase tracking-wide">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(v => {
-                const rc = severityColor(v.risk);
-                const sc = statusColor(v.status);
-                const dpaColor = statusColor(v.dpaStatus);
-                return (
-                  <tr key={v.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-surface))/50] transition-colors">
-                    <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--text-4))]">{v.id}</td>
-                    <td className="px-4 py-3 font-medium text-[hsl(var(--text-1))]">{v.name}</td>
-                    <td className="px-4 py-3 text-[hsl(var(--text-3))]">{v.category}</td>
-                    <td className="px-4 py-3">
-                      <span className="px-2 py-0.5 text-xs" style={{ background: rc.bg, color: rc.text, border: `1px solid ${rc.border}` }}>{v.risk}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2 min-w-[120px]">
-                        <div className="flex-1 h-1.5 bg-[hsl(var(--border))]">
-                          <div className="h-full" style={{ width: `${v.score}%`, background: scoreColor(v.score) }} />
-                        </div>
-                        <span className="text-xs font-medium w-6" style={{ color: scoreColor(v.score) }}>{v.score}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="px-2 py-0.5 text-xs" style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}` }}>{v.status}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="px-2 py-0.5 text-xs" style={{ background: dpaColor.bg, color: dpaColor.text, border: `1px solid ${dpaColor.border}` }}>{v.dpaStatus}</span>
-                    </td>
-                    <td className="px-4 py-3 text-[hsl(var(--text-4))] text-xs">{formatDate(v.lastReview)}</td>
-                    <td className="px-4 py-3 text-xs text-[hsl(var(--text-3))]">{v.contact}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-1">
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setSelected(v)}>
-                          <Eye size={14} />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleEdit(v)}>
-                          <PencilSimple size={14} />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7 text-red-400 hover:text-red-300" onClick={() => setDeleteTarget(v)}>
-                          <Trash size={14} />
-                        </Button>
-                      </div>
-                    </td>
+      <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+        <CardContent className="p-0">
+          {filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12" style={{ color: 'hsl(var(--text-4))' }}>
+              <Buildings size={32} className="mb-2 opacity-40" />
+              <p className="text-sm">No vendors found</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                    {['Vendor', 'Category', 'Risk Tier', 'Score', 'DPA Status', 'Review Status', 'Assignee', 'Last Review', 'Actions'].map(h => (
+                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
+                    ))}
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                </thead>
+                <tbody>
+                  {filtered.map(v => {
+                    const tc = tierColor(v.risk);
+                    const stc = statusColor(v.status);
+                    return (
+                      <tr key={v.id} className="hover:bg-muted/30 transition-colors"
+                        style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                        <td className="px-4 py-3">
+                          <div>
+                            <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{v.name}</p>
+                            <p className="text-xs font-mono" style={{ color: 'hsl(var(--text-4))' }}>{v.id}</p>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{v.category}</td>
+                        <td className="px-4 py-3">
+                          <Badge style={{ background: tc.bg, color: tc.color, borderRadius: 0, fontSize: 10 }}>
+                            {tc.label}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2 min-w-[120px]">
+                            <span className="text-xs font-bold" style={{ color: scoreProgressColor(v.score), minWidth: 28 }}>{v.score}</span>
+                            <div className="flex-1 h-1.5" style={{ background: 'hsl(var(--border))' }}>
+                              <div className="h-full transition-all" style={{ width: `${v.score}%`, background: scoreProgressColor(v.score) }} />
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">{dpaStatusBadge(v.dpaStatus)}</td>
+                        <td className="px-4 py-3">
+                          <Badge style={{ background: stc.bg, color: stc.text, borderRadius: 0, fontSize: 10 }}>
+                            {v.status.replace('_', ' ')}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>
+                          {v.contact ? v.contact.split('@')[0] : '—'}
+                        </td>
+                        <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{formatDate(v.lastReview)}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0"
+                              onClick={() => { setSelectedVendor(v); setDetailTab('overview'); }}>
+                              <Eye size={14} />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0"
+                              onClick={() => setEditVendor(v)}>
+                              <PencilSimple size={14} />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0"
+                              onClick={() => setDeleteTarget(v)}>
+                              <Trash size={14} />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
       </Card>
 
-      {/* Detail Sheet */}
-      <Sheet open={!!selected && !editOpen} onOpenChange={o => { if (!o) setSelected(null); }}>
-        <SheetContent className="w-[640px] max-w-full overflow-y-auto" side="right">
-          {selected && (
-            <>
-              <SheetHeader className="mb-4">
-                <SheetTitle className="flex items-center gap-2">
-                  <Buildings size={18} /> {selected.name}
-                  <span className="font-mono text-xs text-[hsl(var(--text-4))]">{selected.id}</span>
-                </SheetTitle>
-                <p className="text-sm text-[hsl(var(--text-4))]">{selected.description}</p>
-              </SheetHeader>
+      {/* Delete Confirm */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={() => setDeleteTarget(null)}
+        title={`Delete ${deleteTarget?.name}?`}
+        description={`This will remove ${deleteTarget?.id} from the vendor registry. This action cannot be undone.`}
+        confirmLabel="Delete Vendor"
+        variant="destructive"
+        onConfirm={handleDelete}
+      />
 
-              {selected.dpaStatus !== 'signed' && (
-                <div className="mb-4 border border-red-700 bg-red-950/30 p-3 flex items-center gap-2 text-sm text-red-300">
-                  <Warning size={16} className="text-red-400 shrink-0" />
-                  DPA not signed for this vendor. Data processing may be non-compliant.
-                </div>
-              )}
-
-              <Tabs defaultValue="scorecard">
-                <TabsList className="mb-4">
-                  <TabsTrigger value="scorecard">Scorecard</TabsTrigger>
-                  <TabsTrigger value="details">Details</TabsTrigger>
+      {/* Vendor Detail Sheet */}
+      <Sheet open={!!selectedVendor} onOpenChange={() => setSelectedVendor(null)}>
+        <SheetContent style={{ borderRadius: 0, width: 640, maxWidth: '100vw' }}>
+          <SheetHeader>
+            <SheetTitle style={{ color: 'hsl(var(--text-1))' }}>
+              {selectedVendor?.name} <span className="text-xs font-mono font-normal" style={{ color: 'hsl(var(--text-4))' }}>{selectedVendor?.id}</span>
+            </SheetTitle>
+          </SheetHeader>
+          {selectedVendor && (
+            <div className="mt-4 overflow-y-auto h-[calc(100vh-120px)]">
+              <Tabs value={detailTab} onValueChange={setDetailTab}>
+                <TabsList style={{ borderRadius: 0 }}>
+                  <TabsTrigger value="overview" style={{ borderRadius: 0 }}>Overview</TabsTrigger>
+                  <TabsTrigger value="scorecard" style={{ borderRadius: 0 }}>Scorecard</TabsTrigger>
+                  <TabsTrigger value="linked" style={{ borderRadius: 0 }}>Linked Models</TabsTrigger>
+                  <TabsTrigger value="history" style={{ borderRadius: 0 }}>Review History</TabsTrigger>
+                  <TabsTrigger value="dpa" style={{ borderRadius: 0 }}>DPA Status</TabsTrigger>
                 </TabsList>
-                <TabsContent value="scorecard" className="space-y-4">
-                  <div className="text-center mb-4">
-                    <div className="text-4xl font-bold" style={{ color: scoreColor(selected.score) }}>{selected.score}</div>
-                    <div className="text-xs text-[hsl(var(--text-4))] mt-1">Overall Vendor Risk Score</div>
+
+                {/* Overview */}
+                <TabsContent value="overview" className="mt-4 space-y-4">
+                  <div className="flex gap-2 flex-wrap">
+                    {(() => { const tc = tierColor(selectedVendor.risk); return <Badge style={{ background: tc.bg, color: tc.color, borderRadius: 0, fontSize: 10 }}>{tc.label} — {selectedVendor.risk}</Badge>; })()}
+                    <Badge style={{ ...statusColor(selectedVendor.status), borderRadius: 0, fontSize: 10 }}>{selectedVendor.status.replace('_', ' ')}</Badge>
+                    {dpaStatusBadge(selectedVendor.dpaStatus)}
                   </div>
-                  <div className="space-y-4 p-4 bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))]">
-                    <ScoreBar label="Security Controls" value={selected.scoreBreakdown.security} />
-                    <ScoreBar label="Compliance Coverage" value={selected.scoreBreakdown.compliance} />
-                    <ScoreBar label="Service Reliability" value={selected.scoreBreakdown.reliability} />
-                    <ScoreBar label="Data Privacy" value={selected.scoreBreakdown.dataPrivacy} />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    {[
-                      ['DPA Status', selected.dpaStatus], ['Category', selected.category],
-                      ['Last Review', formatDate(selected.lastReview)], ['Contact', selected.contact],
-                    ].map(([k, v]) => (
-                      <div key={k} className="bg-[hsl(var(--bg-surface))] p-3 border border-[hsl(var(--border))]">
-                        <div className="text-xs text-[hsl(var(--text-4))]">{k}</div>
-                        <div className="text-sm font-medium text-[hsl(var(--text-1))] mt-0.5">{v}</div>
-                      </div>
-                    ))}
+                  <div className="grid grid-cols-2 gap-4 text-xs">
+                    <div><p style={{ color: 'hsl(var(--text-4))' }}>Description</p><p className="mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selectedVendor.description}</p></div>
+                    <div><p style={{ color: 'hsl(var(--text-4))' }}>Category</p><p className="mt-1 font-medium" style={{ color: 'hsl(var(--text-1))' }}>{selectedVendor.category}</p></div>
+                    <div><p style={{ color: 'hsl(var(--text-4))' }}>Website</p><p className="mt-1 font-mono" style={{ color: 'hsl(var(--brand))' }}>{selectedVendor.website}</p></div>
+                    <div><p style={{ color: 'hsl(var(--text-4))' }}>Contact</p><p className="mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selectedVendor.contact}</p></div>
+                    <div><p style={{ color: 'hsl(var(--text-4))' }}>Overall Score</p><p className="mt-1 text-lg font-bold" style={{ color: scoreProgressColor(selectedVendor.score) }}>{selectedVendor.score}/100</p></div>
+                    <div><p style={{ color: 'hsl(var(--text-4))' }}>Last Review</p><p className="mt-1" style={{ color: 'hsl(var(--text-1))' }}>{formatDate(selectedVendor.lastReview)}</p></div>
                   </div>
                 </TabsContent>
-                <TabsContent value="details" className="space-y-4">
-                  <div>
-                    <div className="text-xs font-medium text-[hsl(var(--text-4))] mb-2 uppercase tracking-wide">Linked Models</div>
-                    {selected.linkedModels.length > 0 ? (
-                      <div className="space-y-2">
-                        {selected.linkedModels.map(mid => {
-                          const m = MODELS.find(x => x.id === mid);
-                          return m ? (
-                            <div key={mid} className="p-3 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))]">
-                              <div className="text-sm font-medium text-[hsl(var(--text-1))]">{m.name}</div>
-                              <div className="text-xs text-[hsl(var(--text-4))] mt-0.5">{mid} · {m.type}</div>
-                            </div>
-                          ) : null;
-                        })}
+
+                {/* Scorecard */}
+                <TabsContent value="scorecard" className="mt-4 space-y-4">
+                  <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Risk Scorecard</p>
+                  {[
+                    { label: 'Data Sensitivity', value: selectedVendor.scoreBreakdown.dataPrivacy },
+                    { label: 'Business Criticality', value: selectedVendor.scoreBreakdown.reliability },
+                    { label: 'Past Incidents', value: 100 - (selectedVendor.risk === 'high' ? 40 : selectedVendor.risk === 'medium' ? 20 : 10) },
+                    { label: 'Regulatory Exposure', value: selectedVendor.scoreBreakdown.compliance },
+                  ].map((item, idx) => (
+                    <div key={idx} className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{item.label}</span>
+                        <span className="text-xs font-bold" style={{ color: scoreProgressColor(item.value) }}>{item.value}/100</span>
                       </div>
-                    ) : <div className="text-sm text-[hsl(var(--text-4))]">No linked models.</div>}
+                      <div className="h-2" style={{ background: 'hsl(var(--border))' }}>
+                        <div className="h-full transition-all" style={{ width: `${item.value}%`, background: scoreProgressColor(item.value) }} />
+                      </div>
+                    </div>
+                  ))}
+                  <div className="mt-4 p-3" style={{ border: '1px solid hsl(var(--border))' }}>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Security</p>
+                      <span className="text-sm font-bold" style={{ color: scoreProgressColor(selectedVendor.scoreBreakdown.security) }}>{selectedVendor.scoreBreakdown.security}/100</span>
+                    </div>
+                    <div className="mt-1 h-2" style={{ background: 'hsl(var(--border))' }}>
+                      <div className="h-full" style={{ width: `${selectedVendor.scoreBreakdown.security}%`, background: scoreProgressColor(selectedVendor.scoreBreakdown.security) }} />
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-xs font-medium text-[hsl(var(--text-4))] mb-2 uppercase tracking-wide">Website</div>
-                    <a href={`https://${selected.website}`} target="_blank" rel="noopener noreferrer" className="text-sm text-[hsl(var(--brand))] hover:underline">{selected.website}</a>
+                </TabsContent>
+
+                {/* Linked Models */}
+                <TabsContent value="linked" className="mt-4 space-y-3">
+                  <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Linked Models</p>
+                  {selectedVendor.linkedModels.length === 0 ? (
+                    <p className="text-xs py-6 text-center" style={{ color: 'hsl(var(--text-4))' }}>No linked models</p>
+                  ) : (
+                    selectedVendor.linkedModels.map(modelId => {
+                      const model = MODELS.find(m => m.id === modelId);
+                      return model ? (
+                        <div key={modelId} className="p-3 flex items-center justify-between" style={{ border: '1px solid hsl(var(--border))' }}>
+                          <div>
+                            <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{model.name}</p>
+                            <p className="text-xs font-mono" style={{ color: 'hsl(var(--text-4))' }}>{model.id} · {model.version}</p>
+                          </div>
+                          <Badge style={{ ...statusColor(model.status), borderRadius: 0, fontSize: 10 }}>{model.status}</Badge>
+                        </div>
+                      ) : (
+                        <p key={modelId} className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{modelId} — not found</p>
+                      );
+                    })
+                  )}
+                </TabsContent>
+
+                {/* Review History */}
+                <TabsContent value="history" className="mt-4 space-y-3">
+                  <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Review History</p>
+                  {[
+                    { date: selectedVendor.lastReview, reviewer: 'David Kim', result: selectedVendor.status === 'approved' ? 'Approved' : 'In Review', notes: 'Annual vendor review completed.' },
+                    { date: '2025-10-15', reviewer: 'James Patel', result: 'Approved', notes: 'Initial vendor onboarding review.' },
+                  ].map((review, idx) => (
+                    <div key={idx} className="p-3" style={{ border: '1px solid hsl(var(--border))' }}>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{formatDate(review.date)}</p>
+                        <Badge style={{
+                          background: review.result === 'Approved' ? 'hsl(142 71% 45% / 0.15)' : 'hsl(45 93% 47% / 0.15)',
+                          color: review.result === 'Approved' ? 'hsl(142 71% 45%)' : 'hsl(45 93% 47%)',
+                          borderRadius: 0, fontSize: 10,
+                        }}>{review.result}</Badge>
+                      </div>
+                      <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>Reviewer: {review.reviewer}</p>
+                      <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-2))' }}>{review.notes}</p>
+                    </div>
+                  ))}
+                </TabsContent>
+
+                {/* DPA Status */}
+                <TabsContent value="dpa" className="mt-4 space-y-4">
+                  <div className="flex items-center gap-3">
+                    <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>DPA Status:</p>
+                    {dpaStatusBadge(selectedVendor.dpaStatus)}
                   </div>
+
+                  {selectedVendor.dpaStatus === 'signed' && (
+                    <div className="p-3" style={{ border: '1px solid hsl(142 71% 45% / 0.3)', background: 'hsl(142 71% 45% / 0.05)' }}>
+                      <p className="text-xs font-medium" style={{ color: 'hsl(142 71% 45%)' }}>Data Processing Agreement signed and active</p>
+                      <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>Signed: {formatDate(selectedVendor.lastReview)} · Valid for 12 months</p>
+                    </div>
+                  )}
+
+                  {selectedVendor.dpaStatus !== 'signed' && (
+                    <>
+                      <div className="p-3" style={{ border: '1px solid hsl(0 72% 51% / 0.3)', background: 'hsl(0 72% 51% / 0.05)' }}>
+                        <p className="text-xs font-medium" style={{ color: 'hsl(0 72% 51%)' }}>
+                          {selectedVendor.dpaStatus === 'pending' ? 'DPA pending signature' : 'No DPA on file — GDPR Art. 28 violation'}
+                        </p>
+                        <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>
+                          A Data Processing Agreement is required before this vendor can process EU customer data.
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+                          onClick={() => toast('DPA request sent to ' + selectedVendor.contact, 'info')}>
+                          <Handshake size={14} className="mr-1" />Request DPA
+                        </Button>
+                        <Button size="sm" variant="outline" style={{ borderRadius: 0 }}>
+                          <CloudArrowUp size={14} className="mr-1" />Upload Document
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </TabsContent>
               </Tabs>
-            </>
+            </div>
           )}
         </SheetContent>
       </Sheet>
 
       {/* Edit Dialog */}
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Edit Vendor — {selected?.id}</DialogTitle></DialogHeader>
-          <div className="space-y-3 py-2">
-            {(['name', 'contact', 'category'] as const).map(field => (
-              <div key={field}>
-                <label className="text-xs text-[hsl(var(--text-4))] capitalize">{field}</label>
-                <Input value={editForm[field]} onChange={e => setEditForm(p => ({ ...p, [field]: e.target.value }))} className="mt-1" />
-              </div>
-            ))}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
-            <Button onClick={handleSaveEdit}>Save Changes</Button>
-          </DialogFooter>
+      <Dialog open={!!editVendor} onOpenChange={() => setEditVendor(null)}>
+        <DialogContent style={{ borderRadius: 0, maxWidth: 520 }}>
+          <DialogHeader>
+            <DialogTitle>Edit {editVendor?.name}</DialogTitle>
+          </DialogHeader>
+          {editVendor && (
+            <EditVendorForm
+              vendor={editVendor}
+              onSave={(updated) => {
+                setVendors(prev => prev.map(v => v.id === updated.id ? updated : v));
+                toast(`${updated.id} updated`);
+                setEditVendor(null);
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirm */}
-      <AlertDialog open={!!deleteTarget} onOpenChange={o => { if (!o) setDeleteTarget(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Vendor</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete <strong>{deleteTarget?.name}</strong>? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Add Vendor Dialog */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent style={{ borderRadius: 0, maxWidth: 600 }} className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add Vendor</DialogTitle>
+          </DialogHeader>
+          <AddVendorForm
+            onSubmit={(newVendor) => {
+              setVendors(prev => [...prev, newVendor]);
+              toast(`${newVendor.id} ${newVendor.name} added`);
+              setAddOpen(false);
+            }}
+            nextId={`V-${String(vendors.length + 1).padStart(3, '0')}`}
+          />
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// ── Edit Form ─────────────────────────────────────────────────────────────────
+
+function EditVendorForm({ vendor, onSave }: { vendor: Vendor; onSave: (v: Vendor) => void }) {
+  const [name, setName] = useState(vendor.name);
+  const [category, setCategory] = useState(vendor.category);
+  const [status, setStatus] = useState(vendor.status);
+  const [contact, setContact] = useState(vendor.contact);
+
+  return (
+    <div className="space-y-3 py-2">
+      <div>
+        <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Name</label>
+        <Input value={name} onChange={e => setName(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} />
+      </div>
+      <div>
+        <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Category</label>
+        <Input value={category} onChange={e => setCategory(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} />
+      </div>
+      <div>
+        <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Contact</label>
+        <Input value={contact} onChange={e => setContact(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} />
+      </div>
+      <div>
+        <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Status</label>
+        <Select value={status} onValueChange={v => setStatus(v as Vendor['status'])}>
+          <SelectTrigger className="mt-1 h-9" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            {['approved', 'in_review', 'high_risk', 'blocked'].map(s => <SelectItem key={s} value={s}>{s.replace('_', ' ')}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="flex justify-end gap-2 pt-2">
+        <Button onClick={() => onSave({ ...vendor, name, category, status, contact })}
+          style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+          Save Changes
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ── Add Vendor Form ───────────────────────────────────────────────────────────
+
+function AddVendorForm({ onSubmit, nextId }: { onSubmit: (v: Vendor) => void; nextId: string }) {
+  const [name, setName] = useState('');
+  const [category, setCategory] = useState('');
+  const [website, setWebsite] = useState('');
+  const [contact, setContact] = useState('');
+  const [assignee, setAssignee] = useState('');
+  const [whatProvides, setWhatProvides] = useState('');
+  const [riskTier, setRiskTier] = useState<Vendor['risk']>('medium');
+  const [dpaStatus, setDpaStatus] = useState('pending');
+
+  const canSubmit = name && category && assignee && whatProvides;
+
+  const handleSubmit = () => {
+    if (!canSubmit) return;
+    const now = new Date().toISOString().split('T')[0];
+    onSubmit({
+      id: nextId, name, category, risk: riskTier, score: 50, status: 'in_review',
+      lastReview: now, contact, website, dpaStatus, description: whatProvides,
+      linkedModels: [], scoreBreakdown: { security: 50, compliance: 50, reliability: 50, dataPrivacy: 50 },
+    });
+  };
+
+  return (
+    <div className="space-y-3 py-2">
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Name *</label>
+          <Input value={name} onChange={e => setName(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} placeholder="Vendor name" />
+        </div>
+        <div>
+          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Category *</label>
+          <Select value={category} onValueChange={setCategory}>
+            <SelectTrigger className="mt-1 h-9" style={{ borderRadius: 0 }}><SelectValue placeholder="Select" /></SelectTrigger>
+            <SelectContent style={{ borderRadius: 0 }}>
+              {['Foundation Model', 'Infrastructure', 'Data Provider', 'Tool Provider', 'Analytics Platform', 'AI Platform', 'Consulting'].map(c =>
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              )}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Website</label>
+          <Input value={website} onChange={e => setWebsite(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} placeholder="vendor.com" />
+        </div>
+        <div>
+          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Contact</label>
+          <Input value={contact} onChange={e => setContact(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} placeholder="email@vendor.com" />
+        </div>
+      </div>
+      <div>
+        <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Assignee *</label>
+        <Input value={assignee} onChange={e => setAssignee(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} placeholder="Internal reviewer" />
+      </div>
+      <div>
+        <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>What does this vendor provide? *</label>
+        <textarea value={whatProvides} onChange={e => setWhatProvides(e.target.value)}
+          className="mt-1 w-full h-16 text-xs p-2 resize-none"
+          style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))' }}
+          placeholder="Describe what this vendor provides..." />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Risk Tier</label>
+          <Select value={riskTier} onValueChange={v => setRiskTier(v as Vendor['risk'])}>
+            <SelectTrigger className="mt-1 h-9" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+            <SelectContent style={{ borderRadius: 0 }}>
+              {['low', 'medium', 'high', 'critical'].map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>DPA Status</label>
+          <Select value={dpaStatus} onValueChange={setDpaStatus}>
+            <SelectTrigger className="mt-1 h-9" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+            <SelectContent style={{ borderRadius: 0 }}>
+              {['signed', 'pending', 'not_signed'].map(d => <SelectItem key={d} value={d}>{d.replace('_', ' ')}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <div className="flex justify-end gap-2 pt-2">
+        <Button disabled={!canSubmit} onClick={handleSubmit}
+          style={{ borderRadius: 0, background: canSubmit ? 'hsl(var(--brand))' : undefined, color: canSubmit ? '#fff' : undefined }}>
+          <Plus size={14} className="mr-1" />Add Vendor
+        </Button>
+      </div>
     </div>
   );
 }

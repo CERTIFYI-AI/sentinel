@@ -1,424 +1,432 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import {
+  Globe, Eye, PencilSimple, Trash, Plus, Scan, Fire,
+  CheckCircle, Warning, Clock, Target, ShieldWarning,
+  MagnifyingGlass, Lock, ArrowRight,
+} from '@phosphor-icons/react';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
+  ResponsiveContainer, Cell, LabelList,
+} from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../components/ui/sheet';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from '../../components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import {
-  Globe, MagnifyingGlass, Plus, Eye, PencilSimple, Trash,
-  Download, Monitor, Database, Cloud, ShieldCheck, Scan,
-} from '@phosphor-icons/react';
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer,
-  RadarChart, PolarGrid, PolarAngleAxis, Radar,
-} from 'recharts';
-import { ATTACK_SURFACE, AttackSurfaceAsset, severityColor, formatDate } from '../../data/seed';
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '../../components/ui/select';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { ATTACK_SURFACE, AttackSurfaceAsset, severityColor, statusColor, formatDate } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useChartTheme } from '../../hooks/useChartTheme';
 
-function exposureStyle(exposure: string) {
-  switch (exposure) {
-    case 'public': return { bg: '#ef444420', text: '#ef4444', border: '#ef444440' };
-    case 'restricted': return { bg: '#f9731620', text: '#f97316', border: '#f9731640' };
-    case 'internal': return { bg: '#10b98120', text: '#10b981', border: '#10b98140' };
-    default: return { bg: '#6b728020', text: '#6b7280', border: '#6b728040' };
-  }
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info' }
+
+// ── Exposure Risk Score Calculation ───────────────────────────────────────────
+
+function getExposureScore(asset: AttackSurfaceAsset): number {
+  const riskScores: Record<string, number> = { critical: 95, high: 78, medium: 55, low: 25 };
+  const exposureMultiplier: Record<string, number> = { public: 1.2, restricted: 0.9, internal: 0.7 };
+  const base = riskScores[asset.risk] || 50;
+  return Math.round(base * (exposureMultiplier[asset.exposure] || 1));
 }
 
-function typeIcon(type: string) {
-  if (type.includes('Web') || type.includes('Admin')) return <Monitor size={14} style={{ color: '#3b82f6' }} />;
-  if (type.includes('Data') || type.includes('DB')) return <Database size={14} style={{ color: '#f97316' }} />;
-  if (type.includes('API')) return <Cloud size={14} style={{ color: '#8b5cf6' }} />;
-  return <Globe size={14} style={{ color: 'hsl(var(--text-3))' }} />;
+// ── Chart Data ────────────────────────────────────────────────────────────────
+
+const externalAssets = ATTACK_SURFACE.filter(a => a.exposure === 'public');
+const internalAssets = ATTACK_SURFACE.filter(a => a.exposure !== 'public');
+
+const EXPOSURE_CHART_DATA = [
+  ...externalAssets.map(a => ({ name: a.name.split('.')[0], score: getExposureScore(a), group: 'External', fill: 'hsl(0 72% 51%)' })),
+  ...internalAssets.map(a => ({ name: a.name.split('.')[0], score: getExposureScore(a), group: 'Internal', fill: 'hsl(220 90% 56%)' })),
+];
+
+// ── Metric Tile ───────────────────────────────────────────────────────────────
+
+function MetricTile({ label, value, variant, icon, sub }: {
+  label: string; value: string; variant: 'ok' | 'warn' | 'error' | 'info'; icon: React.ReactNode; sub?: string;
+}) {
+  const vs = {
+    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(142 71% 45%)' },
+    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(45 93% 47%)' },
+    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(0 72% 51%)' },
+    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(220 90% 56%)' },
+  };
+  const s = vs[variant];
+  return (
+    <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-4))' }}>{label}</span>
+          <div className="p-1.5" style={{ background: s.bg, borderRadius: 0 }}>{icon}</div>
+        </div>
+        <div className="text-2xl font-bold" style={{ color: s.color }}>{value}</div>
+        {sub && <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>{sub}</p>}
+      </CardContent>
+    </Card>
+  );
 }
 
-const EMPTY_ASSET: Omit<AttackSurfaceAsset, 'id'> = {
-  name: '', type: 'Web Application', exposure: 'internal', risk: 'low',
-  protocol: 'HTTPS', lastScanned: '', status: 'monitored',
-  owner: '', description: '', openPorts: 0,
-};
+// ── Custom Chart Tooltip ──────────────────────────────────────────────────────
+
+function ChartTooltipContent({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="px-3 py-2 text-xs shadow-lg" style={{
+      background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))',
+      borderRadius: 0, color: 'hsl(var(--text-1))',
+    }}>
+      <p className="font-semibold mb-1">{label}</p>
+      <p>Exposure Risk Score: <span className="font-bold">{payload[0].value}</span></p>
+      <p>Type: {payload[0].payload.group}</p>
+    </div>
+  );
+}
+
+// ── Main Component ────────────────────────────────────────────────────────────
 
 export default function AttackSurface() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
-
-  const [assets, setAssets] = useState<AttackSurfaceAsset[]>(ATTACK_SURFACE);
+  const [assets, setAssets] = useState<AttackSurfaceAsset[]>([...ATTACK_SURFACE]);
   const [search, setSearch] = useState('');
-  const [filterRisk, setFilterRisk] = useState('all');
-  const [filterExposure, setFilterExposure] = useState('all');
+  const [filterExposure, setFilterExposure] = useState<string>('all');
+  const [selected, setSelected] = useState<AttackSurfaceAsset | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<AttackSurfaceAsset | null>(null);
+  const [toasts, setToasts] = useState<ToastMsg[]>([]);
 
-  const [viewItem, setViewItem] = useState<AttackSurfaceAsset | null>(null);
-  const [editItem, setEditItem] = useState<AttackSurfaceAsset | null>(null);
-  const [deleteItem, setDeleteItem] = useState<AttackSurfaceAsset | null>(null);
-  const [createOpen, setCreateOpen] = useState(false);
-  const [formData, setFormData] = useState<Omit<AttackSurfaceAsset, 'id'>>(EMPTY_ASSET);
+  const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, text, type }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
+  }, []);
 
   const filtered = assets.filter(a => {
-    const q = search.toLowerCase();
-    const matchSearch = !q || a.name.toLowerCase().includes(q) || a.type.toLowerCase().includes(q) || a.owner.toLowerCase().includes(q);
-    const matchRisk = filterRisk === 'all' || a.risk === filterRisk;
-    const matchExp = filterExposure === 'all' || a.exposure === filterExposure;
-    return matchSearch && matchRisk && matchExp;
+    if (search && !a.name.toLowerCase().includes(search.toLowerCase()) && !a.type.toLowerCase().includes(search.toLowerCase())) return false;
+    if (filterExposure !== 'all' && a.exposure !== filterExposure) return false;
+    return true;
   });
 
-  const typeData = Array.from(
-    assets.reduce((acc, a) => {
-      acc.set(a.type, (acc.get(a.type) || 0) + 1);
-      return acc;
-    }, new Map<string, number>())
-  ).map(([name, count]) => ({ name, count }));
+  const exposedCount = assets.filter(a => a.exposure === 'public').length;
+  const criticalCount = assets.filter(a => a.risk === 'critical').length;
+  const monitoredCount = assets.filter(a => a.status === 'monitored').length;
 
-  const radarData = [
-    { subject: 'Public', count: assets.filter(a => a.exposure === 'public').length },
-    { subject: 'Restricted', count: assets.filter(a => a.exposure === 'restricted').length },
-    { subject: 'Internal', count: assets.filter(a => a.exposure === 'internal').length },
-    { subject: 'Critical Risk', count: assets.filter(a => a.risk === 'critical').length },
-    { subject: 'High Risk', count: assets.filter(a => a.risk === 'high').length },
-    { subject: 'Open Ports', count: assets.reduce((s, a) => s + a.openPorts, 0) },
-  ];
+  const handleDelete = () => {
+    if (!deleteTarget) return;
+    setAssets(prev => prev.filter(a => a.id !== deleteTarget.id));
+    toast(`Asset ${deleteTarget.name} removed`, 'info');
+    setDeleteTarget(null);
+  };
 
-  const stats = [
-    { label: 'Total Assets', value: assets.length, icon: Globe },
-    { label: 'Public Exposure', value: assets.filter(a => a.exposure === 'public').length, icon: Cloud },
-    { label: 'Critical Risk', value: assets.filter(a => a.risk === 'critical').length, icon: Monitor },
-    { label: 'Open Ports', value: assets.reduce((s, a) => s + a.openPorts, 0), icon: Database },
-  ];
+  const openDetail = (a: AttackSurfaceAsset) => { setSelected(a); setSheetOpen(true); };
 
-  function handleCreate() {
-    const id = `AS-${String(assets.length + 1).padStart(3, '0')}`;
-    setAssets(prev => [...prev, { ...formData, id }]);
-    setCreateOpen(false);
-    setFormData(EMPTY_ASSET);
-  }
-
-  function handleEdit() {
-    if (!editItem) return;
-    setAssets(prev => prev.map(a => a.id === editItem.id ? editItem : a));
-    setEditItem(null);
-  }
-
-  function handleDelete() {
-    if (!deleteItem) return;
-    setAssets(prev => prev.filter(a => a.id !== deleteItem.id));
-    setDeleteItem(null);
-  }
+  const isCriticalAsset = (a: AttackSurfaceAsset) =>
+    a.name === 'data-warehouse.internal' || a.name === 'api.sentinel-grc.com';
 
   return (
-    <div className="space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div className="space-y-6">
+      {/* Toast */}
+      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+        {toasts.map(t => (
+          <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
+            background: t.type === 'success' ? 'hsl(142 71% 45%)' : t.type === 'error' ? 'hsl(0 72% 51%)' : 'hsl(220 90% 56%)',
+            color: '#fff', borderRadius: 0, minWidth: 300,
+          }}>{t.text}</div>
+        ))}
+      </div>
+
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Attack Surface</h1>
-          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>
-            {orgName} · Asset exposure mapping & risk monitoring
-          </p>
+          <div className="flex items-center gap-3 mb-1">
+            <Globe size={22} style={{ color: 'hsl(var(--brand))' }} />
+            <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Attack Surface</h1>
+          </div>
+          <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} — External and internal asset exposure monitoring</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm"><Scan size={14} className="mr-1" /> Scan All</Button>
-          <Button variant="outline" size="sm"><Download size={14} className="mr-1" /> Export</Button>
-          <Button size="sm" onClick={() => { setFormData(EMPTY_ASSET); setCreateOpen(true); }}>
-            <Plus size={14} className="mr-1" /> Add Asset
+        <div className="flex items-center gap-3">
+          <Button variant="outline" style={{ borderRadius: 0 }}>
+            <Scan size={14} className="mr-2" />Run Scan
+          </Button>
+          <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+            <Plus size={14} className="mr-2" />Register Asset
           </Button>
         </div>
       </div>
 
-      {/* Stat Cards */}
+      {/* Metrics */}
       <div className="grid grid-cols-4 gap-4">
-        {stats.map(s => (
-          <Card key={s.label} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-            <CardContent className="p-4 flex items-center justify-between">
-              <div>
-                <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{s.label}</p>
-                <p className="text-3xl font-bold mt-1" style={{ color: 'hsl(var(--text-1))' }}>{s.value}</p>
+        <MetricTile label="Total Assets" value={String(assets.length)} variant="info" icon={<Globe size={16} style={{ color: 'hsl(220 90% 56%)' }} />} />
+        <MetricTile label="Exposed (Public)" value={String(exposedCount)} variant="error" icon={<ShieldWarning size={16} weight="fill" style={{ color: 'hsl(0 72% 51%)' }} />} />
+        <MetricTile label="Critical Risk" value={String(criticalCount)} variant="error" icon={<Fire size={16} weight="fill" style={{ color: 'hsl(0 72% 51%)' }} />} sub="Immediate attention" />
+        <MetricTile label="Monitored" value={String(monitoredCount)} variant="ok" icon={<CheckCircle size={16} weight="fill" style={{ color: 'hsl(142 71% 45%)' }} />} />
+      </div>
+
+      {/* Exposure Chart */}
+      <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Exposure Risk Score by Asset</CardTitle>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3" style={{ background: 'hsl(0 72% 51%)', borderRadius: 0 }} />
+                <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>External</span>
               </div>
-              <s.icon size={28} style={{ color: 'hsl(var(--brand))' }} />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3" style={{ background: 'hsl(220 90% 56%)', borderRadius: 0 }} />
+                <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Internal</span>
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={EXPOSURE_CHART_DATA} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} vertical={false} />
+              <XAxis dataKey="name" tick={{ fill: ct.axis, fontSize: 10 }} axisLine={{ stroke: ct.grid }} tickLine={false} />
+              <YAxis
+                label={{ value: 'Exposure Risk Score', angle: -90, position: 'insideLeft', offset: 10, style: { fill: ct.axis, fontSize: 11 } }}
+                tick={{ fill: ct.axis, fontSize: 11 }}
+                axisLine={{ stroke: ct.grid }}
+                tickLine={false}
+                domain={[0, 120]}
+              />
+              <ReTooltip content={<ChartTooltipContent />} />
+              <Bar dataKey="score" maxBarSize={36}>
+                {EXPOSURE_CHART_DATA.map((entry, idx) => (
+                  <Cell key={idx} fill={entry.fill} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
 
-      {/* Charts */}
-      <div className="grid grid-cols-2 gap-4">
-        <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Assets by Type</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={typeData}>
-                <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
-                <XAxis dataKey="name" tick={{ fontSize: 9, fill: ct.axis }} />
-                <YAxis tick={{ fontSize: 11, fill: ct.axis }} allowDecimals={false} label={{ value: 'Count', angle: -90, position: 'insideLeft', style: { fill: ct.axis } }} />
-                <Tooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.tooltipText, borderRadius: 0 }} />
-                <Bar dataKey="count" fill={ct.brand} radius={0} name="Assets" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Exposure Profile</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={180}>
-              <RadarChart data={radarData}>
-                <PolarGrid stroke={ct.grid} />
-                <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fill: ct.axis }} />
-                <Radar dataKey="count" stroke={ct.brand} fill={ct.brand} fillOpacity={0.3} name="Count" />
-                <Tooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.tooltipText, borderRadius: 0 }} />
-              </RadarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Search + Filter */}
+      {/* Filters */}
       <div className="flex items-center gap-3">
         <div className="relative flex-1 max-w-xs">
-          <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--text-3))' }} />
-          <Input placeholder="Search assets..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8" style={{ borderRadius: 0 }} />
+          <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--text-4))' }} />
+          <Input placeholder="Search assets..." value={search} onChange={e => setSearch(e.target.value)}
+            className="pl-9 h-8 text-xs" style={{ borderRadius: 0 }} />
         </div>
-        <select value={filterRisk} onChange={e => setFilterRisk(e.target.value)}
-          style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', fontSize: 13, borderRadius: 0 }}>
-          <option value="all">All Risk Levels</option>
-          {['critical', 'high', 'medium', 'low'].map(r => <option key={r} value={r}>{r}</option>)}
-        </select>
-        <select value={filterExposure} onChange={e => setFilterExposure(e.target.value)}
-          style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', fontSize: 13, borderRadius: 0 }}>
-          <option value="all">All Exposures</option>
-          {['public', 'restricted', 'internal'].map(e => <option key={e} value={e}>{e}</option>)}
-        </select>
-        <span className="text-xs ml-auto" style={{ color: 'hsl(var(--text-3))' }}>{filtered.length} of {assets.length} assets</span>
+        <Select value={filterExposure} onValueChange={setFilterExposure}>
+          <SelectTrigger className="h-8 w-36 text-xs" style={{ borderRadius: 0 }}><SelectValue placeholder="Exposure" /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            <SelectItem value="all">All Exposure</SelectItem>
+            <SelectItem value="public">Public</SelectItem>
+            <SelectItem value="internal">Internal</SelectItem>
+            <SelectItem value="restricted">Restricted</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Table */}
-      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+      <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
         <CardContent className="p-0">
-          {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16" style={{ color: 'hsl(var(--text-3))' }}>
-              <Globe size={40} />
-              <p className="mt-3 text-sm font-medium">No assets match your filters</p>
-            </div>
-          ) : (
-            <table className="w-full">
-              <thead style={{ background: 'hsl(var(--bg-muted))' }}>
-                <tr>
-                  {['ID', 'Asset', 'Type', 'Exposure', 'Risk', 'Protocol', 'Ports', 'Owner', 'Last Scan', 'Actions'].map(h => (
-                    <th key={h} className="text-left p-3 text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>{h}</th>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                  {['Asset', 'Type', 'Exposure', 'Severity', 'Status', 'Last Scan', 'Owner', 'Actions'].map(h => (
+                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold whitespace-nowrap" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(a => (
-                  <tr
-                    key={a.id}
-                    className="cursor-pointer"
-                    style={{ borderTop: '1px solid hsl(var(--border))' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'hsl(var(--bg-muted))')}
-                    onMouseLeave={e => (e.currentTarget.style.background = '')}
-                    onClick={() => setViewItem(a)}
-                  >
-                    <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{a.id}</td>
-                    <td className="p-3">
-                      <div className="flex items-center gap-2">
-                        {typeIcon(a.type)}
-                        <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{a.name}</span>
-                      </div>
-                    </td>
-                    <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{a.type}</td>
-                    <td className="p-3">
-                      <Badge style={{ background: exposureStyle(a.exposure).bg, color: exposureStyle(a.exposure).text, border: `1px solid ${exposureStyle(a.exposure).border}`, borderRadius: 0, fontSize: 11 }}>
-                        {a.exposure}
-                      </Badge>
-                    </td>
-                    <td className="p-3">
-                      <Badge style={{ background: severityColor(a.risk).bg, color: severityColor(a.risk).text, border: `1px solid ${severityColor(a.risk).border}`, borderRadius: 0, fontSize: 11 }}>
-                        {a.risk}
-                      </Badge>
-                    </td>
-                    <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--text-2))' }}>{a.protocol}</td>
-                    <td className="p-3 text-sm" style={{ color: a.openPorts > 2 ? '#ef4444' : 'hsl(var(--text-2))' }}>{a.openPorts}</td>
-                    <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{a.owner}</td>
-                    <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{formatDate(a.lastScanned)}</td>
-                    <td className="p-3">
-                      <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                        <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setViewItem(a)}><Eye size={14} /></Button>
-                        <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setEditItem({ ...a })}><PencilSimple size={14} /></Button>
-                        <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: '#ef4444' }} onClick={() => setDeleteItem(a)}><Trash size={14} /></Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {filtered.map(a => {
+                  const sc = severityColor(a.risk);
+                  const isCrit = isCriticalAsset(a);
+                  return (
+                    <tr
+                      key={a.id}
+                      style={{
+                        borderBottom: '1px solid hsl(var(--border))',
+                        borderLeft: isCrit ? '4px solid hsl(0 72% 51%)' : undefined,
+                      }}
+                      className="hover:bg-muted/30"
+                    >
+                      <td className="px-4 py-3">
+                        <span className="text-xs font-mono font-medium" style={{ color: 'hsl(var(--text-1))' }}>{a.name}</span>
+                      </td>
+                      <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{a.type}</td>
+                      <td className="px-4 py-3">
+                        <Badge style={{
+                          background: a.exposure === 'public' ? 'hsl(0 72% 51% / 0.12)' : a.exposure === 'restricted' ? 'hsl(45 93% 47% / 0.12)' : 'hsl(220 90% 56% / 0.12)',
+                          color: a.exposure === 'public' ? 'hsl(0 72% 51%)' : a.exposure === 'restricted' ? 'hsl(45 93% 47%)' : 'hsl(220 90% 56%)',
+                          borderRadius: 0, fontSize: 10,
+                        }}>
+                          {a.exposure.charAt(0).toUpperCase() + a.exposure.slice(1)}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0, fontSize: 10 }}>
+                          {a.risk.toUpperCase()}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge style={{ background: statusColor(a.status).bg, color: statusColor(a.status).text, borderRadius: 0, fontSize: 10 }}>
+                          {a.status.charAt(0).toUpperCase() + a.status.slice(1)}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{formatDate(a.lastScanned)}</td>
+                      <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-1))' }}>{a.owner}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openDetail(a)}>
+                            <Eye size={14} style={{ color: 'hsl(var(--brand))' }} />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openDetail(a)}>
+                            <PencilSimple size={14} style={{ color: 'hsl(var(--text-4))' }} />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setDeleteTarget(a)}>
+                            <Trash size={14} style={{ color: 'hsl(0 72% 51%)' }} />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
-          )}
+          </div>
         </CardContent>
       </Card>
 
-      {/* View Sheet */}
-      <Sheet open={!!viewItem} onOpenChange={o => !o && setViewItem(null)}>
-        <SheetContent style={{ width: 520, background: 'hsl(var(--bg-surface))', borderRadius: 0 }}>
-          {viewItem && (
+      {/* Delete ConfirmDialog */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        type="danger"
+        title="Remove Asset"
+        message={<p>Remove <strong>{deleteTarget?.name}</strong> from monitoring? This creates an audit entry.</p>}
+        confirmLabel="Remove"
+      />
+
+      {/* Asset Detail Sheet */}
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetContent className="w-[600px] sm:max-w-[600px] overflow-y-auto" style={{ borderRadius: 0 }}>
+          {selected && (
             <>
-              <SheetHeader className="pb-4">
-                <SheetTitle style={{ color: 'hsl(var(--text-1))' }}>{viewItem.name}</SheetTitle>
-                <div className="flex gap-2 flex-wrap">
-                  <Badge style={{ background: severityColor(viewItem.risk).bg, color: severityColor(viewItem.risk).text, border: `1px solid ${severityColor(viewItem.risk).border}`, borderRadius: 0 }}>
-                    {viewItem.risk} risk
-                  </Badge>
-                  <Badge style={{ background: exposureStyle(viewItem.exposure).bg, color: exposureStyle(viewItem.exposure).text, border: `1px solid ${exposureStyle(viewItem.exposure).border}`, borderRadius: 0 }}>
-                    {viewItem.exposure}
-                  </Badge>
-                </div>
+              <SheetHeader>
+                <SheetTitle className="flex items-center gap-2" style={{ color: 'hsl(var(--text-1))' }}>
+                  <Globe size={18} style={{ color: 'hsl(var(--brand))' }} />
+                  {selected.name}
+                </SheetTitle>
               </SheetHeader>
-              <Tabs defaultValue="details">
-                <TabsList style={{ borderRadius: 0, background: 'hsl(var(--bg-muted))' }}>
-                  <TabsTrigger value="details" style={{ borderRadius: 0 }}>Details</TabsTrigger>
-                  <TabsTrigger value="ports" style={{ borderRadius: 0 }}>Network</TabsTrigger>
+              <Tabs defaultValue="overview" className="mt-4">
+                <TabsList style={{ borderRadius: 0 }}>
+                  <TabsTrigger value="overview" style={{ borderRadius: 0 }}>Overview</TabsTrigger>
+                  <TabsTrigger value="exposure" style={{ borderRadius: 0 }}>Exposure Analysis</TabsTrigger>
+                  <TabsTrigger value="risks" style={{ borderRadius: 0 }}>Linked Risks</TabsTrigger>
+                  <TabsTrigger value="scans" style={{ borderRadius: 0 }}>Scan History</TabsTrigger>
                 </TabsList>
-                <TabsContent value="details" className="mt-4 space-y-3">
-                  {[
-                    { label: 'Asset ID', value: viewItem.id },
-                    { label: 'Type', value: viewItem.type },
-                    { label: 'Protocol', value: viewItem.protocol },
-                    { label: 'Owner', value: viewItem.owner },
-                    { label: 'Status', value: viewItem.status },
-                    { label: 'Last Scanned', value: formatDate(viewItem.lastScanned) },
-                  ].map(r => (
-                    <div key={r.label} className="flex justify-between py-2" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                      <span className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>{r.label}</span>
-                      <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{r.value}</span>
+
+                <TabsContent value="overview" className="space-y-4 mt-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Type</span>
+                      <p className="text-sm font-medium mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selected.type}</p>
+                    </div>
+                    <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Exposure</span>
+                      <p className="text-sm font-medium mt-1" style={{ color: selected.exposure === 'public' ? 'hsl(0 72% 51%)' : 'hsl(var(--text-1))' }}>
+                        {selected.exposure.toUpperCase()}
+                      </p>
+                    </div>
+                    <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Protocol</span>
+                      <p className="text-sm font-mono mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selected.protocol}</p>
+                    </div>
+                    <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Open Ports</span>
+                      <p className="text-sm font-bold mt-1" style={{ color: selected.openPorts > 2 ? 'hsl(45 93% 47%)' : 'hsl(var(--text-1))' }}>{selected.openPorts}</p>
+                    </div>
+                    <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Owner</span>
+                      <p className="text-sm font-medium mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selected.owner}</p>
+                    </div>
+                    <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Last Scanned</span>
+                      <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-1))' }}>{formatDate(selected.lastScanned)}</p>
+                    </div>
+                  </div>
+                  <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                    <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Description</span>
+                    <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selected.description}</p>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="exposure" className="space-y-4 mt-4">
+                  <div className="p-4" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Exposure Risk Score</span>
+                      <span className="text-2xl font-bold" style={{
+                        color: getExposureScore(selected) >= 80 ? 'hsl(0 72% 51%)' : getExposureScore(selected) >= 50 ? 'hsl(45 93% 47%)' : 'hsl(142 71% 45%)',
+                      }}>{getExposureScore(selected)}</span>
+                    </div>
+                    <div className="w-full h-2" style={{ background: 'hsl(var(--border))', borderRadius: 0 }}>
+                      <div className="h-full" style={{
+                        width: `${getExposureScore(selected)}%`,
+                        background: getExposureScore(selected) >= 80 ? 'hsl(0 72% 51%)' : getExposureScore(selected) >= 50 ? 'hsl(45 93% 47%)' : 'hsl(142 71% 45%)',
+                        borderRadius: 0,
+                      }} />
+                    </div>
+                  </div>
+                  <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                    <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Analysis</span>
+                    <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-1))' }}>
+                      {selected.exposure === 'public'
+                        ? 'Public-facing asset with external network exposure. Higher risk of attack surface exploitation.'
+                        : selected.exposure === 'restricted'
+                        ? 'Restricted access asset. Limited external exposure with access controls in place.'
+                        : 'Internal asset behind network perimeter. Lower exposure but requires monitoring for lateral movement.'}
+                    </p>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="risks" className="space-y-3 mt-4">
+                  <div className="flex items-center justify-between p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                    <div>
+                      <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>Unauthorized access attempts</p>
+                      <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>THR-004 linked</p>
+                    </div>
+                    <Badge style={{ background: 'hsl(25 95% 53% / 0.12)', color: 'hsl(25 95% 53%)', borderRadius: 0, fontSize: 10 }}>HIGH</Badge>
+                  </div>
+                  {selected.exposure === 'public' && (
+                    <div className="flex items-center justify-between p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <div>
+                        <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>DDoS / resource exhaustion</p>
+                        <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Public exposure risk</p>
+                      </div>
+                      <Badge style={{ background: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 93% 47%)', borderRadius: 0, fontSize: 10 }}>MEDIUM</Badge>
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="scans" className="space-y-3 mt-4">
+                  {['2026-03-28', '2026-03-21', '2026-03-14'].map((date, i) => (
+                    <div key={date} className="flex items-start gap-3 p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <Scan size={14} style={{ color: i === 0 ? 'hsl(142 71% 45%)' : 'hsl(var(--text-4))' }} className="mt-0.5" />
+                      <div>
+                        <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>
+                          {i === 0 ? 'Latest scan — passed' : `Scan — ${i === 1 ? '1 warning' : 'passed'}`}
+                        </p>
+                        <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{formatDate(date)}</p>
+                      </div>
                     </div>
                   ))}
-                  <p className="text-sm mt-2" style={{ color: 'hsl(var(--text-2))' }}>{viewItem.description}</p>
-                </TabsContent>
-                <TabsContent value="ports" className="mt-4">
-                  <div className="text-center py-6">
-                    <p className="text-5xl font-bold" style={{ color: viewItem.openPorts > 2 ? '#ef4444' : '#10b981' }}>{viewItem.openPorts}</p>
-                    <p className="text-sm mt-2" style={{ color: 'hsl(var(--text-3))' }}>Open Ports Detected</p>
-                  </div>
-                  <div className="p-3 mt-2" style={{ background: 'hsl(var(--bg-muted))' }}>
-                    <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-2))' }}>Protocol</p>
-                    <p className="text-sm font-mono" style={{ color: 'hsl(var(--text-1))' }}>{viewItem.protocol}</p>
-                  </div>
                 </TabsContent>
               </Tabs>
-              <div className="flex gap-2 mt-6">
-                <Button size="sm" onClick={() => { setEditItem({ ...viewItem }); setViewItem(null); }}>
-                  <PencilSimple size={14} className="mr-1" /> Edit
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => setViewItem(null)}>Close</Button>
-              </div>
             </>
           )}
         </SheetContent>
       </Sheet>
-
-      {/* Edit Dialog */}
-      <Dialog open={!!editItem} onOpenChange={o => !o && setEditItem(null)}>
-        <DialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0, maxWidth: 520 }}>
-          <DialogHeader><DialogTitle style={{ color: 'hsl(var(--text-1))' }}>Edit Asset</DialogTitle></DialogHeader>
-          {editItem && (
-            <div className="space-y-3">
-              {[{ label: 'Name', key: 'name' }, { label: 'Protocol', key: 'protocol' }, { label: 'Owner', key: 'owner' }, { label: 'Description', key: 'description' }].map(f => (
-                <div key={f.key}>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>{f.label}</label>
-                  <Input value={(editItem as any)[f.key] || ''} onChange={e => setEditItem(prev => prev ? { ...prev, [f.key]: e.target.value } : null)} style={{ borderRadius: 0 }} />
-                </div>
-              ))}
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Risk</label>
-                  <select value={editItem.risk} onChange={e => setEditItem(prev => prev ? { ...prev, risk: e.target.value as any } : null)}
-                    style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                    {['critical', 'high', 'medium', 'low'].map(r => <option key={r} value={r}>{r}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Exposure</label>
-                  <select value={editItem.exposure} onChange={e => setEditItem(prev => prev ? { ...prev, exposure: e.target.value } : null)}
-                    style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                    {['public', 'restricted', 'internal'].map(e => <option key={e} value={e}>{e}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Open Ports</label>
-                  <Input type="number" min={0} value={editItem.openPorts} onChange={e => setEditItem(prev => prev ? { ...prev, openPorts: parseInt(e.target.value) } : null)} style={{ borderRadius: 0 }} />
-                </div>
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditItem(null)} style={{ borderRadius: 0 }}>Cancel</Button>
-            <Button onClick={handleEdit} style={{ borderRadius: 0 }}>Save Changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Create Dialog */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0, maxWidth: 520 }}>
-          <DialogHeader><DialogTitle style={{ color: 'hsl(var(--text-1))' }}>Add Asset</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            {[{ label: 'Name / Hostname', key: 'name' }, { label: 'Protocol', key: 'protocol' }, { label: 'Owner', key: 'owner' }, { label: 'Description', key: 'description' }].map(f => (
-              <div key={f.key}>
-                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>{f.label}</label>
-                <Input value={(formData as any)[f.key] || ''} onChange={e => setFormData(prev => ({ ...prev, [f.key]: e.target.value }))} style={{ borderRadius: 0 }} />
-              </div>
-            ))}
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Asset Type</label>
-                <select value={formData.type} onChange={e => setFormData(prev => ({ ...prev, type: e.target.value }))}
-                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                  {['Web Application', 'API Gateway', 'ML Pipeline', 'Data Store', 'Admin Panel', 'CDN', 'Monitoring'].map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Risk</label>
-                <select value={formData.risk} onChange={e => setFormData(prev => ({ ...prev, risk: e.target.value as any }))}
-                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                  {['critical', 'high', 'medium', 'low'].map(r => <option key={r} value={r}>{r}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Exposure</label>
-                <select value={formData.exposure} onChange={e => setFormData(prev => ({ ...prev, exposure: e.target.value }))}
-                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                  {['public', 'restricted', 'internal'].map(e => <option key={e} value={e}>{e}</option>)}
-                </select>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
-            <Button onClick={handleCreate} style={{ borderRadius: 0 }} disabled={!formData.name}>Add Asset</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Dialog */}
-      <AlertDialog open={!!deleteItem} onOpenChange={o => !o && setDeleteItem(null)}>
-        <AlertDialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0 }}>
-          <AlertDialogHeader>
-            <AlertDialogTitle style={{ color: 'hsl(var(--text-1))' }}>Remove Asset</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to remove <strong>{deleteItem?.name}</strong> from monitoring? This cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} style={{ background: '#ef4444', borderRadius: 0 }}>Remove</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

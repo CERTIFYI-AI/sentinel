@@ -1,431 +1,460 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import {
+  Lightning, Eye, PencilSimple, Trash, MagnifyingGlass, Funnel,
+  Plus, ShieldWarning, Fire, CheckCircle, Warning, Upload,
+  ArrowRight, Clock, Target, X, Detective, CaretRight,
+} from '@phosphor-icons/react';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
+  ResponsiveContainer,
+} from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../components/ui/sheet';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from '../../components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import {
-  Warning, MagnifyingGlass, Plus, Eye, PencilSimple, Trash,
-  Download, FunnelSimple, ShieldWarning, CheckCircle, Clock, Fire,
-} from '@phosphor-icons/react';
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Cell,
-} from 'recharts';
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '../../components/ui/select';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { THREATS, Threat, severityColor, statusColor, formatDate } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useChartTheme } from '../../hooks/useChartTheme';
 
-const STATUS_COLORS: Record<string, string> = {
-  active: '#ef4444',
-  investigating: '#f97316',
-  mitigated: '#10b981',
-  resolved: '#6b7280',
-};
+// ── Types ─────────────────────────────────────────────────────────────────────
 
-const CATEGORY_COLORS = ['#3b82f6', '#8b5cf6', '#f97316', '#10b981', '#ec4899', '#06b6d4'];
+interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info' }
 
-function statusIcon(status: string) {
-  if (status === 'active') return <Fire size={14} style={{ color: '#ef4444' }} />;
-  if (status === 'investigating') return <Clock size={14} style={{ color: '#f97316' }} />;
-  if (status === 'mitigated') return <ShieldWarning size={14} style={{ color: '#10b981' }} />;
-  return <CheckCircle size={14} style={{ color: '#6b7280' }} />;
+interface ExtThreat extends Threat {
+  mitreId?: string;
 }
 
-const EMPTY_THREAT: Omit<Threat, 'id'> = {
-  name: '', category: 'Injection', severity: 'medium', status: 'investigating',
-  source: '', detected: new Date().toISOString().split('T')[0],
-  description: '', affectedModels: [], remediation: [],
-};
+// ── Extended Threats with MITRE ATT&CK ────────────────────────────────────────
+
+const EXTENDED_THREATS: ExtThreat[] = THREATS.map(t => ({
+  ...t,
+  mitreId: ({
+    'THR-001': 'T1190',
+    'THR-002': 'T1552.004',
+    'THR-003': 'T1059.007',
+    'THR-004': 'T1110',
+    'THR-005': 'T1041',
+    'THR-006': 'T1210',
+  } as Record<string, string>)[t.id] || '',
+}));
+
+// ── Chart Data ────────────────────────────────────────────────────────────────
+
+const THREAT_CATEGORIES = [
+  { category: 'Injection', count: 1 },
+  { category: 'Unauthorized Access', count: 1 },
+  { category: 'Data Exfiltration', count: 1 },
+  { category: 'SSRF', count: 1 },
+  { category: 'Prompt Injection', count: 1 },
+  { category: 'Data Exposure', count: 1 },
+];
+
+// ── Metric Tile ───────────────────────────────────────────────────────────────
+
+function MetricTile({ label, value, variant, icon, sub }: {
+  label: string; value: string; variant: 'ok' | 'warn' | 'error' | 'info'; icon: React.ReactNode; sub?: string;
+}) {
+  const vs = {
+    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(142 71% 45%)' },
+    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(45 93% 47%)' },
+    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(0 72% 51%)' },
+    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(220 90% 56%)' },
+  };
+  const s = vs[variant];
+  return (
+    <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-4))' }}>{label}</span>
+          <div className="p-1.5" style={{ background: s.bg, borderRadius: 0 }}>{icon}</div>
+        </div>
+        <div className="text-2xl font-bold" style={{ color: s.color }}>{value}</div>
+        {sub && <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>{sub}</p>}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Custom Chart Tooltip ──────────────────────────────────────────────────────
+
+function ChartTooltipContent({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="px-3 py-2 text-xs shadow-lg" style={{
+      background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))',
+      borderRadius: 0, color: 'hsl(var(--text-1))',
+    }}>
+      <p className="font-semibold mb-1">{label}</p>
+      <p>Count: <span className="font-bold">{payload[0].value}</span></p>
+    </div>
+  );
+}
+
+// ── Main Component ────────────────────────────────────────────────────────────
 
 export default function ThreatFeed() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
-
-  const [threats, setThreats] = useState<Threat[]>(THREATS);
+  const [threats, setThreats] = useState<ExtThreat[]>(EXTENDED_THREATS);
   const [search, setSearch] = useState('');
-  const [filterSeverity, setFilterSeverity] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterSeverity, setFilterSeverity] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [selectedThreat, setSelectedThreat] = useState<ExtThreat | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [resolveTarget, setResolveTarget] = useState<ExtThreat | null>(null);
+  const [resolveNote, setResolveNote] = useState('');
+  const [toasts, setToasts] = useState<ToastMsg[]>([]);
 
-  const [viewItem, setViewItem] = useState<Threat | null>(null);
-  const [editItem, setEditItem] = useState<Threat | null>(null);
-  const [deleteItem, setDeleteItem] = useState<Threat | null>(null);
-  const [createOpen, setCreateOpen] = useState(false);
-  const [formData, setFormData] = useState<Omit<Threat, 'id'>>(EMPTY_THREAT);
+  const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, text, type }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
+  }, []);
 
+  // Filter logic
   const filtered = threats.filter(t => {
-    const q = search.toLowerCase();
-    const matchSearch = !q || t.name.toLowerCase().includes(q) || t.category.toLowerCase().includes(q) || t.id.toLowerCase().includes(q);
-    const matchSev = filterSeverity === 'all' || t.severity === filterSeverity;
-    const matchStat = filterStatus === 'all' || t.status === filterStatus;
-    return matchSearch && matchSev && matchStat;
+    if (search && !t.name.toLowerCase().includes(search.toLowerCase()) && !t.id.toLowerCase().includes(search.toLowerCase())) return false;
+    if (filterSeverity !== 'all' && t.severity !== filterSeverity) return false;
+    if (filterStatus !== 'all' && t.status !== filterStatus) return false;
+    return true;
   });
 
-  const categoryData = Array.from(
-    threats.reduce((acc, t) => {
-      acc.set(t.category, (acc.get(t.category) || 0) + 1);
-      return acc;
-    }, new Map<string, number>())
-  ).map(([name, count]) => ({ name, count }));
+  const criticalCount = threats.filter(t => t.severity === 'critical').length;
+  const openCount = threats.filter(t => t.status === 'active' || t.status === 'investigating').length;
+  const resolvedCount = threats.filter(t => t.status === 'resolved').length;
 
-  const stats = [
-    { label: 'Total Threats', value: threats.length, icon: Warning },
-    { label: 'Active', value: threats.filter(t => t.status === 'active').length, icon: Fire },
-    { label: 'Critical', value: threats.filter(t => t.severity === 'critical').length, icon: ShieldWarning },
-    { label: 'Resolved', value: threats.filter(t => t.status === 'resolved').length, icon: CheckCircle },
-  ];
+  // Actions
+  const handleInvestigate = (threat: ExtThreat) => {
+    setThreats(prev => prev.map(t => t.id === threat.id ? { ...t, status: 'investigating' as const } : t));
+    toast(`${threat.id} status changed to Investigating. HITL item created.`, 'info');
+  };
 
-  function handleCreate() {
-    const id = `THR-${String(threats.length + 1).padStart(3, '0')}`;
-    setThreats(prev => [...prev, { ...formData, id }]);
-    setCreateOpen(false);
-    setFormData(EMPTY_THREAT);
-  }
+  const handleResolve = () => {
+    if (!resolveTarget || !resolveNote.trim()) return;
+    setThreats(prev => prev.map(t => t.id === resolveTarget.id ? { ...t, status: 'resolved' as const } : t));
+    toast(`${resolveTarget.id} resolved. Notes: "${resolveNote.slice(0, 40)}..."`, 'success');
+    setResolveTarget(null);
+    setResolveNote('');
+  };
 
-  function handleEdit() {
-    if (!editItem) return;
-    setThreats(prev => prev.map(t => t.id === editItem.id ? editItem : t));
-    setEditItem(null);
-  }
-
-  function handleDelete() {
-    if (!deleteItem) return;
-    setThreats(prev => prev.filter(t => t.id !== deleteItem.id));
-    setDeleteItem(null);
-  }
+  const openDetail = (threat: ExtThreat) => {
+    setSelectedThreat(threat);
+    setSheetOpen(true);
+  };
 
   return (
-    <div className="space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div className="space-y-6">
+      {/* Toast layer */}
+      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+        {toasts.map(t => (
+          <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
+            background: t.type === 'success' ? 'hsl(142 71% 45%)' : t.type === 'error' ? 'hsl(0 72% 51%)' : 'hsl(220 90% 56%)',
+            color: '#fff', borderRadius: 0, minWidth: 300,
+          }}>{t.text}</div>
+        ))}
+      </div>
+
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Threat Feed</h1>
-          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>
-            {orgName} · AI threat intelligence & incident tracking
-          </p>
+          <div className="flex items-center gap-3 mb-1">
+            <Lightning size={22} weight="fill" style={{ color: 'hsl(0 72% 51%)' }} />
+            <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Threat Intelligence</h1>
+          </div>
+          <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} — Active threats, attack vectors, and MITRE ATT&CK mappings</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm"><Download size={14} className="mr-1" /> Export</Button>
-          <Button size="sm" onClick={() => { setFormData(EMPTY_THREAT); setCreateOpen(true); }}>
-            <Plus size={14} className="mr-1" /> Add Threat
+        <div className="flex items-center gap-3">
+          <Button variant="outline" style={{ borderRadius: 0 }}>
+            <Upload size={14} className="mr-2" />Import Threat Feed
+          </Button>
+          <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+            <Plus size={14} className="mr-2" />Add Threat
           </Button>
         </div>
       </div>
 
-      {/* Stat Cards */}
+      {/* Metrics */}
       <div className="grid grid-cols-4 gap-4">
-        {stats.map(s => (
-          <Card key={s.label} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-            <CardContent className="p-4 flex items-center justify-between">
-              <div>
-                <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{s.label}</p>
-                <p className="text-3xl font-bold mt-1" style={{ color: 'hsl(var(--text-1))' }}>{s.value}</p>
-              </div>
-              <s.icon size={28} style={{ color: 'hsl(var(--brand))' }} />
-            </CardContent>
-          </Card>
-        ))}
+        <MetricTile label="Total Threats" value={String(threats.length)} variant="info" icon={<ShieldWarning size={16} weight="fill" style={{ color: 'hsl(220 90% 56%)' }} />} />
+        <MetricTile label="Critical" value={String(criticalCount)} variant="error" icon={<Fire size={16} weight="fill" style={{ color: 'hsl(0 72% 51%)' }} />} sub="Immediate action" />
+        <MetricTile label="Open / Investigating" value={String(openCount)} variant="warn" icon={<Warning size={16} weight="fill" style={{ color: 'hsl(45 93% 47%)' }} />} />
+        <MetricTile label="Resolved" value={String(resolvedCount)} variant="ok" icon={<CheckCircle size={16} weight="fill" style={{ color: 'hsl(142 71% 45%)' }} />} />
       </div>
 
       {/* Chart */}
-      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+      <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Threats by Category</CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={categoryData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
-              <XAxis dataKey="name" tick={{ fontSize: 11, fill: ct.axis }} />
-              <YAxis tick={{ fontSize: 11, fill: ct.axis }} label={{ value: 'Count', angle: -90, position: 'insideLeft', style: { fill: ct.axis } }} />
-              <Tooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.tooltipText, borderRadius: 0 }} />
-              <Bar dataKey="count" name="Threats" radius={0}>
-                {categoryData.map((_, i) => <Cell key={i} fill={CATEGORY_COLORS[i % CATEGORY_COLORS.length]} />)}
-              </Bar>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={THREAT_CATEGORIES} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} vertical={false} />
+              <XAxis dataKey="category" tick={{ fill: ct.axis, fontSize: 11 }} axisLine={{ stroke: ct.grid }} tickLine={false} />
+              <YAxis label={{ value: 'Threat Count', angle: -90, position: 'insideLeft', offset: 10, style: { fill: ct.axis, fontSize: 11 } }} tick={{ fill: ct.axis, fontSize: 11 }} axisLine={{ stroke: ct.grid }} tickLine={false} allowDecimals={false} />
+              <ReTooltip content={<ChartTooltipContent />} />
+              <Bar dataKey="count" fill={ct.brand} maxBarSize={40} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
-      {/* Search + Filter */}
+      {/* Filters */}
       <div className="flex items-center gap-3">
         <div className="relative flex-1 max-w-xs">
-          <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--text-3))' }} />
-          <Input placeholder="Search threats..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8" style={{ borderRadius: 0 }} />
+          <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--text-4))' }} />
+          <Input placeholder="Search threats..." value={search} onChange={e => setSearch(e.target.value)}
+            className="pl-9 h-8 text-xs" style={{ borderRadius: 0 }} />
         </div>
-        <FunnelSimple size={14} style={{ color: 'hsl(var(--text-3))' }} />
-        <select
-          value={filterSeverity}
-          onChange={e => setFilterSeverity(e.target.value)}
-          style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', fontSize: 13, borderRadius: 0 }}
-        >
-          <option value="all">All Severities</option>
-          {['critical', 'high', 'medium', 'low'].map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
-        <select
-          value={filterStatus}
-          onChange={e => setFilterStatus(e.target.value)}
-          style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', fontSize: 13, borderRadius: 0 }}
-        >
-          <option value="all">All Statuses</option>
-          {['active', 'investigating', 'mitigated', 'resolved'].map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
-        <span className="text-xs ml-auto" style={{ color: 'hsl(var(--text-3))' }}>{filtered.length} of {threats.length} threats</span>
+        <Select value={filterSeverity} onValueChange={setFilterSeverity}>
+          <SelectTrigger className="h-8 w-32 text-xs" style={{ borderRadius: 0 }}><SelectValue placeholder="Severity" /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            <SelectItem value="all">All Severity</SelectItem>
+            <SelectItem value="critical">Critical</SelectItem>
+            <SelectItem value="high">High</SelectItem>
+            <SelectItem value="medium">Medium</SelectItem>
+            <SelectItem value="low">Low</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger className="h-8 w-36 text-xs" style={{ borderRadius: 0 }}><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="investigating">Investigating</SelectItem>
+            <SelectItem value="mitigated">Mitigated</SelectItem>
+            <SelectItem value="resolved">Resolved</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Table */}
-      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+      <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
         <CardContent className="p-0">
-          {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16" style={{ color: 'hsl(var(--text-3))' }}>
-              <Warning size={40} />
-              <p className="mt-3 text-sm font-medium">No threats match your filters</p>
-              <p className="text-xs mt-1">Try adjusting your search or filter criteria</p>
-            </div>
-          ) : (
-            <table className="w-full">
-              <thead style={{ background: 'hsl(var(--bg-muted))' }}>
-                <tr>
-                  {['ID', 'Name', 'Category', 'Severity', 'Status', 'Source', 'Detected', 'Actions'].map(h => (
-                    <th key={h} className="text-left p-3 text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>{h}</th>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                  {['ID', 'Threat', 'Target System', 'Severity', 'Status', 'Detected', 'Source', 'MITRE ATT&CK', 'Actions'].map(h => (
+                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold whitespace-nowrap" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((t, i) => (
-                  <tr
-                    key={t.id}
-                    className="cursor-pointer"
-                    style={{ borderTop: '1px solid hsl(var(--border))' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'hsl(var(--bg-muted))')}
-                    onMouseLeave={e => (e.currentTarget.style.background = '')}
-                    onClick={() => setViewItem(t)}
-                  >
-                    <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{t.id}</td>
-                    <td className="p-3 text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{t.name}</td>
-                    <td className="p-3 text-sm" style={{ color: 'hsl(var(--text-2))' }}>{t.category}</td>
-                    <td className="p-3">
-                      <Badge style={{ background: severityColor(t.severity).bg, color: severityColor(t.severity).text, border: `1px solid ${severityColor(t.severity).border}`, borderRadius: 0, fontSize: 11 }}>
-                        {t.severity}
-                      </Badge>
-                    </td>
-                    <td className="p-3">
-                      <div className="flex items-center gap-1.5">
-                        {statusIcon(t.status)}
-                        <span className="text-xs" style={{ color: STATUS_COLORS[t.status] || 'hsl(var(--text-2))' }}>{t.status}</span>
-                      </div>
-                    </td>
-                    <td className="p-3 text-sm" style={{ color: 'hsl(var(--text-2))' }}>{t.source}</td>
-                    <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{formatDate(t.detected)}</td>
-                    <td className="p-3">
-                      <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                        <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setViewItem(t)}>
-                          <Eye size={14} />
-                        </Button>
-                        <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setEditItem({ ...t })}>
-                          <PencilSimple size={14} />
-                        </Button>
-                        <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: '#ef4444' }} onClick={() => setDeleteItem(t)}>
-                          <Trash size={14} />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {filtered.map(threat => {
+                  const sc = severityColor(threat.severity);
+                  const stc = statusColor(threat.status);
+                  return (
+                    <tr key={threat.id} style={{ borderBottom: '1px solid hsl(var(--border))' }} className="hover:bg-muted/30">
+                      <td className="px-4 py-3 text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{threat.id}</td>
+                      <td className="px-4 py-3">
+                        <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{threat.name}</span>
+                      </td>
+                      <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+                        {threat.affectedModels.length > 0 ? threat.affectedModels.join(', ') : '—'}
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0, fontSize: 10 }}>
+                          {threat.severity.toUpperCase()}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge style={{ background: stc.bg, color: stc.text, border: `1px solid ${stc.border}`, borderRadius: 0, fontSize: 10 }}>
+                          {threat.status.charAt(0).toUpperCase() + threat.status.slice(1)}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{formatDate(threat.detected)}</td>
+                      <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{threat.source}</td>
+                      <td className="px-4 py-3">
+                        {threat.mitreId ? (
+                          <Badge style={{ background: 'hsl(220 90% 56% / 0.12)', color: 'hsl(220 90% 56%)', borderRadius: 0, fontSize: 10, fontFamily: 'monospace' }}>
+                            {threat.mitreId}
+                          </Badge>
+                        ) : <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>—</span>}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openDetail(threat)}>
+                            <Eye size={14} style={{ color: 'hsl(var(--brand))' }} />
+                          </Button>
+                          {(threat.status === 'active' || threat.status === 'mitigated') && (
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleInvestigate(threat)}>
+                              <Detective size={14} style={{ color: 'hsl(45 93% 47%)' }} />
+                            </Button>
+                          )}
+                          {threat.status !== 'resolved' && (
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { setResolveTarget(threat); setResolveNote(''); }}>
+                              <CheckCircle size={14} style={{ color: 'hsl(142 71% 45%)' }} />
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {filtered.length === 0 && (
+                  <tr><td colSpan={9} className="px-4 py-8 text-center text-xs" style={{ color: 'hsl(var(--text-4))' }}>No threats match the current filters.</td></tr>
+                )}
               </tbody>
             </table>
-          )}
+          </div>
         </CardContent>
       </Card>
 
-      {/* View Sheet */}
-      <Sheet open={!!viewItem} onOpenChange={o => !o && setViewItem(null)}>
-        <SheetContent style={{ width: 520, background: 'hsl(var(--bg-surface))', borderRadius: 0 }}>
-          {viewItem && (
+      {/* Resolve ConfirmDialog */}
+      <ConfirmDialog
+        open={!!resolveTarget}
+        onClose={() => { setResolveTarget(null); setResolveNote(''); }}
+        onConfirm={handleResolve}
+        type="warning"
+        title={`Resolve ${resolveTarget?.id}`}
+        message={
+          <div className="space-y-3">
+            <p>Mark <strong>{resolveTarget?.name}</strong> as resolved?</p>
+            <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Resolution notes are required for audit compliance.</p>
+            <textarea
+              className="w-full px-3 py-2 text-sm border bg-transparent outline-none"
+              style={{ borderColor: 'hsl(var(--border))', borderRadius: 0, minHeight: 80 }}
+              placeholder="Enter resolution notes (required)..."
+              value={resolveNote}
+              onChange={e => setResolveNote(e.target.value)}
+            />
+          </div>
+        }
+        confirmLabel="Resolve Threat"
+      />
+
+      {/* Threat Detail Sheet */}
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetContent className="w-[600px] sm:max-w-[600px] overflow-y-auto" style={{ borderRadius: 0 }}>
+          {selectedThreat && (
             <>
-              <SheetHeader className="pb-4">
-                <SheetTitle style={{ color: 'hsl(var(--text-1))' }}>{viewItem.name}</SheetTitle>
-                <div className="flex gap-2">
-                  <Badge style={{ background: severityColor(viewItem.severity).bg, color: severityColor(viewItem.severity).text, border: `1px solid ${severityColor(viewItem.severity).border}`, borderRadius: 0 }}>
-                    {viewItem.severity}
-                  </Badge>
-                  <Badge variant="outline" style={{ borderRadius: 0 }}>{viewItem.status}</Badge>
-                </div>
+              <SheetHeader>
+                <SheetTitle className="flex items-center gap-2" style={{ color: 'hsl(var(--text-1))' }}>
+                  <Lightning size={18} weight="fill" style={{ color: severityColor(selectedThreat.severity).text }} />
+                  {selectedThreat.id} — {selectedThreat.name}
+                </SheetTitle>
               </SheetHeader>
-              <Tabs defaultValue="details">
-                <TabsList style={{ borderRadius: 0, background: 'hsl(var(--bg-muted))' }}>
-                  <TabsTrigger value="details" style={{ borderRadius: 0 }}>Details</TabsTrigger>
-                  <TabsTrigger value="remediation" style={{ borderRadius: 0 }}>Remediation</TabsTrigger>
+              <Tabs defaultValue="overview" className="mt-4">
+                <TabsList style={{ borderRadius: 0 }}>
+                  <TabsTrigger value="overview" style={{ borderRadius: 0 }}>Overview</TabsTrigger>
+                  <TabsTrigger value="affected" style={{ borderRadius: 0 }}>Affected Systems</TabsTrigger>
+                  <TabsTrigger value="remediation" style={{ borderRadius: 0 }}>Remediation Steps</TabsTrigger>
+                  <TabsTrigger value="activity" style={{ borderRadius: 0 }}>Activity</TabsTrigger>
                 </TabsList>
-                <TabsContent value="details" className="mt-4 space-y-3">
-                  {[
-                    { label: 'Threat ID', value: viewItem.id },
-                    { label: 'Category', value: viewItem.category },
-                    { label: 'Source', value: viewItem.source },
-                    { label: 'Detected', value: formatDate(viewItem.detected) },
-                    { label: 'CVE', value: viewItem.cve || 'N/A' },
-                    { label: 'Affected Models', value: viewItem.affectedModels.join(', ') || 'None' },
-                  ].map(r => (
-                    <div key={r.label} className="flex justify-between py-2" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                      <span className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>{r.label}</span>
-                      <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{r.value}</span>
+
+                <TabsContent value="overview" className="space-y-4 mt-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Severity</span>
+                      <div className="mt-1">
+                        <Badge style={{ background: severityColor(selectedThreat.severity).bg, color: severityColor(selectedThreat.severity).text, borderRadius: 0, fontSize: 11 }}>
+                          {selectedThreat.severity.toUpperCase()}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Status</span>
+                      <div className="mt-1">
+                        <Badge style={{ background: statusColor(selectedThreat.status).bg, color: statusColor(selectedThreat.status).text, borderRadius: 0, fontSize: 11 }}>
+                          {selectedThreat.status.charAt(0).toUpperCase() + selectedThreat.status.slice(1)}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Category</span>
+                      <p className="text-sm font-medium mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selectedThreat.category}</p>
+                    </div>
+                    <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Source</span>
+                      <p className="text-sm font-medium mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selectedThreat.source}</p>
+                    </div>
+                    <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Detected</span>
+                      <p className="text-sm font-medium mt-1" style={{ color: 'hsl(var(--text-1))' }}>{formatDate(selectedThreat.detected)}</p>
+                    </div>
+                    <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>MITRE ATT&CK</span>
+                      <p className="text-sm font-mono font-medium mt-1" style={{ color: 'hsl(220 90% 56%)' }}>{selectedThreat.mitreId || '—'}</p>
+                    </div>
+                  </div>
+                  <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                    <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Description</span>
+                    <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selectedThreat.description}</p>
+                  </div>
+                  {selectedThreat.cve && (
+                    <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>CVE Reference</span>
+                      <p className="text-sm font-mono mt-1" style={{ color: 'hsl(0 72% 51%)' }}>{selectedThreat.cve}</p>
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="affected" className="space-y-3 mt-4">
+                  {selectedThreat.affectedModels.length > 0 ? (
+                    selectedThreat.affectedModels.map(m => (
+                      <div key={m} className="flex items-center justify-between p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                        <div className="flex items-center gap-2">
+                          <Target size={14} style={{ color: 'hsl(var(--brand))' }} />
+                          <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{m}</span>
+                        </div>
+                        <Badge style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(0 72% 51%)', borderRadius: 0, fontSize: 10 }}>Impacted</Badge>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs py-6 text-center" style={{ color: 'hsl(var(--text-4))' }}>No specific models affected — platform-level threat.</p>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="remediation" className="space-y-3 mt-4">
+                  {selectedThreat.remediation.map((step, i) => (
+                    <div key={i} className="flex items-start gap-3 p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <div className="flex items-center justify-center w-5 h-5 text-xs font-bold" style={{ background: 'hsl(var(--brand))', color: '#fff', borderRadius: 0, minWidth: 20 }}>
+                        {i + 1}
+                      </div>
+                      <span className="text-sm" style={{ color: 'hsl(var(--text-1))' }}>{step}</span>
                     </div>
                   ))}
-                  <div className="pt-2">
-                    <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-2))' }}>Description</p>
-                    <p className="text-sm" style={{ color: 'hsl(var(--text-2))' }}>{viewItem.description}</p>
-                  </div>
                 </TabsContent>
-                <TabsContent value="remediation" className="mt-4">
-                  <p className="text-xs font-semibold mb-3" style={{ color: 'hsl(var(--text-2))' }}>Remediation Steps</p>
-                  <ul className="space-y-2">
-                    {viewItem.remediation.map((r, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <CheckCircle size={14} style={{ color: '#10b981', marginTop: 2, flexShrink: 0 }} />
-                        <span className="text-sm" style={{ color: 'hsl(var(--text-2))' }}>{r}</span>
-                      </li>
-                    ))}
-                  </ul>
+
+                <TabsContent value="activity" className="space-y-3 mt-4">
+                  <div className="flex items-start gap-3 p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                    <Clock size={14} style={{ color: 'hsl(var(--text-4))' }} className="mt-0.5" />
+                    <div>
+                      <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>Threat detected</p>
+                      <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{formatDate(selectedThreat.detected)} — Source: {selectedThreat.source}</p>
+                    </div>
+                  </div>
+                  {selectedThreat.status === 'mitigated' && (
+                    <div className="flex items-start gap-3 p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <CheckCircle size={14} weight="fill" style={{ color: 'hsl(142 71% 45%)' }} className="mt-0.5" />
+                      <div>
+                        <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>Threat mitigated</p>
+                        <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Remediation steps applied successfully.</p>
+                      </div>
+                    </div>
+                  )}
+                  {selectedThreat.status === 'resolved' && (
+                    <div className="flex items-start gap-3 p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <CheckCircle size={14} weight="fill" style={{ color: 'hsl(142 71% 45%)' }} className="mt-0.5" />
+                      <div>
+                        <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>Threat resolved</p>
+                        <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Closed and archived.</p>
+                      </div>
+                    </div>
+                  )}
                 </TabsContent>
               </Tabs>
-              <div className="flex gap-2 mt-6">
-                <Button size="sm" onClick={() => { setEditItem({ ...viewItem }); setViewItem(null); }}>
-                  <PencilSimple size={14} className="mr-1" /> Edit
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => setViewItem(null)}>Close</Button>
-              </div>
             </>
           )}
         </SheetContent>
       </Sheet>
-
-      {/* Edit Dialog */}
-      <Dialog open={!!editItem} onOpenChange={o => !o && setEditItem(null)}>
-        <DialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0, maxWidth: 520 }}>
-          <DialogHeader>
-            <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>Edit Threat</DialogTitle>
-          </DialogHeader>
-          {editItem && (
-            <div className="space-y-3">
-              {[
-                { label: 'Name', key: 'name', type: 'text' },
-                { label: 'Category', key: 'category', type: 'text' },
-                { label: 'Source', key: 'source', type: 'text' },
-                { label: 'CVE', key: 'cve', type: 'text' },
-                { label: 'Description', key: 'description', type: 'text' },
-              ].map(f => (
-                <div key={f.key}>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>{f.label}</label>
-                  <Input
-                    value={(editItem as any)[f.key] || ''}
-                    onChange={e => setEditItem(prev => prev ? { ...prev, [f.key]: e.target.value } : null)}
-                    style={{ borderRadius: 0 }}
-                  />
-                </div>
-              ))}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Severity</label>
-                  <select
-                    value={editItem.severity}
-                    onChange={e => setEditItem(prev => prev ? { ...prev, severity: e.target.value as any } : null)}
-                    style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}
-                  >
-                    {['critical', 'high', 'medium', 'low'].map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Status</label>
-                  <select
-                    value={editItem.status}
-                    onChange={e => setEditItem(prev => prev ? { ...prev, status: e.target.value as any } : null)}
-                    style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}
-                  >
-                    {['active', 'investigating', 'mitigated', 'resolved'].map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditItem(null)} style={{ borderRadius: 0 }}>Cancel</Button>
-            <Button onClick={handleEdit} style={{ borderRadius: 0 }}>Save Changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Create Dialog */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0, maxWidth: 520 }}>
-          <DialogHeader>
-            <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>Add New Threat</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            {[
-              { label: 'Name', key: 'name', type: 'text' },
-              { label: 'Category', key: 'category', type: 'text' },
-              { label: 'Source', key: 'source', type: 'text' },
-              { label: 'Description', key: 'description', type: 'text' },
-            ].map(f => (
-              <div key={f.key}>
-                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>{f.label}</label>
-                <Input
-                  value={(formData as any)[f.key] || ''}
-                  onChange={e => setFormData(prev => ({ ...prev, [f.key]: e.target.value }))}
-                  style={{ borderRadius: 0 }}
-                />
-              </div>
-            ))}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Severity</label>
-                <select
-                  value={formData.severity}
-                  onChange={e => setFormData(prev => ({ ...prev, severity: e.target.value as any }))}
-                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}
-                >
-                  {['critical', 'high', 'medium', 'low'].map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Status</label>
-                <select
-                  value={formData.status}
-                  onChange={e => setFormData(prev => ({ ...prev, status: e.target.value as any }))}
-                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}
-                >
-                  {['active', 'investigating', 'mitigated', 'resolved'].map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
-            <Button onClick={handleCreate} style={{ borderRadius: 0 }} disabled={!formData.name}>Create Threat</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Dialog */}
-      <AlertDialog open={!!deleteItem} onOpenChange={o => !o && setDeleteItem(null)}>
-        <AlertDialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0 }}>
-          <AlertDialogHeader>
-            <AlertDialogTitle style={{ color: 'hsl(var(--text-1))' }}>Delete Threat</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete <strong>{deleteItem?.name}</strong>? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} style={{ background: '#ef4444', borderRadius: 0 }}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

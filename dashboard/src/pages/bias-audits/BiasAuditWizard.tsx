@@ -1,370 +1,825 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
-  Eye, Plus, Warning, CheckCircle, XCircle, Robot, ChartLine
+  Eye, Trash, Plus, Warning, ArrowRight, ArrowLeft,
+  Play, ShieldCheck, Scales, Brain, Check, CaretRight,
+  MagnifyingGlass, Lightning, Info, ArrowsClockwise, X,
 } from '@phosphor-icons/react';
-import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine
-} from 'recharts';
-import { Card } from '../../components/ui/card';
+import { Card, CardContent } from '../../components/ui/card';
+import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../components/ui/sheet';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
+import { Input } from '../../components/ui/input';
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle,
+} from '../../components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../components/ui/tooltip';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from '../../components/ui/alert-dialog';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from '../../components/ui/dialog';
 import { Progress } from '../../components/ui/progress';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
-import { BIAS_AUDITS, MODELS, statusColor, severityColor, formatDate } from '../../data/seed';
-import { useSettingsStore } from '../../stores/settingsStore';
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip,
+  ReferenceLine, ResponsiveContainer, Legend,
+} from 'recharts';
+import {
+  BIAS_AUDITS, BiasAudit, MODELS, DATASETS, severityColor, statusColor, formatDate,
+} from '../../data/seed';
 import { useChartTheme } from '../../hooks/useChartTheme';
+import { useSettingsStore } from '../../stores/settingsStore';
 
-function StatCard({ icon, value, label }: { icon: React.ReactNode; value: string | number; label: string }) {
+// ── Score Color ───────────────────────────────────────────────────────────────
+function scoreColor(score: number): { bg: string; text: string } {
+  if (score >= 0.85) return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))' };
+  if (score >= 0.80) return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))' };
+  return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))' };
+}
+
+// ── MetricTile ────────────────────────────────────────────────────────────────
+function MetricTile({ label, value, variant }: {
+  label: string; value: string | number; variant: 'default' | 'error' | 'warn' | 'ok';
+}) {
+  const colors = {
+    default: { bg: 'hsl(var(--bg-surface))', text: 'hsl(var(--text-1))', border: 'hsl(var(--border))' },
+    error: { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))' },
+    warn: { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))', border: 'hsl(var(--s-wn-br))' },
+    ok: { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))' },
+  };
+  const c = colors[variant];
   return (
-    <Card className="p-4 flex items-start gap-3">
-      <div className="mt-0.5 text-[hsl(var(--brand))]">{icon}</div>
-      <div>
-        <div className="text-2xl font-bold text-[hsl(var(--text-1))]">{value}</div>
-        <div className="text-xs text-[hsl(var(--text-4))] mt-0.5">{label}</div>
-      </div>
+    <Card style={{ borderRadius: 0, background: c.bg, border: `1px solid ${c.border}` }}>
+      <CardContent className="px-4 py-3">
+        <p className="text-xs font-medium mb-1" style={{ color: 'hsl(var(--text-4))' }}>{label}</p>
+        <p className="text-2xl font-bold" style={{ color: c.text }}>{value}</p>
+      </CardContent>
     </Card>
   );
 }
 
-const WIZARD_STEPS = ['Select Model', 'Choose Framework', 'Configure Attributes', 'Run Audit'];
+// ── Trend chart data ──────────────────────────────────────────────────────────
+const TREND_DATA = [
+  { month: 'Oct', 'MDL-001': 0.82, 'MDL-002': 0.91, 'MDL-004': 0.70 },
+  { month: 'Nov', 'MDL-001': 0.80, 'MDL-002': 0.92, 'MDL-004': 0.68 },
+  { month: 'Dec', 'MDL-001': 0.79, 'MDL-002': 0.93, 'MDL-004': 0.65 },
+  { month: 'Jan', 'MDL-001': 0.79, 'MDL-002': 0.93, 'MDL-004': 0.67 },
+  { month: 'Feb', 'MDL-001': 0.78, 'MDL-002': 0.94, 'MDL-004': 0.62 },
+  { month: 'Mar', 'MDL-001': 0.79, 'MDL-002': 0.93, 'MDL-004': 0.67 },
+];
 
+// ── Frameworks for wizard ─────────────────────────────────────────────────────
+const FRAMEWORKS = [
+  { id: 'eu-ai-act', name: 'EU AI Act', icon: Scales, desc: 'EU AI Act Annex III high-risk assessment' },
+  { id: 'nist-ai-rmf', name: 'NIST AI RMF', icon: ShieldCheck, desc: 'NIST AI Risk Management Framework MEASURE 2.6' },
+  { id: 'eeoc', name: 'EEOC / Title VII', icon: Scales, desc: 'Equal Employment Opportunity Commission guidelines' },
+  { id: 'gdpr', name: 'GDPR Art. 22', icon: ShieldCheck, desc: 'Automated individual decision-making assessment' },
+  { id: 'iso-42001', name: 'ISO/IEC 42001', icon: Brain, desc: 'AI Management System bias controls' },
+  { id: 'custom', name: 'Custom Framework', icon: Lightning, desc: 'Define custom fairness metrics and thresholds' },
+];
+
+const DIMENSIONS = ['Gender', 'Age', 'Race/Ethnicity', 'Disability', 'Geography', 'Income', 'Language'];
+
+// ═════════════════════════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ═════════════════════════════════════════════════════════════════════════════
 export default function BiasAuditWizard() {
-  const orgName = useSettingsStore(s => s.orgName);
-  const chart = useChartTheme();
+  const { orgName } = useSettingsStore();
+  const ct = useChartTheme();
+  const [audits, setAudits] = useState<BiasAudit[]>(BIAS_AUDITS);
+  const [search, setSearch] = useState('');
 
-  const [selected, setSelected] = useState<typeof BIAS_AUDITS[0] | null>(null);
+  // Detail sheet
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [selectedAudit, setSelectedAudit] = useState<BiasAudit | null>(null);
+
+  // Wizard modal
   const [wizardOpen, setWizardOpen] = useState(false);
-  const [wizardStep, setWizardStep] = useState(0);
-  const [wizardModel, setWizardModel] = useState('');
-  const [wizardFramework, setWizardFramework] = useState('');
-  const [wizardRunning, setWizardRunning] = useState(false);
+  const [wizardStep, setWizardStep] = useState(1);
+  const [selectedFramework, setSelectedFramework] = useState('');
+  const [selectedModel, setSelectedModel] = useState('');
+  const [selectedDataset, setSelectedDataset] = useState('');
+  const [selectedDimensions, setSelectedDimensions] = useState<string[]>(['Gender', 'Age']);
+  const [threshold, setThreshold] = useState('0.85');
+  const [running, setRunning] = useState(false);
+  const [wizardResult, setWizardResult] = useState<BiasAudit | null>(null);
 
-  const stats = {
-    total: BIAS_AUDITS.length,
-    failed: BIAS_AUDITS.filter(a => a.result === 'failed').length,
-    passed: BIAS_AUDITS.filter(a => a.result === 'passed').length,
+  // ── Filtering ─────────────────────────────────────────────────────────────
+  const filtered = useMemo(() => {
+    return audits.filter(a => {
+      if (search && !a.modelName.toLowerCase().includes(search.toLowerCase()) && !a.id.toLowerCase().includes(search.toLowerCase())) return false;
+      return true;
+    });
+  }, [audits, search]);
+
+  // ── Metrics ───────────────────────────────────────────────────────────────
+  const totalAudits = audits.length;
+  const failedCount = audits.filter(a => a.result === 'failed').length;
+  const passedCount = audits.filter(a => a.result === 'passed').length;
+  const remediationCount = audits.filter(a => a.status === 'remediation_required' || a.status === 'blocked').length;
+
+  // ── Open detail ───────────────────────────────────────────────────────────
+  const openDetail = (audit: BiasAudit) => {
+    setSelectedAudit(audit);
+    setSheetOpen(true);
   };
 
-  const resultColor = (r: string) => {
-    if (r === 'passed') return { bg: '#14532d', text: '#86efac', border: '#166534' };
-    if (r === 'failed') return { bg: '#7f1d1d', text: '#fca5a5', border: '#991b1b' };
-    return { bg: '#713f12', text: '#fde047', border: '#854d0e' };
+  // ── Delete audit ──────────────────────────────────────────────────────────
+  const deleteAudit = (id: string) => {
+    setAudits(prev => prev.filter(a => a.id !== id));
   };
 
-  const scoreChartData = selected?.dimensions.map(d => ({
-    attribute: d.attribute.length > 12 ? d.attribute.slice(0, 12) + '…' : d.attribute,
-    score: Math.round(d.score * 100),
-    threshold: Math.round(d.threshold * 100),
-    pass: d.pass,
-  })) || [];
+  // ── Re-run audit ──────────────────────────────────────────────────────────
+  const rerunAudit = (audit: BiasAudit) => {
+    // Simulate re-run
+    const updated = { ...audit, date: new Date().toISOString().split('T')[0], status: audit.result === 'failed' ? 'remediation_required' : 'compliant' };
+    setAudits(prev => prev.map(a => a.id === audit.id ? updated : a));
+  };
 
-  const handleWizardNext = () => {
-    if (wizardStep < WIZARD_STEPS.length - 1) {
-      setWizardStep(s => s + 1);
-    } else {
-      setWizardRunning(true);
-      setTimeout(() => {
-        setWizardRunning(false);
-        setWizardOpen(false);
-        setWizardStep(0);
-        setWizardModel('');
-        setWizardFramework('');
-      }, 2000);
+  // ── Wizard run ────────────────────────────────────────────────────────────
+  const runWizardAudit = () => {
+    setRunning(true);
+    setTimeout(() => {
+      const dims = selectedDimensions.map(d => ({
+        attribute: d,
+        score: Math.round((0.6 + Math.random() * 0.35) * 100) / 100,
+        threshold: parseFloat(threshold),
+        pass: false,
+      }));
+      dims.forEach(d => { d.pass = d.score >= d.threshold; });
+      const overall = Math.round(dims.reduce((a, d) => a + d.score, 0) / dims.length * 100) / 100;
+      const result: BiasAudit = {
+        id: `BA-${String(audits.length + 1).padStart(3, '0')}`,
+        modelId: selectedModel,
+        modelName: MODELS.find(m => m.id === selectedModel)?.name || 'Unknown Model',
+        dataset: selectedDataset,
+        framework: FRAMEWORKS.find(f => f.id === selectedFramework)?.name || 'Custom',
+        overallScore: overall,
+        result: dims.every(d => d.pass) ? 'passed' : 'failed',
+        protectedAttributes: selectedDimensions,
+        severity: overall < 0.80 ? 'critical' : overall < 0.85 ? 'high' : 'low',
+        date: new Date().toISOString().split('T')[0],
+        auditor: 'System (Automated)',
+        status: dims.every(d => d.pass) ? 'compliant' : 'remediation_required',
+        dimensions: dims,
+        recommendations: dims.filter(d => !d.pass).map(d => `Remediate ${d.attribute} bias (score: ${d.score})`),
+      };
+      setWizardResult(result);
+      setRunning(false);
+    }, 2500);
+  };
+
+  const finalizeWizard = () => {
+    if (wizardResult) {
+      setAudits(prev => [...prev, wizardResult]);
     }
+    setWizardOpen(false);
+    setWizardStep(1);
+    setWizardResult(null);
+    setSelectedFramework('');
+    setSelectedModel('');
+    setSelectedDataset('');
+    setSelectedDimensions(['Gender', 'Age']);
+    setThreshold('0.85');
   };
 
-  const handleWizardBack = () => setWizardStep(s => Math.max(0, s - 1));
+  const toggleDimension = (d: string) => {
+    setSelectedDimensions(prev =>
+      prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]
+    );
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-[hsl(var(--text-1))]">Bias Audit Wizard</h1>
-          <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">{orgName} — AI fairness and bias audit management</p>
+    <TooltipProvider>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Bias Audits</h1>
+            <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>
+              {orgName} · Fairness & bias assessment across protected attributes
+            </p>
+          </div>
+          <Button onClick={() => setWizardOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+            <Plus size={14} className="mr-1" />New Bias Audit
+          </Button>
         </div>
-        <Button className="gap-2" onClick={() => { setWizardOpen(true); setWizardStep(0); }}>
-          <Plus size={16} /> Run Bias Audit
-        </Button>
-      </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <StatCard icon={<ChartLine size={20} />} value={stats.total} label="Total Audits" />
-        <StatCard icon={<XCircle size={20} />} value={stats.failed} label="Failed" />
-        <StatCard icon={<CheckCircle size={20} />} value={stats.passed} label="Passed" />
-      </div>
+        {/* Metrics */}
+        <div className="grid grid-cols-4 gap-4">
+          <MetricTile label="Total Audits" value={totalAudits} variant="default" />
+          <MetricTile label="Failed" value={failedCount} variant="error" />
+          <MetricTile label="Passed" value={passedCount} variant="ok" />
+          <MetricTile label="Remediation Needed" value={remediationCount} variant="warn" />
+        </div>
 
-      {/* Audit Table */}
-      <Card>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-[hsl(var(--border))]">
-                {['ID', 'Model', 'Dataset', 'Framework', 'Score', 'Protected Attributes', 'Result', 'Date', 'Auditor', 'Actions'].map(h => (
-                  <th key={h} className="text-left px-4 py-3 text-xs font-medium text-[hsl(var(--text-4))] uppercase tracking-wide">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {BIAS_AUDITS.map(audit => {
-                const rc = resultColor(audit.result);
-                const sc = severityColor(audit.severity);
-                return (
-                  <tr key={audit.id} className={`border-b border-[hsl(var(--border))] transition-colors ${audit.result === 'failed' ? 'bg-red-950/10 hover:bg-red-950/20' : 'hover:bg-[hsl(var(--bg-surface))/50]'}`}>
-                    <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--text-4))]">{audit.id}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1.5">
-                        <Robot size={13} className="text-[hsl(var(--brand))]" />
-                        <span className="text-sm font-medium text-[hsl(var(--text-1))]">{audit.modelName}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--text-3))]">{audit.dataset}</td>
-                    <td className="px-4 py-3 text-[hsl(var(--text-3))]">{audit.framework}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <Progress value={audit.overallScore * 100} className="w-16 h-1.5" />
-                        <span className="text-xs font-medium" style={{ color: audit.overallScore >= 0.85 ? '#4ade80' : audit.overallScore >= 0.70 ? '#facc15' : '#f87171' }}>
-                          {(audit.overallScore * 100).toFixed(0)}%
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-wrap gap-1">
-                        {audit.protectedAttributes.slice(0, 2).map(attr => (
-                          <span key={attr} className="px-1.5 py-0.5 text-xs bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{attr}</span>
-                        ))}
-                        {audit.protectedAttributes.length > 2 && (
-                          <span className="text-xs text-[hsl(var(--text-4))]">+{audit.protectedAttributes.length - 2}</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="px-2 py-0.5 text-xs" style={{ background: rc.bg, color: rc.text, border: `1px solid ${rc.border}` }}>{audit.result}</span>
-                    </td>
-                    <td className="px-4 py-3 text-[hsl(var(--text-4))] text-xs">{formatDate(audit.date)}</td>
-                    <td className="px-4 py-3 text-[hsl(var(--text-3))] text-xs">{audit.auditor}</td>
-                    <td className="px-4 py-3">
-                      <Button size="sm" variant="outline" className="gap-1.5 h-7 text-xs" onClick={() => setSelected(audit)}>
-                        <Eye size={13} /> View Report
-                      </Button>
-                    </td>
+        {/* Trend Chart */}
+        <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Fairness Score Trend</p>
+              <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>6-month window</span>
+            </div>
+            <ResponsiveContainer width="100%" height={220}>
+              <LineChart data={TREND_DATA}>
+                <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+                <XAxis dataKey="month" tick={{ fill: ct.axis, fontSize: 11 }} />
+                <YAxis domain={[0.5, 1.0]} tick={{ fill: ct.axis, fontSize: 11 }} label={{ value: 'Fairness Score', angle: -90, position: 'insideLeft', fill: ct.axis, fontSize: 11 }} />
+                <RTooltip
+                  contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, borderRadius: 0, color: ct.tooltipText, fontSize: 12 }}
+                />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <ReferenceLine y={0.80} stroke="hsl(45 93% 47%)" strokeDasharray="6 3" label={{ value: 'Threshold 0.80', fill: 'hsl(45 93% 47%)', fontSize: 10 }} />
+                <Line type="monotone" dataKey="MDL-001" stroke="hsl(0 72% 51%)" strokeWidth={2} dot={{ r: 3 }} name="MDL-001 (Credit Risk)" />
+                <Line type="monotone" dataKey="MDL-002" stroke="hsl(142 71% 45%)" strokeWidth={2} dot={{ r: 3 }} name="MDL-002 (Fraud Detection)" />
+                <Line type="monotone" dataKey="MDL-004" stroke="hsl(220 90% 56%)" strokeWidth={2} dot={{ r: 3 }} name="MDL-004 (Loan Assistant)" />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Search */}
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1 max-w-sm">
+            <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--text-4))' }} />
+            <Input
+              placeholder="Search audits..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-8 h-8 text-sm"
+              style={{ borderRadius: 0 }}
+            />
+          </div>
+        </div>
+
+        {/* Audit Table */}
+        <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                    {['BA-ID', 'Model', 'Dataset', 'Framework', 'Score', 'Result', 'Protected Attrs', 'Triggered By', 'Date', 'Actions'].map(h => (
+                      <th key={h} className="px-3 py-3 text-left text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
+                    ))}
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+                </thead>
+                <tbody>
+                  {filtered.map(audit => {
+                    const sc = scoreColor(audit.overallScore);
+                    const isFailed = audit.result === 'failed';
+                    const isFailedHighlight = ['BA-001', 'BA-003', 'BA-005'].includes(audit.id);
+                    return (
+                      <tr
+                        key={audit.id}
+                        className="hover:bg-muted/30 cursor-pointer"
+                        style={{
+                          borderBottom: '1px solid hsl(var(--border))',
+                          borderLeft: isFailedHighlight ? '4px solid hsl(var(--s-er-tx))' : 'none',
+                        }}
+                        onClick={() => openDetail(audit)}
+                      >
+                        <td className="px-3 py-2">
+                          <span className="font-mono text-xs font-medium" style={{ color: 'hsl(var(--brand))' }}>{audit.id}</span>
+                        </td>
+                        <td className="px-3 py-2">
+                          <div>
+                            <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{audit.modelName}</span>
+                            <span className="block text-[10px] font-mono" style={{ color: 'hsl(var(--text-4))' }}>{audit.modelId}</span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-2">
+                          <span className="text-xs font-mono" style={{ color: 'hsl(var(--text-1))' }}>{audit.dataset}</span>
+                        </td>
+                        <td className="px-3 py-2">
+                          <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{audit.framework}</span>
+                        </td>
+                        <td className="px-3 py-2">
+                          <Badge style={{ background: sc.bg, color: sc.text, borderRadius: 0, fontSize: 12, fontWeight: 700 }}>
+                            {audit.overallScore.toFixed(2)}
+                          </Badge>
+                        </td>
+                        <td className="px-3 py-2">
+                          <Badge style={{
+                            background: isFailed ? 'hsl(var(--s-er-bg))' : 'hsl(var(--s-ok-bg))',
+                            color: isFailed ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-ok-tx))',
+                            borderRadius: 0, fontSize: 11,
+                          }}>
+                            {isFailed ? 'Fail' : 'Pass'}
+                          </Badge>
+                        </td>
+                        <td className="px-3 py-2">
+                          <div className="flex flex-wrap gap-1">
+                            {audit.protectedAttributes.map(attr => (
+                              <Badge key={attr} className="text-[10px] px-1 py-0" style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0 }}>
+                                {attr}
+                              </Badge>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-3 py-2">
+                          <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{audit.auditor}</span>
+                        </td>
+                        <td className="px-3 py-2">
+                          <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{formatDate(audit.date)}</span>
+                        </td>
+                        <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openDetail(audit)}>
+                              <Eye size={14} style={{ color: 'hsl(var(--text-4))' }} />
+                            </Button>
+                            {isFailed && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => rerunAudit(audit)}>
+                                    <ArrowsClockwise size={14} style={{ color: 'hsl(var(--brand))' }} />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent style={{ borderRadius: 0 }}>Re-run Audit</TooltipContent>
+                              </Tooltip>
+                            )}
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                  <Trash size={14} style={{ color: 'hsl(var(--s-er-tx))' }} />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent style={{ borderRadius: 0 }}>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Bias Audit</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Delete "{audit.id} — {audit.modelName}"? Audit records should be preserved for compliance.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => deleteAudit(audit.id)} style={{ borderRadius: 0, background: 'hsl(0 72% 51%)' }}>
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* Detail Sheet */}
-      <Sheet open={!!selected} onOpenChange={o => { if (!o) setSelected(null); }}>
-        <SheetContent className="w-[700px] max-w-full overflow-y-auto" side="right">
-          {selected && (
-            <>
-              <SheetHeader className="mb-4">
-                <SheetTitle className="flex items-center gap-2">
-                  <ChartLine size={18} /> {selected.modelName} — Bias Audit Report
-                  <span className="font-mono text-xs text-[hsl(var(--text-4))]">{selected.id}</span>
-                </SheetTitle>
-              </SheetHeader>
+        {/* ── Bias Audit Detail Sheet ──────────────────────────────────────── */}
+        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+          <SheetContent side="right" className="w-[560px] sm:max-w-[560px] overflow-y-auto" style={{ borderRadius: 0 }}>
+            {selectedAudit && (
+              <>
+                <SheetHeader>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs font-bold" style={{ color: 'hsl(var(--brand))' }}>{selectedAudit.id}</span>
+                    <Badge style={{
+                      background: selectedAudit.result === 'failed' ? 'hsl(var(--s-er-bg))' : 'hsl(var(--s-ok-bg))',
+                      color: selectedAudit.result === 'failed' ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-ok-tx))',
+                      borderRadius: 0,
+                    }}>
+                      {selectedAudit.result === 'failed' ? 'FAILED' : 'PASSED'}
+                    </Badge>
+                  </div>
+                  <SheetTitle style={{ color: 'hsl(var(--text-1))' }}>{selectedAudit.modelName}</SheetTitle>
+                </SheetHeader>
 
-              {selected.result === 'failed' && (
-                <div className="mb-4 border border-red-700 bg-red-950/30 p-3 flex items-center gap-2">
-                  <Warning size={16} className="text-red-400 shrink-0" />
-                  <div>
-                    <div className="text-sm font-semibold text-red-300">Audit Failed</div>
-                    <div className="text-xs text-red-400 mt-0.5">
-                      {selected.status === 'blocked' ? 'Deployment BLOCKED until remediation is complete.' : 'Remediation actions required before production deployment.'}
+                {/* FAILED Banner */}
+                {selectedAudit.result === 'failed' && (
+                  <div className="mt-3 p-3 flex items-start gap-2" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-br))', borderRadius: 0 }}>
+                    <Warning size={16} weight="bold" style={{ color: 'hsl(var(--s-er-tx))', marginTop: 1 }} />
+                    <div>
+                      <p className="text-xs font-semibold" style={{ color: 'hsl(var(--s-er-tx))' }}>
+                        Model promotion blocked. Remediation required before deployment.
+                      </p>
+                      <Button variant="ghost" size="sm" className="h-6 text-xs px-2 mt-1" style={{ borderRadius: 0, color: 'hsl(var(--s-er-tx))' }}>
+                        Create Remediation Task →
+                      </Button>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              <Tabs defaultValue="dimensions">
-                <TabsList className="mb-4">
-                  <TabsTrigger value="dimensions">Dimension Breakdown</TabsTrigger>
-                  <TabsTrigger value="chart">Threshold Chart</TabsTrigger>
-                  <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
-                </TabsList>
+                <Tabs defaultValue="overview" className="mt-4">
+                  <TabsList className="w-full" style={{ borderRadius: 0 }}>
+                    <TabsTrigger value="overview" style={{ borderRadius: 0 }}>Overview</TabsTrigger>
+                    <TabsTrigger value="dimensions" style={{ borderRadius: 0 }}>Dimensions</TabsTrigger>
+                    <TabsTrigger value="remediation" style={{ borderRadius: 0 }}>Remediation</TabsTrigger>
+                    <TabsTrigger value="activity" style={{ borderRadius: 0 }}>Activity</TabsTrigger>
+                  </TabsList>
 
-                <TabsContent value="dimensions" className="space-y-3">
-                  <div className="grid grid-cols-3 gap-3 mb-4">
-                    <div className="bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] p-3">
-                      <div className="text-xs text-[hsl(var(--text-4))]">Overall Score</div>
-                      <div className="text-xl font-bold mt-1" style={{ color: selected.overallScore >= 0.85 ? '#4ade80' : '#f87171' }}>
-                        {(selected.overallScore * 100).toFixed(0)}%
+                  {/* Overview */}
+                  <TabsContent value="overview" className="space-y-4 mt-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Overall Score</p>
+                        {(() => {
+                          const sc = scoreColor(selectedAudit.overallScore);
+                          return (
+                            <Badge style={{ background: sc.bg, color: sc.text, borderRadius: 0, fontSize: 16, fontWeight: 700 }}>
+                              {selectedAudit.overallScore.toFixed(2)}
+                            </Badge>
+                          );
+                        })()}
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Framework</p>
+                        <span className="text-sm" style={{ color: 'hsl(var(--text-1))' }}>{selectedAudit.framework}</span>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Dataset</p>
+                        <span className="text-xs font-mono" style={{ color: 'hsl(var(--text-1))' }}>{selectedAudit.dataset}</span>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Date</p>
+                        <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{formatDate(selectedAudit.date)}</span>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Auditor</p>
+                        <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{selectedAudit.auditor}</span>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Status</p>
+                        <Badge style={{ background: statusColor(selectedAudit.status).bg, color: statusColor(selectedAudit.status).text, borderRadius: 0 }}>
+                          {selectedAudit.status.replace(/_/g, ' ')}
+                        </Badge>
                       </div>
                     </div>
-                    <div className="bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] p-3">
-                      <div className="text-xs text-[hsl(var(--text-4))]">Framework</div>
-                      <div className="text-sm font-medium text-[hsl(var(--text-1))] mt-1">{selected.framework}</div>
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Protected Attributes</p>
+                      <div className="flex flex-wrap gap-1">
+                        {selectedAudit.protectedAttributes.map(a => (
+                          <Badge key={a} style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 11 }}>{a}</Badge>
+                        ))}
+                      </div>
                     </div>
-                    <div className="bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] p-3">
-                      <div className="text-xs text-[hsl(var(--text-4))]">Auditor</div>
-                      <div className="text-sm font-medium text-[hsl(var(--text-1))] mt-1">{selected.auditor}</div>
-                    </div>
-                  </div>
+                  </TabsContent>
 
-                  <div className="overflow-x-auto">
+                  {/* Dimension Results */}
+                  <TabsContent value="dimensions" className="space-y-4 mt-4">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-[hsl(var(--border))]">
-                          {['Attribute', 'Score', 'Threshold', 'Pass/Fail'].map(h => (
-                            <th key={h} className="text-left px-4 py-3 text-xs font-medium text-[hsl(var(--text-4))] uppercase tracking-wide">{h}</th>
+                        <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                          {['Dimension', 'Score', 'Threshold', 'Pass/Fail'].map(h => (
+                            <th key={h} className="px-2 py-2 text-left text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
-                        {selected.dimensions.map(d => (
-                          <tr key={d.attribute} className="border-b border-[hsl(var(--border))]">
-                            <td className="px-4 py-3 font-medium text-[hsl(var(--text-1))]">{d.attribute}</td>
-                            <td className="px-4 py-3">
-                              <span className="font-mono text-sm" style={{ color: d.pass ? '#4ade80' : '#f87171' }}>
-                                {(d.score * 100).toFixed(0)}%
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 text-[hsl(var(--text-3))] font-mono text-sm">{(d.threshold * 100).toFixed(0)}%</td>
-                            <td className="px-4 py-3">
-                              {d.pass
-                                ? <span className="flex items-center gap-1 text-green-400 text-xs"><CheckCircle size={14} /> Pass</span>
-                                : <span className="flex items-center gap-1 text-red-400 text-xs"><XCircle size={14} /> Fail</span>}
+                        {selectedAudit.dimensions.map((dim) => {
+                          const dimSc = scoreColor(dim.score);
+                          return (
+                            <tr
+                              key={dim.attribute}
+                              style={{
+                                borderBottom: '1px solid hsl(var(--border))',
+                                background: !dim.pass ? 'hsl(var(--s-er-bg))' : 'transparent',
+                              }}
+                            >
+                              <td className="px-2 py-2">
+                                <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{dim.attribute}</span>
+                              </td>
+                              <td className="px-2 py-2">
+                                <div className="flex items-center gap-2">
+                                  <div className="flex-1 max-w-[80px]">
+                                    <Progress
+                                      value={dim.score * 100}
+                                      className="h-1.5"
+                                      style={{ borderRadius: 0 }}
+                                    />
+                                  </div>
+                                  <Badge style={{ background: dimSc.bg, color: dimSc.text, borderRadius: 0, fontSize: 11, fontWeight: 700 }}>
+                                    {dim.score.toFixed(2)}
+                                  </Badge>
+                                </div>
+                              </td>
+                              <td className="px-2 py-2">
+                                <span className="text-xs font-mono" style={{ color: 'hsl(var(--text-4))' }}>≥ {dim.threshold.toFixed(2)}</span>
+                              </td>
+                              <td className="px-2 py-2">
+                                <Badge style={{
+                                  background: dim.pass ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-er-bg))',
+                                  color: dim.pass ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))',
+                                  borderRadius: 0, fontSize: 10,
+                                }}>
+                                  {dim.pass ? 'Pass' : 'Fail'}
+                                </Badge>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </TabsContent>
+
+                  {/* Remediation */}
+                  <TabsContent value="remediation" className="space-y-4 mt-4">
+                    <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Recommendations</p>
+                    {selectedAudit.recommendations.map((rec, i) => (
+                      <div key={i} className="flex items-start gap-2 p-2" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                        <CaretRight size={12} style={{ color: 'hsl(var(--brand))', marginTop: 2 }} />
+                        <span className="text-sm" style={{ color: 'hsl(var(--text-1))' }}>{rec}</span>
+                      </div>
+                    ))}
+                    {selectedAudit.result === 'failed' && (
+                      <div className="p-3" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-br))', borderRadius: 0 }}>
+                        <p className="text-xs font-semibold" style={{ color: 'hsl(var(--s-er-tx))' }}>
+                          Deployment blocked until all dimensions meet threshold. Contact {selectedAudit.auditor} for remediation plan.
+                        </p>
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* Activity */}
+                  <TabsContent value="activity" className="space-y-4 mt-4">
+                    <div className="space-y-3">
+                      {[
+                        { date: selectedAudit.date, action: `Bias audit ${selectedAudit.result}`, actor: selectedAudit.auditor },
+                        { date: selectedAudit.date, action: 'Audit initiated', actor: 'System' },
+                      ].map((entry, i) => (
+                        <div key={i} className="flex gap-3 p-2" style={{ borderLeft: '2px solid hsl(var(--brand))', borderRadius: 0 }}>
+                          <div className="space-y-0.5">
+                            <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{entry.action}</p>
+                            <p className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>{formatDate(entry.date)} · {entry.actor}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </>
+            )}
+          </SheetContent>
+        </Sheet>
+
+        {/* ── Wizard Modal ─────────────────────────────────────────────────── */}
+        <Dialog open={wizardOpen} onOpenChange={(o) => { if (!o) { setWizardOpen(false); setWizardStep(1); setWizardResult(null); } else { setWizardOpen(true); } }}>
+          <DialogContent className="sm:max-w-2xl" style={{ borderRadius: 0, maxHeight: '85vh', overflow: 'auto' }}>
+            <DialogHeader>
+              <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>
+                New Bias Audit — Step {wizardStep} of 4
+              </DialogTitle>
+            </DialogHeader>
+
+            {/* Progress */}
+            <div className="flex items-center gap-2 mt-2">
+              {[1, 2, 3, 4].map(s => (
+                <div key={s} className="flex items-center gap-1">
+                  <div
+                    className="flex items-center justify-center w-7 h-7 text-xs font-bold"
+                    style={{
+                      background: s <= wizardStep ? 'hsl(var(--brand))' : 'hsl(var(--bg-surface))',
+                      color: s <= wizardStep ? '#fff' : 'hsl(var(--text-4))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: 0,
+                    }}
+                  >
+                    {s < wizardStep ? <Check size={12} /> : s}
+                  </div>
+                  {s < 4 && <div className="w-8 h-px" style={{ background: s < wizardStep ? 'hsl(var(--brand))' : 'hsl(var(--border))' }} />}
+                </div>
+              ))}
+            </div>
+
+            {/* Step 1: Framework */}
+            {wizardStep === 1 && (
+              <div className="space-y-3 mt-4">
+                <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>Select Fairness Framework</p>
+                <div className="grid grid-cols-3 gap-3">
+                  {FRAMEWORKS.map(fw => (
+                    <div
+                      key={fw.id}
+                      className="p-3 space-y-2 cursor-pointer transition-colors"
+                      style={{
+                        background: selectedFramework === fw.id ? 'hsl(var(--brand) / 0.08)' : 'hsl(var(--bg-surface))',
+                        border: selectedFramework === fw.id ? '2px solid hsl(var(--brand))' : '1px solid hsl(var(--border))',
+                        borderRadius: 0,
+                      }}
+                      onClick={() => setSelectedFramework(fw.id)}
+                    >
+                      <fw.icon size={20} style={{ color: 'hsl(var(--brand))' }} />
+                      <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{fw.name}</p>
+                      <p className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>{fw.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Model */}
+            {wizardStep === 2 && (
+              <div className="space-y-3 mt-4">
+                <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>Select Model to Audit</p>
+                <div className="space-y-2">
+                  {MODELS.map(m => (
+                    <div
+                      key={m.id}
+                      className="flex items-center justify-between p-3 cursor-pointer transition-colors"
+                      style={{
+                        background: selectedModel === m.id ? 'hsl(var(--brand) / 0.08)' : 'hsl(var(--bg-surface))',
+                        border: selectedModel === m.id ? '2px solid hsl(var(--brand))' : '1px solid hsl(var(--border))',
+                        borderRadius: 0,
+                      }}
+                      onClick={() => setSelectedModel(m.id)}
+                    >
+                      <div>
+                        <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{m.name}</p>
+                        <p className="text-[10px] font-mono" style={{ color: 'hsl(var(--text-4))' }}>{m.id} · {m.type} · {m.riskTier} risk</p>
+                      </div>
+                      <Badge style={{ background: severityColor(m.riskTier === 'high' || m.riskTier === 'unacceptable' ? 'high' : m.riskTier === 'limited' ? 'medium' : 'low').bg, color: severityColor(m.riskTier === 'high' || m.riskTier === 'unacceptable' ? 'high' : m.riskTier === 'limited' ? 'medium' : 'low').text, borderRadius: 0, fontSize: 10 }}>
+                        {m.riskTier}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Dataset + Dimensions + Threshold */}
+            {wizardStep === 3 && (
+              <div className="space-y-4 mt-4">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>Select Dataset</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {DATASETS.filter(d => d.status === 'active').map(d => (
+                      <div
+                        key={d.id}
+                        className="p-2 cursor-pointer transition-colors"
+                        style={{
+                          background: selectedDataset === d.id ? 'hsl(var(--brand) / 0.08)' : 'hsl(var(--bg-surface))',
+                          border: selectedDataset === d.id ? '2px solid hsl(var(--brand))' : '1px solid hsl(var(--border))',
+                          borderRadius: 0,
+                        }}
+                        onClick={() => setSelectedDataset(d.id)}
+                      >
+                        <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{d.name}</p>
+                        <p className="text-[10px] font-mono" style={{ color: 'hsl(var(--text-4))' }}>{d.id} · {d.records.toLocaleString()} records</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>Protected Dimensions</p>
+                  <div className="flex flex-wrap gap-2">
+                    {DIMENSIONS.map(d => (
+                      <Badge
+                        key={d}
+                        className="cursor-pointer px-2 py-1"
+                        style={{
+                          background: selectedDimensions.includes(d) ? 'hsl(var(--brand) / 0.15)' : 'hsl(var(--bg-surface))',
+                          color: selectedDimensions.includes(d) ? 'hsl(var(--brand))' : 'hsl(var(--text-4))',
+                          border: selectedDimensions.includes(d) ? '1px solid hsl(var(--brand))' : '1px solid hsl(var(--border))',
+                          borderRadius: 0,
+                        }}
+                        onClick={() => toggleDimension(d)}
+                      >
+                        {selectedDimensions.includes(d) && <Check size={10} className="mr-1" />}
+                        {d}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>Fairness Threshold</p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="range"
+                      min={0.60}
+                      max={0.95}
+                      step={0.01}
+                      value={threshold}
+                      onChange={(e) => setThreshold(e.target.value)}
+                      className="flex-1"
+                    />
+                    <span className="text-sm font-mono font-bold w-12 text-center" style={{ color: 'hsl(var(--text-1))' }}>
+                      {parseFloat(threshold).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 4: Review + Run */}
+            {wizardStep === 4 && (
+              <div className="space-y-4 mt-4">
+                {!running && !wizardResult && (
+                  <>
+                    <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>Review & Run</p>
+                    <div className="space-y-2 p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <div className="flex justify-between text-xs">
+                        <span style={{ color: 'hsl(var(--text-4))' }}>Framework</span>
+                        <span style={{ color: 'hsl(var(--text-1))' }}>{FRAMEWORKS.find(f => f.id === selectedFramework)?.name}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span style={{ color: 'hsl(var(--text-4))' }}>Model</span>
+                        <span style={{ color: 'hsl(var(--text-1))' }}>{MODELS.find(m => m.id === selectedModel)?.name || selectedModel}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span style={{ color: 'hsl(var(--text-4))' }}>Dataset</span>
+                        <span style={{ color: 'hsl(var(--text-1))' }}>{selectedDataset}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span style={{ color: 'hsl(var(--text-4))' }}>Dimensions</span>
+                        <span style={{ color: 'hsl(var(--text-1))' }}>{selectedDimensions.join(', ')}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span style={{ color: 'hsl(var(--text-4))' }}>Threshold</span>
+                        <span style={{ color: 'hsl(var(--text-1))' }}>≥ {parseFloat(threshold).toFixed(2)}</span>
+                      </div>
+                    </div>
+                    <Button onClick={runWizardAudit} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff', width: '100%' }}>
+                      <Play size={14} className="mr-1.5" />Run Bias Audit
+                    </Button>
+                  </>
+                )}
+                {running && (
+                  <div className="flex flex-col items-center gap-3 py-8">
+                    <ArrowsClockwise size={32} className="animate-spin" style={{ color: 'hsl(var(--brand))' }} />
+                    <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>Running bias audit...</p>
+                    <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Analyzing {selectedDimensions.length} dimensions across {DATASETS.find(d => d.id === selectedDataset)?.records.toLocaleString() || '—'} records</p>
+                  </div>
+                )}
+                {wizardResult && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      {wizardResult.result === 'passed' ? (
+                        <ShieldCheck size={20} style={{ color: 'hsl(var(--s-ok-tx))' }} />
+                      ) : (
+                        <Warning size={20} style={{ color: 'hsl(var(--s-er-tx))' }} />
+                      )}
+                      <p className="text-sm font-bold" style={{ color: wizardResult.result === 'passed' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))' }}>
+                        Audit {wizardResult.result === 'passed' ? 'PASSED' : 'FAILED'} — Score: {wizardResult.overallScore.toFixed(2)}
+                      </p>
+                    </div>
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                          {['Dimension', 'Score', 'Threshold', 'Result'].map(h => (
+                            <th key={h} className="px-2 py-2 text-left text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {wizardResult.dimensions.map(d => (
+                          <tr key={d.attribute} style={{ borderBottom: '1px solid hsl(var(--border))', background: !d.pass ? 'hsl(var(--s-er-bg))' : 'transparent' }}>
+                            <td className="px-2 py-2 text-xs" style={{ color: 'hsl(var(--text-1))' }}>{d.attribute}</td>
+                            <td className="px-2 py-2 text-xs font-mono" style={{ color: 'hsl(var(--text-1))' }}>{d.score.toFixed(2)}</td>
+                            <td className="px-2 py-2 text-xs font-mono" style={{ color: 'hsl(var(--text-4))' }}>≥ {d.threshold.toFixed(2)}</td>
+                            <td className="px-2 py-2">
+                              <Badge style={{
+                                background: d.pass ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-er-bg))',
+                                color: d.pass ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))',
+                                borderRadius: 0, fontSize: 10,
+                              }}>
+                                {d.pass ? 'Pass' : 'Fail'}
+                              </Badge>
                             </td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="chart">
-                  <div className="text-xs text-[hsl(var(--text-4))] mb-3">Score vs. threshold (85%) by protected attribute</div>
-                  <ResponsiveContainer width="100%" height={280}>
-                    <LineChart data={scoreChartData} margin={{ left: 10, right: 10, top: 10, bottom: 20 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} />
-                      <XAxis dataKey="attribute" stroke={chart.axis} tick={{ fontSize: 11 }} interval={0} angle={-15} textAnchor="end" />
-                      <YAxis domain={[0, 100]} stroke={chart.axis} tick={{ fontSize: 12 }} tickFormatter={v => `${v}%`} label={{ value: 'Score (%)', angle: -90, position: 'insideLeft', style: { fill: chart.axis, fontSize: 11 } }} />
-                      <Tooltip
-                        contentStyle={{ background: chart.tooltipBg, border: `1px solid ${chart.tooltipBorder}`, color: chart.tooltipText }}
-                        formatter={(v: number) => [`${v}%`]}
-                      />
-                      <ReferenceLine y={85} stroke="#f59e0b" strokeDasharray="6 3" label={{ value: 'Threshold 85%', position: 'right', fill: '#f59e0b', fontSize: 11 }} />
-                      <Line type="monotone" dataKey="score" stroke={chart.brand} strokeWidth={2} dot={{ r: 5, fill: chart.brand }} name="Fairness Score" />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </TabsContent>
-
-                <TabsContent value="recommendations" className="space-y-2">
-                  <div className="text-xs text-[hsl(var(--text-4))] mb-3">Remediation recommendations from audit</div>
-                  {selected.recommendations.map((rec, i) => (
-                    <div key={i} className="flex items-start gap-3 p-3 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))]">
-                      <div className="w-5 h-5 mt-0.5 border border-[hsl(var(--border))] flex items-center justify-center text-xs text-[hsl(var(--text-4))] shrink-0">{i + 1}</div>
-                      <div className="text-sm text-[hsl(var(--text-1))]">{rec}</div>
-                    </div>
-                  ))}
-                </TabsContent>
-              </Tabs>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
-
-      {/* Run Bias Audit Wizard Dialog */}
-      <Dialog open={wizardOpen} onOpenChange={o => { if (!o) { setWizardOpen(false); setWizardStep(0); } }}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Run Bias Audit — Step {wizardStep + 1} of {WIZARD_STEPS.length}</DialogTitle>
-          </DialogHeader>
-
-          {/* Step Progress */}
-          <div className="flex gap-1 mb-4">
-            {WIZARD_STEPS.map((step, i) => (
-              <div key={step} className="flex items-center gap-1 flex-1">
-                <div className={`w-5 h-5 text-xs flex items-center justify-center font-bold shrink-0 ${i <= wizardStep ? 'bg-[hsl(var(--brand))] text-white' : 'bg-[hsl(var(--border))] text-[hsl(var(--text-4))]'}`}>
-                  {i < wizardStep ? '✓' : i + 1}
-                </div>
-                <div className="text-xs text-[hsl(var(--text-4))] hidden sm:block">{step}</div>
-                {i < WIZARD_STEPS.length - 1 && <div className={`flex-1 h-px ${i < wizardStep ? 'bg-[hsl(var(--brand))]' : 'bg-[hsl(var(--border))]'}`} />}
-              </div>
-            ))}
-          </div>
-
-          {/* Step Content */}
-          <div className="py-4 space-y-3 min-h-[160px]">
-            {wizardStep === 0 && (
-              <div>
-                <label className="text-sm font-medium text-[hsl(var(--text-1))] mb-2 block">Select Model to Audit</label>
-                <Select value={wizardModel} onValueChange={setWizardModel}>
-                  <SelectTrigger><SelectValue placeholder="Choose a model..." /></SelectTrigger>
-                  <SelectContent>
-                    {MODELS.map(m => <SelectItem key={m.id} value={m.id}>{m.name} ({m.id})</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                {wizardModel && (
-                  <div className="mt-3 p-3 bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] text-xs text-[hsl(var(--text-3))]">
-                    {MODELS.find(m => m.id === wizardModel)?.description}
+                    <Button onClick={finalizeWizard} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff', width: '100%' }}>
+                      Save Audit Results
+                    </Button>
                   </div>
                 )}
               </div>
             )}
-            {wizardStep === 1 && (
-              <div>
-                <label className="text-sm font-medium text-[hsl(var(--text-1))] mb-2 block">Compliance Framework</label>
-                <Select value={wizardFramework} onValueChange={setWizardFramework}>
-                  <SelectTrigger><SelectValue placeholder="Choose framework..." /></SelectTrigger>
-                  <SelectContent>
-                    {['EU AI Act', 'NIST AI RMF', 'EEOC', 'GDPR', 'ISO/IEC 42001'].map(f => (
-                      <SelectItem key={f} value={f}>{f}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            {wizardStep === 2 && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-[hsl(var(--text-1))] mb-2 block">Protected Attributes to Audit</label>
-                {['Gender', 'Age', 'Race/Ethnicity', 'Geography', 'Disability', 'Income Bracket'].map(attr => (
-                  <label key={attr} className="flex items-center gap-2 p-2 border border-[hsl(var(--border))] cursor-pointer hover:bg-[hsl(var(--bg-surface))]">
-                    <input type="checkbox" defaultChecked className="accent-[hsl(var(--brand))]" />
-                    <span className="text-sm text-[hsl(var(--text-1))]">{attr}</span>
-                  </label>
-                ))}
-              </div>
-            )}
-            {wizardStep === 3 && (
-              <div className="text-center py-6 space-y-3">
-                {wizardRunning ? (
-                  <>
-                    <div className="w-12 h-12 border-4 border-[hsl(var(--brand))] border-t-transparent animate-spin mx-auto" />
-                    <div className="text-sm text-[hsl(var(--text-1))]">Running bias audit...</div>
-                    <div className="text-xs text-[hsl(var(--text-4))]">This may take a few minutes</div>
-                  </>
-                ) : (
-                  <>
-                    <ChartLine size={40} className="mx-auto text-[hsl(var(--brand))]" />
-                    <div className="text-sm font-medium text-[hsl(var(--text-1))]">Ready to run audit</div>
-                    <div className="text-xs text-[hsl(var(--text-4))]">
-                      Model: {MODELS.find(m => m.id === wizardModel)?.name || wizardModel || 'Not selected'}<br />
-                      Framework: {wizardFramework || 'Not selected'}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
 
-          <DialogFooter>
-            {wizardStep > 0 && (
-              <Button variant="outline" onClick={handleWizardBack} disabled={wizardRunning}>Back</Button>
+            {/* Navigation */}
+            {!running && !wizardResult && (
+              <div className="flex items-center justify-between mt-4 pt-3" style={{ borderTop: '1px solid hsl(var(--border))' }}>
+                <Button
+                  variant="outline"
+                  onClick={() => setWizardStep(s => Math.max(1, s - 1))}
+                  disabled={wizardStep === 1}
+                  style={{ borderRadius: 0 }}
+                >
+                  <ArrowLeft size={14} className="mr-1" />Back
+                </Button>
+                <Button
+                  onClick={() => setWizardStep(s => Math.min(4, s + 1))}
+                  disabled={
+                    (wizardStep === 1 && !selectedFramework) ||
+                    (wizardStep === 2 && !selectedModel) ||
+                    (wizardStep === 3 && (!selectedDataset || selectedDimensions.length === 0)) ||
+                    wizardStep === 4
+                  }
+                  style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+                >
+                  Next<ArrowRight size={14} className="ml-1" />
+                </Button>
+              </div>
             )}
-            <Button onClick={handleWizardNext} disabled={wizardRunning || (wizardStep === 0 && !wizardModel) || (wizardStep === 1 && !wizardFramework)}>
-              {wizardStep === WIZARD_STEPS.length - 1 ? (wizardRunning ? 'Running...' : 'Run Audit') : 'Next'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </TooltipProvider>
   );
 }
