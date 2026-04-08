@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -7,7 +7,7 @@ import {
   Clock, Warning, Brain, WarningCircle, Briefcase, FileText,
   Users, Database, StackSimple, ArrowRight, ChartLine, CheckCircle,
   TrendUp, TrendDown, Minus, ShieldCheck, Siren, Plus,
-  Robot, Scales, UserCircleCheck,
+  Robot, Scales, UserCircleCheck, Eye, Lightning, PresentationChart, Exam,
 } from '@phosphor-icons/react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer,
@@ -28,6 +28,51 @@ const RISK_TREND = [
   { month: 'Feb', open: 13, critical: 4 },
   { month: 'Mar', open: 12, critical: 3 },
 ];
+
+// CISO View — frameworks with traffic-light thresholds and 30-day sparkline data
+const CISO_FRAMEWORKS: {
+  key: string;
+  label: string;
+  score: number;
+  trend: number[]; // 30 daily scores
+}[] = [
+  { key: 'iso27001', label: 'ISO 27001', score: 92, trend: [85,86,86,87,87,88,88,88,89,89,89,90,90,90,90,91,91,91,91,91,92,92,92,92,92,92,92,92,92,92] },
+  { key: 'soc2', label: 'SOC 2', score: 85, trend: [78,78,79,79,80,80,80,81,81,81,82,82,82,82,83,83,83,83,84,84,84,84,84,85,85,85,85,85,85,85] },
+  { key: 'euaiact', label: 'EU AI Act', score: 65, trend: [55,55,56,56,57,57,58,58,58,59,59,60,60,61,61,62,62,62,63,63,63,64,64,64,64,65,65,65,65,65] },
+  { key: 'nistrmf', label: 'NIST AI RMF', score: 71, trend: [62,62,63,63,63,64,64,64,65,65,66,66,66,67,67,67,68,68,68,69,69,69,70,70,70,70,71,71,71,71] },
+  { key: 'gdpr', label: 'GDPR', score: 88, trend: [82,82,83,83,83,84,84,84,85,85,85,85,86,86,86,86,87,87,87,87,87,87,88,88,88,88,88,88,88,88] },
+];
+
+function cisoTrafficColor(score: number): string {
+  if (score >= 85) return '#10b981'; // green
+  if (score >= 65) return '#f59e0b'; // amber
+  return '#ef4444'; // red
+}
+
+function cisoTrafficLabel(score: number): string {
+  if (score >= 85) return 'GREEN';
+  if (score >= 65) return 'AMBER';
+  return 'RED';
+}
+
+/** Inline SVG sparkline from an array of numbers */
+function Sparkline({ data, color, width = 100, height = 28 }: { data: number[]; color: string; width?: number; height?: number }) {
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const points = data
+    .map((v, i) => {
+      const x = (i / (data.length - 1)) * width;
+      const y = height - ((v - min) / range) * (height - 4) - 2;
+      return `${x},${y}`;
+    })
+    .join(' ');
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{ display: 'block' }}>
+      <polyline fill="none" stroke={color} strokeWidth="1.5" points={points} />
+    </svg>
+  );
+}
 
 function TrendIcon({ trend }: { trend: 'up' | 'down' | 'stable' }) {
   if (trend === 'up') return <TrendUp size={14} style={{ color: '#ef4444' }} />;
@@ -77,6 +122,7 @@ export default function Overview() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
   const navigate = useNavigate();
+  const [cisoView, setCisoView] = useState(false);
 
   const openRisks = RISKS.filter(r => r.status === 'open').length;
   const activeModels = MODELS.filter(m => m.status === 'production').length;
@@ -128,11 +174,10 @@ export default function Overview() {
   const overdueGapItems = GAPS.filter(g => new Date(g.dueDate) < new Date()).slice(0, 5);
 
   const quickActions = [
-    { label: 'Register Model', icon: Robot, to: '/models/inventory', action: 'register' },
-    { label: 'Create Policy', icon: FileText, to: '/compliance/policies' },
-    { label: 'Start Audit', icon: ShieldCheck, to: '/compliance/controls' },
-    { label: 'Add Vendor', icon: Briefcase, to: '/vendors' },
-    { label: 'Queue HITL Review', icon: UserCircleCheck, to: '/hitl' },
+    { label: 'Start Audit', desc: 'Launch a new compliance audit', icon: ShieldCheck, to: '/audits' },
+    { label: 'Create Incident', desc: 'Report a new risk incident', icon: Lightning, to: '/risk/incidents' },
+    { label: 'Run Assessment', desc: 'Conformity assessment', icon: Exam, to: '/conformity' },
+    { label: 'Generate Report', desc: 'Board-ready reports', icon: PresentationChart, to: '/reporting' },
   ];
 
   return (
@@ -147,7 +192,22 @@ export default function Overview() {
             {orgName} · AI Governance, Risk & Compliance Overview
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCisoView(v => !v)}
+            style={{
+              borderRadius: 0,
+              borderColor: cisoView ? 'hsl(var(--brand))' : 'hsl(var(--border))',
+              color: cisoView ? 'hsl(var(--brand))' : 'hsl(var(--text-3))',
+              background: cisoView ? 'hsl(var(--bg-muted))' : 'transparent',
+              fontSize: 12,
+              gap: 6,
+            }}
+          >
+            <Eye size={14} /> CISO View
+          </Button>
           <Badge style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', border: '1px solid hsl(var(--s-ok-br))', borderRadius: 0, fontSize: 12 }}>
             System Operational
           </Badge>
@@ -156,6 +216,75 @@ export default function Overview() {
           </span>
         </div>
       </div>
+
+      {/* ═══════ CISO VIEW — EXECUTIVE SUMMARY ═══════ */}
+      {cisoView && (
+        <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2" style={{ color: 'hsl(var(--text-1))' }}>
+              <Eye size={16} style={{ color: 'hsl(var(--brand))' }} />
+              Executive Compliance Summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-5 gap-4">
+              {CISO_FRAMEWORKS.map(fw => {
+                const dotColor = cisoTrafficColor(fw.score);
+                const ragLabel = cisoTrafficLabel(fw.score);
+                return (
+                  <div
+                    key={fw.key}
+                    style={{
+                      background: 'hsl(var(--bg-muted))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: 0,
+                      padding: '16px',
+                    }}
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <div
+                        style={{
+                          width: 12,
+                          height: 12,
+                          borderRadius: '50%',
+                          background: dotColor,
+                          flexShrink: 0,
+                          boxShadow: `0 0 6px ${dotColor}40`,
+                        }}
+                      />
+                      <span className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+                        {fw.label}
+                      </span>
+                    </div>
+                    <div className="flex items-end justify-between mb-2">
+                      <span className="text-2xl font-bold" style={{ color: dotColor }}>
+                        {fw.score}%
+                      </span>
+                      <span
+                        className="text-[10px] font-bold px-1.5 py-0.5"
+                        style={{
+                          color: dotColor,
+                          background: `${dotColor}18`,
+                          borderRadius: 0,
+                          letterSpacing: '0.05em',
+                        }}
+                      >
+                        {ragLabel}
+                      </span>
+                    </div>
+                    <div className="mt-2">
+                      <span className="text-[10px] block mb-1" style={{ color: 'hsl(var(--text-4))' }}>
+                        30-day trend
+                      </span>
+                      <Sparkline data={fw.trend} color={dotColor} width={120} height={24} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ═══════ COMPLIANCE POSTURE BANNER ═══════ */}
       <Card style={{
@@ -232,17 +361,46 @@ export default function Overview() {
       </div>
 
       {/* ═══════ QUICK ACTIONS ═══════ */}
-      <div className="flex items-center gap-3">
+      <div className="grid grid-cols-4 gap-4">
         {quickActions.map(a => (
           <Link key={a.label} to={a.to} style={{ textDecoration: 'none' }}>
-            <Button
-              variant="outline"
-              size="sm"
-              style={{ borderRadius: 0, borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}
-              className="hover:border-[hsl(var(--brand))] hover:text-[hsl(var(--brand))]"
+            <Card
+              style={{
+                background: 'hsl(var(--bg-surface))',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: 0,
+                cursor: 'pointer',
+                transition: 'border-color 0.15s, box-shadow 0.15s',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = 'hsl(var(--brand))';
+                e.currentTarget.style.boxShadow = '0 2px 8px hsl(var(--brand) / 0.08)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = 'hsl(var(--border))';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
             >
-              <a.icon size={14} className="mr-1.5" /> {a.label}
-            </Button>
+              <CardContent className="p-4 flex items-center gap-3">
+                <div
+                  className="flex items-center justify-center"
+                  style={{
+                    width: 40,
+                    height: 40,
+                    background: 'hsl(var(--bg-muted))',
+                    borderRadius: 0,
+                    flexShrink: 0,
+                  }}
+                >
+                  <a.icon size={20} style={{ color: 'hsl(var(--brand))' }} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{a.label}</p>
+                  <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{a.desc}</p>
+                </div>
+                <ArrowRight size={14} style={{ color: 'hsl(var(--text-4))', marginLeft: 'auto', flexShrink: 0 }} />
+              </CardContent>
+            </Card>
           </Link>
         ))}
       </div>

@@ -1,8 +1,8 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   Eye, PencilSimple, Export, Funnel, MagnifyingGlass, Flag,
   Warning, GearSix, CheckCircle, ArrowRight, Lightning, Plus,
-  Clock, CaretDown, ShieldCheck, X,
+  Clock, CaretDown, ShieldCheck, X, Siren,
 } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
@@ -132,6 +132,13 @@ export default function GuardrailActivity() {
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
 
+  // Escalation state
+  const [escalateTarget, setEscalateTarget] = useState<ExtGuardrailEvent | null>(null);
+  const [escalatedMap, setEscalatedMap] = useState<Record<string, string>>({}); // eventId -> incidentId
+  const [autoEscalation, setAutoEscalation] = useState(false);
+  const incCounter = useRef(1000);
+  const autoEscalatedRef = useRef<Set<string>>(new Set());
+
   const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
     const id = Date.now();
     setToasts(prev => [...prev, { id, text, type }]);
@@ -210,6 +217,38 @@ export default function GuardrailActivity() {
     toast('Exported guardrail events to CSV', 'success');
   };
 
+  // Escalation handlers
+  const generateIncidentId = useCallback(() => {
+    incCounter.current += 1;
+    return `INC-${incCounter.current}`;
+  }, []);
+
+  const handleEscalateConfirm = useCallback(() => {
+    if (!escalateTarget) return;
+    const incId = generateIncidentId();
+    setEscalatedMap(prev => ({ ...prev, [escalateTarget.id]: incId }));
+    toast(`Incident ${incId} created from guardrail event ${escalateTarget.id}`, 'success');
+    setEscalateTarget(null);
+  }, [escalateTarget, generateIncidentId, toast]);
+
+  // Auto-escalation: when enabled, auto-escalate critical blocked events
+  useEffect(() => {
+    if (!autoEscalation) return;
+    events.forEach(ev => {
+      if (
+        ev.severity === 'critical' &&
+        ev.action === 'blocked' &&
+        !escalatedMap[ev.id] &&
+        !autoEscalatedRef.current.has(ev.id)
+      ) {
+        autoEscalatedRef.current.add(ev.id);
+        const incId = generateIncidentId();
+        setEscalatedMap(prev => ({ ...prev, [ev.id]: incId }));
+        toast(`Auto-escalated: Incident ${incId} created from critical event ${ev.id}`, 'info');
+      }
+    });
+  }, [autoEscalation, events, escalatedMap, generateIncidentId, toast]);
+
   return (
     <TooltipProvider>
       <div className="space-y-6">
@@ -259,6 +298,51 @@ export default function GuardrailActivity() {
             </p>
           </div>
         )}
+
+        {/* Auto-Escalation Banner */}
+        <div className="flex items-center gap-3 px-4 py-2" style={{
+          background: autoEscalation ? 'hsl(0 72% 51% / 0.06)' : 'hsl(var(--bg-surface))',
+          border: `1px solid ${autoEscalation ? 'hsl(0 72% 51% / 0.3)' : 'hsl(var(--border))'}`,
+          borderRadius: 0,
+        }}>
+          <Siren size={16} weight="fill" style={{ color: autoEscalation ? 'hsl(var(--destructive))' : 'hsl(var(--text-4))' }} />
+          <div className="flex-1">
+            <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+              Auto-Escalation {autoEscalation ? 'Enabled' : 'Disabled'}
+            </p>
+            <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+              {autoEscalation
+                ? 'Critical blocked events are automatically escalated to incidents'
+                : 'Enable to automatically create incidents from critical blocked guardrail events'}
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              setAutoEscalation(prev => !prev);
+              toast(autoEscalation ? 'Auto-escalation disabled' : 'Auto-escalation enabled — critical blocked events will create incidents', autoEscalation ? 'info' : 'success');
+            }}
+            className="relative inline-flex h-5 w-9 items-center"
+            style={{
+              background: autoEscalation ? 'hsl(var(--destructive))' : 'hsl(var(--border))',
+              borderRadius: 0,
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'background 0.2s',
+            }}
+          >
+            <span
+              style={{
+                display: 'block',
+                width: 14,
+                height: 14,
+                background: '#fff',
+                borderRadius: 0,
+                transform: autoEscalation ? 'translateX(18px)' : 'translateX(2px)',
+                transition: 'transform 0.2s',
+              }}
+            />
+          </button>
+        </div>
 
         {/* Filters + Bulk Actions */}
         <div className="flex items-center gap-3 flex-wrap">
@@ -354,9 +438,19 @@ export default function GuardrailActivity() {
                                 <span className="text-xs text-green-600 dark:text-green-400">Ack</span>
                               </Button>
                             )}
-                            <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => toast(`Escalated ${ev.id} to incident tracker`, 'info')}>
-                              <span className="text-xs text-destructive">Escalate</span>
-                            </Button>
+                            {escalatedMap[ev.id] ? (
+                              <Badge style={{ background: 'hsl(0 72% 51% / 0.10)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 9, gap: 4, display: 'inline-flex', alignItems: 'center' }}>
+                                <Siren size={10} weight="fill" />Escalated → {escalatedMap[ev.id]}
+                              </Badge>
+                            ) : (ev.severity === 'critical' || ev.severity === 'high') ? (
+                              <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => setEscalateTarget(ev)}>
+                                <span className="text-xs text-destructive">Escalate</span>
+                              </Button>
+                            ) : (
+                              <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => toast(`Only critical/high severity events can be escalated`, 'info')}>
+                                <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Escalate</span>
+                              </Button>
+                            )}
                             <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => { setSelectedEvent(ev); setSheetOpen(true); }}>
                               <span className="text-xs text-blue-600 dark:text-blue-400">Rule</span>
                             </Button>
@@ -410,6 +504,58 @@ export default function GuardrailActivity() {
             <DialogFooter className="mt-4">
               <Button variant="outline" onClick={() => setAckTarget(null)} style={{ borderRadius: 0 }}>Cancel</Button>
               <Button onClick={handleAck} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>Acknowledge</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Escalate to Incident Dialog */}
+        <Dialog open={!!escalateTarget} onOpenChange={() => setEscalateTarget(null)}>
+          <DialogContent style={{ borderRadius: 0, maxWidth: 520 }}>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2" style={{ color: 'hsl(var(--text-1))' }}>
+                <Siren size={18} weight="fill" style={{ color: 'hsl(var(--destructive))' }} />
+                Escalate to Incident
+              </DialogTitle>
+            </DialogHeader>
+            {escalateTarget && (
+              <div className="space-y-3 mt-2">
+                <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>
+                  You are about to create an incident from the following guardrail event. This will notify the on-call team and open an incident ticket.
+                </p>
+                <div className="p-3 space-y-2" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-4))' }}>Event ID</span>
+                    <span className="text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{escalateTarget.id}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-4))' }}>Agent</span>
+                    <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{escalateTarget.agent}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-4))' }}>Rule</span>
+                    <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{escalateTarget.rule}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-4))' }}>Severity</span>
+                    <Badge style={{ background: severityColor(escalateTarget.severity).bg, color: severityColor(escalateTarget.severity).text, border: `1px solid ${severityColor(escalateTarget.severity).border}`, borderRadius: 0, fontSize: 10 }}>
+                      {escalateTarget.severity.toUpperCase()}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-4))' }}>Action</span>
+                    {actionBadge(escalateTarget.action)}
+                  </div>
+                </div>
+                <div className="p-3" style={{ background: 'hsl(0 72% 51% / 0.05)', border: '1px solid hsl(0 72% 51% / 0.2)', borderRadius: 0 }}>
+                  <p className="text-xs font-mono" style={{ color: 'hsl(var(--destructive))' }}>{escalateTarget.output}</p>
+                </div>
+              </div>
+            )}
+            <DialogFooter className="mt-4">
+              <Button variant="outline" onClick={() => setEscalateTarget(null)} style={{ borderRadius: 0 }}>Cancel</Button>
+              <Button onClick={handleEscalateConfirm} style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: '#fff' }}>
+                <Siren size={14} weight="fill" className="mr-2" />Create Incident
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

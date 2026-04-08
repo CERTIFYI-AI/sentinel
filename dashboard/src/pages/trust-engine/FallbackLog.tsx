@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import {
   ArrowsClockwise, Eye, Warning, CheckCircle, Fire, Clock,
-  Lightning, Export, MagnifyingGlass, Funnel, Info, Link,
+  Lightning, Export, MagnifyingGlass, Funnel, Info, Link, UserCircleGear,
 } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
@@ -89,6 +89,7 @@ export default function FallbackLog() {
   const [selectedEntry, setSelectedEntry] = useState<ExtFallback | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
+  const [escalatedEntries, setEscalatedEntries] = useState<Record<string, string>>({});
 
   const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
     const id = Date.now();
@@ -119,6 +120,12 @@ export default function FallbackLog() {
     a.href = url; a.download = 'fallback-log.csv'; a.click();
     URL.revokeObjectURL(url);
     toast('Exported fallback log to CSV', 'success');
+  };
+
+  const handleCreateHITL = (entryId: string) => {
+    const hitlId = `HITL-${String(Math.floor(Math.random() * 900) + 100)}`;
+    setEscalatedEntries(prev => ({ ...prev, [entryId]: hitlId }));
+    toast(`HITL review ${hitlId} created for fallback event ${entryId}`, 'info');
   };
 
   return (
@@ -190,7 +197,7 @@ export default function FallbackLog() {
               <table className="w-full text-sm">
                 <thead>
                   <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                    {['ID', 'Agent', 'Primary Model (Failed)', 'Fallback Model', 'Cause', 'Recovery Time', 'Status', 'Timestamp', 'Actions'].map(h => (
+                    {['ID', 'Agent', 'Primary Model (Failed)', 'Fallback Model', 'Cause', 'Recovery Time', 'Status', 'HITL', 'Timestamp', 'Actions'].map(h => (
                       <th key={h} className="px-3 py-3 text-left text-xs font-semibold whitespace-nowrap" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
                     ))}
                   </tr>
@@ -214,6 +221,26 @@ export default function FallbackLog() {
                         }}>
                           {entry.status.charAt(0).toUpperCase() + entry.status.slice(1)}
                         </Badge>
+                      </td>
+                      <td className="px-3 py-3">
+                        {escalatedEntries[entry.id] ? (
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Badge style={{ background: 'hsl(280 67% 56% / 0.12)', color: 'hsl(280 67% 56%)', borderRadius: 0, fontSize: 10, fontWeight: 600 }}>
+                                <UserCircleGear size={10} weight="fill" className="mr-1 inline" />
+                                {escalatedEntries[entry.id]}
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent style={{ borderRadius: 0 }}>Escalated to HITL review {escalatedEntries[entry.id]}</TooltipContent>
+                          </Tooltip>
+                        ) : entry.status === 'failed' ? (
+                          <Button variant="outline" size="sm" className="h-6 text-xs px-2" style={{ borderRadius: 0, fontSize: 10 }}
+                            onClick={() => handleCreateHITL(entry.id)}>
+                            <UserCircleGear size={12} className="mr-1" />Create HITL Review
+                          </Button>
+                        ) : (
+                          <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>--</span>
+                        )}
                       </td>
                       <td className="px-3 py-3">
                         <Tooltip>
@@ -296,12 +323,27 @@ export default function FallbackLog() {
                       </div>
                     </div>
                     {selectedEntry.status === 'failed' && (
-                      <div className="p-3" style={{ background: 'hsl(0 72% 51% / 0.06)', border: '1px solid hsl(0 72% 51% / 0.3)', borderRadius: 0 }}>
-                        <p className="text-xs font-semibold text-destructive">
-                          <Warning size={12} className="inline mr-1" weight="fill" />
-                          FAILED — Fallback model also failed. Zero tokens processed. Data may have been silently dropped.
-                          Auto-incident creation recommended.
-                        </p>
+                      <div className="space-y-3">
+                        <div className="p-3" style={{ background: 'hsl(0 72% 51% / 0.06)', border: '1px solid hsl(0 72% 51% / 0.3)', borderRadius: 0 }}>
+                          <p className="text-xs font-semibold text-destructive">
+                            <Warning size={12} className="inline mr-1" weight="fill" />
+                            FAILED — Fallback model also failed. Zero tokens processed. Data may have been silently dropped.
+                            Auto-incident creation recommended.
+                          </p>
+                        </div>
+                        {escalatedEntries[selectedEntry.id] ? (
+                          <div className="p-3 flex items-center gap-2" style={{ background: 'hsl(280 67% 56% / 0.08)', border: '1px solid hsl(280 67% 56% / 0.3)', borderRadius: 0 }}>
+                            <UserCircleGear size={14} weight="fill" style={{ color: 'hsl(280 67% 56%)' }} />
+                            <p className="text-xs font-semibold" style={{ color: 'hsl(280 67% 56%)' }}>
+                              Escalated to HITL review {escalatedEntries[selectedEntry.id]}
+                            </p>
+                          </div>
+                        ) : (
+                          <Button size="sm" variant="outline" style={{ borderRadius: 0 }}
+                            onClick={() => handleCreateHITL(selectedEntry.id)}>
+                            <UserCircleGear size={14} className="mr-1" />Create HITL Review
+                          </Button>
+                        )}
                       </div>
                     )}
                   </TabsContent>

@@ -94,6 +94,16 @@ const RiskDetail = lazy(() => import('./pages/risk/RiskDetail'));
 const ModelDetail = lazy(() => import('./pages/models/ModelDetail'));
 const PolicyDetail = lazy(() => import('./pages/policies/PolicyDetail'));
 
+// ── New Enterprise Modules ──────────────────────────────────────────────────
+const AuditManagement = lazy(() => import('./pages/audits/AuditManagement'));
+const RiskRegisterNew = lazy(() => import('./pages/risk/RiskRegisterNew'));
+const ExceptionManagement = lazy(() => import('./pages/exceptions/ExceptionManagement'));
+const TrainingAwareness = lazy(() => import('./pages/training/TrainingAwareness'));
+const DocumentManagement = lazy(() => import('./pages/documents/DocumentManagement'));
+const BusinessContinuity = lazy(() => import('./pages/continuity/BusinessContinuity'));
+const ComplianceCalendar = lazy(() => import('./pages/calendar/ComplianceCalendar'));
+const BenchmarkingMaturity = lazy(() => import('./pages/maturity/BenchmarkingMaturity'));
+
 function Loading() {
   return (
     <div className="flex items-center justify-center h-64">
@@ -261,6 +271,17 @@ export default function App() {
           <Route path="/data-governance" element={<DataGovernancePage />} />
           <Route path="/notifications/regulatory" element={<StakeholderNotifications />} />
           <Route path="/incident-workflow" element={<IncidentWorkflow />} />
+
+          {/* New Enterprise Modules */}
+          <Route path="/audits" element={<AuditManagement />} />
+          <Route path="/risks" element={<RiskRegisterNew />} />
+          <Route path="/exceptions" element={<ExceptionManagement />} />
+          <Route path="/training" element={<TrainingAwareness />} />
+          <Route path="/documents" element={<DocumentManagement />} />
+          <Route path="/continuity" element={<BusinessContinuity />} />
+          <Route path="/calendar" element={<ComplianceCalendar />} />
+          <Route path="/maturity" element={<BenchmarkingMaturity />} />
+
           <Route path="*" element={<Suspense fallback={<Loading />}><NotFound /></Suspense>} />
         </Route>
       </Routes>
