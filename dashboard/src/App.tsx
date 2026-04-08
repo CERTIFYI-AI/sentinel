@@ -94,6 +94,11 @@ const RiskDetail = lazy(() => import('./pages/risk/RiskDetail'));
 const ModelDetail = lazy(() => import('./pages/models/ModelDetail'));
 const PolicyDetail = lazy(() => import('./pages/policies/PolicyDetail'));
 
+// ── New Sidebar Modules ─────────────────────────────────────────────────────
+const AIImpactAssessments = lazy(() => import('./pages/AIImpactAssessments'));
+const AuditTrail = lazy(() => import('./pages/AuditTrail'));
+const ApprovalWorkflows = lazy(() => import('./pages/ApprovalWorkflows'));
+
 // ── New Enterprise Modules ──────────────────────────────────────────────────
 const AuditManagement = lazy(() => import('./pages/audits/AuditManagement'));
 const RiskRegisterNew = lazy(() => import('./pages/risk/RiskRegisterNew'));
@@ -271,6 +276,11 @@ export default function App() {
           <Route path="/data-governance" element={<DataGovernancePage />} />
           <Route path="/notifications/regulatory" element={<StakeholderNotifications />} />
           <Route path="/incident-workflow" element={<IncidentWorkflow />} />
+
+          {/* New Sidebar Modules */}
+          <Route path="/aiia" element={<AIImpactAssessments />} />
+          <Route path="/audit-trail" element={<AuditTrail />} />
+          <Route path="/workflows" element={<ApprovalWorkflows />} />
 
           {/* New Enterprise Modules */}
           <Route path="/audits" element={<AuditManagement />} />

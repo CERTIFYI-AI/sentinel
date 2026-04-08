@@ -12,6 +12,7 @@ import {
   Gauge, Sliders, CurrencyDollar, ArrowsLeftRight, Wrench, UserGear,
   ClockCounterClockwise, DownloadSimple, BellRinging,
   ClipboardText, ShieldWarning, GraduationCap, Lifebuoy, CalendarBlank,
+  FileMagnifyingGlass, FlowArrow,
 } from '@phosphor-icons/react'
 import { cn } from '../lib/utils'
 import { useTheme } from '../providers/ThemeProvider'
@@ -54,6 +55,7 @@ const NAV: NavSection[] = [
       { label: 'Shadow AI', to: '/agents/shadow-ai' },
     ]},
     { label: 'Bias Audits', to: '/bias-audits', icon: Scales },
+    { label: 'AI Impact Assessments', to: '/aiia', icon: FileMagnifyingGlass },
   ]},
   { title: 'COMPLIANCE', items: [
     { label: 'Frameworks', to: '/frameworks', icon: BookOpen },
@@ -62,6 +64,7 @@ const NAV: NavSection[] = [
     { label: 'Evidence Sync', to: '/evidence-sync', icon: FolderOpen },
     { label: 'Compliance Calendar', to: '/calendar', icon: CalendarBlank },
     { label: 'Document Management', to: '/documents', icon: FileText },
+    { label: 'Audit Trail', to: '/audit-trail', icon: ClockCounterClockwise },
   ]},
   { title: 'RISK & INCIDENTS', items: [
     { label: 'Risk Register', to: '/risks', icon: Warning },
@@ -72,6 +75,7 @@ const NAV: NavSection[] = [
     { label: 'HITL Reviews', to: '/hitl', icon: UserCircleCheck, badge: 3 },
     { label: 'Vendors', to: '/vendors', icon: BuildingOffice },
     { label: 'Regulatory Radar', to: '/reg-radar', icon: GlobeHemisphereWest },
+    { label: 'Approval Workflows', to: '/workflows', icon: FlowArrow },
   ]},
   { title: 'ORGANIZATION', items: [
     { label: 'Training & Awareness', to: '/training', icon: GraduationCap },
