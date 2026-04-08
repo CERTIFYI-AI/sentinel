@@ -134,6 +134,7 @@ const NAV: NavSection[] = [
   ]},
   { title: 'SYSTEM', items: [
     { label: 'Settings', to: '/settings', icon: Gear },
+    { label: 'Import Sample Data', to: '/import-data', icon: Database },
     { label: 'AI Advisor', to: '/ai-advisor', icon: Lightbulb },
   ]},
 ]

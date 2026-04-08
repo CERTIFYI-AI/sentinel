@@ -108,6 +108,7 @@ const DocumentManagement = lazy(() => import('./pages/documents/DocumentManageme
 const BusinessContinuity = lazy(() => import('./pages/continuity/BusinessContinuity'));
 const ComplianceCalendar = lazy(() => import('./pages/calendar/ComplianceCalendar'));
 const BenchmarkingMaturity = lazy(() => import('./pages/maturity/BenchmarkingMaturity'));
+const ImportSampleData = lazy(() => import('./pages/ImportSampleData'));
 
 function Loading() {
   return (
@@ -291,6 +292,7 @@ export default function App() {
           <Route path="/continuity" element={<BusinessContinuity />} />
           <Route path="/calendar" element={<ComplianceCalendar />} />
           <Route path="/maturity" element={<BenchmarkingMaturity />} />
+          <Route path="/import-data" element={<ImportSampleData />} />
 
           <Route path="*" element={<Suspense fallback={<Loading />}><NotFound /></Suspense>} />
         </Route>
