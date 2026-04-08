@@ -1,7 +1,7 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   Eye, MagnifyingGlass, Funnel, Clock, Warning, CheckCircle,
-  XCircle, Queue, Plus, Info, ArrowRight, User, Flag,
+  XCircle, Queue, Plus, Info, ArrowRight, User, Flag, UsersThree,
 } from '@phosphor-icons/react';
 import { Card, CardContent } from '../../components/ui/card';
 import { Skeleton } from '../../components/ui/skeleton';
@@ -114,6 +114,26 @@ export default function HITLReviewCenter() {
   const overdueCount = items.filter(i => isOverdue(i)).length;
   const approvedToday = items.filter(i => i.status === 'approved').length;
   const avgReviewTime = '4.2h';
+
+  // Reviewer workload
+  const reviewerWorkload = useMemo(() => {
+    const workloadMap: Record<string, { total: number; pending: number; overdue: number }> = {};
+    items.forEach(item => {
+      if (!workloadMap[item.assignedTo]) {
+        workloadMap[item.assignedTo] = { total: 0, pending: 0, overdue: 0 };
+      }
+      workloadMap[item.assignedTo].total += 1;
+      if (item.status === 'pending' || item.status === 'escalated' || item.status === 'info_requested') {
+        workloadMap[item.assignedTo].pending += 1;
+      }
+      if (isOverdue(item)) {
+        workloadMap[item.assignedTo].overdue += 1;
+      }
+    });
+    return Object.entries(workloadMap)
+      .map(([name, counts]) => ({ name, ...counts }))
+      .sort((a, b) => b.pending - a.pending);
+  }, [items]);
 
   // Filters
   const assignees = ['all', ...Array.from(new Set(items.map(i => i.assignedTo)))];
@@ -231,6 +251,69 @@ export default function HITLReviewCenter() {
           </Card>
         ))}
       </div>
+
+      {/* Reviewer Workload */}
+      <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+        <CardContent className="px-4 py-3">
+          <div className="flex items-center gap-2 mb-3">
+            <UsersThree size={16} style={{ color: 'hsl(var(--brand))' }} />
+            <span className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Reviewer Workload</span>
+          </div>
+          <div className="space-y-2">
+            {reviewerWorkload.map(reviewer => {
+              const maxPending = Math.max(...reviewerWorkload.map(r => r.pending), 1);
+              const barWidth = (reviewer.pending / maxPending) * 100;
+              return (
+                <div key={reviewer.name} className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 min-w-[140px]">
+                    <div className="flex items-center justify-center" style={{
+                      width: 24, height: 24, borderRadius: 0,
+                      background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))',
+                    }}>
+                      <User size={12} style={{ color: 'hsl(var(--text-4))' }} />
+                    </div>
+                    <span className="text-xs font-medium truncate" style={{ color: 'hsl(var(--text-1))' }}>
+                      {reviewer.name}
+                    </span>
+                  </div>
+                  <div className="flex-1 flex items-center gap-2">
+                    <div className="flex-1 h-4 relative" style={{ background: 'hsl(var(--bg-muted))', borderRadius: 0 }}>
+                      <div style={{
+                        width: `${barWidth}%`,
+                        height: '100%',
+                        background: reviewer.overdue > 0 ? 'hsl(var(--destructive))' : 'hsl(var(--brand))',
+                        borderRadius: 0,
+                        transition: 'width 0.3s ease',
+                      }} />
+                    </div>
+                    <Badge style={{
+                      borderRadius: 0, fontSize: 10, minWidth: 24, justifyContent: 'center',
+                      background: reviewer.pending > 0 ? 'hsl(var(--s-wn-bg, 45 93% 47% / 0.1))' : 'hsl(var(--s-ok-bg, 142 71% 45% / 0.1))',
+                      color: reviewer.pending > 0 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))',
+                      border: `1px solid ${reviewer.pending > 0 ? 'hsl(var(--s-wn-br, 45 93% 47% / 0.3))' : 'hsl(var(--s-ok-br, 142 71% 45% / 0.3))'}`,
+                    }}>
+                      {reviewer.pending} open
+                    </Badge>
+                    {reviewer.overdue > 0 && (
+                      <Badge style={{
+                        borderRadius: 0, fontSize: 10, minWidth: 24, justifyContent: 'center',
+                        background: 'hsl(0 72% 51% / 0.1)',
+                        color: 'hsl(var(--destructive))',
+                        border: '1px solid hsl(0 72% 51% / 0.3)',
+                      }}>
+                        {reviewer.overdue} overdue
+                      </Badge>
+                    )}
+                    <span className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>
+                      {reviewer.total} total
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Tabs + Filters */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>

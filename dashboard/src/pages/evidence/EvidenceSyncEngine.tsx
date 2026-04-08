@@ -34,12 +34,12 @@ import {
 import { useSettingsStore } from '../../stores/settingsStore';
 
 // ── Freshness Calc ────────────────────────────────────────────────────────────
-function getFreshness(lastSync: string, status: string): { label: string; color: string; dot: string } {
-  if (status === 'expired') return { label: 'Expired', color: 'hsl(var(--s-er-tx))', dot: 'hsl(var(--s-er-tx))' };
+function getFreshness(lastSync: string, status: string): { label: string; color: string; dot: string; days: number; tier: 'green' | 'amber' | 'red' } {
   const days = Math.floor((Date.now() - new Date(lastSync).getTime()) / (86400000));
-  if (days <= 30) return { label: 'Fresh', color: 'hsl(var(--s-ok-tx))', dot: 'hsl(var(--s-ok-tx))' };
-  if (days <= 90) return { label: 'Aging', color: 'hsl(var(--s-wn-tx))', dot: 'hsl(var(--s-wn-tx))' };
-  return { label: 'Stale', color: 'hsl(var(--s-er-tx))', dot: 'hsl(var(--s-er-tx))' };
+  if (status === 'expired') return { label: 'Expired', color: 'hsl(var(--s-er-tx))', dot: 'hsl(0 72% 51%)', days, tier: 'red' };
+  if (days <= 30) return { label: 'Fresh', color: 'hsl(var(--s-ok-tx))', dot: 'hsl(142 71% 45%)', days, tier: 'green' };
+  if (days <= 90) return { label: 'Aging', color: 'hsl(var(--s-wn-tx))', dot: 'hsl(45 93% 47%)', days, tier: 'amber' };
+  return { label: 'Stale', color: 'hsl(var(--s-er-tx))', dot: 'hsl(0 72% 51%)', days, tier: 'red' };
 }
 
 // ── Evidence-Control mapping ──────────────────────────────────────────────────
@@ -120,6 +120,11 @@ export default function EvidenceSyncEngine() {
   const syncedCount = evidence.filter(e => e.status === 'synced').length;
   const pendingCount = evidence.filter(e => e.status === 'pending').length;
   const expiredCount = evidence.filter(e => e.status === 'expired').length;
+
+  // Freshness metrics
+  const freshCount = evidence.filter(e => getFreshness(e.lastSync, e.status).tier === 'green').length;
+  const agingCount = evidence.filter(e => getFreshness(e.lastSync, e.status).tier === 'amber').length;
+  const staleCount = evidence.filter(e => getFreshness(e.lastSync, e.status).tier === 'red').length;
 
   // ── Open detail ───────────────────────────────────────────────────────────
   const openDetail = (ev: Evidence) => {
@@ -211,6 +216,34 @@ export default function EvidenceSyncEngine() {
           <MetricTile label="Pending" value={pendingCount} variant="warn" />
           <MetricTile label="Expired" value={expiredCount} variant="error" />
         </div>
+
+        {/* Evidence Freshness Summary */}
+        <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+          <CardContent className="px-4 py-3">
+            <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-4))' }}>Evidence Freshness Overview</p>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1.5">
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'hsl(142 71% 45%)' }} />
+                <span className="text-xs font-medium" style={{ color: 'hsl(var(--s-ok-tx))' }}>Fresh (&lt;30d): {freshCount}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'hsl(45 93% 47%)' }} />
+                <span className="text-xs font-medium" style={{ color: 'hsl(var(--s-wn-tx))' }}>Aging (30-90d): {agingCount}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'hsl(0 72% 51%)' }} />
+                <span className="text-xs font-medium" style={{ color: 'hsl(var(--s-er-tx))' }}>Stale (&gt;90d): {staleCount}</span>
+              </div>
+              <div className="flex-1" />
+              {/* Freshness progress bar */}
+              <div className="flex h-2 w-48" style={{ borderRadius: 0, overflow: 'hidden' }}>
+                {freshCount > 0 && <div style={{ width: `${(freshCount / totalEvidence) * 100}%`, background: 'hsl(142 71% 45%)' }} />}
+                {agingCount > 0 && <div style={{ width: `${(agingCount / totalEvidence) * 100}%`, background: 'hsl(45 93% 47%)' }} />}
+                {staleCount > 0 && <div style={{ width: `${(staleCount / totalEvidence) * 100}%`, background: 'hsl(0 72% 51%)' }} />}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Controls Gap Panel */}
         <Card style={{ borderRadius: 0, background: 'hsl(var(--s-wn-bg))', border: '1px solid hsl(var(--s-wn-br))' }}>
@@ -321,8 +354,16 @@ export default function EvidenceSyncEngine() {
                         </td>
                         <td className="px-3 py-2">
                           <div className="flex items-center gap-1.5">
-                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: freshness.dot }} />
-                            <span className="text-xs font-medium" style={{ color: freshness.color }}>{freshness.label}</span>
+                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: freshness.dot, boxShadow: `0 0 4px ${freshness.dot}`, flexShrink: 0 }} />
+                            <Badge style={{
+                              borderRadius: 0,
+                              fontSize: 10,
+                              background: freshness.tier === 'green' ? 'hsl(142 71% 45% / 0.1)' : freshness.tier === 'amber' ? 'hsl(45 93% 47% / 0.1)' : 'hsl(0 72% 51% / 0.1)',
+                              color: freshness.color,
+                              border: `1px solid ${freshness.tier === 'green' ? 'hsl(142 71% 45% / 0.3)' : freshness.tier === 'amber' ? 'hsl(45 93% 47% / 0.3)' : 'hsl(0 72% 51% / 0.3)'}`,
+                            }}>
+                              {freshness.label} ({freshness.days}d)
+                            </Badge>
                           </div>
                         </td>
                         <td className="px-3 py-2">
@@ -389,9 +430,17 @@ export default function EvidenceSyncEngine() {
                     {(() => {
                       const f = getFreshness(selectedEvidence.lastSync, selectedEvidence.status);
                       return (
-                        <div className="flex items-center gap-1">
-                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: f.dot }} />
-                          <span className="text-[10px] font-medium" style={{ color: f.color }}>{f.label}</span>
+                        <div className="flex items-center gap-1.5">
+                          <div style={{ width: 8, height: 8, borderRadius: '50%', background: f.dot, boxShadow: `0 0 4px ${f.dot}`, flexShrink: 0 }} />
+                          <Badge style={{
+                            borderRadius: 0,
+                            fontSize: 10,
+                            background: f.tier === 'green' ? 'hsl(142 71% 45% / 0.1)' : f.tier === 'amber' ? 'hsl(45 93% 47% / 0.1)' : 'hsl(0 72% 51% / 0.1)',
+                            color: f.color,
+                            border: `1px solid ${f.tier === 'green' ? 'hsl(142 71% 45% / 0.3)' : f.tier === 'amber' ? 'hsl(45 93% 47% / 0.3)' : 'hsl(0 72% 51% / 0.3)'}`,
+                          }}>
+                            {f.label} ({f.days}d)
+                          </Badge>
                         </div>
                       );
                     })()}

@@ -1,8 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Eye, PencilSimple, Trash, Plus, Warning, Siren,
   ArrowUp, Clock, User, CaretRight, MagnifyingGlass,
-  Timer, Bell, Megaphone, Check, Info,
+  Timer, Bell, Megaphone, Check, Info, HourglassHigh,
 } from '@phosphor-icons/react';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -31,14 +31,77 @@ import {
 } from '../data/seed';
 import { useSettingsStore } from '../stores/settingsStore';
 
-// ── SLA deadlines ─────────────────────────────────────────────────────────────
-const SLA_DEADLINES: Record<string, string> = {
-  'INC-001': '2026-01-12T00:00:00Z',
-  'INC-002': '2026-01-14T00:00:00Z',
-  'INC-003': '2026-01-22T00:00:00Z',
-  'INC-004': '2026-02-10T00:00:00Z',
-  'INC-005': '2026-03-08T00:00:00Z',
+// ── SLA hours by severity ─────────────────────────────────────────────────────
+const SLA_HOURS: Record<string, number> = {
+  critical: 4,
+  high: 8,
+  medium: 24,
+  low: 72,
 };
+
+function getSlaDeadline(reportedDate: string, severity: string): number {
+  const hours = SLA_HOURS[severity] ?? 24;
+  return new Date(reportedDate).getTime() + hours * 60 * 60 * 1000;
+}
+
+function getSlaRemaining(reportedDate: string, severity: string): { ms: number; total: number; pct: number } {
+  const hours = SLA_HOURS[severity] ?? 24;
+  const totalMs = hours * 60 * 60 * 1000;
+  const deadline = new Date(reportedDate).getTime() + totalMs;
+  const remaining = deadline - Date.now();
+  return { ms: remaining, total: totalMs, pct: totalMs > 0 ? (remaining / totalMs) * 100 : 0 };
+}
+
+function formatCountdown(ms: number): string {
+  if (ms <= 0) return 'BREACHED';
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (h > 0) return `${h}h ${String(m).padStart(2, '0')}m`;
+  if (m > 0) return `${m}m ${String(s).padStart(2, '0')}s`;
+  return `${s}s`;
+}
+
+// ── SLA Countdown Badge ──────────────────────────────────────────────────────
+function SlaCountdownBadge({ reportedDate, severity, status }: {
+  reportedDate: string; severity: string; status: string;
+}) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    if (status === 'resolved') return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [status]);
+
+  if (status === 'resolved') {
+    return (
+      <span className="text-[10px] font-mono px-1.5 py-0.5 font-semibold"
+        style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', borderRadius: 0 }}>
+        RESOLVED
+      </span>
+    );
+  }
+
+  const { ms, pct } = getSlaRemaining(reportedDate, severity);
+  const label = formatCountdown(ms);
+  const breached = ms <= 0;
+  const isRed = pct < 10;
+  const isAmber = pct >= 10 && pct <= 50;
+
+  const bg = breached || isRed ? 'hsl(var(--s-er-bg))' : isAmber ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-ok-bg))';
+  const fg = breached || isRed ? 'hsl(var(--s-er-tx))' : isAmber ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))';
+
+  return (
+    <span
+      className={`text-[10px] font-mono px-1.5 py-0.5 font-semibold inline-flex items-center gap-1 ${breached || isRed ? 'animate-pulse' : ''}`}
+      style={{ background: bg, color: fg, borderRadius: 0 }}
+    >
+      <HourglassHigh size={10} weight="bold" />
+      {label}
+    </span>
+  );
+}
 
 // ── Timeline stages ───────────────────────────────────────────────────────────
 const TIMELINE_STAGES = ['Reported', 'Triaged', 'Investigating', 'Contained', 'Resolved'];
@@ -112,6 +175,135 @@ function IncidentTimeline({ status }: { status: string }) {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+// ── Phase Timeline Visualization ─────────────────────────────────────────────
+const LIFECYCLE_PHASES = [
+  { key: 'creation', label: 'Creation', statuses: ['open'] },
+  { key: 'investigation', label: 'Investigation', statuses: ['investigating'] },
+  { key: 'mitigation', label: 'Mitigation', statuses: ['mitigating'] },
+  { key: 'resolution', label: 'Resolution', statuses: ['resolved'] },
+] as const;
+
+function getPhaseIndex(status: string): number {
+  switch (status) {
+    case 'open': return 0;
+    case 'investigating': return 1;
+    case 'mitigating': return 2;
+    case 'resolved': return 3;
+    default: return 0;
+  }
+}
+
+function PhaseTimeline({ incident }: { incident: Incident }) {
+  const currentPhase = getPhaseIndex(incident.status);
+
+  // derive timestamps for each phase from timeline entries
+  const phaseTimestamps: Record<string, string | null> = {
+    creation: incident.reportedDate,
+    investigation: null,
+    mitigation: null,
+    resolution: null,
+  };
+  for (const entry of incident.timeline) {
+    const lower = entry.action.toLowerCase();
+    if (lower.includes('investigat') || lower.includes('escalat') || lower.includes('root cause')) {
+      if (!phaseTimestamps.investigation) phaseTimestamps.investigation = entry.date;
+    }
+    if (lower.includes('mitigat') || lower.includes('contain') || lower.includes('suspend') || lower.includes('human-review') || lower.includes('human review') || lower.includes('review gate') || lower.includes('quarantin')) {
+      if (!phaseTimestamps.mitigation) phaseTimestamps.mitigation = entry.date;
+    }
+    if (lower.includes('resolv') || lower.includes('fix deployed') || lower.includes('verified')) {
+      if (!phaseTimestamps.resolution) phaseTimestamps.resolution = entry.date;
+    }
+  }
+
+  // compute elapsed time between creation and current phase
+  const sla = SLA_HOURS[incident.severity] ?? 24;
+  const { ms: remaining } = getSlaRemaining(incident.reportedDate, incident.severity);
+  const elapsed = (sla * 60 * 60 * 1000) - remaining;
+  const elapsedHours = Math.max(0, Math.floor(elapsed / (60 * 60 * 1000)));
+  const elapsedMins = Math.max(0, Math.floor((elapsed % (60 * 60 * 1000)) / (60 * 1000)));
+
+  return (
+    <div className="space-y-4">
+      {/* Phase bar */}
+      <div className="flex items-stretch gap-0 w-full">
+        {LIFECYCLE_PHASES.map((phase, i) => {
+          const isPast = i < currentPhase;
+          const isCurrent = i === currentPhase;
+          const isFuture = i > currentPhase;
+          const ts = phaseTimestamps[phase.key];
+          return (
+            <div key={phase.key} className="flex-1 flex flex-col items-center gap-2">
+              {/* Node */}
+              <div className="flex items-center w-full">
+                {i > 0 && (
+                  <div className="flex-1 h-0.5" style={{ background: isPast || isCurrent ? 'hsl(var(--brand))' : 'hsl(var(--border))' }} />
+                )}
+                <div
+                  className="w-9 h-9 flex items-center justify-center shrink-0 relative"
+                  style={{
+                    background: isPast ? 'hsl(var(--s-ok-tx))' : isCurrent ? 'hsl(var(--brand))' : 'hsl(var(--bg-surface))',
+                    border: `2px solid ${isPast ? 'hsl(var(--s-ok-tx))' : isCurrent ? 'hsl(var(--brand))' : 'hsl(var(--border))'}`,
+                    borderRadius: '50%',
+                  }}
+                >
+                  {isPast && <Check size={14} weight="bold" style={{ color: '#fff' }} />}
+                  {isCurrent && (
+                    <>
+                      <div className="w-2.5 h-2.5 bg-white" style={{ borderRadius: '50%' }} />
+                      <div className="absolute inset-0 animate-ping opacity-20" style={{ background: 'hsl(var(--brand))', borderRadius: '50%' }} />
+                    </>
+                  )}
+                  {isFuture && <div className="w-2 h-2" style={{ background: 'hsl(var(--border))', borderRadius: '50%' }} />}
+                </div>
+                {i < LIFECYCLE_PHASES.length - 1 && (
+                  <div className="flex-1 h-0.5" style={{ background: isPast ? 'hsl(var(--brand))' : 'hsl(var(--border))' }} />
+                )}
+              </div>
+              {/* Label + timestamp */}
+              <div className="text-center">
+                <p className="text-[10px] font-semibold" style={{ color: isFuture ? 'hsl(var(--text-4))' : 'hsl(var(--text-1))' }}>
+                  {phase.label}
+                </p>
+                {ts ? (
+                  <p className="text-[9px] font-mono" style={{ color: 'hsl(var(--text-4))' }}>
+                    {formatDate(ts)}
+                  </p>
+                ) : (
+                  <p className="text-[9px]" style={{ color: 'hsl(var(--text-4))' }}>--</p>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* SLA elapsed bar */}
+      {incident.status !== 'resolved' && (
+        <div className="p-3 space-y-2" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>SLA Progress</span>
+            <SlaCountdownBadge reportedDate={incident.reportedDate} severity={incident.severity} status={incident.status} />
+          </div>
+          <div className="w-full h-1.5" style={{ background: 'hsl(var(--border))', borderRadius: 0 }}>
+            <div
+              className="h-full transition-all"
+              style={{
+                width: `${Math.min(100, (elapsed / (sla * 60 * 60 * 1000)) * 100)}%`,
+                background: remaining <= 0 ? 'hsl(var(--s-er-tx))' : remaining / (sla * 60 * 60 * 1000) < 0.1 ? 'hsl(var(--s-er-tx))' : remaining / (sla * 60 * 60 * 1000) < 0.5 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))',
+                borderRadius: 0,
+              }}
+            />
+          </div>
+          <p className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>
+            {elapsedHours}h {elapsedMins}m elapsed of {sla}h SLA ({incident.severity})
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -294,7 +486,7 @@ export default function IncidentLog() {
               <table className="w-full text-sm">
                 <thead>
                   <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                    {['INC-ID', 'Title', 'Severity', 'Status', 'Category', 'Reported', 'Assigned To', 'SLA Deadline', 'Actions'].map(h => (
+                    {['INC-ID', 'Title', 'Severity', 'Status', 'Category', 'Reported', 'Assigned To', 'SLA Countdown', 'Actions'].map(h => (
                       <th key={h} className="px-3 py-3 text-left text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
                     ))}
                   </tr>
@@ -304,8 +496,6 @@ export default function IncidentLog() {
                     const sevColor = severityColor(inc.severity);
                     const statColor = statusColor(inc.status);
                     const isCritical = inc.id === 'INC-001' || inc.id === 'INC-004';
-                    const sla = SLA_DEADLINES[inc.id];
-                    const slaOverdue = sla && new Date(sla).getTime() < Date.now() && inc.status !== 'resolved';
                     return (
                       <tr
                         key={inc.id}
@@ -342,11 +532,7 @@ export default function IncidentLog() {
                           <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{inc.assignee}</span>
                         </td>
                         <td className="px-3 py-2">
-                          {sla ? (
-                            <span className="text-xs font-mono" style={{ color: slaOverdue ? 'hsl(var(--s-er-tx))' : 'hsl(var(--text-1))' }}>
-                              {slaOverdue ? 'OVERDUE' : formatDate(sla)}
-                            </span>
-                          ) : <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>—</span>}
+                          <SlaCountdownBadge reportedDate={inc.reportedDate} severity={inc.severity} status={inc.status} />
                         </td>
                         <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center gap-1">
@@ -438,6 +624,7 @@ export default function IncidentLog() {
                   <TabsList className="w-full" style={{ borderRadius: 0 }}>
                     <TabsTrigger value="overview" style={{ borderRadius: 0 }}>Overview</TabsTrigger>
                     <TabsTrigger value="timeline" style={{ borderRadius: 0 }}>Timeline</TabsTrigger>
+                    <TabsTrigger value="similar" style={{ borderRadius: 0 }}>Similar</TabsTrigger>
                     <TabsTrigger value="rootcause" style={{ borderRadius: 0 }}>Root Cause</TabsTrigger>
                     <TabsTrigger value="corrective" style={{ borderRadius: 0 }}>Corrective</TabsTrigger>
                     <TabsTrigger value="regulatory" style={{ borderRadius: 0 }}>Regulatory</TabsTrigger>
@@ -466,6 +653,18 @@ export default function IncidentLog() {
                         <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{formatDate(selectedIncident.reportedDate)}</span>
                       </div>
                     </div>
+
+                    {/* SLA countdown in overview */}
+                    <div className="p-3 flex items-center justify-between" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <div className="space-y-0.5">
+                        <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>SLA Target</p>
+                        <p className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>
+                          {SLA_HOURS[selectedIncident.severity] ?? 24}h resolution window ({selectedIncident.severity})
+                        </p>
+                      </div>
+                      <SlaCountdownBadge reportedDate={selectedIncident.reportedDate} severity={selectedIncident.severity} status={selectedIncident.status} />
+                    </div>
+
                     {selectedIncident.linkedModel && (
                       <div className="space-y-1">
                         <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Linked Model</p>
@@ -482,19 +681,88 @@ export default function IncidentLog() {
 
                   {/* Timeline */}
                   <TabsContent value="timeline" className="space-y-4 mt-4">
-                    <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Incident Progress</p>
-                    <IncidentTimeline status={selectedIncident.status} />
+                    <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Lifecycle Phases</p>
+                    <PhaseTimeline incident={selectedIncident} />
+
                     <div className="space-y-2 mt-4">
                       <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Activity Log</p>
                       {selectedIncident.timeline.map((entry, i) => (
                         <div key={i} className="flex gap-3 p-2" style={{ borderLeft: '2px solid hsl(var(--brand))', borderRadius: 0 }}>
-                          <div className="space-y-0.5">
-                            <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{entry.action}</p>
-                            <p className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>{formatDate(entry.date)} · {entry.actor}</p>
+                          <div className="flex items-start gap-2 w-full">
+                            <div className="w-5 h-5 flex items-center justify-center shrink-0 mt-0.5"
+                              style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: '50%' }}>
+                              <Clock size={10} style={{ color: 'hsl(var(--text-4))' }} />
+                            </div>
+                            <div className="space-y-0.5 flex-1">
+                              <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{entry.action}</p>
+                              <div className="flex items-center justify-between">
+                                <p className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>{formatDate(entry.date)}</p>
+                                <p className="text-[10px] font-medium" style={{ color: 'hsl(var(--brand))' }}>{entry.actor}</p>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       ))}
                     </div>
+                  </TabsContent>
+
+                  {/* Similar Incidents */}
+                  <TabsContent value="similar" className="space-y-4 mt-4">
+                    <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>
+                      Similar Incidents — matched by category "{selectedIncident.category}"
+                    </p>
+                    {(() => {
+                      const similar = incidents.filter(
+                        i => i.id !== selectedIncident.id && i.category === selectedIncident.category
+                      );
+                      if (similar.length === 0) {
+                        return (
+                          <div className="text-xs py-6 text-center" style={{ color: 'hsl(var(--text-4))' }}>
+                            No similar incidents found in category "{selectedIncident.category}".
+                          </div>
+                        );
+                      }
+                      return similar.map(sim => {
+                        const simSev = severityColor(sim.severity);
+                        const simStat = statusColor(sim.status);
+                        return (
+                          <div
+                            key={sim.id}
+                            className="p-3 cursor-pointer hover:opacity-80 transition-opacity"
+                            style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}
+                            onClick={() => setSelectedIncident(sim)}
+                          >
+                            <div className="flex items-center justify-between mb-1.5">
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono text-xs font-bold" style={{ color: 'hsl(var(--brand))' }}>{sim.id}</span>
+                                <Badge style={{ background: simSev.bg, color: simSev.text, borderRadius: 0, fontSize: 10 }}>
+                                  {sim.severity}
+                                </Badge>
+                                <Badge style={{ background: simStat.bg, color: simStat.text, borderRadius: 0, fontSize: 10 }}>
+                                  {sim.status}
+                                </Badge>
+                              </div>
+                              <SlaCountdownBadge reportedDate={sim.reportedDate} severity={sim.severity} status={sim.status} />
+                            </div>
+                            <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{sim.title}</p>
+                            <p className="text-[10px] mt-1 line-clamp-2" style={{ color: 'hsl(var(--text-4))' }}>{sim.description}</p>
+                            <div className="flex items-center gap-3 mt-2">
+                              <span className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>
+                                <User size={10} className="inline mr-0.5" style={{ verticalAlign: 'middle' }} />{sim.assignee}
+                              </span>
+                              <span className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>
+                                <Clock size={10} className="inline mr-0.5" style={{ verticalAlign: 'middle' }} />{formatDate(sim.reportedDate)}
+                              </span>
+                              {sim.linkedModel && (
+                                <span className="text-[10px] font-mono" style={{ color: 'hsl(var(--brand))' }}>
+                                  {sim.linkedModel}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
                   </TabsContent>
 
                   {/* Root Cause */}

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Eye, PencilSimple, Trash, Plus, Brain, CheckCircle, Warning,
   MagnifyingGlass, Funnel, Export, Siren, ChartLine, FilePdf,
-  ShieldWarning, ArrowUp, ArrowDown, Minus, Info,
+  ShieldWarning, ArrowUp, ArrowDown, Minus, Info, ArrowRight,
 } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Skeleton } from '../../components/ui/skeleton';
@@ -65,6 +65,83 @@ function riskTierBadge(tier: Model['riskTier']) {
     <Badge style={{ background: s.bg, color: s.color, borderRadius: 0, fontSize: 10 }}>
       {tier.charAt(0).toUpperCase() + tier.slice(1)}
     </Badge>
+  );
+}
+
+// ── Lifecycle Stepper ────────────────────────────────────────────────────────
+
+const LIFECYCLE_STAGES = [
+  { key: 'development', label: 'Development', color: '#8b5cf6' },
+  { key: 'staging', label: 'Staging', color: '#3b82f6' },
+  { key: 'production', label: 'Production', color: '#10b981' },
+  { key: 'deprecated', label: 'Deprecated', color: '#f97316' },
+  { key: 'retired', label: 'Retired', color: '#6b7280' },
+] as const;
+
+function resolveLifecycleIndex(status: string): number {
+  const s = status.toLowerCase();
+  const idx = LIFECYCLE_STAGES.findIndex(st => st.key === s);
+  return idx >= 0 ? idx : 0;
+}
+
+function LifecycleStepper({ status }: { status: string }) {
+  const activeIdx = resolveLifecycleIndex(status);
+
+  return (
+    <div style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-muted))', padding: 16 }}>
+      <p className="text-xs font-semibold mb-3" style={{ color: 'hsl(var(--text-4))' }}>Lifecycle Stage</p>
+      <div className="flex items-center" style={{ gap: 0 }}>
+        {LIFECYCLE_STAGES.map((stage, idx) => {
+          const isActive = idx === activeIdx;
+          const isPast = idx < activeIdx;
+          const dotColor = isActive ? stage.color : isPast ? stage.color : 'hsl(var(--border))';
+          const labelColor = isActive ? stage.color : isPast ? 'hsl(var(--text-3))' : 'hsl(var(--text-4))';
+          const lineColor = isPast ? LIFECYCLE_STAGES[idx].color : 'hsl(var(--border))';
+
+          return (
+            <div key={stage.key} className="flex items-center" style={{ flex: idx < LIFECYCLE_STAGES.length - 1 ? 1 : undefined }}>
+              {/* Stage dot + label */}
+              <div className="flex flex-col items-center" style={{ minWidth: 56 }}>
+                <div style={{
+                  width: isActive ? 20 : 12,
+                  height: isActive ? 20 : 12,
+                  borderRadius: 0,
+                  background: isActive ? dotColor : isPast ? dotColor : 'transparent',
+                  border: `2px solid ${dotColor}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.2s',
+                }}>
+                  {isActive && (
+                    <div style={{ width: 8, height: 8, background: '#fff', borderRadius: 0 }} />
+                  )}
+                  {isPast && (
+                    <CheckCircle size={10} weight="bold" style={{ color: '#fff' }} />
+                  )}
+                </div>
+                <span className="text-xs mt-1.5 text-center" style={{
+                  color: labelColor,
+                  fontWeight: isActive ? 700 : 400,
+                  fontSize: 10,
+                  whiteSpace: 'nowrap',
+                }}>
+                  {stage.label}
+                </span>
+              </div>
+              {/* Connector line */}
+              {idx < LIFECYCLE_STAGES.length - 1 && (
+                <div style={{
+                  flex: 1,
+                  height: 2,
+                  background: lineColor,
+                  marginBottom: 18,
+                  minWidth: 12,
+                }} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -273,9 +350,35 @@ export default function ModelInventoryPage() {
                         </td>
                         <td className="px-4 py-3">{driftBadge(m.driftStatus)}</td>
                         <td className="px-4 py-3">
-                          <Badge style={{ background: sc.bg, color: sc.text, borderRadius: 0, fontSize: 10 }}>
-                            {m.status}
-                          </Badge>
+                          <div className="flex flex-col gap-1">
+                            <Badge style={{ background: sc.bg, color: sc.text, borderRadius: 0, fontSize: 10 }}>
+                              {m.status}
+                            </Badge>
+                            <div className="flex items-center gap-0.5">
+                              {LIFECYCLE_STAGES.map((stage, idx) => {
+                                const activeIdx = resolveLifecycleIndex(m.status);
+                                const isActive = idx === activeIdx;
+                                const isPast = idx < activeIdx;
+                                return (
+                                  <div key={stage.key} className="flex items-center">
+                                    <div
+                                      title={stage.label}
+                                      style={{
+                                        width: isActive ? 8 : 6,
+                                        height: isActive ? 8 : 6,
+                                        borderRadius: 0,
+                                        background: isActive || isPast ? stage.color : 'hsl(var(--border))',
+                                        border: isActive ? `1px solid ${stage.color}` : 'none',
+                                      }}
+                                    />
+                                    {idx < LIFECYCLE_STAGES.length - 1 && (
+                                      <div style={{ width: 4, height: 1, background: isPast ? LIFECYCLE_STAGES[idx].color : 'hsl(var(--border))' }} />
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
                         </td>
                         <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{m.owner}</td>
                         <td className="px-4 py-3">
@@ -355,6 +458,9 @@ export default function ModelInventoryPage() {
                       </Badge>
                     )}
                   </div>
+
+                  {/* Lifecycle Pipeline */}
+                  <LifecycleStepper status={selectedModel.status} />
 
                   <div className="grid grid-cols-2 gap-4 text-xs">
                     <div>

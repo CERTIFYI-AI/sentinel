@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Building, Globe, Shield, Key, Bell, Database, Plug, FloppyDisk, Plus, Copy, Eye, EyeSlash, ArrowCounterClockwise, Trash, CheckCircle, XCircle, Warning, Lock, User } from '@phosphor-icons/react';
+import { Building, Globe, Shield, Key, Bell, Database, Plug, FloppyDisk, Plus, Copy, Eye, EyeSlash, ArrowCounterClockwise, Trash, CheckCircle, XCircle, Warning, Lock, User, ClockCounterClockwise } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -65,6 +65,26 @@ const INITIAL_INTEGRATIONS: Integration[] = [
   { id: 'jira', name: 'Jira', description: 'Issue tracking for remediation and risk management tasks', connected: false, logo: 'J' },
 ];
 
+// ── Audit Trail ────────────────────────────────────────────────────────────────
+interface AuditEntry {
+  id: string;
+  timestamp: string;
+  user: string;
+  section: string;
+  field: string;
+  oldValue: string;
+  newValue: string;
+}
+
+const INITIAL_AUDIT_ENTRIES: AuditEntry[] = [
+  { id: 'audit-1', timestamp: '2026-04-07 16:42:03', user: 'Sarah Chen', section: 'Organization', field: 'Primary Contact', oldValue: 'ops@acmefin.com', newValue: 'sarah.chen@acmefin.com' },
+  { id: 'audit-2', timestamp: '2026-04-06 11:15:28', user: 'Marcus Rivera', section: 'Authentication', field: 'Session Timeout', oldValue: '4 hours', newValue: '8 hours' },
+  { id: 'audit-3', timestamp: '2026-04-05 09:30:44', user: 'Sarah Chen', section: 'Data Retention', field: 'Evidence Artifacts', oldValue: '3 years', newValue: '5 years' },
+  { id: 'audit-4', timestamp: '2026-04-03 14:22:11', user: 'James Okoro', section: 'Notifications', field: 'Model Drift — Slack', oldValue: 'Disabled', newValue: 'Enabled' },
+  { id: 'audit-5', timestamp: '2026-04-01 10:05:37', user: 'Sarah Chen', section: 'Integrations', field: 'AWS', oldValue: 'Disconnected', newValue: 'Connected' },
+  { id: 'audit-6', timestamp: '2026-03-29 08:48:19', user: 'Marcus Rivera', section: 'Authentication', field: 'SSO Provider', oldValue: 'Azure AD', newValue: 'Okta' },
+];
+
 export default function Settings() {
   const { orgName, domain, industry, companySize, primaryContact, timezone, fiscalYearStart, updateSettings } = useSettingsStore();
   const [activeTab, setActiveTab] = useState('organization');
@@ -80,6 +100,14 @@ export default function Settings() {
     setOrgSaved(false);
   };
   const saveOrg = () => {
+    const prev = { orgName, domain, industry, companySize, primaryContact, timezone, fiscalYearStart } as Record<string, string>;
+    const labels: Record<string, string> = { orgName: 'Organization Name', domain: 'Domain', industry: 'Industry', companySize: 'Company Size', primaryContact: 'Primary Contact', timezone: 'Timezone', fiscalYearStart: 'Fiscal Year Start' };
+    Object.keys(orgForm).forEach(key => {
+      const k = key as keyof typeof orgForm;
+      if (orgForm[k] !== prev[key]) {
+        addAuditEntry('Organization', labels[key] || key, prev[key], orgForm[k]);
+      }
+    });
     updateSettings(orgForm);
     setOrgDirty(false);
     setOrgSaved(true);
@@ -136,6 +164,21 @@ export default function Settings() {
   const [integrations, setIntegrations] = useState<Integration[]>(INITIAL_INTEGRATIONS);
   const toggleIntegration = (id: string) => setIntegrations(prev => prev.map(i => i.id === id ? { ...i, connected: !i.connected } : i));
 
+  // Audit Trail
+  const [auditEntries, setAuditEntries] = useState<AuditEntry[]>(INITIAL_AUDIT_ENTRIES);
+  const addAuditEntry = (section: string, field: string, oldValue: string, newValue: string) => {
+    const entry: AuditEntry = {
+      id: `audit-${Date.now()}`,
+      timestamp: new Date().toISOString().replace('T', ' ').slice(0, 19),
+      user: 'Current User',
+      section,
+      field,
+      oldValue,
+      newValue,
+    };
+    setAuditEntries(prev => [entry, ...prev]);
+  };
+
   const sectionCard = (children: React.ReactNode, title?: string, icon?: React.ReactNode) => (
     <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
       {title && (
@@ -174,6 +217,7 @@ export default function Settings() {
             { value: 'notifications', label: 'Notifications' },
             { value: 'data-retention', label: 'Data Retention' },
             { value: 'integrations', label: 'Integrations' },
+            { value: 'audit-trail', label: 'Audit Trail' },
           ].map(tab => (
             <TabsTrigger key={tab.value} value={tab.value} style={{ borderRadius: 0 }}>{tab.label}</TabsTrigger>
           ))}
@@ -482,6 +526,72 @@ export default function Settings() {
               </Card>
             ))}
           </div>
+        </TabsContent>
+
+        {/* ── AUDIT TRAIL ──────────────────────────────── */}
+        <TabsContent value="audit-trail" className="mt-4 space-y-4">
+          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ClockCounterClockwise size={16} style={{ color: 'hsl(var(--brand))' }} />
+                  <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Config Change Audit Trail</CardTitle>
+                </div>
+                <Badge style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-4))', borderRadius: 0, fontSize: 11 }}>
+                  {auditEntries.length} entries
+                </Badge>
+              </div>
+              <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>
+                Immutable log of all configuration changes. Entries cannot be modified or deleted.
+              </p>
+            </CardHeader>
+            <CardContent className="p-0">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                    {['Timestamp', 'User', 'Section Changed', 'Field', 'Old Value', 'New Value'].map(h => (
+                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {auditEntries.map(entry => (
+                    <tr key={entry.id} style={{ borderBottom: '1px solid hsl(var(--border))' }} className="hover:bg-muted/30">
+                      <td className="px-4 py-3 text-xs font-mono whitespace-nowrap" style={{ color: 'hsl(var(--text-4))' }}>{entry.timestamp}</td>
+                      <td className="px-4 py-3 text-sm" style={{ color: 'hsl(var(--text-1))' }}>
+                        <div className="flex items-center gap-1.5">
+                          <User size={13} style={{ color: 'hsl(var(--text-4))' }} />
+                          {entry.user}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge style={{ background: 'hsl(var(--brand) / 0.1)', color: 'hsl(var(--brand))', borderRadius: 0, fontSize: 11 }}>
+                          {entry.section}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{entry.field}</td>
+                      <td className="px-4 py-3">
+                        <span className="text-xs px-2 py-0.5 font-mono" style={{ background: 'hsl(0 70% 50% / 0.1)', color: 'hsl(var(--text-3))', borderRadius: 0 }}>
+                          {entry.oldValue}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-xs px-2 py-0.5 font-mono" style={{ background: 'hsl(142 71% 45% / 0.1)', color: 'hsl(var(--text-3))', borderRadius: 0 }}>
+                          {entry.newValue}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {auditEntries.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-12" style={{ color: 'hsl(var(--text-4))' }}>
+                  <ClockCounterClockwise size={32} className="mb-2 opacity-40" />
+                  <p className="text-sm">No configuration changes recorded yet.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

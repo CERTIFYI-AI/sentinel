@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import {
   Eye, PencilSimple, Trash, Plus, Buildings, MagnifyingGlass, Funnel,
   Warning, CheckCircle, ShieldWarning, Export, Handshake, Globe,
-  CloudArrowUp, Siren,
+  CloudArrowUp, Siren, ChartPie, ClipboardText,
 } from '@phosphor-icons/react';
 import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
@@ -45,6 +45,40 @@ function scoreProgressColor(score: number): string {
   if (score >= 80) return 'hsl(var(--s-ok-tx))';
   if (score >= 60) return 'hsl(var(--s-wn-tx))';
   return 'hsl(var(--destructive))';
+}
+
+// ── Concentration Risk Data ───────────────────────────────────────────────────
+
+const CONCENTRATION_DATA: { vendor: string; pct: number; color: string }[] = [
+  { vendor: 'OpenAI', pct: 45, color: 'hsl(220 90% 56%)' },
+  { vendor: 'Anthropic', pct: 30, color: 'hsl(280 67% 56%)' },
+  { vendor: 'Internal', pct: 25, color: 'hsl(142 71% 45%)' },
+];
+
+const CONCENTRATION_THRESHOLD = 40;
+
+// ── Security Questionnaire Data ──────────────────────────────────────────────
+
+type VSQStatus = 'Complete' | 'In Progress' | 'Overdue' | 'Not Started';
+
+interface VSQEntry { vendorId: string; status: VSQStatus; dueDate: string }
+
+const VSQ_DATA: VSQEntry[] = [
+  { vendorId: 'V-001', status: 'Complete', dueDate: '2026-02-15' },
+  { vendorId: 'V-002', status: 'In Progress', dueDate: '2026-04-30' },
+  { vendorId: 'V-003', status: 'Overdue', dueDate: '2026-03-01' },
+  { vendorId: 'V-004', status: 'Not Started', dueDate: '2026-05-15' },
+  { vendorId: 'V-005', status: 'Complete', dueDate: '2026-01-20' },
+  { vendorId: 'V-006', status: 'In Progress', dueDate: '2026-06-01' },
+];
+
+function vsqStatusStyle(status: VSQStatus): { bg: string; color: string } {
+  switch (status) {
+    case 'Complete': return { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' };
+    case 'In Progress': return { bg: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))' };
+    case 'Overdue': return { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' };
+    case 'Not Started': return { bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--text-4))' };
+  }
 }
 
 // ── Main Component ────────────────────────────────────────────────────────────
@@ -167,6 +201,40 @@ export default function VendorRegistry() {
         </div>
       )}
 
+      {/* Concentration Risk */}
+      <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+        <CardContent className="p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <ChartPie size={16} style={{ color: 'hsl(var(--brand))' }} />
+            <span className="text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Vendor Concentration Risk</span>
+          </div>
+          {CONCENTRATION_DATA.some(d => d.pct > CONCENTRATION_THRESHOLD) && (
+            <div className="flex items-center gap-2 px-3 py-2 mb-3" style={{ background: 'hsl(45 93% 47% / 0.08)', border: '1px solid hsl(45 93% 47% / 0.3)', borderRadius: 0 }}>
+              <Warning size={12} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />
+              <p className="text-xs" style={{ color: 'hsl(var(--s-wn-tx))' }}>
+                <strong>Warning:</strong> {CONCENTRATION_DATA.filter(d => d.pct > CONCENTRATION_THRESHOLD).map(d => d.vendor).join(', ')} exceed{CONCENTRATION_DATA.filter(d => d.pct > CONCENTRATION_THRESHOLD).length === 1 ? 's' : ''} {CONCENTRATION_THRESHOLD}% dependency threshold
+              </p>
+            </div>
+          )}
+          <div className="space-y-2">
+            {CONCENTRATION_DATA.map(d => (
+              <div key={d.vendor} className="flex items-center gap-3">
+                <span className="text-xs w-20 font-medium" style={{ color: 'hsl(var(--text-1))' }}>{d.vendor}</span>
+                <div className="flex-1 h-2" style={{ background: 'hsl(var(--border))', borderRadius: 0 }}>
+                  <div className="h-full" style={{ width: `${d.pct}%`, background: d.color, borderRadius: 0 }} />
+                </div>
+                <span className="text-xs font-bold w-10 text-right" style={{ color: d.pct > CONCENTRATION_THRESHOLD ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-1))' }}>
+                  {d.pct}%
+                </span>
+                {d.pct > CONCENTRATION_THRESHOLD && (
+                  <Warning size={12} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />
+                )}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative min-w-52 max-w-xs">
@@ -199,7 +267,7 @@ export default function VendorRegistry() {
               <table className="w-full text-sm">
                 <thead>
                   <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                    {['Vendor', 'Category', 'Risk Tier', 'Score', 'DPA Status', 'Review Status', 'Assignee', 'Last Review', 'Actions'].map(h => (
+                    {['Vendor', 'Category', 'Risk Tier', 'Score', 'DPA Status', 'VSQ Status', 'Review Status', 'Assignee', 'Last Review', 'Actions'].map(h => (
                       <th key={h} className="px-4 py-3 text-left text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
                     ))}
                   </tr>
@@ -232,6 +300,23 @@ export default function VendorRegistry() {
                           </div>
                         </td>
                         <td className="px-4 py-3">{dpaStatusBadge(v.dpaStatus)}</td>
+                        <td className="px-4 py-3">
+                          {(() => {
+                            const vsq = VSQ_DATA.find(q => q.vendorId === v.id);
+                            if (!vsq) return <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>--</span>;
+                            const st = vsqStatusStyle(vsq.status);
+                            return (
+                              <div className="flex flex-col gap-0.5">
+                                <Badge style={{ background: st.bg, color: st.color, borderRadius: 0, fontSize: 10 }}>
+                                  <ClipboardText size={10} weight="fill" className="mr-1 inline" />{vsq.status}
+                                </Badge>
+                                <span className="text-xs" style={{ color: vsq.status === 'Overdue' ? 'hsl(var(--destructive))' : 'hsl(var(--text-4))', fontSize: 9 }}>
+                                  Due: {formatDate(vsq.dueDate)}
+                                </span>
+                              </div>
+                            );
+                          })()}
+                        </td>
                         <td className="px-4 py-3">
                           <Badge style={{ background: stc.bg, color: stc.text, borderRadius: 0, fontSize: 10 }}>
                             {v.status.replace('_', ' ')}

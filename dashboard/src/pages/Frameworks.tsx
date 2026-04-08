@@ -13,7 +13,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import {
   StackSimple, Plus, PencilSimple, Trash, Info, CalendarCheck, ShieldCheck,
-  Warning, ArrowRight, Eye,
+  Warning, ArrowRight, Eye, ArrowsLeftRight,
 } from '@phosphor-icons/react';
 import { FRAMEWORKS, CONTROLS, GAPS, Framework, formatDate } from '../data/seed';
 import { useSettingsStore } from '../stores/settingsStore';
@@ -256,6 +256,121 @@ export default function Frameworks() {
           );
         })}
       </div>
+
+      {/* Framework Crosswalk Matrix */}
+      <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <ArrowsLeftRight size={18} style={{ color: 'hsl(var(--brand))' }} />
+            <CardTitle className="text-sm font-bold" style={{ color: 'hsl(var(--text-1))' }}>
+              Framework Crosswalk
+            </CardTitle>
+          </div>
+          <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-3))' }}>
+            Control mapping across ISO 27001, SOC 2, NIST AI RMF, and EU AI Act
+          </p>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr style={{ borderBottom: '2px solid hsl(var(--border))', background: 'hsl(var(--bg-muted))' }}>
+                  <th className="px-4 py-3 text-left font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Control Domain</th>
+                  <th className="px-4 py-3 text-left font-semibold" style={{ color: 'hsl(var(--text-4))' }}>
+                    <Badge style={{ background: '#3b82f622', color: '#3b82f6', border: '1px solid #3b82f644', borderRadius: 0, fontSize: 10 }}>ISO 27001</Badge>
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold" style={{ color: 'hsl(var(--text-4))' }}>
+                    <Badge style={{ background: '#06b6d422', color: '#06b6d4', border: '1px solid #06b6d444', borderRadius: 0, fontSize: 10 }}>SOC 2</Badge>
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold" style={{ color: 'hsl(var(--text-4))' }}>
+                    <Badge style={{ background: '#f59e0b22', color: '#f59e0b', border: '1px solid #f59e0b44', borderRadius: 0, fontSize: 10 }}>NIST AI RMF</Badge>
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold" style={{ color: 'hsl(var(--text-4))' }}>
+                    <Badge style={{ background: '#f9731622', color: '#f97316', border: '1px solid #f9731644', borderRadius: 0, fontSize: 10 }}>EU AI Act</Badge>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  {
+                    domain: 'Access Control',
+                    iso: 'A.9 Access Control',
+                    soc: 'CC6.1 Logical Access',
+                    nist: 'PR.AC Access Control',
+                    eu: 'Art. 9(4)(b) Access Mgmt',
+                  },
+                  {
+                    domain: 'Risk Assessment',
+                    iso: 'A.8.2 Information Classification',
+                    soc: 'CC3.2 Risk Assessment',
+                    nist: 'GV.1 Risk Governance',
+                    eu: 'Art. 9(1) Risk Mgmt System',
+                  },
+                  {
+                    domain: 'Data Governance',
+                    iso: 'A.8.1 Asset Management',
+                    soc: 'CC6.5 Data Processing',
+                    nist: 'MP.1 Data Governance',
+                    eu: 'Art. 10 Data Quality',
+                  },
+                  {
+                    domain: 'Monitoring & Logging',
+                    iso: 'A.12.4 Logging & Monitoring',
+                    soc: 'CC7.2 System Monitoring',
+                    nist: 'MN.3 Performance Monitoring',
+                    eu: 'Art. 12 Record-keeping',
+                  },
+                  {
+                    domain: 'Incident Response',
+                    iso: 'A.16.1 Incident Management',
+                    soc: 'CC7.4 Incident Response',
+                    nist: 'GV.5 Incident Governance',
+                    eu: 'Art. 62 Incident Reporting',
+                  },
+                  {
+                    domain: 'Transparency',
+                    iso: 'A.18.1 Compliance Requirements',
+                    soc: 'CC1.4 Reporting Obligations',
+                    nist: 'MP.5 Explainability',
+                    eu: 'Art. 13 Transparency',
+                  },
+                  {
+                    domain: 'Human Oversight',
+                    iso: 'A.7.2 Competence & Awareness',
+                    soc: 'CC1.3 Board Oversight',
+                    nist: 'GV.3 Human Oversight',
+                    eu: 'Art. 14 Human Oversight',
+                  },
+                  {
+                    domain: 'Change Management',
+                    iso: 'A.14.2 Change Control',
+                    soc: 'CC8.1 Change Management',
+                    nist: 'GV.6 Change Governance',
+                    eu: 'Art. 9(2)(b) Modification Mgmt',
+                  },
+                ].map((row, idx) => (
+                  <tr key={row.domain} style={{
+                    borderBottom: '1px solid hsl(var(--border))',
+                    background: idx % 2 === 0 ? 'transparent' : 'hsl(var(--bg-muted))',
+                  }}>
+                    <td className="px-4 py-2.5 font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{row.domain}</td>
+                    <td className="px-4 py-2.5 font-mono" style={{ color: 'hsl(var(--text-3))' }}>{row.iso}</td>
+                    <td className="px-4 py-2.5 font-mono" style={{ color: 'hsl(var(--text-3))' }}>{row.soc}</td>
+                    <td className="px-4 py-2.5 font-mono" style={{ color: 'hsl(var(--text-3))' }}>{row.nist}</td>
+                    <td className="px-4 py-2.5 font-mono" style={{ color: 'hsl(var(--text-3))' }}>{row.eu}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="px-4 py-3 flex items-center gap-2" style={{ borderTop: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-muted))' }}>
+            <Info size={14} style={{ color: 'hsl(var(--text-4))' }} />
+            <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+              Crosswalk mappings show approximate equivalences between framework controls. Actual compliance requirements may vary.
+            </span>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Detail Sheet */}
       <Sheet open={!!viewItem} onOpenChange={o => !o && setViewItem(null)}>

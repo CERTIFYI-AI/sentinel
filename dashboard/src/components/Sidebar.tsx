@@ -10,7 +10,8 @@ import {
   ListChecks, TreeStructure, Lightbulb, GlobeHemisphereWest,
   Table, Target, Sword, Scan, Key, GameController,
   Gauge, Sliders, CurrencyDollar, ArrowsLeftRight, Wrench, UserGear,
-  ClockCounterClockwise, DownloadSimple, BellRinging
+  ClockCounterClockwise, DownloadSimple, BellRinging,
+  ClipboardText, ShieldWarning, GraduationCap, Lifebuoy, CalendarBlank,
 } from '@phosphor-icons/react'
 import { cn } from '../lib/utils'
 import { useTheme } from '../providers/ThemeProvider'
@@ -39,71 +40,48 @@ interface NavSection {
 const NAV: NavSection[] = [
   { title: 'OVERVIEW', items: [
     { label: 'Dashboard', to: '/overview', icon: SquaresFour },
-    { label: 'Notifications', to: '/notifications', icon: Bell },
   ]},
-  { title: 'GOVERNANCE', items: [
-    { label: 'Compliance Dashboard', to: '/compliance', icon: Shield },
-    { label: 'Policy Manager', to: '/compliance/policies', icon: FileText },
-    { label: 'Controls', to: '/compliance/controls', icon: ListChecks },
-    { label: 'Frameworks', to: '/frameworks', icon: BookOpen, children: [
-      { label: 'Gap Analysis', to: '/compliance/gap-analysis' },
-      { label: 'Policy Templates', to: '/compliance/policy-templates' },
-    ]},
-    { label: 'AI Advisor', to: '/ai-advisor', icon: Lightbulb },
-    { label: 'Reg Radar', to: '/reg-radar', icon: GlobeHemisphereWest },
-    { label: 'HITL Reviews', to: '/hitl', icon: UserCircleCheck, badge: 3 },
-    { label: 'Conformity Assessment', to: '/conformity', icon: ShieldCheck },
-    { label: 'Data Governance', to: '/data-governance', icon: Database },
-  ]},
-  { title: 'AI INVENTORY', items: [
-    { label: 'Model Registry', to: '/models/inventory', icon: Robot, children: [
+  { title: 'AI GOVERNANCE', items: [
+    { label: 'Model Inventory', to: '/models/inventory', icon: Robot, children: [
       { label: 'Model Lifecycle', to: '/models/lifecycle' },
+    ]},
+    { label: 'Trust Engine', to: '/trust-engine', icon: Gauge, children: [
+      { label: 'Guardrails', to: '/trust-engine/guardrails' },
+      { label: 'Live Traces', to: '/trust-engine/traces' },
+      { label: 'Configuration', to: '/trust-engine/config' },
     ]},
     { label: 'Agent Discovery', to: '/agents', icon: Brain, badge: 12, children: [
       { label: 'Shadow AI', to: '/agents/shadow-ai' },
     ]},
-    { label: 'Datasets', to: '/datasets', icon: Database },
-    { label: 'Vendor Registry', to: '/vendors', icon: BuildingOffice },
-    { label: 'Use Cases', to: '/use-cases', icon: Briefcase },
-    { label: 'Explainability Center', to: '/explainability', icon: Eye },
-  ]},
-  { title: 'RISK & COMPLIANCE', items: [
-    { label: 'Risk Register', to: '/risk', icon: Warning, children: [
-      { label: 'Risk Matrix', to: '/risk/matrix' },
-    ]},
     { label: 'Bias Audits', to: '/bias-audits', icon: Scales },
-    { label: 'Incidents', to: '/risk/incidents', icon: Warning },
+  ]},
+  { title: 'COMPLIANCE', items: [
+    { label: 'Frameworks', to: '/frameworks', icon: BookOpen },
+    { label: 'Controls', to: '/compliance/controls', icon: ListChecks },
+    { label: 'Audit Management', to: '/audits', icon: ClipboardText },
     { label: 'Evidence Sync', to: '/evidence-sync', icon: FolderOpen },
-    { label: 'Reporting', to: '/reporting', icon: ChartBar },
+    { label: 'Compliance Calendar', to: '/calendar', icon: CalendarBlank },
+    { label: 'Document Management', to: '/documents', icon: FileText },
   ]},
-  { title: 'SECURITY', items: [
-    { label: 'Security Hub', to: '/security', icon: ShieldCheck, children: [
-      { label: 'Threat Feed', to: '/security/threats' },
-      { label: 'Scan Center', to: '/security/scanner' },
-      { label: 'Vulnerabilities', to: '/security/vulnerabilities' },
-    ]},
-    { label: 'Red Team Lab', to: '/security/red-team', icon: Sword },
-    { label: 'Attack Surface', to: '/security/attack-surface', icon: Target },
-    { label: 'Policy Firewall', to: '/security/policies', icon: Shield },
-    { label: 'Keys Vault', to: '/security/keys', icon: Key },
-    { label: 'Model Arena', to: '/security/model-arena', icon: GameController },
+  { title: 'RISK & INCIDENTS', items: [
+    { label: 'Risk Register', to: '/risks', icon: Warning },
+    { label: 'Incidents', to: '/risk/incidents', icon: ShieldWarning },
+    { label: 'Exception Management', to: '/exceptions', icon: ShieldWarning },
   ]},
-  { title: 'TRUST ENGINE', items: [
-    { label: 'Trust Dashboard', to: '/trust-engine', icon: Gauge },
-    { label: 'Guardrails', to: '/trust-engine/guardrails', icon: LockOpen },
-    { label: 'Live Traces', to: '/trust-engine/traces', icon: Rss, children: [
-      { label: 'Cost & Tokens', to: '/trust-engine/costs' },
-      { label: 'Fallback Log', to: '/trust-engine/fallback' },
-      { label: 'Tool Monitor', to: '/trust-engine/tools' },
-    ]},
-    { label: 'Configuration', to: '/trust-engine/config', icon: Sliders },
+  { title: 'OPERATIONS', items: [
+    { label: 'HITL Reviews', to: '/hitl', icon: UserCircleCheck, badge: 3 },
+    { label: 'Vendors', to: '/vendors', icon: BuildingOffice },
+    { label: 'Regulatory Radar', to: '/reg-radar', icon: GlobeHemisphereWest },
   ]},
-  { title: 'ADMINISTRATION', items: [
+  { title: 'ORGANIZATION', items: [
+    { label: 'Training & Awareness', to: '/training', icon: GraduationCap },
     { label: 'Access Control', to: '/access-control', icon: Lock },
-    { label: 'Audit Log', to: '/audit-log', icon: ClockCounterClockwise },
-    { label: 'Export Center', to: '/export', icon: DownloadSimple },
+    { label: 'Benchmarking & Maturity', to: '/maturity', icon: ChartBar },
+    { label: 'Business Continuity', to: '/continuity', icon: Lifebuoy },
+  ]},
+  { title: 'SYSTEM', items: [
     { label: 'Settings', to: '/settings', icon: Gear },
-    { label: 'Stakeholder Notifications', to: '/notifications/regulatory', icon: BellRinging },
+    { label: 'AI Advisor', to: '/ai-advisor', icon: Lightbulb },
   ]},
 ]
 

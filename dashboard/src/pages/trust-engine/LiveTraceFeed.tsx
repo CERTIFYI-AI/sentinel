@@ -1,8 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import {
-  Eye, Play, Pause, Trash, Warning, Lightning, Clock,
+  Eye, Play, Pause, Warning, Lightning, Clock,
   CheckCircle, ShieldCheck, MagnifyingGlass, Funnel,
-  ArrowsClockwise, Export,
+  ArrowsClockwise, Export, Archive,
 } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
@@ -116,6 +116,8 @@ export default function LiveTraceFeed() {
   const [selectedTrace, setSelectedTrace] = useState<Trace | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [clearConfirm, setClearConfirm] = useState(false);
+  const [archivedTraces, setArchivedTraces] = useState<(Trace & { archivedAt: string })[]>([]);
+  const [viewMode, setViewMode] = useState<'active' | 'archived'>('active');
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
   const pollCountRef = useRef(0);
 
@@ -148,8 +150,11 @@ export default function LiveTraceFeed() {
   const agents = Array.from(new Set(traces.map(t => t.agent)));
 
   const handleClear = () => {
+    const now = new Date().toISOString();
+    const newArchived = traces.map(t => ({ ...t, archivedAt: now }));
+    setArchivedTraces(prev => [...newArchived, ...prev]);
     setTraces([]);
-    toast('All traces archived (moved to cold storage)', 'info');
+    toast(`${newArchived.length} traces archived to cold storage`, 'info');
     setClearConfirm(false);
   };
 
@@ -208,7 +213,7 @@ export default function LiveTraceFeed() {
               <Export size={14} className="mr-2" />Export
             </Button>
             <Button variant="outline" size="sm" onClick={() => setClearConfirm(true)} style={{ borderRadius: 0, color: 'hsl(var(--destructive))' }}>
-              <Trash size={14} className="mr-2" />Clear
+              <Archive size={14} className="mr-2" />Archive All
             </Button>
           </div>
         </div>
@@ -246,6 +251,37 @@ export default function LiveTraceFeed() {
           </Select>
         </div>
 
+        {/* View Toggle: Active / Archived */}
+        <div className="flex items-center gap-1" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+          <button
+            onClick={() => setViewMode('active')}
+            className="px-4 py-2 text-xs font-medium transition-colors"
+            style={{
+              color: viewMode === 'active' ? 'hsl(var(--brand))' : 'hsl(var(--text-4))',
+              borderBottom: viewMode === 'active' ? '2px solid hsl(var(--brand))' : '2px solid transparent',
+              background: 'transparent',
+              cursor: 'pointer',
+            }}
+          >
+            Active Traces ({traces.length})
+          </button>
+          <button
+            onClick={() => setViewMode('archived')}
+            className="px-4 py-2 text-xs font-medium transition-colors"
+            style={{
+              color: viewMode === 'archived' ? 'hsl(var(--brand))' : 'hsl(var(--text-4))',
+              borderBottom: viewMode === 'archived' ? '2px solid hsl(var(--brand))' : '2px solid transparent',
+              background: 'transparent',
+              cursor: 'pointer',
+            }}
+          >
+            <span className="inline-flex items-center gap-1.5">
+              <Archive size={13} />
+              View Archived ({archivedTraces.length})
+            </span>
+          </button>
+        </div>
+
         {/* Table */}
         <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
           <CardContent className="p-0">
@@ -253,55 +289,103 @@ export default function LiveTraceFeed() {
               <table className="w-full text-sm">
                 <thead>
                   <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                    {['ID', 'Time', 'Agent', 'Model', 'Status', 'Action', 'Latency', 'Tokens', 'Policy', 'Actions'].map(h => (
+                    {(viewMode === 'archived'
+                      ? ['ID', 'Time', 'Agent', 'Model', 'Status', 'Action', 'Latency', 'Tokens', 'Policy', 'Archived At']
+                      : ['ID', 'Time', 'Agent', 'Model', 'Status', 'Action', 'Latency', 'Tokens', 'Policy', 'Actions']
+                    ).map(h => (
                       <th key={h} className="px-3 py-3 text-left text-xs font-semibold whitespace-nowrap" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.slice(0, 50).map(trace => (
-                    <tr key={trace.id} style={{ borderBottom: '1px solid hsl(var(--border))' }} className="hover:bg-muted/30">
-                      <td className="px-3 py-2.5 text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{trace.id}</td>
-                      <td className="px-3 py-2.5">
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{timeAgo(trace.timestamp)}</span>
-                          </TooltipTrigger>
-                          <TooltipContent style={{ borderRadius: 0 }}>{fullTimestamp(trace.timestamp)}</TooltipContent>
-                        </Tooltip>
-                      </td>
-                      <td className="px-3 py-2.5 text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{trace.agent}</td>
-                      <td className="px-3 py-2.5">
-                        {trace.model === 'N/A' ? (
-                          <Badge style={{ background: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))', borderRadius: 0, fontSize: 10 }}>N/A</Badge>
-                        ) : (
-                          <span className="text-xs font-mono" style={{ color: 'hsl(var(--text-1))' }}>{trace.model}</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2.5">{statusBadge(trace.status)}</td>
-                      <td className="px-3 py-2.5">
-                        {trace.status === 'fallback' ? (
-                          <Badge style={{ background: 'hsl(25 95% 53% / 0.15)', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 10 }}>{trace.action}</Badge>
-                        ) : (
-                          <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{trace.action}</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2.5 text-xs font-mono" style={{ color: trace.latencyMs > 1000 ? 'hsl(var(--destructive))' : 'hsl(var(--text-1))' }}>
-                        {trace.latencyMs}ms
-                      </td>
-                      <td className="px-3 py-2.5 text-xs font-mono" style={{ color: 'hsl(var(--text-4))' }}>
-                        {trace.tokens > 0 ? formatNumber(trace.tokens) : '0'}
-                      </td>
-                      <td className="px-3 py-2.5 text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{trace.policyEvaluated}</td>
-                      <td className="px-3 py-2.5">
-                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { setSelectedTrace(trace); setSheetOpen(true); }}>
-                          <Eye size={14} style={{ color: 'hsl(var(--brand))' }} />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                  {filtered.length === 0 && (
-                    <tr><td colSpan={10} className="px-4 py-8 text-center text-xs" style={{ color: 'hsl(var(--text-4))' }}>No traces to display.</td></tr>
+                  {viewMode === 'active' ? (
+                    <>
+                      {filtered.slice(0, 50).map(trace => (
+                        <tr key={trace.id} style={{ borderBottom: '1px solid hsl(var(--border))' }} className="hover:bg-muted/30">
+                          <td className="px-3 py-2.5 text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{trace.id}</td>
+                          <td className="px-3 py-2.5">
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{timeAgo(trace.timestamp)}</span>
+                              </TooltipTrigger>
+                              <TooltipContent style={{ borderRadius: 0 }}>{fullTimestamp(trace.timestamp)}</TooltipContent>
+                            </Tooltip>
+                          </td>
+                          <td className="px-3 py-2.5 text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{trace.agent}</td>
+                          <td className="px-3 py-2.5">
+                            {trace.model === 'N/A' ? (
+                              <Badge style={{ background: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))', borderRadius: 0, fontSize: 10 }}>N/A</Badge>
+                            ) : (
+                              <span className="text-xs font-mono" style={{ color: 'hsl(var(--text-1))' }}>{trace.model}</span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2.5">{statusBadge(trace.status)}</td>
+                          <td className="px-3 py-2.5">
+                            {trace.status === 'fallback' ? (
+                              <Badge style={{ background: 'hsl(25 95% 53% / 0.15)', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 10 }}>{trace.action}</Badge>
+                            ) : (
+                              <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{trace.action}</span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2.5 text-xs font-mono" style={{ color: trace.latencyMs > 1000 ? 'hsl(var(--destructive))' : 'hsl(var(--text-1))' }}>
+                            {trace.latencyMs}ms
+                          </td>
+                          <td className="px-3 py-2.5 text-xs font-mono" style={{ color: 'hsl(var(--text-4))' }}>
+                            {trace.tokens > 0 ? formatNumber(trace.tokens) : '0'}
+                          </td>
+                          <td className="px-3 py-2.5 text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{trace.policyEvaluated}</td>
+                          <td className="px-3 py-2.5">
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { setSelectedTrace(trace); setSheetOpen(true); }}>
+                              <Eye size={14} style={{ color: 'hsl(var(--brand))' }} />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                      {filtered.length === 0 && (
+                        <tr><td colSpan={10} className="px-4 py-8 text-center text-xs" style={{ color: 'hsl(var(--text-4))' }}>No traces to display.</td></tr>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {archivedTraces.slice(0, 50).map(trace => (
+                        <tr key={`${trace.id}-${trace.archivedAt}`} style={{ borderBottom: '1px solid hsl(var(--border))' }} className="hover:bg-muted/30">
+                          <td className="px-3 py-2.5 text-xs font-mono" style={{ color: 'hsl(var(--text-4))' }}>{trace.id}</td>
+                          <td className="px-3 py-2.5">
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{timeAgo(trace.timestamp)}</span>
+                              </TooltipTrigger>
+                              <TooltipContent style={{ borderRadius: 0 }}>{fullTimestamp(trace.timestamp)}</TooltipContent>
+                            </Tooltip>
+                          </td>
+                          <td className="px-3 py-2.5 text-xs font-medium" style={{ color: 'hsl(var(--text-4))' }}>{trace.agent}</td>
+                          <td className="px-3 py-2.5">
+                            {trace.model === 'N/A' ? (
+                              <Badge style={{ background: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))', borderRadius: 0, fontSize: 10 }}>N/A</Badge>
+                            ) : (
+                              <span className="text-xs font-mono" style={{ color: 'hsl(var(--text-4))' }}>{trace.model}</span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2.5">{statusBadge(trace.status)}</td>
+                          <td className="px-3 py-2.5">
+                            <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{trace.action}</span>
+                          </td>
+                          <td className="px-3 py-2.5 text-xs font-mono" style={{ color: 'hsl(var(--text-4))' }}>
+                            {trace.latencyMs}ms
+                          </td>
+                          <td className="px-3 py-2.5 text-xs font-mono" style={{ color: 'hsl(var(--text-4))' }}>
+                            {trace.tokens > 0 ? formatNumber(trace.tokens) : '0'}
+                          </td>
+                          <td className="px-3 py-2.5 text-xs font-mono" style={{ color: 'hsl(var(--text-4))' }}>{trace.policyEvaluated}</td>
+                          <td className="px-3 py-2.5 text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+                            {fullTimestamp(trace.archivedAt)}
+                          </td>
+                        </tr>
+                      ))}
+                      {archivedTraces.length === 0 && (
+                        <tr><td colSpan={10} className="px-4 py-8 text-center text-xs" style={{ color: 'hsl(var(--text-4))' }}>No archived traces.</td></tr>
+                      )}
+                    </>
                   )}
                 </tbody>
               </table>
@@ -315,9 +399,9 @@ export default function LiveTraceFeed() {
           onClose={() => setClearConfirm(false)}
           onConfirm={handleClear}
           type="danger"
-          title="Clear All Traces"
-          message={<p>Clear all <strong>{traces.length}</strong> traces? This action cannot be undone. Traces will be archived to cold storage per retention policy (7 years).</p>}
-          confirmLabel="Clear All"
+          title="Archive All Traces"
+          message={<p>Archive all <strong>{traces.length}</strong> traces? Traces will be moved to cold storage per retention policy (7 years).</p>}
+          confirmLabel="Archive All"
         />
 
         {/* Trace Detail Sheet */}
