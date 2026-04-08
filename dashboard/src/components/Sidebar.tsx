@@ -13,6 +13,7 @@ import {
   ClockCounterClockwise, DownloadSimple, BellRinging,
   ClipboardText, ShieldWarning, GraduationCap, Lifebuoy, CalendarBlank,
   FileMagnifyingGlass, FlowArrow,
+  ChartPieSlice, Scroll,
 } from '@phosphor-icons/react'
 import { cn } from '../lib/utils'
 import { useTheme } from '../providers/ThemeProvider'
@@ -41,6 +42,7 @@ interface NavSection {
 const NAV: NavSection[] = [
   { title: 'OVERVIEW', items: [
     { label: 'Dashboard', to: '/overview', icon: SquaresFour },
+    { label: 'Reporting', to: '/reporting', icon: ChartPieSlice },
   ]},
   { title: 'AI GOVERNANCE', items: [
     { label: 'Model Inventory', to: '/models/inventory', icon: Robot, children: [
@@ -49,6 +51,9 @@ const NAV: NavSection[] = [
     { label: 'Trust Engine', to: '/trust-engine', icon: Gauge, children: [
       { label: 'Guardrails', to: '/trust-engine/guardrails' },
       { label: 'Live Traces', to: '/trust-engine/traces' },
+      { label: 'Cost & Tokens', to: '/trust-engine/costs' },
+      { label: 'Fallback Log', to: '/trust-engine/fallback' },
+      { label: 'Tool Monitor', to: '/trust-engine/tools' },
       { label: 'Configuration', to: '/trust-engine/config' },
     ]},
     { label: 'Agent Discovery', to: '/agents', icon: Brain, badge: 12, children: [
@@ -56,30 +61,74 @@ const NAV: NavSection[] = [
     ]},
     { label: 'Bias Audits', to: '/bias-audits', icon: Scales },
     { label: 'AI Impact Assessments', to: '/aiia', icon: FileMagnifyingGlass },
+    { label: 'Explainability', to: '/explainability', icon: Lightbulb },
+    { label: 'Use Cases', to: '/use-cases', icon: Briefcase },
+  ]},
+  { title: 'SECURITY', items: [
+    { label: 'Security Overview', to: '/security', icon: ShieldCheck, children: [
+      { label: 'Threat Feed', to: '/security/threats' },
+      { label: 'Scan Center', to: '/security/scans' },
+      { label: 'Attack Surface', to: '/security/attack-surface' },
+      { label: 'Vulnerabilities', to: '/security/vulnerabilities' },
+      { label: 'Red Team Lab', to: '/security/red-team' },
+      { label: 'Policy Firewall', to: '/security/policies' },
+      { label: 'Keys Vault', to: '/security/keys' },
+      { label: 'Model Arena', to: '/security/model-arena' },
+      { label: 'Reports', to: '/security/reports' },
+    ]},
   ]},
   { title: 'COMPLIANCE', items: [
+    { label: 'Compliance Dashboard', to: '/compliance', icon: ChartBar },
     { label: 'Frameworks', to: '/frameworks', icon: BookOpen },
     { label: 'Controls', to: '/compliance/controls', icon: ListChecks },
     { label: 'Audit Management', to: '/audits', icon: ClipboardText },
-    { label: 'Evidence Sync', to: '/evidence-sync', icon: FolderOpen },
+    { label: 'Evidence', to: '/evidence-sync', icon: FolderOpen, children: [
+      { label: 'Evidence Hub', to: '/compliance/evidence' },
+      { label: 'Evidence Vault', to: '/evidence-vault' },
+    ]},
+    { label: 'Gap Analysis', to: '/compliance/gap-analysis', icon: Target },
+    { label: 'Conformity Assessment', to: '/conformity', icon: Scan },
+    { label: 'Policies', to: '/policies', icon: Scroll, children: [
+      { label: 'Policy Templates', to: '/compliance/policy-templates' },
+      { label: 'Policy Editor', to: '/policy-editor' },
+    ]},
     { label: 'Compliance Calendar', to: '/calendar', icon: CalendarBlank },
     { label: 'Document Management', to: '/documents', icon: FileText },
     { label: 'Audit Trail', to: '/audit-trail', icon: ClockCounterClockwise },
   ]},
   { title: 'RISK & INCIDENTS', items: [
-    { label: 'Risk Register', to: '/risks', icon: Warning },
-    { label: 'Incidents', to: '/risk/incidents', icon: ShieldWarning },
+    { label: 'Risk Register', to: '/risks', icon: Warning, children: [
+      { label: 'Risk Matrix', to: '/risk/matrix' },
+    ]},
+    { label: 'Incidents', to: '/risk/incidents', icon: ShieldWarning, children: [
+      { label: 'Incident Workflow', to: '/incident-workflow' },
+      { label: 'Remediation', to: '/risk/remediation' },
+      { label: 'Remediation Tracker', to: '/remediation-tracker' },
+    ]},
     { label: 'Exception Management', to: '/exceptions', icon: ShieldWarning },
+  ]},
+  { title: 'EVALUATIONS', items: [
+    { label: 'Quality Metrics', to: '/evals', icon: Gauge, children: [
+      { label: 'Eval Techniques', to: '/evals/techniques' },
+      { label: 'Benchmark', to: '/evals/benchmark' },
+    ]},
+    { label: 'Datasets', to: '/datasets', icon: Database },
+    { label: 'Data Governance', to: '/data-governance', icon: Table },
   ]},
   { title: 'OPERATIONS', items: [
     { label: 'HITL Reviews', to: '/hitl', icon: UserCircleCheck, badge: 3 },
     { label: 'Vendors', to: '/vendors', icon: BuildingOffice },
     { label: 'Regulatory Radar', to: '/reg-radar', icon: GlobeHemisphereWest },
     { label: 'Approval Workflows', to: '/workflows', icon: FlowArrow },
+    { label: 'Notifications', to: '/notifications', icon: Bell },
+    { label: 'Export Center', to: '/export', icon: DownloadSimple },
   ]},
   { title: 'ORGANIZATION', items: [
     { label: 'Training & Awareness', to: '/training', icon: GraduationCap },
-    { label: 'Access Control', to: '/access-control', icon: Lock },
+    { label: 'Access Control', to: '/access-control', icon: Lock, children: [
+      { label: 'Role Manager', to: '/access-control/roles' },
+      { label: 'User Manager', to: '/access-control/users' },
+    ]},
     { label: 'Benchmarking & Maturity', to: '/maturity', icon: ChartBar },
     { label: 'Business Continuity', to: '/continuity', icon: Lifebuoy },
   ]},
