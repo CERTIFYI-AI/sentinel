@@ -423,6 +423,7 @@ export default function LiveTraceFeed() {
                   </TabsList>
 
                   <TabsContent value="spans" className="space-y-4 mt-4">
+                    {/* Metadata grid */}
                     <div className="grid grid-cols-2 gap-3">
                       <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                         <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Agent</span>
@@ -453,6 +454,60 @@ export default function LiveTraceFeed() {
                         <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-1))' }}>{fullTimestamp(selectedTrace.timestamp)}</p>
                       </div>
                     </div>
+
+                    {/* Span Waterfall */}
+                    {(() => {
+                      const total = selectedTrace.latencyMs;
+                      const isBlocked = selectedTrace.status === 'blocked';
+                      const spans: { name: string; start: number; dur: number; color: string; ok: boolean }[] = isBlocked
+                        ? [
+                            { name: 'Input validation', start: 0, dur: Math.round(total * 0.08), color: 'hsl(var(--s-in-tx))', ok: true },
+                            { name: selectedTrace.action, start: Math.round(total * 0.08), dur: Math.round(total * 0.92), color: 'hsl(var(--destructive))', ok: false },
+                          ]
+                        : [
+                            { name: 'Input validation', start: 0, dur: Math.round(total * 0.05), color: 'hsl(var(--s-ok-tx))', ok: true },
+                            { name: 'Policy check', start: Math.round(total * 0.05), dur: Math.round(total * 0.12), color: 'hsl(var(--s-ok-tx))', ok: true },
+                            { name: 'Guardrail eval', start: Math.round(total * 0.17), dur: Math.round(total * 0.08), color: 'hsl(var(--s-ok-tx))', ok: true },
+                            { name: 'Model inference', start: Math.round(total * 0.25), dur: Math.round(total * 0.60), color: 'hsl(var(--brand))', ok: true },
+                            { name: 'Output validation', start: Math.round(total * 0.85), dur: Math.round(total * 0.09), color: 'hsl(var(--s-ok-tx))', ok: true },
+                            { name: 'Response emit', start: Math.round(total * 0.94), dur: Math.round(total * 0.06), color: 'hsl(var(--s-ok-tx))', ok: true },
+                          ];
+                      return (
+                        <div style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', padding: '14px 16px', borderRadius: 0 }}>
+                          <p className="text-xs font-semibold mb-4" style={{ color: 'hsl(var(--text-1))' }}>
+                            Span Waterfall — {total}ms total
+                          </p>
+                          <div className="space-y-2">
+                            {spans.map((sp, idx) => {
+                              const leftPct = (sp.start / total) * 100;
+                              const widthPct = Math.max((sp.dur / total) * 100, 1.5);
+                              return (
+                                <div key={idx} className="flex items-center gap-3">
+                                  <span className="text-xs font-mono flex-shrink-0" style={{ width: 130, color: 'hsl(var(--text-3))', textAlign: 'right' }}>{sp.name}</span>
+                                  <div className="flex-1 relative" style={{ height: 18, background: 'hsl(var(--bg-muted))' }}>
+                                    <div style={{
+                                      position: 'absolute',
+                                      left: `${leftPct}%`,
+                                      width: `${widthPct}%`,
+                                      top: 0,
+                                      height: '100%',
+                                      background: sp.color,
+                                      opacity: 0.85,
+                                    }} />
+                                  </div>
+                                  <span className="text-xs font-mono flex-shrink-0" style={{ width: 48, color: sp.ok ? 'hsl(var(--text-4))' : 'hsl(var(--destructive))' }}>{sp.dur}ms</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <div className="flex items-center gap-4 mt-4 pt-3" style={{ borderTop: '1px solid hsl(var(--border))' }}>
+                            <div className="flex items-center gap-1.5"><div style={{ width: 10, height: 10, background: 'hsl(var(--brand))' }} /><span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Model</span></div>
+                            <div className="flex items-center gap-1.5"><div style={{ width: 10, height: 10, background: 'hsl(var(--s-ok-tx))' }} /><span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Pass</span></div>
+                            <div className="flex items-center gap-1.5"><div style={{ width: 10, height: 10, background: 'hsl(var(--destructive))' }} /><span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Blocked</span></div>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </TabsContent>
 
                   <TabsContent value="io" className="space-y-4 mt-4">

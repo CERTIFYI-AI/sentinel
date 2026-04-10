@@ -11,6 +11,18 @@
   --text-2:      240 6% 22%;
   --text-3:      240 4% 44%;
   --text-4:      240 4% 62%;
+
+  /* Aliases for globals.css compatibility */
+  --text-primary:    var(--text-1);
+  --text-secondary:  var(--text-2);
+  --text-tertiary:   var(--text-3);
+  --text-muted:      var(--text-4);
+  --bg-surface-raised:  var(--bg-raised);
+  --bg-surface-sunken:  var(--bg-sunken);
+  --border-subtle:   var(--bg-muted);
+  --border-default:  var(--border);
+  --border-strong:   var(--border-mid);
+  --interactive-focus: var(--brand);
   --brand:       142 47% 38%;
   --brand-hover: 142 47% 31%;
   --brand-subtle:142 47% 96%;

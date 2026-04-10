@@ -643,6 +643,55 @@ export default function Overview() {
         </Card>
       </div>
 
+      {/* Last 7 AI Incidents */}
+      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+        <CardHeader className="pb-3 flex flex-row items-center justify-between">
+          <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+            Recent AI Incidents
+          </CardTitle>
+          <Link to="/incidents">
+            <Button variant="ghost" size="sm" style={{ fontSize: 11, padding: '2px 8px' }}>
+              View All <ArrowRight size={12} className="ml-1" />
+            </Button>
+          </Link>
+        </CardHeader>
+        <CardContent className="p-0">
+          <table className="w-full">
+            <thead style={{ background: 'hsl(var(--bg-muted))' }}>
+              <tr>
+                {['ID', 'Title', 'Type', 'Severity', 'Status', 'Agent', 'Reported'].map(h => (
+                  <th key={h} className="text-left px-4 py-2 text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {INCIDENTS.slice(0, 7).map(inc => {
+                const sc = severityColor(inc.severity);
+                const stColor = inc.status === 'open' ? 'hsl(var(--s-er-tx))' : inc.status === 'investigating' ? 'hsl(var(--s-wn-tx))' : inc.status === 'resolved' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-4))';
+                const stBg = inc.status === 'open' ? 'hsl(0 72% 51% / 0.10)' : inc.status === 'investigating' ? 'hsl(45 93% 47% / 0.10)' : inc.status === 'resolved' ? 'hsl(142 71% 45% / 0.10)' : 'hsl(var(--bg-muted))';
+                return (
+                  <tr key={inc.id} style={{ borderTop: '1px solid hsl(var(--border))' }}>
+                    <td className="px-4 py-2.5 text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{inc.id}</td>
+                    <td className="px-4 py-2.5">
+                      <span className="text-xs font-medium line-clamp-1" style={{ color: 'hsl(var(--text-1))', maxWidth: 260, display: 'block' }}>{inc.title}</span>
+                    </td>
+                    <td className="px-4 py-2.5 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{inc.category}</td>
+                    <td className="px-4 py-2.5">
+                      <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0, fontSize: 10 }}>{inc.severity}</Badge>
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <Badge style={{ background: stBg, color: stColor, borderRadius: 0, fontSize: 10, textTransform: 'capitalize' }}>{inc.status}</Badge>
+                    </td>
+                    <td className="px-4 py-2.5 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{inc.linkedModel ?? '—'}</td>
+                    <td className="px-4 py-2.5 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{formatDate(inc.reportedDate)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </CardContent>
+      </Card>
+
       {/* Bottom row: Activity Feed + Overdue Tasks */}
       <div className="grid grid-cols-2 gap-4">
         {/* Recent Activity */}
