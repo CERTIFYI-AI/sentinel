@@ -37,7 +37,43 @@ Frontend env vars:
 - `data/` — Local data files
 - `migrations/` — Database migration files
 
+## Dashboard Architecture
+
+### Design System
+- **Tokens**: `dashboard/src/styles/tokens.css` — all HSL CSS vars: `--brand`, `--brand-hover`, `--brand-subtle`, status semantics, surface layers
+- **Accent Colors**: 6 themes (emerald/default, blue, purple, teal, orange, rose) as CSS classes `.accent-*` on `:root`; persisted in localStorage via `dashboard/src/store/accentStore.ts`
+- **Dark/Light mode**: via ThemeProvider in `dashboard/src/providers/theme.tsx`
+- **Fonts**: Outfit (body), monospace for code/IDs
+
+### Sidebar
+- `dashboard/src/components/Sidebar.tsx` — single NAV array drives all sections
+- Sections: OVERVIEW, AI GOVERNANCE, SECURITY, COMPLIANCE, RISK & INCIDENTS, EVALUATIONS, OPERATIONS, ORGANIZATION, SYSTEM
+
+### Seed Data (canonical source)
+- `dashboard/src/data/seed.ts` — all mock/seed data arrays; every page imports from here
+- Key exports: MODELS, AGENTS, DATASETS, VENDORS, RISKS, BIAS_AUDITS, INCIDENTS, EVIDENCE, CONTROLS, FRAMEWORKS, POLICIES, USE_CASES, THREATS, GUARDRAIL_EVENTS, PROMPT_REGISTRY, HITL_ITEMS, TRACES, FALLBACK_LOG, DATA_GOVERNANCE, NOTIFICATION_TEMPLATES, etc.
+
+### Key Pages (all with full CRUD)
+| Page | Route | Notes |
+|------|-------|-------|
+| Overview | `/overview` | Executive dashboard |
+| Tasks | `/tasks` | Task board + kanban |
+| Prompt Registry | `/prompt-registry` | Version-controlled prompts |
+| Vendor Registry | `/vendors` | CRUD + questionnaire + detail |
+| Dataset Registry | `/datasets` | CRUD + detail |
+| Incident Log | `/risk/incidents` | Full CRUD + workflow |
+| Bias Audits | `/bias-audits` | Wizard + results |
+| Evidence Sync | `/evidence-sync` | Evidence CRUD |
+| Use Cases | `/use-cases` | CRUD |
+| Compliance Controls | `/compliance/controls` | CRUD |
+| HITL Reviews | `/hitl` | Review center + detail |
+| Trust Engine | `/trust-engine` | Guardrails, traces, costs, config |
+| Access Control | `/access-control` | RBAC: roles + users |
+| Agent Discovery | `/agents` | + Shadow AI |
+
 ## Notes
 
 - The app runs in degraded mode without DATABASE_URL (uses SQLite) and without REDIS_URL (in-memory circuit breaker)
 - Several routers (auth, notifications, dashboard) require asyncpg/PostgreSQL to be available
+- WebSocket events at `ws://localhost:8000/api/events/ws` — requires auth token; connection errors in dev are expected
+- `CHAT_SAMPLES` error in AiAdvisor is a pre-existing issue unrelated to core GRC functionality
