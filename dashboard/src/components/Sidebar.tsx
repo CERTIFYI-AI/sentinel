@@ -265,19 +265,23 @@ export default function Sidebar() {
 
   return (
     <aside className={cn(
-      'flex flex-col h-screen bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] border-r border-[hsl(var(--border))] transition-all duration-200 flex-shrink-0',
+      'flex flex-col h-screen bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] border-r border-[hsl(var(--border))] transition-all duration-200 flex-shrink-0 overflow-hidden',
       collapsed ? 'w-14' : 'w-[220px]'
     )}>
       {/* Logo + Toggle */}
       {collapsed ? (
-        <div className='flex flex-col items-center h-14 border-b border-[hsl(var(--border))] justify-center gap-1'>
+        <div
+          className='flex flex-col items-center border-b border-[hsl(var(--border))] flex-shrink-0'
+          style={{ minHeight: '56px' }}
+        >
           <button
             onClick={toggleSidebar}
-            className='flex items-center justify-center w-8 h-8 text-[hsl(var(--text-3))] hover:text-[hsl(var(--brand))] hover:bg-[hsl(var(--bg-raised))] transition-colors'
+            className='flex flex-col items-center justify-center w-full gap-1 py-3 text-[hsl(var(--text-3))] hover:text-[hsl(var(--brand))] hover:bg-[hsl(var(--bg-raised))] transition-colors group'
             title='Expand sidebar'
             aria-label='Expand sidebar'
           >
-            <List size={16}/>
+            <List size={18} className='group-hover:text-[hsl(var(--brand))]'/>
+            <span className='text-[9px] font-semibold uppercase tracking-wider opacity-60 group-hover:opacity-100'>Menu</span>
           </button>
         </div>
       ) : (

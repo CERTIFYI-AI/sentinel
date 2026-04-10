@@ -35,13 +35,43 @@ const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
   Incomplete: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
 }
 
+const BLANK_AIBOM = { model: '', version: '', format: 'Sentinel-AIBOM' as const, baseModel: '', owner: '' }
+
 export default function AibomRegistry() {
+  const [records, setRecords] = useState<AIBOMRecord[]>(SEED)
   const [selected, setSelected] = useState<AIBOMRecord | null>(null)
   const [search, setSearch] = useState('')
+  const [showCreate, setShowCreate] = useState(false)
+  const [form, setForm] = useState(BLANK_AIBOM)
+  const [deleteTarget, setDeleteTarget] = useState<AIBOMRecord | null>(null)
 
-  const filtered = SEED.filter(r =>
+  const filtered = records.filter(r =>
     r.modelName.toLowerCase().includes(search.toLowerCase()) || r.id.toLowerCase().includes(search.toLowerCase())
   )
+
+  function handleCreate() {
+    if (!form.model || !form.version || !form.baseModel) { toast.error('Model name, version, and base model are required'); return }
+    const newR: AIBOMRecord = {
+      id: `AIBOM-${String(records.length + 1).padStart(3, '0')}`,
+      modelName: form.model, modelVersion: form.version, format: form.format as AIBOMRecord['format'],
+      generatedDate: '2026-04-10', status: 'Pending Verification', baseModel: form.baseModel,
+      baseModelProvider: 'Internal', trainingDatasets: [], frameworks: [], dependencies: [],
+      vulnerabilities: 0, licenseConflicts: 0, sha256: 'PENDING',
+      attestedBy: 'Pending', owner: form.owner || 'ML Engineering',
+    }
+    setRecords(p => [newR, ...p])
+    setShowCreate(false)
+    setForm(BLANK_AIBOM)
+    toast.success(`AIBOM ${newR.id} created for ${newR.modelName} ${newR.modelVersion} — pending verification`)
+  }
+
+  function handleDelete() {
+    if (!deleteTarget) return
+    setRecords(p => p.filter(r => r.id !== deleteTarget.id))
+    if (selected?.id === deleteTarget.id) setSelected(null)
+    toast.success(`AIBOM ${deleteTarget.id} deleted`)
+    setDeleteTarget(null)
+  }
 
   return (
     <div className="space-y-5">

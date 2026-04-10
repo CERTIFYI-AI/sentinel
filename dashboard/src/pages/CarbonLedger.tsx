@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Leaf, Export, Plus, Eye, X, Warning, Lightbulb, ArrowDown, ArrowUp } from '@phosphor-icons/react'
+import { Leaf, Export, Plus, Eye, X, Warning, Lightbulb, ArrowDown, ArrowUp, Trash } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, ReferenceLine } from 'recharts'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 
 interface CarbonEntry {
   id: string
@@ -57,14 +58,58 @@ function efficiencyColor(score: number) {
   return '#ef4444'
 }
 
+const BLANK_ENTRY = {
+  model: '', period: '2026-Q1', trainingEmissions: '', inferenceEmissions: '',
+  energyKwh: '', renewablePercent: '', computeProvider: '', region: '', offset: '',
+}
+
 export default function CarbonLedger() {
+  const [entries, setEntries] = useState<CarbonEntry[]>(SEED)
   const [selected, setSelected] = useState<CarbonEntry | null>(null)
   const [budgetThreshold, setBudgetThreshold] = useState(100)
   const [editingBudget, setEditingBudget] = useState(false)
   const [budgetInput, setBudgetInput] = useState('100')
   const [dismissedRecs, setDismissedRecs] = useState<Set<number>>(new Set())
+  const [showCreate, setShowCreate] = useState(false)
+  const [form, setForm] = useState(BLANK_ENTRY)
+  const [deleteTarget, setDeleteTarget] = useState<CarbonEntry | null>(null)
 
-  const q1Data = SEED.filter(e => e.period === '2026-Q1')
+  function handleCreate() {
+    if (!form.model || !form.period || !form.computeProvider) {
+      toast.error('Please fill in all required fields')
+      return
+    }
+    const training = Number(form.trainingEmissions) || 0
+    const inference = Number(form.inferenceEmissions) || 0
+    const total = training + inference
+    const offset = Number(form.offset) || 0
+    const kwh = Number(form.energyKwh) || 0
+    const renewable = Number(form.renewablePercent) || 0
+    const eff = kwh > 0 ? Math.min(100, Math.max(0, Math.round(renewable * 0.5 + (1 - total / 200) * 50))) : 50
+    const newE: CarbonEntry = {
+      id: `CLG-${String(entries.length + 1).padStart(3, '0')}`,
+      model: form.model, period: form.period,
+      trainingEmissions: training, inferenceEmissions: inference,
+      totalEmissions: total, energyKwh: kwh,
+      renewablePercent: renewable, computeProvider: form.computeProvider,
+      region: form.region || 'US', offset, netEmissions: total - offset,
+      verified: false, efficiencyScore: eff,
+    }
+    setEntries(p => [newE, ...p])
+    setShowCreate(false)
+    setForm(BLANK_ENTRY)
+    toast.success(`Carbon entry logged for ${newE.model} — ${newE.totalEmissions.toFixed(1)} tCO₂e total`)
+  }
+
+  function handleDelete() {
+    if (!deleteTarget) return
+    setEntries(p => p.filter(e => e.id !== deleteTarget.id))
+    toast.success(`Carbon entry ${deleteTarget.id} deleted`)
+    setDeleteTarget(null)
+    if (selected?.id === deleteTarget.id) setSelected(null)
+  }
+
+  const q1Data = entries.filter(e => e.period === '2026-Q1')
   const totalNet = q1Data.reduce((s, e) => s + e.netEmissions, 0)
   const totalOffset = q1Data.reduce((s, e) => s + e.offset, 0)
   const avgRenewable = Math.round(q1Data.reduce((s, e) => s + e.renewablePercent, 0) / q1Data.length)
@@ -89,7 +134,7 @@ export default function CarbonLedger() {
         </div>
         <div className="flex gap-2">
           <button onClick={() => toast.success('Exported carbon report')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]"><Export size={14} /> Export</button>
-          <button onClick={() => toast.info('Log carbon entry')} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90"><Plus size={14} /> Log Entry</button>
+          <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90"><Plus size={14} /> Log Entry</button>
         </div>
       </div>
 
@@ -247,13 +292,13 @@ export default function CarbonLedger() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
-              {['ID', 'Model', 'Period', 'Training', 'Inference', 'Total', 'Energy (kWh)', 'Renewable', 'Efficiency', 'Offset', 'Net', 'Verified', ''].map(h => (
-                <th key={h} className="text-left px-3 py-3 text-[11px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wide">{h}</th>
+              {['ID', 'Model', 'Period', 'Training', 'Inference', 'Total', 'Energy (kWh)', 'Renewable', 'Efficiency', 'Offset', 'Net', 'Verified', 'View', 'Del'].map(h => (
+                <th key={h} className="text-left px-3 py-3 text-[11px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wide">{h === 'View' || h === 'Del' ? '' : h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {SEED.map(e => (
+            {entries.map(e => (
               <tr key={e.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))] cursor-pointer" onClick={() => setSelected(e)}>
                 <td className="px-3 py-3 font-mono text-xs text-[hsl(var(--brand))]">{e.id}</td>
                 <td className="px-3 py-3 text-xs font-medium text-[hsl(var(--text-1))] max-w-[120px] truncate">{e.model}</td>
@@ -277,6 +322,9 @@ export default function CarbonLedger() {
                   <span className="text-[10px] px-1.5 py-0.5" style={e.verified ? { background: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' } : { background: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)' }}>{e.verified ? 'Verified' : 'Pending'}</span>
                 </td>
                 <td className="px-3 py-3"><Eye size={14} className="text-[hsl(var(--text-4))]" /></td>
+                <td className="px-3 py-3">
+                  <button onClick={ev => { ev.stopPropagation(); setDeleteTarget(e) }} className="p-1 text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))]"><Trash size={13} /></button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -323,6 +371,80 @@ export default function CarbonLedger() {
           </div>
         </div>
       )}
+
+      {/* Log Entry Modal */}
+      {showCreate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowCreate(false)} />
+          <div className="relative bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] w-full max-w-lg mx-4 shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
+              <h2 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2">
+                <Leaf size={15} className="text-[hsl(var(--s-ok-tx))]" />
+                Log Carbon Entry
+              </h2>
+              <button onClick={() => setShowCreate(false)} className="text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-2))]"><X size={16} /></button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Model *</label>
+                  <select value={form.model} onChange={e => setForm(p => ({ ...p, model: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
+                    <option value="">Select model...</option>
+                    {['Credit Scoring Model v2.1', 'Loan Approval Model v3.0', 'Fraud Detection Engine v4.2', 'Customer Churn Predictor v2.3'].map(m => <option key={m}>{m}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Period *</label>
+                  <select value={form.period} onChange={e => setForm(p => ({ ...p, period: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
+                    {['2026-Q1', '2026-Q2', '2025-Q4', '2025-Q3'].map(p => <option key={p}>{p}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Training Emissions (tCO₂e)</label>
+                  <input type="number" step="0.1" min={0} value={form.trainingEmissions} onChange={e => setForm(p => ({ ...p, trainingEmissions: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. 48.2" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Inference Emissions (tCO₂e)</label>
+                  <input type="number" step="0.1" min={0} value={form.inferenceEmissions} onChange={e => setForm(p => ({ ...p, inferenceEmissions: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. 8.9" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Energy (kWh)</label>
+                  <input type="number" min={0} value={form.energyKwh} onChange={e => setForm(p => ({ ...p, energyKwh: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. 22100" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Renewable Energy %</label>
+                  <input type="number" min={0} max={100} value={form.renewablePercent} onChange={e => setForm(p => ({ ...p, renewablePercent: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. 72" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Compute Provider *</label>
+                  <select value={form.computeProvider} onChange={e => setForm(p => ({ ...p, computeProvider: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
+                    <option value="">Select provider...</option>
+                    {['AWS us-east-1', 'AWS us-west-2', 'Azure East US', 'GCP us-central1', 'OpenAI API', 'On-premise'].map(p => <option key={p}>{p}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Carbon Offset (tCO₂e)</label>
+                  <input type="number" step="0.1" min={0} value={form.offset} onChange={e => setForm(p => ({ ...p, offset: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. 20" />
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
+              <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">Cancel</button>
+              <button onClick={handleCreate} className="px-4 py-2 text-sm font-medium bg-[hsl(var(--brand))] text-white hover:opacity-90">Log Entry</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={o => !o && setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Delete carbon entry?"
+        description={`Remove ${deleteTarget?.id} for ${deleteTarget?.model}. This cannot be undone.`}
+        isDestructive
+        confirmLabel="Delete"
+      />
     </div>
   )
 }

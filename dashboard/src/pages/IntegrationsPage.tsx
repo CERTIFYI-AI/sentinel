@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Plugs, Plus, Eye, X, CheckCircle, Warning, ArrowClockwise } from '@phosphor-icons/react'
+import { Plugs, Plus, X, Warning, ArrowClockwise, Trash } from '@phosphor-icons/react'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 
 type IntegrationStatus = 'Connected' | 'Disconnected' | 'Error' | 'Pending Setup'
 type IntegrationCategory = 'AI Provider' | 'Data Source' | 'Compliance Tool' | 'Monitoring' | 'Identity' | 'Notification' | 'Ticketing'
@@ -56,18 +57,46 @@ const CAT_COLORS: Record<IntegrationCategory, string> = {
   Ticketing: 'hsl(var(--text-3))',
 }
 
+const BLANK_INT = { name: '', category: 'AI Provider' as IntegrationCategory, description: '', authMethod: 'API Key', apiVersion: '', }
+
 export default function IntegrationsPage() {
+  const [integrations, setIntegrations] = useState<Integration[]>(SEED)
   const [selected, setSelected] = useState<Integration | null>(null)
   const [catFilter, setCatFilter] = useState<string>('All')
+  const [showCreate, setShowCreate] = useState(false)
+  const [form, setForm] = useState(BLANK_INT)
+  const [deleteTarget, setDeleteTarget] = useState<Integration | null>(null)
 
-  const filtered = catFilter === 'All' ? SEED : SEED.filter(i => i.category === catFilter)
-  const categories = ['All', ...Array.from(new Set(SEED.map(i => i.category)))]
+  const filtered = catFilter === 'All' ? integrations : integrations.filter(i => i.category === catFilter)
+  const categories = ['All', ...Array.from(new Set(integrations.map(i => i.category)))]
 
   const stats = {
-    connected: SEED.filter(i => i.status === 'Connected').length,
-    errors: SEED.filter(i => i.status === 'Error').length,
-    pending: SEED.filter(i => i.status === 'Pending Setup').length,
-    total: SEED.length,
+    connected: integrations.filter(i => i.status === 'Connected').length,
+    errors: integrations.filter(i => i.status === 'Error').length,
+    pending: integrations.filter(i => i.status === 'Pending Setup').length,
+    total: integrations.length,
+  }
+
+  function handleCreate() {
+    if (!form.name || !form.category) { toast.error('Name and category are required'); return }
+    const newInt: Integration = {
+      id: `INT-${String(integrations.length + 1).padStart(3, '0')}`,
+      name: form.name, category: form.category, description: form.description || 'No description provided.',
+      status: 'Pending Setup', dataFlows: [], authMethod: form.authMethod || 'API Key',
+      apiVersion: form.apiVersion || undefined, connectedDate: undefined, healthCheck: undefined,
+    }
+    setIntegrations(p => [...p, newInt])
+    setShowCreate(false)
+    setForm(BLANK_INT)
+    toast.success(`${newInt.name} integration added — complete setup to connect`)
+  }
+
+  function handleDelete() {
+    if (!deleteTarget) return
+    setIntegrations(p => p.filter(i => i.id !== deleteTarget.id))
+    if (selected?.id === deleteTarget.id) setSelected(null)
+    toast.success(`${deleteTarget.name} integration removed`)
+    setDeleteTarget(null)
   }
 
   return (
@@ -80,7 +109,7 @@ export default function IntegrationsPage() {
           </h1>
           <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">Connected systems — AI providers, data sources, monitoring, identity, and notification services</p>
         </div>
-        <button onClick={() => toast.info('Integration marketplace')} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90"><Plus size={14} /> Add Integration</button>
+        <button onClick={() => { setForm(BLANK_INT); setShowCreate(true) }} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90"><Plus size={14} /> Add Integration</button>
       </div>
 
       <div className="grid grid-cols-4 gap-4">
@@ -132,13 +161,14 @@ export default function IntegrationsPage() {
             )}
             <div className="flex items-center justify-between">
               <p className="text-[10px] text-[hsl(var(--text-4))]">{int.lastSync ? `Last sync: ${int.lastSync}` : 'Not connected'}</p>
-              <div className="flex gap-1">
+              <div className="flex gap-1 items-center">
                 {int.status === 'Error' && (
                   <button onClick={e => { e.stopPropagation(); toast.success(`${int.name} reconnected`) }} className="text-[10px] px-2 py-0.5 bg-[hsl(var(--brand))] text-white hover:opacity-90">Reconnect</button>
                 )}
                 {int.status === 'Pending Setup' && (
                   <button onClick={e => { e.stopPropagation(); toast.info(`Setting up ${int.name}`) }} className="text-[10px] px-2 py-0.5 bg-[hsl(var(--brand))] text-white hover:opacity-90">Set Up</button>
                 )}
+                <button onClick={e => { e.stopPropagation(); setDeleteTarget(int) }} className="p-1 text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))]"><Trash size={12} /></button>
               </div>
             </div>
           </div>
@@ -178,10 +208,63 @@ export default function IntegrationsPage() {
             <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
               <button onClick={() => toast.success(`${selected.name} synced`)} className="flex-1 flex items-center justify-center gap-1.5 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]"><ArrowClockwise size={14} /> Sync Now</button>
               {selected.status === 'Error' && <button onClick={() => { toast.success(`${selected.name} reconnected`); setSelected(null) }} className="flex-1 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90">Reconnect</button>}
+              <button onClick={() => { setDeleteTarget(selected); setSelected(null) }} className="px-3 py-2 border border-[hsl(var(--destructive)/0.3)] text-[hsl(var(--destructive))] text-sm hover:bg-[hsl(0_72%_51%/0.06)]"><Trash size={14} /></button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Add Integration Modal */}
+      {showCreate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowCreate(false)} />
+          <div className="relative bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] w-full max-w-md mx-4 shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
+              <h2 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2">
+                <Plugs size={15} className="text-[hsl(var(--brand))]" />
+                Add Integration
+              </h2>
+              <button onClick={() => setShowCreate(false)}><X size={16} className="text-[hsl(var(--text-4))]" /></button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Integration Name *</label>
+                <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Vertex AI, Datadog, ServiceNow..." className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+              </div>
+              <div>
+                <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Category *</label>
+                <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value as IntegrationCategory }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
+                  {['AI Provider', 'Data Source', 'Compliance Tool', 'Monitoring', 'Identity', 'Notification', 'Ticketing'].map(c => <option key={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Auth Method</label>
+                <select value={form.authMethod} onChange={e => setForm(p => ({ ...p, authMethod: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
+                  {['API Key', 'OAuth 2.0', 'Service Account Token', 'mTLS Certificate', 'IAM Role', 'SAML 2.0', 'Integration Key'].map(a => <option key={a}>{a}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Description</label>
+                <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={3} placeholder="Describe what this integration is used for..." className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))] resize-none" />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
+              <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">Cancel</button>
+              <button onClick={handleCreate} className="px-4 py-2 text-sm font-medium bg-[hsl(var(--brand))] text-white hover:opacity-90">Add Integration</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={o => !o && setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Remove integration?"
+        description={`Disconnect and remove ${deleteTarget?.name}. Any data flows relying on this integration will stop.`}
+        isDestructive
+        confirmLabel="Remove"
+      />
     </div>
   )
 }

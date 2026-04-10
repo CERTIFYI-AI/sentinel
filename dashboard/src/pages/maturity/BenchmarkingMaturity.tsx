@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/ca
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import {
-  ChartBar, MagnifyingGlass, Export, TrendUp, Target, ArrowRight,
+  ChartBar, MagnifyingGlass, Export, TrendUp, Target, ArrowRight, X, CheckCircle,
 } from '@phosphor-icons/react';
 import {
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
@@ -11,6 +11,7 @@ import {
 } from 'recharts';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useChartTheme } from '../../hooks/useChartTheme';
+import { toast } from 'sonner';
 
 /* ------------------------------------------------------------------ */
 /*  Types & Constants                                                  */
@@ -76,29 +77,20 @@ function MetricTile({ label, value, sub, icon: Icon, color }: {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Inline toast                                                       */
+/*  Assessment Wizard types                                            */
 /* ------------------------------------------------------------------ */
 
-function showToast(message: string) {
-  const el = document.createElement('div');
-  Object.assign(el.style, {
-    position: 'fixed',
-    bottom: '24px',
-    right: '24px',
-    background: 'hsl(var(--bg-surface))',
-    border: '1px solid hsl(var(--border))',
-    color: 'hsl(var(--text-1))',
-    padding: '12px 20px',
-    fontSize: '13px',
-    fontFamily: 'Outfit, sans-serif',
-    zIndex: '9999',
-    borderRadius: '0',
-    boxShadow: '0 4px 12px rgba(0,0,0,.25)',
-  });
-  el.textContent = message;
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 2500);
+interface AssessmentAnswer {
+  dimensionIndex: number;
+  score: number;
 }
+
+const ASSESSMENT_QUESTIONS = DIMENSIONS.map(d => ({
+  dimension: d.dimension,
+  owner: d.owner,
+  question: `Rate the current maturity of "${d.dimension}" on a scale of 1–5.`,
+  hint: d.priority,
+}));
 
 /* ------------------------------------------------------------------ */
 /*  Helper functions                                                   */
@@ -124,6 +116,10 @@ export default function BenchmarkingMaturity() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
   const [search, setSearch] = useState('');
+  const [showAssessment, setShowAssessment] = useState(false);
+  const [assessStep, setAssessStep] = useState(0);
+  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [assessDone, setAssessDone] = useState(false);
 
   const overallCurrent = Math.round(DIMENSIONS.reduce((s, d) => s + d.current, 0) / DIMENSIONS.length);
   const dimensionsAtTarget = DIMENSIONS.filter(d => d.gap === 0).length;
@@ -157,14 +153,14 @@ export default function BenchmarkingMaturity() {
             variant="outline"
             size="sm"
             style={{ borderRadius: 0 }}
-            onClick={() => showToast('Maturity report exported')}
+            onClick={() => toast.success('Maturity report exported')}
           >
             <Export size={14} className="mr-1" /> Export Report
           </Button>
           <Button
             size="sm"
             style={{ borderRadius: 0 }}
-            onClick={() => showToast('Re-assessment initiated')}
+            onClick={() => { setShowAssessment(true); setAssessStep(0); setAnswers({}); setAssessDone(false); }}
           >
             <ChartBar size={14} className="mr-1" /> Run Assessment
           </Button>
@@ -502,6 +498,115 @@ export default function BenchmarkingMaturity() {
           </table>
         </CardContent>
       </Card>
+      {/* Assessment Wizard */}
+      {showAssessment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowAssessment(false)} />
+          <div className="relative bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] w-full max-w-lg mx-4 shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
+              <div>
+                <h2 className="text-sm font-semibold text-[hsl(var(--text-1))]">Maturity Self-Assessment</h2>
+                {!assessDone && <p className="text-xs text-[hsl(var(--text-4))] mt-0.5">Dimension {assessStep + 1} of {ASSESSMENT_QUESTIONS.length}</p>}
+              </div>
+              <button onClick={() => setShowAssessment(false)} className="text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-2))]"><X size={16} /></button>
+            </div>
+            {!assessDone ? (
+              <>
+                {/* Progress bar */}
+                <div className="h-1 bg-[hsl(var(--bg-raised))]">
+                  <div className="h-1 bg-[hsl(var(--brand))] transition-all" style={{ width: `${((assessStep + 1) / ASSESSMENT_QUESTIONS.length) * 100}%` }} />
+                </div>
+                <div className="p-6 space-y-5">
+                  <div>
+                    <p className="text-[10px] font-semibold text-[hsl(var(--brand))] uppercase tracking-wider mb-1">{ASSESSMENT_QUESTIONS[assessStep].dimension}</p>
+                    <p className="text-sm font-medium text-[hsl(var(--text-1))]">{ASSESSMENT_QUESTIONS[assessStep].question}</p>
+                    <p className="text-[11px] text-[hsl(var(--text-4))] mt-2">Current priority: {ASSESSMENT_QUESTIONS[assessStep].hint}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4, 5].map(score => (
+                      <button
+                        key={score}
+                        onClick={() => setAnswers(p => ({ ...p, [assessStep]: score }))}
+                        className="flex-1 flex flex-col items-center py-4 border-2 transition-all"
+                        style={{
+                          borderColor: answers[assessStep] === score ? 'hsl(var(--brand))' : 'hsl(var(--border))',
+                          background: answers[assessStep] === score ? 'hsl(var(--brand) / 0.1)' : 'hsl(var(--bg-raised))',
+                        }}
+                      >
+                        <span className="text-lg font-bold" style={{ color: answers[assessStep] === score ? 'hsl(var(--brand))' : 'hsl(var(--text-1))' }}>{score}</span>
+                        <span className="text-[9px] text-[hsl(var(--text-4))] mt-0.5">{MATURITY_LABELS[score]}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-[hsl(var(--text-4))]">
+                    {answers[assessStep] ? `Selected: Level ${answers[assessStep]} — ${MATURITY_LABELS[answers[assessStep]]}` : 'Select a maturity level to continue.'}
+                  </p>
+                </div>
+                <div className="flex justify-between gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
+                  <button
+                    onClick={() => setAssessStep(p => Math.max(0, p - 1))}
+                    disabled={assessStep === 0}
+                    className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))] disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (answers[assessStep] === undefined) { toast.error('Please select a maturity level'); return; }
+                      if (assessStep < ASSESSMENT_QUESTIONS.length - 1) {
+                        setAssessStep(p => p + 1);
+                      } else {
+                        setAssessDone(true);
+                      }
+                    }}
+                    className="px-4 py-2 text-sm font-medium bg-[hsl(var(--brand))] text-white hover:opacity-90"
+                  >
+                    {assessStep < ASSESSMENT_QUESTIONS.length - 1 ? 'Next →' : 'Complete Assessment'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="p-6 space-y-4">
+                  <div className="text-center py-4">
+                    <CheckCircle size={48} className="text-[hsl(var(--s-ok-tx))] mx-auto mb-3" weight="duotone" />
+                    <h3 className="text-base font-semibold text-[hsl(var(--text-1))]">Assessment Complete</h3>
+                    <p className="text-sm text-[hsl(var(--text-4))] mt-1">All {ASSESSMENT_QUESTIONS.length} dimensions scored</p>
+                  </div>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {ASSESSMENT_QUESTIONS.map((q, i) => (
+                      <div key={i} className="flex items-center justify-between p-2 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                        <span className="text-xs text-[hsl(var(--text-2))]">{q.dimension}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold" style={{ color: gapColor(Math.max(0, (DIMENSIONS[i]?.target ?? 4) - (answers[i] ?? 3))) }}>
+                            Level {answers[i] ?? '—'}
+                          </span>
+                          <span className="text-[10px] text-[hsl(var(--text-4))]">({MATURITY_LABELS[answers[i] ?? 3]})</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-[hsl(var(--text-4))] text-center">
+                    New average: Level {Math.round(Object.values(answers).reduce((a, b) => a + b, 0) / ASSESSMENT_QUESTIONS.length)}
+                  </p>
+                </div>
+                <div className="flex justify-end gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
+                  <button onClick={() => setShowAssessment(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">Close</button>
+                  <button
+                    onClick={() => {
+                      setShowAssessment(false);
+                      toast.success('Assessment results saved. Maturity scores updated.');
+                    }}
+                    className="px-4 py-2 text-sm font-medium bg-[hsl(var(--brand))] text-white hover:opacity-90"
+                  >
+                    Save Results
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Speedometer, Export, Eye, X } from '@phosphor-icons/react'
+import { Speedometer, Export, Eye, X, Plus, Trash, CheckCircle } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 
 interface ModelBenchmark {
   id: string
@@ -40,13 +41,85 @@ const RADAR_MODELS = (b: ModelBenchmark) => [
   { metric: 'Latency', value: Math.max(0, 100 - b.latencyP50) },
 ]
 
+const BLANK = {
+  model: '',
+  version: '',
+  task: '',
+  latencyP50: '',
+  latencyP99: '',
+  throughput: '',
+  accuracy: '',
+  f1Score: '',
+  costPerInference: '',
+  memoryMb: '',
+  carbonPerInference: '',
+  complianceScore: '',
+  biasScore: '',
+  explainabilityScore: '',
+  benchmarkedBy: '',
+}
+
+function scoreColor(s: number) {
+  return s >= 80 ? 'hsl(var(--s-ok-tx))' : s >= 70 ? 'hsl(45 85% 40%)' : 'hsl(var(--destructive))'
+}
+
 export default function ModelEfficiency() {
+  const [benchmarks, setBenchmarks] = useState<ModelBenchmark[]>(SEED)
   const [selected, setSelected] = useState<ModelBenchmark | null>(null)
   const [compareA, setCompareA] = useState<string>(SEED[0].id)
   const [compareB, setCompareB] = useState<string>(SEED[1].id)
+  const [showCreate, setShowCreate] = useState(false)
+  const [form, setForm] = useState(BLANK)
+  const [deleteTarget, setDeleteTarget] = useState<ModelBenchmark | null>(null)
 
-  const mA = SEED.find(b => b.id === compareA)!
-  const mB = SEED.find(b => b.id === compareB)!
+  const mA = benchmarks.find(b => b.id === compareA) ?? benchmarks[0]
+  const mB = benchmarks.find(b => b.id === compareB) ?? benchmarks[1]
+
+  function handleCreate() {
+    if (!form.model || !form.version || !form.task || !form.accuracy || !form.benchmarkedBy) {
+      toast.error('Please fill in all required fields')
+      return
+    }
+    const acc = Number(form.accuracy)
+    const comp = Number(form.complianceScore) || 80
+    const bias = Number(form.biasScore) || 75
+    const expl = Number(form.explainabilityScore) || 80
+    const overall = Math.round((acc * 0.3 + comp * 0.2 + bias * 0.25 + expl * 0.25))
+    const newB: ModelBenchmark = {
+      id: `BMK-${String(benchmarks.length + 1).padStart(3, '0')}`,
+      model: form.model,
+      version: form.version,
+      task: form.task,
+      latencyP50: Number(form.latencyP50) || 0,
+      latencyP99: Number(form.latencyP99) || 0,
+      throughput: Number(form.throughput) || 0,
+      accuracy: acc,
+      f1Score: Number(form.f1Score) || 0,
+      costPerInference: Number(form.costPerInference) || 0,
+      memoryMb: Number(form.memoryMb) || 0,
+      carbonPerInference: Number(form.carbonPerInference) || 0,
+      complianceScore: comp,
+      biasScore: bias,
+      explainabilityScore: expl,
+      overallScore: overall,
+      benchmarkDate: new Date().toISOString().slice(0, 10),
+      benchmarkedBy: form.benchmarkedBy,
+    }
+    setBenchmarks(p => [newB, ...p])
+    setShowCreate(false)
+    setForm(BLANK)
+    toast.success(`Benchmark run recorded for ${newB.model} ${newB.version} — overall score: ${newB.overallScore}`)
+  }
+
+  function handleDelete() {
+    if (!deleteTarget) return
+    setBenchmarks(p => p.filter(b => b.id !== deleteTarget.id))
+    toast.success(`Benchmark ${deleteTarget.id} deleted`)
+    setDeleteTarget(null)
+    if (selected?.id === deleteTarget.id) setSelected(null)
+    if (compareA === deleteTarget.id && benchmarks.length > 1) setCompareA(benchmarks.filter(b => b.id !== deleteTarget.id)[0]?.id ?? '')
+    if (compareB === deleteTarget.id && benchmarks.length > 1) setCompareB(benchmarks.filter(b => b.id !== deleteTarget.id)[0]?.id ?? '')
+  }
 
   return (
     <div className="space-y-5">
@@ -58,44 +131,71 @@ export default function ModelEfficiency() {
           </h1>
           <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">Multi-dimensional model benchmarking — accuracy, latency, cost, carbon, fairness, and explainability</p>
         </div>
-        <button onClick={() => toast.success('Benchmarks exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]"><Export size={14} /> Export</button>
+        <div className="flex gap-2">
+          <button onClick={() => toast.success('Benchmarks exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]"><Export size={14} /> Export</button>
+          <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 px-4 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90"><Plus size={14} /> Add Benchmark Run</button>
+        </div>
       </div>
 
-      {/* Comparison */}
+      {/* KPI Strip */}
+      <div className="grid grid-cols-4 gap-4">
+        {[
+          { label: 'Models Benchmarked', value: benchmarks.length, sub: 'Active benchmarks', color: 'hsl(var(--brand))' },
+          { label: 'Best Overall Score', value: `${Math.max(...benchmarks.map(b => b.overallScore))}/100`, sub: benchmarks.find(b => b.overallScore === Math.max(...benchmarks.map(b => b.overallScore)))?.model ?? '', color: 'hsl(var(--s-ok-tx))' },
+          { label: 'Lowest Fairness', value: `${Math.min(...benchmarks.map(b => b.biasScore))}/100`, sub: benchmarks.find(b => b.biasScore === Math.min(...benchmarks.map(b => b.biasScore)))?.model ?? '', color: scoreColor(Math.min(...benchmarks.map(b => b.biasScore))) },
+          { label: 'Avg Explainability', value: `${Math.round(benchmarks.reduce((s, b) => s + b.explainabilityScore, 0) / benchmarks.length)}/100`, sub: 'Across all models', color: 'hsl(var(--text-1))' },
+        ].map(s => (
+          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+            <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
+            <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
+            <p className="text-[10px] text-[hsl(var(--text-4))] mt-1 truncate">{s.sub}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Comparison Radar */}
       <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
         <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] mb-4">Model Comparison Radar</h3>
-        <div className="flex items-center gap-4 mb-4">
+        <div className="flex items-center gap-6 mb-4">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-1 bg-[hsl(var(--brand))]" />
+            <div className="w-4 h-1 bg-[hsl(var(--brand))]" />
             <select value={compareA} onChange={e => setCompareA(e.target.value)} className="text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] px-2 py-1 focus:outline-none">
-              {SEED.map(b => <option key={b.id} value={b.id}>{b.model} {b.version}</option>)}
+              {benchmarks.map(b => <option key={b.id} value={b.id}>{b.model} {b.version}</option>)}
             </select>
           </div>
+          <span className="text-xs text-[hsl(var(--text-4))]">vs</span>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-1 bg-[hsl(var(--destructive))]" />
+            <div className="w-4 h-1 bg-[hsl(var(--destructive))]" />
             <select value={compareB} onChange={e => setCompareB(e.target.value)} className="text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] px-2 py-1 focus:outline-none">
-              {SEED.map(b => <option key={b.id} value={b.id}>{b.model} {b.version}</option>)}
+              {benchmarks.map(b => <option key={b.id} value={b.id}>{b.model} {b.version}</option>)}
             </select>
           </div>
         </div>
         <div className="flex gap-6">
-          <ResponsiveContainer width="50%" height={220}>
-            <RadarChart data={RADAR_MODELS(mA)}>
-              <PolarGrid stroke="hsl(var(--border))" />
-              <PolarAngleAxis dataKey="metric" tick={{ fontSize: 10, fill: 'hsl(var(--text-4))' }} />
-              <Radar dataKey="value" stroke="hsl(var(--brand))" fill="hsl(var(--brand) / 0.2)" strokeWidth={2} />
-            </RadarChart>
-          </ResponsiveContainer>
-          <ResponsiveContainer width="50%" height={220}>
-            <RadarChart data={RADAR_MODELS(mB)}>
-              <PolarGrid stroke="hsl(var(--border))" />
-              <PolarAngleAxis dataKey="metric" tick={{ fontSize: 10, fill: 'hsl(var(--text-4))' }} />
-              <Radar dataKey="value" stroke="hsl(var(--destructive))" fill="hsl(var(--destructive) / 0.2)" strokeWidth={2} />
-            </RadarChart>
-          </ResponsiveContainer>
+          <div className="flex-1">
+            <p className="text-xs text-center text-[hsl(var(--text-4))] mb-2">{mA.model} {mA.version}</p>
+            <ResponsiveContainer width="100%" height={220}>
+              <RadarChart data={RADAR_MODELS(mA)}>
+                <PolarGrid stroke="hsl(var(--border))" />
+                <PolarAngleAxis dataKey="metric" tick={{ fontSize: 10, fill: 'hsl(var(--text-4))' }} />
+                <Radar dataKey="value" stroke="hsl(var(--brand))" fill="hsl(var(--brand) / 0.2)" strokeWidth={2} />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex-1">
+            <p className="text-xs text-center text-[hsl(var(--text-4))] mb-2">{mB.model} {mB.version}</p>
+            <ResponsiveContainer width="100%" height={220}>
+              <RadarChart data={RADAR_MODELS(mB)}>
+                <PolarGrid stroke="hsl(var(--border))" />
+                <PolarAngleAxis dataKey="metric" tick={{ fontSize: 10, fill: 'hsl(var(--text-4))' }} />
+                <Radar dataKey="value" stroke="hsl(var(--destructive))" fill="hsl(var(--destructive) / 0.2)" strokeWidth={2} />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
 
+      {/* Benchmark Table */}
       <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] overflow-hidden">
         <table className="w-full text-sm">
           <thead>
@@ -106,9 +206,12 @@ export default function ModelEfficiency() {
             </tr>
           </thead>
           <tbody>
-            {SEED.map(b => (
+            {benchmarks.map(b => (
               <tr key={b.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))] cursor-pointer" onClick={() => setSelected(b)}>
-                <td className="px-3 py-3"><p className="text-xs font-medium text-[hsl(var(--text-1))]">{b.model}</p><p className="text-[10px] text-[hsl(var(--text-4))]">{b.version}</p></td>
+                <td className="px-3 py-3">
+                  <p className="text-xs font-medium text-[hsl(var(--text-1))]">{b.model}</p>
+                  <p className="text-[10px] text-[hsl(var(--text-4))]">{b.version}</p>
+                </td>
                 <td className="px-3 py-3 text-xs text-[hsl(var(--text-3))]">{b.task}</td>
                 <td className="px-3 py-3 text-xs font-mono font-semibold text-[hsl(var(--text-1))]">{b.accuracy.toFixed(1)}%</td>
                 <td className="px-3 py-3 text-xs font-mono text-[hsl(var(--text-3))]">{b.latencyP50}ms</td>
@@ -117,32 +220,56 @@ export default function ModelEfficiency() {
                 <td className="px-3 py-3 text-xs font-mono text-[hsl(var(--text-3))]">${b.costPerInference.toFixed(5)}</td>
                 <td className="px-3 py-3 text-xs font-mono text-[hsl(var(--text-3))]">{b.carbonPerInference}g</td>
                 <td className="px-3 py-3">
-                  <span className="text-xs font-bold" style={{ color: b.biasScore >= 80 ? 'hsl(var(--s-ok-tx))' : b.biasScore >= 65 ? 'hsl(45 85% 40%)' : 'hsl(var(--destructive))' }}>{b.biasScore}/100</span>
+                  <span className="text-xs font-bold" style={{ color: scoreColor(b.biasScore) }}>{b.biasScore}/100</span>
                 </td>
                 <td className="px-3 py-3 text-xs font-bold text-[hsl(var(--s-ok-tx))]">{b.explainabilityScore}/100</td>
                 <td className="px-3 py-3">
-                  <span className="text-sm font-bold" style={{ color: b.overallScore >= 80 ? 'hsl(var(--s-ok-tx))' : b.overallScore >= 70 ? 'hsl(45 85% 40%)' : 'hsl(var(--destructive))' }}>{b.overallScore}</span>
+                  <span className="text-sm font-bold" style={{ color: scoreColor(b.overallScore) }}>{b.overallScore}</span>
                 </td>
-                <td className="px-3 py-3"><Eye size={14} className="text-[hsl(var(--text-4))]" /></td>
+                <td className="px-3 py-3">
+                  <div className="flex gap-1">
+                    <button onClick={e => { e.stopPropagation(); setSelected(b) }} className="p-1 text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))]"><Eye size={13} /></button>
+                    <button onClick={e => { e.stopPropagation(); setDeleteTarget(b) }} className="p-1 text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))]"><Trash size={13} /></button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
+      {/* Detail Drawer */}
       {selected && (
         <div className="fixed inset-0 z-50 flex">
           <div className="flex-1 bg-black/40" onClick={() => setSelected(null)} />
           <div className="w-[440px] bg-[hsl(var(--bg-surface))] border-l border-[hsl(var(--border))] flex flex-col h-full overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))]">
-              <div><p className="font-mono text-xs text-[hsl(var(--brand))]">{selected.id}</p><h2 className="text-sm font-semibold text-[hsl(var(--text-1))]">{selected.model} {selected.version}</h2></div>
-              <button onClick={() => setSelected(null)}><X size={18} className="text-[hsl(var(--text-4))]" /></button>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
+              <div>
+                <p className="font-mono text-xs text-[hsl(var(--brand))]">{selected.id}</p>
+                <h2 className="text-sm font-semibold text-[hsl(var(--text-1))]">{selected.model} {selected.version}</h2>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => { setDeleteTarget(selected); setSelected(null) }} className="p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))]"><Trash size={14} /></button>
+                <button onClick={() => setSelected(null)} className="text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-2))]"><X size={16} /></button>
+              </div>
             </div>
-            <div className="p-4 space-y-4">
+            <div className="p-5 space-y-4">
+              {/* Radar */}
+              <ResponsiveContainer width="100%" height={200}>
+                <RadarChart data={RADAR_MODELS(selected)}>
+                  <PolarGrid stroke="hsl(var(--border))" />
+                  <PolarAngleAxis dataKey="metric" tick={{ fontSize: 10, fill: 'hsl(var(--text-4))' }} />
+                  <Radar dataKey="value" stroke="hsl(var(--brand))" fill="hsl(var(--brand) / 0.2)" strokeWidth={2} />
+                </RadarChart>
+              </ResponsiveContainer>
+              {/* Overall score highlight */}
+              <div className="text-center p-4 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                <p className="text-[10px] text-[hsl(var(--text-4))] uppercase tracking-wider">Overall Score</p>
+                <p className="text-4xl font-bold mt-1" style={{ color: scoreColor(selected.overallScore) }}>{selected.overallScore}/100</p>
+                <p className="text-[10px] text-[hsl(var(--text-4))] mt-1">{selected.task} · Benchmarked by {selected.benchmarkedBy}</p>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { label: 'Overall Score', value: `${selected.overallScore}/100` },
-                  { label: 'Task', value: selected.task },
                   { label: 'Accuracy', value: `${selected.accuracy.toFixed(1)}%` },
                   { label: 'F1 Score', value: selected.f1Score.toFixed(3) },
                   { label: 'P50 Latency', value: `${selected.latencyP50}ms` },
@@ -154,7 +281,7 @@ export default function ModelEfficiency() {
                   { label: 'Fairness Score', value: `${selected.biasScore}/100` },
                   { label: 'Explainability', value: `${selected.explainabilityScore}/100` },
                   { label: 'Compliance Score', value: `${selected.complianceScore}/100` },
-                  { label: 'Benchmarked By', value: selected.benchmarkedBy },
+                  { label: 'Benchmark Date', value: selected.benchmarkDate },
                 ].map(({ label, value }) => (
                   <div key={label} className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
                     <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{label}</p>
@@ -166,6 +293,107 @@ export default function ModelEfficiency() {
           </div>
         </div>
       )}
+
+      {/* Add Benchmark Run Modal */}
+      {showCreate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowCreate(false)} />
+          <div className="relative bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] w-full max-w-2xl mx-4 shadow-2xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
+              <h2 className="text-sm font-semibold text-[hsl(var(--text-1))]">Add Benchmark Run</h2>
+              <button onClick={() => setShowCreate(false)} className="text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-2))]"><X size={16} /></button>
+            </div>
+            <div className="p-5 overflow-y-auto">
+              <div className="grid grid-cols-3 gap-4">
+                {/* Model Info */}
+                <div className="col-span-3">
+                  <p className="text-[11px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wide mb-2">Model Identity</p>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-[10px] text-[hsl(var(--text-4))] mb-1 block">Model Name *</label>
+                      <select value={form.model} onChange={e => setForm(p => ({ ...p, model: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
+                        <option value="">Select model...</option>
+                        {['Credit Scoring Model', 'Loan Approval Model', 'Fraud Detection Engine', 'Customer Churn Predictor', 'Risk Assessment Model'].map(m => <option key={m}>{m}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-[hsl(var(--text-4))] mb-1 block">Version *</label>
+                      <input value={form.version} onChange={e => setForm(p => ({ ...p, version: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. v2.2" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-[hsl(var(--text-4))] mb-1 block">Task *</label>
+                      <select value={form.task} onChange={e => setForm(p => ({ ...p, task: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
+                        <option value="">Select task...</option>
+                        {['Binary Classification', 'Multi-class Classification', 'Regression', 'Anomaly Detection', 'NLP / Text', 'Time Series Forecasting'].map(t => <option key={t}>{t}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Performance Metrics */}
+                <div className="col-span-3">
+                  <p className="text-[11px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wide mb-2">Performance Metrics</p>
+                  <div className="grid grid-cols-4 gap-3">
+                    {[
+                      { key: 'accuracy', label: 'Accuracy % *', placeholder: '89.4' },
+                      { key: 'f1Score', label: 'F1 Score', placeholder: '0.871' },
+                      { key: 'latencyP50', label: 'P50 Latency (ms)', placeholder: '45' },
+                      { key: 'latencyP99', label: 'P99 Latency (ms)', placeholder: '120' },
+                      { key: 'throughput', label: 'Throughput (req/s)', placeholder: '2200' },
+                      { key: 'costPerInference', label: 'Cost / Inference ($)', placeholder: '0.00012' },
+                      { key: 'memoryMb', label: 'Memory (MB)', placeholder: '840' },
+                      { key: 'carbonPerInference', label: 'Carbon / Inf (g CO₂)', placeholder: '0.0026' },
+                    ].map(({ key, label, placeholder }) => (
+                      <div key={key}>
+                        <label className="text-[10px] text-[hsl(var(--text-4))] mb-1 block">{label}</label>
+                        <input type="number" step="any" value={(form as any)[key]} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder={placeholder} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Governance Scores */}
+                <div className="col-span-3">
+                  <p className="text-[11px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wide mb-2">Governance & Risk Scores (0–100)</p>
+                  <div className="grid grid-cols-4 gap-3">
+                    {[
+                      { key: 'complianceScore', label: 'Compliance', placeholder: '91' },
+                      { key: 'biasScore', label: 'Fairness / Bias', placeholder: '88' },
+                      { key: 'explainabilityScore', label: 'Explainability', placeholder: '94' },
+                    ].map(({ key, label, placeholder }) => (
+                      <div key={key}>
+                        <label className="text-[10px] text-[hsl(var(--text-4))] mb-1 block">{label}</label>
+                        <input type="number" min={0} max={100} value={(form as any)[key]} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder={placeholder} />
+                      </div>
+                    ))}
+                    <div>
+                      <label className="text-[10px] text-[hsl(var(--text-4))] mb-1 block">Benchmarked By *</label>
+                      <select value={form.benchmarkedBy} onChange={e => setForm(p => ({ ...p, benchmarkedBy: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
+                        <option value="">Select...</option>
+                        {['James Liu', 'Maria Santos', 'Sarah Chen', 'David Kim', 'Priya Sharma'].map(p => <option key={p}>{p}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
+              <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">Cancel</button>
+              <button onClick={handleCreate} className="px-4 py-2 text-sm font-medium bg-[hsl(var(--brand))] text-white hover:opacity-90">Save Benchmark Run</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={o => !o && setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Delete benchmark run?"
+        description={`Remove ${deleteTarget?.id} for ${deleteTarget?.model} ${deleteTarget?.version}. This action cannot be undone.`}
+        isDestructive
+        confirmLabel="Delete"
+      />
     </div>
   )
 }

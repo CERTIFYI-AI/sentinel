@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Certificate, MagnifyingGlass, Plus, Eye, X, Export, CheckCircle, Warning } from '@phosphor-icons/react'
+import { Certificate, MagnifyingGlass, Plus, Eye, X, Export, Trash } from '@phosphor-icons/react'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 
 type AttestationStatus = 'Valid' | 'Expired' | 'Pending' | 'Rejected' | 'Under Review'
 type AttestationType = 'Data Provenance' | 'Model Integrity' | 'Security Review' | 'Bias Audit' | 'Privacy Assessment' | 'SBOM/AIBOM Verification'
