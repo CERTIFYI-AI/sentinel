@@ -1,9 +1,11 @@
 """Sentinel AI Compliance Platform - Main FastAPI Application."""
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from contextlib import asynccontextmanager
 import logging
 import asyncio
+import httpx
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -208,15 +210,16 @@ except Exception as e:
     logger.warning(f"health_router failed: {e}")
 
 
-@app.get("/", tags=["root"])
-async def root():
-    """Platform root - returns status."""
-    return {
-        "message": "Sentinel AI Compliance Platform",
-        "version": "1.0.0",
-        "status": "operational",
-        "docs": "/api/docs",
-    }
+@app.get("/", include_in_schema=False)
+async def root(request: Request):
+    """Proxy root to Vite frontend."""
+    try:
+        async with httpx.AsyncClient(follow_redirects=True, timeout=10.0) as c:
+            resp = await c.get("http://localhost:5000/")
+        return Response(content=resp.content, status_code=resp.status_code,
+                        headers=dict(resp.headers), media_type=resp.headers.get("content-type"))
+    except Exception:
+        return Response(content="Starting up, please refresh.", status_code=503)
 
 
 @app.get("/api", tags=["root"])
@@ -292,3 +295,40 @@ try:
     logger.info('use_case_router loaded')
 except Exception as e:
     logger.warning(f'use_case_router error: {e}')
+
+
+# ── Frontend Proxy ────────────────────────────────────────────────────────────
+# Proxy all non-API requests to the Vite dev server so that accessing the
+# backend's external port (80 → 8000) also serves the React frontend.
+
+_VITE_BASE = "http://localhost:5000"
+_proxy_client = httpx.AsyncClient(base_url=_VITE_BASE, follow_redirects=True, timeout=30.0)
+
+
+@app.api_route("/{path:path}", methods=["GET", "HEAD"], include_in_schema=False)
+async def _frontend_proxy(request: Request, path: str):
+    """Forward all unmatched GET requests to the Vite dev server.
+    API paths are left to FastAPI's own routers; only non-API paths are proxied.
+    """
+    # Never proxy API, docs, or WebSocket upgrade paths — let FastAPI 404 them
+    if path.startswith("api") or path.startswith("ws") or path.startswith("favicon"):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Not found")
+
+    url = httpx.URL(path=f"/{path}", query=request.url.query.encode("utf-8"))
+    headers = dict(request.headers)
+    headers.pop("host", None)
+    try:
+        resp = await _proxy_client.request(
+            method=request.method,
+            url=url,
+            headers=headers,
+        )
+        return Response(
+            content=resp.content,
+            status_code=resp.status_code,
+            headers=dict(resp.headers),
+            media_type=resp.headers.get("content-type"),
+        )
+    except Exception:
+        return Response(content="Service starting up, please refresh.", status_code=503)
