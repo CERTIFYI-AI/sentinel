@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 
 from sentinel.models.approval_engine import ApprovalEngine, STAGE_ROLES, ROLE_LABELS
 
-router = APIRouter(prefix="/approvals", tags=["approvals"])
+router = APIRouter(tags=["approvals"])
 _engine = ApprovalEngine()
 
 

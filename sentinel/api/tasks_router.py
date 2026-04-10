@@ -19,7 +19,7 @@ from pydantic import BaseModel
 from sentinel.tasks.task_store import TaskStore
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/tasks", tags=["tasks"])
+router = APIRouter(tags=["tasks"])
 
 _task_store = TaskStore()
 

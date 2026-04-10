@@ -20,7 +20,7 @@ from sentinel.evals.eval_runner import EvalRunner
 from sentinel.evals.eval_store import EvalStore
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/evals", tags=["evals"])
+router = APIRouter(tags=["evals"])
 
 _eval_runner = EvalRunner()
 _eval_store = EvalStore()

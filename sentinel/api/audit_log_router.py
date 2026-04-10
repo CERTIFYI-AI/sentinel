@@ -26,7 +26,7 @@ from pydantic import BaseModel, Field
 
 from sentinel.auth.jwt_handler import get_current_tenant
 
-router = APIRouter(prefix="/audit-log", tags=["Audit Log"])
+router = APIRouter(tags=["Audit Log"])
 
 # ---------------------------------------------------------------------------
 # Schema

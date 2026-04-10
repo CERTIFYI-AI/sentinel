@@ -19,7 +19,7 @@ from pydantic import BaseModel, EmailStr, field_validator
 from sentinel.config import settings
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter(tags=["auth"])
 _bearer = HTTPBearer(auto_error=False)
 
 # ---------------------------------------------------------------------------

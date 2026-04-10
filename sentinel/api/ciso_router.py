@@ -12,7 +12,7 @@ from fastapi import APIRouter, Query
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/ciso", tags=["ciso"])
+router = APIRouter(tags=["ciso"])
 
 # ---------------------------------------------------------------------------
 # Singleton posture calculator — shared across all requests
