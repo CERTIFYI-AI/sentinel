@@ -1,0 +1,167 @@
+import { useState } from 'react'
+import { Power, Warning, MagnifyingGlass, Plus, Eye, X, Export, ShieldWarning, CheckCircle } from '@phosphor-icons/react'
+import { toast } from 'sonner'
+
+type KillSwitchTrigger = 'Manual' | 'Automated — Trust Score' | 'Automated — Error Rate' | 'Automated — Bias Threshold' | 'Regulatory Order' | 'Security Incident'
+type KSStatus = 'Active — Agent Suspended' | 'Resolved' | 'Under Investigation' | 'Escalated'
+
+interface KillSwitchEvent {
+  id: string
+  agentId: string
+  agentName: string
+  triggeredAt: string
+  triggeredBy: string
+  trigger: KillSwitchTrigger
+  status: KSStatus
+  reason: string
+  impactedSystems: string[]
+  impactedUsers: number
+  resumedAt?: string
+  resolutionNotes?: string
+  approvedBy?: string
+  regulatoryNotificationRequired: boolean
+  regulatoryNotificationSent?: boolean
+}
+
+const SEED: KillSwitchEvent[] = [
+  { id: 'KSE-2026-012', agentId: 'AGT-004', agentName: 'CustomerServiceOrchestrator', triggeredAt: '2026-04-07 14:20:00', triggeredBy: 'Sarah Chen (CISO)', trigger: 'Manual', status: 'Active — Agent Suspended', reason: 'Agent spawned 847 sub-agents in 90 seconds during an unexpected recursive loop. Memory usage exceeded 94% of cluster capacity. Emergency suspension to prevent cascade failure.', impactedSystems: ['Customer Service Portal', 'Chat API', 'Worker Agent Pool'], impactedUsers: 1240, regulatoryNotificationRequired: false },
+  { id: 'KSE-2026-011', agentId: 'AGT-001', agentName: 'LoanProcessorAgent', triggeredAt: '2026-03-28 11:45:00', triggeredBy: 'Automated — Trust Score Drop', trigger: 'Automated — Trust Score', status: 'Resolved', reason: 'Trust score dropped below kill switch threshold (configured: 60, actual: 47) due to 23 consecutive HITL overrides indicating systematic decision errors.', impactedSystems: ['Loan Processing Pipeline', 'Underwriter Queue'], impactedUsers: 0, resumedAt: '2026-03-29 09:00:00', resolutionNotes: 'Root cause: outdated credit bureau data causing scoring errors. Updated data pipeline. Manual review of 23 affected applications completed. All decisions validated.', approvedBy: 'James Liu', regulatoryNotificationRequired: true, regulatoryNotificationSent: true },
+  { id: 'KSE-2026-010', agentId: 'AGT-002', agentName: 'FraudInvestigatorAgent', triggeredAt: '2026-03-15 03:22:00', triggeredBy: 'Automated — Error Rate', trigger: 'Automated — Error Rate', status: 'Resolved', reason: 'API error rate spiked to 34% (threshold: 10%) due to third-party enrichment provider outage. Agent suspended to prevent incomplete fraud investigations.', impactedSystems: ['Fraud Investigation Queue', 'Case Management'], impactedUsers: 0, resumedAt: '2026-03-15 06:45:00', resolutionNotes: 'Enrichment provider restored. Failover to backup enrichment source configured. 18 queued investigations resumed.', approvedBy: 'Sarah Chen', regulatoryNotificationRequired: false },
+  { id: 'KSE-2026-008', agentId: 'AGT-001', agentName: 'LoanProcessorAgent', triggeredAt: '2026-02-14 09:30:00', triggeredBy: 'Automated — Bias Threshold', trigger: 'Automated — Bias Threshold', status: 'Resolved', reason: 'Real-time bias monitoring detected demographic parity gap exceeding 25% threshold for gender attribute. Automatic suspension per EU AI Act Article 10 compliance policy.', impactedSystems: ['Loan Processing Pipeline'], impactedUsers: 0, resumedAt: '2026-02-17 14:00:00', resolutionNotes: 'Emergency bias audit completed. Re-weighting applied to training data. Gap reduced to 8.2%. EC notified per Article 62 incident reporting requirement.', approvedBy: 'Maria Santos', regulatoryNotificationRequired: true, regulatoryNotificationSent: true },
+  { id: 'KSE-2026-005', agentId: 'AGT-005', agentName: 'RiskAssessmentAgent (beta)', triggeredAt: '2026-04-09 16:00:00', triggeredBy: 'Regulatory Order', trigger: 'Regulatory Order', status: 'Under Investigation', reason: 'Pre-emptive kill switch engaged per internal AI governance policy: new agent must pass all beta validation checks before production activation. Pending security review.', impactedSystems: ['Risk Scoring API'], impactedUsers: 0, regulatoryNotificationRequired: false },
+]
+
+const STATUS_STYLE: Record<KSStatus, { bg: string; color: string }> = {
+  'Active — Agent Suspended': { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))' },
+  Resolved: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
+  'Under Investigation': { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)' },
+  Escalated: { bg: 'hsl(280 67% 56% / 0.12)', color: 'hsl(280 60% 55%)' },
+}
+
+export default function KillSwitchEvents() {
+  const [selected, setSelected] = useState<KillSwitchEvent | null>(null)
+  const [statusFilter, setStatusFilter] = useState('All')
+  const [events, setEvents] = useState(SEED)
+
+  const filtered = statusFilter === 'All' ? events : events.filter(e => e.status === statusFilter)
+
+  const stats = {
+    total: events.length,
+    active: events.filter(e => e.status === 'Active — Agent Suspended').length,
+    resolved: events.filter(e => e.status === 'Resolved').length,
+    pendingNotification: events.filter(e => e.regulatoryNotificationRequired && !e.regulatoryNotificationSent).length,
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-[hsl(var(--text-1))] flex items-center gap-2">
+            <Power size={20} weight="fill" className="text-[hsl(var(--destructive))]" />
+            Kill Switch Events
+          </h1>
+          <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">Audit log of all agent suspension events — manual, automated, and regulatory</p>
+        </div>
+        <button onClick={() => toast.success('Exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+          <Export size={14} /> Export
+        </button>
+      </div>
+
+      <div className="grid grid-cols-4 gap-4">
+        {[
+          { label: 'Total Events', value: stats.total, color: 'hsl(var(--text-1))' },
+          { label: 'Active Suspensions', value: stats.active, color: 'hsl(var(--destructive))' },
+          { label: 'Resolved', value: stats.resolved, color: 'hsl(var(--s-ok-tx))' },
+          { label: 'Reg. Notification Pending', value: stats.pendingNotification, color: 'hsl(45 85% 40%)' },
+        ].map(s => (
+          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+            <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
+            <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {stats.active > 0 && (
+        <div className="flex items-center gap-3 p-3 border border-[hsl(var(--destructive)/0.4)] bg-[hsl(0_72%_51%/0.06)]">
+          <Power size={16} className="text-[hsl(var(--destructive))] flex-shrink-0" weight="fill" />
+          <p className="text-sm text-[hsl(var(--text-2))]"><span className="font-semibold text-[hsl(var(--destructive))]">{stats.active} agent(s) currently suspended.</span> Review suspension reasons and coordinate remediation before resuming.</p>
+        </div>
+      )}
+
+      <div className="flex gap-3">
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+          {['All', 'Active — Agent Suspended', 'Resolved', 'Under Investigation', 'Escalated'].map(s => <option key={s}>{s}</option>)}
+        </select>
+      </div>
+
+      <div className="space-y-3">
+        {filtered.map(e => {
+          const ss = STATUS_STYLE[e.status]
+          return (
+            <div key={e.id} className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4 cursor-pointer hover:border-[hsl(var(--brand)/0.4)]" onClick={() => setSelected(e)}>
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-mono text-[10px] text-[hsl(var(--destructive))]">{e.id}</span>
+                    <span className="text-[11px] px-2 py-0.5 font-medium" style={ss}>{e.status}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-4))]">{e.trigger}</span>
+                    {e.regulatoryNotificationRequired && (
+                      <span className="text-[10px] px-1.5 py-0.5" style={{ background: 'hsl(280 67% 56% / 0.12)', color: 'hsl(280 60% 55%)' }}>Reg. Required</span>
+                    )}
+                  </div>
+                  <h3 className="text-sm font-semibold text-[hsl(var(--text-1))]">{e.agentName} <span className="text-[hsl(var(--text-4))] font-normal font-mono text-xs">({e.agentId})</span></h3>
+                  <p className="text-xs text-[hsl(var(--text-4))] mt-0.5">{e.triggeredAt} · By: {e.triggeredBy}</p>
+                  <p className="text-xs text-[hsl(var(--text-3))] mt-2 line-clamp-2">{e.reason}</p>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  {e.impactedUsers > 0 && <p className="text-xs font-semibold text-[hsl(var(--destructive))]">{e.impactedUsers.toLocaleString()} users affected</p>}
+                  {e.resumedAt && <p className="text-xs text-[hsl(var(--s-ok-tx))] mt-1">Resumed: {e.resumedAt}</p>}
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {selected && (
+        <div className="fixed inset-0 z-50 flex">
+          <div className="flex-1 bg-black/40" onClick={() => setSelected(null)} />
+          <div className="w-[520px] bg-[hsl(var(--bg-surface))] border-l border-[hsl(var(--border))] flex flex-col h-full overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))]">
+              <div><p className="font-mono text-xs text-[hsl(var(--destructive))]">{selected.id}</p><h2 className="text-sm font-semibold text-[hsl(var(--text-1))]">Kill Switch — {selected.agentName}</h2></div>
+              <button onClick={() => setSelected(null)}><X size={18} className="text-[hsl(var(--text-4))]" /></button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div className="flex gap-2 flex-wrap">
+                <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status]}>{selected.status}</span>
+                <span className="text-[11px] px-2 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{selected.trigger}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: 'Triggered At', value: selected.triggeredAt },
+                  { label: 'Triggered By', value: selected.triggeredBy },
+                  { label: 'Impacted Users', value: selected.impactedUsers.toLocaleString() },
+                  { label: 'Reg. Notification', value: selected.regulatoryNotificationRequired ? (selected.regulatoryNotificationSent ? 'Sent ✓' : 'PENDING') : 'Not Required' },
+                ].map(({ label, value }) => (
+                  <div key={label} className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                    <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{label}</p>
+                    <p className="text-xs font-medium text-[hsl(var(--text-1))] mt-0.5">{value}</p>
+                  </div>
+                ))}
+              </div>
+              <div><p className="text-[11px] font-semibold text-[hsl(var(--destructive))] uppercase tracking-wide mb-1">Suspension Reason</p><p className="text-sm text-[hsl(var(--text-2))] p-3 bg-[hsl(0_72%_51%/0.06)] border border-[hsl(var(--destructive)/0.3)] leading-relaxed">{selected.reason}</p></div>
+              <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Impacted Systems</p><div className="space-y-1">{selected.impactedSystems.map(s => <div key={s} className="text-xs text-[hsl(var(--text-2))] p-2 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{s}</div>)}</div></div>
+              {selected.resolutionNotes && <div><p className="text-[11px] font-semibold text-[hsl(var(--s-ok-tx))] uppercase tracking-wide mb-1">Resolution Notes</p><p className="text-sm text-[hsl(var(--text-2))] p-3 bg-[hsl(142_71%_45%/0.06)] border border-[hsl(var(--s-ok-tx)/0.3)] leading-relaxed">{selected.resolutionNotes}</p></div>}
+            </div>
+            {selected.status === 'Active — Agent Suspended' && (
+              <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
+                <button onClick={() => { toast.success('Resumption approved — agent restarting'); setEvents(prev => prev.map(e => e.id === selected.id ? { ...e, status: 'Resolved' as KSStatus, resumedAt: new Date().toISOString() } : e)); setSelected(null) }} className="flex-1 py-2 bg-[hsl(var(--s-ok-tx))] text-white text-sm font-medium hover:opacity-90">Approve Resumption</button>
+                <button onClick={() => toast.info('Escalation path opened')} className="px-4 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">Escalate</button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

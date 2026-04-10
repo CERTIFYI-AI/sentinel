@@ -112,6 +112,27 @@ const ImportSampleData = lazy(() => import('./pages/ImportSampleData'));
 const Tasks = lazy(() => import('./pages/Tasks'));
 const PromptRegistryPage = lazy(() => import('./pages/PromptRegistry'));
 
+// ── New Modules (19 pages) ──────────────────────────────────────────────────
+const DsrManagement = lazy(() => import('./pages/DsrManagement'));
+const RedTeamFindings = lazy(() => import('./pages/RedTeamFindings'));
+const ConsentManagement = lazy(() => import('./pages/ConsentManagement'));
+const FinancialRisk = lazy(() => import('./pages/FinancialRisk'));
+const SystemAuditLog = lazy(() => import('./pages/SystemAuditLog'));
+const AgentRegistry = lazy(() => import('./pages/AgentRegistry'));
+const AgentIAM = lazy(() => import('./pages/AgentIAM'));
+const MultiAgentChoreography = lazy(() => import('./pages/MultiAgentChoreography'));
+const KillSwitchEvents = lazy(() => import('./pages/KillSwitchEvents'));
+const AibomRegistry = lazy(() => import('./pages/AibomRegistry'));
+const ProvenanceGraph = lazy(() => import('./pages/ProvenanceGraph'));
+const VendorUpload = lazy(() => import('./pages/VendorUpload'));
+const SupplyChainAttestations = lazy(() => import('./pages/SupplyChainAttestations'));
+const CarbonLedger = lazy(() => import('./pages/CarbonLedger'));
+const EnergyEfficiency = lazy(() => import('./pages/EnergyEfficiency'));
+const EsgReports = lazy(() => import('./pages/EsgReports'));
+const ModelEfficiency = lazy(() => import('./pages/ModelEfficiency'));
+const DataLineage = lazy(() => import('./pages/DataLineage'));
+const IntegrationsPage = lazy(() => import('./pages/IntegrationsPage'));
+
 function Loading() {
   return (
     <div className="flex items-center justify-center h-64" aria-busy="true" aria-label="Loading page">
