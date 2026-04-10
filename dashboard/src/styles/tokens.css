@@ -4,6 +4,7 @@
   --bg-surface:  0 0% 100%;
   --bg-raised:   240 5% 98%;
   --bg-sunken:   240 5% 93%;
+  --bg-muted:    240 5% 95%;
   --border:      240 6% 90%;
   --border-mid:  240 6% 82%;
   --text-1:      240 10% 4%;
@@ -28,6 +29,8 @@
   --shadow-sm: 0 1px 3px rgb(0 0 0/8%);
   --shadow-md: 0 4px 8px rgb(0 0 0/8%);
   --shadow-lg: 0 10px 20px rgb(0 0 0/8%);
+
+  --destructive: 0 72% 51%;
 }
 
 .dark {
@@ -35,6 +38,7 @@
   --bg-surface: 224 15% 11%;
   --bg-raised:  224 15% 14%;
   --bg-sunken:  224 15% 6%;
+  --bg-muted:   224 15% 13%;
   --border:     224 15% 18%;
   --border-mid: 224 15% 24%;
   --text-1:     210 40% 96%;
@@ -59,16 +63,65 @@
   --shadow-sm: 0 1px 3px rgb(0 0 0/40%);
   --shadow-md: 0 4px 8px rgb(0 0 0/40%);
   --shadow-lg: 0 10px 20px rgb(0 0 0/40%);
+
+  --destructive: 0 62% 60%;
 }
 
 * { border-radius: 0 !important; }
 [data-avatar] { border-radius: 9999px !important; }
+
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   font-family: "Outfit", sans-serif;
   background: hsl(var(--bg-page));
   color: hsl(var(--text-1));
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+/* Custom scrollbars — matches the design system */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border-mid));
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--text-4));
+}
+
+/* Focus-visible ring using brand color */
+:focus-visible {
+  outline: 2px solid hsl(var(--brand));
+  outline-offset: 2px;
+}
+
+/* Selection color */
+::selection {
+  background: hsl(var(--brand) / 20%);
+  color: hsl(var(--text-1));
+}
+
+/* Autofill input theming */
 input:-webkit-autofill {
   -webkit-box-shadow: 0 0 0 100px hsl(var(--bg-surface)) inset !important;
   -webkit-text-fill-color: hsl(var(--text-1)) !important;
+}
+
+/* Transition for theme switching */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color;
+  transition-duration: 150ms;
+  transition-timing-function: ease;
+}
+/* Don't animate layout/transform properties */
+button, a, input, textarea, select {
+  transition-property: background-color, border-color, color, opacity, box-shadow;
 }

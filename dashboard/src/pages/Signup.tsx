@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { ShieldCheck } from '@phosphor-icons/react';
 
 export default function Signup() {
-  const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '', organization: '', agreeTerms: false });
+  const [form, setForm] = useState({
+    name: '', email: '', password: '', confirmPassword: '', organization: '', agreeTerms: false,
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const signup = useAuthStore((s) => s.signup);
@@ -17,7 +20,7 @@ export default function Signup() {
     if (!form.email) e.email = 'Email is required';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Invalid email format';
     if (!form.password) e.password = 'Password is required';
-    else if (form.password.length < 8) e.password = 'Min 8 characters';
+    else if (form.password.length < 8) e.password = 'Minimum 8 characters';
     if (form.password !== form.confirmPassword) e.confirmPassword = 'Passwords do not match';
     if (!form.organization.trim()) e.organization = 'Organization is required';
     if (!form.agreeTerms) e.agreeTerms = 'You must agree to the terms';
@@ -39,59 +42,124 @@ export default function Signup() {
     }
   };
 
-  const inp = 'w-full px-3 py-2.5 bg-[#0a0a0f] border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500';
+  const inputClass = (hasError: boolean) =>
+    `w-full px-3 py-2.5 bg-[hsl(var(--bg-raised))] border text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--brand))/50%] focus:border-[hsl(var(--brand))] transition-colors text-sm ${hasError ? 'border-[hsl(var(--s-er-br))]' : 'border-[hsl(var(--border))]'}`;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0a0a0f] px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[hsl(var(--bg-page))] px-4 py-8">
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
-          <img src="https://dignep.com.np/wp-content/uploads/2026/03/sentinel_logo.svg" alt="Certifyi Sentinel" className="h-14 w-auto mb-2" />
-          <h1 className="text-2xl font-bold text-white">Create Account</h1>
-          <p className="text-sm text-gray-400 mt-1">Get started with Certifyi Sentinel</p>
+          <div className="w-12 h-12 bg-[hsl(var(--brand))] flex items-center justify-center mb-3">
+            <ShieldCheck size={24} weight="fill" className="text-white" />
+          </div>
+          <h1 className="text-2xl font-bold text-[hsl(var(--text-1))]">Create Account</h1>
+          <p className="text-sm text-[hsl(var(--text-3))] mt-1">Get started with Certifyi Sentinel</p>
         </div>
-        <div className="bg-[#12121a] border border-gray-800 rounded-xl p-6 shadow-2xl">
-          {errors.form && <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">{errors.form}</div>}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1.5">Full Name</label>
-              <input value={form.name} onChange={(e) => set('name', e.target.value)} className={inp} placeholder="John Doe" />
-              {errors.name && <p className="mt-1 text-xs text-red-400">{errors.name}</p>}
+
+        <div className="bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] p-6 shadow-[var(--shadow-md)]">
+          {errors.form && (
+            <div className="mb-4 p-3 bg-[hsl(var(--s-er-bg))] border border-[hsl(var(--s-er-br))] text-[hsl(var(--s-er-tx))] text-sm">
+              {errors.form}
             </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1.5">Email</label>
-              <input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} className={inp} placeholder="john@company.com" />
-              {errors.email && <p className="mt-1 text-xs text-red-400">{errors.email}</p>}
+              <label className="block text-sm font-medium text-[hsl(var(--text-2))] mb-1.5">Full Name</label>
+              <input
+                value={form.name}
+                onChange={(e) => set('name', e.target.value)}
+                className={inputClass(!!errors.name)}
+                placeholder="Jane Smith"
+                autoComplete="name"
+              />
+              {errors.name && <p className="mt-1 text-xs text-[hsl(var(--s-er-tx))]">{errors.name}</p>}
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[hsl(var(--text-2))] mb-1.5">Work Email</label>
+              <input
+                type="email"
+                value={form.email}
+                onChange={(e) => set('email', e.target.value)}
+                className={inputClass(!!errors.email)}
+                placeholder="jane@company.com"
+                autoComplete="email"
+              />
+              {errors.email && <p className="mt-1 text-xs text-[hsl(var(--s-er-tx))]">{errors.email}</p>}
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">Password</label>
-                <input type="password" value={form.password} onChange={(e) => set('password', e.target.value)} className={inp} placeholder="Min 8 chars" />
-                {errors.password && <p className="mt-1 text-xs text-red-400">{errors.password}</p>}
+                <label className="block text-sm font-medium text-[hsl(var(--text-2))] mb-1.5">Password</label>
+                <input
+                  type="password"
+                  value={form.password}
+                  onChange={(e) => set('password', e.target.value)}
+                  className={inputClass(!!errors.password)}
+                  placeholder="Min 8 chars"
+                  autoComplete="new-password"
+                />
+                {errors.password && <p className="mt-1 text-xs text-[hsl(var(--s-er-tx))]">{errors.password}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">Confirm</label>
-                <input type="password" value={form.confirmPassword} onChange={(e) => set('confirmPassword', e.target.value)} className={inp} placeholder="Re-enter" />
-                {errors.confirmPassword && <p className="mt-1 text-xs text-red-400">{errors.confirmPassword}</p>}
+                <label className="block text-sm font-medium text-[hsl(var(--text-2))] mb-1.5">Confirm</label>
+                <input
+                  type="password"
+                  value={form.confirmPassword}
+                  onChange={(e) => set('confirmPassword', e.target.value)}
+                  className={inputClass(!!errors.confirmPassword)}
+                  placeholder="Re-enter"
+                  autoComplete="new-password"
+                />
+                {errors.confirmPassword && <p className="mt-1 text-xs text-[hsl(var(--s-er-tx))]">{errors.confirmPassword}</p>}
               </div>
             </div>
+
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1.5">Organization</label>
-              <input value={form.organization} onChange={(e) => set('organization', e.target.value)} className={inp} placeholder="Acme Corp" />
-              {errors.organization && <p className="mt-1 text-xs text-red-400">{errors.organization}</p>}
+              <label className="block text-sm font-medium text-[hsl(var(--text-2))] mb-1.5">Organization</label>
+              <input
+                value={form.organization}
+                onChange={(e) => set('organization', e.target.value)}
+                className={inputClass(!!errors.organization)}
+                placeholder="Acme Corp"
+                autoComplete="organization"
+              />
+              {errors.organization && <p className="mt-1 text-xs text-[hsl(var(--s-er-tx))]">{errors.organization}</p>}
             </div>
+
             <div>
-              <label className="flex items-center gap-2 text-sm text-gray-400">
-                <input type="checkbox" checked={form.agreeTerms} onChange={(e) => set('agreeTerms', e.target.checked)} className="rounded border-gray-600" />
-                I agree to the <a href="#" className="text-emerald-400">Terms of Service</a> and <a href="#" className="text-emerald-400">Privacy Policy</a>
+              <label className="flex items-start gap-2.5 text-sm text-[hsl(var(--text-3))] cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.agreeTerms}
+                  onChange={(e) => set('agreeTerms', e.target.checked)}
+                  className="mt-0.5 border-[hsl(var(--border))]"
+                />
+                <span>
+                  I agree to the{' '}
+                  <a href="#" className="text-[hsl(var(--brand))] hover:underline">Terms of Service</a>
+                  {' '}and{' '}
+                  <a href="#" className="text-[hsl(var(--brand))] hover:underline">Privacy Policy</a>
+                </span>
               </label>
-              {errors.agreeTerms && <p className="mt-1 text-xs text-red-400">{errors.agreeTerms}</p>}
+              {errors.agreeTerms && <p className="mt-1 text-xs text-[hsl(var(--s-er-tx))]">{errors.agreeTerms}</p>}
             </div>
-            <button type="submit" disabled={loading} className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-medium rounded-lg transition-colors">
-              {loading ? 'Creating account...' : 'Create Account'}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-2.5 bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-hover))] disabled:opacity-50 text-white font-medium transition-colors text-sm"
+            >
+              {loading ? 'Creating account…' : 'Create Account'}
             </button>
           </form>
-          <p className="mt-6 text-center text-sm text-gray-400">
-            Already have an account? <Link to="/login" className="text-emerald-400 hover:text-emerald-300 font-medium">Sign In</Link>
+
+          <p className="mt-6 text-center text-sm text-[hsl(var(--text-3))]">
+            Already have an account?{' '}
+            <Link to="/login" className="text-[hsl(var(--brand))] hover:underline font-medium">
+              Sign In
+            </Link>
           </p>
         </div>
       </div>

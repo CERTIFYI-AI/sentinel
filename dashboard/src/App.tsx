@@ -112,10 +112,13 @@ const ImportSampleData = lazy(() => import('./pages/ImportSampleData'));
 
 function Loading() {
   return (
-    <div className="flex items-center justify-center h-64">
+    <div className="flex items-center justify-center h-64" aria-busy="true" aria-label="Loading page">
       <div className="flex flex-col items-center gap-3">
-        <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-sm text-gray-400">Loading...</p>
+        <div
+          className="w-7 h-7 border-2 border-t-transparent animate-spin flex-shrink-0"
+          style={{ borderColor: 'hsl(var(--border-mid))', borderTopColor: 'hsl(var(--brand))' }}
+        />
+        <p className="text-xs text-[hsl(var(--text-4))]">Loading…</p>
       </div>
     </div>
   );

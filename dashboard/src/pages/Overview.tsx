@@ -329,8 +329,8 @@ export default function Overview() {
         </CardContent>
       </Card>
 
-      {/* KPI Tiles — 9 cards, 3 rows of 3 */}
-      <div className="grid grid-cols-3 gap-4 lg:grid-cols-9 lg:gap-3">
+      {/* KPI Tiles — responsive grid: 3 cols → 5 cols → 9 cols */}
+      <div className="grid grid-cols-3 gap-3 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-9">
         {kpis.map(k => (
           <Link key={k.label} to={k.link} style={{ textDecoration: 'none' }}>
             <Card
