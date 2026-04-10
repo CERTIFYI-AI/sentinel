@@ -1,11 +1,11 @@
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import {
   SquaresFour, Bell, FileText, Shield, BookOpen, ChartBar,
-  UserCircleCheck, Robot, Rss, Database, BuildingOffice,
+  UserCircleCheck, Robot, Database, BuildingOffice,
   Warning, Scales, FolderOpen,
   ShieldCheck, Lock, Gear,
-  SignOut, CaretDown, Sun, Moon,
+  SignOut, CaretDown, Sun, Moon, Monitor,
   List, X, Brain, Briefcase, Eye,
   ListChecks, Lightbulb, GlobeHemisphereWest,
   Table, Target, Scan,
@@ -14,14 +14,14 @@ import {
   ClipboardText, ShieldWarning, GraduationCap, Lifebuoy, CalendarBlank,
   FileMagnifyingGlass, FlowArrow,
   ChartPieSlice, Scroll, ChatTeardropText, CheckSquare,
+  ArrowRight,
 } from '@phosphor-icons/react'
 import { cn } from '../lib/utils'
-import { useTheme } from '../providers/theme'
+import { useTheme, type Theme } from '../providers/theme'
 
 interface NavSubItem {
   label: string
   to: string
-  icon?: any
 }
 
 interface NavItem {
@@ -166,20 +166,27 @@ function isSectionActive(items: NavItem[], pathname: string): boolean {
   })
 }
 
-function isParentOrChildActive(item: NavItem, pathname: string): boolean {
-  if (isItemActive(item.to, pathname)) return true
-  if (item.children?.some(c => isItemActive(c.to, pathname))) return true
-  return false
+const LOGO_URL = 'https://dignep.com.np/wp-content/uploads/2026/03/sentinel_logo.svg'
+
+const THEME_ICONS: Record<Theme, React.ReactNode> = {
+  dark: <Moon size={13} weight='duotone' />,
+  light: <Sun size={13} weight='duotone' />,
+  system: <Monitor size={13} weight='duotone' />,
 }
 
-const LOGO_URL = 'https://dignep.com.np/wp-content/uploads/2026/03/sentinel_logo.svg'
+const THEME_NEXT_LABEL: Record<Theme, string> = {
+  dark: 'Dark mode — click for Light',
+  light: 'Light mode — click for System',
+  system: 'System mode — click for Dark',
+}
 
 export default function Sidebar() {
   const location = useLocation()
+  const navigate = useNavigate()
   const [sidebarState, setSidebarState] = useState<'expanded' | 'icon-only' | 'hidden'>(loadSidebarState)
   const [expandedSections, setExpandedSections] = useState<string[]>(loadSections)
   const [expandedItems, setExpandedItems] = useState<string[]>([])
-  const { setTheme, resolved } = useTheme()
+  const { theme, cycleTheme } = useTheme()
   const [logoError, setLogoError] = useState(false)
 
   const collapsed = sidebarState === 'icon-only'
@@ -202,8 +209,7 @@ export default function Sidebar() {
     if (activeSections.length > 0) {
       setExpandedSections(prev => {
         const missing = activeSections.filter(t => !prev.includes(t))
-        if (missing.length === 0) return prev
-        return [...prev, ...missing]
+        return missing.length === 0 ? prev : [...prev, ...missing]
       })
     }
 
@@ -225,8 +231,6 @@ export default function Sidebar() {
   const cycleSidebar = () => setSidebarState(prev =>
     prev === 'expanded' ? 'icon-only' : prev === 'icon-only' ? 'hidden' : 'expanded'
   )
-
-  const toggleTheme = () => setTheme(resolved === 'dark' ? 'light' : 'dark')
 
   if (hidden) {
     return (
@@ -313,82 +317,110 @@ export default function Sidebar() {
                     const childActive = item.children?.some(c => isItemActive(c.to, location.pathname))
                     const hasChildren = !!(item.children && item.children.length > 0)
                     const childrenExpanded = expandedItems.includes(item.to)
-
-                    const handleItemClick = () => {
-                      if (hasChildren) toggleItem(item.to)
-                    }
+                    const isHighlighted = active || (!!childActive && !active)
 
                     return (
                       <div key={item.to}>
-                        {/* Primary nav item */}
-                        <NavLink
-                          to={item.to}
-                          onClick={handleItemClick}
-                          className={({ isActive }) => cn(
-                            'flex items-center gap-2.5 px-2 py-1.5 text-[13px] transition-colors group',
-                            (active || (childActive && !active))
-                              ? 'bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))]'
-                              : 'text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-1))]',
-                            active && 'border-l-2 border-[hsl(var(--brand))]',
-                            collapsed && 'justify-center px-0'
-                          )}
-                          title={collapsed ? item.label : undefined}
-                        >
-                          {/* Left border indicator */}
-                          {active && !collapsed && (
-                            <span className='sr-only'>Active</span>
-                          )}
-                          <Icon
-                            size={16}
-                            weight={active ? 'fill' : 'regular'}
+                        {/* Parent nav row — BUTTON when has children, NavLink when leaf */}
+                        {hasChildren ? (
+                          <button
+                            onClick={() => {
+                              toggleItem(item.to)
+                              // Navigate to parent page when expanding (not collapsing)
+                              if (!childrenExpanded) navigate(item.to)
+                            }}
                             className={cn(
-                              'flex-shrink-0 transition-colors',
-                              active
-                                ? 'text-[hsl(var(--brand))]'
-                                : 'text-[hsl(var(--text-4))] group-hover:text-[hsl(var(--text-2))]'
+                              'w-full flex items-center gap-2.5 px-2 py-1.5 text-[13px] transition-colors group',
+                              isHighlighted
+                                ? 'bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))] border-l-2 border-[hsl(var(--brand))]'
+                                : 'text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-1))]',
+                              collapsed && 'justify-center px-0'
                             )}
-                          />
-                          {!collapsed && (
-                            <>
-                              <span className='flex-1 truncate font-[450]'>{item.label}</span>
-                              {item.badge != null && (
-                                <span className='bg-[hsl(var(--brand))] text-white text-[10px] px-1.5 py-0.5 font-semibold min-w-[18px] text-center leading-none'>
-                                  {item.badge}
-                                </span>
+                            title={collapsed ? item.label : undefined}
+                          >
+                            <Icon
+                              size={16}
+                              weight={isHighlighted ? 'fill' : 'regular'}
+                              className={cn(
+                                'flex-shrink-0 transition-colors',
+                                isHighlighted
+                                  ? 'text-[hsl(var(--brand))]'
+                                  : 'text-[hsl(var(--text-4))] group-hover:text-[hsl(var(--text-2))]'
                               )}
-                              {hasChildren && (
+                            />
+                            {!collapsed && (
+                              <>
+                                <span className='flex-1 text-left truncate font-[450]'>{item.label}</span>
+                                {item.badge != null && (
+                                  <span className='bg-[hsl(var(--brand))] text-white text-[10px] px-1.5 py-0.5 font-semibold min-w-[18px] text-center leading-none'>
+                                    {item.badge}
+                                  </span>
+                                )}
                                 <CaretDown
                                   size={10}
                                   className={cn(
                                     'flex-shrink-0 transition-transform duration-150',
                                     childrenExpanded ? 'rotate-0' : '-rotate-90',
-                                    active ? 'text-[hsl(var(--brand))]' : 'text-[hsl(var(--text-4))]'
+                                    isHighlighted ? 'text-[hsl(var(--brand))]' : 'text-[hsl(var(--text-4))]'
                                   )}
                                 />
+                              </>
+                            )}
+                          </button>
+                        ) : (
+                          <NavLink
+                            to={item.to}
+                            className={({ isActive }) => cn(
+                              'flex items-center gap-2.5 px-2 py-1.5 text-[13px] transition-colors group',
+                              isActive
+                                ? 'bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))] border-l-2 border-[hsl(var(--brand))]'
+                                : 'text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-1))]',
+                              collapsed && 'justify-center px-0'
+                            )}
+                            title={collapsed ? item.label : undefined}
+                          >
+                            <Icon
+                              size={16}
+                              weight={active ? 'fill' : 'regular'}
+                              className={cn(
+                                'flex-shrink-0 transition-colors',
+                                active
+                                  ? 'text-[hsl(var(--brand))]'
+                                  : 'text-[hsl(var(--text-4))] group-hover:text-[hsl(var(--text-2))]'
                               )}
-                            </>
-                          )}
-                        </NavLink>
+                            />
+                            {!collapsed && (
+                              <>
+                                <span className='flex-1 truncate font-[450]'>{item.label}</span>
+                                {item.badge != null && (
+                                  <span className='bg-[hsl(var(--brand))] text-white text-[10px] px-1.5 py-0.5 font-semibold min-w-[18px] text-center leading-none'>
+                                    {item.badge}
+                                  </span>
+                                )}
+                              </>
+                            )}
+                          </NavLink>
+                        )}
 
                         {/* Sub-items */}
                         {!collapsed && hasChildren && childrenExpanded && (
                           <div className='ml-5 mt-0.5 space-y-0.5 border-l border-[hsl(var(--border))]'>
                             {item.children!.map(child => {
-                              const childActive = isItemActive(child.to, location.pathname)
+                              const cActive = isItemActive(child.to, location.pathname)
                               return (
                                 <NavLink
                                   key={child.to}
                                   to={child.to}
                                   className={cn(
                                     'flex items-center gap-2 pl-3 pr-2 py-1.5 text-[12px] transition-colors',
-                                    childActive
+                                    cActive
                                       ? 'text-[hsl(var(--brand))] font-medium'
                                       : 'text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]'
                                   )}
                                 >
                                   <span className={cn(
-                                    'w-1 h-1 flex-shrink-0',
-                                    childActive ? 'bg-[hsl(var(--brand))]' : 'bg-current opacity-40'
+                                    'w-1 h-1 flex-shrink-0 rounded-full',
+                                    cActive ? 'bg-[hsl(var(--brand))]' : 'bg-current opacity-40'
                                   )} />
                                   <span className='truncate'>{child.label}</span>
                                 </NavLink>
@@ -411,20 +443,20 @@ export default function Sidebar() {
         {collapsed ? (
           <div className='flex flex-col items-center gap-2 py-1'>
             <button
-              onClick={toggleTheme}
+              onClick={cycleTheme}
               className='flex items-center justify-center w-8 h-8 text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-1))] transition-colors'
-              title={resolved === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-              aria-label={resolved === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              title={THEME_NEXT_LABEL[theme]}
+              aria-label={THEME_NEXT_LABEL[theme]}
             >
-              {resolved === 'dark' ? <Sun size={16} weight='duotone'/> : <Moon size={16} weight='duotone'/>}
+              {THEME_ICONS[theme]}
             </button>
-            <div data-avatar='true' className='w-8 h-8 bg-[hsl(var(--brand))] flex items-center justify-center flex-shrink-0'>
+            <div className='w-8 h-8 bg-[hsl(var(--brand))] flex items-center justify-center flex-shrink-0'>
               <span className='text-xs font-bold text-white'>SC</span>
             </div>
           </div>
         ) : (
           <div className='flex items-center gap-2 px-1.5 py-1'>
-            <div data-avatar='true' className='w-7 h-7 bg-[hsl(var(--brand))] flex items-center justify-center flex-shrink-0'>
+            <div className='w-7 h-7 bg-[hsl(var(--brand))] flex items-center justify-center flex-shrink-0'>
               <span className='text-[11px] font-bold text-white'>SC</span>
             </div>
             <div className='flex-1 min-w-0'>
@@ -433,15 +465,15 @@ export default function Sidebar() {
             </div>
             <div className='flex items-center gap-0.5 flex-shrink-0'>
               <button
-                onClick={toggleTheme}
+                onClick={cycleTheme}
                 className='flex items-center justify-center w-7 h-7 text-[hsl(var(--text-4))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-2))] transition-colors'
-                title={resolved === 'dark' ? 'Light mode' : 'Dark mode'}
-                aria-label={resolved === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                title={THEME_NEXT_LABEL[theme]}
+                aria-label={THEME_NEXT_LABEL[theme]}
               >
-                {resolved === 'dark' ? <Sun size={13} weight='duotone'/> : <Moon size={13} weight='duotone'/>}
+                {THEME_ICONS[theme]}
               </button>
               <button
-                className='flex items-center justify-center w-7 h-7 text-[hsl(var(--text-4))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--s-er-tx))] transition-colors'
+                className='flex items-center justify-center w-7 h-7 text-[hsl(var(--text-4))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-2))] transition-colors'
                 title='Sign out'
                 aria-label='Sign out'
               >
@@ -454,4 +486,3 @@ export default function Sidebar() {
     </aside>
   )
 }
-

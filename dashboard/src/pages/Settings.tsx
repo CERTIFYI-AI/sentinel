@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Building, Globe, Shield, Key, Bell, Database, Plug, FloppyDisk, Plus, Copy, Eye, EyeSlash, ArrowCounterClockwise, Trash, CheckCircle, XCircle, Warning, Lock, User, ClockCounterClockwise } from '@phosphor-icons/react';
+import { Building, Globe, Shield, Key, Bell, Database, Plug, FloppyDisk, Plus, Copy, Eye, EyeSlash, ArrowCounterClockwise, Trash, CheckCircle, XCircle, Warning, Lock, User, ClockCounterClockwise, Moon, Sun, Desktop, PaintBrush } from '@phosphor-icons/react';
+import { useTheme } from '../providers/theme';
+import { getStoredAccent, setAccent, type Accent } from '../store/accentStore';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -87,7 +89,16 @@ const INITIAL_AUDIT_ENTRIES: AuditEntry[] = [
 
 export default function Settings() {
   const { orgName, domain, industry, companySize, primaryContact, timezone, fiscalYearStart, updateSettings } = useSettingsStore();
+  const { theme, setTheme } = useTheme();
+  const [accent, setAccentState] = useState<Accent>(getStoredAccent);
+  const handleAccentChange = (a: Accent) => { setAccent(a); setAccentState(a); };
   const [activeTab, setActiveTab] = useState('organization');
+  const [displayPrefs, setDisplayPrefs] = useState({
+    sidebarLabels: true,
+    animateCharts: true,
+    compactRows: false,
+    showEntityIds: true,
+  });
 
   // Org form
   const [orgForm, setOrgForm] = useState({ orgName, domain, industry, companySize, primaryContact, timezone, fiscalYearStart });
@@ -217,6 +228,7 @@ export default function Settings() {
             { value: 'notifications', label: 'Notifications' },
             { value: 'data-retention', label: 'Data Retention' },
             { value: 'integrations', label: 'Integrations' },
+            { value: 'appearance', label: 'Appearance' },
             { value: 'audit-trail', label: 'Audit Trail' },
           ].map(tab => (
             <TabsTrigger key={tab.value} value={tab.value} style={{ borderRadius: 0 }}>{tab.label}</TabsTrigger>
@@ -528,7 +540,170 @@ export default function Settings() {
           </div>
         </TabsContent>
 
-        {/* ── AUDIT TRAIL ──────────────────────────────── */}
+        {/* ── APPEARANCE ─────────────────────────────── */}
+        <TabsContent value="appearance" className="mt-4 space-y-6">
+          {/* Theme Selection */}
+          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2" style={{ color: 'hsl(var(--text-1))' }}>
+                <PaintBrush size={16} style={{ color: 'hsl(var(--brand))' }} />
+                Theme
+              </CardTitle>
+              <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Choose how the Sentinel AI platform looks. "System" follows your OS preference.</p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-4">
+                {[
+                  {
+                    value: 'dark' as const,
+                    label: 'Dark',
+                    description: 'Optimised for low-light environments and extended use.',
+                    icon: Moon,
+                    preview: { bg: '#0f172a', sidebar: '#1e293b', card: '#1e293b', text: '#f1f5f9', accent: '#22c55e' },
+                  },
+                  {
+                    value: 'light' as const,
+                    label: 'Light',
+                    description: 'Clean, bright interface for well-lit workspaces.',
+                    icon: Sun,
+                    preview: { bg: '#f8fafc', sidebar: '#f1f5f9', card: '#ffffff', text: '#0f172a', accent: '#16a34a' },
+                  },
+                  {
+                    value: 'system' as const,
+                    label: 'System',
+                    description: 'Automatically matches your operating system setting.',
+                    icon: Desktop,
+                    preview: { bg: '#e2e8f0', sidebar: '#cbd5e1', card: '#f8fafc', text: '#334155', accent: '#22c55e' },
+                  },
+                ].map(opt => {
+                  const Icon = opt.icon;
+                  const selected = theme === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      onClick={() => setTheme(opt.value)}
+                      style={{
+                        borderRadius: 0,
+                        border: selected ? '2px solid hsl(var(--brand))' : '2px solid hsl(var(--border))',
+                        background: selected ? 'hsl(var(--brand) / 0.06)' : 'hsl(var(--bg-muted))',
+                        padding: 0,
+                        overflow: 'hidden',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        transition: 'border-color 0.15s',
+                      }}
+                    >
+                      {/* Mini UI preview */}
+                      <div style={{ background: opt.preview.bg, height: 100, position: 'relative', display: 'flex', gap: 4, padding: 8 }}>
+                        <div style={{ width: 28, background: opt.preview.sidebar, borderRadius: 2, flexShrink: 0 }}>
+                          {[0,1,2,3,4].map(i => (
+                            <div key={i} style={{ height: 6, margin: '4px 4px', background: i === 1 ? opt.preview.accent : opt.preview.text, opacity: i === 1 ? 0.8 : 0.2, borderRadius: 1 }} />
+                          ))}
+                        </div>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <div style={{ height: 10, background: opt.preview.card, borderRadius: 2, border: `1px solid ${opt.preview.text}20` }} />
+                          <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
+                            {[0,1,2,3].map(i => (
+                              <div key={i} style={{ background: opt.preview.card, borderRadius: 2, border: `1px solid ${opt.preview.text}15`, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 3 }}>
+                                <div style={{ height: 4 + (i % 3) * 4, background: opt.preview.accent, borderRadius: 1, opacity: 0.7 }} />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        {selected && (
+                          <div style={{ position: 'absolute', top: 6, right: 6, background: 'hsl(var(--brand))', borderRadius: '50%', width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <CheckCircle size={12} weight="fill" style={{ color: '#fff' }} />
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ padding: '10px 12px', borderTop: `1px solid ${selected ? 'hsl(var(--brand) / 0.3)' : 'hsl(var(--border))'}` }}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Icon size={14} style={{ color: selected ? 'hsl(var(--brand))' : 'hsl(var(--text-3))' }} />
+                          <span className="text-sm font-semibold" style={{ color: selected ? 'hsl(var(--brand))' : 'hsl(var(--text-1))' }}>{opt.label}</span>
+                        </div>
+                        <p className="text-xs leading-relaxed" style={{ color: 'hsl(var(--text-4))' }}>{opt.description}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Accent Color */}
+          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Accent Color</CardTitle>
+              <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Sets the brand color used for buttons, links, active indicators, and chart series across the platform.</p>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-4 flex-wrap">
+                {([
+                  { key: 'emerald' as Accent, label: 'Emerald', color: 'hsl(142 47% 44%)' },
+                  { key: 'blue' as Accent, label: 'Blue', color: 'hsl(217 91% 56%)' },
+                  { key: 'purple' as Accent, label: 'Purple', color: 'hsl(263 70% 58%)' },
+                  { key: 'teal' as Accent, label: 'Teal', color: 'hsl(174 72% 40%)' },
+                  { key: 'orange' as Accent, label: 'Orange', color: 'hsl(25 95% 52%)' },
+                  { key: 'rose' as Accent, label: 'Rose', color: 'hsl(346 77% 50%)' },
+                ]).map(sw => {
+                  const isActive = accent === sw.key;
+                  return (
+                    <button
+                      key={sw.key}
+                      onClick={() => handleAccentChange(sw.key)}
+                      title={sw.label}
+                      aria-label={`Set accent to ${sw.label}`}
+                      style={{
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                        background: 'none', border: 'none', cursor: 'pointer', padding: 4,
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 36, height: 36,
+                          background: sw.color,
+                          border: isActive ? '3px solid hsl(var(--text-1))' : '3px solid transparent',
+                          outline: isActive ? '1px solid hsl(var(--text-4))' : 'none',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}
+                      >
+                        {isActive && <CheckCircle size={16} weight="fill" style={{ color: '#fff' }} />}
+                      </div>
+                      <span className="text-xs" style={{ color: isActive ? 'hsl(var(--text-1))' : 'hsl(var(--text-4))' }}>{sw.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Density / Display Options */}
+          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Display Preferences</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-0">
+              {([
+                { key: 'sidebarLabels' as const, label: 'Show sidebar section labels', description: 'Display category headers (OVERVIEW, AI GOVERNANCE, etc.) in the navigation sidebar' },
+                { key: 'animateCharts' as const, label: 'Animate chart transitions', description: 'Enable smooth entry animations on recharts graphs and dashboard tiles' },
+                { key: 'compactRows' as const, label: 'Compact table rows', description: 'Reduce vertical padding in data tables for higher information density' },
+                { key: 'showEntityIds' as const, label: 'Show entity IDs', description: 'Display short IDs (e.g. MDL-001, RSK-004) inline with entity names throughout the UI' },
+              ]).map(pref => (
+                <div key={pref.key} className="flex items-center justify-between py-3" style={{ borderBottom: '1px solid hsl(var(--border) / 0.5)' }}>
+                  <div>
+                    <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{pref.label}</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>{pref.description}</p>
+                  </div>
+                  <Switch
+                    checked={displayPrefs[pref.key]}
+                    onCheckedChange={v => setDisplayPrefs(prev => ({ ...prev, [pref.key]: v }))}
+                  />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="audit-trail" className="mt-4 space-y-4">
           <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
             <CardHeader className="pb-3">
