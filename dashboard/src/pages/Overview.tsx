@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -8,6 +8,7 @@ import {
   Users, Database, StackSimple, ArrowRight, ChartLine, CheckCircle,
   TrendUp, TrendDown, Minus, ShieldCheck, Siren, Plus,
   Robot, Scales, UserCircleCheck, Eye, Lightning, PresentationChart, Exam,
+  ArrowSquareOut, Sparkle, X, ArrowUp, ArrowDown, Timer,
 } from '@phosphor-icons/react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer,
@@ -118,11 +119,45 @@ function ScoreRing({ value, label, color, size = 80 }: { value: number | string;
   );
 }
 
+type DateRange = '7D' | '30D' | '90D' | 'QoQ';
+
+const AUDIT_DATE = new Date('2026-04-20');
+
+function useCountdown(target: Date) {
+  const [timeLeft, setTimeLeft] = useState('');
+  useEffect(() => {
+    function update() {
+      const diff = target.getTime() - Date.now();
+      if (diff <= 0) { setTimeLeft('Today'); return; }
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setTimeLeft(`${d}d ${h}h ${m}m ${s}s`);
+    }
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [target]);
+  return timeLeft;
+}
+
+const DIGEST_TEMPLATES = [
+  'Since last login: 2 new risks added, compliance improved 3%, 1 bias audit failed. 2 models need immediate review.',
+  'Since last login: Shadow AI agent detected in Marketing, EU AI Act readiness at 65%. 3 controls need evidence refresh.',
+  'Since last login: HITL queue has 3 pending reviews, AML false positive rate increased. 1 critical incident escalated.',
+  'Since last login: 4 vendor DPAs approaching expiry, ISO 42001 audit due in 10 days. 5 open gaps are past deadline.',
+];
+
 export default function Overview() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
   const navigate = useNavigate();
   const [cisoView, setCisoView] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRange>('30D');
+  const [alertPanelOpen, setAlertPanelOpen] = useState(false);
+  const [digestIdx, setDigestIdx] = useState(0);
+  const countdown = useCountdown(AUDIT_DATE);
 
   const openRisks = RISKS.filter(r => r.status === 'open').length;
   const activeModels = MODELS.filter(m => m.status === 'production').length;
@@ -180,10 +215,34 @@ export default function Overview() {
     { label: 'Generate Report', desc: 'Board-ready reports', icon: PresentationChart, to: '/reporting' },
   ];
 
+  const ALERT_ITEMS = [
+    { id: 'A1', title: 'EU AI Act Annex IV documentation incomplete', severity: 'critical', link: '/compliance/gap-analysis' },
+    { id: 'A2', title: 'MDL-001 fairness score below threshold (74%)', severity: 'critical', link: '/models/inventory/MDL-001' },
+    { id: 'A3', title: 'Shadow AI agent AGT-010 active in Marketing', severity: 'high', link: '/agents/AGT-010' },
+  ];
+
+  const KPI_TRENDS: Record<string, { delta: number; dir: 'up' | 'down' | 'stable' }> = {
+    'Open Risks': { delta: 2.1, dir: 'up' },
+    'Active Models': { delta: 0, dir: 'stable' },
+    'Critical Incidents': { delta: 1.0, dir: 'up' },
+    'Active Policies': { delta: 5.3, dir: 'up' },
+    'Vendors': { delta: 0, dir: 'stable' },
+    'Datasets': { delta: 1, dir: 'up' },
+    'Frameworks': { delta: 0, dir: 'stable' },
+    'Open Tasks': { delta: 3.2, dir: 'down' },
+    'Use Cases': { delta: 0, dir: 'stable' },
+  };
+
   return (
     <div className="space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+      {/* Skip to main content (WCAG) */}
+      <a href="#main-content" style={{ position: 'absolute', left: -9999, top: 0, zIndex: 999, padding: '8px 14px', background: 'hsl(var(--brand))', color: '#fff', fontSize: 13 }}
+        onFocus={e => { e.currentTarget.style.left = '0'; }} onBlur={e => { e.currentTarget.style.left = '-9999px'; }}>
+        Skip to main content
+      </a>
+
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>
             GRC Executive Dashboard
@@ -192,11 +251,34 @@ export default function Overview() {
             {orgName} · AI Governance, Risk & Compliance Overview
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Date range pills */}
+          <div style={{ display: 'flex', gap: 2 }}>
+            {(['7D', '30D', '90D', 'QoQ'] as DateRange[]).map(r => (
+              <button
+                key={r}
+                onClick={() => setDateRange(r)}
+                aria-pressed={dateRange === r}
+                style={{
+                  padding: '4px 10px',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  border: '1px solid hsl(var(--border))',
+                  cursor: 'pointer',
+                  background: dateRange === r ? 'hsl(var(--brand))' : 'hsl(var(--bg-surface))',
+                  color: dateRange === r ? '#fff' : 'hsl(var(--text-3))',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
           <Button
             variant="outline"
             size="sm"
             onClick={() => setCisoView(v => !v)}
+            aria-pressed={cisoView}
             style={{
               borderRadius: 0,
               borderColor: cisoView ? 'hsl(var(--brand))' : 'hsl(var(--border))',
@@ -216,6 +298,72 @@ export default function Overview() {
           </span>
         </div>
       </div>
+
+      {/* Alert Ribbon */}
+      <div
+        onClick={() => setAlertPanelOpen(true)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          padding: '10px 16px',
+          background: 'hsl(var(--s-er-bg))',
+          border: '1px solid hsl(var(--s-er-br))',
+          cursor: 'pointer',
+        }}
+        role="button"
+        tabIndex={0}
+        onKeyDown={e => e.key === 'Enter' && setAlertPanelOpen(true)}
+        aria-label="View critical items before audit"
+      >
+        <Siren size={16} style={{ color: 'hsl(var(--s-er-tx))', flexShrink: 0 }} />
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--s-er-tx))' }}>
+          {ALERT_ITEMS.length} critical items require attention before next audit (Apr 20)
+        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginLeft: 'auto', background: 'hsl(var(--s-er-tx)/0.12)', padding: '3px 10px' }}>
+          <Timer size={13} style={{ color: 'hsl(var(--s-er-tx))' }} />
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'hsl(var(--s-er-tx))', fontFamily: 'monospace' }}>{countdown}</span>
+        </div>
+        <ArrowRight size={14} style={{ color: 'hsl(var(--s-er-tx))', flexShrink: 0 }} />
+      </div>
+
+      {/* Alert slide-out panel */}
+      {alertPanelOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex' }}>
+          <div style={{ flex: 1, background: 'hsl(var(--bg-page)/60%)', backdropFilter: 'blur(4px)' }} onClick={() => setAlertPanelOpen(false)} />
+          <div style={{ width: 420, background: 'hsl(var(--bg-surface))', borderLeft: '1px solid hsl(var(--border))', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid hsl(var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, background: 'hsl(var(--bg-surface))' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Siren size={16} style={{ color: 'hsl(var(--s-er-tx))' }} />
+                <span style={{ fontWeight: 700, color: 'hsl(var(--text-1))', fontSize: 14 }}>Critical Items</span>
+                <span style={{ fontSize: 11, fontFamily: 'monospace', color: 'hsl(var(--s-er-tx))' }}>Audit in {countdown}</span>
+              </div>
+              <button onClick={() => setAlertPanelOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'hsl(var(--text-3))' }} aria-label="Close">
+                <X size={18} />
+              </button>
+            </div>
+            <div style={{ padding: '16px 20px', flex: 1 }}>
+              {ALERT_ITEMS.map((item, i) => {
+                const sc = item.severity === 'critical'
+                  ? { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', br: 'hsl(var(--s-er-br))' }
+                  : { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))', br: 'hsl(var(--s-wn-br))' };
+                return (
+                  <div key={item.id} style={{ marginBottom: 12, padding: 14, background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                      <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.br}`, borderRadius: 0, fontSize: 10 }}>{item.severity}</Badge>
+                      <span style={{ fontSize: 10, color: 'hsl(var(--text-4))' }}>{item.id}</span>
+                    </div>
+                    <p style={{ fontSize: 13, fontWeight: 500, color: 'hsl(var(--text-1))', marginBottom: 10, lineHeight: 1.4 }}>{item.title}</p>
+                    <Link to={item.link} onClick={() => setAlertPanelOpen(false)} style={{ fontSize: 12, color: 'hsl(var(--brand))', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      Resolve <ArrowRight size={12} />
+                    </Link>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ═══════ CISO VIEW — EXECUTIVE SUMMARY ═══════ */}
       {cisoView && (
@@ -329,35 +477,70 @@ export default function Overview() {
         </CardContent>
       </Card>
 
-      {/* KPI Tiles — responsive grid: 3 cols → 5 cols → 9 cols */}
-      <div className="grid grid-cols-3 gap-3 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-9">
-        {kpis.map(k => (
-          <Link key={k.label} to={k.link} style={{ textDecoration: 'none' }}>
-            <Card
-              style={{
-                background: 'hsl(var(--bg-surface))',
-                border: '1px solid hsl(var(--border))',
-                borderLeft: `4px solid ${kpiBorderColor(k)}`,
-                cursor: 'pointer',
-                transition: 'border-color 0.15s',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.borderColor = k.color)}
-              onMouseLeave={e => {
-                e.currentTarget.style.borderColor = 'hsl(var(--border))';
-                e.currentTarget.style.borderLeftColor = kpiBorderColor(k);
-              }}
+      {/* Executive AI Digest */}
+      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+        <CardContent className="p-4">
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+            <div style={{ flexShrink: 0, width: 32, height: 32, background: 'hsl(var(--brand-subtle))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Sparkle size={16} style={{ color: 'hsl(var(--brand))' }} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'hsl(var(--text-3))', marginBottom: 4 }}>
+                AI Executive Digest
+              </p>
+              <p style={{ fontSize: 13, color: 'hsl(var(--text-2))', lineHeight: 1.6 }}>
+                {DIGEST_TEMPLATES[digestIdx]}
+              </p>
+            </div>
+            <button
+              onClick={() => setDigestIdx(i => (i + 1) % DIGEST_TEMPLATES.length)}
+              aria-label="Refresh AI digest"
+              style={{ flexShrink: 0, background: 'none', border: '1px solid hsl(var(--border))', cursor: 'pointer', padding: '5px 8px', color: 'hsl(var(--text-3))' }}
             >
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <k.icon size={20} style={{ color: k.color }} />
-                  <ArrowRight size={12} style={{ color: 'hsl(var(--text-4))' }} />
-                </div>
-                <p className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>{k.value}</p>
-                <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-3))' }}>{k.label}</p>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
+              <ArrowRight size={13} />
+            </button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* KPI Tiles — responsive grid: 3 cols → 5 cols → 9 cols */}
+      <div id="main-content" className="grid grid-cols-1 gap-3 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-9">
+        {kpis.map(k => {
+          const trend = KPI_TRENDS[k.label];
+          const isNegative = k.label === 'Open Risks' || k.label === 'Critical Incidents' || k.label === 'Open Tasks';
+          const trendColor = !trend || trend.dir === 'stable' ? 'hsl(var(--text-4))'
+            : (trend.dir === 'up' && isNegative) || (trend.dir === 'down' && !isNegative) ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-ok-tx))';
+          return (
+            <Link key={k.label} to={k.link} style={{ textDecoration: 'none' }}>
+              <Card
+                style={{
+                  background: 'hsl(var(--bg-surface))',
+                  border: '1px solid hsl(var(--border))',
+                  borderLeft: `4px solid ${kpiBorderColor(k)}`,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = k.color; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'hsl(var(--border))'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderLeftColor = kpiBorderColor(k); }}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <k.icon size={20} style={{ color: k.color }} aria-hidden="true" />
+                    <ArrowRight size={12} style={{ color: 'hsl(var(--text-4))' }} />
+                  </div>
+                  <p className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>{k.value}</p>
+                  <p className="text-xs mt-0.5 mb-1" style={{ color: 'hsl(var(--text-3))' }}>{k.label}</p>
+                  {trend && trend.dir !== 'stable' && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                      {trend.dir === 'up' ? <ArrowUp size={10} style={{ color: trendColor }} /> : <ArrowDown size={10} style={{ color: trendColor }} />}
+                      <span style={{ fontSize: 10, color: trendColor, fontWeight: 600 }}>{trend.delta}% vs last {dateRange}</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </Link>
+          );
+        })}
       </div>
 
       {/* ═══════ QUICK ACTIONS ═══════ */}

@@ -1,18 +1,27 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
+import { toast } from 'sonner';
 import {
   ClipboardText, Clock, CheckCircle, Warning, Plus, MagnifyingGlass,
   Funnel, LayoutFour, Table, Trash, PencilSimple, X,
-  CalendarBlank, User, ArrowUp, Rows, Kanban, CaretDown,
+  CalendarBlank, User, ArrowUp, Rows, Kanban, CaretDown, DotsSixVertical,
 } from '@phosphor-icons/react';
+import {
+  DndContext, DragEndEvent, DragOverEvent, DragOverlay, DragStartEvent,
+  PointerSensor, useSensor, useSensors, closestCorners,
+} from '@dnd-kit/core';
+import {
+  SortableContext, useSortable, verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { GAPS, RISKS, USERS, severityColor, statusColor, formatDate } from '../data/seed';
 import type { Severity } from '../data/seed';
 
 // ── Task data derived from GAPS + RISKS ─────────────────────────────────
 
-export type TaskStatus = 'todo' | 'in_progress' | 'done' | 'overdue';
+export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done' | 'overdue' | 'blocked';
 
 export interface Task {
   id: string;
@@ -25,6 +34,34 @@ export interface Task {
   source: string;
   sourceType: 'gap' | 'risk';
   sourceLink: string;
+}
+
+// SLA badge calculation
+function SlaBadge({ dueDate, status }: { dueDate: string; status: TaskStatus }) {
+  if (status === 'done') return null;
+  const today = new Date();
+  const due = new Date(dueDate);
+  const days = Math.ceil((due.getTime() - today.getTime()) / 86400000);
+  if (days < 0) return (
+    <span style={{ fontSize: 9, fontWeight: 700, color: 'hsl(var(--s-er-tx))', background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-br))', padding: '1px 5px', animation: 'pulse 2s infinite' }}>
+      OVERDUE
+    </span>
+  );
+  if (days === 0) return (
+    <span style={{ fontSize: 9, fontWeight: 700, color: 'hsl(var(--s-er-tx))', background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-br))', padding: '1px 5px' }}>
+      DUE TODAY
+    </span>
+  );
+  if (days <= 3) return (
+    <span style={{ fontSize: 9, fontWeight: 600, color: 'hsl(var(--s-wn-tx))', background: 'hsl(var(--s-wn-bg))', border: '1px solid hsl(var(--s-wn-br))', padding: '1px 5px' }}>
+      {days}d left
+    </span>
+  );
+  return (
+    <span style={{ fontSize: 9, fontWeight: 500, color: 'hsl(var(--s-ok-tx))', background: 'hsl(var(--s-ok-bg))', border: '1px solid hsl(var(--s-ok-br))', padding: '1px 5px' }}>
+      {days}d left
+    </span>
+  );
 }
 
 export const TASKS: Task[] = [
@@ -215,9 +252,74 @@ export const TASKS: Task[] = [
 const statusConfig: Record<TaskStatus, { label: string; bg: string; text: string; border: string }> = {
   todo:        { label: 'Todo',        bg: 'hsl(var(--bg-muted))',  text: 'hsl(var(--text-2))', border: 'hsl(var(--border))' },
   in_progress: { label: 'In Progress', bg: 'hsl(var(--s-in-bg))',  text: 'hsl(var(--s-in-tx))', border: 'hsl(var(--s-in-br))' },
+  review:      { label: 'Review',      bg: 'hsl(263 30% 14%)',     text: 'hsl(263 70% 65%)',    border: 'hsl(263 30% 24%)' },
   done:        { label: 'Done',        bg: 'hsl(var(--s-ok-bg))',  text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))' },
   overdue:     { label: 'Overdue',     bg: 'hsl(var(--s-er-bg))',  text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))' },
+  blocked:     { label: 'Blocked',     bg: 'hsl(var(--r-hi-bg))',  text: 'hsl(var(--r-hi-tx))', border: 'hsl(var(--r-hi-br))' },
 };
+
+const KANBAN_COLUMNS: TaskStatus[] = ['todo', 'in_progress', 'review', 'done', 'blocked'];
+
+// ── Sortable Kanban Card ────────────────────────────────────────────────────
+function SortableCard({
+  task, selected, onSelect, onClick,
+}: {
+  task: Task; selected: boolean; onSelect: (id: string) => void; onClick: (task: Task) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  };
+  const sc = severityColor(task.priority);
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        ...style,
+        background: 'hsl(var(--bg-surface))',
+        border: `1px solid ${selected ? 'hsl(var(--brand))' : 'hsl(var(--border))'}`,
+        padding: 10,
+        cursor: 'pointer',
+        position: 'relative',
+      }}
+      onClick={() => onClick(task)}
+    >
+      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: sc.text }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={e => { e.stopPropagation(); onSelect(task.id); }}
+          onClick={e => e.stopPropagation()}
+          style={{ width: 11, height: 11, cursor: 'pointer' }}
+        />
+        <SlaBadge dueDate={task.dueDate} status={task.status} />
+        <span style={{ fontSize: 9, color: 'hsl(var(--text-4))', fontFamily: 'monospace', marginLeft: 'auto' }}>{task.id}</span>
+        <div
+          {...attributes}
+          {...listeners}
+          onClick={e => e.stopPropagation()}
+          style={{ cursor: 'grab', color: 'hsl(var(--text-4))', display: 'flex' }}
+          aria-label="Drag to reorder"
+        >
+          <DotsSixVertical size={12} />
+        </div>
+      </div>
+      <p style={{ fontSize: 11, fontWeight: 500, color: 'hsl(var(--text-1))', lineHeight: 1.4, marginBottom: 6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+        {task.title}
+      </p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ width: 18, height: 18, borderRadius: '50%', background: sc.text, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 700, color: '#fff' }}>
+          {task.assignee.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
+        </span>
+        <span style={{ fontSize: 10, color: 'hsl(var(--text-3))', flex: 1 }}>{task.assignee.split(' ')[0]}</span>
+        <PriorityBadge priority={task.priority} />
+      </div>
+    </div>
+  );
+}
 
 function StatusBadge({ status }: { status: TaskStatus }) {
   const c = statusConfig[status];
@@ -279,6 +381,11 @@ export default function Tasks() {
   const [editTask, setEditTask] = useState<Task | null>(null);
   const [form, setForm] = useState<Omit<Task, 'id'>>(emptyForm);
   const [detailTask, setDetailTask] = useState<Task | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [commentText, setCommentText] = useState('');
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   const overdue = tasks.filter(t => t.status === 'overdue').length;
   const inProgress = tasks.filter(t => t.status === 'in_progress').length;
@@ -290,6 +397,54 @@ export default function Tasks() {
     { label: 'In Progress', value: inProgress, color: 'hsl(var(--brand))', icon: Clock },
     { label: 'Done This Week', value: done, color: 'hsl(var(--s-ok-tx))', icon: CheckCircle },
   ];
+
+  function toggleSelect(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selectedIds.size === filtered.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map(t => t.id)));
+    }
+  }
+
+  function bulkChangeStatus(status: TaskStatus) {
+    setTasks(prev => prev.map(t => selectedIds.has(t.id) ? { ...t, status } : t));
+    toast.success(`Updated ${selectedIds.size} task${selectedIds.size > 1 ? 's' : ''} to ${status.replace('_', ' ')}`);
+    setSelectedIds(new Set());
+  }
+
+  function bulkChangePriority(priority: Severity) {
+    setTasks(prev => prev.map(t => selectedIds.has(t.id) ? { ...t, priority } : t));
+    toast.success(`Changed priority for ${selectedIds.size} task${selectedIds.size > 1 ? 's' : ''}`);
+    setSelectedIds(new Set());
+  }
+
+  function handleDragStart(e: DragStartEvent) { setActiveId(String(e.active.id)); }
+
+  function handleDragEnd(e: DragEndEvent) {
+    const { active, over } = e;
+    setActiveId(null);
+    if (!over) return;
+    const taskId = String(active.id);
+    const overId = String(over.id);
+    if (KANBAN_COLUMNS.includes(overId as TaskStatus)) {
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: overId as TaskStatus } : t));
+      toast.success(`Task moved to ${statusConfig[overId as TaskStatus].label}`);
+    } else {
+      const overTask = tasks.find(t => t.id === overId);
+      if (overTask && overTask.status !== tasks.find(t => t.id === taskId)?.status) {
+        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: overTask.status } : t));
+        toast.success(`Task moved to ${statusConfig[overTask.status].label}`);
+      }
+    }
+  }
 
   const filtered = tasks.filter(t => {
     const matchSearch = !search || t.title.toLowerCase().includes(search.toLowerCase()) || t.id.toLowerCase().includes(search.toLowerCase());
@@ -571,73 +726,102 @@ export default function Tasks() {
         </div>
       )}
 
-      {/* Kanban view */}
-      {view === 'kanban' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
-          {(['todo', 'in_progress', 'overdue', 'done'] as TaskStatus[]).map(status => {
-            const sc = statusConfig[status];
-            const colTasks = filtered.filter(t => t.status === status);
-            return (
-              <div key={status} style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', padding: 12 }}>
-                {/* Column header */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, paddingBottom: 10, borderBottom: '1px solid hsl(var(--border))' }}>
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: sc.text }} />
-                  <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'hsl(var(--text-2))' }}>
-                    {sc.label}
-                  </span>
-                  <span style={{
-                    marginLeft: 'auto',
-                    fontSize: 10,
-                    fontWeight: 600,
-                    padding: '1px 6px',
-                    background: sc.bg,
-                    color: sc.text,
-                    border: `1px solid ${sc.border}`,
-                  }}>
-                    {colTasks.length}
-                  </span>
-                </div>
-
-                {/* Cards */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {colTasks.map(t => (
-                    <div
-                      key={t.id}
-                      onClick={() => setDetailTask(t)}
-                      style={{
-                        background: 'hsl(var(--bg-surface))',
-                        border: '1px solid hsl(var(--border))',
-                        padding: 10,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                        <PriorityBadge priority={t.priority} />
-                        <span style={{ fontSize: 10, color: 'hsl(var(--text-4))', fontFamily: 'monospace', marginLeft: 'auto' }}>{t.id}</span>
-                      </div>
-                      <p style={{ fontSize: 12, fontWeight: 500, color: 'hsl(var(--text-1))', lineHeight: 1.4, marginBottom: 8 }}>
-                        {t.title.length > 70 ? t.title.slice(0, 67) + '…' : t.title}
-                      </p>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <AvatarInitials name={t.assignee} />
-                        <span style={{ fontSize: 11, color: 'hsl(var(--text-3))', flex: 1 }}>{t.assignee.split(' ')[0]}</span>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: t.status === 'overdue' ? 'hsl(var(--s-er-tx))' : 'hsl(var(--text-4))' }}>
-                          <CalendarBlank size={10} />
-                          {formatDate(t.dueDate)}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  {colTasks.length === 0 && (
-                    <div style={{ padding: '20px 0', textAlign: 'center', color: 'hsl(var(--text-4))', fontSize: 12 }}>
-                      No tasks
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+      {/* Bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', background: 'hsl(var(--brand)/0.08)', border: '1px solid hsl(var(--brand)/0.3)' }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--brand))' }}>
+            {selectedIds.size} selected
+          </span>
+          <select
+            onChange={e => { if (e.target.value) { bulkChangeStatus(e.target.value as TaskStatus); e.target.value = ''; } }}
+            style={{ padding: '5px 10px', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-2))', fontSize: 12, cursor: 'pointer' }}
+          >
+            <option value="">Change Status ({selectedIds.size})</option>
+            {(Object.keys(statusConfig) as TaskStatus[]).map(s => (
+              <option key={s} value={s}>{statusConfig[s].label}</option>
+            ))}
+          </select>
+          <select
+            onChange={e => { if (e.target.value) { bulkChangePriority(e.target.value as Severity); e.target.value = ''; } }}
+            style={{ padding: '5px 10px', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-2))', fontSize: 12, cursor: 'pointer' }}
+          >
+            <option value="">Change Priority ({selectedIds.size})</option>
+            {(['critical', 'high', 'medium', 'low'] as Severity[]).map(p => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </select>
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'hsl(var(--text-3))', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}
+          >
+            <X size={14} /> Clear
+          </button>
         </div>
+      )}
+
+      {/* Kanban view — DnD enabled */}
+      {view === 'kanban' && (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${KANBAN_COLUMNS.length}, 1fr)`, gap: 12, overflowX: 'auto' }}>
+            {KANBAN_COLUMNS.map(status => {
+              const sc = statusConfig[status];
+              const colTasks = tasks.filter(t => t.status === status && (
+                !search || t.title.toLowerCase().includes(search.toLowerCase()) || t.id.toLowerCase().includes(search.toLowerCase())
+              ) && (filterPriority === 'all' || t.priority === filterPriority));
+              return (
+                <div
+                  key={status}
+                  id={status}
+                  style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', padding: 10, minHeight: 400, minWidth: 200 }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, paddingBottom: 8, borderBottom: '1px solid hsl(var(--border))' }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: sc.text, flexShrink: 0 }} />
+                    <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'hsl(var(--text-2))' }}>
+                      {sc.label}
+                    </span>
+                    <span style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 700, padding: '1px 6px', background: sc.bg, color: sc.text, border: `1px solid ${sc.border}` }}>
+                      {colTasks.length}
+                    </span>
+                  </div>
+                  <SortableContext items={colTasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {colTasks.map(t => (
+                        <SortableCard
+                          key={t.id}
+                          task={t}
+                          selected={selectedIds.has(t.id)}
+                          onSelect={toggleSelect}
+                          onClick={setDetailTask}
+                        />
+                      ))}
+                      {colTasks.length === 0 && (
+                        <div style={{ padding: '24px 0', textAlign: 'center', color: 'hsl(var(--text-4))', fontSize: 11, border: '1px dashed hsl(var(--border))' }}>
+                          Drop here
+                        </div>
+                      )}
+                    </div>
+                  </SortableContext>
+                </div>
+              );
+            })}
+          </div>
+          <DragOverlay>
+            {activeId ? (() => {
+              const task = tasks.find(t => t.id === activeId);
+              if (!task) return null;
+              return (
+                <div style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--brand))', padding: 10, opacity: 0.9, boxShadow: 'var(--shadow-lg)' }}>
+                  <p style={{ fontSize: 11, fontWeight: 500, color: 'hsl(var(--text-1))' }}>{task.title.slice(0, 50)}…</p>
+                </div>
+              );
+            })() : null}
+          </DragOverlay>
+        </DndContext>
       )}
 
       {/* Task detail drawer */}

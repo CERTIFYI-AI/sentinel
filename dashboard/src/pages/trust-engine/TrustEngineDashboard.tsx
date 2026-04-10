@@ -58,12 +58,15 @@ const EVAL_TREND = [
 
 // ── Alert Ticker Messages ─────────────────────────────────────────────────────
 
-const TICKER_MESSAGES = [
-  'PII detected in loan request — Redacted [14:32:01]',
-  'Hallucination Guard blocked LoanAssistant output — Confidence 0.72 [14:22:55]',
-  'Data Boundary violation: DataGuard attempted external export [14:22:50]',
-  'Cost threshold approaching for OpenAI-API-Connector (71% of weekly budget) [13:45:00]',
-  'Prompt injection attempt blocked by ComplianceBot [13:30:44]',
+const TICKER_MESSAGES: { text: string; type: 'critical' | 'warning' | 'info' | 'ok' }[] = [
+  { text: 'PII detected in loan request — Redacted [14:32:01]', type: 'critical' },
+  { text: 'Hallucination Guard blocked LoanAssistant output — Confidence 0.72 [14:22:55]', type: 'warning' },
+  { text: 'Data Boundary violation: DataGuard attempted external export [14:22:50]', type: 'critical' },
+  { text: 'Cost threshold approaching for OpenAI-API-Connector (71% of weekly budget) [13:45:00]', type: 'warning' },
+  { text: 'Prompt injection attempt blocked by ComplianceBot [13:30:44]', type: 'critical' },
+  { text: 'Bias detection passed for FairLend evaluation [13:15:22]', type: 'ok' },
+  { text: 'ComplianceBot processed 14,200 evaluations today [12:00:00]', type: 'info' },
+  { text: 'AGT-010 shadow agent making unauthorized API calls [11:48:33]', type: 'critical' },
 ];
 
 // ── Metric Tile ───────────────────────────────────────────────────────────────
@@ -254,13 +257,19 @@ export default function TrustEngineDashboard() {
         <div className="flex items-center h-full px-3">
           <Badge style={{ background: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 9, marginRight: 8, flexShrink: 0 }}>LIVE</Badge>
           <div ref={tickerRef} className="flex-1 overflow-hidden whitespace-nowrap">
-            <div className="inline-block animate-marquee" style={{ animation: 'marquee 40s linear infinite' }}>
-              {TICKER_MESSAGES.map((msg, i) => (
-                <span key={i} className="text-xs mx-8" style={{ color: 'hsl(var(--text-4))' }}>
-                  <Lightning size={10} weight="fill" className="inline mr-1" style={{ color: 'hsl(var(--s-wn-tx))' }} />
-                  {msg}
-                </span>
-              ))}
+            <div className="inline-block" style={{ animation: 'marquee 50s linear infinite' }}>
+              {[...TICKER_MESSAGES, ...TICKER_MESSAGES].map((msg, i) => {
+                const tc = msg.type === 'critical' ? 'hsl(var(--s-er-tx))'
+                  : msg.type === 'warning' ? 'hsl(var(--s-wn-tx))'
+                  : msg.type === 'ok' ? 'hsl(var(--s-ok-tx))'
+                  : 'hsl(var(--s-in-tx))';
+                return (
+                  <span key={i} className="text-xs mx-6" style={{ color: tc }}>
+                    <Lightning size={9} weight="fill" className="inline mr-1" />
+                    {msg.text}
+                  </span>
+                );
+              })}
             </div>
           </div>
         </div>
