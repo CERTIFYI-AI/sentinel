@@ -16,7 +16,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/compliance", tags=["compliance"])
+router = APIRouter(tags=["compliance"])
 
 
 def _get_tenant_id() -> str:

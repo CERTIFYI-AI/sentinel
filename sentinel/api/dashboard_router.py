@@ -22,7 +22,7 @@ from sentinel.storage import api_key_store, tenant_store
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/dashboard", tags=["dashboard"])
+router = APIRouter(tags=["dashboard"])
 
 
 # ---------------------------------------------------------------------------

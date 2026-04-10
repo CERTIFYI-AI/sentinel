@@ -24,7 +24,7 @@ from sentinel.security.vulnerability_store import VulnerabilityStore
 from sentinel.security.posture_calculator import get_security_score, get_open_findings, get_top_findings
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/security", tags=["security"])
+router = APIRouter(tags=["security"])
 
 _campaign_runner = CampaignRunner()
 _vuln_store = VulnerabilityStore()

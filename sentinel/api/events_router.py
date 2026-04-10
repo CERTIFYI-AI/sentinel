@@ -19,7 +19,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/events", tags=["events"])
+router = APIRouter(tags=["events"])
 
 # ---------------------------------------------------------------------------
 # In-memory event log + WebSocket connection manager

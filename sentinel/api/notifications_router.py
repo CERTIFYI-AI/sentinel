@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from sentinel.api.auth_router import _get_current_user, _get_db
 
-router = APIRouter(prefix="/notifications", tags=["notifications"])
+router = APIRouter(tags=["notifications"])
 
 
 @router.get("")

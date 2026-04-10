@@ -80,5 +80,12 @@ Frontend env vars:
 
 - The app runs in degraded mode without DATABASE_URL (uses SQLite) and without REDIS_URL (in-memory circuit breaker)
 - Several routers (auth, notifications, dashboard) require asyncpg/PostgreSQL to be available
-- WebSocket events at `ws://localhost:8000/api/events/ws` — requires auth token; connection errors in dev are expected
+- WebSocket events at `/api/events/ws` — now working via wsproto on Replit
 - `CHAT_SAMPLES` error in AiAdvisor is a pre-existing issue unrelated to core GRC functionality
+
+## Replit Migration Notes
+
+- Python packages installed via pip (uvicorn[standard], fastapi, wsproto, etc.)
+- uvicorn started with `--ws wsproto` to avoid WebSocket origin check issues on Replit's proxy
+- Fixed double-prefix issue: router files in `sentinel/api/` had their own `prefix=` which conflicted with the prefix already added in `main.py`; removed the per-file prefixes so routes are correctly at `/api/auth/login`, etc.
+- Both servers running: FastAPI on :8000, Vite on :5000; Vite proxies `/api` to the backend
