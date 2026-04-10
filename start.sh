@@ -1,6 +1,12 @@
 #!/bin/bash
 set -e
 
+# Install dashboard dependencies if needed
+if [ ! -d "dashboard/node_modules" ]; then
+  echo "Installing dashboard dependencies..."
+  cd dashboard && npm install && cd ..
+fi
+
 # Start the FastAPI backend on port 8000 in the background
 echo "Starting Sentinel API backend on port 8000..."
 python -m uvicorn sentinel.api.main:app --host 0.0.0.0 --port 8000 --reload &
