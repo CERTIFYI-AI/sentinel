@@ -1,14 +1,16 @@
 import { useState, useMemo } from 'react';
+import { toast } from 'sonner';
 import {
   MagnifyingGlass, Export, GraduationCap, ChartBar, Warning,
   Certificate, Eye, Clock, Users, BookOpen, VideoCamera,
   FileText, Play, CheckCircle, CalendarBlank, ListChecks,
-  UserCircle, ArrowRight,
+  UserCircle, ArrowRight, Plus, Trash,
 } from '@phosphor-icons/react';
 import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from '../../components/ui/sheet';
@@ -16,6 +18,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/ta
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '../../components/ui/select';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from '../../components/ui/dialog';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { useSettingsStore } from '../../stores/settingsStore';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -255,21 +261,6 @@ const COURSES: Course[] = [
 
 const CATEGORIES = ['All Categories', 'AI Ethics', 'Data Privacy', 'Compliance', 'Incident Response', 'Security'];
 
-// ── Inline Toast ─────────────────────────────────────────────────────────────
-function toast(msg: string) {
-  const el = document.createElement('div');
-  el.textContent = msg;
-  Object.assign(el.style, {
-    position: 'fixed', bottom: '24px', right: '24px', zIndex: '9999',
-    padding: '10px 20px', fontFamily: 'Outfit, sans-serif', fontSize: '13px',
-    background: 'hsl(var(--bg-surface))', color: 'hsl(var(--text-1))',
-    border: '1px solid hsl(var(--border))', borderRadius: '0',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-  });
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 2800);
-}
-
 // ── MetricTile ───────────────────────────────────────────────────────────────
 function MetricTile({ label, value, icon, variant }: {
   label: string; value: string | number; icon: React.ReactNode;
@@ -326,14 +317,18 @@ function CompletionBar({ pct }: { pct: number }) {
 // ═════════════════════════════════════════════════════════════════════════════
 export default function TrainingAwareness() {
   const { orgName } = useSettingsStore();
+  const [courses, setCourses] = useState<Course[]>(COURSES);
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState('All Categories');
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState({ title: '', category: 'AI Ethics', format: 'Interactive' as Course['format'], duration: '', assignedTo: '', dueDate: '' });
+  const [deleteTarget, setDeleteTarget] = useState<Course | null>(null);
 
   // ── Filtering ──────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
-    return COURSES.filter(c => {
+    return courses.filter(c => {
       if (search) {
         const q = search.toLowerCase();
         if (!c.title.toLowerCase().includes(q) && !c.id.toLowerCase().includes(q) && !c.category.toLowerCase().includes(q)) return false;
@@ -341,13 +336,13 @@ export default function TrainingAwareness() {
       if (filterCategory !== 'All Categories' && c.category !== filterCategory) return false;
       return true;
     });
-  }, [search, filterCategory]);
+  }, [courses, search, filterCategory]);
 
   // ── Metrics ────────────────────────────────────────────────────────────────
-  const totalCourses = COURSES.length;
-  const avgCompletion = Math.round(COURSES.reduce((s, c) => s + c.completionPct, 0) / COURSES.length);
-  const overdueCount = COURSES.filter(c => c.status === 'Active' && new Date(c.dueDate) < new Date()).length;
-  const certExpiring = COURSES.reduce((count, c) => {
+  const totalCourses = courses.length;
+  const avgCompletion = courses.length ? Math.round(courses.reduce((s, c) => s + c.completionPct, 0) / courses.length) : 0;
+  const overdueCount = courses.filter(c => c.status === 'Active' && new Date(c.dueDate) < new Date()).length;
+  const certExpiring = courses.reduce((count, c) => {
     return count + c.certificates.filter(cert => {
       const exp = new Date(cert.expiry);
       const now = new Date();
@@ -357,10 +352,34 @@ export default function TrainingAwareness() {
     }).length;
   }, 0);
 
-  // ── Open detail ────────────────────────────────────────────────────────────
-  const openDetail = (course: Course) => {
-    setSelectedCourse(course);
-    setSheetOpen(true);
+  // ── Handlers ───────────────────────────────────────────────────────────────
+  const openDetail = (course: Course) => { setSelectedCourse(course); setSheetOpen(true); };
+
+  const handleCreate = () => {
+    if (!createForm.title || !createForm.duration || !createForm.assignedTo) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+    const newCourse: Course = {
+      id: `TRN-${String(courses.length + 1).padStart(3, '0')}`,
+      title: createForm.title, category: createForm.category,
+      format: createForm.format, duration: createForm.duration,
+      assignedTo: createForm.assignedTo, completionPct: 0,
+      dueDate: createForm.dueDate || '2026-12-31', status: 'Active',
+      description: '', modules: [], assignments: [], certificates: [],
+    };
+    setCourses(prev => [newCourse, ...prev]);
+    setCreateOpen(false);
+    setCreateForm({ title: '', category: 'AI Ethics', format: 'Interactive', duration: '', assignedTo: '', dueDate: '' });
+    toast.success(`Course "${newCourse.title}" created`);
+  };
+
+  const handleDelete = () => {
+    if (!deleteTarget) return;
+    setCourses(prev => prev.filter(c => c.id !== deleteTarget.id));
+    if (selectedCourse?.id === deleteTarget.id) { setSheetOpen(false); setSelectedCourse(null); }
+    toast.success(`Course "${deleteTarget.title}" deleted`);
+    setDeleteTarget(null);
   };
 
   // ── Export CSV ─────────────────────────────────────────────────────────────
@@ -375,7 +394,7 @@ export default function TrainingAwareness() {
     a.download = `training-courses-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    toast('CSV exported successfully');
+    toast.success('CSV exported successfully');
   };
 
   // ── Status badge helpers ───────────────────────────────────────────────────
@@ -405,9 +424,14 @@ export default function TrainingAwareness() {
             {orgName} &middot; AI governance training programs & compliance awareness
           </p>
         </div>
-        <Button onClick={exportCSV} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
-          <Export size={14} className="mr-1" />Export CSV
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={exportCSV} variant="outline" style={{ borderRadius: 0 }}>
+            <Export size={14} className="mr-1" />Export CSV
+          </Button>
+          <Button onClick={() => setCreateOpen(true)} style={{ borderRadius: 0 }}>
+            <Plus size={14} className="mr-1" />New Course
+          </Button>
+        </div>
       </div>
 
       {/* KPIs */}
@@ -512,9 +536,14 @@ export default function TrainingAwareness() {
                         </Badge>
                       </td>
                       <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
-                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openDetail(course)}>
-                          <Eye size={14} style={{ color: 'hsl(var(--text-4))' }} />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openDetail(course)}>
+                            <Eye size={14} style={{ color: 'hsl(var(--text-4))' }} />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setDeleteTarget(course)}>
+                            <Trash size={14} style={{ color: 'hsl(var(--destructive))' }} />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -877,6 +906,69 @@ export default function TrainingAwareness() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Create Course Dialog */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent style={{ borderRadius: 0, maxWidth: 500 }}>
+          <DialogHeader>
+            <DialogTitle>New Training Course</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-1">
+            <div className="space-y-1">
+              <Label>Course Title *</Label>
+              <input value={createForm.title} onChange={e => setCreateForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g., AI Risk Management Fundamentals" className="w-full h-9 px-3 text-sm border border-[hsl(var(--border))] bg-transparent text-[hsl(var(--text-1))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--brand))]" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>Category</Label>
+                <Select value={createForm.category} onValueChange={v => setCreateForm(f => ({ ...f, category: v }))}>
+                  <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {['AI Ethics', 'Data Privacy', 'Compliance', 'Incident Response', 'Security'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Format</Label>
+                <Select value={createForm.format} onValueChange={v => setCreateForm(f => ({ ...f, format: v as Course['format'] }))}>
+                  <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {['Interactive', 'Video', 'Document'].map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Duration *</Label>
+                <input value={createForm.duration} onChange={e => setCreateForm(f => ({ ...f, duration: e.target.value }))} placeholder="e.g., 2h" className="w-full h-9 px-3 text-sm border border-[hsl(var(--border))] bg-transparent text-[hsl(var(--text-1))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--brand))]" />
+              </div>
+              <div className="space-y-1">
+                <Label>Due Date</Label>
+                <input type="date" value={createForm.dueDate} onChange={e => setCreateForm(f => ({ ...f, dueDate: e.target.value }))} className="w-full h-9 px-3 text-sm border border-[hsl(var(--border))] bg-transparent text-[hsl(var(--text-1))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--brand))]" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label>Assigned To *</Label>
+              <input value={createForm.assignedTo} onChange={e => setCreateForm(f => ({ ...f, assignedTo: e.target.value }))} placeholder="e.g., Engineering Team" className="w-full h-9 px-3 text-sm border border-[hsl(var(--border))] bg-transparent text-[hsl(var(--text-1))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--brand))]" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
+            <Button onClick={handleCreate} style={{ borderRadius: 0 }}>Create Course</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirm */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={o => { if (!o) setDeleteTarget(null); }}
+        onConfirm={handleDelete}
+        isDestructive
+        title={`Delete "${deleteTarget?.title}"?`}
+        message="This will permanently remove the course, all module content, assignment records, and issued certificates."
+        impactList={['Course content and modules', 'All assignment and completion records', 'Issued certificates', 'Score history']}
+        confirmLabel="Delete Course"
+      />
     </div>
   );
 }

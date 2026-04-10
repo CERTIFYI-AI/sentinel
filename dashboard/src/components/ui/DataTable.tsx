@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react"
-import { Eye, PencilSimple, Trash, MagnifyingGlass, CaretUp, CaretDown } from "@phosphor-icons/react"
+import { Eye, PencilSimple, Trash, MagnifyingGlass, CaretUp, CaretDown, CaretLeft, CaretRight } from "@phosphor-icons/react"
 import { cn } from "@/lib/utils"
 
 export interface Column<T> {
@@ -22,16 +22,24 @@ interface Props<T> {
   actions?: (row: T) => React.ReactNode
   emptyMessage?: string
   getRowClassName?: (row: T) => string
+  defaultPageSize?: number
+  showPagination?: boolean
 }
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100]
 
 export function DataTable<T extends Record<string, any>>({
   data, columns, onView, onEdit, onDelete, onRowClick,
   searchPlaceholder = "Search...", searchKey = "name",
   actions, emptyMessage = "No records found.", getRowClassName,
+  defaultPageSize = 25, showPagination = true,
 }: Props<T>) {
   const [search, setSearch] = useState("")
   const [sortKey, setSortKey] = useState<string | null>(null)
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc")
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(defaultPageSize)
+
   const filtered = useMemo(() => {
     let d = data
     if (search) d = d.filter(r => String(r[searchKey] ?? "").toLowerCase().includes(search.toLowerCase()))
@@ -41,20 +49,48 @@ export function DataTable<T extends Record<string, any>>({
     })
     return d
   }, [data, search, sortKey, sortDir, searchKey])
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
+  const safePage = Math.min(page, totalPages)
+  const pageStart = (safePage - 1) * pageSize
+  const pageEnd = Math.min(pageStart + pageSize, filtered.length)
+  const paginated = filtered.slice(pageStart, pageEnd)
+
   const toggleSort = (key: string) => {
     if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc")
     else { setSortKey(key); setSortDir("asc") }
+    setPage(1)
   }
+
+  const handleSearch = (v: string) => {
+    setSearch(v)
+    setPage(1)
+  }
+
   const hasActions = onView || onEdit || onDelete || actions
+
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <div className="relative flex-1 max-w-xs">
           <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder={searchPlaceholder}
+          <input value={search} onChange={e => handleSearch(e.target.value)} placeholder={searchPlaceholder}
             className="w-full h-8 pl-8 pr-3 text-xs bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--brand))]" />
         </div>
+        {showPagination && (
+          <div className="flex items-center gap-1 ml-auto text-xs text-[hsl(var(--text-4))]">
+            <span>Rows:</span>
+            <select
+              value={pageSize}
+              onChange={e => { setPageSize(Number(e.target.value)); setPage(1) }}
+              className="h-8 px-2 text-xs bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-2))] focus:outline-none"
+            >
+              {PAGE_SIZE_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+        )}
       </div>
+
       <div className="border border-[hsl(var(--border))] overflow-hidden">
         <table className="w-full text-sm">
           <thead>
@@ -72,9 +108,9 @@ export function DataTable<T extends Record<string, any>>({
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
+            {paginated.length === 0 ? (
               <tr><td colSpan={columns.length + (hasActions ? 1 : 0)} className="px-4 py-8 text-center text-sm text-[hsl(var(--text-4))]">{emptyMessage}</td></tr>
-            ) : filtered.map((row, i) => (
+            ) : paginated.map((row, i) => (
               <tr key={i} onClick={() => onRowClick?.(row)}
                 className={cn("group border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))] transition-colors", onRowClick && "cursor-pointer", getRowClassName?.(row))}>
                 {columns.map(col => (
@@ -98,7 +134,35 @@ export function DataTable<T extends Record<string, any>>({
           </tbody>
         </table>
       </div>
-      <p className="text-xs text-[hsl(var(--text-4))]">{filtered.length} of {data.length} records</p>
+
+      {showPagination ? (
+        <div className="flex items-center justify-between text-xs text-[hsl(var(--text-4))]">
+          <span>
+            Showing {filtered.length === 0 ? 0 : pageStart + 1}–{pageEnd} of {filtered.length} records
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={safePage <= 1}
+              className="h-7 px-2 border border-[hsl(var(--border))] disabled:opacity-40 hover:bg-[hsl(var(--bg-raised))] flex items-center gap-1 disabled:cursor-not-allowed"
+            >
+              <CaretLeft size={12} /> Prev
+            </button>
+            <span className="px-3 py-1 border border-[hsl(var(--brand))] text-[hsl(var(--brand))]">
+              {safePage} / {totalPages}
+            </span>
+            <button
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={safePage >= totalPages}
+              className="h-7 px-2 border border-[hsl(var(--border))] disabled:opacity-40 hover:bg-[hsl(var(--bg-raised))] flex items-center gap-1 disabled:cursor-not-allowed"
+            >
+              Next <CaretRight size={12} />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <p className="text-xs text-[hsl(var(--text-4))]">{filtered.length} of {data.length} records</p>
+      )}
     </div>
   )
 }

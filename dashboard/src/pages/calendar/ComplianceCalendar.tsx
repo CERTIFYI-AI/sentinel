@@ -1,6 +1,16 @@
 import { useState, useMemo } from 'react';
+import { toast } from 'sonner';
 import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
+import { Label } from '../../components/ui/label';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from '../../components/ui/dialog';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '../../components/ui/select';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import {
   CalendarBlank,
   MagnifyingGlass,
@@ -12,6 +22,8 @@ import {
   CaretLeft,
   CaretRight,
   X,
+  Plus,
+  Trash,
 } from '@phosphor-icons/react';
 import { useSettingsStore } from '../../stores/settingsStore';
 
@@ -186,27 +198,6 @@ const EVENTS: CalendarEvent[] = [
   },
 ];
 
-// ── Inline toast ─────────────────────────────────────────────────────────
-
-function toast(message: string) {
-  const el = document.createElement('div');
-  el.textContent = message;
-  Object.assign(el.style, {
-    position: 'fixed',
-    bottom: '24px',
-    right: '24px',
-    background: 'hsl(var(--bg-surface))',
-    color: 'hsl(var(--text-1))',
-    border: '1px solid hsl(var(--border))',
-    padding: '10px 18px',
-    fontSize: '13px',
-    fontFamily: 'Outfit, sans-serif',
-    zIndex: '9999',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-  });
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 2500);
-}
 
 // ── Inline MetricTile ────────────────────────────────────────────────────
 
@@ -281,6 +272,7 @@ function exportCSV(events: CalendarEvent[]) {
 
 export default function ComplianceCalendar() {
   const { orgName } = useSettingsStore();
+  const [events, setEvents] = useState<CalendarEvent[]>(EVENTS);
   const [view, setView] = useState<'list' | 'calendar'>('calendar');
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
@@ -288,11 +280,14 @@ export default function ComplianceCalendar() {
   const [calYear, setCalYear] = useState(2026);
   const [calMonth, setCalMonth] = useState(3); // April = 3 (0-indexed)
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState({ title: '', date: '', type: 'audit' as EventType, framework: '', owner: '', status: 'Upcoming' as EventStatus });
+  const [deleteTarget, setDeleteTarget] = useState<CalendarEvent | null>(null);
 
   // ── Derived data ─────────────────────────────────────────────────────
 
   const filtered = useMemo(() => {
-    return EVENTS.filter(e => {
+    return events.filter(e => {
       const matchSearch =
         !search ||
         e.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -302,23 +297,23 @@ export default function ComplianceCalendar() {
       const matchStatus = filterStatus === 'all' || e.status === filterStatus;
       return matchSearch && matchType && matchStatus;
     });
-  }, [search, filterType, filterStatus]);
+  }, [events, search, filterType, filterStatus]);
 
-  const thisMonthEvents = EVENTS.filter(e => {
+  const thisMonthEvents = events.filter(e => {
     const d = new Date(e.date + 'T00:00:00');
     return d.getMonth() === 3 && d.getFullYear() === 2026;
   });
 
-  const overdueCount = EVENTS.filter(e => e.status === 'Overdue').length;
+  const overdueCount = events.filter(e => e.status === 'Overdue').length;
 
-  const coming30 = EVENTS.filter(e => {
+  const coming30 = events.filter(e => {
     const d = new Date(e.date + 'T00:00:00');
     const now = new Date('2026-04-08T00:00:00');
     const diff = (d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
     return diff >= 0 && diff <= 30;
   });
 
-  const coming90 = EVENTS.filter(e => {
+  const coming90 = events.filter(e => {
     const d = new Date(e.date + 'T00:00:00');
     const now = new Date('2026-04-08T00:00:00');
     const diff = (d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
@@ -332,7 +327,7 @@ export default function ComplianceCalendar() {
 
   const eventsForMonth = useMemo(() => {
     const map: Record<number, CalendarEvent[]> = {};
-    EVENTS.forEach(e => {
+    events.forEach(e => {
       const d = new Date(e.date + 'T00:00:00');
       if (d.getFullYear() === calYear && d.getMonth() === calMonth) {
         const day = d.getDate();
@@ -341,7 +336,31 @@ export default function ComplianceCalendar() {
       }
     });
     return map;
-  }, [calYear, calMonth]);
+  }, [events, calYear, calMonth]);
+
+  // ── CRUD handlers ────────────────────────────────────────────────────
+
+  const handleCreate = () => {
+    if (!createForm.title || !createForm.date || !createForm.framework || !createForm.owner) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+    const newEvent: CalendarEvent = {
+      id: `EVT-${String(events.length + 1).padStart(3, '0')}`,
+      ...createForm,
+    };
+    setEvents(prev => [...prev, newEvent].sort((a, b) => a.date.localeCompare(b.date)));
+    setCreateOpen(false);
+    setCreateForm({ title: '', date: '', type: 'audit', framework: '', owner: '', status: 'Upcoming' });
+    toast.success(`Event "${newEvent.title}" scheduled`);
+  };
+
+  const handleDelete = () => {
+    if (!deleteTarget) return;
+    setEvents(prev => prev.filter(e => e.id !== deleteTarget.id));
+    toast.success(`Event "${deleteTarget.title}" removed`);
+    setDeleteTarget(null);
+  };
 
   const selectedDayEvents = selectedDay ? (eventsForMonth[selectedDay] || []) : [];
 
