@@ -41,8 +41,10 @@ export const useEventStore = create<EventStore>((set, get) => ({
       existing.close();
     }
 
-    const apiBase = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
-    const wsBase = apiBase.replace(/^http/, 'ws');
+    const apiBase = import.meta.env.VITE_API_URL ?? '';
+    const wsBase = apiBase
+      ? apiBase.replace(/^http/, 'ws')
+      : `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}`;
     const url = `${wsBase}/api/events/ws?tenant_id=${encodeURIComponent(tenantId)}`;
 
     let socket: WebSocket;
