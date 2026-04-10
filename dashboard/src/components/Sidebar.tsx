@@ -13,7 +13,7 @@ import {
   ClockCounterClockwise, DownloadSimple,
   ClipboardText, ShieldWarning, GraduationCap, Lifebuoy, CalendarBlank,
   FileMagnifyingGlass, FlowArrow,
-  ChartPieSlice, Scroll,
+  ChartPieSlice, Scroll, ChatTeardropText, CheckSquare,
 } from '@phosphor-icons/react'
 import { cn } from '../lib/utils'
 import { useTheme } from '../providers/theme'
@@ -40,6 +40,8 @@ interface NavSection {
 const NAV: NavSection[] = [
   { title: 'OVERVIEW', items: [
     { label: 'Dashboard', to: '/overview', icon: SquaresFour },
+    { label: 'Tasks', to: '/tasks', icon: CheckSquare },
+    { label: 'Notifications', to: '/notifications', icon: Bell },
     { label: 'Reporting', to: '/reporting', icon: ChartPieSlice },
   ]},
   { title: 'AI GOVERNANCE', items: [
@@ -61,6 +63,7 @@ const NAV: NavSection[] = [
     { label: 'AI Impact Assessments', to: '/aiia', icon: FileMagnifyingGlass },
     { label: 'Explainability', to: '/explainability', icon: Lightbulb },
     { label: 'Use Cases', to: '/use-cases', icon: Briefcase },
+    { label: 'Prompt Registry', to: '/prompt-registry', icon: ChatTeardropText },
   ]},
   { title: 'SECURITY', items: [
     { label: 'Security Overview', to: '/security', icon: ShieldCheck, children: [
@@ -118,7 +121,6 @@ const NAV: NavSection[] = [
     { label: 'Vendors', to: '/vendors', icon: BuildingOffice },
     { label: 'Regulatory Radar', to: '/reg-radar', icon: GlobeHemisphereWest },
     { label: 'Approval Workflows', to: '/workflows', icon: FlowArrow },
-    { label: 'Notifications', to: '/notifications', icon: Bell },
     { label: 'Export Center', to: '/export', icon: DownloadSimple },
   ]},
   { title: 'ORGANIZATION', items: [

@@ -6,6 +6,7 @@ import App from "./App";
 import { ThemeProvider } from "./providers/ThemeProvider";
 import "./index.css";
 import "./styles/globals.css";
+import "./store/accentStore";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

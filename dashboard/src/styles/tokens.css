@@ -125,3 +125,71 @@ input:-webkit-autofill {
 button, a, input, textarea, select {
   transition-property: background-color, border-color, color, opacity, box-shadow;
 }
+
+/* ── Accent Color Schemes ─────────────────────────────── */
+/* Default: Emerald (already defined in :root) */
+
+/* Blue */
+:root.accent-blue {
+  --brand:        217 91% 50%;
+  --brand-hover:  217 91% 43%;
+  --brand-subtle: 217 91% 96%;
+  --r-lo-bg: 217 91% 96%; --r-lo-tx: 217 71% 30%; --r-lo-br: 217 91% 82%;
+}
+.dark.accent-blue {
+  --brand:        217 91% 62%;
+  --brand-hover:  217 91% 55%;
+  --brand-subtle: 217 40% 14%;
+}
+
+/* Purple */
+:root.accent-purple {
+  --brand:        263 70% 50%;
+  --brand-hover:  263 70% 43%;
+  --brand-subtle: 263 70% 96%;
+  --r-lo-bg: 263 70% 96%; --r-lo-tx: 263 55% 32%; --r-lo-br: 263 70% 82%;
+}
+.dark.accent-purple {
+  --brand:        263 70% 65%;
+  --brand-hover:  263 70% 58%;
+  --brand-subtle: 263 30% 14%;
+}
+
+/* Teal */
+:root.accent-teal {
+  --brand:        174 72% 36%;
+  --brand-hover:  174 72% 29%;
+  --brand-subtle: 174 72% 96%;
+  --r-lo-bg: 174 72% 96%; --r-lo-tx: 174 60% 26%; --r-lo-br: 174 72% 80%;
+}
+.dark.accent-teal {
+  --brand:        174 72% 48%;
+  --brand-hover:  174 72% 41%;
+  --brand-subtle: 174 30% 13%;
+}
+
+/* Orange */
+:root.accent-orange {
+  --brand:        25 95% 45%;
+  --brand-hover:  25 95% 38%;
+  --brand-subtle: 25 95% 96%;
+  --r-lo-bg: 25 95% 96%; --r-lo-tx: 25 75% 30%; --r-lo-br: 25 95% 80%;
+}
+.dark.accent-orange {
+  --brand:        25 95% 58%;
+  --brand-hover:  25 95% 51%;
+  --brand-subtle: 25 40% 14%;
+}
+
+/* Rose */
+:root.accent-rose {
+  --brand:        346 77% 45%;
+  --brand-hover:  346 77% 38%;
+  --brand-subtle: 346 77% 96%;
+  --r-lo-bg: 346 77% 96%; --r-lo-tx: 346 60% 30%; --r-lo-br: 346 77% 82%;
+}
+.dark.accent-rose {
+  --brand:        346 77% 58%;
+  --brand-hover:  346 77% 51%;
+  --brand-subtle: 346 30% 14%;
+}

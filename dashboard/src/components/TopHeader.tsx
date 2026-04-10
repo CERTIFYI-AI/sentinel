@@ -1,12 +1,22 @@
 import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { MagnifyingGlass, Bell, ArrowsClockwise, Sun, Moon, User, Gear, SignOut, CaretRight } from '@phosphor-icons/react'
+import { MagnifyingGlass, Bell, ArrowsClockwise, Sun, Moon, User, Gear, SignOut, CaretRight, PaintBrush } from '@phosphor-icons/react'
 import { Button } from './ui/button'
 import { CommandPalette } from './ui/CommandPalette'
 import { NotificationDrawer } from './ui/NotificationDrawer'
 import { useTheme } from '../providers/theme'
+import { getStoredAccent, setAccent, type Accent } from '../store/accentStore'
 
-const UNREAD_COUNT = 5  // seed value — 5 unread notifications
+const UNREAD_COUNT = 5
+
+const ACCENT_SWATCHES: { key: Accent; label: string; color: string; darkColor: string }[] = [
+  { key: 'emerald', label: 'Emerald',  color: 'hsl(142 47% 38%)', darkColor: 'hsl(142 47% 50%)' },
+  { key: 'blue',    label: 'Blue',     color: 'hsl(217 91% 50%)', darkColor: 'hsl(217 91% 62%)' },
+  { key: 'purple',  label: 'Purple',   color: 'hsl(263 70% 50%)', darkColor: 'hsl(263 70% 65%)' },
+  { key: 'teal',    label: 'Teal',     color: 'hsl(174 72% 36%)', darkColor: 'hsl(174 72% 48%)' },
+  { key: 'orange',  label: 'Orange',   color: 'hsl(25 95% 45%)',  darkColor: 'hsl(25 95% 58%)' },
+  { key: 'rose',    label: 'Rose',     color: 'hsl(346 77% 45%)', darkColor: 'hsl(346 77% 58%)' },
+]
 
 const SEGMENT_LABELS: Record<string, string> = {
   overview:            'Dashboard',
@@ -25,7 +35,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   models:              'AI Inventory',
   inventory:           'Model Inventory',
   lifecycle:           'Model Lifecycle',
-  agents:              'AI Inventory',
+  agents:              'Agent Discovery',
   'shadow-ai':         'Shadow AI',
   datasets:            'Datasets',
   vendors:             'Vendor Registry',
@@ -81,6 +91,8 @@ const SEGMENT_LABELS: Record<string, string> = {
   aiia:                'AI Impact Assessments',
   'audit-trail':       'Audit Trail',
   workflows:           'Approval Workflows',
+  tasks:               'Tasks',
+  'prompt-registry':   'Prompt Registry',
 }
 
 function isDynamicId(seg: string): boolean {
@@ -120,25 +132,37 @@ export default function TopHeader() {
   const [avatarOpen, setAvatarOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
+  const [colorOpen, setColorOpen] = useState(false)
+  const [accent, setAccentState] = useState<Accent>(getStoredAccent)
+
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const colorRef = useRef<HTMLDivElement>(null)
 
   const closeDropdown = useCallback(() => setAvatarOpen(false), [])
+  const closeColor = useCallback(() => setColorOpen(false), [])
 
-  // Close avatar dropdown on outside click / Escape
+  const handleAccentChange = (a: Accent) => {
+    setAccent(a)
+    setAccentState(a)
+    setColorOpen(false)
+  }
+
+  // Close dropdowns on outside click / Escape
   useEffect(() => {
-    if (!avatarOpen) return
+    if (!avatarOpen && !colorOpen) return
     function handleClick(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) closeDropdown()
+      if (colorRef.current && !colorRef.current.contains(e.target as Node)) closeColor()
     }
     function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') closeDropdown()
+      if (e.key === 'Escape') { closeDropdown(); closeColor() }
     }
     document.addEventListener('mousedown', handleClick)
     document.addEventListener('keydown', handleKey)
     return () => { document.removeEventListener('mousedown', handleClick); document.removeEventListener('keydown', handleKey) }
-  }, [avatarOpen, closeDropdown])
+  }, [avatarOpen, colorOpen, closeDropdown, closeColor])
 
-  // Open search on "/" key (when not in an input)
+  // Open search on "/" key
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.key === '/' && !searchOpen && !notifOpen) {
@@ -151,6 +175,9 @@ export default function TopHeader() {
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
   }, [searchOpen, notifOpen])
+
+  const currentSwatch = ACCENT_SWATCHES.find(s => s.key === accent) ?? ACCENT_SWATCHES[0]
+  const swatchColor = resolved === 'dark' ? currentSwatch.darkColor : currentSwatch.color
 
   return (
     <>
@@ -193,6 +220,60 @@ export default function TopHeader() {
             <span className='flex-1 text-left text-xs'>Quick search…</span>
             <kbd className='hidden sm:inline text-[9px] px-1 py-0.5 border border-[hsl(var(--border))] leading-none opacity-70'>/</kbd>
           </button>
+
+          {/* Accent Color Picker */}
+          <div className='relative' ref={colorRef}>
+            <Button
+              variant='ghost'
+              size='icon'
+              className='h-8 w-8 relative'
+              onClick={() => setColorOpen(v => !v)}
+              title='Change accent color'
+              aria-label='Change accent color'
+              aria-expanded={colorOpen}
+            >
+              <PaintBrush size={16} className='text-[hsl(var(--text-3))]' />
+              <span
+                className='absolute bottom-1.5 right-1.5 w-2 h-2 border border-[hsl(var(--bg-surface))]'
+                style={{ background: swatchColor }}
+              />
+            </Button>
+
+            {colorOpen && (
+              <div
+                role='menu'
+                className='absolute right-0 top-full mt-2 w-52 bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] shadow-[var(--shadow-md)] z-50 p-3'
+              >
+                <p className='text-[11px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wider mb-2.5'>
+                  Accent Color
+                </p>
+                <div className='grid grid-cols-3 gap-2'>
+                  {ACCENT_SWATCHES.map(s => {
+                    const color = resolved === 'dark' ? s.darkColor : s.color
+                    const isActive = accent === s.key
+                    return (
+                      <button
+                        key={s.key}
+                        role='menuitem'
+                        onClick={() => handleAccentChange(s.key)}
+                        title={s.label}
+                        className='flex flex-col items-center gap-1.5 p-2 hover:bg-[hsl(var(--bg-raised))] transition-colors group'
+                        style={{ outline: isActive ? `2px solid ${color}` : 'none', outlineOffset: 2 }}
+                      >
+                        <span
+                          className='w-6 h-6 flex-shrink-0'
+                          style={{ background: color }}
+                        />
+                        <span className='text-[10px] text-[hsl(var(--text-4))] group-hover:text-[hsl(var(--text-2))]'>
+                          {s.label}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Theme toggle */}
           <Button
