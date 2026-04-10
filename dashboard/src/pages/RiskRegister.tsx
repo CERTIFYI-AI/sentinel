@@ -602,7 +602,8 @@ export default function RiskRegister() {
                 <Tabs defaultValue="overview" className="mt-4">
                   <TabsList className="w-full" style={{ borderRadius: 0 }}>
                     <TabsTrigger value="overview" style={{ borderRadius: 0 }}>Overview</TabsTrigger>
-                    <TabsTrigger value="mitigations" style={{ borderRadius: 0 }}>Mitigations</TabsTrigger>
+                    <TabsTrigger value="mitigations" style={{ borderRadius: 0 }}>Treatment</TabsTrigger>
+                    <TabsTrigger value="financial" style={{ borderRadius: 0 }}>Financial</TabsTrigger>
                     <TabsTrigger value="evidence" style={{ borderRadius: 0 }}>Evidence</TabsTrigger>
                     <TabsTrigger value="controls" style={{ borderRadius: 0 }}>Controls</TabsTrigger>
                     <TabsTrigger value="activity" style={{ borderRadius: 0 }}>Activity</TabsTrigger>
@@ -656,6 +657,52 @@ export default function RiskRegister() {
                         </Badge>
                       </div>
                     )}
+                  </TabsContent>
+
+                  {/* Financial Tab */}
+                  <TabsContent value="financial" className="space-y-4 mt-4">
+                    <div style={{ padding: 12, background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))' }}>
+                      <p className="text-[10px] font-semibold uppercase mb-3" style={{ color: 'hsl(var(--text-4))' }}>FAIR Quantitative Risk Analysis</p>
+                      {(() => {
+                        const baseALE = selectedRisk.score * 125000;
+                        const reducedALE = baseALE * 0.35;
+                        const ctrlCost = baseALE * 0.15;
+                        const rosi = ((baseALE - reducedALE - ctrlCost) / ctrlCost * 100).toFixed(0);
+                        return (
+                          <div className="grid grid-cols-2 gap-3">
+                            {[
+                              { label: 'Annualized Loss Expectancy', value: `$${(baseALE / 1000).toFixed(0)}K`, color: 'hsl(var(--s-er-tx))' },
+                              { label: 'Prob. of Occurrence (annual)', value: `${(selectedRisk.likelihood * 18)}%`, color: 'hsl(var(--s-wn-tx))' },
+                              { label: 'Single Loss Expectancy', value: `$${((selectedRisk.impact * 680000) / 1000).toFixed(0)}K`, color: 'hsl(var(--s-er-tx))' },
+                              { label: 'Reduced ALE (post-control)', value: `$${(reducedALE / 1000).toFixed(0)}K`, color: 'hsl(var(--s-ok-tx))' },
+                              { label: 'Control Cost (annual)', value: `$${(ctrlCost / 1000).toFixed(0)}K`, color: 'hsl(var(--text-1))' },
+                              { label: 'ROSI', value: `${rosi}%`, color: Number(rosi) > 0 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))' },
+                            ].map(item => (
+                              <div key={item.label} style={{ padding: '10px 12px', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+                                <p className="text-[10px]" style={{ color: 'hsl(var(--text-4))', marginBottom: 3 }}>{item.label}</p>
+                                <p className="text-base font-bold" style={{ color: item.color }}>{item.value}</p>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                    <div style={{ padding: 12, background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))' }}>
+                      <p className="text-[10px] font-semibold uppercase mb-3" style={{ color: 'hsl(var(--text-4))' }}>Regulatory Exposure</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        {[
+                          { label: 'Max GDPR Fine', value: '€20M / 4% turnover' },
+                          { label: 'EU AI Act Penalty', value: `€${selectedRisk.score >= 17 ? '30M / 6%' : '15M / 3%'}` },
+                          { label: 'Reputation Impact', value: selectedRisk.score >= 17 ? 'Severe' : selectedRisk.score >= 10 ? 'Significant' : 'Moderate' },
+                          { label: 'Materiality Threshold', value: selectedRisk.score >= 10 ? 'Board reportable' : 'Management level' },
+                        ].map(item => (
+                          <div key={item.label} style={{ padding: '10px 12px', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+                            <p className="text-[10px]" style={{ color: 'hsl(var(--text-4))', marginBottom: 3 }}>{item.label}</p>
+                            <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{item.value}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </TabsContent>
 
                   {/* Mitigations Tab */}

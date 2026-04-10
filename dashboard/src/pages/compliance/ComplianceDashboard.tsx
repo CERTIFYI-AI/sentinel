@@ -132,6 +132,67 @@ export default function ComplianceDashboardPage() {
         </CardContent>
       </Card>
 
+      {/* Control Mapping Matrix */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle style={{ color: 'hsl(var(--text-1))', fontSize: 14 }}>Control Mapping Matrix</CardTitle>
+            <span style={{ fontSize: 11, color: 'hsl(var(--text-4))' }}>Control coverage across frameworks</span>
+          </div>
+        </CardHeader>
+        <CardContent style={{ overflowX: 'auto', padding: 0 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                <th style={{ padding: '8px 14px', textAlign: 'left', color: 'hsl(var(--text-4))', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: 10, minWidth: 200 }}>Control Area</th>
+                {frameworkScores.map(f => (
+                  <th key={f.name} style={{ padding: '8px 12px', textAlign: 'center', color: 'hsl(var(--text-4))', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: 10, whiteSpace: 'nowrap' }}>
+                    {f.name.split(' ')[0]}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { area: 'Identity & Access Management', coverage: [true, true, true, true, true, true] },
+                { area: 'Data Encryption & Protection', coverage: [true, true, false, true, true, true] },
+                { area: 'Incident Response', coverage: [true, true, true, true, false, true] },
+                { area: 'Audit Logging & Monitoring', coverage: [true, true, true, false, true, true] },
+                { area: 'Vendor Risk Management', coverage: [false, true, false, false, true, true] },
+                { area: 'AI Model Governance', coverage: [false, true, true, false, false, false] },
+                { area: 'Change Management', coverage: [true, true, true, false, true, false] },
+                { area: 'Business Continuity', coverage: [true, true, true, true, false, false] },
+              ].map(({ area, coverage }) => {
+                const covered = coverage.filter(Boolean).length;
+                return (
+                  <tr key={area} style={{ borderBottom: '1px solid hsl(var(--border))', cursor: 'pointer' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'hsl(var(--bg-muted))')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                    <td style={{ padding: '8px 14px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ width: `${(covered / 6) * 100}%`, maxWidth: 60, minWidth: 8, height: 4, background: covered >= 5 ? 'hsl(var(--s-ok-tx))' : covered >= 3 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-er-tx))', flexShrink: 0 }} />
+                        <span style={{ color: 'hsl(var(--text-1))', fontWeight: 500 }}>{area}</span>
+                      </div>
+                    </td>
+                    {coverage.map((covered, i) => (
+                      <td key={i} style={{ padding: '8px 12px', textAlign: 'center' }}>
+                        <span style={{ fontSize: 14, color: covered ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--border))' }}>
+                          {covered ? '●' : '○'}
+                        </span>
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <div style={{ padding: '10px 14px', borderTop: '1px solid hsl(var(--border))', display: 'flex', gap: 20, fontSize: 11, color: 'hsl(var(--text-4))' }}>
+            <span><span style={{ color: 'hsl(var(--s-ok-tx))' }}>●</span> Control covered</span>
+            <span><span style={{ color: 'hsl(var(--border))' }}>○</span> Not in scope</span>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Gap Drill-down Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-3xl">
