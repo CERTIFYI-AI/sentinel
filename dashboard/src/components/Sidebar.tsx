@@ -6,7 +6,7 @@ import {
   Warning, Scales, FolderOpen,
   ShieldCheck, Lock, Gear,
   SignOut, CaretDown, Sun, Moon, Monitor,
-  List, X, Brain, Briefcase, Eye,
+  List, PanelLeftClose, Brain, Briefcase, Eye,
   ListChecks, Lightbulb, GlobeHemisphereWest,
   Table, Target, Scan,
   Gauge,
@@ -14,7 +14,10 @@ import {
   ClipboardText, ShieldWarning, GraduationCap, Lifebuoy, CalendarBlank,
   FileMagnifyingGlass, FlowArrow,
   ChartPieSlice, Scroll, ChatTeardropText, CheckSquare,
-  ArrowRight,
+  UserList, Bug, HandCoins, ChartLine, TreeStructure, Plugs, Notepad,
+  Key, Power, Package, CloudArrowUp, Certificate,
+  Leaf, Lightning, Globe, Speedometer, IdentificationCard, Cpu,
+  Swap,
 } from '@phosphor-icons/react'
 import { cn } from '../lib/utils'
 import { useTheme, type Theme } from '../providers/theme'
@@ -65,6 +68,12 @@ const NAV: NavSection[] = [
     { label: 'Use Cases', to: '/use-cases', icon: Briefcase },
     { label: 'Prompt Registry', to: '/prompt-registry', icon: ChatTeardropText },
   ]},
+  { title: 'AGENTIC GOVERNANCE', items: [
+    { label: 'Agent Registry', to: '/agent-registry', icon: Cpu },
+    { label: 'Agent IAM', to: '/agent-iam', icon: IdentificationCard },
+    { label: 'Multi-Agent Choreography', to: '/multi-agent', icon: Swap },
+    { label: 'Kill Switch Events', to: '/kill-switch', icon: Power },
+  ]},
   { title: 'SECURITY', items: [
     { label: 'Security Overview', to: '/security', icon: ShieldCheck, children: [
       { label: 'Threat Feed', to: '/security/threats' },
@@ -77,6 +86,7 @@ const NAV: NavSection[] = [
       { label: 'Model Arena', to: '/security/model-arena' },
       { label: 'Reports', to: '/security/reports' },
     ]},
+    { label: 'Red Team Findings', to: '/red-team-findings', icon: Bug },
   ]},
   { title: 'COMPLIANCE', items: [
     { label: 'Compliance Dashboard', to: '/compliance', icon: ChartBar },
@@ -96,6 +106,7 @@ const NAV: NavSection[] = [
     { label: 'Compliance Calendar', to: '/calendar', icon: CalendarBlank },
     { label: 'Document Management', to: '/documents', icon: FileText },
     { label: 'Audit Trail', to: '/audit-trail', icon: ClockCounterClockwise },
+    { label: 'System Audit Log', to: '/system-audit-log', icon: Notepad },
   ]},
   { title: 'RISK & INCIDENTS', items: [
     { label: 'Risk Register', to: '/risks', icon: Warning, children: [
@@ -107,6 +118,13 @@ const NAV: NavSection[] = [
       { label: 'Remediation Tracker', to: '/remediation-tracker' },
     ]},
     { label: 'Exception Management', to: '/exceptions', icon: ShieldWarning },
+    { label: 'Financial Risk Quantification', to: '/financial-risk', icon: HandCoins },
+  ]},
+  { title: 'AI SUPPLY CHAIN', items: [
+    { label: 'AIBOM Registry', to: '/aibom', icon: Package },
+    { label: 'Provenance Graph', to: '/provenance', icon: TreeStructure },
+    { label: 'Vendor Upload Portal', to: '/vendor-upload', icon: CloudArrowUp },
+    { label: 'Supply Chain Attestations', to: '/supply-chain', icon: Certificate },
   ]},
   { title: 'EVALUATIONS', items: [
     { label: 'Quality Metrics', to: '/evals', icon: Gauge, children: [
@@ -115,6 +133,7 @@ const NAV: NavSection[] = [
     ]},
     { label: 'Datasets', to: '/datasets', icon: Database },
     { label: 'Data Governance', to: '/data-governance', icon: Table },
+    { label: 'Data Lineage', to: '/data-lineage', icon: ChartLine },
   ]},
   { title: 'OPERATIONS', items: [
     { label: 'HITL Reviews', to: '/hitl', icon: UserCircleCheck, badge: 3 },
@@ -122,6 +141,17 @@ const NAV: NavSection[] = [
     { label: 'Regulatory Radar', to: '/reg-radar', icon: GlobeHemisphereWest },
     { label: 'Approval Workflows', to: '/workflows', icon: FlowArrow },
     { label: 'Export Center', to: '/export', icon: DownloadSimple },
+    { label: 'Integrations', to: '/integrations', icon: Plugs },
+  ]},
+  { title: 'PRIVACY & CONSENT', items: [
+    { label: 'DSR / Rights Management', to: '/dsr', icon: UserList },
+    { label: 'Consent Management', to: '/consent-management', icon: CheckSquare },
+  ]},
+  { title: 'SUSTAINABILITY & ESG', items: [
+    { label: 'Carbon Ledger', to: '/carbon-ledger', icon: Leaf },
+    { label: 'Energy Efficiency', to: '/energy-efficiency', icon: Lightning },
+    { label: 'ESG Reports', to: '/esg-reports', icon: Globe },
+    { label: 'Model Efficiency Benchmarking', to: '/model-efficiency', icon: Speedometer },
   ]},
   { title: 'ORGANIZATION', items: [
     { label: 'Training & Awareness', to: '/training', icon: GraduationCap },
@@ -144,10 +174,10 @@ function loadSections(): string[] {
   catch { return NAV.map(s => s.title) }
 }
 
-function loadSidebarState(): 'expanded' | 'icon-only' | 'hidden' {
+function loadSidebarState(): 'expanded' | 'icon-only' {
   try {
     const v = localStorage.getItem(SIDEBAR_STATE_KEY)
-    if (v === 'expanded' || v === 'icon-only' || v === 'hidden') return v
+    if (v === 'expanded' || v === 'icon-only') return v
     return 'expanded'
   } catch { return 'expanded' }
 }
@@ -183,14 +213,13 @@ const THEME_NEXT_LABEL: Record<Theme, string> = {
 export default function Sidebar() {
   const location = useLocation()
   const navigate = useNavigate()
-  const [sidebarState, setSidebarState] = useState<'expanded' | 'icon-only' | 'hidden'>(loadSidebarState)
+  const [sidebarState, setSidebarState] = useState<'expanded' | 'icon-only'>(loadSidebarState)
   const [expandedSections, setExpandedSections] = useState<string[]>(loadSections)
   const [expandedItems, setExpandedItems] = useState<string[]>([])
   const { theme, cycleTheme } = useTheme()
   const [logoError, setLogoError] = useState(false)
 
   const collapsed = sidebarState === 'icon-only'
-  const hidden = sidebarState === 'hidden'
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(expandedSections))
@@ -228,22 +257,7 @@ export default function Sidebar() {
   const toggleItem = (to: string) =>
     setExpandedItems(prev => prev.includes(to) ? prev.filter(t => t !== to) : [...prev, to])
 
-  const cycleSidebar = () => setSidebarState(prev =>
-    prev === 'expanded' ? 'icon-only' : prev === 'icon-only' ? 'hidden' : 'expanded'
-  )
-
-  if (hidden) {
-    return (
-      <button
-        onClick={() => setSidebarState('expanded')}
-        className='fixed top-3 left-3 z-50 w-9 h-9 flex items-center justify-center bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-1))] shadow-[var(--shadow-sm)] transition-colors'
-        title='Show navigation'
-        aria-label='Show navigation'
-      >
-        <List size={16} />
-      </button>
-    )
-  }
+  const toggleSidebar = () => setSidebarState(prev => prev === 'expanded' ? 'icon-only' : 'expanded')
 
   return (
     <aside className={cn(
@@ -271,12 +285,12 @@ export default function Sidebar() {
           </div>
         )}
         <button
-          onClick={cycleSidebar}
+          onClick={toggleSidebar}
           className='text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-2))] ml-auto flex-shrink-0 p-1'
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          {collapsed ? <List size={14}/> : <X size={14}/>}
+          {collapsed ? <List size={14}/> : <PanelLeftClose size={14}/>}
         </button>
       </div>
 
@@ -326,7 +340,6 @@ export default function Sidebar() {
                           <button
                             onClick={() => {
                               toggleItem(item.to)
-                              // Navigate to parent page when expanding (not collapsing)
                               if (!childrenExpanded) navigate(item.to)
                             }}
                             className={cn(

@@ -1,0 +1,49 @@
+think like You are a 15+ year expert AI/ML, GRC, and React/TypeScript enterprise engineer. Build and enhance Sentinel AI GRC Platform “The Trust Layer for Production AI” for Fortune 500 clients.
+i need real appropirate seed data on each modules  -isuue sidebar minimize (collapse sidebar) once close collapse sidebar there is no option to open -complete remaining UI CRUD functionality of all modules  -check AI advisor page its not working  Sentinel should not be built as a collection of pages mapped one-to-one with compliance topics. It should be built as a trust graph plus workflow engine, where modules are views over shared governed entities, shared evidence, shared policies, and shared events.
+In real enterprise use, users do not think in isolated screens. They think in operating questions such as which production AI systems are high risk, which controls are failing, which vendors are upstream of a model incident, whether a regulator-triggered obligation is covered, and whether an autonomous agent should be blocked, escalated, or attested.
+Core Engineering Principle
+Every module in Sentinel should either create, enrich, evaluate, approve, or consume one of a small set of canonical governed entities. If a module has its own disconnected records, its own status semantics, and its own attachment model, the platform will fragment operationally even if the UI appears complete.
+The engineering goal should be a shared domain model with many projections, not many duplicate mini-systems. In practice, this means Model Inventory, Agent Discovery, Use Cases, Risks, Controls, Evidence, Audits, Vendors, Incidents, Assessments, Policies, and Trust Scores should all resolve to linked records in a common platform graph. Sentinel will win large enterprise accounts not by having the most pages, but by becoming the system where AI governance state becomes computable, evidence becomes reusable, and trust decisions become operationally enforceable across models, agents, vendors, controls, and runtime events. The technical strategy should therefore center on canonical entities, graph relationships, event-driven automation, policy evaluation, bounded autonomous agents, and integration-first evidence orchestration. 
+Add following new modules with titles and module names (if already following module is already there dont create new ):
+Core GRC / Trust
+DSR / Rights Management
+Module name: DSR / Rights Management
+Red Team Findings
+Module name: Red Team Findings
+Consent Management
+Module name: Consent Management
+Financial Risk Quantification
+Module name: Financial Risk Quantification
+Data Lineage
+Module name: Data Lineage
+Integrations
+Module name: Integrations
+System Audit Log
+Module name: System Audit Log
+Agentic Governance
+Agent Registry
+Module name: Agent Registry
+Agent IAM
+Module name: Agent IAM
+Multi-Agent Choreography
+Module name: Multi-Agent Choreography
+Kill Switch Events
+Module name: Kill Switch Events
+AI Supply Chain
+AIBOM Registry
+Module name: AIBOM Registry
+Provenance Graph
+Module name: Provenance Graph
+Vendor Upload Portal
+Module name: Vendor Upload Portal
+Supply Chain Attestations
+Module name: Supply Chain Attestations
+Sustainability & ESG
+Carbon Ledger
+Module name: Carbon Ledger
+Energy Efficiency
+Module name: Energy Efficiency
+ESG Reports
+Module name: ESG Reports
+Model Efficiency Benchmarking
+Module name: Model Efficiency Benchmarking
