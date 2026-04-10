@@ -1,0 +1,453 @@
+You are a 15+ year expert in AI/ML, GRC, and React/TypeScript.
+Fix Sentinel AI GRC platform — Fortune 500 readiness pass.
+Most code exists. Fix bugs, wire interactions, add missing workflows.
+
+REPO: Read all files first. Fix existing. Complete files only.
+"CHECKPOINT: [file]" if context runs long.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CRITICAL FIX FIRST: LIGHT MODE BUG
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Every page renders white-on-white in light mode.
+Fix src/styles/tokens.css :root values:
+
+:root {
+  --bg-page:    240 5% 96%;
+  --bg-surface: 0 0% 100%;
+  --bg-raised:  240 5% 98%;
+  --bg-sunken:  240 5% 93%;
+  --border:     240 6% 88%;
+  --text-1:     240 10% 4%;
+  --text-2:     240 6% 22%;
+  --text-3:     240 4% 44%;
+  --text-4:     240 4% 62%;
+  --brand:      142 47% 38%;
+  --brand-subtle: 142 47% 96%;
+}
+.dark {
+  --bg-page:    224 15% 8%;
+  --bg-surface: 224 15% 11%;
+  --bg-raised:  224 15% 14%;
+  --bg-sunken:  224 15% 6%;
+  --border:     224 15% 18%;
+  --text-1:     210 40% 96%;
+  --text-2:     215 20% 75%;
+  --text-3:     215 15% 55%;
+  --text-4:     215 12% 38%;
+  --brand:      142 47% 50%;
+  --brand-subtle: 142 20% 14%;
+}
+
+Apply to body: background hsl(var(--bg-page)) | color hsl(var(--text-1))
+All cards: bg hsl(var(--bg-surface)) border hsl(var(--border))
+Zero hardcoded colors anywhere — only CSS vars
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. DASHBOARD  src/pages/Overview.tsx
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Add to existing page:
+
+Date range pills (top-right): 7D | 30D | 90D | QoQ
+  Active: bg hsl(var(--brand)) text-white | Inactive: border
+  All KPIs + charts react to selection
+
+Trend arrows on every KPI tile:
+  ↑ 3.2% vs last period (ok color) | ↓ 1.1% (error color)
+  Data: calculate delta from seed time-series values
+
+Clickable KPI drill-through:
+  "8 Open Risks" → /risk?status=open
+  "2 Critical Incidents" → /risk/incidents?severity=critical
+  "75% Compliance" → /compliance
+  "3 Pending HITL" → /hitl?status=pending
+  cursor-pointer hover:shadow-md on all tiles
+
+Alert ribbon countdown:
+  "3 critical items — next audit Apr 20" + countdown timer
+  Click → slide-out panel listing each item with "Resolve →"
+
+Executive AI digest (below KPIs):
+  Auto-generated summary string from store data:
+  "Since last login: 2 new risks added, compliance improved 3%,
+   1 bias audit failed. 2 models need immediate review."
+  Refresh icon to regenerate
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. TASK MANAGEMENT  src/pages/Tasks.tsx
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Fix Kanban board drag-and-drop:
+  Use @dnd-kit/core (already installed or add)
+  Columns: Todo | In Progress | Review | Done | Blocked
+  Drag card between columns → updates task status in store
+  Column counts update live
+
+SLA timer badges per task:
+  Calculate: deadline - today = days remaining
+  >3 days: ok color | 1-3 days: warn | 0: error | past: "OVERDUE" pulse
+
+Bulk actions (checkbox per row):
+  Select all + per-row | Bulk bar when >0 selected:
+  "Reassign (N)" | "Change Priority (N)" | "Change Status (N)"
+  Each: dropdown → apply → toast → audit entry
+
+Comment thread per task (detail drawer new tab):
+  Comments list: avatar + author + timestamp + text
+  Add comment: textarea + Post button
+  @mention: prefix with @ → highlight matched user from authStore
+
+Auto-task generation hook:
+  When risk created → auto-create linked task:
+    title: "Mitigate: {risk.title}" | owner: risk.owner
+    deadline: risk.target_date | priority: mapped from risk.severity
+  Toast: "Task TSK-016 auto-created from RSK-013"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. MODEL INVENTORY  src/pages/ModelDetail.tsx
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Ensure model row click opens detail page at /models/inventory/:id
+
+7 tabs (add missing ones):
+  Model Card | Performance | Bias History |
+  Explainability | Data Lineage | Technical Docs | Activity
+
+Model Card tab — EU AI Act passport:
+  Two-col info grid: all fields from register form
+  Fairness threshold: value + "Below threshold" red badge if failing
+  Framework compliance row: per framework chip (✓ ok / ⚠ gap)
+  Export: "Model Card PDF" | "EU AI Act Annex IV JSON"
+
+Data Lineage tab — SVG flow:
+  [DS chips] → [Preprocessing] → [Training] → [MDL] → [Inference]
+  Pure CSS + inline SVG | each node: bg surface border
+  Arrows: SVG path hsl(var(--brand))
+  Click node → EntityChip popover with navigate
+
+A/B comparison modal:
+  "Compare" checkbox per row (max 3)
+  "Compare (N)" button → Modal xl side-by-side columns
+  Row per metric | green cell = better value
+
+Drift alert configuration per model (edit modal):
+  Fairness threshold slider | Drift threshold slider
+  Alert channel: Email | Slack | PagerDuty toggle per channel
+  "Test Alert" button → toast "Test alert sent"
+
+Lifecycle state machine (Model Lifecycle page):
+  Visual pipeline: Dev → Validation → Staging → Production → Monitor → Decommission
+  Current stage: pulsing brand ring | Past: filled ok | Future: empty
+  "Advance Stage" button → ConfirmDialog with gate checklist
+    Gate requires: bias audit passed + HITL approved + evidence attached
+  Gate fail: list what's missing + "Fix Now →" per item
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. TRUST ENGINE  src/pages/TrustDashboard.tsx
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Live ticker severity colors (fix text-only):
+  Wrap each event in colored chip inline:
+    Critical: bg error | High: bg r-hi | Medium: bg warn
+  Click chip → event detail drawer
+
+Alert configuration modal ("Configure Alerts"):
+  Per policy: threshold % input + delay select (Immediate/5min/1hr)
+  Channels: Slack webhook URL | Email | PagerDuty key
+  "Send Test" button per channel
+  Save → persists to trustConfigStore
+
+Trust score breakdown (expandable, visible not hover):
+  Chevron toggle below main score
+  Per policy: name | score | weight | evaluations | trend arrow
+  Hallucination Guard 89% → amber "Below 95% threshold" badge
+
+Guardrails visual rule builder:
+  "Add Rule" → condition builder UI:
+    IF [field dropdown] [operator] [value input] THEN [action dropdown]
+    "AND" / "OR" join between conditions
+    Preview: natural language "Block if toxicity > 0.8 AND PII detected"
+  "Test Rule" → sample input → shows triggered/not triggered
+  Rule version history in drawer (v1.0 → v1.1 with changelog)
+
+Live Traces — span waterfall:
+  Per trace row: expand → child spans indented
+  Each span: colored bar (width = duration proportion)
+  Hover: tooltip with exact latency + token count + cost
+  Filter bar: latency > N ms | status = error | model = select
+
+Cost dashboard additions:
+  Projected monthly burn: "At current rate: $37.20/month"
+  Budget alert: threshold input → amber/red badge when exceeded
+  Breakdown donut: by model | by agent | by department
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. AGENT REGISTRY  src/pages/AgentDetail.tsx
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Kill Switch → 2-step confirmation:
+  Click Kill Switch → ConfirmDialog:
+    "Killing AGT-010 will break: [workflow list]"
+    Reason textarea* required min 20 chars
+    "Confirm Kill Switch" error-solid Button
+  On confirm: status = quarantined | audit entry | toast
+
+Trust Score breakdown drawer:
+  Click score → right drawer:
+    Per factor: Accuracy | Safety | Compliance | Hallucination Rate | Feedback
+    Each: progress bar + score + weight + trend
+    Weighted methodology explainer
+
+Agent IAM permission matrix:
+  New tab "Permissions" in agent detail:
+    Table: Resource | Read | Write | Execute | Admin
+    Rows: datasets, models, APIs, tools, outputs
+    Cells: ✓ allowed | — denied | ! anomaly detected
+  "Enforce Least Privilege" Button → strips unused permissions
+
+Multi-agent choreography (tab "Topology"):
+  D3-style SVG graph (or ReactFlow if installed):
+    Node per agent (circle, colored by risk)
+    Edge: arrow = communication | width = message volume
+    Hover edge: message sample popover + latency
+  "Kill Agent" accessible from node right-click menu
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. SECURITY  src/pages/SecurityHub.tsx
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SBOM / AI Supply Chain tab:
+  Table: Model | Library | Version | CVEs | License | Risk
+  Seed: MDL-001 (transformers 4.36.0 3 CVEs | torch 2.1.2)
+  "Generate SBOM" → CycloneDX JSON download
+  CVE count chip → filter /security/vulnerabilities to that library
+
+Red Team remediation workflow:
+  Score 45% → error banner "AI security posture critical"
+  Per finding: "Create Fix" → task + risk record auto-created
+  "Remediation Progress" section: finding list with owner + deadline + %
+
+Attack Surface visual topology:
+  SVG node-link diagram: external nodes (red exposed) | internal (blue)
+  Edge width = data flow volume | hover: asset metadata
+  "Exposed" nodes: pulsing red ring
+  Click node → asset detail drawer
+
+Policy Firewall:
+  Test/Enforce mode toggle (prominent, warning if switching to Enforce)
+  Rule effectiveness: block rate % + false positive % per rule
+  "Add Rule" → same visual condition builder as Guardrails
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. COMPLIANCE  src/pages/Compliance.tsx
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Cross-framework control mapping matrix:
+  "Control Mapping" tab on Compliance Dashboard
+  Rows: controls | Cols: frameworks
+  Cell: ✓ covered | ⚠ partial | — N/A
+  Footer: "8 controls satisfy 23 requirements — saves 62% duplication"
+  Click cell → clause detail popover
+
+Gap remediation workflow:
+  "10 Open Gaps" → click → Gap Analysis filtered view
+  Per gap row: "Create Action Plan" →
+    Owner | Deadline | Priority | Effort | Evidence required
+    Creates task record + links to control
+
+Audit findings detail:
+  Audit detail drawer: "Findings" tab
+  Finding: ID | Description | Risk Rating | Status | Assignee
+  "Create Remediation Task" per finding → task auto-linked
+  "Auditor Portal Share" → simulated time-limited link
+
+Evidence Hub enhancements:
+  Drag-and-drop upload zone (dashed border, hover highlight)
+  Auto-tag to control on upload:
+    Dropdown: "This evidence satisfies: [CTRL-XXX select]"
+  Staleness alert: evidence >90 days → amber "Stale Evidence" badge
+  Version history: per evidence item → v1 → v2 → current
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. RISK & INCIDENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Risk Register — interactive heatmap:
+  5×5 CSS grid heatmap (top of page, collapsible)
+  Cells: color gradient green→red by L×I
+  Risk ID chips inside cells | "+N more" chip if overflow
+  Click cell → filter table to that L/I combination
+  List/Matrix toggle (same page, sessionStorage)
+
+Risk detail — full treatment plan:
+  Risk Appetite indicator: "Appetite: Medium | Current: High → Above appetite"
+  Treatment: Accept | Mitigate | Transfer | Avoid (radio)
+  Residual risk: after-controls score with separate L×I display
+  Control effectiveness: per linked control — N% effective
+
+Incident workflow state machine:
+  Horizontal steps: Detected → Triaged → Investigating →
+    Contained → Resolved → Post-Mortem
+  Current: pulsing ring | Past: filled | Future: empty
+  SLA timer per stage (configurable, default: Critical=2h High=24h)
+  "OVERDUE" badge if past SLA | escalation notification
+
+Financial risk quantification (Risk detail "Financial" tab):
+  Simple ALE calculation: asset_value × probability × impact_factor
+  Display: "Estimated Annual Loss Exposure: $2.4M–$8.7M"
+  "Based on: N similar incidents in financial services (2024-2025)"
+  Not Monte Carlo (too complex) — simplified range calculation
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. EVALUATIONS  src/pages/Evals.tsx
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+"Run Evaluation" wizard (fix button to open full wizard):
+  Step 1: Select model (list from MDL-XXX)
+  Step 2: Select technique (BLEU/ROUGE/Hallucination/Toxicity/Bias/Custom)
+  Step 3: Select dataset (DS-XXX list, demographic=true flag)
+  Step 4: Configure thresholds + schedule (now/scheduled)
+  Step 5: Review → Run (2.5s simulated → results inline)
+  Results: score + pass/fail + dimension breakdown
+
+Model Arena (if exists — enhance):
+  Leaderboard table: rank | model | safety score | quality | cost | carbon
+  ELO-style rating: calculated from head-to-head eval results
+  "Compare Selected" → side-by-side radar chart
+  Pareto frontier chart: quality vs cost scatter (Recharts)
+
+Benchmark suite:
+  Preset suites: EU AI Act Readiness | NIST AI RMF | Safety Basics
+  Per suite: list of eval techniques + expected thresholds
+  "Run Suite on Model" → batch wizard
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. OPERATIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Regulatory Radar — regulation impact assessment:
+  Per regulation row: "Assess Impact" →
+    Auto-analyzes linked frameworks → "8 controls affected"
+    Shows CTRL-IDs with navigate chips
+    "Create Remediation Plan" bulk → tasks auto-generated
+  Upcoming regulation timeline:
+    Recharts horizontal timeline | colored by impact
+    Hover: regulation name + effective date + your readiness %
+
+Approval Workflows visual builder:
+  /workflows/:id → WorkflowBuilder page
+  Visual flow: nodes connected by arrows (CSS + SVG)
+  Stage node: card with role | deadline | escalation config
+  Click stage → right config panel:
+    Approver (role or user) | SLA hours | Escalation after N hours |
+    Condition: IF risk_level = critical → add CISO stage
+  Sequential / Parallel / Conditional routing types
+  "Test Workflow" → dry-run simulation
+
+Export Center — board-ready report:
+  "Board Report" template card
+  Preview: cover + 6 slides (compliance/risk/models/incidents/deadlines/actions)
+  Export: PDF Blob download with org name in header
+  "Schedule Board Report" → quarterly frequency preset
+
+Vendor Registry — contract management:
+  Contract section in vendor detail:
+    Contract Expiry Date | Annual Value | SLA Terms
+    Days-to-expiry badge: amber <60d | red <30d
+  Documents tab: upload DPA | SOC2 | ISO Cert | Pen Test
+  Sub-processors list (GDPR Art.28): add/remove rows
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+11. SUSTAINABILITY  src/pages/Sustainability.tsx (new or enhance)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Add to sidebar under ORGANIZATION if not exists.
+
+Carbon Ledger:
+  Per-inference estimate: model_params × tokens × carbon_factor
+  Recharts BarChart: carbon by model (Mon-Sun)
+  "Carbon Budget": threshold input → bar turns red if exceeded
+  Projected monthly: "At current rate: 2.4 tCO₂e/month"
+
+Energy efficiency score per model:
+  Quality/performance ÷ GPU hours × 100
+  Recommendation chips: "Quantize MDL-001 → save 34% energy"
+
+ESG report template in Reporting:
+  New template card: "ESG AI Impact Report"
+  Covers: carbon | energy | governance | fairness | transparency
+  Export PDF with GRI/SASB alignment disclaimer
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12. GLOBAL CROSS-CUTTING FIXES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Command Palette (Cmd+K):
+  Already exists — enhance results:
+  ACTIONS section: "+ Register Model" | "+ Create Risk" | etc.
+  ENTITIES: federated search across all stores
+  RECENT: last 5 navigated entities from sessionStorage
+  Keyboard: ↑↓ navigate | Enter select | Esc close
+
+Bulk operations on ALL tables (if missing):
+  Header checkbox + per-row checkbox
+  Bulk bar: context-specific actions per module
+  Apply → toast → audit entry
+
+Empty states on ALL modules:
+  If no data: Phosphor icon + title + description + primary CTA
+  If search no results: MagnifyingGlass icon + "No results" + "Clear filters"
+  Never blank white space
+
+Notification center enhancements:
+  Bell popover: already exists → add "Configure Alerts" link
+  /notifications page: add "Alert Rules" tab
+    Create rules: trigger + threshold + channel
+    Triggers: compliance drop below N% | risk score > N |
+      model drift detected | HITL SLA breach | budget exceeded
+
+Audit Trail (if exists):
+  Verify: append-only, no delete/edit UI
+  Add: tamper-evident badge "Immutable log — SOC 2 compliant"
+  Export: date range + module filter → CSV with sha256 hash column
+
+Responsive design (tablet):
+  MetricTile grids: grid-cols-1 sm:grid-cols-2 lg:grid-cols-4
+  Tables: overflow-x-auto wrapper min-w-[640px]
+  Sidebar: overlay drawer on <768px
+
+WCAG keyboard navigation:
+  All interactive elements: focus-visible:ring-2 hsl(var(--brand))
+  Tab order: logical top-to-bottom
+  Skip to main content link (visually hidden, focus shows)
+  All icon-only buttons: aria-label attribute
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT ORDER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1.  src/styles/tokens.css          ← light mode fix (P0, do first)
+2.  src/pages/Overview.tsx         ← date range + trends + digest
+3.  src/pages/Tasks.tsx            ← kanban DnD + SLA + bulk + comments
+4.  src/pages/ModelDetail.tsx      ← 7 tabs + lineage + comparison
+5.  src/pages/ModelLifecycle.tsx   ← state machine + gate approvals
+6.  src/pages/TrustDashboard.tsx   ← ticker colors + alert config
+7.  src/pages/Guardrails.tsx       ← visual rule builder
+8.  src/pages/LiveTraces.tsx       ← span waterfall + filters
+9.  src/pages/AgentDetail.tsx      ← kill switch + IAM + topology
+10. src/pages/SecurityHub.tsx      ← SBOM + attack surface visual
+11. src/pages/Compliance.tsx       ← control mapping + gap workflow
+12. src/pages/EvidenceSync.tsx     ← drag-drop + staleness + versioning
+13. src/pages/Risk.tsx             ← heatmap + treatment + ALE
+14. src/pages/Incidents.tsx        ← workflow state machine + SLA
+15. src/pages/Evals.tsx            ← run wizard + arena + benchmarks
+16. src/pages/RegRadar.tsx         ← impact assessment + timeline
+17. src/pages/Workflows.tsx        ← visual builder
+18. src/pages/Reporting.tsx        ← board report + scheduling
+19. src/pages/Vendors.tsx          ← contract + documents
+20. src/pages/Sustainability.tsx   ← carbon ledger + ESG report
+21. src/components/layout/TopBar.tsx ← command palette + notifications
+22. src/components/ui/DataTable.tsx  ← bulk ops + empty states
+
+After all files:
+"COMPLETE ✓
+ P0: Light mode fixed — CSS vars properly contrasted
+ Dashboard: date range + trend arrows + drill-through + AI digest
+ Tasks: functional kanban DnD + SLA timers + auto-task generation
+ Models: 7-tab detail + lifecycle state machine + A/B compare
+ Trust: severity ticker + alert config + span waterfall
+ Agents: kill switch guard + IAM matrix + topology graph
+ Security: SBOM + attack surface visual + red team remediation
+ Compliance: control mapping matrix + gap workflow + evidence DnD
+ Risk: interactive heatmap + treatment + financial quantification
+ Evaluations: run wizard + model arena + benchmark suites
+ Sustainability: carbon ledger + ESG report template
+ Global: WCAG keyboard nav + bulk ops + empty states + responsive"
