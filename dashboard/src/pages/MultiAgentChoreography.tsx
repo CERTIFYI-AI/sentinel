@@ -51,6 +51,10 @@ export default function MultiAgentChoreography() {
   const [search, setSearch] = useState('')
   const [workflows, setWorkflows] = useState(SEED)
   const [terminateTarget, setTerminateTarget] = useState<AgentWorkflow | null>(null)
+  const [showCreate, setShowCreate] = useState(false)
+  const [newWfName, setNewWfName] = useState('')
+  const [newWfTrigger, setNewWfTrigger] = useState('Manual')
+  const [newWfOrch, setNewWfOrch] = useState('')
 
   const filtered = workflows.filter(w => {
     const q = search.toLowerCase()
