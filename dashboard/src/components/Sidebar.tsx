@@ -6,7 +6,7 @@ import {
   Warning, Scales, FolderOpen,
   ShieldCheck, Lock, Gear,
   SignOut, CaretDown, Sun, Moon, Monitor,
-  List, PanelLeftClose, Brain, Briefcase, Eye,
+  List, Sidebar as SidebarCollapseIcon, Brain, Briefcase, Eye,
   ListChecks, Lightbulb, GlobeHemisphereWest,
   Table, Target, Scan,
   Gauge,
@@ -290,7 +290,7 @@ export default function Sidebar() {
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          {collapsed ? <List size={14}/> : <PanelLeftClose size={14}/>}
+          {collapsed ? <List size={14}/> : <SidebarCollapseIcon size={14}/>}
         </button>
       </div>
 
