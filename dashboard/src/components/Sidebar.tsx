@@ -17,7 +17,7 @@ import {
   UserList, Bug, HandCoins, ChartLine, TreeStructure, Plugs, Notepad,
   Key, Power, Package, CloudArrowUp, Certificate,
   Leaf, Lightning, Globe, Speedometer, IdentificationCard, Cpu,
-  Swap,
+  Swap, Users,
 } from '@phosphor-icons/react'
 import { cn } from '../lib/utils'
 import { useTheme, type Theme } from '../providers/theme'
@@ -50,6 +50,7 @@ const NAV: NavSection[] = [
   { title: 'AI GOVERNANCE', items: [
     { label: 'Model Inventory', to: '/models/inventory', icon: Robot, children: [
       { label: 'Model Lifecycle', to: '/models/lifecycle' },
+      { label: 'Model Validation Lab', to: '/model-validation' },
     ]},
     { label: 'Trust Engine', to: '/trust-engine', icon: Gauge, children: [
       { label: 'Guardrails', to: '/trust-engine/guardrails' },
@@ -73,6 +74,7 @@ const NAV: NavSection[] = [
     { label: 'Agent IAM', to: '/agent-iam', icon: IdentificationCard },
     { label: 'Multi-Agent Choreography', to: '/multi-agent', icon: Swap },
     { label: 'Kill Switch Events', to: '/kill-switch', icon: Power },
+    { label: 'Performance Monitoring', to: '/performance-monitoring', icon: Gauge },
   ]},
   { title: 'SECURITY', items: [
     { label: 'Security Overview', to: '/security', icon: ShieldCheck, children: [
@@ -116,6 +118,7 @@ const NAV: NavSection[] = [
       { label: 'Incident Workflow', to: '/incident-workflow' },
       { label: 'Remediation', to: '/risk/remediation' },
       { label: 'Remediation Tracker', to: '/remediation-tracker' },
+      { label: 'Incident Playbooks', to: '/incidents/playbooks' },
     ]},
     { label: 'Exception Management', to: '/exceptions', icon: ShieldWarning },
     { label: 'Financial Risk Quantification', to: '/financial-risk', icon: HandCoins },
@@ -154,6 +157,7 @@ const NAV: NavSection[] = [
     { label: 'Model Efficiency Benchmarking', to: '/model-efficiency', icon: Speedometer },
   ]},
   { title: 'ORGANIZATION', items: [
+    { label: 'Committee Management', to: '/committee', icon: Users },
     { label: 'Training & Awareness', to: '/training', icon: GraduationCap },
     { label: 'Access Control', to: '/access-control', icon: Lock },
     { label: 'Benchmarking & Maturity', to: '/maturity', icon: ChartBar },

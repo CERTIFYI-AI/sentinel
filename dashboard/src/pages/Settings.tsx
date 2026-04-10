@@ -230,6 +230,7 @@ export default function Settings() {
             { value: 'integrations', label: 'Integrations' },
             { value: 'appearance', label: 'Appearance' },
             { value: 'audit-trail', label: 'Audit Trail' },
+            { value: 'sso', label: 'SSO / SAML' },
           ].map(tab => (
             <TabsTrigger key={tab.value} value={tab.value} style={{ borderRadius: 0 }}>{tab.label}</TabsTrigger>
           ))}
@@ -700,6 +701,160 @@ export default function Settings() {
                   />
                 </div>
               ))}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── SSO / SAML ─────────────────────────────── */}
+        <TabsContent value="sso" className="mt-4 space-y-4">
+          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Shield size={16} style={{ color: 'hsl(var(--brand))' }} />
+                  <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>SAML 2.0 Single Sign-On</CardTitle>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs px-2 py-0.5 font-medium" style={{ background: ssoEnabled ? 'hsl(142 71% 45% / 0.12)' : 'hsl(220 14% 60% / 0.15)', color: ssoEnabled ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-3))', borderRadius: 0 }}>{ssoEnabled ? 'Enabled' : 'Disabled'}</span>
+                  <Switch checked={ssoEnabled} onCheckedChange={setSsoEnabled} />
+                </div>
+              </div>
+              <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>Configure SAML 2.0 identity provider integration for enterprise single sign-on.</p>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              {/* IdP Configuration */}
+              <div>
+                <p className="text-xs font-semibold mb-3" style={{ color: 'hsl(var(--text-3))', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Identity Provider Configuration</p>
+                <div className="space-y-3">
+                  {[
+                    { label: 'IdP Entity ID', placeholder: 'https://your-idp.example.com/saml/metadata', value: 'https://acmefinancial.okta.com/app/metadata' },
+                    { label: 'SSO URL (IdP)', placeholder: 'https://your-idp.example.com/saml/sso', value: 'https://acmefinancial.okta.com/app/sso/saml' },
+                    { label: 'SLO URL (IdP)', placeholder: 'https://your-idp.example.com/saml/slo', value: 'https://acmefinancial.okta.com/app/slo/saml' },
+                  ].map(f => (
+                    <div key={f.label} className="grid grid-cols-3 gap-4 items-center">
+                      <label className="text-sm font-medium" style={{ color: 'hsl(var(--text-4))' }}>{f.label}</label>
+                      <Input defaultValue={f.value} placeholder={f.placeholder} className="col-span-2" style={{ borderRadius: 0 }} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* X.509 Certificate */}
+              <div style={{ borderTop: '1px solid hsl(var(--border))', paddingTop: 16 }}>
+                <p className="text-xs font-semibold mb-3" style={{ color: 'hsl(var(--text-3))', textTransform: 'uppercase', letterSpacing: '0.05em' }}>X.509 Certificate</p>
+                <div className="p-3 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] font-mono text-xs text-[hsl(var(--text-3))] space-y-1">
+                  <p>-----BEGIN CERTIFICATE-----</p>
+                  <p>MIIDqDCCApCgAwIBAgIGAYYQ+oX9MA0GCSqGSIb3DQEBCwUAMIGUMQswCQYD...</p>
+                  <p className="text-[hsl(var(--text-4))]">[Certificate truncated — 2048-bit RSA, expires 2027-03-15]</p>
+                  <p>-----END CERTIFICATE-----</p>
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <Button variant="outline" size="sm" style={{ borderRadius: 0 }}>Upload New Certificate</Button>
+                  <Button variant="ghost" size="sm" style={{ borderRadius: 0 }}><Copy size={12} className="mr-1" /> Copy</Button>
+                </div>
+              </div>
+
+              {/* SP Metadata */}
+              <div style={{ borderTop: '1px solid hsl(var(--border))', paddingTop: 16 }}>
+                <p className="text-xs font-semibold mb-3" style={{ color: 'hsl(var(--text-3))', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Service Provider Metadata (Sentinel)</p>
+                <div className="grid grid-cols-3 gap-4 items-center">
+                  <label className="text-sm font-medium" style={{ color: 'hsl(var(--text-4))' }}>SP Entity ID</label>
+                  <div className="col-span-2 flex gap-2">
+                    <Input readOnly value="https://app.sentinel-grc.com/saml/metadata" style={{ borderRadius: 0 }} />
+                    <Button variant="outline" size="sm" style={{ borderRadius: 0 }}><Copy size={12} /></Button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-4 items-center mt-3">
+                  <label className="text-sm font-medium" style={{ color: 'hsl(var(--text-4))' }}>ACS URL</label>
+                  <div className="col-span-2 flex gap-2">
+                    <Input readOnly value="https://app.sentinel-grc.com/saml/acs" style={{ borderRadius: 0 }} />
+                    <Button variant="outline" size="sm" style={{ borderRadius: 0 }}><Copy size={12} /></Button>
+                  </div>
+                </div>
+                <Button variant="outline" size="sm" className="mt-3" style={{ borderRadius: 0 }}>Download SP Metadata XML</Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* JIT Provisioning */}
+          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-2">
+                <User size={16} style={{ color: 'hsl(var(--brand))' }} />
+                <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Just-in-Time Provisioning</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-0">
+              {[
+                { label: 'Enable JIT provisioning', description: 'Automatically create user accounts on first SAML login', defaultChecked: true },
+                { label: 'Enforce SSO for all users', description: 'Block username/password login — all users must authenticate via SSO', defaultChecked: false },
+                { label: 'Sync group memberships', description: 'Synchronize IdP group memberships to Sentinel roles on each login', defaultChecked: true },
+                { label: 'Deprovision on IdP disable', description: 'Automatically revoke access when user is disabled in IdP', defaultChecked: true },
+              ].map(opt => (
+                <div key={opt.label} className="flex items-center justify-between py-3" style={{ borderBottom: '1px solid hsl(var(--border) / 0.5)' }}>
+                  <div>
+                    <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{opt.label}</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>{opt.description}</p>
+                  </div>
+                  <Switch defaultChecked={opt.defaultChecked} />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* Attribute Mapping */}
+          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Attribute Mapping</CardTitle>
+              <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>Map SAML assertion attributes to Sentinel user profile fields.</p>
+            </CardHeader>
+            <CardContent>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                    {['SAML Attribute', 'Sentinel Field', 'Required'].map(h => (
+                      <th key={h} className="px-3 py-2 text-left text-xs font-medium" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { saml: 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress', sentinel: 'email', required: true },
+                    { saml: 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname', sentinel: 'first_name', required: true },
+                    { saml: 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname', sentinel: 'last_name', required: true },
+                    { saml: 'groups', sentinel: 'role', required: false },
+                    { saml: 'department', sentinel: 'department', required: false },
+                  ].map((row, i) => (
+                    <tr key={i} style={{ borderBottom: '1px solid hsl(var(--border) / 0.5)' }}>
+                      <td className="px-3 py-2 font-mono text-xs" style={{ color: 'hsl(var(--text-3))' }}>{row.saml.length > 50 ? '…' + row.saml.slice(-40) : row.saml}</td>
+                      <td className="px-3 py-2">
+                        <Input defaultValue={row.sentinel} className="h-7 text-xs" style={{ borderRadius: 0 }} />
+                      </td>
+                      <td className="px-3 py-2">
+                        {row.required ? (
+                          <span className="text-xs px-1.5 py-0.5" style={{ background: 'hsl(0 72% 51% / 0.1)', color: 'hsl(var(--destructive))', borderRadius: 0 }}>Required</span>
+                        ) : (
+                          <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Optional</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <Button size="sm" className="mt-4" style={{ borderRadius: 0 }}>Save Attribute Mappings</Button>
+            </CardContent>
+          </Card>
+
+          {/* Test SSO */}
+          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardContent className="pt-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Test SSO Configuration</p>
+                  <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>Send a test SAML assertion to verify the integration is working correctly.</p>
+                </div>
+                <Button variant="outline" size="sm" style={{ borderRadius: 0 }}>Run SSO Test</Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

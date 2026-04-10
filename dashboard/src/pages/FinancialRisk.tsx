@@ -1,7 +1,7 @@
-import { useState } from 'react'
-import { HandCoins, MagnifyingGlass, Plus, Eye, X, Export, TrendUp, TrendDown } from '@phosphor-icons/react'
+import { useState, useMemo } from 'react'
+import { HandCoins, MagnifyingGlass, Plus, Eye, X, Export, TrendUp, TrendDown, ChartLine, Calculator, Target, Sliders } from '@phosphor-icons/react'
 import { toast } from 'sonner'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LineChart, Line, CartesianGrid, ReferenceLine, Legend, ScatterChart, Scatter, ZAxis } from 'recharts'
 
 interface FinancialRiskItem {
   id: string
@@ -142,6 +142,102 @@ export default function FinancialRisk() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* ── Monte Carlo Simulation Panel ─────────────────────────────────────── */}
+      <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2">
+            <ChartLine size={16} className="text-[hsl(var(--brand))]" weight="duotone" />
+            Monte Carlo Loss Distribution Simulation (10,000 iterations)
+          </h3>
+          <button onClick={() => toast.info('Re-running simulation...')} className="text-xs px-3 py-1 bg-[hsl(var(--brand))] text-white hover:opacity-90">Run Simulation</button>
+        </div>
+        <div className="grid grid-cols-4 gap-3 mb-4">
+          {[
+            { label: 'P50 (Median)', value: '$3.8M', color: '#10b981' },
+            { label: 'P75', value: '$7.2M', color: '#f59e0b' },
+            { label: 'P90', value: '$12.4M', color: '#f97316' },
+            { label: 'P95 (Worst-Case)', value: formatCurrency(worstCase), color: '#ef4444' },
+          ].map(s => (
+            <div key={s.label} className="p-3 border border-[hsl(var(--border))] text-center">
+              <p className="text-[10px] text-[hsl(var(--text-4))] uppercase mb-1">{s.label}</p>
+              <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
+            </div>
+          ))}
+        </div>
+        <ResponsiveContainer width="100%" height={140}>
+          <BarChart data={[
+            { loss: '<$1M', freq: 18 }, { loss: '$1-2M', freq: 24 }, { loss: '$2-4M', freq: 31 },
+            { loss: '$4-6M', freq: 14 }, { loss: '$6-9M', freq: 8 }, { loss: '$9-12M', freq: 3 }, { loss: '>$12M', freq: 2 },
+          ]} margin={{ top: 0, right: 10, bottom: 0, left: 0 }}>
+            <XAxis dataKey="loss" tick={{ fontSize: 10, fill: 'hsl(var(--text-4))' }} />
+            <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--text-4))' }} unit="%" />
+            <Tooltip formatter={(v: any) => [`${v}%`, 'Probability']} contentStyle={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }} />
+            <ReferenceLine x="$4-6M" stroke="#f59e0b" strokeDasharray="3 2" label={{ value: 'AEL', fill: '#f59e0b', fontSize: 10 }} />
+            <Bar dataKey="freq" fill="hsl(var(--brand) / 0.7)" />
+          </BarChart>
+        </ResponsiveContainer>
+        <p className="text-[10px] text-[hsl(var(--text-4))] mt-2">Simulation parameters: 10,000 iterations · Log-normal loss distribution · Inputs: probability, magnitude, and control effectiveness ranges from all 6 risks</p>
+      </div>
+
+      {/* ── FAIR Model Tuning & Risk Appetite ──────────────────────────────────── */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+          <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2 mb-4">
+            <Sliders size={16} className="text-[hsl(var(--brand))]" weight="duotone" />
+            FAIR Model Tuning
+          </h3>
+          {[
+            { param: 'Threat Event Frequency (TEF)', min: 0.05, max: 0.5, current: 0.25 },
+            { param: 'Vulnerability (VULN)', min: 0.1, max: 0.9, current: 0.45 },
+            { param: 'Loss Magnitude (LM) — mean', min: 1, max: 25, current: 8.2, unit: 'M' },
+            { param: 'Control Strength (CS)', min: 0.3, max: 0.95, current: 0.62 },
+          ].map(p => (
+            <div key={p.param} className="mb-3">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-xs text-[hsl(var(--text-2))]">{p.param}</p>
+                <span className="text-xs font-semibold text-[hsl(var(--text-1))]">{p.current}{p.unit || ''}</span>
+              </div>
+              <input type="range" min={p.min} max={p.max} step={p.max > 5 ? 0.1 : 0.01} defaultValue={p.current}
+                className="w-full h-1.5 bg-[hsl(var(--border))] appearance-none cursor-pointer"
+                onChange={() => toast.info('Recalculating FAIR model…')} />
+              <div className="flex justify-between text-[10px] text-[hsl(var(--text-4))] mt-0.5">
+                <span>{p.min}{p.unit || ''}</span><span>{p.max}{p.unit || ''}</span>
+              </div>
+            </div>
+          ))}
+          <button onClick={() => toast.success('FAIR model recalculated')} className="w-full text-xs py-1.5 bg-[hsl(var(--brand))] text-white hover:opacity-90">Recalculate AEL</button>
+        </div>
+
+        <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+          <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2 mb-4">
+            <Calculator size={16} className="text-[hsl(var(--brand))]" weight="duotone" />
+            Controls ROI Calculator
+          </h3>
+          <div className="space-y-3">
+            {[
+              { control: 'Bias Monitoring (real-time)', investment: 120000, riskReduction: 1500000, roi: 1150 },
+              { control: 'Explainability Platform', investment: 85000, riskReduction: 980000, roi: 1053 },
+              { control: 'Model Validation Lab', investment: 200000, riskReduction: 3200000, roi: 1500 },
+              { control: 'Data Quality Pipeline', investment: 65000, riskReduction: 420000, roi: 546 },
+            ].map(c => (
+              <div key={c.control} className="p-2 border border-[hsl(var(--border))]">
+                <p className="text-xs font-medium text-[hsl(var(--text-1))]">{c.control}</p>
+                <div className="grid grid-cols-3 gap-2 mt-1 text-[10px]">
+                  <div><p className="text-[hsl(var(--text-4))]">Investment</p><p className="font-semibold text-[hsl(var(--text-2))]">{formatCurrency(c.investment)}</p></div>
+                  <div><p className="text-[hsl(var(--text-4))]">Risk Reduction</p><p className="font-semibold text-[hsl(var(--s-ok-tx))]">{formatCurrency(c.riskReduction)}</p></div>
+                  <div><p className="text-[hsl(var(--text-4))]">ROI</p><p className="font-semibold" style={{ color: '#10b981' }}>{c.roi}%</p></div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 p-2 border border-[hsl(var(--s-ok-br))] bg-[hsl(var(--s-ok-bg))]">
+            <p className="text-xs text-[hsl(var(--s-ok-tx))] font-medium">Total Portfolio ROI</p>
+            <p className="text-xl font-bold text-[hsl(var(--s-ok-tx))]">948%</p>
+            <p className="text-[10px] text-[hsl(var(--text-4))]">$470K investment → $6.1M risk reduction</p>
+          </div>
+        </div>
       </div>
 
       {selected && (

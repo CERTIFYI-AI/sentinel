@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { IdentificationCard, MagnifyingGlass, Plus, Eye, X, Export, Key, ShieldCheck, Warning } from '@phosphor-icons/react'
+import { IdentificationCard, MagnifyingGlass, Plus, Eye, X, Export, Key, ShieldCheck, Warning, Lock, UserCheck, ArrowsClockwise, Siren } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 interface AgentIdentity {
@@ -141,6 +141,121 @@ export default function AgentIAM() {
           </tbody>
         </table>
         {filtered.length === 0 && <div className="text-center py-12 text-[hsl(var(--text-4))] text-sm">No identities match filters</div>}
+      </div>
+
+      {/* ── Least-Privilege Analysis ─────────────────────────────────────────── */}
+      <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2">
+            <Lock size={16} className="text-[hsl(var(--brand))]" weight="duotone" />
+            Least-Privilege Analysis
+          </h3>
+          <button onClick={() => toast.info('Analysing scope usage...')} className="text-xs px-3 py-1 border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+            Re-Analyse
+          </button>
+        </div>
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
+              {['Agent', 'Granted Scopes', 'Scopes Used (30d)', 'Unused Scopes', 'Risk', 'Action'].map(h => (
+                <th key={h} className="px-3 py-2 text-left font-medium text-[hsl(var(--text-4))]">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              { agent: 'LoanProcessorAgent', granted: 4, used: 3, unused: ['audit:write'], risk: 'Low' },
+              { agent: 'FraudInvestigatorAgent', granted: 4, used: 2, unused: ['enrichment:call', 'customers:read'], risk: 'Medium' },
+              { agent: 'ComplianceMonitorAgent', granted: 4, used: 4, unused: [], risk: 'None' },
+              { agent: 'DataQualityPatrolAgent', granted: 3, used: 2, unused: ['alerts:write'], risk: 'Low' },
+            ].map(r => (
+              <tr key={r.agent} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))]">
+                <td className="px-3 py-2 font-medium text-[hsl(var(--text-1))]">{r.agent}</td>
+                <td className="px-3 py-2 text-[hsl(var(--text-3))]">{r.granted} scopes</td>
+                <td className="px-3 py-2 text-[hsl(var(--text-3))]">{r.used} scopes</td>
+                <td className="px-3 py-2">
+                  {r.unused.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {r.unused.map(s => (
+                        <span key={s} className="text-[10px] px-1.5 py-0.5 bg-[hsl(0_72%_51%/0.1)] text-[hsl(var(--destructive))] border border-[hsl(var(--destructive)/0.2)]">{s}</span>
+                      ))}
+                    </div>
+                  ) : <span className="text-[hsl(var(--s-ok-tx))]">None — minimal</span>}
+                </td>
+                <td className="px-3 py-2">
+                  <span className="text-[10px] px-1.5 py-0.5 font-medium" style={{
+                    background: r.risk === 'None' ? 'hsl(142 71% 45% / 0.12)' : r.risk === 'Low' ? 'hsl(220 90% 56% / 0.12)' : 'hsl(45 93% 47% / 0.12)',
+                    color: r.risk === 'None' ? 'hsl(var(--s-ok-tx))' : r.risk === 'Low' ? 'hsl(var(--s-in-tx))' : 'hsl(45 85% 40%)',
+                  }}>{r.risk}</span>
+                </td>
+                <td className="px-3 py-2">
+                  {r.unused.length > 0 ? (
+                    <button onClick={() => toast.success(`Revoked unused scopes for ${r.agent}`)} className="text-[10px] px-2 py-0.5 bg-[hsl(var(--brand))] text-white hover:opacity-90">Revoke Unused</button>
+                  ) : <span className="text-[10px] text-[hsl(var(--text-4))]">No action needed</span>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* ── Access Review Campaigns & Anomalous Access ──────────────────────── */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+          <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2 mb-3">
+            <UserCheck size={15} className="text-[hsl(var(--brand))]" weight="duotone" />
+            Access Review Campaigns
+          </h3>
+          {[
+            { name: 'Q1 2026 Agent Scope Review', due: '2026-04-15', status: 'Overdue', reviewers: 'Raj Gupta, Emma Wilson', completed: 60 },
+            { name: 'Quarterly Role Attestation', due: '2026-04-30', status: 'In Progress', reviewers: 'Sarah Chen', completed: 30 },
+            { name: 'Annual mTLS Certificate Audit', due: '2026-06-01', status: 'Scheduled', reviewers: 'Maria Santos', completed: 0 },
+          ].map(c => (
+            <div key={c.name} className="mb-3 p-2 border border-[hsl(var(--border))]">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-xs font-medium text-[hsl(var(--text-1))]">{c.name}</p>
+                <span className="text-[10px] px-1.5 py-0.5 font-medium" style={{
+                  background: c.status === 'Overdue' ? 'hsl(0 72% 51% / 0.12)' : c.status === 'In Progress' ? 'hsl(45 93% 47% / 0.12)' : 'hsl(220 90% 56% / 0.12)',
+                  color: c.status === 'Overdue' ? 'hsl(var(--destructive))' : c.status === 'In Progress' ? 'hsl(45 85% 40%)' : 'hsl(var(--s-in-tx))',
+                }}>{c.status}</span>
+              </div>
+              <p className="text-[10px] text-[hsl(var(--text-4))] mb-1">Due: {c.due} · Reviewers: {c.reviewers}</p>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 h-1.5 bg-[hsl(var(--border))] overflow-hidden">
+                  <div className="h-full bg-[hsl(var(--brand))]" style={{ width: `${c.completed}%` }} />
+                </div>
+                <span className="text-[10px] text-[hsl(var(--text-4))]">{c.completed}%</span>
+              </div>
+            </div>
+          ))}
+          <button onClick={() => toast.info('New access review campaign wizard')} className="w-full text-xs py-1.5 border border-[hsl(var(--brand))] text-[hsl(var(--brand))] hover:bg-[hsl(var(--brand)/0.05)]">
+            + New Campaign
+          </button>
+        </div>
+
+        <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+          <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2 mb-3">
+            <Siren size={15} className="text-[hsl(var(--destructive))]" weight="duotone" />
+            Anomalous Access Detection
+          </h3>
+          {[
+            { agent: 'FraudInvestigatorAgent', anomaly: 'Unusual access time: 03:22 AM (off-hours)', severity: 'medium', time: '2026-04-10 03:22' },
+            { agent: 'LoanProcessorAgent', anomaly: 'API key IAM-002 used from new IP: 192.168.99.1', severity: 'high', time: '2026-04-09 14:55' },
+            { agent: 'ComplianceMonitorAgent', anomaly: '3× usual report generation rate — possible data exfil', severity: 'low', time: '2026-04-08 11:30' },
+          ].map(a => (
+            <div key={a.time} className="mb-2 p-2 border border-[hsl(var(--border))]" style={{ borderLeft: `3px solid ${a.severity === 'high' ? '#ef4444' : a.severity === 'medium' ? '#f59e0b' : '#6366f1'}` }}>
+              <div className="flex items-center justify-between mb-0.5">
+                <p className="text-xs font-medium text-[hsl(var(--text-1))]">{a.agent}</p>
+                <span className="text-[10px] text-[hsl(var(--text-4))]">{a.time.split(' ')[1]}</span>
+              </div>
+              <p className="text-xs text-[hsl(var(--text-3))]">{a.anomaly}</p>
+              <button onClick={() => toast.info('Anomaly investigation opened')} className="mt-1 text-[10px] px-2 py-0.5 border border-[hsl(var(--border))] text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-raised))]">Investigate</button>
+            </div>
+          ))}
+          <div className="mt-2 p-2 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] text-[10px] text-[hsl(var(--text-4))]">
+            Anomaly detection powered by baseline behavioural profiles (30-day rolling window). Alerts at 2σ deviation from mean.
+          </div>
+        </div>
       </div>
 
       {selected && (

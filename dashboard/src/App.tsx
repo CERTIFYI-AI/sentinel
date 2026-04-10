@@ -133,6 +133,12 @@ const ModelEfficiency = lazy(() => import('./pages/ModelEfficiency'));
 const DataLineage = lazy(() => import('./pages/DataLineage'));
 const IntegrationsPage = lazy(() => import('./pages/IntegrationsPage'));
 
+// ── New GRC Modules ─────────────────────────────────────────────────────────
+const CommitteeManagement = lazy(() => import('./pages/committee/CommitteeManagement'));
+const ModelValidationLab = lazy(() => import('./pages/validation/ModelValidationLab'));
+const PerformanceMonitoring = lazy(() => import('./pages/performance/PerformanceMonitoring'));
+const IncidentPlaybooks = lazy(() => import('./pages/incidents/IncidentPlaybooks'));
+
 function Loading() {
   return (
     <div className="flex items-center justify-center h-64" aria-busy="true" aria-label="Loading page">
@@ -358,6 +364,12 @@ export default function App() {
 
           {/* Operations */}
           <Route path="/integrations" element={<IntegrationsPage />} />
+
+          {/* New GRC Modules */}
+          <Route path="/committee" element={<CommitteeManagement />} />
+          <Route path="/model-validation" element={<ModelValidationLab />} />
+          <Route path="/performance-monitoring" element={<PerformanceMonitoring />} />
+          <Route path="/incidents/playbooks" element={<IncidentPlaybooks />} />
 
           <Route path="*" element={<Suspense fallback={<Loading />}><NotFound /></Suspense>} />
         </Route>
