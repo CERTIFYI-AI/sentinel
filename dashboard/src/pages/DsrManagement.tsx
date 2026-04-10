@@ -65,6 +65,7 @@ export default function DsrManagement() {
   const [statusFilter, setStatusFilter] = useState('All')
   const [typeFilter, setTypeFilter] = useState('All')
   const [selected, setSelected] = useState<DSRRequest | null>(null)
+  const [drawerTab, setDrawerTab] = useState<'overview' | 'ai-impact' | 'sla' | 'actions'>('overview')
   const [showCreate, setShowCreate] = useState(false)
   const [editMode, setEditMode] = useState(false)
   const [form, setForm] = useState<Omit<DSRRequest, 'id'>>(BLANK)
@@ -230,11 +231,11 @@ export default function DsrManagement() {
       {selected && (
         <div className="fixed inset-0 z-40 flex">
           <div className="flex-1 bg-black/40" onClick={() => { setSelected(null); setEditMode(false) }} />
-          <div className="w-[520px] bg-[hsl(var(--bg-surface))] border-l border-[hsl(var(--border))] h-full overflow-y-auto flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))] sticky top-0 bg-[hsl(var(--bg-surface))]">
+          <div className="w-[520px] bg-[hsl(var(--bg-surface))] border-l border-[hsl(var(--border))] h-full flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
               <div>
                 <p className="font-mono text-xs text-[hsl(var(--brand))] font-semibold">{selected.id}</p>
-                <h2 className="text-base font-semibold text-[hsl(var(--text-1))] mt-0.5">{selected.type} Request — {selected.subject}</h2>
+                <h2 className="text-base font-semibold text-[hsl(var(--text-1))] mt-0.5">{selected.type} — {selected.subject}</h2>
               </div>
               <div className="flex items-center gap-2">
                 {!editMode && <button onClick={() => openEdit(selected)} className="p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))]"><Pencil size={15} /></button>}
@@ -242,57 +243,143 @@ export default function DsrManagement() {
               </div>
             </div>
 
-            <div className="p-5 space-y-5 flex-1">
+            {!editMode && (
+              <div className="flex border-b border-[hsl(var(--border))] flex-shrink-0">
+                {([['overview', 'Overview'], ['ai-impact', 'AI Impact'], ['sla', 'SLA'], ['actions', 'Actions']] as const).map(([tab, label]) => (
+                  <button key={tab} onClick={() => setDrawerTab(tab)} className="flex-1 py-2.5 text-[11px] font-medium transition-colors" style={drawerTab === tab ? { color: 'hsl(var(--brand))', borderBottom: '2px solid hsl(var(--brand))' } : { color: 'hsl(var(--text-4))' }}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="flex-1 overflow-y-auto p-5 space-y-4">
               {!editMode ? (
                 <>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="px-2 py-0.5 rounded text-xs font-semibold text-white" style={{ background: TYPE_COLOR[selected.type] }}>{selected.type}</span>
-                    <span className="px-2 py-0.5 rounded text-xs font-medium" style={STATUS_STYLE[selected.status]}>{selected.status}</span>
-                    <span className="px-2 py-0.5 rounded text-xs font-medium" style={PRIORITY_STYLE[selected.priority]}>{selected.priority} Priority</span>
-                  </div>
+                  {drawerTab === 'overview' && (
+                    <>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="px-2 py-0.5 rounded text-xs font-semibold text-white" style={{ background: TYPE_COLOR[selected.type] }}>{selected.type}</span>
+                        <span className="px-2 py-0.5 rounded text-xs font-medium" style={STATUS_STYLE[selected.status]}>{selected.status}</span>
+                        <span className="px-2 py-0.5 rounded text-xs font-medium" style={PRIORITY_STYLE[selected.priority]}>{selected.priority} Priority</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        {[
+                          { label: 'Subject', value: selected.subject },
+                          { label: 'Email', value: selected.email },
+                          { label: 'Regulation', value: selected.regulation },
+                          { label: 'Assignee', value: selected.assignee },
+                          { label: 'Submitted', value: selected.submittedDate },
+                          { label: 'Due Date', value: selected.dueDate },
+                        ].map(f => (
+                          <div key={f.label} className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                            <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{f.label}</p>
+                            <p className="text-xs font-medium text-[hsl(var(--text-1))] mt-0.5 truncate">{f.value}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Case Notes</p>
+                        <p className="text-sm text-[hsl(var(--text-2))] bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] p-3 leading-relaxed">{selected.notes}</p>
+                      </div>
+                    </>
+                  )}
 
-                  {[
-                    { label: 'Subject', value: `${selected.subject} (${selected.email})` },
-                    { label: 'Regulation', value: selected.regulation },
-                    { label: 'Submitted', value: selected.submittedDate },
-                    { label: 'Due Date', value: selected.dueDate },
-                    { label: 'Assignee', value: selected.assignee },
-                  ].map(f => (
-                    <div key={f.label}>
-                      <p className="text-xs text-[hsl(var(--text-4))] mb-0.5">{f.label}</p>
-                      <p className="text-sm text-[hsl(var(--text-1))]">{f.value}</p>
-                    </div>
-                  ))}
+                  {drawerTab === 'ai-impact' && (
+                    <>
+                      <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide">AI Systems Affected ({selected.aiSystemsAffected.length})</p>
+                      <div className="space-y-2">
+                        {selected.aiSystemsAffected.map(s => (
+                          <div key={s} className="flex items-center gap-2 p-3 bg-[hsl(var(--brand)/0.06)] border border-[hsl(var(--brand)/0.2)]">
+                            <div className="w-2 h-2 rounded-full bg-[hsl(var(--brand))]" />
+                            <div className="flex-1">
+                              <p className="text-xs font-medium text-[hsl(var(--brand))]">{s}</p>
+                              <p className="text-[10px] text-[hsl(var(--text-4))] mt-0.5">Must comply with {selected.type} request per {selected.regulation}</p>
+                            </div>
+                          </div>
+                        ))}
+                        {selected.aiSystemsAffected.length === 0 && <p className="text-xs text-[hsl(var(--text-4))]">No AI systems identified yet</p>}
+                      </div>
+                      <div className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                        <p className="text-[10px] font-semibold text-[hsl(var(--text-3))] uppercase mb-2">Regulatory Obligation</p>
+                        <p className="text-xs text-[hsl(var(--text-2))] leading-relaxed">
+                          {selected.type === 'Erasure' && `All identified AI systems must purge personal data for ${selected.subject} within the SLA window. Training data derived from this subject may also need removal per ${selected.regulation}.`}
+                          {selected.type === 'Access' && `Provide ${selected.subject} with a full export of all personal data held across all AI systems within the statutory period under ${selected.regulation}.`}
+                          {selected.type === 'Portability' && `Export personal data in a machine-readable format (JSON/CSV) for ${selected.subject} from all ${selected.aiSystemsAffected.length} AI system(s).`}
+                          {selected.type === 'Rectification' && `Correct inaccurate personal data for ${selected.subject} across all linked AI systems and retrain/update any models using the corrected data.`}
+                          {selected.type === 'Objection' && `Cease automated processing of ${selected.subject}'s data for the objected purposes across all ${selected.aiSystemsAffected.length} linked AI system(s).`}
+                          {selected.type === 'Restriction' && `Restrict (not delete) processing of ${selected.subject}'s data across all linked AI systems pending resolution.`}
+                        </p>
+                      </div>
+                    </>
+                  )}
 
-                  <div>
-                    <p className="text-xs text-[hsl(var(--text-4))] mb-1">AI Systems Affected</p>
-                    <div className="space-y-1">
-                      {selected.aiSystemsAffected.map(s => (
-                        <div key={s} className="flex items-center gap-1.5 text-xs text-[hsl(var(--text-2))]">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--brand))]" />
-                          {s}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  {drawerTab === 'sla' && (
+                    <>
+                      <div className="p-4 rounded border" style={
+                        selected.daysRemaining < 0
+                          ? { background: 'hsl(0 72% 51% / 0.06)', borderColor: 'hsl(var(--destructive) / 0.4)' }
+                          : selected.daysRemaining <= 7
+                          ? { background: 'hsl(45 93% 47% / 0.06)', borderColor: 'hsl(45 93% 47% / 0.4)' }
+                          : { background: 'hsl(142 71% 45% / 0.06)', borderColor: 'hsl(142 71% 45% / 0.3)' }
+                      }>
+                        <p className="text-2xl font-bold" style={{ color: selected.daysRemaining < 0 ? 'hsl(var(--destructive))' : selected.daysRemaining <= 7 ? 'hsl(45 85% 40%)' : 'hsl(var(--s-ok-tx))' }}>
+                          {selected.daysRemaining < 0 ? `${Math.abs(selected.daysRemaining)} days overdue` : selected.daysRemaining === 0 ? 'Due today' : `${selected.daysRemaining} days remaining`}
+                        </p>
+                        <p className="text-xs text-[hsl(var(--text-4))] mt-1">SLA deadline: {selected.dueDate} · Regulation: {selected.regulation}</p>
+                      </div>
+                      <div className="space-y-3">
+                        {[
+                          { phase: 'Request Received', date: selected.submittedDate, done: true },
+                          { phase: 'Identity Verified', date: selected.submittedDate, done: selected.status !== 'Pending' },
+                          { phase: 'AI Systems Notified', date: selected.submittedDate, done: ['In Review', 'Completed'].includes(selected.status) },
+                          { phase: 'Response Prepared', date: selected.dueDate, done: selected.status === 'Completed' },
+                          { phase: 'Completed & Documented', date: selected.dueDate, done: selected.status === 'Completed' },
+                        ].map(step => (
+                          <div key={step.phase} className="flex items-center gap-3 p-2.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                            <div className="w-3 h-3 rounded-full flex-shrink-0 border-2" style={step.done ? { background: 'hsl(var(--s-ok-tx))', borderColor: 'hsl(var(--s-ok-tx))' } : { background: 'transparent', borderColor: 'hsl(var(--border))' }} />
+                            <p className="text-xs text-[hsl(var(--text-2))] flex-1">{step.phase}</p>
+                            <span className="text-[10px] text-[hsl(var(--text-4))]">{step.date}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
 
-                  <div>
-                    <p className="text-xs text-[hsl(var(--text-4))] mb-1">Case Notes</p>
-                    <p className="text-sm text-[hsl(var(--text-2))] bg-[hsl(var(--bg-raised))] p-3 rounded">{selected.notes}</p>
-                  </div>
-
-                  <div className="flex gap-2 pt-2 border-t border-[hsl(var(--border))]">
-                    <button onClick={() => {
-                      setRecords(p => p.map(r => r.id === selected.id ? { ...r, status: 'Completed' } : r))
-                      setSelected(prev => prev ? { ...prev, status: 'Completed' } : null)
-                      toast.success('DSR marked as completed')
-                    }} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm">
-                      <CheckCircle size={13} /> Mark Complete
-                    </button>
-                    <button onClick={() => setDeleteTarget(selected.id)} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--destructive))]">
-                      <Trash size={13} /> Delete
-                    </button>
-                  </div>
+                  {drawerTab === 'actions' && (
+                    <>
+                      <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide">Available Actions</p>
+                      <div className="space-y-2">
+                        {selected.status !== 'Completed' && (
+                          <button onClick={() => {
+                            setRecords(p => p.map(r => r.id === selected.id ? { ...r, status: 'Completed' } : r))
+                            setSelected(prev => prev ? { ...prev, status: 'Completed' } : null)
+                            toast.success('DSR marked as completed')
+                          }} className="w-full flex items-center gap-2 p-3 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90">
+                            <CheckCircle size={16} /> Mark as Completed
+                          </button>
+                        )}
+                        {selected.status === 'Pending' && (
+                          <button onClick={() => {
+                            setRecords(p => p.map(r => r.id === selected.id ? { ...r, status: 'In Review' } : r))
+                            setSelected(prev => prev ? { ...prev, status: 'In Review' } : null)
+                            toast.success('DSR moved to In Review')
+                          }} className="w-full flex items-center gap-2 p-3 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+                            Move to In Review
+                          </button>
+                        )}
+                        <button onClick={() => { openEdit(selected) }} className="w-full flex items-center gap-2 p-3 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+                          <Pencil size={14} /> Edit Request Details
+                        </button>
+                        <button onClick={() => toast.success('DSR exported as PDF')} className="w-full flex items-center gap-2 p-3 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+                          Export Compliance Evidence
+                        </button>
+                        <button onClick={() => setDeleteTarget(selected.id)} className="w-full flex items-center gap-2 p-3 border border-[hsl(var(--destructive)/0.4)] text-sm text-[hsl(var(--destructive))] hover:bg-[hsl(0_72%_51%/0.05)]">
+                          <Trash size={14} /> Delete Request
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </>
               ) : (
                 <>
