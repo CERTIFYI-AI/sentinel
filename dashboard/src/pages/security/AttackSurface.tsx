@@ -1,8 +1,8 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import {
   Globe, Eye, PencilSimple, Trash, Plus, Scan, Fire,
   CheckCircle, Warning, Clock, Target, ShieldWarning,
-  MagnifyingGlass, Lock, ArrowRight,
+  MagnifyingGlass, Lock, ArrowRight, Graph, CaretDown, CaretUp,
 } from '@phosphor-icons/react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,

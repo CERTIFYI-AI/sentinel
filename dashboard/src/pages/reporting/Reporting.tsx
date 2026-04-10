@@ -97,6 +97,11 @@ const REPORT_TEMPLATES: ReportTemplate[] = [
     description: 'C-suite summary — trust score, risk posture, compliance status, incident count, and key action items.',
     icon: ChartLine, lastGenerated: '2026-04-05', category: 'Executive',
   },
+  {
+    id: 'RPT-008', name: 'Board Governance Report',
+    description: 'Board-level AI governance summary — strategic risk posture, regulatory exposure, key metrics, and attestation status for directors and trustees.',
+    icon: Gavel, lastGenerated: '2026-03-31', category: 'Executive',
+  },
 ];
 
 // ── Scheduled Reports ─────────────────────────────────────────────────────────
