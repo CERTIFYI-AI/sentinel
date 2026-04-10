@@ -7,17 +7,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Shield, Warning as AlertTriangle, FileText, TrendUp as TrendingUp, CaretRight as ChevronRight } from "@phosphor-icons/react";
 import { useNavigate } from "react-router-dom";
 
-const gaugeColor = (v: number) => v >= 90 ? "#22c55e" : v >= 70 ? "#eab308" : "#ef4444";
+const gaugeColor = (v: number) => v >= 90 ? 'hsl(142 71% 45%)' : v >= 70 ? 'hsl(45 93% 47%)' : 'hsl(0 72% 51%)';
 
 function ComplianceGauge({ value }: { value: number }) {
   const r = 70, c = 2 * Math.PI * r, pct = (value / 100) * c;
   return (
     <svg viewBox="0 0 160 160" className="w-40 h-40">
-      <circle cx="80" cy="80" r={r} fill="none" stroke="#1e293b" strokeWidth="14" />
+      <circle cx="80" cy="80" r={r} fill="none" stroke="hsl(var(--border))" strokeWidth="14" />
       <circle cx="80" cy="80" r={r} fill="none" stroke={gaugeColor(value)} strokeWidth="14"
-        strokeDasharray={`${pct} ${c - pct}`} strokeDashoffset={c / 4} strokeLinecap="round" />
-      <text x="80" y="75" textAnchor="middle" className="fill-white text-2xl font-bold">{value}%</text>
-      <text x="80" y="95" textAnchor="middle" className="fill-slate-400 text-xs">Compliance</text>
+        strokeDasharray={`${pct} ${c - pct}`} strokeDashoffset={c / 4} strokeLinecap="butt" />
+      <text x="80" y="75" textAnchor="middle" style={{ fill: 'hsl(var(--text-1))', fontSize: 22, fontWeight: 700, fontFamily: 'Outfit, sans-serif' }}>{value}%</text>
+      <text x="80" y="95" textAnchor="middle" style={{ fill: 'hsl(var(--text-4))', fontSize: 11, fontFamily: 'Outfit, sans-serif' }}>Compliance</text>
     </svg>
   );
 }

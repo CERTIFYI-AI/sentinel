@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   ShieldCheck, Eye, PencilSimple, Trash, Plus, Copy, Play, Pause,
   Warning, CheckCircle, ArrowUp, ArrowDown, TrendUp, TrendDown,
-  Info, Lightning, Clock,
+  Info, Lightning, Clock, Bell,
 } from '@phosphor-icons/react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
@@ -157,6 +157,8 @@ export default function TrustEngineDashboard() {
   const [deleteTarget, setDeleteTarget] = useState<ExtPolicy | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [newRule, setNewRule] = useState({ name: '', type: 'Privacy', target: 'All Agents', threshold: '95%' });
+  const [alertConfigOpen, setAlertConfigOpen] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({ email: true, slack: false, pagerduty: false, threshold: '95', channels: 'security-alerts' });
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
   const tickerRef = useRef<HTMLDivElement>(null);
 
@@ -247,9 +249,14 @@ export default function TrustEngineDashboard() {
           </div>
           <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} — Real-time policy governance, trust scoring, and guardrail monitoring</p>
         </div>
-        <Button onClick={() => setCreateOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
-          <Plus size={14} className="mr-2" />Create Rule
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setAlertConfigOpen(true)} style={{ borderRadius: 0 }}>
+            <Bell size={14} className="mr-2" />Alert Config
+          </Button>
+          <Button onClick={() => setCreateOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+            <Plus size={14} className="mr-2" />Create Rule
+          </Button>
+        </div>
       </div>
 
       {/* Live Alert Ticker */}
@@ -259,14 +266,23 @@ export default function TrustEngineDashboard() {
           <div ref={tickerRef} className="flex-1 overflow-hidden whitespace-nowrap">
             <div className="inline-block" style={{ animation: 'marquee 50s linear infinite' }}>
               {[...TICKER_MESSAGES, ...TICKER_MESSAGES].map((msg, i) => {
+                const chipBg = msg.type === 'critical' ? 'hsl(0 72% 51% / 0.18)'
+                  : msg.type === 'warning' ? 'hsl(45 93% 47% / 0.18)'
+                  : msg.type === 'ok' ? 'hsl(142 71% 45% / 0.18)'
+                  : 'hsl(220 90% 56% / 0.18)';
                 const tc = msg.type === 'critical' ? 'hsl(var(--s-er-tx))'
                   : msg.type === 'warning' ? 'hsl(var(--s-wn-tx))'
                   : msg.type === 'ok' ? 'hsl(var(--s-ok-tx))'
                   : 'hsl(var(--s-in-tx))';
                 return (
-                  <span key={i} className="text-xs mx-6" style={{ color: tc }}>
-                    <Lightning size={9} weight="fill" className="inline mr-1" />
-                    {msg.text}
+                  <span key={i} className="inline-flex items-center gap-1.5 mx-6">
+                    <span style={{ background: chipBg, color: tc, fontSize: 8, fontWeight: 700, padding: '1px 5px', letterSpacing: '0.07em', textTransform: 'uppercase', borderRadius: 0, lineHeight: '14px' }}>
+                      {msg.type}
+                    </span>
+                    <span className="text-xs" style={{ color: tc }}>
+                      <Lightning size={9} weight="fill" style={{ display: 'inline', marginRight: 3 }} />
+                      {msg.text}
+                    </span>
                   </span>
                 );
               })}
@@ -462,6 +478,67 @@ export default function TrustEngineDashboard() {
         message={<p>Delete <strong>{deleteTarget?.name}</strong>? This cannot be undone.</p>}
         confirmLabel="Delete"
       />
+
+      {/* Alert Configuration Dialog */}
+      <Dialog open={alertConfigOpen} onOpenChange={setAlertConfigOpen}>
+        <DialogContent style={{ borderRadius: 0, maxWidth: 500 }}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2" style={{ color: 'hsl(var(--text-1))' }}>
+              <Bell size={16} weight="fill" style={{ color: 'hsl(var(--brand))' }} />
+              Trust Engine Alert Configuration
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="p-3" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+              <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Configure where and when trust policy violations are sent. Alerts trigger when composite trust score drops below the configured threshold.</p>
+            </div>
+            <div>
+              <label className="text-xs font-medium mb-2 block" style={{ color: 'hsl(var(--text-4))' }}>Alert Threshold (Trust Score %)</label>
+              <div className="flex items-center gap-3">
+                <input type="range" min={70} max={99} value={alertConfig.threshold}
+                  onChange={e => setAlertConfig({ ...alertConfig, threshold: e.target.value })}
+                  style={{ flex: 1, accentColor: 'hsl(var(--brand))' }} />
+                <span className="text-sm font-bold" style={{ color: Number(alertConfig.threshold) < 90 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))', minWidth: 40 }}>
+                  {alertConfig.threshold}%
+                </span>
+              </div>
+              <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>Alert fires when score drops below {alertConfig.threshold}%</p>
+            </div>
+            <div>
+              <label className="text-xs font-medium mb-2 block" style={{ color: 'hsl(var(--text-4))' }}>Notification Channels</label>
+              {(['email', 'slack', 'pagerduty'] as const).map(ch => (
+                <label key={ch} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, cursor: 'pointer' }}>
+                  <input type="checkbox"
+                    checked={alertConfig[ch]}
+                    onChange={e => setAlertConfig({ ...alertConfig, [ch]: e.target.checked })}
+                    style={{ width: 14, height: 14, accentColor: 'hsl(var(--brand))' }} />
+                  <span style={{ fontSize: 13, color: 'hsl(var(--text-1))', textTransform: 'capitalize' }}>{ch}</span>
+                  <Badge style={{
+                    background: alertConfig[ch] ? 'hsl(142 71% 45% / 0.12)' : 'hsl(var(--bg-muted))',
+                    color: alertConfig[ch] ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-4))',
+                    borderRadius: 0, fontSize: 9, marginLeft: 'auto',
+                  }}>
+                    {alertConfig[ch] ? 'Enabled' : 'Disabled'}
+                  </Badge>
+                </label>
+              ))}
+            </div>
+            {alertConfig.slack && (
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Slack Channel</label>
+                <Input value={alertConfig.channels} onChange={e => setAlertConfig({ ...alertConfig, channels: e.target.value })}
+                  placeholder="#security-alerts" style={{ borderRadius: 0 }} />
+              </div>
+            )}
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setAlertConfigOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
+            <Button onClick={() => { setAlertConfigOpen(false); toast('Alert configuration saved', 'success'); }} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+              Save Configuration
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Create Rule Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
