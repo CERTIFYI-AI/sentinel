@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { IdentificationCard, MagnifyingGlass, Plus, Eye, X, Export, Key, ShieldCheck, Warning, Lock, UserCheck, ArrowsClockwise, Siren } from '@phosphor-icons/react'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 
 interface AgentIdentity {
   id: string
@@ -40,17 +41,37 @@ export default function AgentIAM() {
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<AgentIdentity | null>(null)
   const [statusFilter, setStatusFilter] = useState('All')
+  const [revokeTarget, setRevokeTarget] = useState<AgentIdentity | null>(null)
+  const [rotateTarget, setRotateTarget] = useState<AgentIdentity | null>(null)
+  const [identities, setIdentities] = useState(SEED)
 
-  const filtered = SEED.filter(i => {
+  function confirmRevoke() {
+    if (!revokeTarget) return
+    setIdentities(prev => prev.map(i => i.id === revokeTarget.id ? { ...i, status: 'Revoked' as const } : i))
+    toast.success(`Credential ${revokeTarget.id} revoked`)
+    setRevokeTarget(null)
+    setSelected(null)
+  }
+
+  function confirmRotate() {
+    if (!rotateTarget) return
+    const newExpiry = new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10)
+    setIdentities(prev => prev.map(i => i.id === rotateTarget.id ? { ...i, status: 'Active' as const, expires: newExpiry, rotationPolicy: `Every 90 days — next: ${newExpiry}` } : i))
+    toast.success(`Credential ${rotateTarget.id} rotated successfully — new expiry: ${newExpiry}`)
+    setRotateTarget(null)
+    setSelected(null)
+  }
+
+  const filtered = identities.filter(i => {
     const ms = i.agentName.toLowerCase().includes(search.toLowerCase()) || i.principalId.toLowerCase().includes(search.toLowerCase()) || i.id.toLowerCase().includes(search.toLowerCase())
     return ms && (statusFilter === 'All' || i.status === statusFilter)
   })
 
   const stats = {
-    total: SEED.length,
-    active: SEED.filter(i => i.status === 'Active').length,
-    pendingRotation: SEED.filter(i => i.status === 'Pending Rotation').length,
-    auditRequired: SEED.filter(i => i.auditRequired).length,
+    total: identities.length,
+    active: identities.filter(i => i.status === 'Active').length,
+    pendingRotation: identities.filter(i => i.status === 'Pending Rotation').length,
+    auditRequired: identities.filter(i => i.auditRequired).length,
   }
 
   return (
@@ -288,12 +309,44 @@ export default function AgentIAM() {
               <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">Rotation Policy</p><p className="text-sm text-[hsl(var(--text-2))] p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{selected.rotationPolicy}</p></div>
             </div>
             <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
-              <button onClick={() => { toast.success('Credential rotated successfully'); setSelected(null) }} className="flex-1 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90">Rotate Credential</button>
-              {selected.status === 'Active' && <button onClick={() => { toast.success('Credential revoked'); setSelected(null) }} className="px-4 py-2 border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] text-sm hover:bg-[hsl(0_72%_51%/0.05)]">Revoke</button>}
+              <button
+                onClick={() => setRotateTarget(selected)}
+                className="flex-1 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90"
+              >
+                Rotate Credential
+              </button>
+              {selected.status === 'Active' && (
+                <button
+                  onClick={() => setRevokeTarget(selected)}
+                  className="px-4 py-2 border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] text-sm hover:bg-[hsl(0_72%_51%/0.05)]"
+                >
+                  Revoke
+                </button>
+              )}
             </div>
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!rotateTarget}
+        title="Rotate Credential"
+        description={`Rotate credential ${rotateTarget?.id} for ${rotateTarget?.agentName}? A new credential will be issued and the existing one invalidated. Ensure dependent systems are updated.`}
+        confirmLabel="Rotate"
+        
+        onConfirm={confirmRotate}
+        onClose={() => setRotateTarget(null)}
+      />
+
+      <ConfirmDialog
+        open={!!revokeTarget}
+        title="Revoke Credential"
+        description={`Permanently revoke ${revokeTarget?.id} for ${revokeTarget?.agentName}? The agent will immediately lose all access. This cannot be undone.`}
+        confirmLabel="Revoke"
+        type="danger"
+        onConfirm={confirmRevoke}
+        onClose={() => setRevokeTarget(null)}
+      />
     </div>
   )
 }

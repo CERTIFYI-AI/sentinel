@@ -269,34 +269,45 @@ export default function Sidebar() {
       collapsed ? 'w-14' : 'w-[220px]'
     )}>
       {/* Logo + Toggle */}
-      <div className='flex items-center gap-2.5 px-3 h-14 border-b border-[hsl(var(--border))]'>
-        {!logoError ? (
-          <img
-            src={LOGO_URL}
-            alt='Sentinel'
-            className='w-7 h-7 flex-shrink-0'
-            onError={() => setLogoError(true)}
-          />
-        ) : (
-          <div className='w-7 h-7 bg-[hsl(var(--brand))] flex items-center justify-center flex-shrink-0'>
-            <ShieldCheck size={16} weight='fill' className='text-white' />
-          </div>
-        )}
-        {!collapsed && (
+      {collapsed ? (
+        <div className='flex flex-col items-center h-14 border-b border-[hsl(var(--border))] justify-center gap-1'>
+          <button
+            onClick={toggleSidebar}
+            className='flex items-center justify-center w-8 h-8 text-[hsl(var(--text-3))] hover:text-[hsl(var(--brand))] hover:bg-[hsl(var(--bg-raised))] transition-colors'
+            title='Expand sidebar'
+            aria-label='Expand sidebar'
+          >
+            <List size={16}/>
+          </button>
+        </div>
+      ) : (
+        <div className='flex items-center gap-2.5 px-3 h-14 border-b border-[hsl(var(--border))]'>
+          {!logoError ? (
+            <img
+              src={LOGO_URL}
+              alt='Sentinel'
+              className='w-7 h-7 flex-shrink-0'
+              onError={() => setLogoError(true)}
+            />
+          ) : (
+            <div className='w-7 h-7 bg-[hsl(var(--brand))] flex items-center justify-center flex-shrink-0'>
+              <ShieldCheck size={16} weight='fill' className='text-white' />
+            </div>
+          )}
           <div className='flex-1 min-w-0'>
             <p className='text-sm font-semibold text-[hsl(var(--text-1))] truncate leading-tight'>Sentinel AI</p>
             <p className='text-[10px] text-[hsl(var(--text-4))] leading-tight'>GRC Platform</p>
           </div>
-        )}
-        <button
-          onClick={toggleSidebar}
-          className='text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-2))] ml-auto flex-shrink-0 p-1'
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {collapsed ? <List size={14}/> : <SidebarCollapseIcon size={14}/>}
-        </button>
-      </div>
+          <button
+            onClick={toggleSidebar}
+            className='text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-2))] flex-shrink-0 p-1 transition-colors'
+            title='Collapse sidebar'
+            aria-label='Collapse sidebar'
+          >
+            <SidebarCollapseIcon size={14}/>
+          </button>
+        </div>
+      )}
 
       {/* Nav items */}
       <div className='flex-1 overflow-y-auto py-2 scrollbar-thin'>
@@ -343,8 +354,12 @@ export default function Sidebar() {
                         {hasChildren ? (
                           <button
                             onClick={() => {
-                              toggleItem(item.to)
-                              if (!childrenExpanded) navigate(item.to)
+                              if (collapsed) {
+                                navigate(item.to)
+                              } else {
+                                toggleItem(item.to)
+                                if (!childrenExpanded) navigate(item.to)
+                              }
                             }}
                             className={cn(
                               'w-full flex items-center gap-2.5 px-2 py-1.5 text-[13px] transition-colors group',
