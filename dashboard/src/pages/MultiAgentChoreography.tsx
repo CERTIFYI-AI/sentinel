@@ -47,6 +47,7 @@ const STATUS_STYLE: Record<WorkflowStatus, { bg: string; color: string }> = {
 
 export default function MultiAgentChoreography() {
   const [selected, setSelected] = useState<AgentWorkflow | null>(null)
+  const [drawerTab, setDrawerTab] = useState<'overview' | 'agents' | 'execution' | 'hitl'>('overview')
   const [statusFilter, setStatusFilter] = useState('All')
   const [search, setSearch] = useState('')
   const [workflows, setWorkflows] = useState(SEED)
@@ -89,7 +90,7 @@ export default function MultiAgentChoreography() {
           <button onClick={() => toast.success('Exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
             <Export size={14} /> Export
           </button>
-          <button onClick={() => toast.info('Workflow designer')} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90">
+          <button onClick={() => { setNewWfName(''); setNewWfTrigger('Manual'); setNewWfOrch(''); setShowCreate(true) }} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90">
             <Plus size={14} /> New Workflow
           </button>
         </div>
@@ -184,51 +185,235 @@ export default function MultiAgentChoreography() {
       {selected && (
         <div className="fixed inset-0 z-50 flex">
           <div className="flex-1 bg-black/40" onClick={() => setSelected(null)} />
-          <div className="w-[520px] bg-[hsl(var(--bg-surface))] border-l border-[hsl(var(--border))] flex flex-col h-full overflow-y-auto">
+          <div className="w-[520px] bg-[hsl(var(--bg-surface))] border-l border-[hsl(var(--border))] flex flex-col h-full">
             <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))]">
-              <div><p className="font-mono text-xs text-[hsl(var(--brand))]">{selected.id}</p><h2 className="text-sm font-semibold text-[hsl(var(--text-1))]">{selected.name}</h2></div>
+              <div>
+                <p className="font-mono text-xs text-[hsl(var(--brand))]">{selected.id}</p>
+                <h2 className="text-base font-semibold text-[hsl(var(--text-1))]">{selected.name}</h2>
+              </div>
               <button onClick={() => setSelected(null)}><X size={18} className="text-[hsl(var(--text-4))]" /></button>
             </div>
-            <div className="p-4 space-y-4">
-              <div className="flex gap-2 flex-wrap">
-                <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status]}>{selected.status}</span>
-                {selected.hitlRequired && <span className="text-[11px] px-2 py-0.5 bg-[hsl(280_67%_56%/0.12)] text-[hsl(280_60%_55%)]">HITL Required</span>}
-              </div>
-              <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">{selected.description}</p>
-              <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">Trigger</p><p className="text-sm text-[hsl(var(--text-2))] p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{selected.trigger}</p></div>
-              {selected.lastError && (
-                <div><p className="text-[11px] font-semibold text-[hsl(var(--destructive))] uppercase tracking-wide mb-1">Error</p><p className="text-xs text-[hsl(var(--destructive))] p-3 bg-[hsl(0_72%_51%/0.06)] border border-[hsl(var(--destructive)/0.3)] leading-relaxed">{selected.lastError}</p></div>
-              )}
-              {selected.hitlStep && (
-                <div><p className="text-[11px] font-semibold text-[hsl(280_60%_55%)] uppercase tracking-wide mb-1">HITL Step</p><p className="text-sm text-[hsl(var(--text-2))] p-3 bg-[hsl(280_67%_56%/0.06)] border border-[hsl(280_67%_56%/0.3)]">{selected.hitlStep}</p></div>
-              )}
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { label: 'Started', value: selected.startedAt },
-                  { label: 'Duration', value: selected.duration ?? 'In progress' },
-                  { label: 'Input Tokens', value: selected.inputTokens.toLocaleString() },
-                  { label: 'Output Tokens', value: selected.outputTokens.toLocaleString() },
-                  { label: 'Total Cost', value: `$${selected.cost.toFixed(2)}` },
-                  { label: 'Owner', value: selected.owner },
-                ].map(({ label, value }) => (
-                  <div key={label} className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
-                    <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{label}</p>
-                    <p className="text-xs font-medium text-[hsl(var(--text-1))] mt-0.5">{value}</p>
+
+            <div className="flex border-b border-[hsl(var(--border))] flex-shrink-0">
+              {([['overview', 'Overview'], ['agents', 'Agents'], ['execution', 'Execution'], ['hitl', 'HITL']] as const).map(([tab, label]) => (
+                <button key={tab} onClick={() => setDrawerTab(tab)} className="flex-1 py-2.5 text-[11px] font-medium transition-colors" style={drawerTab === tab ? { color: 'hsl(var(--brand))', borderBottom: '2px solid hsl(var(--brand))' } : { color: 'hsl(var(--text-4))' }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {drawerTab === 'overview' && (
+                <>
+                  <div className="flex gap-2 flex-wrap">
+                    <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status]}>{selected.status}</span>
+                    {selected.hitlRequired && <span className="text-[11px] px-2 py-0.5 bg-[hsl(280_67%_56%/0.12)] text-[hsl(280_60%_55%)]">HITL Required</span>}
                   </div>
-                ))}
+                  <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">{selected.description}</p>
+                  <div>
+                    <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">Trigger</p>
+                    <p className="text-xs text-[hsl(var(--text-2))] p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] leading-relaxed">{selected.trigger}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { label: 'Started', value: selected.startedAt },
+                      { label: 'Duration', value: selected.duration ?? 'In progress' },
+                      { label: 'Owner', value: selected.owner },
+                      { label: 'Steps', value: `${selected.stepsCompleted}/${selected.stepsTotal}` },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                        <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{label}</p>
+                        <p className="text-xs font-medium text-[hsl(var(--text-1))] mt-0.5">{value}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {selected.lastError && (
+                    <div>
+                      <p className="text-[11px] font-semibold text-[hsl(var(--destructive))] uppercase tracking-wide mb-1">Error</p>
+                      <p className="text-xs text-[hsl(var(--destructive))] p-3 bg-[hsl(0_72%_51%/0.06)] border border-[hsl(var(--destructive)/0.3)] leading-relaxed">{selected.lastError}</p>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {drawerTab === 'agents' && (
+                <>
+                  <div>
+                    <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Orchestrator</p>
+                    <div className="flex items-center gap-2 p-3 bg-[hsl(var(--brand)/0.08)] border border-[hsl(var(--brand)/0.25)]">
+                      <div className="w-2 h-2 rounded-full bg-[hsl(var(--brand))]" />
+                      <p className="text-xs font-semibold text-[hsl(var(--brand))]">{selected.orchestratorAgent}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Worker Agents ({selected.workerAgents.length})</p>
+                    <div className="space-y-2">
+                      {selected.workerAgents.map((agent, i) => (
+                        <div key={agent} className="flex items-center gap-3 p-2.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                          <span className="text-[10px] font-mono text-[hsl(var(--text-4))] w-4">#{i + 1}</span>
+                          <ArrowRight size={10} className="text-[hsl(var(--text-4))]" />
+                          <p className="text-xs font-medium text-[hsl(var(--text-2))]">{agent}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Agent Chain Visualization</p>
+                    <div className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-x-auto">
+                      <div className="flex items-center gap-1 flex-nowrap min-w-max">
+                        <span className="text-[10px] px-2 py-1 bg-[hsl(var(--brand)/0.15)] border border-[hsl(var(--brand)/0.3)] text-[hsl(var(--brand))] font-medium whitespace-nowrap">{selected.orchestratorAgent.split(' ')[0]}</span>
+                        {selected.workerAgents.map((a, i) => (
+                          <div key={a} className="flex items-center gap-1">
+                            <ArrowRight size={10} className="text-[hsl(var(--text-4))] flex-shrink-0" />
+                            <span className="text-[10px] px-2 py-1 bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] text-[hsl(var(--text-3))] whitespace-nowrap">{a}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {drawerTab === 'execution' && (
+                <>
+                  <div>
+                    <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Progress</p>
+                    <div className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs text-[hsl(var(--text-2))]">{selected.stepsCompleted} of {selected.stepsTotal} steps</p>
+                        <p className="text-xs font-bold text-[hsl(var(--text-1))]">{Math.round((selected.stepsCompleted / selected.stepsTotal) * 100)}%</p>
+                      </div>
+                      <div className="h-2 bg-[hsl(var(--border))] rounded-full overflow-hidden">
+                        <div className="h-full rounded-full" style={{ width: `${(selected.stepsCompleted / selected.stepsTotal) * 100}%`, background: selected.status === 'Failed' ? 'hsl(var(--destructive))' : selected.status === 'Completed' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--brand))' }} />
+                      </div>
+                      <p className="text-[11px] text-[hsl(var(--text-4))] mt-2 italic">{selected.currentStep}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Token & Cost Usage</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { label: 'Input Tokens', value: selected.inputTokens.toLocaleString() },
+                        { label: 'Output Tokens', value: selected.outputTokens.toLocaleString() },
+                        { label: 'Total Tokens', value: (selected.inputTokens + selected.outputTokens).toLocaleString() },
+                        { label: 'Total Cost', value: `$${selected.cost.toFixed(4)}` },
+                      ].map(({ label, value }) => (
+                        <div key={label} className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                          <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{label}</p>
+                          <p className="text-xs font-bold text-[hsl(var(--text-1))] mt-0.5">{value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Timeline</p>
+                    <div className="space-y-2">
+                      <div className="flex gap-3 p-2.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                        <div className="w-2 h-2 rounded-full mt-1 bg-[hsl(var(--s-ok-tx))] flex-shrink-0" />
+                        <div><p className="text-xs text-[hsl(var(--text-2))]">Started</p><p className="text-[10px] text-[hsl(var(--text-4))]">{selected.startedAt}</p></div>
+                      </div>
+                      {selected.completedAt && (
+                        <div className="flex gap-3 p-2.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                          <div className="w-2 h-2 rounded-full mt-1 bg-[hsl(var(--brand))] flex-shrink-0" />
+                          <div><p className="text-xs text-[hsl(var(--text-2))]">Completed</p><p className="text-[10px] text-[hsl(var(--text-4))]">{selected.completedAt} · Duration: {selected.duration}</p></div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {drawerTab === 'hitl' && (
+                <>
+                  {selected.hitlRequired ? (
+                    <>
+                      <div className="flex items-start gap-3 p-4 bg-[hsl(280_67%_56%/0.06)] border border-[hsl(280_67%_56%/0.25)]">
+                        <Warning size={20} className="text-[hsl(280_60%_55%)] flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-semibold text-[hsl(280_60%_55%)]">Human-in-the-Loop Required</p>
+                          <p className="text-xs text-[hsl(var(--text-3))] mt-1 leading-relaxed">{selected.hitlStep}</p>
+                        </div>
+                      </div>
+                      {selected.status === 'Awaiting Approval' && (
+                        <div className="space-y-2">
+                          <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide">Required Action</p>
+                          <p className="text-xs text-[hsl(var(--text-2))] leading-relaxed">Review the workflow output and approve to continue automated processing, or terminate if the result is unacceptable.</p>
+                          <div className="flex gap-2 mt-3">
+                            <button onClick={() => handleApprove(selected.id)} className="flex-1 py-2.5 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90">Approve & Resume</button>
+                            <button onClick={() => setTerminateTarget(selected)} className="px-4 py-2.5 border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] text-sm hover:bg-[hsl(0_72%_51%/0.05)]">Terminate</button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex items-center gap-3 p-4 bg-[hsl(142_71%_45%/0.06)] border border-[hsl(142_71%_45%/0.3)]">
+                      <CheckCircle size={20} className="text-[hsl(var(--s-ok-tx))]" />
+                      <div>
+                        <p className="text-sm font-semibold text-[hsl(var(--s-ok-tx))]">No Human Intervention Required</p>
+                        <p className="text-xs text-[hsl(var(--text-4))] mt-0.5">This workflow runs fully automated — no HITL gate configured</p>
+                      </div>
+                    </div>
+                  )}
+                  {selected.status === 'Running' && (
+                    <button onClick={() => setTerminateTarget(selected)} className="w-full py-2.5 border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] text-sm hover:bg-[hsl(0_72%_51%/0.05)]">Terminate Workflow</button>
+                  )}
+                </>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2 flex-shrink-0">
+              {(selected.status === 'Awaiting Approval' || selected.status === 'Paused') && (
+                <button onClick={() => handleApprove(selected.id)} className="flex-1 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90">Approve & Resume</button>
+              )}
+              {(selected.status === 'Running' || selected.status === 'Awaiting Approval' || selected.status === 'Paused') && (
+                <button onClick={() => setTerminateTarget(selected)} className="px-4 py-2 border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] text-sm hover:bg-[hsl(0_72%_51%/0.05)]">Terminate</button>
+              )}
+              {selected.status === 'Failed' && (
+                <button onClick={() => toast.success('Retry queued')} className="flex-1 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90">Retry Workflow</button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCreate && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowCreate(false)} />
+          <div className="relative bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
+              <h2 className="font-semibold text-[hsl(var(--text-1))]">New Workflow</h2>
+              <button onClick={() => setShowCreate(false)}><X size={16} className="text-[hsl(var(--text-4))]" /></button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="text-xs text-[hsl(var(--text-4))]">Workflow Name *</label>
+                <input value={newWfName} onChange={e => setNewWfName(e.target.value)} placeholder="e.g. Monthly Bias Audit — Loan Model"
+                  className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none focus:border-[hsl(var(--brand))]" />
+              </div>
+              <div>
+                <label className="text-xs text-[hsl(var(--text-4))]">Orchestrator Agent *</label>
+                <input value={newWfOrch} onChange={e => setNewWfOrch(e.target.value)} placeholder="e.g. ComplianceMonitorAgent v3.0"
+                  className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none focus:border-[hsl(var(--brand))]" />
+              </div>
+              <div>
+                <label className="text-xs text-[hsl(var(--text-4))]">Trigger</label>
+                <select value={newWfTrigger} onChange={e => setNewWfTrigger(e.target.value)}
+                  className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none">
+                  {['Manual', 'Scheduled', 'Event-driven', 'API', 'Webhook'].map(t => <option key={t}>{t}</option>)}
+                </select>
               </div>
             </div>
-            {(selected.status === 'Awaiting Approval' || selected.status === 'Paused') && (
-              <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
-                <button onClick={() => handleApprove(selected.id)} className="flex-1 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90">Approve & Resume</button>
-                <button onClick={() => setTerminateTarget(selected)} className="px-4 py-2 border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] text-sm hover:bg-[hsl(0_72%_51%/0.05)]">Terminate</button>
-              </div>
-            )}
-            {selected.status === 'Running' && (
-              <div className="p-4 border-t border-[hsl(var(--border))]">
-                <button onClick={() => setTerminateTarget(selected)} className="w-full py-2 border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] text-sm hover:bg-[hsl(0_72%_51%/0.05)]">Terminate Workflow</button>
-              </div>
-            )}
+            <div className="flex gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
+              <button onClick={() => {
+                if (!newWfName.trim() || !newWfOrch.trim()) { toast.error('Workflow name and orchestrator are required'); return }
+                const id = `WF-2026-${String(workflows.length + 100).padStart(4, '0')}`
+                const wf: AgentWorkflow = { id, name: newWfName, description: `New workflow: ${newWfName}`, status: 'Paused', trigger: `${newWfTrigger} — configured on 2026-04-10`, orchestratorAgent: newWfOrch, workerAgents: [], startedAt: '—', stepsTotal: 1, stepsCompleted: 0, currentStep: 'Not started', inputTokens: 0, outputTokens: 0, cost: 0, hitlRequired: false, owner: 'Current User' }
+                setWorkflows(p => [wf, ...p])
+                setShowCreate(false)
+                toast.success(`Workflow ${id} created`)
+              }} className="flex-1 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90">Create Workflow</button>
+              <button onClick={() => setShowCreate(false)} className="px-4 py-2 border border-[hsl(var(--border))] text-sm">Cancel</button>
+            </div>
           </div>
         </div>
       )}
