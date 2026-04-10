@@ -1,24 +1,22 @@
 import { NavLink, useLocation } from 'react-router-dom'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import {
   SquaresFour, Bell, FileText, Shield, BookOpen, ChartBar,
   UserCircleCheck, Robot, Rss, Database, BuildingOffice,
   Warning, Scales, FolderOpen,
-  ShieldCheck, LockOpen, Lock, Gear,
-  SignOut, CaretDown, CaretRight, Sun, Moon,
+  ShieldCheck, Lock, Gear,
+  SignOut, CaretDown, Sun, Moon,
   List, X, Brain, Briefcase, Eye,
-  ListChecks, TreeStructure, Lightbulb, GlobeHemisphereWest,
-  Table, Target, Sword, Scan, Key, GameController,
-  Gauge, Sliders, CurrencyDollar, ArrowsLeftRight, Wrench, UserGear,
-  ClockCounterClockwise, DownloadSimple, BellRinging,
+  ListChecks, Lightbulb, GlobeHemisphereWest,
+  Table, Target, Scan,
+  Gauge,
+  ClockCounterClockwise, DownloadSimple,
   ClipboardText, ShieldWarning, GraduationCap, Lifebuoy, CalendarBlank,
   FileMagnifyingGlass, FlowArrow,
   ChartPieSlice, Scroll,
 } from '@phosphor-icons/react'
 import { cn } from '../lib/utils'
-import { useTheme } from '../providers/ThemeProvider'
-
-// ── Navigation Structure ──────────────────────────────────────────────────────
+import { useTheme } from '../providers/theme'
 
 interface NavSubItem {
   label: string
@@ -56,7 +54,7 @@ const NAV: NavSection[] = [
       { label: 'Tool Monitor', to: '/trust-engine/tools' },
       { label: 'Configuration', to: '/trust-engine/config' },
     ]},
-    { label: 'Agent Discovery', to: '/agents', icon: Brain, badge: 12, children: [
+    { label: 'Agent Discovery', to: '/agents', icon: Brain, badge: 3, children: [
       { label: 'Shadow AI', to: '/agents/shadow-ai' },
     ]},
     { label: 'Bias Audits', to: '/bias-audits', icon: Scales },
@@ -125,10 +123,7 @@ const NAV: NavSection[] = [
   ]},
   { title: 'ORGANIZATION', items: [
     { label: 'Training & Awareness', to: '/training', icon: GraduationCap },
-    { label: 'Access Control', to: '/access-control', icon: Lock, children: [
-      { label: 'Role Manager', to: '/access-control/roles' },
-      { label: 'User Manager', to: '/access-control/users' },
-    ]},
+    { label: 'Access Control', to: '/access-control', icon: Lock },
     { label: 'Benchmarking & Maturity', to: '/maturity', icon: ChartBar },
     { label: 'Business Continuity', to: '/continuity', icon: Lifebuoy },
   ]},
@@ -155,20 +150,12 @@ function loadSidebarState(): 'expanded' | 'icon-only' | 'hidden' {
   } catch { return 'expanded' }
 }
 
-/**
- * Returns true if the nav item's route is active for the current path.
- */
 function isItemActive(to: string, pathname: string): boolean {
-  if (to === '/overview') {
-    return pathname === '/' || pathname === '/overview'
-  }
+  if (to === '/overview') return pathname === '/' || pathname === '/overview'
   if (pathname === to) return true
   return pathname.startsWith(to + '/')
 }
 
-/**
- * Returns true if any item in a section is active (used for auto-expand).
- */
 function isSectionActive(items: NavItem[], pathname: string): boolean {
   return items.some(item => {
     if (isItemActive(item.to, pathname)) return true
@@ -190,7 +177,7 @@ export default function Sidebar() {
   const [sidebarState, setSidebarState] = useState<'expanded' | 'icon-only' | 'hidden'>(loadSidebarState)
   const [expandedSections, setExpandedSections] = useState<string[]>(loadSections)
   const [expandedItems, setExpandedItems] = useState<string[]>([])
-  const { theme, setTheme, resolvedTheme } = useTheme()
+  const { setTheme, resolved } = useTheme()
   const [logoError, setLogoError] = useState(false)
 
   const collapsed = sidebarState === 'icon-only'
@@ -204,7 +191,7 @@ export default function Sidebar() {
     localStorage.setItem(SIDEBAR_STATE_KEY, sidebarState)
   }, [sidebarState])
 
-  // Auto-expand sections that contain the currently active route
+  // Auto-expand sections and items for active route
   useEffect(() => {
     const activeSections = NAV
       .filter(section => isSectionActive(section.items, location.pathname))
@@ -212,13 +199,12 @@ export default function Sidebar() {
 
     if (activeSections.length > 0) {
       setExpandedSections(prev => {
-        const missing = activeSections.filter(title => !prev.includes(title))
+        const missing = activeSections.filter(t => !prev.includes(t))
         if (missing.length === 0) return prev
         return [...prev, ...missing]
       })
     }
 
-    // Auto-expand parent items whose children are active
     NAV.forEach(section => {
       section.items.forEach(item => {
         if (item.children?.some(c => isItemActive(c.to, location.pathname))) {
@@ -231,21 +217,14 @@ export default function Sidebar() {
   const toggleSection = (title: string) =>
     setExpandedSections(prev => prev.includes(title) ? prev.filter(t => t !== title) : [...prev, title])
 
-  const toggleItemExpand = (to: string, e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
+  const toggleItem = (to: string) =>
     setExpandedItems(prev => prev.includes(to) ? prev.filter(t => t !== to) : [...prev, to])
-  }
 
-  const cycleSidebar = () => {
-    setSidebarState(prev => {
-      if (prev === 'expanded') return 'icon-only'
-      if (prev === 'icon-only') return 'hidden'
-      return 'expanded'
-    })
-  }
+  const cycleSidebar = () => setSidebarState(prev =>
+    prev === 'expanded' ? 'icon-only' : prev === 'icon-only' ? 'hidden' : 'expanded'
+  )
 
-  const toggleTheme = () => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')
+  const toggleTheme = () => setTheme(resolved === 'dark' ? 'light' : 'dark')
 
   if (hidden) {
     return (
@@ -263,49 +242,50 @@ export default function Sidebar() {
   return (
     <aside className={cn(
       'flex flex-col h-screen bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] border-r border-[hsl(var(--border))] transition-all duration-200 flex-shrink-0',
-      collapsed ? 'w-16' : 'w-64'
+      collapsed ? 'w-14' : 'w-[220px]'
     )}>
       {/* Logo + Toggle */}
-      <div className='flex items-center gap-3 px-4 h-14 border-b border-[hsl(var(--border))]'>
+      <div className='flex items-center gap-2.5 px-3 h-14 border-b border-[hsl(var(--border))]'>
         {!logoError ? (
           <img
             src={LOGO_URL}
             alt='Sentinel'
-            className='w-8 h-8 flex-shrink-0'
+            className='w-7 h-7 flex-shrink-0'
             onError={() => setLogoError(true)}
           />
         ) : (
-          <div className='w-8 h-8 bg-[hsl(var(--brand))] flex items-center justify-center flex-shrink-0'>
-            <ShieldCheck size={18} weight='fill' className='text-white' />
+          <div className='w-7 h-7 bg-[hsl(var(--brand))] flex items-center justify-center flex-shrink-0'>
+            <ShieldCheck size={16} weight='fill' className='text-white' />
           </div>
         )}
         {!collapsed && (
           <div className='flex-1 min-w-0'>
-            <p className='text-sm font-semibold text-[hsl(var(--text-1))] truncate'>Sentinel AI</p>
-            <p className='text-[10px] text-[hsl(var(--text-4))]'>GRC Platform</p>
+            <p className='text-sm font-semibold text-[hsl(var(--text-1))] truncate leading-tight'>Sentinel AI</p>
+            <p className='text-[10px] text-[hsl(var(--text-4))] leading-tight'>GRC Platform</p>
           </div>
         )}
         <button
           onClick={cycleSidebar}
-          className='text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-2))] ml-auto'
+          className='text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-2))] ml-auto flex-shrink-0 p-1'
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          {collapsed ? <CaretRight size={14}/> : <X size={14}/>}
+          {collapsed ? <List size={14}/> : <X size={14}/>}
         </button>
       </div>
 
       {/* Nav items */}
-      <div className='flex-1 overflow-y-auto py-2'>
+      <div className='flex-1 overflow-y-auto py-2 scrollbar-thin'>
         {NAV.map(section => {
           const sectionActive = isSectionActive(section.items, location.pathname)
           const isExpanded = expandedSections.includes(section.title)
 
           return (
-            <div key={section.title} className='px-2 mb-1'>
+            <div key={section.title} className='px-2 mb-0.5'>
               {!collapsed && (
                 <button
                   onClick={() => toggleSection(section.title)}
-                  className='flex items-center justify-between w-full px-2 py-1'
+                  className='flex items-center justify-between w-full px-1.5 py-1 group'
                 >
                   <span className={cn(
                     'text-[10px] font-semibold tracking-wider uppercase',
@@ -313,71 +293,84 @@ export default function Sidebar() {
                   )}>
                     {section.title}
                   </span>
-                  {isExpanded
-                    ? <CaretDown size={10} className='text-[hsl(var(--text-4))]'/>
-                    : <CaretRight size={10} className='text-[hsl(var(--text-4))]'/>
-                  }
+                  <CaretDown
+                    size={9}
+                    className={cn(
+                      'text-[hsl(var(--text-4))] transition-transform duration-150',
+                      isExpanded ? 'rotate-0' : '-rotate-90'
+                    )}
+                  />
                 </button>
               )}
+
               {(collapsed || isExpanded) && (
-                <div className='space-y-0.5'>
+                <div className='space-y-0.5 mt-0.5'>
                   {section.items.map((item) => {
                     const Icon = item.icon
                     const active = isItemActive(item.to, location.pathname)
-                    const parentActive = isParentOrChildActive(item, location.pathname)
-                    const hasChildren = item.children && item.children.length > 0
+                    const childActive = item.children?.some(c => isItemActive(c.to, location.pathname))
+                    const hasChildren = !!(item.children && item.children.length > 0)
                     const childrenExpanded = expandedItems.includes(item.to)
+
+                    const handleItemClick = () => {
+                      if (hasChildren) toggleItem(item.to)
+                    }
 
                     return (
                       <div key={item.to}>
                         {/* Primary nav item */}
-                        <div className='flex items-center'>
-                          <NavLink
-                            to={item.to}
-                            className={cn(
-                              'flex items-center gap-3 px-3 py-2 text-sm transition-colors group flex-1 min-w-0',
-                              active
-                                ? 'bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))] border-l-2 border-[hsl(var(--brand))]'
-                                : 'text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-1))]',
-                              collapsed && 'justify-center px-2'
-                            )}
-                            title={collapsed ? item.label : undefined}
-                          >
-                            <Icon
-                              size={18}
-                              weight={active ? 'fill' : 'duotone'}
-                              className={cn(
-                                'flex-shrink-0',
-                                active ? 'text-[hsl(var(--brand))]' : 'text-[hsl(var(--text-4))] group-hover:text-[hsl(var(--text-2))]'
-                              )}
-                            />
-                            {!collapsed && (
-                              <>
-                                <span className='flex-1 truncate'>{item.label}</span>
-                                {item.badge != null && (
-                                  <span className='bg-[hsl(var(--brand))] text-white text-[10px] px-1.5 py-0.5 font-medium min-w-[20px] text-center'>
-                                    {item.badge}
-                                  </span>
-                                )}
-                              </>
-                            )}
-                          </NavLink>
-                          {!collapsed && hasChildren && (
-                            <button
-                              onClick={(e) => toggleItemExpand(item.to, e)}
-                              className='px-2 py-2 text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-2))] flex-shrink-0'
-                            >
-                              {childrenExpanded
-                                ? <CaretDown size={10}/>
-                                : <CaretRight size={10}/>
-                              }
-                            </button>
+                        <NavLink
+                          to={item.to}
+                          onClick={handleItemClick}
+                          className={({ isActive }) => cn(
+                            'flex items-center gap-2.5 px-2 py-1.5 text-[13px] transition-colors group',
+                            (active || (childActive && !active))
+                              ? 'bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))]'
+                              : 'text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-1))]',
+                            active && 'border-l-2 border-[hsl(var(--brand))]',
+                            collapsed && 'justify-center px-0'
                           )}
-                        </div>
+                          title={collapsed ? item.label : undefined}
+                        >
+                          {/* Left border indicator */}
+                          {active && !collapsed && (
+                            <span className='sr-only'>Active</span>
+                          )}
+                          <Icon
+                            size={16}
+                            weight={active ? 'fill' : 'regular'}
+                            className={cn(
+                              'flex-shrink-0 transition-colors',
+                              active
+                                ? 'text-[hsl(var(--brand))]'
+                                : 'text-[hsl(var(--text-4))] group-hover:text-[hsl(var(--text-2))]'
+                            )}
+                          />
+                          {!collapsed && (
+                            <>
+                              <span className='flex-1 truncate font-[450]'>{item.label}</span>
+                              {item.badge != null && (
+                                <span className='bg-[hsl(var(--brand))] text-white text-[10px] px-1.5 py-0.5 font-semibold min-w-[18px] text-center leading-none'>
+                                  {item.badge}
+                                </span>
+                              )}
+                              {hasChildren && (
+                                <CaretDown
+                                  size={10}
+                                  className={cn(
+                                    'flex-shrink-0 transition-transform duration-150',
+                                    childrenExpanded ? 'rotate-0' : '-rotate-90',
+                                    active ? 'text-[hsl(var(--brand))]' : 'text-[hsl(var(--text-4))]'
+                                  )}
+                                />
+                              )}
+                            </>
+                          )}
+                        </NavLink>
 
-                        {/* Sub-items (children) */}
+                        {/* Sub-items */}
                         {!collapsed && hasChildren && childrenExpanded && (
-                          <div className='ml-4 space-y-0.5'>
+                          <div className='ml-5 mt-0.5 space-y-0.5 border-l border-[hsl(var(--border))]'>
                             {item.children!.map(child => {
                               const childActive = isItemActive(child.to, location.pathname)
                               return (
@@ -385,13 +378,16 @@ export default function Sidebar() {
                                   key={child.to}
                                   to={child.to}
                                   className={cn(
-                                    'flex items-center gap-2 pl-4 pr-3 py-1.5 text-xs transition-colors',
+                                    'flex items-center gap-2 pl-3 pr-2 py-1.5 text-[12px] transition-colors',
                                     childActive
-                                      ? 'bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))] border-l-2 border-[hsl(var(--brand))] opacity-90'
-                                      : 'text-[hsl(var(--text-4))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-2))]'
+                                      ? 'text-[hsl(var(--brand))] font-medium'
+                                      : 'text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]'
                                   )}
                                 >
-                                  <span className='w-1.5 h-1.5 border border-current opacity-50 flex-shrink-0' />
+                                  <span className={cn(
+                                    'w-1 h-1 flex-shrink-0',
+                                    childActive ? 'bg-[hsl(var(--brand))]' : 'bg-current opacity-40'
+                                  )} />
                                   <span className='truncate'>{child.label}</span>
                                 </NavLink>
                               )
@@ -415,39 +411,39 @@ export default function Sidebar() {
             <button
               onClick={toggleTheme}
               className='flex items-center justify-center w-8 h-8 text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-1))] transition-colors'
-              title={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-              aria-label={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              title={resolved === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              aria-label={resolved === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             >
-              {resolvedTheme === 'dark' ? <Sun size={16} weight='duotone'/> : <Moon size={16} weight='duotone'/>}
+              {resolved === 'dark' ? <Sun size={16} weight='duotone'/> : <Moon size={16} weight='duotone'/>}
             </button>
             <div data-avatar='true' className='w-8 h-8 bg-[hsl(var(--brand))] flex items-center justify-center flex-shrink-0'>
               <span className='text-xs font-bold text-white'>SC</span>
             </div>
           </div>
         ) : (
-          <div className='flex items-center gap-2 px-2 py-1.5'>
-            <div data-avatar='true' className='w-8 h-8 bg-[hsl(var(--brand))] flex items-center justify-center flex-shrink-0'>
-              <span className='text-xs font-bold text-white'>SC</span>
+          <div className='flex items-center gap-2 px-1.5 py-1'>
+            <div data-avatar='true' className='w-7 h-7 bg-[hsl(var(--brand))] flex items-center justify-center flex-shrink-0'>
+              <span className='text-[11px] font-bold text-white'>SC</span>
             </div>
             <div className='flex-1 min-w-0'>
-              <p className='text-xs font-semibold text-[hsl(var(--text-1))] truncate'>Sarah Chen</p>
-              <p className='text-[10px] text-[hsl(var(--text-4))]'>CISO</p>
+              <p className='text-[12px] font-semibold text-[hsl(var(--text-1))] truncate leading-tight'>Sarah Chen</p>
+              <p className='text-[10px] text-[hsl(var(--text-4))] leading-tight'>CISO</p>
             </div>
-            <div className='flex items-center gap-1 flex-shrink-0'>
+            <div className='flex items-center gap-0.5 flex-shrink-0'>
               <button
                 onClick={toggleTheme}
                 className='flex items-center justify-center w-7 h-7 text-[hsl(var(--text-4))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-2))] transition-colors'
-                title={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-                aria-label={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                title={resolved === 'dark' ? 'Light mode' : 'Dark mode'}
+                aria-label={resolved === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
               >
-                {resolvedTheme === 'dark' ? <Sun size={14} weight='duotone'/> : <Moon size={14} weight='duotone'/>}
+                {resolved === 'dark' ? <Sun size={13} weight='duotone'/> : <Moon size={13} weight='duotone'/>}
               </button>
               <button
-                className='flex items-center justify-center w-7 h-7 text-[hsl(var(--text-4))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-2))] transition-colors'
+                className='flex items-center justify-center w-7 h-7 text-[hsl(var(--text-4))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--s-er-tx))] transition-colors'
                 title='Sign out'
                 aria-label='Sign out'
               >
-                <SignOut size={14}/>
+                <SignOut size={13}/>
               </button>
             </div>
           </div>
@@ -456,4 +452,4 @@ export default function Sidebar() {
     </aside>
   )
 }
-export { default as AppSidebar } from "./Sidebar"
+
