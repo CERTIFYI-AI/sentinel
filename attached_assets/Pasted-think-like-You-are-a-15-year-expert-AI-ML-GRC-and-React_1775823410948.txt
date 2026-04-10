@@ -1,0 +1,23 @@
+think like You are a 15+ year expert AI/ML, GRC, and React/TypeScript enterprise engineer. Build and enhance Sentinel AI GRC Platform “The Trust Layer for Production AI” for Fortune 500 clients.
+do audit of all module i need real appropirate seed data on each module fix sidebar UX issue. Sentinel should not be built as a collection of pages mapped one-to-one with compliance topics. It should be built as a trust graph plus workflow engine, where modules are views over shared governed entities, shared evidence, shared policies, and shared events.
+
+In real enterprise use, users do not think in isolated screens. They think in operating questions such as which production AI systems are high risk, which controls are failing, which vendors are upstream of a model incident, whether a regulator-triggered obligation is covered, and whether an autonomous agent should be blocked, escalated, or attested.
+
+That means Sentinel’s backend should be organized around:
+* Canonical entities. 
+* Relationship graph and lineage. 
+* Event streams and state transitions. 
+* Policy decisioning. 
+* Evidence and attestation fabric. 
+* Autonomous orchestration with human approval boundaries. 
+Core Engineering Principle
+Every module in Sentinel should either create, enrich, evaluate, approve, or consume one of a small set of canonical governed entities. If a module has its own disconnected records, its own status semantics, and its own attachment model, the platform will fragment operationally even if the UI appears complete.
+
+The engineering goal should be a shared domain model with many projections, not many duplicate mini-systems. In practice, this means Model Inventory, Agent Discovery, Use Cases, Risks, Controls, Evidence, Audits, Vendors, Incidents, Assessments, Policies, and Trust Scores should all resolve to linked records in a common platform graph.
+
+
+-complete remaining UI CRUD functionality -Enhance 
+Make functional
+-Light Mode
+-Dark Mode
+-System Mode (or "Automatic")  Sentinel will win large enterprise accounts not by having the most pages, but by becoming the system where AI governance state becomes computable, evidence becomes reusable, and trust decisions become operationally enforceable across models, agents, vendors, controls, and runtime events. The technical strategy should therefore center on canonical entities, graph relationships, event-driven automation, policy evaluation, bounded autonomous agents, and integration-first evidence orchestration.

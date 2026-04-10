@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Bell, MagnifyingGlass, Sun, Moon, CaretRight, User } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
-import { useTheme } from "@/components/theme-provider";
+import { useTheme } from "@/providers/theme";
 import { NotificationDrawer } from "@/components/ui/NotificationDrawer";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
@@ -20,7 +20,7 @@ const pathNames: Record<string, string> = {
 export function TopBar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { theme, setTheme } = useTheme();
+  const { theme, cycleTheme } = useTheme();
   const [notifOpen, setNotifOpen] = useState(false);
   const currentPage = pathNames[location.pathname] || "Overview";
 
@@ -64,8 +64,8 @@ export function TopBar() {
           </div>
 
           {/* Theme toggle */}
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} aria-label="Toggle theme">
-            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={cycleTheme} aria-label="Cycle theme">
+            {theme === "dark" ? <Moon className="h-4 w-4" /> : theme === "light" ? <Sun className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
           </Button>
 
           {/* Avatar */}

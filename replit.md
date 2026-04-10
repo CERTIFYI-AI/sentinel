@@ -41,13 +41,18 @@ Frontend env vars:
 
 ### Design System
 - **Tokens**: `dashboard/src/styles/tokens.css` — all HSL CSS vars: `--brand`, `--brand-hover`, `--brand-subtle`, status semantics, surface layers
-- **Accent Colors**: 6 themes (emerald/default, blue, purple, teal, orange, rose) as CSS classes `.accent-*` on `:root`; persisted in localStorage via `dashboard/src/store/accentStore.ts`
-- **Dark/Light mode**: via ThemeProvider in `dashboard/src/providers/theme.tsx`
+- **Theme System**: 3-way toggle (Dark → Light → System) via `dashboard/src/providers/theme.tsx`
+  - `ThemeProvider` exports: `theme`, `setTheme`, `resolved`, `cycleTheme`, `ThemeToggle`
+  - Storage key: `sntl-theme`; system preference media query listener active in system mode
+  - All components use `useTheme()` from `providers/theme` (canonical — old `ThemeProvider.tsx` and `components/theme-provider.tsx` are stale/unused)
+  - Theme toggle visible in: TopHeader (Moon/Sun/Monitor icons), Sidebar footer (cycle button), Settings → Appearance tab
+- **Accent Colors**: 6 themes (Emerald/default, Blue, Purple, Teal, Orange, Rose); stored in localStorage via `dashboard/src/store/accentStore.ts`; selectable in TopHeader paint-brush popover AND Settings → Appearance tab
 - **Fonts**: Outfit (body), monospace for code/IDs
 
 ### Sidebar
 - `dashboard/src/components/Sidebar.tsx` — single NAV array drives all sections
 - Sections: OVERVIEW, AI GOVERNANCE, SECURITY, COMPLIANCE, RISK & INCIDENTS, EVALUATIONS, OPERATIONS, ORGANIZATION, SYSTEM
+- **UX**: Parent items with children use `<button>` (not NavLink) — clicking expands/collapses and navigates on first expand; child subitems use NavLink normally; 3-way theme toggle in footer
 
 ### Seed Data (canonical source)
 - `dashboard/src/data/seed.ts` — all mock/seed data arrays; every page imports from here

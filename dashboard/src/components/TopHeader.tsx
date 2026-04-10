@@ -1,6 +1,6 @@
 import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { MagnifyingGlass, Bell, ArrowsClockwise, Sun, Moon, User, Gear, SignOut, CaretRight, PaintBrush } from '@phosphor-icons/react'
+import { MagnifyingGlass, Bell, ArrowsClockwise, Sun, Moon, Monitor, User, Gear, SignOut, CaretRight, PaintBrush } from '@phosphor-icons/react'
 import { Button } from './ui/button'
 import { CommandPalette } from './ui/CommandPalette'
 import { NotificationDrawer } from './ui/NotificationDrawer'
@@ -126,7 +126,7 @@ function buildBreadcrumbs(pathname: string): { label: string; path: string; isLa
 export default function TopHeader() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { resolved, setTheme } = useTheme()
+  const { theme, resolved, setTheme, cycleTheme } = useTheme()
   const breadcrumbs = buildBreadcrumbs(location.pathname)
 
   const [avatarOpen, setAvatarOpen] = useState(false)
@@ -275,18 +275,20 @@ export default function TopHeader() {
             )}
           </div>
 
-          {/* Theme toggle */}
+          {/* Theme toggle — cycles Dark → Light → System */}
           <Button
             variant='ghost'
             size='icon'
             className='h-8 w-8'
-            onClick={() => setTheme(resolved === 'dark' ? 'light' : 'dark')}
-            title={resolved === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            aria-label={resolved === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            onClick={cycleTheme}
+            title={theme === 'dark' ? 'Dark mode — click for Light' : theme === 'light' ? 'Light mode — click for System' : 'System mode — click for Dark'}
+            aria-label='Cycle theme'
           >
-            {resolved === 'dark'
+            {theme === 'dark'
+              ? <Moon size={16} className='text-[hsl(var(--text-3))]' />
+              : theme === 'light'
               ? <Sun size={16} className='text-[hsl(var(--text-3))]' />
-              : <Moon size={16} className='text-[hsl(var(--text-3))]' />
+              : <Monitor size={16} className='text-[hsl(var(--text-3))]' />
             }
           </Button>
 
