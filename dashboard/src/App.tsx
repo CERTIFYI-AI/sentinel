@@ -322,6 +322,43 @@ export default function App() {
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/prompt-registry" element={<PromptRegistryPage />} />
 
+          {/* Privacy & Consent */}
+          <Route path="/dsr" element={<DsrManagement />} />
+          <Route path="/consent-management" element={<ConsentManagement />} />
+
+          {/* Security */}
+          <Route path="/red-team-findings" element={<RedTeamFindings />} />
+
+          {/* Risk & Incidents */}
+          <Route path="/financial-risk" element={<FinancialRisk />} />
+
+          {/* Compliance */}
+          <Route path="/system-audit-log" element={<SystemAuditLog />} />
+
+          {/* Agentic Governance */}
+          <Route path="/agent-registry" element={<AgentRegistry />} />
+          <Route path="/agent-iam" element={<AgentIAM />} />
+          <Route path="/multi-agent" element={<MultiAgentChoreography />} />
+          <Route path="/kill-switch" element={<KillSwitchEvents />} />
+
+          {/* AI Supply Chain */}
+          <Route path="/aibom" element={<AibomRegistry />} />
+          <Route path="/provenance" element={<ProvenanceGraph />} />
+          <Route path="/vendor-upload" element={<VendorUpload />} />
+          <Route path="/supply-chain" element={<SupplyChainAttestations />} />
+
+          {/* Sustainability & ESG */}
+          <Route path="/carbon-ledger" element={<CarbonLedger />} />
+          <Route path="/energy-efficiency" element={<EnergyEfficiency />} />
+          <Route path="/esg-reports" element={<EsgReports />} />
+          <Route path="/model-efficiency" element={<ModelEfficiency />} />
+
+          {/* Evaluations */}
+          <Route path="/data-lineage" element={<DataLineage />} />
+
+          {/* Operations */}
+          <Route path="/integrations" element={<IntegrationsPage />} />
+
           <Route path="*" element={<Suspense fallback={<Loading />}><NotFound /></Suspense>} />
         </Route>
       </Routes>
