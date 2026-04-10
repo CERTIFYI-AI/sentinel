@@ -1,0 +1,118 @@
+
+CRITICAL UI/UX ENHANCEMENTS NEEDED PER MODULE
+1. Dashboard (/overview)
+* Missing: SLA countdown timers for open remediation items
+* Missing: Cross-module dependency graph visualization (risk → control → evidence chain)
+
+4. Reporting (/reporting)
+* Missing: Custom report builder with drag-and-drop field selection
+* Missing: Board-ready PDF export with branding/watermarks
+* Missing: Regulatory-specific report templates (EU AI Act Article-by-article, SOC 2 Type II narrative)
+* Missing: Comparative period analysis (QoQ, YoY)
+* Missing: Auto-attach evidence artifacts to generated reports
+* Missing: Digital signature and approval workflow before distribution
+5. Model Inventory
+* Need: Full model lifecycle state machine (Draft → Testing → Staging → Production → Deprecated → Retired)
+* Need: Model card generation (per Google/Mitchell et al. format)
+* Need: Model lineage graph showing parent/child model relationships
+* Need: Drift detection alerts with statistical test results (PSI, KS, Chi-squared)
+* Need: A/B test governance tracking
+* Need: Shadow model comparison view
+
+7. Bias Audits (/bias-audits)
+* Missing: Intersectional bias analysis (cross-cutting protected attributes)
+* Missing: Counterfactual fairness testing UI
+* Missing: Remediation recommendation engine
+* Missing: Pre-deployment vs. post-deployment audit comparison
+* Missing: Statistical significance indicators on fairness scores
+* Missing: Regulatory mapping panel (which audit satisfies which regulation)
+8. Explainability (/explainability)
+* Missing: Local explanation view (individual prediction explanations, not just global SHAP)
+* Missing: LIME, Anchors, Counterfactual method support
+* Missing: Plain-language explanation generator for non-technical stakeholders
+* Missing: Explanation adequacy scoring (does this meet GDPR Art.22 requirements?)
+* Missing: Export as consumer-facing explanation document
+9. Use Cases (/use-cases)
+* Missing: Use case lifecycle workflow (Proposed → Risk Assessed → Approved → Live → Retired)
+* Missing: Linked risk assessments and DPIA references per use case
+* Missing: Stakeholder RACI matrix per use case
+* Missing: Business value vs. risk scatter plot visualization
+* Missing: Regulatory applicability auto-tagging based on geography + sector
+10. Agent IAM (/agent-iam)
+* Missing: Least-privilege analysis (over-provisioned agents detection)
+* Missing: Access review campaigns (periodic recertification)
+* Missing: Credential vault integration (HashiCorp Vault, AWS Secrets Manager)
+* Missing: Permission boundary visualization (what can this agent access?)
+* Missing: Anomalous access pattern detection
+11. Kill Switch (/kill-switch)
+* Missing: One-click "Kill All" emergency button with 2FA confirmation
+* Missing: Automated rollback to previous safe state
+* Missing: Impact blast radius analysis before suspension
+* Missing: Post-mortem template auto-generation
+* Missing: Regulatory notification automation (notify DPA within 72h if GDPR-relevant)
+13. Financial Risk (/financial-risk)
+* Missing: Monte Carlo simulation visualization
+* Missing: FAIR model interactive parameter tuning
+* Missing: Risk appetite threshold lines on charts
+* Missing: Insurance coverage mapping against quantified risks
+* Missing: ROI calculator for proposed controls
+14. Settings (/settings)
+* Missing: SSO/SAML configuration UI (currently has Auth tab but needs full IdP setup)
+
+MISSING MODULES (Critical for Fortune 500)
+A. Stakeholder & Committee Management (NEW MODULE)
+Fortune 500 companies have AI Ethics Boards, Model Risk Committees, and cross-functional governance bodies. You need:
+* Committee registry with members, charter, meeting cadence
+* Meeting minutes with decision tracking and action items
+* Voting/approval workflows for high-risk model deployments
+* Attestation tracking (who signed off, when, on what)
+B. Third-Party / Vendor AI Risk Management (ENHANCE existing Vendors)
+The current Vendors module needs significant depth:
+* Vendor AI risk questionnaire builder (customizable assessment templates)
+* Continuous vendor monitoring dashboard (API health, SLA tracking)
+* DPA/contractual obligation tracker
+* Vendor SLA date 
+* Vendor concentration risk analysis
+* Sub-processor mapping (who are your vendors' vendors?)
+C. Regulatory Change Management (ENHANCE Regulatory Radar)
+* Regulatory change impact assessment workflow
+* Auto-mapping of new regulations to existing controls
+* Jurisdictional applicability engine (which regulations apply where)
+* Comment/response tracking for public consultations
+* Regulatory timeline with enforcement dates
+D. Model Validation & Testing Lab (NEW MODULE)
+* Structured model validation workflow (challenger model testing)
+* Adversarial robustness testing results
+* Performance benchmark comparison across model versions
+* Automated regression testing pipeline status
+* Validation report generation per SR 11-7 / OCC guidelines
+E. Incident Response Playbook Engine (ENHANCE Incidents)
+* Pre-built incident response playbooks (data breach, model failure, bias incident)
+* Automated escalation chains with configurable SLAs
+* War room / incident collaboration workspace
+* Post-incident review workflow with lessons learned
+* Regulatory notification tracking (GDPR 72h, SEC 4-day, etc.)
+F. Stakeholder Communication Hub (NEW MODULE)
+* Board reporting package generator
+* Regulator communication log
+* Customer transparency portal (what AI decisions affect them)
+* Employee AI usage disclosure tracking
+* Public AI system registry (EU AI Act database registration)
+G. Performance Monitoring & Observability (NEW MODULE)
+* Real-time model performance dashboards (latency, throughput, error rates)
+* Data quality monitoring (schema drift, null rates, distribution shifts)
+* Alert correlation engine (performance drop → bias increase → risk escalation)
+* SLO/SLA tracking per model endpoint
+* Cost-per-inference tracking
+
+CROSS-CUTTING UX IMPROVEMENTS
+1. Global: Every table needs export (CSV, PDF, JSON), column customization, saved views, and bulk actions
+2. Global: Add breadcrumb navigation — deep modules lose context
+3. Global: Implement command palette (Cmd+K) for power users — you have search but it needs keyboard-first UX
+4. Global: Add contextual help panels / tooltips explaining regulatory terms (not everyone knows what SHAP or FAIR means)
+5. Global: Add "Related Items" sidebar on every detail view (viewing a model? Show linked risks, controls, audits, use cases)
+6. Global: Dark mode is present (theme toggle exists) but ensure all charts/graphs respect theme
+7. Global: Add activity timeline / audit trail on every entity detail page
+8. Global: Implement real-time collaboration indicators (who else is viewing this item)
+9. Global: Add onboarding wizard for new tenants (guided setup of frameworks, thresholds, roles)
+This platform has an impressively broad module set already. The primary gaps are depth of interactivity within existing modules (most are display-heavy, action-light) and the missing modules above that Fortune 500 compliance, legal, and risk teams will expect from a production trust layer.

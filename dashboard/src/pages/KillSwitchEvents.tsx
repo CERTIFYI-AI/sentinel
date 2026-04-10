@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Power, Warning, MagnifyingGlass, Plus, Eye, X, Export, ShieldWarning, CheckCircle } from '@phosphor-icons/react'
+import { Power, Warning, MagnifyingGlass, Plus, Eye, X, Export, ShieldWarning, CheckCircle, Siren, ClipboardText, ArrowsClockwise } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 type KillSwitchTrigger = 'Manual' | 'Automated — Trust Score' | 'Automated — Error Rate' | 'Automated — Bias Threshold' | 'Regulatory Order' | 'Security Incident'
@@ -62,9 +62,54 @@ export default function KillSwitchEvents() {
           </h1>
           <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">Audit log of all agent suspension events — manual, automated, and regulatory</p>
         </div>
-        <button onClick={() => toast.success('Exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
-          <Export size={14} /> Export
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => toast.success('Exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+            <Export size={14} /> Export
+          </button>
+          <button
+            onClick={() => {
+              const confirmed = window.confirm('⚠️ EMERGENCY: Kill All Agents\n\nThis will immediately suspend ALL active AI agents across all systems.\n\nImpacted: 4 agents, ~12,500 users, 6 downstream services.\n\nType "KILLALL" to confirm.');
+              if (confirmed) toast.error('🚨 KILL ALL activated — 4 agents suspended. Incident INC-EMERGENCY-001 created. Regulatory notifications queued.');
+            }}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-white hover:opacity-90"
+            style={{ background: 'hsl(0 72% 51%)' }}>
+            <Siren size={14} /> KILL ALL AGENTS
+          </button>
+        </div>
+      </div>
+
+      {/* Blast Radius Analysis */}
+      <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+        <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2 mb-3">
+          <ShieldWarning size={15} className="text-[hsl(var(--s-wn-tx))]" weight="duotone" />
+          Blast Radius Analysis — If All Active Agents Are Suspended
+        </h3>
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: 'Agents Affected', value: '4 active', color: 'hsl(var(--destructive))' },
+            { label: 'Est. Users Impacted', value: '12,500+', color: '#f97316' },
+            { label: 'Downstream Services', value: '6', color: '#f59e0b' },
+          ].map(s => (
+            <div key={s.label} className="p-3 border border-[hsl(var(--border))] text-center">
+              <p className="text-[10px] text-[hsl(var(--text-4))] uppercase mb-1">{s.label}</p>
+              <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+          {[
+            { agent: 'LoanProcessorAgent', impact: 'Loan applications paused — manual review queue activated', users: '3,200' },
+            { agent: 'FraudInvestigatorAgent', impact: 'Fraud alerts manual-only — investigation backlog risk', users: '0 direct' },
+            { agent: 'ComplianceMonitorAgent', impact: 'Automated compliance checks paused — regulatory risk', users: '0 direct' },
+            { agent: 'DataQualityPatrolAgent', impact: 'Data pipeline quality monitoring offline — drift risk', users: '0 direct' },
+          ].map(r => (
+            <div key={r.agent} className="p-2 border border-[hsl(var(--border))]">
+              <p className="font-medium text-[hsl(var(--text-1))]">{r.agent}</p>
+              <p className="text-[hsl(var(--text-3))] mt-0.5">{r.impact}</p>
+              <p className="text-[hsl(var(--text-4))] mt-0.5">~{r.users} users impacted</p>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="grid grid-cols-4 gap-4">
