@@ -26,6 +26,18 @@ Required for full functionality (set via Replit Secrets):
 Frontend env vars:
 - `VITE_API_URL` — API base URL (leave empty for proxied local dev)
 
+## Recent Changes (April 2026)
+
+### Fixed: RiskDetail page (`/risk/:id`)
+- Was: complete stub showing hardcoded data for a single generic risk
+- Now: full implementation reading from `RISKS` seed data by ID
+- Features: 6 tabs (Overview, Mitigation, Incidents, Controls, Frameworks, Activity), Risk Heat Map visualization, Treatment Progress bar, linked AI model card, Related Bias Audits, linked incidents from `INCIDENTS`, related controls from `CONTROLS`, per-risk framework mapping, per-risk activity timeline, Edit dialog
+
+### Fixed: PolicyDetail page (`/policies/:id`)
+- Was: stub with only Details tab functional; all other tabs showed placeholder text
+- Now: all 6 tabs fully populated (Details, Versions, Approvals, Controls, Evidence, Audit Trail)
+- Features: Framework coverage progress bar, compliance gaps, per-policy version history timeline, full approval workflow chain with statuses/comments, linked controls (with smart framework matching for ISO/IEC 42001 → EU AI Act + ISO 27001), linked evidence items, audit trail with system log entries, Edit dialog
+
 ## Key Directories
 
 - `sentinel/` — Python FastAPI backend (routers, config, models, auth)
