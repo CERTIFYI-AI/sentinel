@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Swap, Plus, Eye, X, Export, CheckCircle, Warning, Clock, ArrowRight } from '@phosphor-icons/react'
+import { Swap, Plus, Eye, X, Export, CheckCircle, Warning, Clock, ArrowRight, MagnifyingGlass } from '@phosphor-icons/react'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 
 type WorkflowStatus = 'Running' | 'Completed' | 'Failed' | 'Paused' | 'Awaiting Approval'
 
@@ -47,9 +48,15 @@ const STATUS_STYLE: Record<WorkflowStatus, { bg: string; color: string }> = {
 export default function MultiAgentChoreography() {
   const [selected, setSelected] = useState<AgentWorkflow | null>(null)
   const [statusFilter, setStatusFilter] = useState('All')
+  const [search, setSearch] = useState('')
   const [workflows, setWorkflows] = useState(SEED)
+  const [terminateTarget, setTerminateTarget] = useState<AgentWorkflow | null>(null)
 
-  const filtered = statusFilter === 'All' ? workflows : workflows.filter(w => w.status === statusFilter)
+  const filtered = workflows.filter(w => {
+    const q = search.toLowerCase()
+    const ms = w.name.toLowerCase().includes(q) || w.id.toLowerCase().includes(q) || w.orchestratorAgent.toLowerCase().includes(q) || w.owner.toLowerCase().includes(q)
+    return ms && (statusFilter === 'All' || w.status === statusFilter)
+  })
 
   const stats = {
     total: workflows.length,
@@ -99,6 +106,10 @@ export default function MultiAgentChoreography() {
       </div>
 
       <div className="flex gap-3">
+        <div className="flex items-center gap-2 flex-1 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] px-3">
+          <MagnifyingGlass size={14} className="text-[hsl(var(--text-4))] flex-shrink-0" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search workflows…" className="flex-1 py-2 text-sm bg-transparent text-[hsl(var(--text-1))] placeholder-[hsl(var(--text-4))] focus:outline-none" />
+        </div>
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
           {['All', 'Running', 'Completed', 'Failed', 'Paused', 'Awaiting Approval'].map(s => <option key={s}>{s}</option>)}
         </select>
@@ -206,12 +217,33 @@ export default function MultiAgentChoreography() {
             {(selected.status === 'Awaiting Approval' || selected.status === 'Paused') && (
               <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
                 <button onClick={() => handleApprove(selected.id)} className="flex-1 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90">Approve & Resume</button>
-                <button onClick={() => { toast.success('Workflow terminated'); setSelected(null) }} className="px-4 py-2 border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] text-sm hover:bg-[hsl(0_72%_51%/0.05)]">Terminate</button>
+                <button onClick={() => setTerminateTarget(selected)} className="px-4 py-2 border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] text-sm hover:bg-[hsl(0_72%_51%/0.05)]">Terminate</button>
+              </div>
+            )}
+            {selected.status === 'Running' && (
+              <div className="p-4 border-t border-[hsl(var(--border))]">
+                <button onClick={() => setTerminateTarget(selected)} className="w-full py-2 border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] text-sm hover:bg-[hsl(0_72%_51%/0.05)]">Terminate Workflow</button>
               </div>
             )}
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!terminateTarget}
+        title="Terminate Workflow"
+        description={`Terminate "${terminateTarget?.name}"? All in-progress agent steps will be stopped immediately. This action cannot be undone.`}
+        confirmLabel="Terminate"
+        type="danger"
+        onConfirm={() => {
+          if (!terminateTarget) return
+          setWorkflows(prev => prev.map(w => w.id === terminateTarget.id ? { ...w, status: 'Failed' as WorkflowStatus, currentStep: 'Terminated by operator', lastError: 'Workflow manually terminated by operator.' } : w))
+          toast.error(`Workflow ${terminateTarget.id} terminated`)
+          setTerminateTarget(null)
+          setSelected(null)
+        }}
+        onClose={() => setTerminateTarget(null)}
+      />
     </div>
   )
 }
