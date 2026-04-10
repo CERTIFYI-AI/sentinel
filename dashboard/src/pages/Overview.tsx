@@ -779,6 +779,136 @@ export default function Overview() {
         </Card>
       </div>
 
+      {/* ── SLA Countdown Timers ─────────────────────────────────────────────── */}
+      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+        <CardHeader className="pb-3 flex flex-row items-center justify-between">
+          <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+            SLA Countdown — Open Remediation Items
+          </CardTitle>
+          <Link to="/remediation">
+            <Button variant="ghost" size="sm" style={{ fontSize: 11, padding: '2px 8px' }}>
+              View All <ArrowRight size={12} className="ml-1" />
+            </Button>
+          </Link>
+        </CardHeader>
+        <CardContent className="p-0">
+          <table className="w-full">
+            <thead style={{ background: 'hsl(var(--bg-muted))' }}>
+              <tr>
+                {['ID', 'Item', 'Category', 'SLA Deadline', 'Time Remaining', 'Owner', 'Status'].map(h => (
+                  <th key={h} className="text-left p-3 text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { id: 'REM-001', item: 'Bias remediation — Loan Model Gender gap', cat: 'Bias Audit', deadline: '2026-04-12', owner: 'Data Science', hoursLeft: 48, status: 'In Progress' },
+                { id: 'REM-002', item: 'GDPR Art.22 explanation document update', cat: 'Compliance', deadline: '2026-04-15', owner: 'Compliance', hoursLeft: 120, status: 'Not Started' },
+                { id: 'REM-003', item: 'Kill switch post-mortem KSE-2026-012', cat: 'Incident', deadline: '2026-04-10', owner: 'CISO', hoursLeft: 4, status: 'Overdue' },
+                { id: 'REM-004', item: 'Model revalidation after data drift alert', cat: 'Model Risk', deadline: '2026-04-18', owner: 'MLOps', hoursLeft: 192, status: 'In Progress' },
+                { id: 'REM-005', item: 'EU AI Act Art.9 risk management update', cat: 'Regulatory', deadline: '2026-04-08', owner: 'Legal', hoursLeft: -24, status: 'Overdue' },
+              ].map(item => {
+                const pct = Math.max(0, Math.min(100, (item.hoursLeft / 192) * 100));
+                const isOverdue = item.hoursLeft < 0;
+                const isUrgent = item.hoursLeft >= 0 && item.hoursLeft < 72;
+                const barColor = isOverdue ? 'hsl(0 72% 51%)' : isUrgent ? 'hsl(45 93% 47%)' : 'hsl(142 71% 45%)';
+                const timeLabel = isOverdue
+                  ? `${Math.abs(item.hoursLeft)}h overdue`
+                  : item.hoursLeft < 24
+                    ? `${item.hoursLeft}h left`
+                    : `${Math.floor(item.hoursLeft / 24)}d ${item.hoursLeft % 24}h left`;
+                return (
+                  <tr key={item.id} style={{ borderTop: '1px solid hsl(var(--border))' }}>
+                    <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{item.id}</td>
+                    <td className="p-3 text-xs font-medium" style={{ color: 'hsl(var(--text-1))', maxWidth: 260 }}>
+                      <span className="line-clamp-2">{item.item}</span>
+                    </td>
+                    <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{item.cat}</td>
+                    <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{item.deadline}</td>
+                    <td className="p-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-16 h-1.5" style={{ background: 'hsl(var(--border))' }}>
+                          <div className="h-full" style={{ width: `${isOverdue ? 100 : pct}%`, background: barColor }} />
+                        </div>
+                        <span className="text-xs font-bold whitespace-nowrap" style={{ color: barColor }}>{timeLabel}</span>
+                      </div>
+                    </td>
+                    <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{item.owner}</td>
+                    <td className="p-3">
+                      <Badge style={{
+                        background: item.status === 'Overdue' ? 'hsl(0 72% 51% / 0.12)' : item.status === 'In Progress' ? 'hsl(45 93% 47% / 0.12)' : 'hsl(var(--s-nt-bg))',
+                        color: item.status === 'Overdue' ? 'hsl(var(--destructive))' : item.status === 'In Progress' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-4))',
+                        borderRadius: 0, fontSize: 10,
+                      }}>{item.status}</Badge>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </CardContent>
+      </Card>
+
+      {/* ── Cross-Module Dependency Graph ─────────────────────────────────── */}
+      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+            Cross-Module Dependency Map — MDL-001 Loan Approval v3.0
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-4">
+          <div className="relative" style={{ height: 280 }}>
+            <svg viewBox="0 0 800 260" style={{ width: '100%', height: '100%' }}>
+              <defs>
+                <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                  <path d="M0,0 L0,6 L6,3 z" fill="hsl(220 90% 56% / 0.5)" />
+                </marker>
+                <marker id="arrowhead-warn" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                  <path d="M0,0 L0,6 L6,3 z" fill="hsl(45 93% 47% / 0.8)" />
+                </marker>
+                <marker id="arrowhead-err" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                  <path d="M0,0 L0,6 L6,3 z" fill="hsl(0 72% 51% / 0.8)" />
+                </marker>
+              </defs>
+              {[
+                { x1: 180, y1: 130, x2: 300, y2: 75, type: 'ok' },
+                { x1: 180, y1: 130, x2: 300, y2: 130, type: 'warn' },
+                { x1: 180, y1: 130, x2: 300, y2: 185, type: 'ok' },
+                { x1: 500, y1: 75, x2: 620, y2: 75, type: 'ok' },
+                { x1: 500, y1: 130, x2: 620, y2: 130, type: 'err' },
+                { x1: 500, y1: 185, x2: 620, y2: 185, type: 'ok' },
+              ].map((line, i) => (
+                <line key={i} x1={line.x1} y1={line.y1} x2={line.x2 - 60} y2={line.y2}
+                  stroke={line.type === 'ok' ? 'hsl(220 90% 56% / 0.4)' : line.type === 'warn' ? 'hsl(45 93% 47% / 0.6)' : 'hsl(0 72% 51% / 0.6)'}
+                  strokeWidth="1.5" strokeDasharray={line.type !== 'ok' ? '4,3' : '0'}
+                  markerEnd={`url(#arrowhead${line.type === 'warn' ? '-warn' : line.type === 'err' ? '-err' : ''})`} />
+              ))}
+              {[
+                { x: 80, y: 107, w: 100, h: 46, label: 'MDL-001', sub: 'Loan Approval v3.0', color: 'hsl(var(--brand))' },
+                { x: 300, y: 52, w: 200, h: 40, label: 'BA-003 Bias Audit', sub: 'Failed (Gender: 0.74)', color: 'hsl(0 72% 51%)' },
+                { x: 300, y: 107, w: 200, h: 40, label: 'EXP-002 Explainability', sub: 'Pending Review', color: 'hsl(45 93% 47%)' },
+                { x: 300, y: 163, w: 200, h: 40, label: 'UC-001 Use Case', sub: 'In Progress', color: 'hsl(var(--brand))' },
+                { x: 620, y: 52, w: 140, h: 40, label: 'EU AI Act Art.10', sub: 'Gap Identified', color: 'hsl(0 72% 51%)' },
+                { x: 620, y: 107, w: 140, h: 40, label: 'Kill Switch', sub: 'Trigger Active', color: 'hsl(0 72% 51%)' },
+                { x: 620, y: 163, w: 140, h: 40, label: 'ECOA Compliance', sub: 'Compliant', color: 'hsl(142 71% 45%)' },
+              ].map((node) => (
+                <g key={node.label}>
+                  <rect x={node.x} y={node.y} width={node.w} height={node.h}
+                    fill="hsl(var(--bg-raised))" stroke={node.color} strokeWidth="1.5" />
+                  <text x={node.x + node.w / 2} y={node.y + 16} textAnchor="middle" fontSize="10" fill={node.color} fontWeight="600">{node.label}</text>
+                  <text x={node.x + node.w / 2} y={node.y + 30} textAnchor="middle" fontSize="9" fill="hsl(var(--text-4))">{node.sub}</text>
+                </g>
+              ))}
+            </svg>
+          </div>
+          <div className="flex items-center gap-6 text-[10px] mt-2 px-2" style={{ color: 'hsl(var(--text-4))' }}>
+            <span className="flex items-center gap-1.5"><span className="inline-block w-6 h-0.5" style={{ background: 'hsl(220 90% 56% / 0.6)' }} />Active dependency</span>
+            <span className="flex items-center gap-1.5"><span className="inline-block w-6 h-0.5 border-t-2 border-dashed" style={{ borderColor: 'hsl(45 93% 47% / 0.8)' }} />Warning dependency</span>
+            <span className="flex items-center gap-1.5"><span className="inline-block w-6 h-0.5 border-t-2 border-dashed" style={{ borderColor: 'hsl(0 72% 51% / 0.8)' }} />Critical / blocking dependency</span>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Open Risks Summary */}
       <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
         <CardHeader className="pb-3 flex flex-row items-center justify-between">

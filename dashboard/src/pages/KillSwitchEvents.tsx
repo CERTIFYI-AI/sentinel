@@ -42,6 +42,11 @@ export default function KillSwitchEvents() {
   const [selected, setSelected] = useState<KillSwitchEvent | null>(null)
   const [statusFilter, setStatusFilter] = useState('All')
   const [events, setEvents] = useState(SEED)
+  const [killAllOpen, setKillAllOpen] = useState(false)
+  const [killAllCode, setKillAllCode] = useState('')
+  const [killAllStep, setKillAllStep] = useState<'confirm' | 'mfa' | 'done'>('confirm')
+  const [mfaInput, setMfaInput] = useState('')
+  const [postMortemOpen, setPostMortemOpen] = useState<KillSwitchEvent | null>(null)
 
   const filtered = statusFilter === 'All' ? events : events.filter(e => e.status === statusFilter)
 
@@ -67,10 +72,7 @@ export default function KillSwitchEvents() {
             <Export size={14} /> Export
           </button>
           <button
-            onClick={() => {
-              const confirmed = window.confirm('⚠️ EMERGENCY: Kill All Agents\n\nThis will immediately suspend ALL active AI agents across all systems.\n\nImpacted: 4 agents, ~12,500 users, 6 downstream services.\n\nType "KILLALL" to confirm.');
-              if (confirmed) toast.error('🚨 KILL ALL activated — 4 agents suspended. Incident INC-EMERGENCY-001 created. Regulatory notifications queued.');
-            }}
+            onClick={() => { setKillAllOpen(true); setKillAllStep('confirm'); setKillAllCode(''); setMfaInput(''); }}
             className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-white hover:opacity-90"
             style={{ background: 'hsl(0 72% 51%)' }}>
             <Siren size={14} /> KILL ALL AGENTS
@@ -167,6 +169,176 @@ export default function KillSwitchEvents() {
           )
         })}
       </div>
+
+      {/* ── Post-mortem Templates ─────────────────────────────────────────── */}
+      <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+        <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2 mb-3">
+          <ClipboardText size={15} className="text-[hsl(var(--brand))]" />
+          Post-mortem Templates
+        </h3>
+        <p className="text-xs text-[hsl(var(--text-4))] mb-3">Select a resolved incident to auto-generate a structured post-mortem report for regulatory submission and internal review.</p>
+        <div className="space-y-2">
+          {events.filter(e => e.status === 'Resolved').map(e => (
+            <div key={e.id} className="p-3 border border-[hsl(var(--border))] flex items-center justify-between">
+              <div>
+                <span className="font-mono text-xs text-[hsl(var(--brand))]">{e.id}</span>
+                <span className="text-xs text-[hsl(var(--text-2))] ml-2">{e.agentName}</span>
+                <span className="text-[10px] text-[hsl(var(--text-4))] ml-2">· {e.triggeredAt}</span>
+              </div>
+              <button
+                onClick={() => setPostMortemOpen(e)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+                <ClipboardText size={12} /> Generate Post-mortem
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Kill All 2FA Dialog ────────────────────────────────────────────── */}
+      {killAllOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setKillAllOpen(false)} />
+          <div className="relative w-[480px] bg-[hsl(var(--bg-surface))] border border-[hsl(var(--destructive)/0.5)]" style={{ boxShadow: '0 0 40px hsl(0 72% 51% / 0.3)' }}>
+            <div className="p-5 border-b border-[hsl(var(--destructive)/0.3)] bg-[hsl(0_72%_51%/0.08)]">
+              <div className="flex items-center gap-3">
+                <Siren size={22} className="text-[hsl(var(--destructive))]" weight="fill" />
+                <div>
+                  <h2 className="text-sm font-bold text-[hsl(var(--destructive))] uppercase tracking-wide">Emergency: Kill All Agents</h2>
+                  <p className="text-xs text-[hsl(var(--text-3))] mt-0.5">This will immediately suspend ALL active AI agents across all production systems.</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-5">
+              {killAllStep === 'confirm' && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    {[
+                      { label: 'Agents Suspended', value: '4', color: 'hsl(var(--destructive))' },
+                      { label: 'Users Impacted', value: '12,500+', color: '#f97316' },
+                      { label: 'Services Offline', value: '6', color: '#f59e0b' },
+                    ].map(s => (
+                      <div key={s.label} className="p-2 border border-[hsl(var(--border))]">
+                        <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{s.label}</p>
+                        <p className="text-lg font-bold mt-0.5" style={{ color: s.color }}>{s.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div>
+                    <p className="text-xs text-[hsl(var(--text-4))] mb-1.5">Step 1 of 2 — Type <strong className="text-[hsl(var(--destructive))] font-mono">KILLALL</strong> to proceed to MFA verification</p>
+                    <input
+                      autoFocus
+                      value={killAllCode}
+                      onChange={e => setKillAllCode(e.target.value.toUpperCase())}
+                      placeholder="Type KILLALL"
+                      className="w-full px-3 py-2 text-sm border font-mono bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none"
+                      style={{ borderColor: killAllCode === 'KILLALL' ? 'hsl(var(--destructive))' : 'hsl(var(--border))' }}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => setKillAllOpen(false)} className="flex-1 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">Cancel</button>
+                    <button
+                      disabled={killAllCode !== 'KILLALL'}
+                      onClick={() => setKillAllStep('mfa')}
+                      className="flex-1 py-2 text-sm font-bold text-white hover:opacity-90 disabled:opacity-40"
+                      style={{ background: 'hsl(0 72% 51%)' }}>
+                      Continue to MFA →
+                    </button>
+                  </div>
+                </div>
+              )}
+              {killAllStep === 'mfa' && (
+                <div className="space-y-4">
+                  <div className="p-3 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-center">
+                    <p className="text-[10px] text-[hsl(var(--text-4))] uppercase mb-1">Simulated MFA Code</p>
+                    <p className="text-2xl font-mono font-bold tracking-[0.3em] text-[hsl(var(--brand))]">847293</p>
+                    <p className="text-[10px] text-[hsl(var(--text-4))] mt-1">Enter the 6-digit code from your authenticator app</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[hsl(var(--text-4))] mb-1.5">Step 2 of 2 — Enter your MFA code</p>
+                    <input
+                      autoFocus
+                      value={mfaInput}
+                      onChange={e => setMfaInput(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="000000"
+                      maxLength={6}
+                      className="w-full px-3 py-2 text-xl font-mono text-center border bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none tracking-[0.3em]"
+                      style={{ borderColor: mfaInput.length === 6 ? 'hsl(var(--destructive))' : 'hsl(var(--border))' }}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => setKillAllStep('confirm')} className="flex-1 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">← Back</button>
+                    <button
+                      disabled={mfaInput.length !== 6}
+                      onClick={() => {
+                        if (mfaInput !== '847293') { toast.error('Invalid MFA code — Kill All aborted.'); return; }
+                        setKillAllStep('done');
+                        setEvents(prev => prev.map(e => e.status === 'Active — Agent Suspended' ? e : e.status !== 'Resolved' ? { ...e, status: 'Active — Agent Suspended' as KSStatus } : e));
+                        const newEvent: KillSwitchEvent = {
+                          id: `KSE-EMERGENCY-${Date.now()}`, agentId: 'ALL', agentName: 'ALL AGENTS',
+                          triggeredAt: new Date().toISOString().replace('T', ' ').slice(0, 19),
+                          triggeredBy: 'Sarah Chen (CISO) — MFA Verified', trigger: 'Manual',
+                          status: 'Active — Agent Suspended', reason: 'Emergency Kill All triggered by authenticated operator. All 4 active agents suspended. Incident created.',
+                          impactedSystems: ['All Production Systems'], impactedUsers: 12500,
+                          regulatoryNotificationRequired: true,
+                        };
+                        setEvents(prev => [newEvent, ...prev]);
+                        toast.error('🚨 KILL ALL activated — 4 agents suspended. INC-EMERGENCY created. Regulatory notifications queued.');
+                        setTimeout(() => setKillAllOpen(false), 2000);
+                      }}
+                      className="flex-1 py-2 text-sm font-bold text-white hover:opacity-90 disabled:opacity-40"
+                      style={{ background: 'hsl(0 72% 51%)' }}>
+                      EXECUTE KILL ALL
+                    </button>
+                  </div>
+                </div>
+              )}
+              {killAllStep === 'done' && (
+                <div className="text-center py-4">
+                  <Siren size={36} className="text-[hsl(var(--destructive))] mx-auto mb-2 animate-pulse" weight="fill" />
+                  <p className="text-sm font-bold text-[hsl(var(--destructive))]">KILL ALL Activated</p>
+                  <p className="text-xs text-[hsl(var(--text-4))] mt-1">4 agents suspended · Incident created · Notifications queued</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Post-mortem Detail Modal ───────────────────────────────────────── */}
+      {postMortemOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setPostMortemOpen(null)} />
+          <div className="relative w-[640px] max-h-[80vh] overflow-y-auto bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))]">
+            <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))]">
+              <div>
+                <span className="font-mono text-xs text-[hsl(var(--brand))]">{postMortemOpen.id}</span>
+                <h2 className="text-sm font-semibold text-[hsl(var(--text-1))]">Post-mortem Report — {postMortemOpen.agentName}</h2>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => toast.success('Post-mortem exported as PDF')} className="px-3 py-1.5 text-xs border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">Export PDF</button>
+                <button onClick={() => setPostMortemOpen(null)}><X size={16} className="text-[hsl(var(--text-4))]" /></button>
+              </div>
+            </div>
+            <div className="p-4 space-y-4 text-xs">
+              {[
+                { title: '1. Incident Summary', content: `Incident ${postMortemOpen.id} — ${postMortemOpen.agentName} was suspended on ${postMortemOpen.triggeredAt} via ${postMortemOpen.trigger} trigger. Root cause: ${postMortemOpen.reason}` },
+                { title: '2. Timeline of Events', content: `${postMortemOpen.triggeredAt} — Kill switch triggered by ${postMortemOpen.triggeredBy}\n${postMortemOpen.resumedAt ? `${postMortemOpen.resumedAt} — Agent resumed after remediation. Approved by: ${postMortemOpen.approvedBy}` : 'Pending resolution.'}` },
+                { title: '3. Impact Assessment', content: `Directly impacted users: ${postMortemOpen.impactedUsers.toLocaleString()}\nImpacted systems: ${postMortemOpen.impactedSystems.join(', ')}\nBusiness impact: Operations paused during suspension window.` },
+                { title: '4. Root Cause Analysis', content: postMortemOpen.resolutionNotes || 'Investigation ongoing. Root cause analysis in progress.' },
+                { title: '5. Corrective Actions', content: '• Immediate: Agent suspended and incident created\n• Short-term: Root cause identified and remediated\n• Long-term: Enhanced monitoring thresholds implemented\n• Preventive: Runbook updated with new detection criteria' },
+                { title: '6. Regulatory Obligations', content: postMortemOpen.regulatoryNotificationRequired ? `Regulatory notification required: ${postMortemOpen.regulatoryNotificationSent ? '✓ Sent' : '⚠ PENDING — must be submitted within 72 hours per EU AI Act Art. 62'}` : 'No regulatory notification required for this incident.' },
+                { title: '7. Approval & Sign-off', content: `Report prepared by: Sentinel AI GRC Platform\nApproved by: ${postMortemOpen.approvedBy || '[Pending]'}\nDate: ${new Date().toLocaleDateString()}\nNext review: ${new Date(Date.now() + 30 * 86400000).toLocaleDateString()}` },
+              ].map(s => (
+                <div key={s.title} className="p-3 border border-[hsl(var(--border))]">
+                  <p className="text-[11px] font-semibold text-[hsl(var(--text-1))] mb-1.5">{s.title}</p>
+                  <pre className="text-[hsl(var(--text-3))] whitespace-pre-wrap font-sans leading-relaxed">{s.content}</pre>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {selected && (
         <div className="fixed inset-0 z-50 flex">

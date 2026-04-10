@@ -3,6 +3,7 @@ import React from 'react';
 import { lazy, Suspense } from 'react';
 import Sidebar from './components/Sidebar';
 import TopHeader from './components/TopHeader';
+import CommandPalette from './components/CommandPalette';
 import { useRealtimeEvents } from './hooks/useRealtimeEvents';
 import { useRealtimeInvalidation } from './hooks/useRealtimeInvalidation';
 import { useAuthStore } from './store/authStore';
@@ -186,6 +187,7 @@ function ProtectedLayout() {
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <TopHeader />
+        <CommandPalette />
         <main className="flex-1 overflow-y-auto p-6">
           <Suspense fallback={<Loading />}>
             <Outlet />

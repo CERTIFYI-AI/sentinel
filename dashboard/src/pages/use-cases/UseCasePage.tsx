@@ -328,6 +328,187 @@ export default function UseCasePage() {
         </CardContent>
       </Card>
 
+      {/* ── RACI Matrix ───────────────────────────────────────────────────── */}
+      <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>RACI Matrix — Use Case Accountability</p>
+              <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>Responsible, Accountable, Consulted, Informed per use case activity</p>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs border-collapse">
+              <thead>
+                <tr>
+                  <th className="px-3 py-2 text-left font-medium" style={{ color: 'hsl(var(--text-4))', minWidth: 200 }}>Activity / Role</th>
+                  {['Data Scientist', 'Risk Officer', 'Compliance Lead', 'Legal Counsel', 'CISO', 'Business Owner', 'Board'].map(r => (
+                    <th key={r} className="px-3 py-2 text-center font-medium" style={{ color: 'hsl(var(--text-4))', minWidth: 90 }}>{r}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { activity: 'Use Case Registration', roles: ['R', 'C', 'C', '-', '-', 'A', '-'] },
+                  { activity: 'Risk Classification', roles: ['C', 'R', 'R', 'C', 'C', 'A', 'I'] },
+                  { activity: 'Bias Audit Execution', roles: ['R', 'A', 'C', '-', 'C', 'I', '-'] },
+                  { activity: 'Regulatory Impact Assessment', roles: ['C', 'C', 'R', 'A', 'C', 'I', 'I'] },
+                  { activity: 'Model Approval / Sign-off', roles: ['C', 'R', 'R', 'C', 'C', 'A', 'I'] },
+                  { activity: 'Production Deployment', roles: ['R', 'C', 'I', '-', 'A', 'C', '-'] },
+                  { activity: 'Ongoing Monitoring', roles: ['R', 'C', 'C', '-', 'A', 'I', '-'] },
+                  { activity: 'Incident Escalation', roles: ['C', 'R', 'C', 'C', 'A', 'I', 'I'] },
+                  { activity: 'Board Reporting', roles: ['-', 'C', 'R', 'C', 'C', 'A', 'I'] },
+                  { activity: 'Decommissioning Decision', roles: ['C', 'R', 'C', 'C', 'C', 'A', 'I'] },
+                ].map((row, i) => (
+                  <tr key={row.activity} style={{ borderTop: '1px solid hsl(var(--border))' }}>
+                    <td className="px-3 py-2 font-medium" style={{ color: 'hsl(var(--text-2))' }}>{row.activity}</td>
+                    {row.roles.map((role, j) => {
+                      const colors: Record<string, { bg: string; color: string }> = {
+                        'R': { bg: 'hsl(var(--brand) / 0.15)', color: 'hsl(var(--brand))' },
+                        'A': { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
+                        'C': { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(var(--s-wn-tx))' },
+                        'I': { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(var(--s-ok-tx))' },
+                        '-': { bg: 'transparent', color: 'hsl(var(--text-4))' },
+                      };
+                      const c = colors[role] || colors['-'];
+                      return (
+                        <td key={j} className="px-3 py-2 text-center">
+                          <span className="text-[10px] font-bold px-2 py-0.5" style={{ background: c.bg, color: c.color }}>{role}</span>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="flex items-center gap-4 mt-3 text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>
+            {[['R', 'hsl(var(--brand))', 'Responsible'], ['A', 'hsl(var(--destructive))', 'Accountable'], ['C', 'hsl(var(--s-wn-tx))', 'Consulted'], ['I', 'hsl(var(--s-ok-tx))', 'Informed'], ['-', 'hsl(var(--text-4))', 'Not Involved']].map(([k, c, l]) => (
+              <span key={k} className="flex items-center gap-1">
+                <span className="font-bold text-xs" style={{ color: c as string }}>{k}</span> {l}
+              </span>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Business Value vs Risk Scatter ────────────────────────────────── */}
+      <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+        <CardContent className="p-4">
+          <p className="text-sm font-semibold mb-1" style={{ color: 'hsl(var(--text-1))' }}>Business Value vs. Risk Matrix</p>
+          <p className="text-xs mb-4" style={{ color: 'hsl(var(--text-4))' }}>Strategic prioritization of use cases by potential business value and AI risk level</p>
+          <div className="relative" style={{ height: 320, border: '1px solid hsl(var(--border))' }}>
+            <div className="absolute inset-0 grid grid-cols-2 grid-rows-2">
+              {[
+                { label: 'Explore Carefully', color: 'hsl(45 93% 47% / 0.06)', pos: 'top-2 right-2' },
+                { label: 'Strategic Priority', color: 'hsl(142 71% 45% / 0.06)', pos: 'top-2 left-2' },
+                { label: 'Deprioritize', color: 'hsl(var(--border) / 0.3)', pos: 'bottom-2 right-2' },
+                { label: 'Quick Wins', color: 'hsl(220 90% 56% / 0.06)', pos: 'bottom-2 left-2' },
+              ].map((q, i) => (
+                <div key={q.label} className="relative flex" style={{ background: q.color }}>
+                  <span className="absolute text-[9px] font-medium p-1" style={{
+                    top: i < 2 ? 6 : 'auto', bottom: i >= 2 ? 6 : 'auto',
+                    left: i % 2 === 0 ? 6 : 'auto', right: i % 2 !== 0 ? 6 : 'auto',
+                    color: 'hsl(var(--text-4))',
+                  }}>{q.label}</span>
+                </div>
+              ))}
+            </div>
+            <div className="absolute left-0 bottom-0 right-0 flex justify-between px-4 pb-1 text-[9px]" style={{ color: 'hsl(var(--text-4))' }}>
+              <span>Low Risk</span><span className="font-medium">← Risk Level →</span><span>High Risk</span>
+            </div>
+            <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-between py-4 pl-1 text-[9px]" style={{ color: 'hsl(var(--text-4))', writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
+              <span>High Value</span><span className="font-medium">Business Value</span><span>Low Value</span>
+            </div>
+            {[
+              { id: 'UC-001', title: 'Loan Scoring Auto', risk: 0.82, value: 0.88, color: 'hsl(var(--destructive))' },
+              { id: 'UC-002', title: 'Fraud Detection', risk: 0.45, value: 0.91, color: 'hsl(var(--brand))' },
+              { id: 'UC-003', title: 'HR Resume Screen', risk: 0.78, value: 0.54, color: 'hsl(45 93% 47%)' },
+              { id: 'UC-004', title: 'Supply Chain Opt.', risk: 0.25, value: 0.72, color: 'hsl(var(--brand))' },
+              { id: 'UC-005', title: 'Medical Risk Score', risk: 0.89, value: 0.76, color: 'hsl(var(--destructive))' },
+              { id: 'UC-006', title: 'Customer Churn', risk: 0.22, value: 0.63, color: 'hsl(142 71% 45%)' },
+              { id: 'UC-007', title: 'Content Moderation', risk: 0.65, value: 0.42, color: 'hsl(45 93% 47%)' },
+              { id: 'UC-008', title: 'Predictive Maint.', risk: 0.18, value: 0.55, color: 'hsl(var(--brand))' },
+            ].map(uc => (
+              <div key={uc.id} className="absolute flex flex-col items-center cursor-pointer group"
+                style={{
+                  left: `${8 + uc.risk * 84}%`,
+                  top: `${8 + (1 - uc.value) * 80}%`,
+                  transform: 'translate(-50%, -50%)',
+                }}>
+                <div className="w-4 h-4 rounded-full border-2 border-white shadow" style={{ background: uc.color }} />
+                <span className="text-[9px] font-medium mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap px-1" style={{ background: 'hsl(var(--bg-surface))', color: 'hsl(var(--text-1))', border: '1px solid hsl(var(--border))' }}>
+                  {uc.id}: {uc.title}
+                </span>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] mt-2" style={{ color: 'hsl(var(--text-4))' }}>Hover over dots to see use case details. Bubble position derived from risk score and estimated business value metrics.</p>
+        </CardContent>
+      </Card>
+
+      {/* ── Regulatory Auto-Tagging ───────────────────────────────────────── */}
+      <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Regulatory Applicability Auto-Tagging</p>
+              <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>AI-determined regulatory framework applicability per use case based on risk class, geography, industry, and data types</p>
+            </div>
+            <button className="px-3 py-1.5 text-xs text-white" style={{ background: 'hsl(var(--brand))' }}
+              onClick={() => {}}>Re-run Auto-Tag</button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                  {['Use Case', 'Risk Class', 'Geography', 'Applicable Regulations', 'Auto-Tagged', 'Override'].map(h => (
+                    <th key={h} className="px-3 py-2 text-left font-medium" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { uc: 'UC-001', title: 'Loan Scoring Automation', risk: 'High-Risk', geo: 'US + EU', regs: ['EU AI Act Art.6', 'ECOA', 'CFPB', 'GDPR Art.22'], confidence: 97 },
+                  { uc: 'UC-002', title: 'Fraud Detection Engine', risk: 'High-Risk', geo: 'Global', regs: ['EU AI Act Art.6', 'PSD2', 'GDPR', 'Basel IV'], confidence: 94 },
+                  { uc: 'UC-003', title: 'HR Resume Screening', risk: 'High-Risk', geo: 'EU + UK', regs: ['EU AI Act Annex III', 'GDPR', 'UK Equality Act', 'EEOC'], confidence: 99 },
+                  { uc: 'UC-004', title: 'Supply Chain Optimizer', risk: 'Minimal', geo: 'US', regs: ['NIST AI RMF', 'ISO 42001'], confidence: 82 },
+                  { uc: 'UC-005', title: 'Medical Risk Score', risk: 'High-Risk', geo: 'US + EU', regs: ['EU AI Act Annex III §5', 'FDA AI/ML', 'HIPAA', 'MDR 2017/745'], confidence: 98 },
+                ].map(r => (
+                  <tr key={r.uc} style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                    <td className="px-3 py-2">
+                      <span className="font-mono font-medium" style={{ color: 'hsl(var(--brand))' }}>{r.uc}</span>
+                      <span className="text-[10px] ml-1.5" style={{ color: 'hsl(var(--text-3))' }}>{r.title}</span>
+                    </td>
+                    <td className="px-3 py-2">
+                      <span className="text-[10px] px-1.5 py-0.5" style={{
+                        background: r.risk === 'High-Risk' ? 'hsl(0 72% 51% / 0.12)' : 'hsl(142 71% 45% / 0.12)',
+                        color: r.risk === 'High-Risk' ? 'hsl(var(--destructive))' : 'hsl(var(--s-ok-tx))',
+                      }}>{r.risk}</span>
+                    </td>
+                    <td className="px-3 py-2" style={{ color: 'hsl(var(--text-3))' }}>{r.geo}</td>
+                    <td className="px-3 py-2">
+                      <div className="flex flex-wrap gap-1">
+                        {r.regs.map(reg => (
+                          <span key={reg} className="text-[9px] px-1.5 py-0.5" style={{ background: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))', border: '1px solid hsl(220 90% 56% / 0.2)' }}>{reg}</span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-3 py-2">
+                      <span className="text-[10px] font-mono font-bold" style={{ color: r.confidence >= 95 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))' }}>{r.confidence}% confidence</span>
+                    </td>
+                    <td className="px-3 py-2">
+                      <button className="text-[10px] px-2 py-0.5 border" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-3))' }}
+                        onClick={() => {}}>Edit Tags</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Delete Confirm */}
       <ConfirmDialog
         open={!!deleteTarget}
