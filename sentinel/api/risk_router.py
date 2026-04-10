@@ -131,7 +131,8 @@ async def update_risk(risk_id: str, req: Request, body: RiskUpdate, db=Depends(g
         set_clauses.append(f"{k}=${i}"); params.append(v)
     params.extend([datetime.now(timezone.utc), risk_id, tenant_id])
     set_clauses.append(f"updated_at=${len(params)-1}")
-    await db.execute(f"UPDATE risk_entries SET {", ".join(set_clauses)} WHERE id=${len(params)-1} AND tenant_id=${len(params)}", *params)
+    set_clause_str = ", ".join(set_clauses)
+    await db.execute(f"UPDATE risk_entries SET {set_clause_str} WHERE id=${len(params)-1} AND tenant_id=${len(params)}", *params)
     updated = await db.fetchrow("SELECT * FROM risk_entries WHERE id=$1", risk_id)
     return {"success": True, "data": dict(updated)}
 
