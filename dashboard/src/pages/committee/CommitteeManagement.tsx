@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import {
   Users, Plus, Eye, Trash, PencilSimple, CalendarBlank, CheckCircle,
   Warning, Info, MagnifyingGlass, Export, FileText, Vote,
@@ -16,6 +17,7 @@ import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
 import { Progress } from '../../components/ui/progress';
 import { formatDate } from '../../data/seed';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 
 interface CommitteeMember {
   name: string; role: string; department: string; votingRight: boolean;
@@ -145,43 +147,53 @@ const VOTE_COLORS: Record<string, { bg: string; color: string }> = {
   Deferred: { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(var(--s-wn-tx))' },
 };
 
-interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info' }
-
 export default function CommitteeManagement() {
   const [search, setSearch] = useState('');
+  const [committees, setCommittees] = useState<Committee[]>(SEED_COMMITTEES);
   const [selected, setSelected] = useState<Committee | null>(null);
   const [tab, setTab] = useState('members');
   const [createOpen, setCreateOpen] = useState(false);
-  const [toasts, setToasts] = useState<ToastMsg[]>([]);
+  const [createForm, setCreateForm] = useState({ name: '', type: '', chair: '', cadence: 'Monthly', charter: '' });
+  const [deleteTarget, setDeleteTarget] = useState<Committee | null>(null);
 
-  const addToast = (text: string, type: ToastMsg['type'] = 'success') => {
-    const id = Date.now();
-    setToasts(t => [...t, { id, text, type }]);
-    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3500);
-  };
-
-  const filtered = SEED_COMMITTEES.filter(c =>
+  const filtered = committees.filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
     c.type.toLowerCase().includes(search.toLowerCase())
   );
 
-  const totalMembers = SEED_COMMITTEES.reduce((s, c) => s + c.members.length, 0);
-  const totalOpenActions = SEED_COMMITTEES.flatMap(c => c.meetings.flatMap(m => m.actionItems)).filter(a => a.status === 'Open' || a.status === 'In Progress').length;
-  const overdueActions = SEED_COMMITTEES.flatMap(c => c.meetings.flatMap(m => m.actionItems)).filter(a => a.status === 'Overdue').length;
-  const upcomingMeetings = SEED_COMMITTEES.filter(c => new Date(c.nextMeeting) >= new Date()).length;
+  const totalMembers = committees.reduce((s, c) => s + c.members.length, 0);
+  const totalOpenActions = committees.flatMap(c => c.meetings.flatMap(m => m.actionItems)).filter(a => a.status === 'Open' || a.status === 'In Progress').length;
+  const overdueActions = committees.flatMap(c => c.meetings.flatMap(m => m.actionItems)).filter(a => a.status === 'Overdue').length;
+  const upcomingMeetings = committees.filter(c => new Date(c.nextMeeting) >= new Date()).length;
+
+  const handleCreateCommittee = () => {
+    if (!createForm.name || !createForm.type || !createForm.chair) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+    const newCommittee: Committee = {
+      id: `COM-${String(committees.length + 1).padStart(3, '0')}`,
+      name: createForm.name, type: createForm.type, chair: createForm.chair,
+      cadence: createForm.cadence, charter: createForm.charter,
+      status: 'Active', nextMeeting: '2026-05-01',
+      members: [], meetings: [], votingRecords: [], attestations: [],
+    };
+    setCommittees(prev => [newCommittee, ...prev]);
+    setCreateOpen(false);
+    setCreateForm({ name: '', type: '', chair: '', cadence: 'Monthly', charter: '' });
+    toast.success(`Committee "${newCommittee.name}" created successfully`);
+  };
+
+  const handleDelete = () => {
+    if (!deleteTarget) return;
+    setCommittees(prev => prev.filter(c => c.id !== deleteTarget.id));
+    if (selected?.id === deleteTarget.id) setSelected(null);
+    toast.success(`Committee "${deleteTarget.name}" deleted`);
+    setDeleteTarget(null);
+  };
 
   return (
     <div className="space-y-5">
-      {/* Toast */}
-      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
-        {toasts.map(t => (
-          <div key={t.id} className="px-4 py-2 rounded text-sm text-white shadow-lg"
-            style={{ background: t.type === 'success' ? '#10b981' : t.type === 'error' ? '#ef4444' : '#3b82f6' }}>
-            {t.text}
-          </div>
-        ))}
-      </div>
-
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -192,7 +204,7 @@ export default function CommitteeManagement() {
           <p className="text-sm text-[hsl(var(--text-3))] mt-0.5">AI Ethics Boards, Model Risk Committees, and governance bodies</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5 rounded-none" onClick={() => addToast('Exported committee registry')}>
+          <Button variant="outline" size="sm" className="gap-1.5 rounded-none" onClick={() => toast.success('Committee registry exported')}>
             <Export size={14} /> Export
           </Button>
           <Button size="sm" className="gap-1.5 rounded-none" onClick={() => setCreateOpen(true)}>
@@ -270,6 +282,13 @@ export default function CommitteeManagement() {
                         {openActs} open
                       </Badge>
                     )}
+                    <button
+                      onClick={e => { e.stopPropagation(); setDeleteTarget(c); }}
+                      className="p-1 text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))] transition-colors"
+                      title="Delete committee"
+                    >
+                      <Trash size={13} />
+                    </button>
                   </div>
                 </div>
               </CardContent>
@@ -332,7 +351,7 @@ export default function CommitteeManagement() {
                           <p className="text-sm font-medium text-[hsl(var(--text-1))]">{m.id} · {formatDate(m.date)}</p>
                           <p className="text-xs text-[hsl(var(--text-3))] mt-0.5">Attendees: {m.attendees.join(', ')}</p>
                         </div>
-                        <Button variant="ghost" size="sm" className="rounded-none h-7 text-xs" onClick={() => addToast('Minutes exported')}>
+                        <Button variant="ghost" size="sm" className="rounded-none h-7 text-xs" onClick={() => toast.success('Minutes exported')}>
                           <Export size={12} className="mr-1" /> Export
                         </Button>
                       </div>
@@ -418,7 +437,7 @@ export default function CommitteeManagement() {
                       </div>
                     </div>
                   ))}
-                  <Button variant="outline" size="sm" className="gap-1.5 rounded-none w-full" onClick={() => addToast('New attestation recorded')}>
+                  <Button variant="outline" size="sm" className="gap-1.5 rounded-none w-full" onClick={() => toast.success('New attestation recorded')}>
                     <Plus size={14} /> Record Attestation
                   </Button>
                 </TabsContent>
@@ -435,19 +454,21 @@ export default function CommitteeManagement() {
             <DialogTitle>Create New Committee</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            {[
-              { label: 'Committee Name', placeholder: 'e.g. AI Ethics Board' },
-              { label: 'Type', placeholder: 'e.g. Ethics & Governance' },
-              { label: 'Chair', placeholder: 'Name and title' },
-            ].map(f => (
-              <div key={f.label}>
-                <Label className="text-xs">{f.label}</Label>
-                <Input placeholder={f.placeholder} className="rounded-none mt-1 text-sm" />
-              </div>
-            ))}
+            <div>
+              <Label className="text-xs">Committee Name *</Label>
+              <Input value={createForm.name} onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. AI Ethics Board" className="rounded-none mt-1 text-sm" />
+            </div>
+            <div>
+              <Label className="text-xs">Type *</Label>
+              <Input value={createForm.type} onChange={e => setCreateForm(f => ({ ...f, type: e.target.value }))} placeholder="e.g. Ethics & Governance" className="rounded-none mt-1 text-sm" />
+            </div>
+            <div>
+              <Label className="text-xs">Chair *</Label>
+              <Input value={createForm.chair} onChange={e => setCreateForm(f => ({ ...f, chair: e.target.value }))} placeholder="Name and title" className="rounded-none mt-1 text-sm" />
+            </div>
             <div>
               <Label className="text-xs">Meeting Cadence</Label>
-              <Select>
+              <Select value={createForm.cadence} onValueChange={v => setCreateForm(f => ({ ...f, cadence: v }))}>
                 <SelectTrigger className="rounded-none mt-1 text-sm"><SelectValue placeholder="Select cadence" /></SelectTrigger>
                 <SelectContent>
                   {['Weekly', 'Bi-weekly', 'Monthly', 'Quarterly', 'Ad-hoc'].map(c => (
@@ -458,15 +479,27 @@ export default function CommitteeManagement() {
             </div>
             <div>
               <Label className="text-xs">Charter</Label>
-              <Textarea placeholder="Describe the committee's mandate and responsibilities..." className="rounded-none mt-1 text-sm resize-none" rows={3} />
+              <Textarea value={createForm.charter} onChange={e => setCreateForm(f => ({ ...f, charter: e.target.value }))} placeholder="Describe the committee's mandate and responsibilities..." className="rounded-none mt-1 text-sm resize-none" rows={3} />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" size="sm" className="rounded-none" onClick={() => setCreateOpen(false)}>Cancel</Button>
-            <Button size="sm" className="rounded-none" onClick={() => { setCreateOpen(false); addToast('Committee created successfully'); }}>Create</Button>
+            <Button size="sm" className="rounded-none" onClick={handleCreateCommittee}>Create Committee</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirm */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={o => { if (!o) setDeleteTarget(null); }}
+        onConfirm={handleDelete}
+        isDestructive
+        title={`Delete "${deleteTarget?.name}"?`}
+        message="The committee record, meeting minutes, voting records, and attestations will be permanently removed."
+        impactList={['All meeting minutes and decisions', 'Voting records and approvals', 'Committee attestations', 'Member assignments']}
+        confirmLabel="Delete Committee"
+      />
     </div>
   );
 }

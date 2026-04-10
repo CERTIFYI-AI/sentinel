@@ -1,14 +1,16 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Lifebuoy, MagnifyingGlass, Export, Eye, CheckCircle,
   Warning, Clock, ShieldCheck, ArrowsClockwise, Users,
-  MapPin, Phone, Envelope, TreeStructure, ListChecks,
-  CaretRight, CalendarBlank, Timer, Funnel,
+  Phone, Envelope, TreeStructure, ListChecks,
+  CaretRight, CalendarBlank, Timer, Funnel, Plus, Trash, PencilSimple,
 } from '@phosphor-icons/react';
 import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Textarea } from '../../components/ui/textarea';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from '../../components/ui/sheet';
@@ -16,6 +18,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/ta
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '../../components/ui/select';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from '../../components/ui/dialog';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { toast } from 'sonner';
 import { useSettingsStore } from '../../stores/settingsStore';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -225,10 +232,6 @@ const BCP_PLANS: BCPPlan[] = [
   },
 ];
 
-// ── Inline Toast ─────────────────────────────────────────────────────────────
-
-interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info' }
-
 // ── MetricTile ───────────────────────────────────────────────────────────────
 
 function MetricTile({ label, value, variant }: {
@@ -329,20 +332,20 @@ function daysUntil(dateStr: string): number {
 
 export default function BusinessContinuity() {
   const { orgName } = useSettingsStore();
-  const [plans] = useState<BCPPlan[]>(BCP_PLANS);
+  const [plans, setPlans] = useState<BCPPlan[]>(BCP_PLANS);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [toasts, setToasts] = useState<ToastMsg[]>([]);
 
   // Detail drawer
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<BCPPlan | null>(null);
 
-  const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
-    const id = Date.now();
-    setToasts(prev => [...prev, { id, text, type }]);
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
-  }, []);
+  // Create dialog
+  const [createOpen, setCreateOpen] = useState(false);
+  const [form, setForm] = useState({ name: '', scope: '', rto: '', rpo: '', owner: '', status: 'Draft' as BCPPlan['status'], nextTest: '' });
+
+  // Delete confirm
+  const [deleteTarget, setDeleteTarget] = useState<BCPPlan | null>(null);
 
   // ── Filtering ─────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
@@ -369,10 +372,33 @@ export default function BusinessContinuity() {
   const rpoMetPct = Math.round((rpoMetCount / plans.length) * 100);
   const lastTestDate = 'Mar 15, 2026';
 
-  // ── Open detail ───────────────────────────────────────────────────────────
-  const openDetail = (plan: BCPPlan) => {
-    setSelectedPlan(plan);
-    setSheetOpen(true);
+  // ── Handlers ──────────────────────────────────────────────────────────────
+  const openDetail = (plan: BCPPlan) => { setSelectedPlan(plan); setSheetOpen(true); };
+
+  const handleCreate = () => {
+    if (!form.name || !form.scope || !form.rto || !form.rpo || !form.owner) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+    const newPlan: BCPPlan = {
+      id: `BCP-${String(plans.length + 1).padStart(3, '0')}`,
+      name: form.name, scope: form.scope, rto: form.rto, rpo: form.rpo,
+      owner: form.owner, status: form.status, nextTest: form.nextTest || '2026-12-31',
+      lastTested: '—', testResult: 'Pass', description: '',
+      recoverySteps: [], dependencies: [], testResults: [], contacts: [],
+    };
+    setPlans(prev => [newPlan, ...prev]);
+    setCreateOpen(false);
+    setForm({ name: '', scope: '', rto: '', rpo: '', owner: '', status: 'Draft', nextTest: '' });
+    toast.success(`BCP Plan "${newPlan.name}" created successfully`);
+  };
+
+  const handleDelete = () => {
+    if (!deleteTarget) return;
+    setPlans(prev => prev.filter(p => p.id !== deleteTarget.id));
+    if (selectedPlan?.id === deleteTarget.id) { setSheetOpen(false); setSelectedPlan(null); }
+    toast.success(`BCP Plan "${deleteTarget.name}" deleted`);
+    setDeleteTarget(null);
   };
 
   // ── Export CSV ────────────────────────────────────────────────────────────
@@ -396,31 +422,11 @@ export default function BusinessContinuity() {
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     a.download = `bcp-plans-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
-    toast('BCP plans exported as CSV');
+    toast.success('BCP plans exported as CSV');
   };
 
   return (
     <div className="space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
-      {/* Toast container */}
-      {toasts.length > 0 && (
-        <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
-          {toasts.map(t => (
-            <div
-              key={t.id}
-              className="px-4 py-2 text-sm font-medium shadow-lg animate-in slide-in-from-right"
-              style={{
-                borderRadius: 0,
-                background: t.type === 'success' ? 'hsl(var(--s-ok-bg))' : t.type === 'error' ? 'hsl(var(--s-er-bg))' : 'hsl(var(--s-in-bg))',
-                color: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-in-tx))',
-                border: `1px solid ${t.type === 'success' ? 'hsl(var(--s-ok-br))' : t.type === 'error' ? 'hsl(var(--s-er-br))' : 'hsl(var(--s-in-br))'}`,
-              }}
-            >
-              {t.text}
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -431,9 +437,14 @@ export default function BusinessContinuity() {
             {orgName} · Disaster recovery plans, RTO/RPO tracking & test management
           </p>
         </div>
-        <Button onClick={exportCSV} variant="outline" style={{ borderRadius: 0 }}>
-          <Export size={14} className="mr-1.5" />Export CSV
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={exportCSV} variant="outline" style={{ borderRadius: 0 }}>
+            <Export size={14} className="mr-1.5" />Export CSV
+          </Button>
+          <Button onClick={() => setCreateOpen(true)} style={{ borderRadius: 0 }}>
+            <Plus size={14} className="mr-1.5" />New BCP Plan
+          </Button>
+        </div>
       </div>
 
       {/* KPI Metrics */}
@@ -538,9 +549,14 @@ export default function BusinessContinuity() {
                         </span>
                       </td>
                       <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
-                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openDetail(plan)}>
-                          <Eye size={14} style={{ color: 'hsl(var(--text-4))' }} />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openDetail(plan)}>
+                            <Eye size={14} style={{ color: 'hsl(var(--text-4))' }} />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setDeleteTarget(plan)}>
+                            <Trash size={14} style={{ color: 'hsl(var(--destructive))' }} />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -564,6 +580,68 @@ export default function BusinessContinuity() {
           Showing {filtered.length} of {plans.length} plans
         </p>
       </div>
+
+      {/* ── Create Dialog ─────────────────────────────────────────────────── */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent style={{ borderRadius: 0, maxWidth: 520 }}>
+          <DialogHeader>
+            <DialogTitle>New BCP Plan</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1 col-span-2">
+                <Label>Plan Name *</Label>
+                <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g., Customer Portal DR Plan" style={{ borderRadius: 0 }} />
+              </div>
+              <div className="space-y-1 col-span-2">
+                <Label>Scope *</Label>
+                <Input value={form.scope} onChange={e => setForm(f => ({ ...f, scope: e.target.value }))} placeholder="e.g., Customer Portal & Auth Services" style={{ borderRadius: 0 }} />
+              </div>
+              <div className="space-y-1">
+                <Label>RTO *</Label>
+                <Input value={form.rto} onChange={e => setForm(f => ({ ...f, rto: e.target.value }))} placeholder="e.g., 4h" style={{ borderRadius: 0 }} />
+              </div>
+              <div className="space-y-1">
+                <Label>RPO *</Label>
+                <Input value={form.rpo} onChange={e => setForm(f => ({ ...f, rpo: e.target.value }))} placeholder="e.g., 30min" style={{ borderRadius: 0 }} />
+              </div>
+              <div className="space-y-1">
+                <Label>Owner *</Label>
+                <Input value={form.owner} onChange={e => setForm(f => ({ ...f, owner: e.target.value }))} placeholder="e.g., Sarah Chen" style={{ borderRadius: 0 }} />
+              </div>
+              <div className="space-y-1">
+                <Label>Status</Label>
+                <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v as BCPPlan['status'] }))}>
+                  <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {(['Draft', 'Active', 'Under Review', 'Archived'] as const).map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Next Test Date</Label>
+                <Input type="date" value={form.nextTest} onChange={e => setForm(f => ({ ...f, nextTest: e.target.value }))} style={{ borderRadius: 0 }} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
+            <Button onClick={handleCreate} style={{ borderRadius: 0 }}>Create Plan</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Delete Confirm ────────────────────────────────────────────────── */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={o => { if (!o) setDeleteTarget(null); }}
+        onConfirm={handleDelete}
+        isDestructive
+        title={`Delete "${deleteTarget?.name}"?`}
+        message="This action cannot be undone. All plan data including recovery steps, test results, and contacts will be permanently removed."
+        impactList={['Recovery procedures and runbooks', 'Dependency mapping and failover configs', 'DR test history and findings', 'Emergency contact records']}
+        confirmLabel="Delete Plan"
+      />
 
       {/* ── Detail Drawer ──────────────────────────────────────────────────── */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
