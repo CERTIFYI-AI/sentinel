@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import {
   Eye, PencilSimple, Trash, Plus, ArrowUp, ArrowRight, ArrowDown,
   Warning, ShieldCheck, GridFour, ListBullets, Funnel, Info,
-  X, CaretRight, Link as LinkIcon, Clock, User, Flag,
+  X, CaretRight, CaretDown, CaretUp, Link as LinkIcon, Clock, User, Flag,
   MagnifyingGlass, ArrowsClockwise,
 } from '@phosphor-icons/react';
 import { Card, CardContent } from '../components/ui/card';
@@ -152,6 +152,151 @@ function MetricTile({ label, value, variant, tooltip }: {
   return inner;
 }
 
+// ── Interactive 5×5 Collapsible Heatmap ──────────────────────────────────────
+function RiskHeatmap({
+  risks,
+  filterL,
+  filterI,
+  onCellClick,
+}: {
+  risks: Risk[];
+  filterL: number | null;
+  filterI: number | null;
+  onCellClick: (l: number, i: number) => void;
+}) {
+  const matrix: Record<string, Risk[]> = {};
+  risks.forEach(r => {
+    const key = `${r.likelihood}-${r.impact}`;
+    if (!matrix[key]) matrix[key] = [];
+    matrix[key].push(r);
+  });
+
+  const isActive = (l: number, i: number) => filterL === l && filterI === i;
+
+  return (
+    <div className="overflow-x-auto">
+      <div className="flex gap-3 items-start" style={{ minWidth: 540 }}>
+        {/* Y-axis label */}
+        <div className="flex items-center justify-center" style={{ width: 18, height: 300 }}>
+          <span
+            style={{
+              color: 'hsl(var(--text-4))',
+              fontSize: 10,
+              fontWeight: 600,
+              writingMode: 'vertical-rl',
+              transform: 'rotate(180deg)',
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+            }}
+          >
+            Likelihood →
+          </span>
+        </div>
+
+        <div>
+          {/* Row labels + cells */}
+          {[5, 4, 3, 2, 1].map(l => (
+            <div key={l} className="flex items-center gap-1 mb-1">
+              <span style={{ width: 14, fontSize: 9, color: 'hsl(var(--text-4))', textAlign: 'right', flexShrink: 0 }}>{l}</span>
+              {[1, 2, 3, 4, 5].map(i => {
+                const s = l * i;
+                let bg = 'hsl(142 71% 45% / 0.14)';
+                let hoverBg = 'hsl(142 71% 45% / 0.25)';
+                if (s >= 17) { bg = 'hsl(0 72% 51% / 0.22)'; hoverBg = 'hsl(0 72% 51% / 0.38)'; }
+                else if (s >= 10) { bg = 'hsl(25 95% 53% / 0.22)'; hoverBg = 'hsl(25 95% 53% / 0.38)'; }
+                else if (s >= 5) { bg = 'hsl(45 93% 47% / 0.18)'; hoverBg = 'hsl(45 93% 47% / 0.32)'; }
+                const cellRisks = matrix[`${l}-${i}`] || [];
+                const visible = cellRisks.slice(0, 2);
+                const overflow = cellRisks.length - 2;
+                const active = isActive(l, i);
+                return (
+                  <div
+                    key={`${l}-${i}`}
+                    className="cursor-pointer flex flex-col items-center justify-center gap-0.5 transition-all"
+                    title={`L${l}×I${i} = Score ${s}${cellRisks.length ? ` | ${cellRisks.map(r => r.id).join(', ')}` : ' | No risks'}`}
+                    style={{
+                      width: 90,
+                      height: 56,
+                      background: active ? hoverBg : bg,
+                      border: active ? '2px solid hsl(var(--brand))' : '1px solid hsl(var(--border))',
+                      borderRadius: 0,
+                      position: 'relative',
+                    }}
+                    onClick={() => onCellClick(l, i)}
+                    onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = hoverBg; }}
+                    onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = bg; }}
+                  >
+                    {active && (
+                      <div style={{
+                        position: 'absolute', top: 2, right: 3,
+                        fontSize: 8, color: 'hsl(var(--brand))',
+                        fontWeight: 700, letterSpacing: '0.05em',
+                      }}>●</div>
+                    )}
+                    {visible.map(r => (
+                      <span
+                        key={r.id}
+                        style={{
+                          fontSize: 9, fontWeight: 600,
+                          color: 'hsl(var(--text-1))',
+                          background: 'hsl(var(--bg-muted))',
+                          padding: '1px 4px',
+                          borderRadius: 0,
+                          lineHeight: 1.4,
+                          maxWidth: 82,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >{r.id}</span>
+                    ))}
+                    {overflow > 0 && (
+                      <span style={{ fontSize: 9, color: 'hsl(var(--text-4))', fontWeight: 600 }}>+{overflow} more</span>
+                    )}
+                    {cellRisks.length === 0 && (
+                      <span style={{ fontSize: 9, color: 'hsl(var(--border))' }}>—</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+          {/* X-axis labels */}
+          <div className="flex items-center gap-1 mt-1">
+            <span style={{ width: 14 }} />
+            {[1, 2, 3, 4, 5].map(i => (
+              <span key={i} style={{ width: 90, textAlign: 'center', fontSize: 9, color: 'hsl(var(--text-4))' }}>{i}</span>
+            ))}
+          </div>
+          <div className="flex items-center justify-center mt-1">
+            <span style={{ fontSize: 10, color: 'hsl(var(--text-4))', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              &nbsp;&nbsp;&nbsp;&nbsp;Impact →
+            </span>
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div className="flex flex-col gap-2 ml-4 mt-2" style={{ flexShrink: 0 }}>
+          {[
+            { label: 'Critical (17–25)', bg: 'hsl(0 72% 51% / 0.22)' },
+            { label: 'High (10–16)', bg: 'hsl(25 95% 53% / 0.22)' },
+            { label: 'Medium (5–9)', bg: 'hsl(45 93% 47% / 0.18)' },
+            { label: 'Low (1–4)', bg: 'hsl(142 71% 45% / 0.14)' },
+          ].map(({ label, bg }) => (
+            <div key={label} className="flex items-center gap-2">
+              <div style={{ width: 14, height: 14, background: bg, border: '1px solid hsl(var(--border))', flexShrink: 0 }} />
+              <span style={{ fontSize: 10, color: 'hsl(var(--text-4))' }}>{label}</span>
+            </div>
+          ))}
+          <div style={{ marginTop: 6, fontSize: 10, color: 'hsl(var(--text-4))', lineHeight: 1.5 }}>
+            Click a cell to<br />filter the table
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ═════════════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═════════════════════════════════════════════════════════════════════════════
@@ -164,6 +309,8 @@ export default function RiskRegister() {
   const [viewMode, setViewMode] = useState<'list' | 'matrix'>(() => {
     return (sessionStorage.getItem('risk-view') as 'list' | 'matrix') || 'list';
   });
+  const [heatmapExpanded, setHeatmapExpanded] = useState(true);
+  const [heatmapFilter, setHeatmapFilter] = useState<{ l: number | null; i: number | null }>({ l: null, i: null });
   const [selectedRisk, setSelectedRisk] = useState<Risk | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
@@ -201,9 +348,17 @@ export default function RiskRegister() {
       if (search && !r.title.toLowerCase().includes(search.toLowerCase()) && !r.id.toLowerCase().includes(search.toLowerCase())) return false;
       if (filterCategory !== 'all' && r.category !== filterCategory) return false;
       if (filterStatus !== 'all' && r.status !== filterStatus) return false;
+      if (heatmapFilter.l !== null && r.likelihood !== heatmapFilter.l) return false;
+      if (heatmapFilter.i !== null && r.impact !== heatmapFilter.i) return false;
       return true;
     });
-  }, [risks, search, filterCategory, filterStatus]);
+  }, [risks, search, filterCategory, filterStatus, heatmapFilter]);
+
+  const handleHeatmapCell = (l: number, i: number) => {
+    setHeatmapFilter(prev =>
+      prev.l === l && prev.i === i ? { l: null, i: null } : { l, i }
+    );
+  };
 
   // ── Metrics ───────────────────────────────────────────────────────────────
   const totalRisks = risks.length;
@@ -402,6 +557,44 @@ export default function RiskRegister() {
             Average risk score across all {totalRisks} risks. Calculated as Likelihood × Impact on a 5×5 matrix (max 25).
           </TooltipContent>
         </Tooltip>
+
+        {/* Collapsible Risk Heatmap */}
+        {viewMode === 'list' && (
+          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <div
+              className="flex items-center justify-between cursor-pointer px-4 py-3"
+              style={{ borderBottom: heatmapExpanded ? '1px solid hsl(var(--border))' : 'none' }}
+              onClick={() => setHeatmapExpanded(v => !v)}
+            >
+              <div className="flex items-center gap-2">
+                <GridFour size={15} style={{ color: 'hsl(var(--brand))' }} />
+                <span className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+                  Risk Heatmap
+                </span>
+                <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Likelihood × Impact — click a cell to filter the table</span>
+                {heatmapFilter.l !== null && (
+                  <Badge
+                    style={{ background: 'hsl(var(--brand) / 0.12)', color: 'hsl(var(--brand))', borderRadius: 0, fontSize: 10, cursor: 'pointer' }}
+                    onClick={e => { e.stopPropagation(); setHeatmapFilter({ l: null, i: null }); }}
+                  >
+                    L{heatmapFilter.l}×I{heatmapFilter.i} · ×
+                  </Badge>
+                )}
+              </div>
+              {heatmapExpanded ? <CaretUp size={14} style={{ color: 'hsl(var(--text-4))' }} /> : <CaretDown size={14} style={{ color: 'hsl(var(--text-4))' }} />}
+            </div>
+            {heatmapExpanded && (
+              <CardContent className="p-4">
+                <RiskHeatmap
+                  risks={risks}
+                  filterL={heatmapFilter.l}
+                  filterI={heatmapFilter.i}
+                  onCellClick={handleHeatmapCell}
+                />
+              </CardContent>
+            )}
+          </Card>
+        )}
 
         {/* Filters */}
         <div className="flex items-center gap-3">
