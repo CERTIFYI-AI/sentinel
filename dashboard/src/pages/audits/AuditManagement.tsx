@@ -4,11 +4,14 @@ import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import {
   ClipboardText, MagnifyingGlass, Export, Plus, Eye, Warning, CheckCircle,
   Clock, CalendarCheck, User, Flag, ArrowRight, CaretDown, ListChecks,
+  PencilSimple, Trash,
 } from '@phosphor-icons/react';
 import { useSettingsStore } from '../../stores/settingsStore';
 
@@ -266,17 +269,61 @@ interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info
 
 export default function AuditManagement() {
   const { orgName } = useSettingsStore();
-  const [audits] = useState<Audit[]>(AUDITS);
+  const [audits, setAudits] = useState<Audit[]>(AUDITS);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selected, setSelected] = useState<Audit | null>(null);
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
+
+  // CRUD state
+  const [addOpen, setAddOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<Audit | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [form, setForm] = useState({ framework: '', scope: '', auditor: '', startDate: '', endDate: '', riskRating: 'Medium' as Audit['riskRating'], status: 'Planning' as Audit['status'], description: '' });
 
   const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
     const id = Date.now();
     setToasts(prev => [...prev, { id, text, type }]);
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
   }, []);
+
+  const handleAdd = () => {
+    if (!form.framework || !form.scope || !form.auditor || !form.startDate || !form.endDate) { toast('Please fill all required fields.', 'error'); return; }
+    const newAudit: Audit = {
+      id: `AUD-${String(audits.length + 1).padStart(3, '0')}`,
+      ...form,
+      findingsCount: 0,
+      findings: [],
+      actionItems: [],
+      evidence: [],
+      timeline: [{ id: `TL-${Date.now()}`, date: new Date().toISOString().split('T')[0], event: 'Audit created', user: 'Sarah Chen' }],
+    };
+    setAudits(prev => [newAudit, ...prev]);
+    setAddOpen(false);
+    setForm({ framework: '', scope: '', auditor: '', startDate: '', endDate: '', riskRating: 'Medium', status: 'Planning', description: '' });
+    toast(`Audit ${newAudit.id} created successfully`);
+  };
+
+  const handleEdit = () => {
+    if (!editTarget) return;
+    setAudits(prev => prev.map(a => a.id === editTarget.id ? { ...a, ...form } : a));
+    setEditTarget(null);
+    toast('Audit updated successfully');
+  };
+
+  const handleDelete = () => {
+    if (!deleteId) return;
+    setAudits(prev => prev.filter(a => a.id !== deleteId));
+    if (selected?.id === deleteId) setSelected(null);
+    toast('Audit deleted', 'info');
+    setDeleteId(null);
+  };
+
+  const openEdit = (audit: Audit, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setForm({ framework: audit.framework, scope: audit.scope, auditor: audit.auditor, startDate: audit.startDate, endDate: audit.endDate, riskRating: audit.riskRating, status: audit.status, description: audit.description });
+    setEditTarget(audit);
+  };
 
   const filtered = useMemo(() => audits.filter(a => {
     if (search) {
@@ -325,6 +372,9 @@ export default function AuditManagement() {
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={handleExport} style={{ borderRadius: 0 }}>
             <Export size={14} className="mr-1" /> Export CSV
+          </Button>
+          <Button size="sm" onClick={() => setAddOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+            <Plus size={14} className="mr-1" /> Start Audit
           </Button>
         </div>
       </div>
@@ -389,9 +439,17 @@ export default function AuditManagement() {
                         <Badge style={{ background: rs.bg, color: rs.text, borderRadius: 0, fontSize: 10 }}>{a.riskRating}</Badge>
                       </td>
                       <td className="px-3 py-2.5">
-                        <Button size="sm" variant="ghost" style={{ padding: '2px 6px' }}>
-                          <Eye size={14} />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button size="sm" variant="ghost" style={{ padding: '2px 6px' }} onClick={e => { e.stopPropagation(); setSelected(a); }}>
+                            <Eye size={13} />
+                          </Button>
+                          <Button size="sm" variant="ghost" style={{ padding: '2px 6px' }} onClick={e => openEdit(a, e)}>
+                            <PencilSimple size={13} />
+                          </Button>
+                          <Button size="sm" variant="ghost" style={{ padding: '2px 6px', color: 'hsl(var(--destructive))' }} onClick={e => { e.stopPropagation(); setDeleteId(a.id); }}>
+                            <Trash size={13} />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -401,6 +459,76 @@ export default function AuditManagement() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Create / Edit Dialog */}
+      <Dialog open={addOpen || !!editTarget} onOpenChange={o => { if (!o) { setAddOpen(false); setEditTarget(null); } }}>
+        <DialogContent style={{ borderRadius: 0, maxWidth: 560 }}>
+          <DialogHeader>
+            <DialogTitle>{editTarget ? `Edit Audit — ${editTarget.id}` : 'Start New Audit'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {[
+              { label: 'Framework *', key: 'framework', placeholder: 'e.g. ISO 27001, SOC 2, EU AI Act' },
+              { label: 'Scope *', key: 'scope', placeholder: 'Audit scope and coverage area' },
+              { label: 'Lead Auditor *', key: 'auditor', placeholder: 'e.g. Deloitte LLP, PwC, Internal' },
+              { label: 'Description', key: 'description', placeholder: 'Audit objective and background' },
+            ].map(f => (
+              <div key={f.key}>
+                <label className="text-xs font-medium text-[hsl(var(--text-3))] block mb-1">{f.label}</label>
+                <Input style={{ borderRadius: 0 }} placeholder={f.placeholder} value={(form as any)[f.key]} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))} />
+              </div>
+            ))}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-[hsl(var(--text-3))] block mb-1">Start Date *</label>
+                <Input type="date" style={{ borderRadius: 0 }} value={form.startDate} onChange={e => setForm(p => ({ ...p, startDate: e.target.value }))} />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-[hsl(var(--text-3))] block mb-1">End Date *</label>
+                <Input type="date" style={{ borderRadius: 0 }} value={form.endDate} onChange={e => setForm(p => ({ ...p, endDate: e.target.value }))} />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-[hsl(var(--text-3))] block mb-1">Status</label>
+                <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v as Audit['status'] }))}>
+                  <SelectTrigger style={{ borderRadius: 0, height: 36 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {['Planning', 'In Progress', 'Review', 'Closed'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-[hsl(var(--text-3))] block mb-1">Risk Rating</label>
+                <Select value={form.riskRating} onValueChange={v => setForm(p => ({ ...p, riskRating: v as Audit['riskRating'] }))}>
+                  <SelectTrigger style={{ borderRadius: 0, height: 36 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {['Critical', 'High', 'Medium', 'Low'].map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => { setAddOpen(false); setEditTarget(null); }}>Cancel</Button>
+            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }} onClick={editTarget ? handleEdit : handleAdd}>
+              {editTarget ? 'Save Changes' : 'Create Audit'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteId} onOpenChange={o => !o && setDeleteId(null)}>
+        <AlertDialogContent style={{ borderRadius: 0 }}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Audit {deleteId}?</AlertDialogTitle>
+            <AlertDialogDescription>This action cannot be undone. All findings, evidence and action items for this audit will be permanently removed.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
+            <AlertDialogAction style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: '#fff' }} onClick={handleDelete}>Delete Audit</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Detail Drawer */}
       <Sheet open={!!selected} onOpenChange={o => !o && setSelected(null)}>
