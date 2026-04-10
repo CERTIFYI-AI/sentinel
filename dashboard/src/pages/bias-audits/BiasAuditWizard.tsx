@@ -372,6 +372,308 @@ export default function BiasAuditWizard() {
           </CardContent>
         </Card>
 
+        {/* ── Intersectional Bias Analysis ─────────────────────────────────── */}
+        <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Intersectional Bias Analysis</p>
+                <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>Cross-cutting protected attributes — fairness scores at attribute intersections (Loan Approval Model v3.0)</p>
+              </div>
+              <Badge style={{ background: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>MDL-001</Badge>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr>
+                    <th className="p-2 text-left font-medium" style={{ color: 'hsl(var(--text-4))' }}>Attribute ↓ / ↓</th>
+                    {['Gender', 'Age', 'Race/Ethnicity', 'Geography', 'Income'].map(a => (
+                      <th key={a} className="p-2 text-center font-medium" style={{ color: 'hsl(var(--text-4))' }}>{a}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { attr: 'Gender', scores: [null, 0.91, 0.74, 0.88, 0.79] },
+                    { attr: 'Age', scores: [0.91, null, 0.68, 0.85, 0.72] },
+                    { attr: 'Race/Ethnicity', scores: [0.74, 0.68, null, 0.71, 0.65] },
+                    { attr: 'Geography', scores: [0.88, 0.85, 0.71, null, 0.83] },
+                    { attr: 'Income', scores: [0.79, 0.72, 0.65, 0.83, null] },
+                  ].map(row => (
+                    <tr key={row.attr}>
+                      <td className="p-2 font-medium" style={{ color: 'hsl(var(--text-2))' }}>{row.attr}</td>
+                      {row.scores.map((score, i) => (
+                        <td key={i} className="p-2 text-center">
+                          {score === null ? (
+                            <span style={{ color: 'hsl(var(--text-4))' }}>—</span>
+                          ) : (
+                            <span className="font-mono font-bold text-xs px-2 py-0.5" style={{
+                              background: score >= 0.85 ? 'hsl(142 71% 45% / 0.15)' : score >= 0.75 ? 'hsl(45 93% 47% / 0.15)' : 'hsl(0 72% 51% / 0.15)',
+                              color: score >= 0.85 ? 'hsl(var(--s-ok-tx))' : score >= 0.75 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))',
+                            }}>{score.toFixed(2)}</span>
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex items-center gap-4 mt-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3" style={{ background: 'hsl(142 71% 45% / 0.3)' }} />≥ 0.85 Pass</span>
+              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3" style={{ background: 'hsl(45 93% 47% / 0.3)' }} />0.75–0.84 Warning</span>
+              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3" style={{ background: 'hsl(0 72% 51% / 0.3)' }} />&lt; 0.75 Fail</span>
+              <span className="ml-auto font-semibold text-[hsl(var(--destructive))]">⚠ 3 critical intersections detected (Race/Ethnicity × Income = 0.65)</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ── Pre / Post Deployment Comparison ─────────────────────────────── */}
+        <div className="grid grid-cols-2 gap-4">
+          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardContent className="p-4">
+              <p className="text-sm font-semibold mb-3" style={{ color: 'hsl(var(--text-1))' }}>Pre vs. Post Deployment Audit Comparison</p>
+              <table className="w-full text-xs">
+                <thead>
+                  <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                    {['Dimension', 'Pre-Deploy', 'Post-Deploy', 'Δ Change'].map(h => (
+                      <th key={h} className="px-2 py-2 text-left font-medium" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { dim: 'Gender', pre: 0.87, post: 0.79 },
+                    { dim: 'Age', pre: 0.83, post: 0.81 },
+                    { dim: 'Race/Ethnicity', pre: 0.80, post: 0.74 },
+                    { dim: 'Geography', pre: 0.89, post: 0.88 },
+                    { dim: 'Income', pre: 0.82, post: 0.79 },
+                  ].map(r => {
+                    const delta = r.post - r.pre;
+                    return (
+                      <tr key={r.dim} style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                        <td className="px-2 py-2" style={{ color: 'hsl(var(--text-1))' }}>{r.dim}</td>
+                        <td className="px-2 py-2 font-mono" style={{ color: 'hsl(var(--text-3))' }}>{r.pre.toFixed(2)}</td>
+                        <td className="px-2 py-2 font-mono font-bold" style={{ color: r.post >= 0.85 ? 'hsl(var(--s-ok-tx))' : r.post >= 0.75 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))' }}>{r.post.toFixed(2)}</td>
+                        <td className="px-2 py-2 font-mono font-bold" style={{ color: delta >= 0 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))' }}>
+                          {delta >= 0 ? '+' : ''}{delta.toFixed(2)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              <p className="text-[10px] mt-2" style={{ color: 'hsl(var(--text-4))' }}>Comparison: BA-002 (pre-deploy, Feb 2026) vs BA-004 (post-deploy, Apr 2026)</p>
+            </CardContent>
+          </Card>
+
+          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardContent className="p-4">
+              <p className="text-sm font-semibold mb-3" style={{ color: 'hsl(var(--text-1))' }}>Statistical Significance Indicators</p>
+              <table className="w-full text-xs">
+                <thead>
+                  <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                    {['Test', 'Statistic', 'p-value', 'Significance'].map(h => (
+                      <th key={h} className="px-2 py-2 text-left font-medium" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { test: 'Chi-squared (Gender)', stat: '12.4', p: '0.002', sig: true },
+                    { test: 'KS Test (Age)', stat: '0.18', p: '0.041', sig: true },
+                    { test: 'PSI (Race)', stat: '0.32', p: '< 0.001', sig: true },
+                    { test: 'Fisher (Geography)', stat: '3.2', p: '0.213', sig: false },
+                    { test: 'Z-test (Income)', stat: '1.96', p: '0.051', sig: false },
+                  ].map(r => (
+                    <tr key={r.test} style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                      <td className="px-2 py-2" style={{ color: 'hsl(var(--text-1))' }}>{r.test}</td>
+                      <td className="px-2 py-2 font-mono" style={{ color: 'hsl(var(--text-3))' }}>{r.stat}</td>
+                      <td className="px-2 py-2 font-mono" style={{ color: 'hsl(var(--text-3))' }}>{r.p}</td>
+                      <td className="px-2 py-2">
+                        <Badge style={{
+                          background: r.sig ? 'hsl(0 72% 51% / 0.12)' : 'hsl(142 71% 45% / 0.12)',
+                          color: r.sig ? 'hsl(var(--destructive))' : 'hsl(var(--s-ok-tx))',
+                          borderRadius: 0, fontSize: 9,
+                        }}>{r.sig ? 'Significant (α=0.05)' : 'Not significant'}</Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* ── Counterfactual Fairness Testing ──────────────────────────────── */}
+        <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Counterfactual Fairness Testing</p>
+                <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>Would the decision change if only the protected attribute changed? Tested on Loan Approval Model v3.0</p>
+              </div>
+              <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+                onClick={() => {}}>Run Counterfactual Test</Button>
+            </div>
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              {[
+                { label: 'Cases Tested', value: '500', color: 'hsl(var(--text-1))' },
+                { label: 'Counterfactually Unfair', value: '87 (17.4%)', color: 'hsl(var(--destructive))' },
+                { label: 'Avg Decision Delta', value: '-0.12', color: 'hsl(var(--s-wn-tx))' },
+              ].map(s => (
+                <div key={s.label} className="p-3 text-center" style={{ border: '1px solid hsl(var(--border))' }}>
+                  <p className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>{s.label}</p>
+                  <p className="text-xl font-bold mt-1" style={{ color: s.color }}>{s.value}</p>
+                </div>
+              ))}
+            </div>
+            <table className="w-full text-xs">
+              <thead>
+                <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                  {['Case ID', 'Changed Attribute', 'Original Score', 'Counterfactual Score', 'Decision Changed', 'Fairness Issue'].map(h => (
+                    <th key={h} className="px-3 py-2 text-left font-medium" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { id: 'CF-001', attr: 'Gender: M → F', orig: 0.72, cf: 0.58, changed: true, issue: 'Approval → Reject' },
+                  { id: 'CF-002', attr: 'Race: White → Black', orig: 0.85, cf: 0.69, changed: true, issue: 'Score drop 16pts' },
+                  { id: 'CF-003', attr: 'Age: 35 → 55', orig: 0.78, cf: 0.76, changed: false, issue: 'None' },
+                  { id: 'CF-004', attr: 'Gender: F → M', orig: 0.61, cf: 0.74, changed: true, issue: 'Reject → Approval' },
+                  { id: 'CF-005', attr: 'Race: Black → Asian', orig: 0.68, cf: 0.71, changed: false, issue: 'None' },
+                ].map(r => (
+                  <tr key={r.id} style={{ borderBottom: '1px solid hsl(var(--border))', background: r.changed ? 'hsl(0 72% 51% / 0.04)' : 'transparent' }}>
+                    <td className="px-3 py-2 font-mono" style={{ color: 'hsl(var(--brand))' }}>{r.id}</td>
+                    <td className="px-3 py-2" style={{ color: 'hsl(var(--text-1))' }}>{r.attr}</td>
+                    <td className="px-3 py-2 font-mono" style={{ color: 'hsl(var(--text-3))' }}>{r.orig.toFixed(2)}</td>
+                    <td className="px-3 py-2 font-mono font-bold" style={{ color: r.cf < r.orig ? 'hsl(var(--destructive))' : 'hsl(var(--s-ok-tx))' }}>{r.cf.toFixed(2)}</td>
+                    <td className="px-3 py-2">
+                      <Badge style={{
+                        background: r.changed ? 'hsl(0 72% 51% / 0.12)' : 'hsl(142 71% 45% / 0.12)',
+                        color: r.changed ? 'hsl(var(--destructive))' : 'hsl(var(--s-ok-tx))',
+                        borderRadius: 0, fontSize: 9,
+                      }}>{r.changed ? 'Yes — Unfair' : 'No — Fair'}</Badge>
+                    </td>
+                    <td className="px-3 py-2 text-xs" style={{ color: r.issue !== 'None' ? 'hsl(var(--destructive))' : 'hsl(var(--text-4))' }}>{r.issue}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+
+        {/* ── Remediation Recommendation Engine ────────────────────────────── */}
+        <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+          <CardContent className="p-4">
+            <p className="text-sm font-semibold mb-3" style={{ color: 'hsl(var(--text-1))' }}>Remediation Recommendation Engine</p>
+            <div className="space-y-3">
+              {[
+                {
+                  issue: 'Race/Ethnicity × Income intersectional gap (score: 0.65)',
+                  priority: 'Critical',
+                  recommendations: [
+                    'Re-weight training data to address underrepresentation of low-income minority applicants',
+                    'Apply adversarial debiasing during model training (FairLearn / AI Fairness 360)',
+                    'Implement post-processing: equalized odds calibration per subgroup',
+                  ],
+                  regulation: 'ECOA, EU AI Act Art. 10, CFPB Fair Lending',
+                },
+                {
+                  issue: 'Gender counterfactual unfairness — 17.4% of decisions change on gender flip',
+                  priority: 'High',
+                  recommendations: [
+                    'Remove or proxy gender-correlated features (e.g., name, address patterns)',
+                    'Constrain model using fairness-aware training objective',
+                    'Run monthly bias audit with real-time monitoring trigger at 5% threshold',
+                  ],
+                  regulation: 'EU AI Act Art. 5, Title VII, ECOA',
+                },
+                {
+                  issue: 'Post-deployment score degradation across Race (−0.06) and Gender (−0.08)',
+                  priority: 'Medium',
+                  recommendations: [
+                    'Schedule quarterly re-training with refreshed fairness-balanced datasets',
+                    'Set up automated bias monitoring with kill-switch trigger at score < 0.75',
+                    'Implement human-in-the-loop review for borderline decisions',
+                  ],
+                  regulation: 'NIST AI RMF GOVERN 6.1, ISO 42001 Clause 9',
+                },
+              ].map(item => (
+                <div key={item.issue} className="p-3" style={{
+                  border: `1px solid ${item.priority === 'Critical' ? 'hsl(0 72% 51% / 0.3)' : item.priority === 'High' ? 'hsl(45 93% 47% / 0.3)' : 'hsl(var(--border))'}`,
+                  borderLeft: `4px solid ${item.priority === 'Critical' ? 'hsl(0 72% 51%)' : item.priority === 'High' ? 'hsl(45 93% 47%)' : 'hsl(var(--brand))'}`,
+                }}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge style={{
+                      background: item.priority === 'Critical' ? 'hsl(0 72% 51% / 0.12)' : item.priority === 'High' ? 'hsl(45 93% 47% / 0.12)' : 'hsl(220 90% 56% / 0.12)',
+                      color: item.priority === 'Critical' ? 'hsl(var(--destructive))' : item.priority === 'High' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-in-tx))',
+                      borderRadius: 0, fontSize: 9,
+                    }}>{item.priority}</Badge>
+                    <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{item.issue}</p>
+                  </div>
+                  <ul className="space-y-1 mb-2">
+                    {item.recommendations.map((r, i) => (
+                      <li key={i} className="text-xs flex items-start gap-2" style={{ color: 'hsl(var(--text-3))' }}>
+                        <span className="font-bold mt-0.5" style={{ color: 'hsl(var(--brand))' }}>→</span>{r}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>Regulatory basis: {item.regulation}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ── Regulatory Mapping Panel ──────────────────────────────────────── */}
+        <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+          <CardContent className="p-4">
+            <p className="text-sm font-semibold mb-3" style={{ color: 'hsl(var(--text-1))' }}>Regulatory Mapping — Which Audits Satisfy Which Regulation</p>
+            <table className="w-full text-xs">
+              <thead>
+                <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                  {['Regulation / Article', 'Requirement', 'Satisfied By', 'Coverage', 'Status'].map(h => (
+                    <th key={h} className="px-3 py-2 text-left font-medium" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { reg: 'EU AI Act Art. 10', req: 'Training data governance & bias assessment', satisfiedBy: 'BA-001, BA-003', coverage: 85, status: 'Compliant' },
+                  { reg: 'EU AI Act Art. 9 Annex III', req: 'Risk management for high-risk AI systems', satisfiedBy: 'BA-001, BA-004', coverage: 70, status: 'Partial' },
+                  { reg: 'ECOA / Reg B', req: 'Equal Credit Opportunity — no disparate impact', satisfiedBy: 'BA-003, BA-005', coverage: 60, status: 'Gap Identified' },
+                  { reg: 'NIST AI RMF MEASURE 2.6', req: 'AI bias testing and monitoring', satisfiedBy: 'BA-001 – BA-005', coverage: 90, status: 'Compliant' },
+                  { reg: 'ISO/IEC 42001 §6.1.2', req: 'AI risk assessment including bias risks', satisfiedBy: 'BA-002, BA-004', coverage: 75, status: 'Compliant' },
+                  { reg: 'GDPR Art. 22', req: 'Safeguards for automated decisions', satisfiedBy: 'BA-001', coverage: 55, status: 'Gap Identified' },
+                ].map(r => (
+                  <tr key={r.reg} style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                    <td className="px-3 py-2 font-medium" style={{ color: 'hsl(var(--text-1))' }}>{r.reg}</td>
+                    <td className="px-3 py-2 max-w-[200px]" style={{ color: 'hsl(var(--text-3))' }}>{r.req}</td>
+                    <td className="px-3 py-2 font-mono" style={{ color: 'hsl(var(--brand))' }}>{r.satisfiedBy}</td>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-1.5" style={{ background: 'hsl(var(--border))', maxWidth: 80 }}>
+                          <div className="h-full" style={{ width: `${r.coverage}%`, background: r.coverage >= 80 ? 'hsl(142 71% 45%)' : r.coverage >= 65 ? 'hsl(45 93% 47%)' : 'hsl(0 72% 51%)' }} />
+                        </div>
+                        <span className="font-mono" style={{ color: 'hsl(var(--text-3))' }}>{r.coverage}%</span>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2">
+                      <Badge style={{
+                        background: r.status === 'Compliant' ? 'hsl(142 71% 45% / 0.12)' : r.status === 'Partial' ? 'hsl(45 93% 47% / 0.12)' : 'hsl(0 72% 51% / 0.12)',
+                        color: r.status === 'Compliant' ? 'hsl(var(--s-ok-tx))' : r.status === 'Partial' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))',
+                        borderRadius: 0, fontSize: 9,
+                      }}>{r.status}</Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+
         {/* ── Bias Audit Detail Sheet ──────────────────────────────────────── */}
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
           <SheetContent side="right" className="w-[560px] sm:max-w-[560px] overflow-y-auto" style={{ borderRadius: 0 }}>

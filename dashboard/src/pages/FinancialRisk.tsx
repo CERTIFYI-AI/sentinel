@@ -240,6 +240,69 @@ export default function FinancialRisk() {
         </div>
       </div>
 
+      {/* ── Insurance Coverage Mapping ─────────────────────────────────────── */}
+      <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+        <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2 mb-4">
+          <span className="text-base">🛡</span>
+          Insurance Coverage Mapping — AI Risk Transfer Analysis
+        </h3>
+        <div className="grid grid-cols-4 gap-3 mb-4">
+          {[
+            { label: 'Total Gross Risk Exposure', value: '$14.2M', color: 'hsl(var(--destructive))' },
+            { label: 'Insured Coverage', value: '$8.5M', color: 'hsl(var(--s-ok-tx))' },
+            { label: 'Uninsured Residual', value: '$5.7M', color: 'hsl(var(--s-wn-tx))' },
+            { label: 'Coverage Ratio', value: '59.9%', color: 'hsl(var(--s-in-tx))' },
+          ].map(s => (
+            <div key={s.label} className="p-3 border border-[hsl(var(--border))] text-center">
+              <p className="text-[10px] text-[hsl(var(--text-4))] uppercase mb-1">{s.label}</p>
+              <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
+            </div>
+          ))}
+        </div>
+        <table className="w-full text-xs mb-4">
+          <thead>
+            <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+              {['Risk Category', 'Gross Exposure', 'Policy', 'Coverage Limit', 'Deductible', 'Net Gap', 'Coverage Status'].map(h => (
+                <th key={h} className="px-3 py-2 text-left font-medium text-[hsl(var(--text-4))]">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              { category: 'Bias/Discrimination Liability', gross: '$3.8M', policy: 'Tech E&O — AXA XL', limit: '$2.5M', deductible: '$250K', gap: '$1.3M', covered: true },
+              { category: 'Model Performance Failure', gross: '$4.2M', policy: 'Cyber Liability — Chubb', limit: '$3.0M', deductible: '$100K', gap: '$1.2M', covered: true },
+              { category: 'Regulatory Fines (EU AI Act)', gross: '$2.1M', policy: 'Regulatory Defense — Beazley', limit: '$1.5M', deductible: '$500K', gap: '$0.6M', covered: true },
+              { category: 'Data Privacy Breach', gross: '$1.9M', policy: 'Cyber — AIG', limit: '$1.5M', deductible: '$50K', gap: '$0.4M', covered: true },
+              { category: 'Autonomous Decision Error', gross: '$1.5M', policy: 'No applicable policy', limit: '—', deductible: '—', gap: '$1.5M', covered: false },
+              { category: 'Reputational Damage', gross: '$0.7M', policy: 'No applicable policy', limit: '—', deductible: '—', gap: '$0.7M', covered: false },
+            ].map(r => (
+              <tr key={r.category} style={{ borderBottom: '1px solid hsl(var(--border))', background: !r.covered ? 'hsl(0 72% 51% / 0.04)' : 'transparent' }}>
+                <td className="px-3 py-2 font-medium text-[hsl(var(--text-1))]">{r.category}</td>
+                <td className="px-3 py-2 font-mono font-bold text-[hsl(var(--destructive))]">{r.gross}</td>
+                <td className="px-3 py-2 text-[hsl(var(--text-3))]">{r.policy}</td>
+                <td className="px-3 py-2 font-mono text-[hsl(var(--s-ok-tx))]">{r.limit}</td>
+                <td className="px-3 py-2 font-mono text-[hsl(var(--text-3))]">{r.deductible}</td>
+                <td className="px-3 py-2 font-mono font-bold" style={{ color: r.gap !== '$0M' && r.gap !== '—' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-4))' }}>{r.gap}</td>
+                <td className="px-3 py-2">
+                  <span className="text-[9px] px-2 py-0.5 font-medium" style={{
+                    background: r.covered ? 'hsl(142 71% 45% / 0.12)' : 'hsl(0 72% 51% / 0.12)',
+                    color: r.covered ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))',
+                  }}>{r.covered ? 'Partially Covered' : 'UNINSURED GAP'}</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="p-3 border border-[hsl(45_93%_47%/0.4)] bg-[hsl(45_93%_47%/0.06)]">
+          <p className="text-xs font-semibold text-[hsl(var(--s-wn-tx))] mb-1">⚠ Coverage Gap Recommendations</p>
+          <ul className="space-y-1 text-xs text-[hsl(var(--text-3))]">
+            <li>→ Negotiate <strong>Autonomous AI Decision</strong> rider with existing E&O carrier — est. $45K/yr premium for $2M coverage</li>
+            <li>→ Explore <strong>Reputational Harm</strong> endorsement with Munich Re AI insurance product line</li>
+            <li>→ Implement additional controls (bias monitoring, kill switch) to reduce premium exposure by an estimated 18%</li>
+          </ul>
+        </div>
+      </div>
+
       {selected && (
         <div className="fixed inset-0 z-50 flex">
           <div className="flex-1 bg-black/40" onClick={() => setSelected(null)} />

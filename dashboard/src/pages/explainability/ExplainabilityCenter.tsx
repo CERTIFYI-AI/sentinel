@@ -381,6 +381,223 @@ export default function ExplainabilityCenter() {
         </CardContent>
       </Card>
 
+      {/* ── Local Explanation View (LIME / Anchors / Counterfactual) ──────── */}
+      {currentReport && (
+        <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Local Explanation Methods — Individual Prediction Analysis</p>
+                <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>LIME, Anchors, and Counterfactual explanations for single prediction instance: Decision DEC-2026-001</p>
+              </div>
+              <div className="flex gap-2">
+                {['LIME', 'Anchors', 'Counterfactual'].map(m => (
+                  <button key={m} className="px-3 py-1 text-xs font-medium border" style={{
+                    background: currentReport.method === m || (m === 'LIME' && currentReport.method.includes('SHAP')) ? 'hsl(var(--brand))' : 'hsl(var(--bg-raised))',
+                    color: currentReport.method === m || (m === 'LIME' && currentReport.method.includes('SHAP')) ? '#fff' : 'hsl(var(--text-2))',
+                    borderColor: 'hsl(var(--border))',
+                  }}
+                    onClick={() => toast.info(`${m} explanation generated`)}>
+                    {m}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              {/* LIME */}
+              <div className="p-3" style={{ border: '1px solid hsl(var(--border))' }}>
+                <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-1))' }}>LIME — Linear Approx.</p>
+                <p className="text-[10px] mb-3" style={{ color: 'hsl(var(--text-4))' }}>Local surrogate model around this prediction point</p>
+                {[
+                  { feature: 'Credit Score', weight: 0.42, dir: 1 },
+                  { feature: 'Debt-to-Income', weight: 0.28, dir: -1 },
+                  { feature: 'Employment Years', weight: 0.19, dir: 1 },
+                  { feature: 'Loan Amount', weight: 0.15, dir: -1 },
+                  { feature: 'Payment History', weight: 0.11, dir: 1 },
+                ].map(f => (
+                  <div key={f.feature} className="flex items-center gap-2 mb-1.5">
+                    <span className="text-[10px] w-28 truncate" style={{ color: 'hsl(var(--text-3))' }}>{f.feature}</span>
+                    <div className="flex-1 flex items-center">
+                      {f.dir > 0 ? (
+                        <div className="h-2 ml-auto" style={{ width: `${f.weight * 100}%`, background: 'hsl(142 71% 45% / 0.7)', maxWidth: '100%' }} />
+                      ) : (
+                        <div className="h-2 mr-auto" style={{ width: `${f.weight * 100}%`, background: 'hsl(0 72% 51% / 0.7)', maxWidth: '100%' }} />
+                      )}
+                    </div>
+                    <span className="text-[10px] font-mono w-8 text-right" style={{ color: f.dir > 0 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))' }}>
+                      {f.dir > 0 ? '+' : '-'}{f.weight.toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+                <div className="mt-2 pt-2" style={{ borderTop: '1px solid hsl(var(--border))' }}>
+                  <span className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>Local fidelity: </span>
+                  <span className="text-[10px] font-bold" style={{ color: 'hsl(var(--s-ok-tx))' }}>R² = 0.89</span>
+                </div>
+              </div>
+
+              {/* Anchors */}
+              <div className="p-3" style={{ border: '1px solid hsl(var(--border))' }}>
+                <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-1))' }}>Anchors — Rule Extraction</p>
+                <p className="text-[10px] mb-3" style={{ color: 'hsl(var(--text-4))' }}>Sufficient conditions that anchor this prediction</p>
+                <div className="space-y-2">
+                  {[
+                    { rule: 'Credit Score ≥ 720', precision: 0.94, coverage: 0.31 },
+                    { rule: 'Debt-to-Income ≤ 0.35', precision: 0.91, coverage: 0.44 },
+                    { rule: 'Employment ≥ 3 years', precision: 0.88, coverage: 0.52 },
+                  ].map(r => (
+                    <div key={r.rule} className="p-2" style={{ background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))' }}>
+                      <p className="text-[10px] font-mono font-medium" style={{ color: 'hsl(var(--brand))' }}>IF {r.rule}</p>
+                      <div className="flex gap-3 mt-1">
+                        <span className="text-[9px]" style={{ color: 'hsl(var(--text-4))' }}>Precision: <strong style={{ color: 'hsl(var(--s-ok-tx))' }}>{(r.precision * 100).toFixed(0)}%</strong></span>
+                        <span className="text-[9px]" style={{ color: 'hsl(var(--text-4))' }}>Coverage: <strong style={{ color: 'hsl(var(--s-in-tx))' }}>{(r.coverage * 100).toFixed(0)}%</strong></span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px] mt-2" style={{ color: 'hsl(var(--text-4))' }}>Combined anchor precision: <strong style={{ color: 'hsl(var(--s-ok-tx))' }}>96.2%</strong></p>
+              </div>
+
+              {/* Counterfactual */}
+              <div className="p-3" style={{ border: '1px solid hsl(var(--border))' }}>
+                <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-1))' }}>Counterfactual — "What If"</p>
+                <p className="text-[10px] mb-3" style={{ color: 'hsl(var(--text-4))' }}>Minimum changes to flip the decision from Deny → Approve</p>
+                <div className="space-y-2">
+                  {[
+                    { feature: 'Credit Score', current: '658', needed: '≥ 680', delta: '+22 pts' },
+                    { feature: 'Debt-to-Income', current: '0.42', needed: '≤ 0.38', delta: '-0.04' },
+                    { feature: 'Loan Amount', current: '$45,000', needed: '≤ $38,000', delta: '-$7,000' },
+                  ].map(f => (
+                    <div key={f.feature} className="flex items-center gap-2 text-[10px]">
+                      <span className="w-24" style={{ color: 'hsl(var(--text-3))' }}>{f.feature}</span>
+                      <span className="font-mono" style={{ color: 'hsl(var(--destructive))' }}>{f.current}</span>
+                      <span style={{ color: 'hsl(var(--text-4))' }}>→</span>
+                      <span className="font-mono font-bold" style={{ color: 'hsl(var(--s-ok-tx))' }}>{f.needed}</span>
+                      <span className="ml-auto" style={{ color: 'hsl(var(--brand))' }}>{f.delta}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-2 p-2 text-[10px]" style={{ background: 'hsl(142 71% 45% / 0.08)', border: '1px solid hsl(var(--s-ok-br))' }}>
+                  <span style={{ color: 'hsl(var(--s-ok-tx))' }}>Result: Decision flips to <strong>APPROVE</strong> with 3 minimal changes</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Plain-Language Explanation Generator ─────────────────────────── */}
+      {currentReport && (
+        <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Plain-Language Explanation Generator</p>
+                <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>Auto-generate consumer-facing, regulator-ready explanations compliant with GDPR Art. 22 and EU AI Act Art. 13</p>
+              </div>
+              <div className="flex gap-2">
+                <button className="px-3 py-1.5 text-xs border" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}
+                  onClick={() => toast.success('Explanation exported as PDF')}>Export PDF</button>
+                <button className="px-3 py-1.5 text-xs text-white" style={{ background: 'hsl(var(--brand))' }}
+                  onClick={() => toast.success('Plain-language explanation generated')}>Regenerate</button>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-3))' }}>CONSUMER-FACING (Plain English)</p>
+                <div className="p-4 text-sm leading-relaxed" style={{ background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-2))' }}>
+                  <p className="font-semibold mb-2" style={{ color: 'hsl(var(--text-1))' }}>Why your loan application was declined</p>
+                  <p>Our system reviewed your application and was unable to approve it at this time. Here are the main factors that influenced this decision:</p>
+                  <ul className="mt-2 space-y-1">
+                    <li>• <strong>Your credit score (658)</strong> was slightly below our threshold. A score of 680 or higher would improve your eligibility.</li>
+                    <li>• <strong>Your debt-to-income ratio (42%)</strong> indicates a high proportion of existing debt. Reducing this to below 38% would help.</li>
+                    <li>• <strong>The loan amount requested ($45,000)</strong> exceeds what our model deems manageable given your current financial profile.</li>
+                  </ul>
+                  <p className="mt-2 text-xs" style={{ color: 'hsl(var(--text-4))' }}>You have the right to request human review of this decision. Contact support@example.com.</p>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-3))' }}>REGULATOR-FACING (GDPR Art. 22 / EU AI Act Art. 13)</p>
+                <div className="p-4 text-xs leading-relaxed" style={{ background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-3))' }}>
+                  <p className="font-semibold text-xs mb-1" style={{ color: 'hsl(var(--text-1))' }}>Explanation Report — {currentReport.modelId}</p>
+                  <p><strong>System:</strong> {currentReport.modelName} ({currentReport.method})</p>
+                  <p><strong>Decision date:</strong> {new Date().toLocaleDateString()}</p>
+                  <p><strong>Framework:</strong> {currentReport.framework}</p>
+                  <p className="mt-2"><strong>Top contributing features:</strong></p>
+                  {currentReport.topFeatures.slice(0, 3).map(f => (
+                    <p key={f.name}>• {f.name}: {(f.importance * 100).toFixed(0)}% contribution</p>
+                  ))}
+                  <p className="mt-2"><strong>Recourse available:</strong> Yes — human review, appeal process documented.</p>
+                  <p><strong>Right to explanation:</strong> This notice satisfies GDPR Art. 22(3) and EU AI Act Art. 13 obligations.</p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-3 grid grid-cols-4 gap-3">
+              {[
+                { label: 'Readability Score', value: 'Grade 8.2', ok: true },
+                { label: 'GDPR Art. 22 Compliance', value: 'Compliant', ok: true },
+                { label: 'EU AI Act Art. 13', value: 'Compliant', ok: true },
+                { label: 'Average Length', value: '142 words', ok: true },
+              ].map(s => (
+                <div key={s.label} className="p-2 text-center" style={{ border: '1px solid hsl(var(--border))' }}>
+                  <p className="text-[9px]" style={{ color: 'hsl(var(--text-4))' }}>{s.label}</p>
+                  <p className="text-xs font-bold mt-0.5" style={{ color: s.ok ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))' }}>{s.value}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Explanation Adequacy Scoring ──────────────────────────────────── */}
+      {currentReport && (
+        <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+          <CardContent className="p-4">
+            <p className="text-sm font-semibold mb-3" style={{ color: 'hsl(var(--text-1))' }}>Explanation Adequacy Scoring — {currentReport.modelName}</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-3">
+                {[
+                  { criterion: 'Completeness (all key features explained)', score: 88 },
+                  { criterion: 'Faithfulness (matches model behaviour)', score: 91 },
+                  { criterion: 'Accessibility (understandable to end user)', score: 82 },
+                  { criterion: 'Contrastive (explains why not alternative)', score: 75 },
+                  { criterion: 'Actionability (user can act on explanation)', score: 86 },
+                  { criterion: 'Regulatory Sufficiency (GDPR/EU AI Act)', score: 93 },
+                ].map(c => (
+                  <div key={c.criterion}>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span style={{ color: 'hsl(var(--text-3))' }}>{c.criterion}</span>
+                      <span className="font-mono font-bold" style={{ color: c.score >= 85 ? 'hsl(var(--s-ok-tx))' : c.score >= 75 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))' }}>{c.score}%</span>
+                    </div>
+                    <div className="h-1.5" style={{ background: 'hsl(var(--border))' }}>
+                      <div className="h-full" style={{
+                        width: `${c.score}%`,
+                        background: c.score >= 85 ? 'hsl(142 71% 45%)' : c.score >= 75 ? 'hsl(45 93% 47%)' : 'hsl(0 72% 51%)',
+                      }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-col gap-3">
+                <div className="p-4 text-center" style={{ border: '1px solid hsl(var(--border))' }}>
+                  <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Overall Adequacy Score</p>
+                  <p className="text-4xl font-bold mt-1" style={{ color: 'hsl(var(--s-ok-tx))' }}>86</p>
+                  <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>/ 100 — Good</p>
+                </div>
+                <div className="p-3" style={{ border: '1px solid hsl(45 93% 47% / 0.4)', background: 'hsl(45 93% 47% / 0.06)' }}>
+                  <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--s-wn-tx))' }}>Improvement Recommendations</p>
+                  <ul className="space-y-1 text-[10px]" style={{ color: 'hsl(var(--text-3))' }}>
+                    <li>→ Add contrastive statements ("approved because X, not Y")</li>
+                    <li>→ Provide quantitative thresholds in consumer explanation</li>
+                    <li>→ Include appeal timeline (required by EU AI Act Art. 85)</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Delete Confirm */}
       <ConfirmDialog
         open={!!deleteTarget}
