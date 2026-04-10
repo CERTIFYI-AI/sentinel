@@ -251,10 +251,11 @@ export default function Sidebar() {
     return (
       <button
         onClick={() => setSidebarState('expanded')}
-        className='fixed top-3 left-3 z-50 w-10 h-10 flex items-center justify-center bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] text-[hsl(var(--text-3))] hover:text-[hsl(var(--text-1))] transition-colors'
-        title='Show sidebar'
+        className='fixed top-3 left-3 z-50 w-9 h-9 flex items-center justify-center bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-1))] shadow-[var(--shadow-sm)] transition-colors'
+        title='Show navigation'
+        aria-label='Show navigation'
       >
-        <List size={18} />
+        <List size={16} />
       </button>
     )
   }
@@ -408,33 +409,49 @@ export default function Sidebar() {
       </div>
 
       {/* Footer */}
-      <div className='border-t border-[hsl(var(--border))] p-3 space-y-1'>
-        <button
-          onClick={toggleTheme}
-          className={cn(
-            'flex items-center justify-center w-8 h-8 mx-auto text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-1))] transition-colors',
-            !collapsed && 'ml-0'
-          )}
-          title={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-        >
-          {resolvedTheme === 'dark' ? <Sun size={18} weight='duotone'/> : <Moon size={18} weight='duotone'/>}
-        </button>
-        <div className={cn('flex items-center gap-3 px-3 py-2', collapsed && 'justify-center px-2')}>
-          <div data-avatar='true' className='w-8 h-8 rounded-full bg-[hsl(var(--brand))] flex items-center justify-center flex-shrink-0'>
-            <span className='text-xs font-bold text-white'>SC</span>
+      <div className='border-t border-[hsl(var(--border))] p-2'>
+        {collapsed ? (
+          <div className='flex flex-col items-center gap-2 py-1'>
+            <button
+              onClick={toggleTheme}
+              className='flex items-center justify-center w-8 h-8 text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-1))] transition-colors'
+              title={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              aria-label={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {resolvedTheme === 'dark' ? <Sun size={16} weight='duotone'/> : <Moon size={16} weight='duotone'/>}
+            </button>
+            <div data-avatar='true' className='w-8 h-8 bg-[hsl(var(--brand))] flex items-center justify-center flex-shrink-0'>
+              <span className='text-xs font-bold text-white'>SC</span>
+            </div>
           </div>
-          {!collapsed && (
-            <>
-              <div className='flex-1 min-w-0'>
-                <p className='text-xs font-medium text-[hsl(var(--text-1))] truncate'>Sarah Chen</p>
-                <p className='text-[10px] text-[hsl(var(--text-4))]'>CISO</p>
-              </div>
-              <button className='text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-2))]' title='Sign out'>
+        ) : (
+          <div className='flex items-center gap-2 px-2 py-1.5'>
+            <div data-avatar='true' className='w-8 h-8 bg-[hsl(var(--brand))] flex items-center justify-center flex-shrink-0'>
+              <span className='text-xs font-bold text-white'>SC</span>
+            </div>
+            <div className='flex-1 min-w-0'>
+              <p className='text-xs font-semibold text-[hsl(var(--text-1))] truncate'>Sarah Chen</p>
+              <p className='text-[10px] text-[hsl(var(--text-4))]'>CISO</p>
+            </div>
+            <div className='flex items-center gap-1 flex-shrink-0'>
+              <button
+                onClick={toggleTheme}
+                className='flex items-center justify-center w-7 h-7 text-[hsl(var(--text-4))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-2))] transition-colors'
+                title={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                aria-label={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {resolvedTheme === 'dark' ? <Sun size={14} weight='duotone'/> : <Moon size={14} weight='duotone'/>}
+              </button>
+              <button
+                className='flex items-center justify-center w-7 h-7 text-[hsl(var(--text-4))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-2))] transition-colors'
+                title='Sign out'
+                aria-label='Sign out'
+              >
                 <SignOut size={14}/>
               </button>
-            </>
-          )}
-        </div>
+            </div>
+          </div>
+        )}
       </div>
     </aside>
   )
