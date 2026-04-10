@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Leaf, Export, Plus, Eye, X } from '@phosphor-icons/react'
+import { Leaf, Export, Plus, Eye, X, Warning, Lightbulb, ArrowDown, ArrowUp } from '@phosphor-icons/react'
 import { toast } from 'sonner'
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, ReferenceLine } from 'recharts'
 
 interface CarbonEntry {
   id: string
@@ -17,14 +17,15 @@ interface CarbonEntry {
   offset: number
   netEmissions: number
   verified: boolean
+  efficiencyScore: number
 }
 
 const SEED: CarbonEntry[] = [
-  { id: 'CLG-001', model: 'Credit Scoring Model v2.1', period: '2026-Q1', trainingEmissions: 0, inferenceEmissions: 12.4, totalEmissions: 12.4, energyKwh: 4800, renewablePercent: 92, computeProvider: 'AWS us-east-1', region: 'US East', offset: 0, netEmissions: 12.4, verified: true },
-  { id: 'CLG-002', model: 'Loan Approval Model v3.0', period: '2026-Q1', trainingEmissions: 48.2, inferenceEmissions: 8.9, totalEmissions: 57.1, energyKwh: 22100, renewablePercent: 72, computeProvider: 'Azure East US', region: 'US East', offset: 20, netEmissions: 37.1, verified: true },
-  { id: 'CLG-003', model: 'Fraud Detection Engine v4.2', period: '2026-Q1', trainingEmissions: 0, inferenceEmissions: 89.4, totalEmissions: 89.4, energyKwh: 34600, renewablePercent: 85, computeProvider: 'OpenAI API', region: 'US West', offset: 45, netEmissions: 44.4, verified: false },
-  { id: 'CLG-004', model: 'Customer Churn Predictor v2.3', period: '2026-Q1', trainingEmissions: 12.7, inferenceEmissions: 4.1, totalEmissions: 16.8, energyKwh: 6500, renewablePercent: 88, computeProvider: 'GCP us-central1', region: 'US Central', offset: 0, netEmissions: 16.8, verified: true },
-  { id: 'CLG-005', model: 'Fraud Detection Engine v4.2', period: '2025-Q4', trainingEmissions: 95.3, inferenceEmissions: 82.1, totalEmissions: 177.4, energyKwh: 68700, renewablePercent: 71, computeProvider: 'OpenAI API', region: 'US West', offset: 80, netEmissions: 97.4, verified: true },
+  { id: 'CLG-001', model: 'Credit Scoring Model v2.1', period: '2026-Q1', trainingEmissions: 0, inferenceEmissions: 12.4, totalEmissions: 12.4, energyKwh: 4800, renewablePercent: 92, computeProvider: 'AWS us-east-1', region: 'US East', offset: 0, netEmissions: 12.4, verified: true, efficiencyScore: 91 },
+  { id: 'CLG-002', model: 'Loan Approval Model v3.0', period: '2026-Q1', trainingEmissions: 48.2, inferenceEmissions: 8.9, totalEmissions: 57.1, energyKwh: 22100, renewablePercent: 72, computeProvider: 'Azure East US', region: 'US East', offset: 20, netEmissions: 37.1, verified: true, efficiencyScore: 67 },
+  { id: 'CLG-003', model: 'Fraud Detection Engine v4.2', period: '2026-Q1', trainingEmissions: 0, inferenceEmissions: 89.4, totalEmissions: 89.4, energyKwh: 34600, renewablePercent: 85, computeProvider: 'OpenAI API', region: 'US West', offset: 45, netEmissions: 44.4, verified: false, efficiencyScore: 54 },
+  { id: 'CLG-004', model: 'Customer Churn Predictor v2.3', period: '2026-Q1', trainingEmissions: 12.7, inferenceEmissions: 4.1, totalEmissions: 16.8, energyKwh: 6500, renewablePercent: 88, computeProvider: 'GCP us-central1', region: 'US Central', offset: 0, netEmissions: 16.8, verified: true, efficiencyScore: 82 },
+  { id: 'CLG-005', model: 'Fraud Detection Engine v4.2', period: '2025-Q4', trainingEmissions: 95.3, inferenceEmissions: 82.1, totalEmissions: 177.4, energyKwh: 68700, renewablePercent: 71, computeProvider: 'OpenAI API', region: 'US West', offset: 80, netEmissions: 97.4, verified: true, efficiencyScore: 44 },
 ]
 
 const TREND_DATA = [
@@ -37,18 +38,44 @@ const TREND_DATA = [
 ]
 
 const MODEL_DATA = [
-  { name: 'Fraud Detection', emissions: 89.4 },
-  { name: 'Loan Approval', emissions: 57.1 },
-  { name: 'Churn Predictor', emissions: 16.8 },
-  { name: 'Credit Scoring', emissions: 12.4 },
+  { name: 'Fraud Detection', emissions: 89.4, efficiency: 54 },
+  { name: 'Loan Approval', emissions: 57.1, efficiency: 67 },
+  { name: 'Churn Predictor', emissions: 16.8, efficiency: 82 },
+  { name: 'Credit Scoring', emissions: 12.4, efficiency: 91 },
 ]
+
+const RECOMMENDATIONS = [
+  { id: 1, label: 'Switch Fraud Engine to EU West region', impact: '–14 tCO₂e/mo', effort: 'Medium', icon: Leaf },
+  { id: 2, label: 'Increase Loan Approval renewable energy to 90%', impact: '–8 tCO₂e/mo', effort: 'Low', icon: ArrowDown },
+  { id: 3, label: 'Batch inference requests for Fraud Engine', impact: '–20% energy', effort: 'High', icon: Lightbulb },
+  { id: 4, label: 'Add 25 tCO₂e offset credits for Q2', impact: 'Net –25 tCO₂e', effort: 'Low', icon: Plus },
+]
+
+function efficiencyColor(score: number) {
+  if (score >= 80) return '#10b981'
+  if (score >= 60) return '#f97316'
+  return '#ef4444'
+}
 
 export default function CarbonLedger() {
   const [selected, setSelected] = useState<CarbonEntry | null>(null)
+  const [budgetThreshold, setBudgetThreshold] = useState(100)
+  const [editingBudget, setEditingBudget] = useState(false)
+  const [budgetInput, setBudgetInput] = useState('100')
+  const [dismissedRecs, setDismissedRecs] = useState<Set<number>>(new Set())
 
-  const totalNet = SEED.filter(e => e.period === '2026-Q1').reduce((s, e) => s + e.netEmissions, 0)
-  const totalOffset = SEED.filter(e => e.period === '2026-Q1').reduce((s, e) => s + e.offset, 0)
-  const avgRenewable = Math.round(SEED.filter(e => e.period === '2026-Q1').reduce((s, e) => s + e.renewablePercent, 0) / SEED.filter(e => e.period === '2026-Q1').length)
+  const q1Data = SEED.filter(e => e.period === '2026-Q1')
+  const totalNet = q1Data.reduce((s, e) => s + e.netEmissions, 0)
+  const totalOffset = q1Data.reduce((s, e) => s + e.offset, 0)
+  const avgRenewable = Math.round(q1Data.reduce((s, e) => s + e.renewablePercent, 0) / q1Data.length)
+
+  const lastMonth = TREND_DATA[TREND_DATA.length - 1].emissions
+  const prevMonth = TREND_DATA[TREND_DATA.length - 2].emissions
+  const monthlyChange = lastMonth - prevMonth
+  const projectedMonthly = Math.round(lastMonth * (1 + (monthlyChange / prevMonth) * 0.5))
+  const budgetPct = Math.round((totalNet / budgetThreshold) * 100)
+
+  const visibleRecs = RECOMMENDATIONS.filter(r => !dismissedRecs.has(r.id))
 
   return (
     <div className="space-y-5">
@@ -66,14 +93,66 @@ export default function CarbonLedger() {
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      {/* Budget threshold banner */}
+      <div style={{
+        padding: '12px 16px',
+        background: budgetPct >= 100 ? 'hsl(0 72% 51% / 0.08)' : budgetPct >= 80 ? 'hsl(45 93% 47% / 0.08)' : 'hsl(142 71% 45% / 0.06)',
+        border: `1px solid ${budgetPct >= 100 ? 'hsl(0 72% 51% / 0.4)' : budgetPct >= 80 ? 'hsl(45 93% 47% / 0.4)' : 'hsl(142 71% 45% / 0.3)'}`,
+        display: 'flex', alignItems: 'center', gap: 12,
+      }}>
+        <Warning size={16} style={{ color: budgetPct >= 100 ? '#ef4444' : budgetPct >= 80 ? '#f97316' : '#10b981', flexShrink: 0 }} />
+        <div style={{ flex: 1 }}>
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+              Q1 2026 Carbon Budget — {totalNet.toFixed(1)} / {budgetThreshold} tCO₂e ({budgetPct}%)
+            </span>
+            {editingBudget ? (
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  value={budgetInput}
+                  onChange={e => setBudgetInput(e.target.value)}
+                  className="w-20 text-xs px-2 py-1 border bg-transparent"
+                  style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-1))' }}
+                />
+                <button
+                  onClick={() => { setBudgetThreshold(Number(budgetInput) || 100); setEditingBudget(false); toast.success(`Budget threshold set to ${budgetInput} tCO₂e`); }}
+                  className="text-xs px-2 py-1"
+                  style={{ background: 'hsl(var(--brand))', color: '#fff' }}
+                >Save</button>
+                <button onClick={() => setEditingBudget(false)} className="text-xs px-2 py-1" style={{ background: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}>Cancel</button>
+              </div>
+            ) : (
+              <button onClick={() => { setEditingBudget(true); setBudgetInput(String(budgetThreshold)); }}
+                className="text-xs underline" style={{ color: 'hsl(var(--text-4))', background: 'none', border: 'none', cursor: 'pointer' }}>
+                Set Budget
+              </button>
+            )}
+          </div>
+          <div style={{ height: 6, background: 'hsl(var(--border))', position: 'relative' }}>
+            <div style={{
+              width: `${Math.min(budgetPct, 100)}%`,
+              height: '100%',
+              background: budgetPct >= 100 ? '#ef4444' : budgetPct >= 80 ? '#f97316' : '#10b981',
+              transition: 'width 0.5s ease',
+            }} />
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-5 gap-4">
         {[
           { label: 'Net Emissions Q1 2026', value: `${totalNet.toFixed(1)} tCO₂e`, sub: 'After offsets', color: 'hsl(var(--s-ok-tx))' },
           { label: 'Total Offsets Applied', value: `${totalOffset} tCO₂e`, sub: 'Carbon credits', color: 'hsl(var(--brand))' },
           { label: 'Avg Renewable Energy', value: `${avgRenewable}%`, sub: 'Across all compute', color: 'hsl(var(--s-ok-tx))' },
-          { label: 'Target (Q1)', value: '100 tCO₂e', sub: `${totalNet.toFixed(0)} / 100 — ${totalNet <= 100 ? 'ON TRACK ✓' : 'EXCEEDED'}`, color: totalNet <= 100 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))' },
+          { label: 'Budget Utilization', value: `${budgetPct}%`, sub: `${totalNet.toFixed(0)} / ${budgetThreshold} tCO₂e`, color: budgetPct >= 100 ? '#ef4444' : budgetPct >= 80 ? '#f97316' : '#10b981' },
+          {
+            label: 'Projected Monthly', value: `~${projectedMonthly} tCO₂e`,
+            sub: `At current rate ${monthlyChange < 0 ? '▼' : '▲'} ${Math.abs(monthlyChange)} vs prior`,
+            color: monthlyChange < 0 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))',
+          },
         ].map(s => (
-          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+          <div key={s.label} className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
             <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
             <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
             <p className="text-[10px] text-[hsl(var(--text-4))] mt-1">{s.sub}</p>
@@ -81,19 +160,50 @@ export default function CarbonLedger() {
         ))}
       </div>
 
+      {/* Recommendation chips */}
+      {visibleRecs.length > 0 && (
+        <div style={{ border: '1px solid hsl(142 71% 45% / 0.25)', background: 'hsl(142 71% 45% / 0.04)', padding: '12px 16px' }}>
+          <div className="flex items-center gap-2 mb-3">
+            <Lightbulb size={14} style={{ color: '#10b981' }} />
+            <span className="text-xs font-semibold" style={{ color: '#10b981' }}>Carbon Reduction Recommendations</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {visibleRecs.map(rec => (
+              <div key={rec.id} className="flex items-center gap-2" style={{
+                background: 'hsl(var(--bg-surface))',
+                border: '1px solid hsl(142 71% 45% / 0.25)',
+                padding: '5px 10px',
+              }}>
+                <rec.icon size={12} style={{ color: '#10b981', flexShrink: 0 }} />
+                <span className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>{rec.label}</span>
+                <span className="text-xs font-bold" style={{ color: '#10b981' }}>{rec.impact}</span>
+                <span className="text-xs px-1" style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-4))' }}>{rec.effort}</span>
+                <button
+                  onClick={() => setDismissedRecs(prev => new Set([...prev, rec.id]))}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'hsl(var(--text-4))', padding: 0, marginLeft: 4 }}
+                >
+                  <X size={11} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-4">
-        <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+        <div className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
           <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] mb-4">Monthly Emissions Trend (tCO₂e)</h3>
           <ResponsiveContainer width="100%" height={180}>
             <AreaChart data={TREND_DATA}>
               <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'hsl(var(--text-4))' }} />
               <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--text-4))' }} />
               <Tooltip contentStyle={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }} />
+              <ReferenceLine y={budgetThreshold} stroke="#ef4444" strokeDasharray="4 2" label={{ value: `Budget ${budgetThreshold}`, fill: '#ef4444', fontSize: 10 }} />
               <Area type="monotone" dataKey="emissions" stroke="hsl(var(--s-ok-tx))" fill="hsl(142 71% 45% / 0.15)" strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
-        <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+        <div className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
           <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] mb-4">Emissions by Model — Q1 2026 (tCO₂e)</h3>
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={MODEL_DATA} layout="vertical">
@@ -106,11 +216,38 @@ export default function CarbonLedger() {
         </div>
       </div>
 
-      <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] overflow-hidden">
+      {/* Energy Efficiency Scores */}
+      <div className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+        <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] mb-4">Energy Efficiency Scores by Model</h3>
+        <div className="space-y-3">
+          {MODEL_DATA.sort((a, b) => b.efficiency - a.efficiency).map(m => {
+            const color = efficiencyColor(m.efficiency)
+            return (
+              <div key={m.name}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{m.name}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{m.emissions} tCO₂e</span>
+                    <span className="text-xs font-bold" style={{ color }}>{m.efficiency}/100</span>
+                  </div>
+                </div>
+                <div style={{ height: 6, background: 'hsl(var(--border))' }}>
+                  <div style={{ width: `${m.efficiency}%`, height: '100%', background: color, transition: 'width 0.5s ease' }} />
+                </div>
+                <p className="text-[10px] mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>
+                  {m.efficiency >= 80 ? '✓ Efficient — no action required' : m.efficiency >= 60 ? '⚠ Moderate — consider optimization' : '✗ Inefficient — optimization recommended'}
+                </p>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      <div className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
-              {['ID', 'Model', 'Period', 'Training', 'Inference', 'Total', 'Energy (kWh)', 'Renewable', 'Offset', 'Net', 'Verified', ''].map(h => (
+              {['ID', 'Model', 'Period', 'Training', 'Inference', 'Total', 'Energy (kWh)', 'Renewable', 'Efficiency', 'Offset', 'Net', 'Verified', ''].map(h => (
                 <th key={h} className="text-left px-3 py-3 text-[11px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wide">{h}</th>
               ))}
             </tr>
@@ -127,9 +264,12 @@ export default function CarbonLedger() {
                 <td className="px-3 py-3 text-xs font-mono text-[hsl(var(--text-3))]">{e.energyKwh.toLocaleString()}</td>
                 <td className="px-3 py-3">
                   <div className="flex items-center gap-1">
-                    <div className="w-10 h-1 bg-[hsl(var(--border))] rounded-full"><div className="h-full rounded-full bg-[hsl(var(--s-ok-tx))]" style={{ width: `${e.renewablePercent}%` }} /></div>
+                    <div className="w-10 h-1 bg-[hsl(var(--border))]"><div className="h-full bg-[hsl(var(--s-ok-tx))]" style={{ width: `${e.renewablePercent}%` }} /></div>
                     <span className="text-xs text-[hsl(var(--text-3))]">{e.renewablePercent}%</span>
                   </div>
+                </td>
+                <td className="px-3 py-3">
+                  <span className="text-xs font-bold" style={{ color: efficiencyColor(e.efficiencyScore) }}>{e.efficiencyScore}</span>
                 </td>
                 <td className="px-3 py-3 text-xs font-mono text-[hsl(var(--brand))]">{e.offset}</td>
                 <td className="px-3 py-3 text-xs font-mono font-bold" style={{ color: e.netEmissions < 50 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))' }}>{e.netEmissions.toFixed(1)}</td>
@@ -161,13 +301,23 @@ export default function CarbonLedger() {
                   { label: 'Net Emissions', value: `${selected.netEmissions.toFixed(1)} tCO₂e` },
                   { label: 'Energy Used', value: `${selected.energyKwh.toLocaleString()} kWh` },
                   { label: 'Renewable Energy', value: `${selected.renewablePercent}%` },
+                  { label: 'Efficiency Score', value: `${selected.efficiencyScore}/100` },
                   { label: 'Compute Provider', value: selected.computeProvider },
+                  { label: 'Region', value: selected.region },
                 ].map(({ label, value }) => (
                   <div key={label} className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
                     <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{label}</p>
                     <p className="text-sm font-semibold text-[hsl(var(--text-1))] mt-0.5">{value}</p>
                   </div>
                 ))}
+              </div>
+              <div style={{ background: 'hsl(142 71% 45% / 0.06)', border: '1px solid hsl(142 71% 45% / 0.2)', padding: '10px 12px' }}>
+                <p className="text-xs font-semibold" style={{ color: '#10b981' }}>Efficiency Score: {selected.efficiencyScore}/100</p>
+                <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-3))' }}>
+                  {selected.efficiencyScore >= 80 ? 'This model is operating efficiently. No immediate action required.' :
+                    selected.efficiencyScore >= 60 ? 'Moderate efficiency. Consider batching requests or switching to higher-renewable compute.' :
+                      'Low efficiency. Recommend migrating to EU West region (50%+ renewable) and enabling inference batching.'}
+                </p>
               </div>
             </div>
           </div>

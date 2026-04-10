@@ -2,7 +2,8 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   Eye, PencilSimple, Export, Funnel, MagnifyingGlass, Flag,
   Warning, GearSix, CheckCircle, ArrowRight, Lightning, Plus,
-  Clock, CaretDown, ShieldCheck, X, Siren,
+  Clock, CaretDown, ShieldCheck, X, Siren, Code, Trash,
+  ToggleLeft, ToggleRight,
 } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
@@ -138,6 +139,25 @@ export default function GuardrailActivity() {
   const [autoEscalation, setAutoEscalation] = useState(false);
   const incCounter = useRef(1000);
   const autoEscalatedRef = useRef<Set<string>>(new Set());
+
+  // Rule Builder state
+  const [ruleBuilderOpen, setRuleBuilderOpen] = useState(false);
+  interface BuiltRule {
+    id: string; name: string; enabled: boolean;
+    conditions: { field: string; operator: string; value: string }[];
+    action: string; severity: string; framework: string;
+  }
+  const [builtRules, setBuiltRules] = useState<BuiltRule[]>([
+    { id: 'BR-001', name: 'PII Detection', enabled: true, conditions: [{ field: 'output', operator: 'contains', value: 'SSN|DOB|passport' }], action: 'block', severity: 'high', framework: 'GDPR Art. 25' },
+    { id: 'BR-002', name: 'Hallucination Guard', enabled: true, conditions: [{ field: 'confidence_score', operator: '<', value: '0.95' }], action: 'block', severity: 'high', framework: 'ISO 42001' },
+    { id: 'BR-003', name: 'Toxicity Filter', enabled: true, conditions: [{ field: 'toxicity_score', operator: '>', value: '0.15' }], action: 'warn', severity: 'medium', framework: 'Custom' },
+    { id: 'BR-004', name: 'Data Boundary', enabled: true, conditions: [{ field: 'destination', operator: 'not_in', value: 'approved_endpoints' }], action: 'block', severity: 'critical', framework: 'SOC 2 CC6.1' },
+    { id: 'BR-005', name: 'Cost Threshold', enabled: false, conditions: [{ field: 'token_count', operator: '>', value: '8000' }], action: 'flag', severity: 'low', framework: 'Custom' },
+  ]);
+  const [newRule, setNewRule] = useState({ name: '', conditions: [{ field: 'output', operator: 'contains', value: '' }], action: 'block', severity: 'high', framework: 'Custom' });
+  const RULE_FIELDS = ['output', 'input', 'confidence_score', 'toxicity_score', 'token_count', 'destination', 'agent_id', 'model_id'];
+  const RULE_OPERATORS = ['contains', 'not_contains', '>', '<', '>=', '<=', 'equals', 'not_in', 'regex_match'];
+  const RULE_ACTIONS = ['block', 'warn', 'flag', 'allow', 'redact'];
 
   const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
     const id = Date.now();
@@ -342,6 +362,153 @@ export default function GuardrailActivity() {
               }}
             />
           </button>
+        </div>
+
+        {/* Rule Builder Panel */}
+        <div style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-surface))' }}>
+          <div
+            className="flex items-center justify-between px-4 py-3 cursor-pointer"
+            style={{ borderBottom: ruleBuilderOpen ? '1px solid hsl(var(--border))' : 'none' }}
+            onClick={() => setRuleBuilderOpen(v => !v)}
+          >
+            <div className="flex items-center gap-2">
+              <Code size={16} style={{ color: 'hsl(var(--brand))' }} />
+              <span className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Visual Rule Builder</span>
+              <Badge style={{ background: 'hsl(var(--brand) / 0.12)', color: 'hsl(var(--brand))', borderRadius: 0, fontSize: 10 }}>
+                {builtRules.filter(r => r.enabled).length} active / {builtRules.length} total
+              </Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" style={{ borderRadius: 0, height: 28, fontSize: 11 }}
+                onClick={e => {
+                  e.stopPropagation();
+                  if (!newRule.name) { toast('Enter a rule name', 'error'); return; }
+                  const id = `BR-${String(builtRules.length + 1).padStart(3, '0')}`;
+                  setBuiltRules(prev => [...prev, { id, name: newRule.name, enabled: true, conditions: newRule.conditions, action: newRule.action, severity: newRule.severity, framework: newRule.framework }]);
+                  setNewRule({ name: '', conditions: [{ field: 'output', operator: 'contains', value: '' }], action: 'block', severity: 'high', framework: 'Custom' });
+                  toast(`Rule "${newRule.name}" created and activated`, 'success');
+                  setRuleBuilderOpen(true);
+                }}>
+                <Plus size={12} className="mr-1" /> Save Rule
+              </Button>
+              <CaretDown size={14} style={{ color: 'hsl(var(--text-3))', transform: ruleBuilderOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+            </div>
+          </div>
+
+          {ruleBuilderOpen && (
+            <div className="p-4 space-y-5">
+              {/* New rule form — IF/THEN builder */}
+              <div style={{ border: '1px solid hsl(var(--brand) / 0.2)', padding: 16, background: 'hsl(var(--brand) / 0.02)' }}>
+                <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'hsl(var(--brand))' }}>New Rule</p>
+                <div className="grid grid-cols-3 gap-3 mb-3">
+                  <div>
+                    <label className="text-xs mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Rule Name</label>
+                    <Input value={newRule.name} onChange={e => setNewRule(r => ({ ...r, name: e.target.value }))}
+                      placeholder="e.g. Customer SSN Guard" className="h-8 text-xs" style={{ borderRadius: 0 }} />
+                  </div>
+                  <div>
+                    <label className="text-xs mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Action</label>
+                    <select value={newRule.action} onChange={e => setNewRule(r => ({ ...r, action: e.target.value }))}
+                      style={{ width: '100%', height: 32, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '0 8px', borderRadius: 0, fontSize: 12 }}>
+                      {RULE_ACTIONS.map(a => <option key={a} value={a}>{a}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Severity</label>
+                    <select value={newRule.severity} onChange={e => setNewRule(r => ({ ...r, severity: e.target.value }))}
+                      style={{ width: '100%', height: 32, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '0 8px', borderRadius: 0, fontSize: 12 }}>
+                      {['critical', 'high', 'medium', 'low'].map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                {/* IF conditions */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-bold" style={{ color: 'hsl(var(--s-wn-tx))' }}>IF</span>
+                    <div style={{ flex: 1, height: 1, background: 'hsl(var(--border))' }} />
+                  </div>
+                  {newRule.conditions.map((cond, ci) => (
+                    <div key={ci} className="flex items-center gap-2">
+                      {ci > 0 && <span className="text-xs font-bold w-8 text-center" style={{ color: 'hsl(var(--s-in-tx))' }}>AND</span>}
+                      {ci === 0 && <span className="text-xs w-8" />}
+                      <select value={cond.field} onChange={e => setNewRule(r => ({ ...r, conditions: r.conditions.map((c, i) => i === ci ? { ...c, field: e.target.value } : c) }))}
+                        style={{ flex: 1, height: 32, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '0 8px', borderRadius: 0, fontSize: 12 }}>
+                        {RULE_FIELDS.map(f => <option key={f} value={f}>{f}</option>)}
+                      </select>
+                      <select value={cond.operator} onChange={e => setNewRule(r => ({ ...r, conditions: r.conditions.map((c, i) => i === ci ? { ...c, operator: e.target.value } : c) }))}
+                        style={{ flex: 1, height: 32, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '0 8px', borderRadius: 0, fontSize: 12 }}>
+                        {RULE_OPERATORS.map(o => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                      <Input value={cond.value} onChange={e => setNewRule(r => ({ ...r, conditions: r.conditions.map((c, i) => i === ci ? { ...c, value: e.target.value } : c) }))}
+                        placeholder="value…" className="flex-1 h-8 text-xs" style={{ borderRadius: 0 }} />
+                      {ci > 0 && (
+                        <button onClick={() => setNewRule(r => ({ ...r, conditions: r.conditions.filter((_, i) => i !== ci) }))}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '4px' }}>
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <Button size="sm" variant="ghost" style={{ height: 28, fontSize: 11, marginTop: 2 }}
+                    onClick={() => setNewRule(r => ({ ...r, conditions: [...r.conditions, { field: 'output', operator: 'contains', value: '' }] }))}>
+                    <Plus size={12} className="mr-1" /> Add Condition
+                  </Button>
+                </div>
+
+                {/* THEN action */}
+                <div className="flex items-center gap-2 mt-3">
+                  <span className="text-xs font-bold" style={{ color: 'hsl(var(--s-ok-tx))' }}>THEN</span>
+                  <span className="text-xs px-2 py-1 font-semibold" style={{ background: 'hsl(var(--brand) / 0.12)', color: 'hsl(var(--brand))' }}>
+                    {newRule.action.toUpperCase()} with {newRule.severity} severity
+                  </span>
+                </div>
+              </div>
+
+              {/* Existing rules list */}
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'hsl(var(--text-3))' }}>Configured Rules</p>
+                <div className="space-y-1">
+                  {builtRules.map(rule => {
+                    const sc = severityColor(rule.severity as any);
+                    const actionColors: Record<string, string> = { block: '#ef4444', warn: '#f97316', flag: '#3b82f6', allow: '#10b981', redact: '#8b5cf6' };
+                    return (
+                      <div key={rule.id} className="flex items-center gap-3 px-3 py-2" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))' }}>
+                        <span className="text-xs font-mono" style={{ color: 'hsl(var(--text-4))', minWidth: 52 }}>{rule.id}</span>
+                        <span className="text-xs font-semibold flex-1" style={{ color: rule.enabled ? 'hsl(var(--text-1))' : 'hsl(var(--text-4))' }}>
+                          {rule.name}
+                        </span>
+                        <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+                          {rule.conditions[0].field} {rule.conditions[0].operator} <code style={{ color: 'hsl(var(--text-2))' }}>"{rule.conditions[0].value}"</code>
+                          {rule.conditions.length > 1 && ` +${rule.conditions.length - 1} more`}
+                        </span>
+                        <Badge style={{ background: `${actionColors[rule.action]}20`, color: actionColors[rule.action], borderRadius: 0, fontSize: 10 }}>{rule.action}</Badge>
+                        <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0, fontSize: 10 }}>{rule.severity}</Badge>
+                        <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{rule.framework}</span>
+                        <button
+                          onClick={() => {
+                            setBuiltRules(prev => prev.map(r => r.id === rule.id ? { ...r, enabled: !r.enabled } : r));
+                            toast(`Rule "${rule.name}" ${rule.enabled ? 'disabled' : 'enabled'}`, 'info');
+                          }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: rule.enabled ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-4))' }}
+                          title={rule.enabled ? 'Disable' : 'Enable'}
+                        >
+                          {rule.enabled ? <ToggleRight size={20} weight="fill" /> : <ToggleLeft size={20} />}
+                        </button>
+                        <button
+                          onClick={() => { setBuiltRules(prev => prev.filter(r => r.id !== rule.id)); toast(`Rule "${rule.name}" deleted`, 'info'); }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}
+                          title="Delete rule"
+                        >
+                          <Trash size={14} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Filters + Bulk Actions */}
