@@ -11,4 +11,4 @@ sleep 2
 
 # Start the Vite frontend on port 5000
 echo "Starting Sentinel Dashboard frontend on port 5000..."
-cd dashboard && ../node_modules/.bin/vite --port 5000 --host 0.0.0.0
+cd dashboard && npm run dev
