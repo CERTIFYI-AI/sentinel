@@ -162,12 +162,7 @@ export default function ModelInventoryPage() {
   const [deleteTarget, setDeleteTarget] = useState<Model | null>(null);
   const [registerOpen, setRegisterOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const t = setTimeout(() => setIsLoading(false), 600);
-    return () => clearTimeout(t);
-  }, []);
+  const [isLoading] = useState(false);
 
   const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
     const id = Date.now();
