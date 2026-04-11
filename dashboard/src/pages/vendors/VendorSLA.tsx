@@ -15,7 +15,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../components/u
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import {
-  VENDOR_SLAS, VENDORS, VendorSLA, SLAStatus, formatDate,
+  VENDOR_SLAS, VENDORS, VendorSLA as VendorSLARecord, SLAStatus, formatDate,
 } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
 
@@ -37,7 +37,7 @@ const SLA_TYPES = ['Availability', 'Support Response', 'Incident Notification', 
 interface CreateForm {
   vendorId: string;
   serviceName: string;
-  slaType: VendorSLA['slaType'];
+  slaType: VendorSLARecord['slaType'];
   target: string;
   warningThreshold: string;
   breachThreshold: string;
@@ -63,14 +63,14 @@ const BLANK_FORM: CreateForm = {
 export default function VendorSLA() {
   const { orgName } = useSettingsStore();
   const navigate = useNavigate();
-  const [slas, setSlas] = useState<VendorSLA[]>(VENDOR_SLAS);
+  const [slas, setSlas] = useState<VendorSLARecord[]>(VENDOR_SLAS);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [vendorFilter, setVendorFilter] = useState('all');
-  const [selected, setSelected] = useState<VendorSLA | null>(null);
+  const [selected, setSelected] = useState<VendorSLARecord | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<VendorSLA | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<VendorSLARecord | null>(null);
   const [form, setForm] = useState<CreateForm>(BLANK_FORM);
   const [formError, setFormError] = useState('');
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
@@ -111,7 +111,7 @@ export default function VendorSLA() {
     }
     const vendor = VENDORS.find(v => v.id === form.vendorId);
     if (!vendor) { setFormError('Select a valid vendor.'); return; }
-    const newSla: VendorSLA = {
+    const newSla: VendorSLARecord = {
       id: `SLA-${String(slas.length + 1).padStart(3, '0')}`,
       vendorId: form.vendorId,
       vendorName: vendor.name,
@@ -447,7 +447,7 @@ export default function VendorSLA() {
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>SLA Type *</label>
-                <Select value={form.slaType} onValueChange={v => setForm(p => ({ ...p, slaType: v as VendorSLA['slaType'] }))}>
+                <Select value={form.slaType} onValueChange={v => setForm(p => ({ ...p, slaType: v as VendorSLARecord['slaType'] }))}>
                   <SelectTrigger style={{ borderRadius: 0 }}>
                     <SelectValue />
                   </SelectTrigger>
