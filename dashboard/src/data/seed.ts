@@ -264,19 +264,51 @@ export const DATASETS: Dataset[] = [
 
 // ── Vendors ────────────────────────────────────
 export interface Vendor {
-  id: string; name: string; category: string; risk: Severity; score: number;
-  status: VendorStatus; lastReview: string; contact: string; website: string;
-  dpaStatus: string; description: string; linkedModels: string[];
+  id: string;
+  name: string;
+  legalName: string;
+  category: string;
+  criticality: VendorCriticality;
+  risk: Severity;
+  inherentRisk: Severity;
+  score: number;
+  status: VendorStatus;
+  lastReview: string;
+  reassessmentDue: string;
+  contact: string;
+  website: string;
+  businessOwner: string;
+  vendorManager: string;
+  dpaStatus: string;
+  description: string;
+  linkedModels: string[];
+  aiUse: VendorAIUse;
+  privacyImpact: 'none' | 'low' | 'moderate' | 'high';
+  dataAccessLevel: 'none' | 'internal' | 'confidential' | 'sensitive' | 'regulated';
+  regions: string[];
+  subprocessorCount: number;
+  certifications: string[];
+  fourthPartyExposure: 'low' | 'moderate' | 'high';
+  contractStart: string;
+  contractEnd: string;
+  renewalDate: string;
+  incidentCount: number;
+  openIssues: number;
   scoreBreakdown: { security: number; compliance: number; reliability: number; dataPrivacy: number };
 }
 export const VENDORS: Vendor[] = [
-  { id: 'V-001', name: 'OpenAI', category: 'Foundation Model', risk: 'medium', score: 87, status: 'approved', lastReview: '2026-02-15', contact: 'enterprise@openai.com', website: 'openai.com', dpaStatus: 'signed', description: 'Provider of GPT-4o and embedding APIs.', linkedModels: ['MDL-004'], scoreBreakdown: { security: 85, compliance: 82, reliability: 94, dataPrivacy: 87 } },
-  { id: 'V-002', name: 'AWS SageMaker', category: 'Infrastructure', risk: 'low', score: 94, status: 'approved', lastReview: '2026-01-20', contact: 'aws-enterprise@amazon.com', website: 'aws.amazon.com/sagemaker', dpaStatus: 'signed', description: 'ML infrastructure and model hosting platform.', linkedModels: ['MDL-001', 'MDL-002', 'MDL-005'], scoreBreakdown: { security: 96, compliance: 95, reliability: 98, dataPrivacy: 87 } },
-  { id: 'V-003', name: 'Anthropic', category: 'Foundation Model', risk: 'low', score: 96, status: 'approved', lastReview: '2026-03-01', contact: 'sales@anthropic.com', website: 'anthropic.com', dpaStatus: 'signed', description: 'Provider of Claude models for data labeling and analysis.', linkedModels: ['MDL-006'], scoreBreakdown: { security: 97, compliance: 95, reliability: 96, dataPrivacy: 96 } },
-  { id: 'V-004', name: 'Pinecone', category: 'Data Provider', risk: 'medium', score: 72, status: 'in_review', lastReview: '2026-02-28', contact: 'enterprise@pinecone.io', website: 'pinecone.io', dpaStatus: 'pending', description: 'Vector database for RAG and semantic search.', linkedModels: ['MDL-004'], scoreBreakdown: { security: 70, compliance: 65, reliability: 82, dataPrivacy: 71 } },
-  { id: 'V-005', name: 'Giskard', category: 'Tool Provider', risk: 'low', score: 79, status: 'approved', lastReview: '2026-03-10', contact: 'hello@giskard.ai', website: 'giskard.ai', dpaStatus: 'signed', description: 'AI testing and bias audit tooling.', linkedModels: [], scoreBreakdown: { security: 78, compliance: 82, reliability: 76, dataPrivacy: 80 } },
-  { id: 'V-006', name: 'Palantir', category: 'Analytics Platform', risk: 'high', score: 61, status: 'in_review', lastReview: '2026-01-15', contact: 'sales@palantir.com', website: 'palantir.com', dpaStatus: 'pending', description: 'Enterprise analytics and AI platform. Under enhanced due diligence.', linkedModels: [], scoreBreakdown: { security: 72, compliance: 55, reliability: 68, dataPrivacy: 49 } },
-  { id: 'V-007', name: 'C3.ai', category: 'AI Platform', risk: 'high', score: 55, status: 'high_risk', lastReview: '2026-02-01', contact: 'enterprise@c3.ai', website: 'c3.ai', dpaStatus: 'not_signed', description: 'Enterprise AI platform. HIGH RISK — DPA not signed, data residency concerns.', linkedModels: [], scoreBreakdown: { security: 58, compliance: 45, reliability: 62, dataPrivacy: 55 } },
+  { id: 'V-001', name: 'OpenAI', legalName: 'OpenAI, L.L.C.', category: 'Foundation Model', criticality: 'critical', risk: 'medium', inherentRisk: 'high', score: 87, status: 'approved', lastReview: '2026-02-15', reassessmentDue: '2026-08-15', contact: 'enterprise@openai.com', website: 'openai.com', businessOwner: 'Raj Gupta', vendorManager: 'David Kim', dpaStatus: 'signed', description: 'Provider of GPT-4o and embedding APIs. Primary LLM vendor for Loan Approval Assistant and AML Scanner.', linkedModels: ['MDL-004'], aiUse: 'model_provider', privacyImpact: 'high', dataAccessLevel: 'confidential', regions: ['US', 'EU'], subprocessorCount: 8, certifications: ['SOC 2 Type II', 'ISO 27001'], fourthPartyExposure: 'high', contractStart: '2024-01-01', contractEnd: '2026-12-31', renewalDate: '2026-10-01', incidentCount: 2, openIssues: 1, scoreBreakdown: { security: 85, compliance: 82, reliability: 94, dataPrivacy: 87 } },
+  { id: 'V-002', name: 'AWS SageMaker', legalName: 'Amazon Web Services, Inc.', category: 'Infrastructure', criticality: 'critical', risk: 'low', inherentRisk: 'medium', score: 94, status: 'approved', lastReview: '2026-01-20', reassessmentDue: '2027-01-20', contact: 'aws-enterprise@amazon.com', website: 'aws.amazon.com/sagemaker', businessOwner: 'Maria Santos', vendorManager: 'James Patel', dpaStatus: 'signed', description: 'ML infrastructure and model hosting platform. Hosts Credit Risk Scorer, Fraud Detection Engine and Customer Churn Predictor.', linkedModels: ['MDL-001', 'MDL-002', 'MDL-005'], aiUse: 'ai_feature', privacyImpact: 'high', dataAccessLevel: 'regulated', regions: ['US-East-1', 'EU-West-1'], subprocessorCount: 12, certifications: ['SOC 2 Type II', 'ISO 27001', 'ISO 27017', 'CSA STAR', 'FedRAMP'], fourthPartyExposure: 'high', contractStart: '2023-06-01', contractEnd: '2027-05-31', renewalDate: '2027-02-28', incidentCount: 0, openIssues: 0, scoreBreakdown: { security: 96, compliance: 95, reliability: 98, dataPrivacy: 87 } },
+  { id: 'V-003', name: 'Anthropic', legalName: 'Anthropic, PBC', category: 'Foundation Model', criticality: 'high', risk: 'low', inherentRisk: 'medium', score: 96, status: 'approved', lastReview: '2026-03-01', reassessmentDue: '2026-09-01', contact: 'sales@anthropic.com', website: 'anthropic.com', businessOwner: 'Raj Gupta', vendorManager: 'David Kim', dpaStatus: 'signed', description: 'Provider of Claude 3.5 Sonnet for data labeling, analysis, and fallback LLM scenarios.', linkedModels: ['MDL-006'], aiUse: 'model_provider', privacyImpact: 'moderate', dataAccessLevel: 'confidential', regions: ['US'], subprocessorCount: 5, certifications: ['SOC 2 Type II', 'ISO 27001'], fourthPartyExposure: 'moderate', contractStart: '2025-01-01', contractEnd: '2026-12-31', renewalDate: '2026-10-15', incidentCount: 0, openIssues: 0, scoreBreakdown: { security: 97, compliance: 95, reliability: 96, dataPrivacy: 96 } },
+  { id: 'V-004', name: 'Pinecone', legalName: 'Pinecone Systems, Inc.', category: 'Data Provider', criticality: 'high', risk: 'medium', inherentRisk: 'high', score: 72, status: 'in_review', lastReview: '2026-02-28', reassessmentDue: '2026-04-30', contact: 'enterprise@pinecone.io', website: 'pinecone.io', businessOwner: 'Raj Gupta', vendorManager: 'Emma Wilson', dpaStatus: 'pending', description: 'Vector database for RAG pipelines and semantic search. Stores customer query embeddings.', linkedModels: ['MDL-004'], aiUse: 'ai_feature', privacyImpact: 'moderate', dataAccessLevel: 'sensitive', regions: ['US-East-1', 'EU-West-1'], subprocessorCount: 4, certifications: ['SOC 2 Type II'], fourthPartyExposure: 'moderate', contractStart: '2025-06-01', contractEnd: '2026-05-31', renewalDate: '2026-03-31', incidentCount: 0, openIssues: 2, scoreBreakdown: { security: 70, compliance: 65, reliability: 82, dataPrivacy: 71 } },
+  { id: 'V-005', name: 'Giskard', legalName: 'Giskard SAS', category: 'Tool Provider', criticality: 'low', risk: 'low', inherentRisk: 'low', score: 79, status: 'approved', lastReview: '2026-03-10', reassessmentDue: '2027-03-10', contact: 'hello@giskard.ai', website: 'giskard.ai', businessOwner: 'Emma Wilson', vendorManager: 'Maria Santos', dpaStatus: 'signed', description: 'AI testing, bias audit tooling, and vulnerability scanning for ML models.', linkedModels: [], aiUse: 'ai_feature', privacyImpact: 'low', dataAccessLevel: 'internal', regions: ['EU'], subprocessorCount: 2, certifications: ['ISO 27001'], fourthPartyExposure: 'low', contractStart: '2025-04-01', contractEnd: '2027-03-31', renewalDate: '2027-01-31', incidentCount: 0, openIssues: 0, scoreBreakdown: { security: 78, compliance: 82, reliability: 76, dataPrivacy: 80 } },
+  { id: 'V-006', name: 'Palantir', legalName: 'Palantir Technologies Inc.', category: 'Analytics Platform', criticality: 'high', risk: 'high', inherentRisk: 'critical', score: 61, status: 'in_review', lastReview: '2026-01-15', reassessmentDue: '2026-04-15', contact: 'sales@palantir.com', website: 'palantir.com', businessOwner: 'Sarah Chen', vendorManager: 'James Patel', dpaStatus: 'pending', description: 'Enterprise analytics and AI platform under enhanced due diligence. Insufficient data residency controls for EU data.', linkedModels: [], aiUse: 'high_risk_dependency', privacyImpact: 'high', dataAccessLevel: 'regulated', regions: ['US', 'EU', 'UK'], subprocessorCount: 14, certifications: ['FedRAMP', 'ISO 27001'], fourthPartyExposure: 'high', contractStart: '2025-02-01', contractEnd: '2027-01-31', renewalDate: '2026-10-31', incidentCount: 1, openIssues: 3, scoreBreakdown: { security: 72, compliance: 55, reliability: 68, dataPrivacy: 49 } },
+  { id: 'V-007', name: 'C3.ai', legalName: 'C3.ai, Inc.', category: 'AI Platform', criticality: 'high', risk: 'high', inherentRisk: 'critical', score: 55, status: 'high_risk', lastReview: '2026-02-01', reassessmentDue: '2026-04-01', contact: 'enterprise@c3.ai', website: 'c3.ai', businessOwner: 'Raj Gupta', vendorManager: 'David Kim', dpaStatus: 'not_signed', description: 'Enterprise AI platform. HIGH RISK — DPA not signed, data residency concerns. Data sharing suspended.', linkedModels: [], aiUse: 'high_risk_dependency', privacyImpact: 'high', dataAccessLevel: 'regulated', regions: ['US'], subprocessorCount: 9, certifications: ['SOC 2 Type II'], fourthPartyExposure: 'high', contractStart: '2025-03-01', contractEnd: '2026-02-28', renewalDate: '2026-01-01', incidentCount: 1, openIssues: 4, scoreBreakdown: { security: 58, compliance: 45, reliability: 62, dataPrivacy: 55 } },
+  { id: 'V-008', name: 'Okta', legalName: 'Okta, Inc.', category: 'Identity & Access Management', criticality: 'critical', risk: 'low', inherentRisk: 'medium', score: 92, status: 'approved', lastReview: '2026-01-10', reassessmentDue: '2027-01-10', contact: 'enterprise@okta.com', website: 'okta.com', businessOwner: 'Sarah Chen', vendorManager: 'James Patel', dpaStatus: 'signed', description: 'Identity and access management platform for SSO, MFA, and employee lifecycle management.', linkedModels: [], aiUse: 'none', privacyImpact: 'high', dataAccessLevel: 'sensitive', regions: ['US', 'EU'], subprocessorCount: 6, certifications: ['SOC 2 Type II', 'ISO 27001', 'ISO 27018', 'CSA STAR'], fourthPartyExposure: 'moderate', contractStart: '2022-01-01', contractEnd: '2027-12-31', renewalDate: '2027-09-30', incidentCount: 0, openIssues: 0, scoreBreakdown: { security: 95, compliance: 91, reliability: 99, dataPrivacy: 83 } },
+  { id: 'V-009', name: 'Scale AI', legalName: 'Scale AI, Inc.', category: 'Annotation & Data Labeling', criticality: 'high', risk: 'medium', inherentRisk: 'high', score: 74, status: 'approved', lastReview: '2026-02-20', reassessmentDue: '2026-08-20', contact: 'enterprise@scale.com', website: 'scale.com', businessOwner: 'Maria Santos', vendorManager: 'Emma Wilson', dpaStatus: 'signed', description: 'Human-in-the-loop data annotation and RLHF platform. Handles PII-adjacent training data labeling.', linkedModels: ['MDL-001', 'MDL-002'], aiUse: 'ai_feature', privacyImpact: 'high', dataAccessLevel: 'sensitive', regions: ['US', 'EU', 'APAC'], subprocessorCount: 22, certifications: ['SOC 2 Type II', 'ISO 27001'], fourthPartyExposure: 'high', contractStart: '2025-01-15', contractEnd: '2026-12-31', renewalDate: '2026-10-01', incidentCount: 1, openIssues: 2, scoreBreakdown: { security: 73, compliance: 70, reliability: 82, dataPrivacy: 71 } },
+  { id: 'V-010', name: 'Databricks', legalName: 'Databricks, Inc.', category: 'Analytics Platform', criticality: 'critical', risk: 'low', inherentRisk: 'medium', score: 90, status: 'approved', lastReview: '2026-01-25', reassessmentDue: '2027-01-25', contact: 'enterprise@databricks.com', website: 'databricks.com', businessOwner: 'Maria Santos', vendorManager: 'Raj Gupta', dpaStatus: 'signed', description: 'Unified data analytics and ML platform. Powers feature engineering, model training, and batch inference pipelines.', linkedModels: ['MDL-001', 'MDL-002', 'MDL-003'], aiUse: 'ai_feature', privacyImpact: 'high', dataAccessLevel: 'regulated', regions: ['US-East-1', 'EU-West-1'], subprocessorCount: 7, certifications: ['SOC 2 Type II', 'ISO 27001', 'FedRAMP'], fourthPartyExposure: 'moderate', contractStart: '2023-07-01', contractEnd: '2028-06-30', renewalDate: '2028-03-31', incidentCount: 0, openIssues: 0, scoreBreakdown: { security: 91, compliance: 90, reliability: 95, dataPrivacy: 84 } },
+  { id: 'V-011', name: 'ServiceNow', legalName: 'ServiceNow, Inc.', category: 'IT Service Management', criticality: 'moderate', risk: 'low', inherentRisk: 'low', score: 88, status: 'approved', lastReview: '2026-02-05', reassessmentDue: '2027-02-05', contact: 'enterprise@servicenow.com', website: 'servicenow.com', businessOwner: 'James Patel', vendorManager: 'Emma Wilson', dpaStatus: 'signed', description: 'ITSM and GRC workflow platform. Integrates with Sentinel for ticket escalation and remediation tracking.', linkedModels: [], aiUse: 'ai_feature', privacyImpact: 'moderate', dataAccessLevel: 'internal', regions: ['US', 'EU'], subprocessorCount: 5, certifications: ['SOC 2 Type II', 'ISO 27001', 'ISO 27701'], fourthPartyExposure: 'low', contractStart: '2022-06-01', contractEnd: '2027-05-31', renewalDate: '2027-02-28', incidentCount: 0, openIssues: 0, scoreBreakdown: { security: 88, compliance: 86, reliability: 94, dataPrivacy: 84 } },
+  { id: 'V-012', name: 'Clifford Chance', legalName: 'Clifford Chance LLP', category: 'Legal & Compliance Consulting', criticality: 'low', risk: 'low', inherentRisk: 'low', score: 82, status: 'approved', lastReview: '2026-03-15', reassessmentDue: '2027-03-15', contact: 'ai-advisory@cliffordchance.com', website: 'cliffordchance.com', businessOwner: 'Sarah Chen', vendorManager: 'James Patel', dpaStatus: 'signed', description: 'External legal counsel for AI governance, EU AI Act compliance advisory, and regulatory affairs.', linkedModels: [], aiUse: 'none', privacyImpact: 'low', dataAccessLevel: 'confidential', regions: ['UK', 'EU', 'US'], subprocessorCount: 1, certifications: ['ISO 27001'], fourthPartyExposure: 'low', contractStart: '2024-04-01', contractEnd: '2027-03-31', renewalDate: '2026-12-31', incidentCount: 0, openIssues: 0, scoreBreakdown: { security: 82, compliance: 88, reliability: 80, dataPrivacy: 78 } },
 ];
 
 // ── Risks ──────────────────────────────────────
@@ -940,4 +972,135 @@ export const PROMPT_REGISTRY: PromptRecord[] = [
       { version: '1.0.3', content: 'Final version before deprecation.', author: 'David Kim', changedAt: '2026-01-15T09:00:00Z', changeNote: 'Deprecated in favor of PR-005. Model upgrade to GPT-4o required new schema.' },
     ],
   },
+];
+
+// ── Vendor Assessments ──────────────────────────
+export interface VendorAssessment {
+  id: string;
+  vendorId: string;
+  vendorName: string;
+  assessmentType: 'Security' | 'Privacy' | 'AI Governance' | 'DPA Review' | 'Financial' | 'Operational Resilience' | 'Business Continuity' | 'Custom';
+  version: string;
+  status: AssessmentStatus;
+  frameworkBasis: string;
+  owner: string;
+  dueDate: string;
+  submittedAt: string | null;
+  reviewedAt: string | null;
+  approvedAt: string | null;
+  score: number | null;
+  riskFindingsCount: number;
+  criticalFindingsCount: number;
+  evidenceCount: number;
+  summary: string;
+  recommendation: 'Approve' | 'Approve with Conditions' | 'Reject' | 'Reassess' | null;
+  nextReviewDate: string;
+}
+export const VENDOR_ASSESSMENTS: VendorAssessment[] = [
+  { id: 'VA-001', vendorId: 'V-001', vendorName: 'OpenAI', assessmentType: 'Security', version: 'v3.0', status: 'approved', frameworkBasis: 'SIG Lite', owner: 'David Kim', dueDate: '2026-01-31', submittedAt: '2026-01-28', reviewedAt: '2026-02-10', approvedAt: '2026-02-15', score: 87, riskFindingsCount: 4, criticalFindingsCount: 0, evidenceCount: 12, summary: 'OpenAI maintains strong security posture with SOC 2 Type II and ISO 27001. Minor findings in data residency controls for EU workloads. DPA Art. 28 compliant. Recommend enhanced subprocessor monitoring.', recommendation: 'Approve with Conditions', nextReviewDate: '2026-08-15' },
+  { id: 'VA-002', vendorId: 'V-001', vendorName: 'OpenAI', assessmentType: 'AI Governance', version: 'v2.0', status: 'approved', frameworkBasis: 'ISO 42001', owner: 'Emma Wilson', dueDate: '2026-02-28', submittedAt: '2026-02-20', reviewedAt: '2026-03-01', approvedAt: '2026-03-05', score: 82, riskFindingsCount: 6, criticalFindingsCount: 1, evidenceCount: 9, summary: 'AI governance assessment under ISO 42001. Critical finding: training data lineage insufficient for EU AI Act Article 10 requirements. Conditional approval pending remediation plan.', recommendation: 'Approve with Conditions', nextReviewDate: '2026-09-05' },
+  { id: 'VA-003', vendorId: 'V-004', vendorName: 'Pinecone', assessmentType: 'Security', version: 'v1.0', status: 'in_progress', frameworkBasis: 'CAIQ', owner: 'Emma Wilson', dueDate: '2026-04-30', submittedAt: null, reviewedAt: null, approvedAt: null, score: null, riskFindingsCount: 0, criticalFindingsCount: 0, evidenceCount: 3, summary: 'Assessment in progress. Vendor has provided initial SOC 2 report. Pending penetration test results and DPA review completion.', recommendation: null, nextReviewDate: '2026-10-30' },
+  { id: 'VA-004', vendorId: 'V-006', vendorName: 'Palantir', assessmentType: 'Privacy', version: 'v1.0', status: 'under_review', frameworkBasis: 'GDPR', owner: 'James Patel', dueDate: '2026-03-31', submittedAt: '2026-03-25', reviewedAt: null, approvedAt: null, score: 51, riskFindingsCount: 11, criticalFindingsCount: 3, evidenceCount: 7, summary: 'Privacy assessment identifies 3 critical findings: (1) EU data residency not guaranteed, (2) subprocessor list incomplete, (3) data retention policies non-compliant with GDPR Art. 5(1)(e). Escalated to CISO.', recommendation: 'Reject', nextReviewDate: '2026-06-30' },
+  { id: 'VA-005', vendorId: 'V-007', vendorName: 'C3.ai', assessmentType: 'DPA Review', version: 'v1.0', status: 'rejected', frameworkBasis: 'GDPR', owner: 'James Patel', dueDate: '2026-01-31', submittedAt: '2026-01-20', reviewedAt: '2026-02-01', approvedAt: null, score: 28, riskFindingsCount: 14, criticalFindingsCount: 5, evidenceCount: 2, summary: 'DPA review failed. Vendor refuses to sign standard DPA terms. Data residency outside EU with no SCCs. No subprocessor disclosure. All data sharing suspended immediately.', recommendation: 'Reject', nextReviewDate: '2026-06-01' },
+  { id: 'VA-006', vendorId: 'V-002', vendorName: 'AWS SageMaker', assessmentType: 'Operational Resilience', version: 'v2.0', status: 'approved', frameworkBasis: 'ISO 27001', owner: 'Maria Santos', dueDate: '2026-01-15', submittedAt: '2026-01-12', reviewedAt: '2026-01-18', approvedAt: '2026-01-20', score: 96, riskFindingsCount: 1, criticalFindingsCount: 0, evidenceCount: 18, summary: 'Exceptional operational resilience posture. 99.99% uptime SLA met. Multi-region failover tested quarterly. Minor finding: RTO documentation for EU region needs update.', recommendation: 'Approve', nextReviewDate: '2027-01-20' },
+  { id: 'VA-007', vendorId: 'V-009', vendorName: 'Scale AI', assessmentType: 'Privacy', version: 'v1.0', status: 'approved_with_conditions', frameworkBasis: 'GDPR', owner: 'Emma Wilson', dueDate: '2026-02-15', submittedAt: '2026-02-10', reviewedAt: '2026-02-18', approvedAt: '2026-02-20', score: 72, riskFindingsCount: 7, criticalFindingsCount: 1, evidenceCount: 11, summary: 'Approved with conditions. Critical finding: human annotators in APAC region accessing PII-tagged data without adequate SCCs. Vendor committed to geo-fenced annotation within 60 days.', recommendation: 'Approve with Conditions', nextReviewDate: '2026-08-20' },
+  { id: 'VA-008', vendorId: 'V-010', vendorName: 'Databricks', assessmentType: 'Security', version: 'v2.0', status: 'approved', frameworkBasis: 'SIG Lite', owner: 'Raj Gupta', dueDate: '2026-01-20', submittedAt: '2026-01-18', reviewedAt: '2026-01-22', approvedAt: '2026-01-25', score: 91, riskFindingsCount: 2, criticalFindingsCount: 0, evidenceCount: 15, summary: 'Strong security posture. FedRAMP authorized. Minor findings in access log retention period and MFA enforcement for service accounts. Both remediated within 30 days.', recommendation: 'Approve', nextReviewDate: '2027-01-25' },
+];
+
+// ── Vendor SLAs ─────────────────────────────────
+export interface VendorSLA {
+  id: string;
+  vendorId: string;
+  vendorName: string;
+  serviceName: string;
+  slaType: 'Availability' | 'Support Response' | 'Incident Notification' | 'RTO' | 'RPO' | 'Review Turnaround' | 'DSR Support' | 'Custom';
+  target: string;
+  warningThreshold: string;
+  breachThreshold: string;
+  measurementWindow: string;
+  currentPerformance: string;
+  status: SLAStatus;
+  owner: string;
+  escalationPath: string;
+  lastMeasuredAt: string;
+  lastBreachAt: string | null;
+  linkedTickets: string[];
+  notes: string;
+}
+export const VENDOR_SLAS: VendorSLA[] = [
+  { id: 'SLA-001', vendorId: 'V-001', vendorName: 'OpenAI', serviceName: 'GPT-4o API', slaType: 'Availability', target: '99.9%', warningThreshold: '99.5%', breachThreshold: '99.0%', measurementWindow: 'Monthly', currentPerformance: '99.7%', status: 'healthy', owner: 'David Kim', escalationPath: 'David Kim → Raj Gupta → Sarah Chen', lastMeasuredAt: '2026-04-01', lastBreachAt: null, linkedTickets: [], notes: 'Measured against OpenAI status page. EU region had scheduled maintenance window Feb 14.' },
+  { id: 'SLA-002', vendorId: 'V-001', vendorName: 'OpenAI', serviceName: 'GPT-4o API', slaType: 'Support Response', target: 'P1: 1h / P2: 4h / P3: 24h', warningThreshold: 'P1: 2h / P2: 6h', breachThreshold: 'P1: 4h / P2: 12h', measurementWindow: 'Per Incident', currentPerformance: 'P1: avg 1.8h (Mar)', status: 'at_risk', owner: 'David Kim', escalationPath: 'David Kim → Raj Gupta', lastMeasuredAt: '2026-04-01', lastBreachAt: '2026-03-12', linkedTickets: ['TKT-4421'], notes: 'P1 response times trending above target in March. Enterprise CSM engaged for remediation plan.' },
+  { id: 'SLA-003', vendorId: 'V-002', vendorName: 'AWS SageMaker', serviceName: 'SageMaker Inference Endpoints', slaType: 'Availability', target: '99.99%', warningThreshold: '99.95%', breachThreshold: '99.9%', measurementWindow: 'Monthly', currentPerformance: '100%', status: 'healthy', owner: 'James Patel', escalationPath: 'James Patel → Maria Santos → Sarah Chen', lastMeasuredAt: '2026-04-01', lastBreachAt: null, linkedTickets: [], notes: 'AWS SageMaker us-east-1 and eu-west-1 both at 100% for rolling 90-day period.' },
+  { id: 'SLA-004', vendorId: 'V-002', vendorName: 'AWS SageMaker', serviceName: 'S3 Data Storage', slaType: 'RPO', target: '< 15 min', warningThreshold: '< 30 min', breachThreshold: '> 60 min', measurementWindow: 'Per Incident', currentPerformance: '< 5 min (last DR test)', status: 'healthy', owner: 'James Patel', escalationPath: 'James Patel → Maria Santos', lastMeasuredAt: '2026-03-15', lastBreachAt: null, linkedTickets: [], notes: 'Quarterly DR test completed 2026-03-15. Cross-region replication verified.' },
+  { id: 'SLA-005', vendorId: 'V-004', vendorName: 'Pinecone', serviceName: 'Vector DB Query API', slaType: 'Availability', target: '99.9%', warningThreshold: '99.5%', breachThreshold: '99.0%', measurementWindow: 'Monthly', currentPerformance: '98.1%', status: 'breached', owner: 'Emma Wilson', escalationPath: 'Emma Wilson → Raj Gupta → Sarah Chen', lastMeasuredAt: '2026-04-01', lastBreachAt: '2026-03-22', linkedTickets: ['TKT-4489', 'TKT-4502'], notes: 'BREACHED: Two outages in March totalling 28h downtime. Vendor RCA provided — database migration failure. Service credits being negotiated.' },
+  { id: 'SLA-006', vendorId: 'V-006', vendorName: 'Palantir', serviceName: 'Foundry Analytics Platform', slaType: 'Availability', target: '99.9%', warningThreshold: '99.7%', breachThreshold: '99.5%', measurementWindow: 'Monthly', currentPerformance: '99.6%', status: 'at_risk', owner: 'James Patel', escalationPath: 'James Patel → Sarah Chen', lastMeasuredAt: '2026-04-01', lastBreachAt: '2026-02-18', linkedTickets: ['TKT-4380'], notes: 'Performance at warning threshold. Availability impacted by ongoing data residency migration. Enhanced monitoring active.' },
+  { id: 'SLA-007', vendorId: 'V-007', vendorName: 'C3.ai', serviceName: 'Enterprise AI Platform', slaType: 'Incident Notification', target: '< 1h for P1 incidents', warningThreshold: '< 2h', breachThreshold: '> 4h', measurementWindow: 'Per Incident', currentPerformance: 'Avg 6.2h (Q1 2026)', status: 'breached', owner: 'David Kim', escalationPath: 'David Kim → Sarah Chen', lastMeasuredAt: '2026-03-01', lastBreachAt: '2026-03-01', linkedTickets: ['TKT-4350', 'TKT-4398'], notes: 'BREACHED: Repeated failure to notify within SLA window. Vendor on formal breach notice. Data sharing suspended Feb 2026.' },
+  { id: 'SLA-008', vendorId: 'V-009', vendorName: 'Scale AI', serviceName: 'Annotation Turnaround', slaType: 'Review Turnaround', target: '< 5 business days per batch', warningThreshold: '5–7 days', breachThreshold: '> 7 days', measurementWindow: 'Per Batch', currentPerformance: 'Avg 4.2 days (Q1)', status: 'healthy', owner: 'Emma Wilson', escalationPath: 'Emma Wilson → Maria Santos', lastMeasuredAt: '2026-04-01', lastBreachAt: '2025-11-10', linkedTickets: [], notes: 'Performance consistently within target. Last breach Nov 2025 due to annotator shortage. Geo-fencing implementation pending per VA-007 conditions.' },
+  { id: 'SLA-009', vendorId: 'V-001', vendorName: 'OpenAI', serviceName: 'Data Subject Request Support', slaType: 'DSR Support', target: '< 24h acknowledgement / < 30 days fulfillment', warningThreshold: '< 48h / < 25 days', breachThreshold: '> 72h / > 30 days', measurementWindow: 'Per DSR', currentPerformance: 'Avg 18h ack / 22 days fulfillment', status: 'healthy', owner: 'James Patel', escalationPath: 'James Patel → David Kim', lastMeasuredAt: '2026-03-31', lastBreachAt: null, linkedTickets: [], notes: 'GDPR Art. 28 DSR support SLA. 3 DSRs processed in Q1 2026, all within target.' },
+  { id: 'SLA-010', vendorId: 'V-008', vendorName: 'Okta', serviceName: 'Identity Platform', slaType: 'Availability', target: '99.99%', warningThreshold: '99.95%', breachThreshold: '99.9%', measurementWindow: 'Monthly', currentPerformance: '100%', status: 'healthy', owner: 'James Patel', escalationPath: 'James Patel → Sarah Chen', lastMeasuredAt: '2026-04-01', lastBreachAt: null, linkedTickets: [], notes: 'Okta identity platform at 100% availability for 12 consecutive months.' },
+];
+
+// ── TPRM Issues ─────────────────────────────────
+export interface TPRMIssue {
+  id: string;
+  vendorId: string;
+  vendorName: string;
+  sourceType: 'Assessment' | 'SLA' | 'Incident' | 'Audit' | 'External Monitoring' | 'Contract Review';
+  title: string;
+  severity: Severity;
+  status: TPRMIssueStatus;
+  owner: string;
+  dueDate: string;
+  remediationPlan: string;
+  linkedAssessmentId: string | null;
+  linkedRiskId: string | null;
+  linkedIncidentId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+export const TPRM_ISSUES: TPRMIssue[] = [
+  { id: 'TI-001', vendorId: 'V-001', vendorName: 'OpenAI', sourceType: 'Assessment', title: 'Training data lineage insufficient for EU AI Act Art. 10', severity: 'critical', status: 'in_progress', owner: 'Emma Wilson', dueDate: '2026-05-31', remediationPlan: 'OpenAI to provide data provenance documentation for GPT-4o training corpus. Interim: restrict EU-originating prompts to avoid Art. 10 scope.', linkedAssessmentId: 'VA-002', linkedRiskId: 'RSK-004', linkedIncidentId: null, createdAt: '2026-03-05T10:00:00Z', updatedAt: '2026-04-01T14:30:00Z' },
+  { id: 'TI-002', vendorId: 'V-001', vendorName: 'OpenAI', sourceType: 'Assessment', title: 'Subprocessor change notification lag exceeds 30-day SLA', severity: 'medium', status: 'open', owner: 'David Kim', dueDate: '2026-05-15', remediationPlan: 'Negotiate enhanced subprocessor notification clause in DPA amendment. Target: 14-day advance notice vs current 30-day.', linkedAssessmentId: 'VA-001', linkedRiskId: null, linkedIncidentId: null, createdAt: '2026-02-16T09:00:00Z', updatedAt: '2026-03-20T11:00:00Z' },
+  { id: 'TI-003', vendorId: 'V-004', vendorName: 'Pinecone', sourceType: 'SLA', title: 'SLA breach — 28h downtime in March 2026', severity: 'high', status: 'in_progress', owner: 'Emma Wilson', dueDate: '2026-04-30', remediationPlan: 'Obtain formal RCA from vendor. Negotiate service credits per SLA terms. Evaluate failover to alternative vector DB (Weaviate) as contingency.', linkedAssessmentId: null, linkedRiskId: null, linkedIncidentId: 'INC-001', createdAt: '2026-03-22T18:00:00Z', updatedAt: '2026-04-02T09:00:00Z' },
+  { id: 'TI-004', vendorId: 'V-004', vendorName: 'Pinecone', sourceType: 'Assessment', title: 'DPA not executed — GDPR Art. 28 gap', severity: 'critical', status: 'open', owner: 'James Patel', dueDate: '2026-04-15', remediationPlan: 'Suspend EU data ingestion into Pinecone. Legal to issue DPA execution request by 2026-04-15. Escalate to CISO if no response within 7 days.', linkedAssessmentId: 'VA-003', linkedRiskId: 'RSK-003', linkedIncidentId: null, createdAt: '2026-03-01T10:00:00Z', updatedAt: '2026-04-01T08:00:00Z' },
+  { id: 'TI-005', vendorId: 'V-006', vendorName: 'Palantir', sourceType: 'Assessment', title: 'EU data residency not guaranteed — critical GDPR finding', severity: 'critical', status: 'in_progress', owner: 'James Patel', dueDate: '2026-06-30', remediationPlan: 'Palantir to configure dedicated EU-West data plane. Interim: no EU-originating regulated data processed via Palantir. DPO review required before resumption.', linkedAssessmentId: 'VA-004', linkedRiskId: 'RSK-004', linkedIncidentId: null, createdAt: '2026-03-26T14:00:00Z', updatedAt: '2026-04-01T10:00:00Z' },
+  { id: 'TI-006', vendorId: 'V-006', vendorName: 'Palantir', sourceType: 'Assessment', title: 'Subprocessor list incomplete — 14 processors undisclosed', severity: 'high', status: 'open', owner: 'James Patel', dueDate: '2026-05-31', remediationPlan: 'Formal written demand for complete subprocessor disclosure. Engage legal to assess contractual remedies if not provided within 30 days.', linkedAssessmentId: 'VA-004', linkedRiskId: null, linkedIncidentId: null, createdAt: '2026-03-26T14:30:00Z', updatedAt: '2026-03-26T14:30:00Z' },
+  { id: 'TI-007', vendorId: 'V-007', vendorName: 'C3.ai', sourceType: 'Audit', title: 'DPA not signed — all data sharing suspended', severity: 'critical', status: 'open', owner: 'James Patel', dueDate: '2026-05-01', remediationPlan: 'Vendor under formal breach notice. Two options: (1) Sign GDPR-compliant DPA within 30 days, (2) initiate contract termination. Legal engaged.', linkedAssessmentId: 'VA-005', linkedRiskId: 'RSK-003', linkedIncidentId: null, createdAt: '2026-02-01T09:00:00Z', updatedAt: '2026-04-01T16:00:00Z' },
+  { id: 'TI-008', vendorId: 'V-007', vendorName: 'C3.ai', sourceType: 'SLA', title: 'Incident notification SLA breached — avg 6.2h vs 1h target', severity: 'high', status: 'open', owner: 'David Kim', dueDate: '2026-04-30', remediationPlan: 'Vendor on formal SLA breach notice. Service credits to be claimed. Likely combined with contract termination proceedings.', linkedAssessmentId: null, linkedRiskId: null, linkedIncidentId: null, createdAt: '2026-03-01T12:00:00Z', updatedAt: '2026-03-15T09:00:00Z' },
+  { id: 'TI-009', vendorId: 'V-009', vendorName: 'Scale AI', sourceType: 'Assessment', title: 'APAC annotators accessing PII data without adequate SCCs', severity: 'critical', status: 'in_progress', owner: 'Emma Wilson', dueDate: '2026-04-20', remediationPlan: 'Scale AI implementing geo-fenced annotation queues by 2026-04-20. Interim: PII-tagged data routed to EU-only annotator pool. Weekly progress check with vendor CSM.', linkedAssessmentId: 'VA-007', linkedRiskId: 'RSK-003', linkedIncidentId: null, createdAt: '2026-02-20T10:00:00Z', updatedAt: '2026-04-01T11:00:00Z' },
+  { id: 'TI-010', vendorId: 'V-001', vendorName: 'OpenAI', sourceType: 'External Monitoring', title: 'OpenAI model outputs leaking rate limit metadata', severity: 'medium', status: 'mitigated', owner: 'Raj Gupta', dueDate: '2026-03-31', remediationPlan: 'Implemented response sanitization layer in API gateway. OpenAI patched in v1.34 API. Closed with monitoring.', linkedAssessmentId: null, linkedRiskId: null, linkedIncidentId: 'INC-005', createdAt: '2026-02-28T16:00:00Z', updatedAt: '2026-03-20T14:00:00Z' },
+  { id: 'TI-011', vendorId: 'V-006', vendorName: 'Palantir', sourceType: 'Contract Review', title: 'Data retention clause conflicts with GDPR Art. 5(1)(e)', severity: 'high', status: 'open', owner: 'James Patel', dueDate: '2026-06-30', remediationPlan: 'Legal review initiated. Palantir contract amendment required to align retention periods with GDPR. Estimated 90-day negotiation window.', linkedAssessmentId: 'VA-004', linkedRiskId: null, linkedIncidentId: null, createdAt: '2026-03-26T15:00:00Z', updatedAt: '2026-03-26T15:00:00Z' },
+];
+
+// ── Vendor Documents ────────────────────────────
+export interface VendorDocument {
+  id: string;
+  vendorId: string;
+  vendorName: string;
+  type: 'DPA' | 'MSA' | 'SOC 2' | 'ISO Certificate' | 'Pen Test' | 'Security Whitepaper' | 'Subprocessor List' | 'Insurance' | 'BCP/DR' | 'AI Transparency' | 'Other';
+  fileName: string;
+  status: VendorDocStatus;
+  uploadedAt: string;
+  expiresAt: string | null;
+  owner: string;
+}
+export const VENDOR_DOCUMENTS: VendorDocument[] = [
+  { id: 'VD-001', vendorId: 'V-001', vendorName: 'OpenAI', type: 'DPA', fileName: 'OpenAI_DPA_v4_2026-02.pdf', status: 'valid', uploadedAt: '2026-02-10', expiresAt: '2027-02-10', owner: 'James Patel' },
+  { id: 'VD-002', vendorId: 'V-001', vendorName: 'OpenAI', type: 'SOC 2', fileName: 'OpenAI_SOC2_TypeII_2025.pdf', status: 'expiring_soon', uploadedAt: '2025-04-15', expiresAt: '2026-04-30', owner: 'David Kim' },
+  { id: 'VD-003', vendorId: 'V-001', vendorName: 'OpenAI', type: 'AI Transparency', fileName: 'OpenAI_GPT4o_ModelCard_v2.pdf', status: 'valid', uploadedAt: '2026-01-20', expiresAt: null, owner: 'Emma Wilson' },
+  { id: 'VD-004', vendorId: 'V-002', vendorName: 'AWS SageMaker', type: 'DPA', fileName: 'AWS_GDPR_DPA_2025.pdf', status: 'valid', uploadedAt: '2025-06-01', expiresAt: '2028-05-31', owner: 'James Patel' },
+  { id: 'VD-005', vendorId: 'V-002', vendorName: 'AWS SageMaker', type: 'SOC 2', fileName: 'AWS_SOC2_TypeII_2025-H2.pdf', status: 'valid', uploadedAt: '2026-02-01', expiresAt: '2026-09-01', owner: 'James Patel' },
+  { id: 'VD-006', vendorId: 'V-002', vendorName: 'AWS SageMaker', type: 'ISO Certificate', fileName: 'AWS_ISO27001_Certificate_2025.pdf', status: 'valid', uploadedAt: '2025-11-01', expiresAt: '2026-11-01', owner: 'James Patel' },
+  { id: 'VD-007', vendorId: 'V-003', vendorName: 'Anthropic', type: 'DPA', fileName: 'Anthropic_DPA_2025.pdf', status: 'valid', uploadedAt: '2025-01-15', expiresAt: '2027-01-15', owner: 'James Patel' },
+  { id: 'VD-008', vendorId: 'V-003', vendorName: 'Anthropic', type: 'SOC 2', fileName: 'Anthropic_SOC2_TypeII_2025.pdf', status: 'expiring_soon', uploadedAt: '2025-05-01', expiresAt: '2026-05-15', owner: 'David Kim' },
+  { id: 'VD-009', vendorId: 'V-004', vendorName: 'Pinecone', type: 'DPA', fileName: 'Pinecone_DPA_Draft_v1.pdf', status: 'missing', uploadedAt: '', expiresAt: null, owner: 'James Patel' },
+  { id: 'VD-010', vendorId: 'V-004', vendorName: 'Pinecone', type: 'SOC 2', fileName: 'Pinecone_SOC2_TypeII_2025.pdf', status: 'valid', uploadedAt: '2025-12-15', expiresAt: '2026-12-15', owner: 'Emma Wilson' },
+  { id: 'VD-011', vendorId: 'V-006', vendorName: 'Palantir', type: 'DPA', fileName: 'Palantir_DPA_Unsigned.pdf', status: 'missing', uploadedAt: '', expiresAt: null, owner: 'James Patel' },
+  { id: 'VD-012', vendorId: 'V-006', vendorName: 'Palantir', type: 'Subprocessor List', fileName: 'Palantir_Subprocessors_Partial_2026.pdf', status: 'requested', uploadedAt: '2026-01-01', expiresAt: null, owner: 'James Patel' },
+  { id: 'VD-013', vendorId: 'V-007', vendorName: 'C3.ai', type: 'DPA', fileName: 'C3ai_DPA_MISSING.pdf', status: 'missing', uploadedAt: '', expiresAt: null, owner: 'James Patel' },
+  { id: 'VD-014', vendorId: 'V-007', vendorName: 'C3.ai', type: 'SOC 2', fileName: 'C3ai_SOC2_2024.pdf', status: 'expired', uploadedAt: '2024-06-01', expiresAt: '2025-06-01', owner: 'David Kim' },
+  { id: 'VD-015', vendorId: 'V-009', vendorName: 'Scale AI', type: 'DPA', fileName: 'ScaleAI_DPA_2025.pdf', status: 'valid', uploadedAt: '2025-01-20', expiresAt: '2027-01-20', owner: 'James Patel' },
+  { id: 'VD-016', vendorId: 'V-009', vendorName: 'Scale AI', type: 'Pen Test', fileName: 'ScaleAI_PenTest_2025-Q4.pdf', status: 'expiring_soon', uploadedAt: '2025-10-15', expiresAt: '2026-04-30', owner: 'Emma Wilson' },
+  { id: 'VD-017', vendorId: 'V-010', vendorName: 'Databricks', type: 'SOC 2', fileName: 'Databricks_SOC2_TypeII_2025.pdf', status: 'valid', uploadedAt: '2025-09-01', expiresAt: '2026-09-01', owner: 'Raj Gupta' },
+  { id: 'VD-018', vendorId: 'V-010', vendorName: 'Databricks', type: 'DPA', fileName: 'Databricks_DPA_2023.pdf', status: 'valid', uploadedAt: '2023-07-01', expiresAt: '2028-06-30', owner: 'James Patel' },
 ];
