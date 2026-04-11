@@ -142,6 +142,9 @@ const CommitteeManagement = lazy(() => import('./pages/committee/CommitteeManage
 const ModelValidationLab = lazy(() => import('./pages/validation/ModelValidationLab'));
 const PerformanceMonitoring = lazy(() => import('./pages/performance/PerformanceMonitoring'));
 const IncidentPlaybooks = lazy(() => import('./pages/incidents/IncidentPlaybooks'));
+const EvalResultsViewer = lazy(() => import('./pages/evals/EvalResultsViewer'));
+const CisoDashboard = lazy(() => import('./pages/ciso/CisoDashboard'));
+const BoardReport = lazy(() => import('./pages/ciso/BoardReport'));
 
 function Loading() {
   return (
@@ -233,7 +236,7 @@ export default function App() {
           <Route path="/evals" element={<QualityMetrics />} />
           <Route path="/evals/quality-metrics" element={<QualityMetrics />} />
           <Route path="/evals/techniques" element={<EvalTechniques />} />
-          <Route path="/evals/results" element={<QualityMetrics />} />
+          <Route path="/evals/results" element={<Suspense fallback={<Loading />}><EvalResultsViewer /></Suspense>} />
           <Route path="/evals/benchmark" element={<Benchmark />} />
           <Route path="/evals/datasets" element={<Datasets />} />
           <Route path="/compliance" element={<ComplianceDashboard />} />
@@ -305,6 +308,8 @@ export default function App() {
           <Route path="/compliance/controls/:id" element={<ControlDetail />} />
               <Route path="/controls/:id" element={<ControlDetail />} />
           <Route path="/reporting" element={<Suspense fallback={<Loading />}><Reporting /></Suspense>} />
+          <Route path="/ciso" element={<Suspense fallback={<Loading />}><CisoDashboard /></Suspense>} />
+          <Route path="/ciso/report" element={<Suspense fallback={<Loading />}><BoardReport /></Suspense>} />
           <Route path="/risk/register" element={<RiskRegister />} />
           <Route path="/risk/:id" element={<RiskDetail />} />
           <Route path="/models/:id" element={<ModelDetail />} />
