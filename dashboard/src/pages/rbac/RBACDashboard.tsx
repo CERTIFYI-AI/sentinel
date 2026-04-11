@@ -67,7 +67,11 @@ const MFA_DATA = [
 export default function RBACDashboard() {
   const { orgName } = useSettingsStore();
   const chart = useChartTheme();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    const queued = sessionStorage.getItem('rbac_initial_tab');
+    if (queued) { sessionStorage.removeItem('rbac_initial_tab'); return queued; }
+    return 'overview';
+  });
   const [users, setUsers] = useState<RBACUser[]>(INITIAL_RBAC_USERS);
   const [search, setSearch] = useState('');
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
