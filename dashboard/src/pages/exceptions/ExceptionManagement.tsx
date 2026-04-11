@@ -15,6 +15,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/ta
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '../../components/ui/select';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from '../../components/ui/dialog';
+import { Label } from '../../components/ui/label';
+import { Textarea } from '../../components/ui/textarea';
 import { useSettingsStore } from '../../stores/settingsStore';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -338,13 +343,45 @@ function exportCsv(data: Exception[]) {
 // ═════════════════════════════════════════════════════════════════════════════
 export default function ExceptionManagement() {
   const { orgName } = useSettingsStore();
-  const [exceptions] = useState<Exception[]>(EXCEPTIONS);
+  const [exceptions, setExceptions] = useState<Exception[]>(EXCEPTIONS);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
 
   // Detail drawer
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selected, setSelected] = useState<Exception | null>(null);
+
+  // Request Exception dialog
+  const [requestOpen, setRequestOpen] = useState(false);
+  const [newExc, setNewExc] = useState({ policy: '', policyRef: '', requestedBy: '', approver: '', riskAccepted: 'Medium' as RiskLevel, expiryDate: '', description: '', justification: '', compensatingControls: '' });
+
+  const handleRequestException = () => {
+    const id = `EXC-${String(exceptions.length + 1).padStart(3, '0')}`;
+    const exc: Exception = {
+      id,
+      policy: newExc.policy || 'New Policy Exception',
+      policyRef: newExc.policyRef || 'POL-001',
+      requestedBy: newExc.requestedBy || orgName,
+      requestedDate: new Date().toISOString().split('T')[0],
+      approver: newExc.approver || 'Chief Risk Officer',
+      status: 'Pending',
+      riskAccepted: newExc.riskAccepted,
+      expiryDate: newExc.expiryDate || new Date(Date.now() + 180 * 86400000).toISOString().split('T')[0],
+      compensatingControls: newExc.compensatingControls || 'To be defined',
+      description: newExc.description,
+      justification: newExc.justification,
+      riskAnalysis: 'Pending risk analysis',
+      impactScope: 'TBD',
+      affectedSystems: [],
+      controlDetails: [],
+      approvalChain: [{ role: 'Chief Risk Officer', name: newExc.approver || 'CRO', decision: 'Pending', date: '', notes: '' }],
+      renewalHistory: [],
+    };
+    setExceptions(prev => [...prev, exc]);
+    setRequestOpen(false);
+    setNewExc({ policy: '', policyRef: '', requestedBy: '', approver: '', riskAccepted: 'Medium', expiryDate: '', description: '', justification: '', compensatingControls: '' });
+    toast(`Exception request ${id} submitted for approval`);
+  };
 
   // ── Filtering ──────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
@@ -395,7 +432,7 @@ export default function ExceptionManagement() {
           >
             <Export size={14} className="mr-1" />Export CSV
           </Button>
-          <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+          <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }} onClick={() => setRequestOpen(true)}>
             <Plus size={14} className="mr-1" />Request Exception
           </Button>
         </div>
@@ -830,6 +867,68 @@ export default function ExceptionManagement() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Request Exception Dialog */}
+      <Dialog open={requestOpen} onOpenChange={setRequestOpen}>
+        <DialogContent style={{ borderRadius: 0, maxWidth: 540 }}>
+          <DialogHeader>
+            <DialogTitle>Request Policy Exception</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Policy Name *</Label>
+                <Input style={{ borderRadius: 0 }} placeholder="e.g. Data Retention Policy" value={newExc.policy} onChange={e => setNewExc(p => ({ ...p, policy: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Policy Reference</Label>
+                <Input style={{ borderRadius: 0 }} placeholder="e.g. DRP-3.1" value={newExc.policyRef} onChange={e => setNewExc(p => ({ ...p, policyRef: e.target.value }))} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Requested By</Label>
+                <Input style={{ borderRadius: 0 }} placeholder="Name" value={newExc.requestedBy} onChange={e => setNewExc(p => ({ ...p, requestedBy: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Approver</Label>
+                <Input style={{ borderRadius: 0 }} placeholder="Approver name" value={newExc.approver} onChange={e => setNewExc(p => ({ ...p, approver: e.target.value }))} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Risk Level</Label>
+                <Select value={newExc.riskAccepted} onValueChange={v => setNewExc(p => ({ ...p, riskAccepted: v as RiskLevel }))}>
+                  <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {(['Low', 'Medium', 'High', 'Critical'] as RiskLevel[]).map(r => (
+                      <SelectItem key={r} value={r}>{r}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Expiry Date</Label>
+                <Input type="date" style={{ borderRadius: 0 }} value={newExc.expiryDate} onChange={e => setNewExc(p => ({ ...p, expiryDate: e.target.value }))} />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Business Justification *</Label>
+              <Textarea style={{ borderRadius: 0 }} rows={3} placeholder="Why is this exception needed?" value={newExc.justification} onChange={e => setNewExc(p => ({ ...p, justification: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Compensating Controls</Label>
+              <Textarea style={{ borderRadius: 0 }} rows={2} placeholder="What mitigating controls are in place?" value={newExc.compensatingControls} onChange={e => setNewExc(p => ({ ...p, compensatingControls: e.target.value }))} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setRequestOpen(false)}>Cancel</Button>
+            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }} onClick={handleRequestException} disabled={!newExc.policy || !newExc.justification}>
+              Submit Request
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
