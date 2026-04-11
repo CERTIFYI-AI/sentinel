@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Eye, PencilSimple, Trash, Plus, Buildings, MagnifyingGlass, Funnel,
   Warning, CheckCircle, ShieldWarning, Export, Handshake, Globe,
@@ -85,6 +86,7 @@ function vsqStatusStyle(status: VSQStatus): { bg: string; color: string } {
 
 export default function VendorRegistry() {
   const { orgName } = useSettingsStore();
+  const navigate = useNavigate();
   const [vendors, setVendors] = useState<Vendor[]>(VENDORS);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -277,8 +279,9 @@ export default function VendorRegistry() {
                     const tc = tierColor(v.risk);
                     const stc = statusColor(v.status);
                     return (
-                      <tr key={v.id} className="hover:bg-muted/30 transition-colors"
-                        style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                      <tr key={v.id} className="hover:bg-muted/30 transition-colors cursor-pointer"
+                        style={{ borderBottom: '1px solid hsl(var(--border))' }}
+                        onClick={() => navigate(`/vendors/${v.id}`)}>
                         <td className="px-4 py-3">
                           <div>
                             <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{v.name}</p>
@@ -326,10 +329,10 @@ export default function VendorRegistry() {
                           {v.contact ? v.contact.split('@')[0] : '—'}
                         </td>
                         <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{formatDate(v.lastReview)}</td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                           <div className="flex items-center gap-1">
                             <Button variant="ghost" size="sm" className="h-7 w-7 p-0"
-                              onClick={() => { setSelectedVendor(v); setDetailTab('overview'); }}>
+                              onClick={() => navigate(`/vendors/${v.id}`)}>
                               <Eye size={14} />
                             </Button>
                             <Button variant="ghost" size="sm" className="h-7 w-7 p-0"

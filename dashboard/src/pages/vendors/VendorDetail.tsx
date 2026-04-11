@@ -9,7 +9,7 @@ import {
   Buildings, Robot, Clock, CalendarBlank, FileText, Users,
   FilePdf, Download, UploadSimple, CurrencyDollar,
   CheckCircle, XCircle, ArrowsClockwise, Plugs,
-  ClipboardText, Star, Eye, SealCheck, Activity,
+  ClipboardText, Star, Eye, SealCheck, ChartLine,
   ArrowSquareOut,
 } from '@phosphor-icons/react';
 import {
