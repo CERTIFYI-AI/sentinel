@@ -126,20 +126,23 @@ function buildBreadcrumbs(pathname: string): { label: string; path: string; isLa
 export default function TopHeader() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { theme, resolved, setTheme, cycleTheme } = useTheme()
+  const { theme, resolved, setTheme } = useTheme()
   const breadcrumbs = buildBreadcrumbs(location.pathname)
 
   const [avatarOpen, setAvatarOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const [colorOpen, setColorOpen] = useState(false)
+  const [themeOpen, setThemeOpen] = useState(false)
   const [accent, setAccentState] = useState<Accent>(getStoredAccent)
 
   const dropdownRef = useRef<HTMLDivElement>(null)
   const colorRef = useRef<HTMLDivElement>(null)
+  const themeRef = useRef<HTMLDivElement>(null)
 
   const closeDropdown = useCallback(() => setAvatarOpen(false), [])
   const closeColor = useCallback(() => setColorOpen(false), [])
+  const closeTheme = useCallback(() => setThemeOpen(false), [])
 
   const handleAccentChange = (a: Accent) => {
     setAccent(a)
@@ -147,20 +150,26 @@ export default function TopHeader() {
     setColorOpen(false)
   }
 
+  const handleThemeChange = (t: 'light' | 'dark' | 'system') => {
+    setTheme(t)
+    setThemeOpen(false)
+  }
+
   // Close dropdowns on outside click / Escape
   useEffect(() => {
-    if (!avatarOpen && !colorOpen) return
+    if (!avatarOpen && !colorOpen && !themeOpen) return
     function handleClick(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) closeDropdown()
       if (colorRef.current && !colorRef.current.contains(e.target as Node)) closeColor()
+      if (themeRef.current && !themeRef.current.contains(e.target as Node)) closeTheme()
     }
     function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') { closeDropdown(); closeColor() }
+      if (e.key === 'Escape') { closeDropdown(); closeColor(); closeTheme() }
     }
     document.addEventListener('mousedown', handleClick)
     document.addEventListener('keydown', handleKey)
     return () => { document.removeEventListener('mousedown', handleClick); document.removeEventListener('keydown', handleKey) }
-  }, [avatarOpen, colorOpen, closeDropdown, closeColor])
+  }, [avatarOpen, colorOpen, themeOpen, closeDropdown, closeColor, closeTheme])
 
   // Open search on "/" key
   useEffect(() => {
@@ -275,22 +284,60 @@ export default function TopHeader() {
             )}
           </div>
 
-          {/* Theme toggle — cycles Dark → Light → System */}
-          <Button
-            variant='ghost'
-            size='icon'
-            className='h-8 w-8'
-            onClick={cycleTheme}
-            title={theme === 'dark' ? 'Dark mode — click for Light' : theme === 'light' ? 'Light mode — click for System' : 'System mode — click for Dark'}
-            aria-label='Cycle theme'
-          >
-            {theme === 'dark'
-              ? <Moon size={16} className='text-[hsl(var(--text-3))]' />
-              : theme === 'light'
-              ? <Sun size={16} className='text-[hsl(var(--text-3))]' />
-              : <Monitor size={16} className='text-[hsl(var(--text-3))]' />
-            }
-          </Button>
+          {/* Theme picker — Light / Dark / System */}
+          <div className='relative' ref={themeRef}>
+            <Button
+              variant='ghost'
+              size='icon'
+              className='h-8 w-8'
+              onClick={() => setThemeOpen(v => !v)}
+              title='Switch theme'
+              aria-label='Switch theme'
+              aria-expanded={themeOpen}
+            >
+              {theme === 'dark'
+                ? <Moon size={16} className='text-[hsl(var(--text-3))]' />
+                : theme === 'light'
+                ? <Sun size={16} className='text-[hsl(var(--text-3))]' />
+                : <Monitor size={16} className='text-[hsl(var(--text-3))]' />
+              }
+            </Button>
+
+            {themeOpen && (
+              <div
+                role='menu'
+                className='absolute right-0 top-full mt-2 w-44 bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] shadow-[var(--shadow-md)] z-50 p-1.5'
+              >
+                <p className='text-[11px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wider px-2 py-1.5'>
+                  Appearance
+                </p>
+                {([
+                  { key: 'light' as const, label: 'Light', icon: <Sun size={14} /> },
+                  { key: 'dark'  as const, label: 'Dark',  icon: <Moon size={14} /> },
+                  { key: 'system' as const, label: 'System', icon: <Monitor size={14} /> },
+                ]).map(opt => (
+                  <button
+                    key={opt.key}
+                    role='menuitem'
+                    onClick={() => handleThemeChange(opt.key)}
+                    className='w-full flex items-center gap-2.5 px-2 py-1.5 text-sm hover:bg-[hsl(var(--bg-raised))] transition-colors'
+                    style={{
+                      color: theme === opt.key ? 'hsl(var(--brand))' : 'hsl(var(--text-2))',
+                      fontWeight: theme === opt.key ? 600 : 400,
+                    }}
+                  >
+                    <span style={{ color: theme === opt.key ? 'hsl(var(--brand))' : 'hsl(var(--text-3))' }}>
+                      {opt.icon}
+                    </span>
+                    {opt.label}
+                    {theme === opt.key && (
+                      <span className='ml-auto w-1.5 h-1.5 bg-[hsl(var(--brand))] flex-shrink-0' />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Refresh */}
           <Button
