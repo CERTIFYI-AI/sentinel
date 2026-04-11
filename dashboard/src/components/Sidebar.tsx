@@ -51,6 +51,12 @@ const NAV: NavSection[] = [
       { label: 'Tasks',        to: '/tasks',       icon: CheckSquare },
       { label: 'Notifications',to: '/notifications',icon: Bell },
       { label: 'Reporting',    to: '/reporting',   icon: ChartPieSlice },
+      {
+        label: 'CISO Dashboard', to: '/ciso', icon: ShieldCheck,
+        children: [
+          { label: 'Board Report', to: '/ciso/report' },
+        ],
+      },
     ],
   },
   {
@@ -115,6 +121,7 @@ const NAV: NavSection[] = [
       {
         label: 'Evaluations', to: '/evals', icon: ChartBar,
         children: [
+          { label: 'Results Viewer',  to: '/evals/results' },
           { label: 'Eval Techniques', to: '/evals/techniques' },
           { label: 'Benchmark',       to: '/evals/benchmark' },
         ],

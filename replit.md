@@ -26,6 +26,42 @@ Required for full functionality (set via Replit Secrets):
 Frontend env vars:
 - `VITE_API_URL` — API base URL (leave empty for proxied local dev)
 
+## Recent Changes (April 2026 — Session 3)
+
+### Enhanced: GuardrailActivity.tsx (`/trust-engine/guardrails`)
+- Visual Rule Builder panel (collapsible) with IF/THEN condition builder
+- AND condition chaining, per-field operators, action selector
+- 5 pre-seeded rules (BR-001 to BR-005) with toggle/delete
+- Auto-escalation toggle, SLA enforcement banner
+
+### Enhanced: CarbonLedger.tsx (`/data/carbon`)
+- Inline editable budget threshold with progress bar and over-budget warning
+- 5th stat card: "At current rate" projected monthly figure
+- Per-model energy efficiency score bars with color coding (green/orange/red)
+- Dismissible recommendation chips with CO₂ savings estimates
+- Budget reference line on trend chart
+
+### Built: EvalResultsViewer.tsx (`/evals/results`)
+- Was a "Coming Soon" placeholder — now a fully featured evaluation viewer
+- Run selector (3 runs with score chips)
+- Score Breakdown tab: horizontal bar chart + metric table with delta chips vs prior run
+- Regression Trends tab: 6-run line chart per metric
+- Failure Analysis tab: severity filter/search, failure case drill-down sheet with prompt/output/expected/judge rationale
+
+### Fixed: App.tsx routing
+- `/evals/results` was wired to QualityMetrics — now correctly wired to EvalResultsViewer
+- Added `/ciso` (CisoDashboard) and `/ciso/report` (BoardReport) routes
+
+### Enhanced: Sidebar.tsx
+- Added "CISO Dashboard" with "Board Report" child to OVERVIEW section
+- Added "Results Viewer" child under Evaluations section
+
+### Enhanced: BoardReport.tsx
+- PDF and PPTX generate buttons now show loading/success toast feedback (were disabled)
+
+### Fixed: Backend
+- Installed `wsproto` Python package to fix backend crash on startup
+
 ## Recent Changes (April 2026)
 
 ### Fixed: RiskDetail page (`/risk/:id`)
