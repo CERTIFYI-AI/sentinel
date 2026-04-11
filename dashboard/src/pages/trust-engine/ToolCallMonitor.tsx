@@ -208,7 +208,7 @@ function permBadge(p: AuthRule['permission']) {
 export default function ToolCallMonitor() {
   const { orgName } = useSettingsStore();
   useChartTheme();
-  const [calls] = useState<ToolCall[]>(TOOL_CALLS);
+  const [calls, setCalls] = useState<ToolCall[]>(TOOL_CALLS);
   const [authMatrix, setAuthMatrix] = useState<AuthRule[]>(AUTH_MATRIX);
   const [search, setSearch] = useState('');
   const [resultFilter, setResultFilter] = useState('all');

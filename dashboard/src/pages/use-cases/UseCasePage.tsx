@@ -110,6 +110,16 @@ function StatusBadge({ status }: { status: string }) {
   return <Badge style={{ background: style.bg, color: style.color, borderRadius: 0, fontSize: 10 }}>{status}</Badge>;
 }
 
+// ── Regulatory Tagging Rows ──────────────────────────────────────────────────
+
+const REG_TAG_ROWS = [
+  { uc: 'UC-001', title: 'Loan Scoring Automation', risk: 'High-Risk', geo: 'US + EU', regs: ['EU AI Act Art.6', 'ECOA', 'CFPB', 'GDPR Art.22'], confidence: 97 },
+  { uc: 'UC-002', title: 'Fraud Detection Engine', risk: 'High-Risk', geo: 'Global', regs: ['EU AI Act Art.6', 'PSD2', 'GDPR', 'Basel IV'], confidence: 94 },
+  { uc: 'UC-003', title: 'HR Resume Screening', risk: 'High-Risk', geo: 'EU + UK', regs: ['EU AI Act Annex III', 'GDPR', 'UK Equality Act', 'EEOC'], confidence: 99 },
+  { uc: 'UC-004', title: 'Supply Chain Optimizer', risk: 'Minimal', geo: 'US', regs: ['NIST AI RMF', 'ISO 42001'], confidence: 82 },
+  { uc: 'UC-005', title: 'Medical Risk Score', risk: 'High-Risk', geo: 'US + EU', regs: ['EU AI Act Annex III §5', 'FDA AI/ML', 'HIPAA', 'MDR 2017/745'], confidence: 98 },
+];
+
 // ── Main Component ───────────────────────────────────────────────────────────
 
 export default function UseCasePage() {
@@ -125,6 +135,9 @@ export default function UseCasePage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
   const [ceItems, setCeItems] = useState(CE_CHECKLIST.map(c => ({ ...c, checked: c.status === 'Complete' })));
+  const [regTagRows, setRegTagRows] = useState(REG_TAG_ROWS);
+  const [editTagRow, setEditTagRow] = useState<(typeof REG_TAG_ROWS)[0] | null>(null);
+  const [editTagInput, setEditTagInput] = useState('');
 
   // Create form state
   const [newUC, setNewUC] = useState({
@@ -456,7 +469,10 @@ export default function UseCasePage() {
               <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>AI-determined regulatory framework applicability per use case based on risk class, geography, industry, and data types</p>
             </div>
             <button className="px-3 py-1.5 text-xs text-white" style={{ background: 'hsl(var(--brand))' }}
-              onClick={() => {}}>Re-run Auto-Tag</button>
+              onClick={() => {
+                setRegTagRows(prev => prev.map(r => ({ ...r, confidence: Math.min(100, r.confidence + Math.floor(Math.random() * 3 - 1)) })));
+                toast('Regulatory auto-tag complete — 5 use cases re-processed', 'success');
+              }}>Re-run Auto-Tag</button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
@@ -468,13 +484,7 @@ export default function UseCasePage() {
                 </tr>
               </thead>
               <tbody>
-                {[
-                  { uc: 'UC-001', title: 'Loan Scoring Automation', risk: 'High-Risk', geo: 'US + EU', regs: ['EU AI Act Art.6', 'ECOA', 'CFPB', 'GDPR Art.22'], confidence: 97 },
-                  { uc: 'UC-002', title: 'Fraud Detection Engine', risk: 'High-Risk', geo: 'Global', regs: ['EU AI Act Art.6', 'PSD2', 'GDPR', 'Basel IV'], confidence: 94 },
-                  { uc: 'UC-003', title: 'HR Resume Screening', risk: 'High-Risk', geo: 'EU + UK', regs: ['EU AI Act Annex III', 'GDPR', 'UK Equality Act', 'EEOC'], confidence: 99 },
-                  { uc: 'UC-004', title: 'Supply Chain Optimizer', risk: 'Minimal', geo: 'US', regs: ['NIST AI RMF', 'ISO 42001'], confidence: 82 },
-                  { uc: 'UC-005', title: 'Medical Risk Score', risk: 'High-Risk', geo: 'US + EU', regs: ['EU AI Act Annex III §5', 'FDA AI/ML', 'HIPAA', 'MDR 2017/745'], confidence: 98 },
-                ].map(r => (
+                {regTagRows.map(r => (
                   <tr key={r.uc} style={{ borderBottom: '1px solid hsl(var(--border))' }}>
                     <td className="px-3 py-2">
                       <span className="font-mono font-medium" style={{ color: 'hsl(var(--brand))' }}>{r.uc}</span>

@@ -90,6 +90,14 @@ export default function BiasAuditWizard() {
   const ct = useChartTheme();
   const [audits, setAudits] = useState<BiasAudit[]>(BIAS_AUDITS);
   const [search, setSearch] = useState('');
+  const [cfRunning, setCfRunning] = useState(false);
+  const [cfDone, setCfDone] = useState(false);
+
+  const runCounterfactualTest = () => {
+    setCfRunning(true);
+    setCfDone(false);
+    setTimeout(() => { setCfRunning(false); setCfDone(true); }, 2200);
+  };
 
   // Detail sheet
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -513,8 +521,10 @@ export default function BiasAuditWizard() {
                 <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Counterfactual Fairness Testing</p>
                 <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>Would the decision change if only the protected attribute changed? Tested on Loan Approval Model v3.0</p>
               </div>
-              <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
-                onClick={() => {}}>Run Counterfactual Test</Button>
+              <Button size="sm" style={{ borderRadius: 0, background: cfDone ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--brand))', color: cfDone ? 'hsl(var(--s-ok-tx))' : '#fff', border: cfDone ? '1px solid hsl(var(--s-ok-br))' : 'none' }}
+                onClick={runCounterfactualTest} disabled={cfRunning}>
+                {cfRunning ? 'Running…' : cfDone ? '✓ Re-run Test' : 'Run Counterfactual Test'}
+              </Button>
             </div>
             <div className="grid grid-cols-3 gap-3 mb-4">
               {[

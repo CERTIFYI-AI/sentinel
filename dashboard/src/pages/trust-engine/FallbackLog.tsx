@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import {
   ArrowsClockwise, Eye, Warning, CheckCircle, Fire, Clock,
-  Lightning, Export, MagnifyingGlass, Funnel, Info, Link, UserCircleGear,
+  Lightning, Export, MagnifyingGlass, Funnel, Info, Link, UserCircleGear, Archive,
 } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
@@ -83,7 +83,7 @@ const EXTENDED_ENTRIES: ExtFallback[] = FALLBACK_LOG.map(fb => {
 
 export default function FallbackLog() {
   const { orgName } = useSettingsStore();
-  const [entries] = useState<ExtFallback[]>(EXTENDED_ENTRIES);
+  const [entries, setEntries] = useState<ExtFallback[]>(EXTENDED_ENTRIES);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [selectedEntry, setSelectedEntry] = useState<ExtFallback | null>(null);
@@ -126,6 +126,12 @@ export default function FallbackLog() {
     const hitlId = `HITL-${String(Math.floor(Math.random() * 900) + 100)}`;
     setEscalatedEntries(prev => ({ ...prev, [entryId]: hitlId }));
     toast(`HITL review ${hitlId} created for fallback event ${entryId}`, 'info');
+  };
+
+  const handleArchive = (entryId: string) => {
+    setEntries(prev => prev.filter(e => e.id !== entryId));
+    if (selectedEntry?.id === entryId) { setSheetOpen(false); setSelectedEntry(null); }
+    toast(`Fallback event ${entryId} archived`, 'info');
   };
 
   return (
@@ -255,9 +261,19 @@ export default function FallbackLog() {
                         </Tooltip>
                       </td>
                       <td className="px-3 py-3">
-                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { setSelectedEntry(entry); setSheetOpen(true); }}>
-                          <Eye size={14} style={{ color: 'hsl(var(--brand))' }} />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { setSelectedEntry(entry); setSheetOpen(true); }}>
+                            <Eye size={13} style={{ color: 'hsl(var(--brand))' }} />
+                          </Button>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleArchive(entry.id)}>
+                                <Archive size={13} style={{ color: 'hsl(var(--text-4))' }} />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent style={{ borderRadius: 0 }}>Archive entry</TooltipContent>
+                          </Tooltip>
+                        </div>
                       </td>
                     </tr>
                   ))}
