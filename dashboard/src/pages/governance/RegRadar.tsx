@@ -12,10 +12,15 @@ import {
 } from '../../components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
+  ResponsiveContainer, ReferenceLine, Cell,
+} from 'recharts';
+import {
   Target, Warning, Flag, Globe, Clock, Plus, Eye, PencilSimple, Trash, CheckSquare,
 } from '@phosphor-icons/react';
 import { REGULATIONS, Regulation, Severity, severityColor, formatDate } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
+import { useChartTheme } from '../../hooks/useChartTheme';
 
 const TODAY = new Date();
 
@@ -42,6 +47,7 @@ function statusBadge(status: string) {
 
 export default function RegRadar() {
   const { orgName } = useSettingsStore();
+  const ct = useChartTheme();
 
   const [regulations, setRegulations] = useState<Regulation[]>(REGULATIONS);
   const [filterImpact, setFilterImpact] = useState('all');
@@ -162,27 +168,94 @@ export default function RegRadar() {
         </span>
       </div>
 
-      {/* Timeline */}
+      {/* Timeline — Recharts horizontal Gantt-style chart */}
       <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Regulatory Timeline</CardTitle>
-          <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>
-            Today: {TODAY.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-          </p>
-        </CardHeader>
-        <CardContent>
-          {/* Timeline horizontal bar */}
-          <div className="relative mb-6">
-            <div className="h-0.5 w-full" style={{ background: 'hsl(var(--border))' }} />
-            {/* Today marker */}
-            <div className="absolute top-0 left-0 -translate-y-1/2" style={{ left: '0%' }}>
-              <div className="w-3 h-3 rounded-full border-2" style={{ background: '#ef4444', borderColor: '#ef4444' }} />
-              <span className="text-xs font-bold absolute top-4 -translate-x-1/2" style={{ color: '#ef4444', whiteSpace: 'nowrap' }}>TODAY</span>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Regulatory Timeline</CardTitle>
+              <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-3))' }}>
+                Days from today ({TODAY.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}) · Negative = overdue
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              {[
+                { color: 'hsl(var(--r-cr-tx))', label: 'Critical' },
+                { color: 'hsl(var(--r-hi-tx))', label: 'High' },
+                { color: 'hsl(var(--r-md-tx))', label: 'Medium' },
+              ].map(({ color, label }) => (
+                <div key={label} className="flex items-center gap-1">
+                  <div style={{ width: 8, height: 8, background: color, borderRadius: 0 }} />
+                  <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{label}</span>
+                </div>
+              ))}
             </div>
           </div>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={filtered.length * 42 + 40}>
+            <BarChart
+              data={[...sorted].map(r => ({ ...r, shortName: r.name.length > 28 ? r.name.substring(0, 28) + '…' : r.name }))}
+              layout="vertical"
+              margin={{ top: 4, right: 40, left: 8, bottom: 4 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} horizontal={false} />
+              <XAxis
+                type="number"
+                dataKey="daysUntilEffective"
+                tick={{ fill: ct.axis, fontSize: 10 }}
+                axisLine={{ stroke: ct.grid }}
+                tickLine={false}
+                tickFormatter={(v: number) => (v > 0 ? `+${v}d` : `${v}d`)}
+                domain={['auto', 'auto']}
+              />
+              <YAxis
+                type="category"
+                dataKey="shortName"
+                tick={{ fill: ct.axis, fontSize: 10 }}
+                axisLine={false}
+                tickLine={false}
+                width={180}
+              />
+              <ReTooltip
+                content={({ active, payload }) => {
+                  if (!active || !payload?.length) return null;
+                  const d = payload[0].payload as Regulation;
+                  const dayInfo = getDaysLabel(d.daysUntilEffective);
+                  return (
+                    <div style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', padding: '8px 12px', borderRadius: 0 }}>
+                      <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-1))' }}>{d.name}</p>
+                      <p className="text-xs" style={{ color: dayInfo.color }}>{dayInfo.label}</p>
+                      <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Effective: {formatDate(d.effectiveDate)}</p>
+                      <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Jurisdiction: {d.jurisdiction}</p>
+                    </div>
+                  );
+                }}
+              />
+              <ReferenceLine x={0} stroke="hsl(var(--destructive))" strokeWidth={2} label={{ value: 'TODAY', fill: 'hsl(var(--destructive))', fontSize: 9, position: 'top' }} />
+              <Bar dataKey="daysUntilEffective" maxBarSize={18} radius={0}>
+                {[...sorted].map((r) => {
+                  const impactColor: Record<string, string> = {
+                    critical: 'hsl(var(--r-cr-tx))',
+                    high: 'hsl(var(--r-hi-tx))',
+                    medium: 'hsl(var(--r-md-tx))',
+                    low: 'hsl(var(--r-lo-tx))',
+                  };
+                  return <Cell key={r.id} fill={impactColor[r.impact] || 'hsl(var(--brand))'} />;
+                })}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
 
-          {/* Regulation items */}
-          <div className="space-y-3 mt-4">
+      {/* Regulation items */}
+      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Regulation Detail</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="space-y-0">
             {sorted.map(reg => {
               const sc = severityColor(reg.impact);
               const dayInfo = getDaysLabel(reg.daysUntilEffective);

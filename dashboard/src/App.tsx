@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import React from 'react';
 import { lazy, Suspense } from 'react';
+import { PageSkeleton } from './components/ui/PageSkeleton';
 import Sidebar from './components/Sidebar';
 import TopHeader from './components/TopHeader';
 import CommandPalette from './components/CommandPalette';
@@ -147,17 +148,7 @@ const CisoDashboard = lazy(() => import('./pages/ciso/CisoDashboard'));
 const BoardReport = lazy(() => import('./pages/ciso/BoardReport'));
 
 function Loading() {
-  return (
-    <div className="flex items-center justify-center h-64" aria-busy="true" aria-label="Loading page">
-      <div className="flex flex-col items-center gap-3">
-        <div
-          className="w-7 h-7 border-2 border-t-transparent animate-spin flex-shrink-0"
-          style={{ borderColor: 'hsl(var(--border-mid))', borderTopColor: 'hsl(var(--brand))' }}
-        />
-        <p className="text-xs text-[hsl(var(--text-4))]">Loading…</p>
-      </div>
-    </div>
-  );
+  return <PageSkeleton />;
 }
 
 /** Redirects authenticated users away from login/signup to the dashboard */
