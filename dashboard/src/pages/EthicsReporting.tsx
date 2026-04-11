@@ -99,6 +99,9 @@ function MetricTile({ label, value, variant }: { label: string; value: string | 
   );
 }
 
+const REPORT_CATEGORIES: ReportCategory[] = ['AI Bias/Discrimination', 'Safety Concern', 'Privacy Violation', 'Misuse of AI', 'Regulatory Non-Compliance', 'Ethical Concern', 'Other'];
+const INVESTIGATORS = ['David Kim', 'James Patel', 'Emma Wilson', 'Sarah Chen', 'Maria Santos'];
+
 export default function EthicsReporting() {
   const [reports, setReports] = useState<EthicsReport[]>(SEED);
   const [search, setSearch] = useState('');
@@ -106,6 +109,14 @@ export default function EthicsReporting() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [viewIdentityOpen, setViewIdentityOpen] = useState(false);
   const [viewReason, setViewReason] = useState('');
+  const [createOpen, setCreateOpen] = useState(false);
+
+  const [wCategory, setWCategory] = useState<ReportCategory>('AI Bias/Discrimination');
+  const [wSeverity, setWSeverity] = useState<ReportSeverity>('Medium');
+  const [wSource, setWSource] = useState<Source>('Anonymous');
+  const [wDesc, setWDesc] = useState('');
+  const [wSystem, setWSystem] = useState('');
+  const [wInvestigator, setWInvestigator] = useState('David Kim');
 
   const filtered = useMemo(() => reports.filter(r =>
     !search || r.category.toLowerCase().includes(search.toLowerCase()) || r.id.toLowerCase().includes(search.toLowerCase()) || r.description.toLowerCase().includes(search.toLowerCase())
@@ -120,6 +131,24 @@ export default function EthicsReporting() {
     setReports(prev => prev.filter(r => r.id !== id));
   }
 
+  function submitCreate() {
+    const newReport: EthicsReport = {
+      id: `ER-${String(reports.length + 1).padStart(3, '0')}`,
+      date: new Date().toISOString().split('T')[0],
+      category: wCategory,
+      severity: wSeverity,
+      source: wSource,
+      status: 'Open',
+      assignedInvestigator: wInvestigator,
+      priority: wSeverity === 'Critical' || wSeverity === 'High' ? 'High' : wSeverity === 'Medium' ? 'Medium' : 'Low',
+      description: wDesc || 'No description provided.',
+      system: wSystem || undefined,
+    };
+    setReports(prev => [newReport, ...prev]);
+    setCreateOpen(false);
+    setWDesc(''); setWSystem('');
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
@@ -129,7 +158,10 @@ export default function EthicsReporting() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => window.open('/ethics-reporting/submit', '_blank')}>
-            <ArrowSquareOut size={14} className="mr-1.5" /> Public Submission Form
+            <ArrowSquareOut size={14} className="mr-1.5" /> Public Form
+          </Button>
+          <Button onClick={() => setCreateOpen(true)} style={{ borderRadius: 0 }}>
+            <UserCircleCheck size={15} className="mr-1.5" /> Log Report
           </Button>
         </div>
       </div>
@@ -348,6 +380,74 @@ export default function EthicsReporting() {
           <div className="flex items-center justify-between pt-4 border-t" style={{ borderColor: 'hsl(var(--border))' }}>
             <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setViewIdentityOpen(false)}>Cancel</Button>
             <Button style={{ borderRadius: 0 }} disabled={!viewReason.trim()} onClick={() => setViewIdentityOpen(false)}>Access Identity</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Log Report Dialog */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent style={{ borderRadius: 0, maxWidth: 540 }}>
+          <DialogHeader>
+            <DialogTitle>Log Ethics Report</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="p-3 border" style={{ borderColor: 'hsl(var(--brand)/30%)', background: 'hsl(var(--brand-subtle))', borderRadius: 0 }}>
+              <p className="text-xs" style={{ color: 'hsl(var(--brand))' }}>Use this form to log reports received via phone, email or in person. For self-submission, share the Public Form link.</p>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Category *</label>
+              <select className="w-full text-sm border p-2" style={{ borderRadius: 0, borderColor: 'hsl(var(--border))', background: 'hsl(var(--bg-surface))', color: 'hsl(var(--text-1))' }}
+                value={wCategory} onChange={e => setWCategory(e.target.value as ReportCategory)}>
+                {REPORT_CATEGORIES.map(c => <option key={c}>{c}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Severity *</label>
+              <div className="flex gap-2">
+                {(['Low', 'Medium', 'High', 'Critical'] as ReportSeverity[]).map(s => (
+                  <button key={s} onClick={() => setWSeverity(s)}
+                    className="flex-1 py-1.5 text-xs border font-medium transition-colors"
+                    style={{ borderRadius: 0, borderColor: wSeverity === s ? 'hsl(var(--brand))' : 'hsl(var(--border))', background: wSeverity === s ? 'hsl(var(--brand-subtle))' : 'transparent', color: wSeverity === s ? 'hsl(var(--brand))' : 'hsl(var(--text-3))' }}>
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Source</label>
+              <div className="flex gap-2">
+                {(['Anonymous', 'Named (hidden)'] as Source[]).map(src => (
+                  <button key={src} onClick={() => setWSource(src)}
+                    className="flex-1 py-1.5 text-xs border font-medium transition-colors"
+                    style={{ borderRadius: 0, borderColor: wSource === src ? 'hsl(var(--brand))' : 'hsl(var(--border))', background: wSource === src ? 'hsl(var(--brand-subtle))' : 'transparent', color: wSource === src ? 'hsl(var(--brand))' : 'hsl(var(--text-3))' }}>
+                    {src}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>AI System Affected</label>
+                <input type="text" className="w-full text-sm border p-2" style={{ borderRadius: 0, borderColor: 'hsl(var(--border))', background: 'hsl(var(--bg-surface))', color: 'hsl(var(--text-1))' }}
+                  placeholder="e.g. Credit Risk Scorer" value={wSystem} onChange={e => setWSystem(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Assign Investigator *</label>
+                <select className="w-full text-sm border p-2" style={{ borderRadius: 0, borderColor: 'hsl(var(--border))', background: 'hsl(var(--bg-surface))', color: 'hsl(var(--text-1))' }}
+                  value={wInvestigator} onChange={e => setWInvestigator(e.target.value)}>
+                  {INVESTIGATORS.map(u => <option key={u}>{u}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Description *</label>
+              <textarea className="w-full text-sm border p-2 min-h-[80px]" style={{ borderRadius: 0, borderColor: 'hsl(var(--border))', background: 'hsl(var(--bg-surface))', color: 'hsl(var(--text-1))' }}
+                value={wDesc} onChange={e => setWDesc(e.target.value)} placeholder="Describe the concern in detail..." />
+            </div>
+          </div>
+          <div className="flex items-center justify-between pt-4 border-t" style={{ borderColor: 'hsl(var(--border))' }}>
+            <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setCreateOpen(false)}>Cancel</Button>
+            <Button style={{ borderRadius: 0 }} onClick={submitCreate}>Log Report</Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import {
-  Plus, ArrowsLeftRight, MagnifyingGlass, DownloadSimple, Sparkle, X,
+  Plus, ArrowsLeftRight, MagnifyingGlass, DownloadSimple, Sparkle, X, Warning,
 } from '@phosphor-icons/react';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -13,6 +13,9 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger,
 } from '../components/ui/alert-dialog';
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle,
+} from '../components/ui/sheet';
 
 type Coverage = 'Full' | 'Partial' | 'Gap' | 'N/A';
 
@@ -185,6 +188,9 @@ export default function FrameworkMappingPage() {
           <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>Map controls across frameworks to eliminate redundancy and identify gaps</p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setGapPanelOpen(true)}>
+            <Warning size={14} className="mr-1.5" /> Gap Analysis
+          </Button>
           <Button variant="outline" style={{ borderRadius: 0 }} onClick={runAutoMap} disabled={autoMapping}>
             <Sparkle size={14} className="mr-1.5" /> {autoMapping ? 'Analyzing...' : 'Auto-Map'}
           </Button>
@@ -305,6 +311,79 @@ export default function FrameworkMappingPage() {
           <DownloadSimple size={13} className="mr-1.5" /> Export as CSV
         </Button>
       </div>
+
+      {/* Gap Analysis Sheet */}
+      <Sheet open={gapPanelOpen} onOpenChange={setGapPanelOpen}>
+        <SheetContent style={{ width: 560, borderRadius: 0, overflowY: 'auto' }}>
+          <SheetHeader className="pb-4 border-b" style={{ borderColor: 'hsl(var(--border))' }}>
+            <SheetTitle className="flex items-center gap-2">
+              <Warning size={16} style={{ color: 'hsl(var(--s-wn-tx))' }} />
+              Gap Analysis Report
+            </SheetTitle>
+          </SheetHeader>
+          <div className="mt-4 space-y-4">
+            <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Controls with coverage gaps across selected frameworks — prioritised by gap count.</p>
+
+            {/* Summary stats */}
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { label: 'Controls with Gaps', value: mappings.filter(m => m.gaps > 0).length, color: 'hsl(var(--s-er-tx))' },
+                { label: 'Total Gaps', value: mappings.reduce((a, m) => a + m.gaps, 0), color: 'hsl(var(--s-wn-tx))' },
+                { label: 'Avg Coverage', value: `${Math.round(mappings.reduce((a, m) => a + m.coveragePct, 0) / mappings.length)}%`, color: pctColor(Math.round(mappings.reduce((a, m) => a + m.coveragePct, 0) / mappings.length)) },
+              ].map(s => (
+                <div key={s.label} className="p-3 border text-center" style={{ borderColor: 'hsl(var(--border))' }}>
+                  <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
+                  <p className="text-[11px] mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>{s.label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Gap items */}
+            <div className="space-y-2">
+              {[...mappings].filter(m => m.gaps > 0).sort((a, b) => b.gaps - a.gaps).map(m => (
+                <div key={m.id} className="p-3 border" style={{ borderColor: m.coveragePct < 65 ? 'hsl(var(--s-er-br))' : 'hsl(var(--s-wn-br))', background: m.coveragePct < 65 ? 'hsl(var(--s-er-bg))' : 'hsl(var(--s-wn-bg))' }}>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div>
+                      <span className="font-mono text-[10px] px-1 py-0.5 mr-1.5" style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))', borderRadius: 0 }}>{m.id}</span>
+                      <span className="text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{m.control}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <span className="text-[10px] font-bold px-1.5 py-0.5" style={{ background: m.coveragePct < 65 ? 'hsl(var(--s-er-bg))' : 'hsl(var(--s-wn-bg))', color: m.coveragePct < 65 ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-wn-tx))', borderRadius: 0 }}>
+                        {m.gaps} gap{m.gaps !== 1 ? 's' : ''}
+                      </span>
+                      <span className="text-xs font-bold" style={{ color: pctColor(m.coveragePct) }}>{m.coveragePct}%</span>
+                    </div>
+                  </div>
+                  <p className="text-[11px] mb-2" style={{ color: 'hsl(var(--text-4))' }}>{m.controlDesc}</p>
+                  <div className="flex flex-wrap gap-1">
+                    {FRAMEWORKS.map(fw => {
+                      const found = m.mappings.find(mp => mp.framework === fw);
+                      if (!found || found.coverage === 'Gap' || !found) {
+                        return (
+                          <span key={fw} className="text-[10px] px-1.5 py-0.5 font-medium" style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))', borderRadius: 0 }}>
+                            {fw}: Gap
+                          </span>
+                        );
+                      }
+                      return null;
+                    })}
+                  </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <Button size="sm" style={{ borderRadius: 0, fontSize: 11, height: 24 }}>Create Remediation Task</Button>
+                    <Button size="sm" variant="outline" style={{ borderRadius: 0, fontSize: 11, height: 24 }}>Assign Owner</Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {mappings.filter(m => m.gaps > 0).length === 0 && (
+              <div className="p-4 border text-center" style={{ borderColor: 'hsl(var(--s-ok-br))', background: 'hsl(var(--s-ok-bg))' }}>
+                <p className="text-sm font-medium" style={{ color: 'hsl(var(--s-ok-tx))' }}>✓ No coverage gaps detected across selected frameworks</p>
+              </div>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Add Mapping Modal */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
