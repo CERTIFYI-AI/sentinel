@@ -147,6 +147,17 @@ const EvalResultsViewer = lazy(() => import('./pages/evals/EvalResultsViewer'));
 const CisoDashboard = lazy(() => import('./pages/ciso/CisoDashboard'));
 const BoardReport = lazy(() => import('./pages/ciso/BoardReport'));
 
+// ── 8 New Regulatory Modules ─────────────────────────────────────────────────
+const AIRiskTiering = lazy(() => import('./pages/AIRiskTiering'));
+const DPIA = lazy(() => import('./pages/DPIA'));
+const TransparencyReports = lazy(() => import('./pages/TransparencyReports'));
+const PostMarket = lazy(() => import('./pages/PostMarket'));
+const FrameworkMapping = lazy(() => import('./pages/FrameworkMapping'));
+const GenAIRisks = lazy(() => import('./pages/GenAIRisks'));
+const DataQuality = lazy(() => import('./pages/DataQuality'));
+const EthicsReporting = lazy(() => import('./pages/EthicsReporting'));
+const EthicsReportingSubmit = lazy(() => import('./pages/EthicsReportingSubmit'));
+
 function Loading() {
   return <PageSkeleton />;
 }
@@ -203,6 +214,9 @@ export default function App() {
           <Route path="/login" element={<Suspense fallback={<Loading />}><Login /></Suspense>} />
           <Route path="/signup" element={<Suspense fallback={<Loading />}><Signup /></Suspense>} />
         </Route>
+
+        {/* Fully public — no auth required */}
+        <Route path="/ethics-reporting/submit" element={<Suspense fallback={<Loading />}><EthicsReportingSubmit /></Suspense>} />
 
         {/* Protected routes — with Sidebar + TopHeader layout */}
         <Route element={<ProtectedLayout />}>
@@ -373,6 +387,16 @@ export default function App() {
           <Route path="/model-validation" element={<ModelValidationLab />} />
           <Route path="/performance-monitoring" element={<PerformanceMonitoring />} />
           <Route path="/incidents/playbooks" element={<IncidentPlaybooks />} />
+
+          {/* 8 New Regulatory Modules */}
+          <Route path="/ai-risk-tiering" element={<Suspense fallback={<Loading />}><AIRiskTiering /></Suspense>} />
+          <Route path="/dpia" element={<Suspense fallback={<Loading />}><DPIA /></Suspense>} />
+          <Route path="/transparency-reports" element={<Suspense fallback={<Loading />}><TransparencyReports /></Suspense>} />
+          <Route path="/post-market" element={<Suspense fallback={<Loading />}><PostMarket /></Suspense>} />
+          <Route path="/framework-mapping" element={<Suspense fallback={<Loading />}><FrameworkMapping /></Suspense>} />
+          <Route path="/genai-risks" element={<Suspense fallback={<Loading />}><GenAIRisks /></Suspense>} />
+          <Route path="/data-quality" element={<Suspense fallback={<Loading />}><DataQuality /></Suspense>} />
+          <Route path="/ethics-reporting" element={<Suspense fallback={<Loading />}><EthicsReporting /></Suspense>} />
 
           <Route path="*" element={<Suspense fallback={<Loading />}><NotFound /></Suspense>} />
         </Route>
