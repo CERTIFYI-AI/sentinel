@@ -67,6 +67,9 @@ const AgentDetail = lazy(() => import('./pages/agents/AgentDetail'));
 const VendorRegistry = lazy(() => import('./pages/vendors/VendorRegistry'));
 const VendorDetail = lazy(() => import('./pages/vendors/VendorDetail'));
 const VendorQuestionnaire = lazy(() => import('./pages/vendors/VendorQuestionnaire'));
+const VendorAssessments = lazy(() => import('./pages/vendors/VendorAssessments'));
+const VendorSLAPage = lazy(() => import('./pages/vendors/VendorSLA'));
+const TPRMWorkspace = lazy(() => import('./pages/vendors/TPRMWorkspace'));
 const HITLReviewCenter = lazy(() => import('./pages/hitl/HITLReviewCenter'));
 const HITLDetail = lazy(() => import('./pages/hitl/HITLDetail'));
 const AiAdvisor = lazy(() => import('./pages/AiAdvisor'))
@@ -270,6 +273,9 @@ export default function App() {
           <Route path="/datasets" element={<DatasetRegistry />} />
           <Route path="/datasets/:id" element={<DatasetDetail />} />
           <Route path="/vendors" element={<VendorRegistry />} />
+          <Route path="/vendors/assessments" element={<VendorAssessments />} />
+          <Route path="/vendors/sla" element={<VendorSLAPage />} />
+          <Route path="/vendors/tprm" element={<TPRMWorkspace />} />
           <Route path="/vendors/:id" element={<VendorDetail />} />
           <Route path="/vendors/:id/questionnaire" element={<VendorQuestionnaire />} />
 

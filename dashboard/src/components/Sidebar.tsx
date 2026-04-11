@@ -140,7 +140,11 @@ const NAV: NavSection[] = [
   ]},
   { title: 'OPERATIONS', items: [
     { label: 'HITL Reviews', to: '/hitl', icon: UserCircleCheck, badge: 3 },
-    { label: 'Vendors', to: '/vendors', icon: BuildingOffice },
+    { label: 'Vendors', to: '/vendors', icon: BuildingOffice, children: [
+      { label: 'Vendor Assessments', to: '/vendors/assessments' },
+      { label: 'SLA Monitor', to: '/vendors/sla' },
+      { label: 'TPRM Workspace', to: '/vendors/tprm' },
+    ]},
     { label: 'Regulatory Radar', to: '/reg-radar', icon: GlobeHemisphereWest },
     { label: 'Approval Workflows', to: '/workflows', icon: FlowArrow },
     { label: 'Export Center', to: '/export', icon: DownloadSimple },
