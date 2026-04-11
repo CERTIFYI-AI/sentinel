@@ -362,10 +362,62 @@ export default function AIRiskTiering() {
                   )}
                 </TabsContent>
 
-                <TabsContent value="linked" className="mt-4">
-                  <div className="p-3 border" style={{ borderColor: 'hsl(var(--border))' }}>
-                    <p className="text-sm font-medium mb-1" style={{ color: 'hsl(var(--text-1))' }}>{selected.system}</p>
-                    <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Type: {selected.type}</p>
+                <TabsContent value="linked" className="mt-4 space-y-3">
+                  {/* Model card */}
+                  <div className="p-3 border" style={{ borderColor: 'hsl(var(--brand)/30%)', background: 'hsl(var(--brand-subtle))' }}>
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div>
+                        <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{selected.system}</p>
+                        <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>{selected.type}</p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-bold px-1.5 py-0.5" style={{ background: tierColor(selected.tier).bg, color: tierColor(selected.tier).text, borderRadius: 0 }}>{selected.tier}</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-3 flex-wrap">
+                      <span className="text-[11px]" style={{ color: 'hsl(var(--text-3))' }}>Owner: <strong style={{ color: 'hsl(var(--text-2))' }}>{selected.owner}</strong></span>
+                      <span className="text-[11px]" style={{ color: 'hsl(var(--text-3))' }}>Added: <strong style={{ color: 'hsl(var(--text-2))' }}>{selected.created}</strong></span>
+                    </div>
+                  </div>
+
+                  {/* Compliance status */}
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-3))' }}>Compliance Status</p>
+                    {[
+                      { label: 'EU AI Act Article', value: selected.article, highlight: true },
+                      { label: 'Annex III Category', value: selected.annexIIICategory },
+                      { label: 'GPAI Model', value: selected.gpai ? 'Yes — Art.53 obligations apply' : 'No' },
+                      { label: 'Transparency Req.', value: selected.transparencyReq ? 'Required (Art.13 / Art.52)' : 'Not required' },
+                      { label: 'Review Status', value: selected.reviewStatus },
+                    ].map(r => (
+                      <div key={r.label} className="flex items-center justify-between py-1.5 border-b" style={{ borderColor: 'hsl(var(--border))' }}>
+                        <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{r.label}</span>
+                        <span className="text-xs font-medium" style={{ color: r.highlight ? 'hsl(var(--brand))' : 'hsl(var(--text-2))' }}>{r.value}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Obligation count */}
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { label: 'Total Obligations', value: selected.tier === 'High Risk' ? 12 : selected.tier === 'Limited' ? 3 : selected.tier === 'Unacceptable' ? 0 : 0 },
+                      { label: 'Met', value: selected.reviewStatus === 'Approved' ? (selected.tier === 'High Risk' ? 10 : selected.tier === 'Limited' ? 3 : 0) : 0 },
+                      { label: 'Gaps', value: selected.reviewStatus === 'Approved' ? (selected.tier === 'High Risk' ? 2 : 0) : (selected.tier === 'High Risk' ? 12 : 3) },
+                    ].map(s => (
+                      <div key={s.label} className="p-2 border text-center" style={{ borderColor: 'hsl(var(--border))' }}>
+                        <p className="text-lg font-bold" style={{ color: 'hsl(var(--text-1))' }}>{s.value}</p>
+                        <p className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>{s.label}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button size="sm" style={{ borderRadius: 0, fontSize: 11, height: 28 }} className="flex-1">
+                      <ShieldCheck size={12} className="mr-1.5" /> View Full Model Record
+                    </Button>
+                    <Button size="sm" variant="outline" style={{ borderRadius: 0, fontSize: 11, height: 28 }} className="flex-1">
+                      <ArrowRight size={12} className="mr-1.5" /> Open Obligations
+                    </Button>
                   </div>
                 </TabsContent>
 

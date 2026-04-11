@@ -349,22 +349,91 @@ export default function PostMarket() {
                   )}
                 </TabsContent>
 
-                <TabsContent value="feedback" className="mt-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between p-3 border" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--bg-raised))' }}>
-                      <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Feedback Collection</span>
-                      <span className="text-xs font-semibold" style={{ color: selected.feedbackCollection ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))' }}>
-                        {selected.feedbackCollection ? 'Enabled' : 'Disabled'}
-                      </span>
+                <TabsContent value="feedback" className="mt-4 space-y-3">
+                  <div className="flex items-center justify-between p-3 border" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--bg-raised))' }}>
+                    <div>
+                      <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-2))' }}>Feedback Collection Portal</p>
+                      <p className="text-[11px] mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>User complaints collected via integrated feedback portal (EU AI Act Art.62)</p>
                     </div>
-                    <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>User complaints and feedback are collected via the integrated feedback portal.</p>
+                    <span className="text-xs font-semibold px-2 py-0.5" style={{ background: selected.feedbackCollection ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-er-bg))', color: selected.feedbackCollection ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))', borderRadius: 0 }}>
+                      {selected.feedbackCollection ? 'Enabled' : 'Disabled'}
+                    </span>
+                  </div>
+                  {(() => {
+                    const complaints = events.filter(e => e.planId === selected.id && e.type === 'User Complaint');
+                    return complaints.length > 0 ? (
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-3))' }}>Logged Complaints ({complaints.length})</p>
+                        {complaints.map(c => (
+                          <div key={c.id} className="p-2.5 border" style={{ borderColor: 'hsl(var(--s-wn-br))', background: 'hsl(var(--s-wn-bg))' }}>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-mono text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>{c.id}</span>
+                              <span className="text-[11px]" style={{ color: 'hsl(var(--text-4))' }}>{c.date}</span>
+                            </div>
+                            <p className="text-xs" style={{ color: 'hsl(var(--s-wn-tx))' }}>{c.message}</p>
+                            <Button size="sm" style={{ borderRadius: 0, fontSize: 11, height: 24, marginTop: 6 }}>Open Complaint</Button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-3 border text-center" style={{ borderColor: 'hsl(var(--s-ok-br))', background: 'hsl(var(--s-ok-bg))' }}>
+                        <p className="text-xs" style={{ color: 'hsl(var(--s-ok-tx))' }}>✓ No user complaints logged for this plan</p>
+                      </div>
+                    );
+                  })()}
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { label: 'Complaints (30d)', value: events.filter(e => e.planId === selected.id && e.type === 'User Complaint').length },
+                      { label: 'Resolved', value: 0 },
+                      { label: 'Avg. Resolution', value: 'N/A' },
+                    ].map(s => (
+                      <div key={s.label} className="p-2 border text-center" style={{ borderColor: 'hsl(var(--border))' }}>
+                        <p className="text-base font-bold" style={{ color: 'hsl(var(--text-1))' }}>{s.value}</p>
+                        <p className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>{s.label}</p>
+                      </div>
+                    ))}
                   </div>
                 </TabsContent>
 
-                <TabsContent value="reports" className="mt-4">
-                  <p className="text-xs mb-3" style={{ color: 'hsl(var(--text-3))' }}>Serious incident reports filed per EU AI Act Art.73</p>
-                  <div className="p-3 border" style={{ borderColor: 'hsl(var(--border))' }}>
-                    <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>No serious incidents reported to supervisory authority.</p>
+                <TabsContent value="reports" className="mt-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-3))' }}>Serious Incident Reports — EU AI Act Art.73</p>
+                    <Button size="sm" style={{ borderRadius: 0, fontSize: 11, height: 26 }}>
+                      <Warning size={12} className="mr-1" /> File Incident
+                    </Button>
+                  </div>
+                  {selected.status === 'Critical' ? (
+                    <div className="p-3 border space-y-2" style={{ borderColor: 'hsl(var(--s-er-br))', background: 'hsl(var(--s-er-bg))' }}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold" style={{ color: 'hsl(var(--s-er-tx))' }}>Pending Art.73 Notification</span>
+                        <span className="text-[10px] px-1.5 py-0.5" style={{ background: 'hsl(var(--s-er-tx))', color: 'hsl(var(--bg-surface))', borderRadius: 0 }}>ACTION REQUIRED</span>
+                      </div>
+                      <p className="text-xs" style={{ color: 'hsl(var(--s-er-tx))' }}>A serious incident has been detected. You must notify the relevant market surveillance authority within 15 days.</p>
+                      <div className="flex gap-2 mt-2">
+                        <Button size="sm" style={{ borderRadius: 0, fontSize: 11, height: 26, background: 'hsl(var(--s-er-tx))' }}>Submit to Authority</Button>
+                        <Button size="sm" variant="outline" style={{ borderRadius: 0, fontSize: 11, height: 26 }}>Generate Report PDF</Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-3 border text-center" style={{ borderColor: 'hsl(var(--s-ok-br))', background: 'hsl(var(--s-ok-bg))' }}>
+                      <p className="text-xs font-medium" style={{ color: 'hsl(var(--s-ok-tx))' }}>✓ No serious incidents reported to supervisory authority</p>
+                    </div>
+                  )}
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Reporting Obligations</p>
+                    {[
+                      { art: 'Art.73', desc: 'Serious incident notification to market surveillance authority', deadline: '15 days' },
+                      { art: 'Art.74', desc: 'Post-market log maintained and available to authorities', deadline: 'Ongoing' },
+                      { art: 'Art.72', desc: 'Post-market monitoring plan in place', deadline: 'Ongoing' },
+                    ].map(o => (
+                      <div key={o.art} className="flex items-center justify-between p-2 border" style={{ borderColor: 'hsl(var(--border))' }}>
+                        <div>
+                          <span className="text-[10px] font-bold mr-2" style={{ color: 'hsl(var(--brand))' }}>{o.art}</span>
+                          <span className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>{o.desc}</span>
+                        </div>
+                        <span className="text-[10px] font-medium ml-2 flex-shrink-0" style={{ color: 'hsl(var(--text-4))' }}>{o.deadline}</span>
+                      </div>
+                    ))}
                   </div>
                 </TabsContent>
               </Tabs>
