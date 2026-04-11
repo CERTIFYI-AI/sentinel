@@ -5,32 +5,33 @@ import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import {
-  ArrowLeft, Warning, CheckCircle, Globe, EnvelopeSimple, Shield,
-  Buildings, Robot, Clock, Star, CalendarBlank, FileText, Users,
-  FilePdf, FileDashed, Download, UploadSimple, CurrencyDollar,
+  ArrowLeft, Warning, Globe, EnvelopeSimple, Shield,
+  Buildings, Robot, Clock, CalendarBlank, FileText, Users,
+  FilePdf, Download, UploadSimple, CurrencyDollar,
+  CheckCircle, XCircle, ArrowsClockwise, Plugs,
+  ClipboardText, Star, Eye, SealCheck, Activity,
+  ArrowSquareOut,
 } from '@phosphor-icons/react';
-import { VENDORS, MODELS, severityColor, statusColor, formatDate } from '../../data/seed';
+import {
+  VENDORS, MODELS, VENDOR_ASSESSMENTS, VENDOR_SLAS, TPRM_ISSUES, VENDOR_DOCUMENTS,
+  severityColor, statusColor, formatDate,
+  type VendorAssessment, type VendorSLA, type TPRMIssue, type VendorDocument,
+} from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { toast } from 'sonner';
+
+// ── helpers ──────────────────────────────────────────────────────────────────
 
 function ScoreGauge({ score, size = 120 }: { score: number; size?: number }) {
   const color = score >= 80 ? '#10b981' : score >= 60 ? '#f97316' : '#ef4444';
   const radius = (size / 2) - 10;
   const circumference = Math.PI * radius;
   const progress = (score / 100) * circumference;
-
   return (
     <div style={{ position: 'relative', width: size, height: size / 2 + 20, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <svg width={size} height={size / 2 + 10} viewBox={`0 0 ${size} ${size / 2 + 10}`}>
-        <path
-          d={`M 10 ${size / 2} A ${radius} ${radius} 0 0 1 ${size - 10} ${size / 2}`}
-          fill="none" stroke="hsl(var(--bg-muted))" strokeWidth="10" strokeLinecap="butt"
-        />
-        <path
-          d={`M 10 ${size / 2} A ${radius} ${radius} 0 0 1 ${size - 10} ${size / 2}`}
-          fill="none" stroke={color} strokeWidth="10" strokeLinecap="butt"
-          strokeDasharray={`${progress} ${circumference}`}
-        />
+        <path d={`M 10 ${size / 2} A ${radius} ${radius} 0 0 1 ${size - 10} ${size / 2}`} fill="none" stroke="hsl(var(--bg-muted))" strokeWidth="10" strokeLinecap="butt" />
+        <path d={`M 10 ${size / 2} A ${radius} ${radius} 0 0 1 ${size - 10} ${size / 2}`} fill="none" stroke={color} strokeWidth="10" strokeLinecap="butt" strokeDasharray={`${progress} ${circumference}`} />
       </svg>
       <div style={{ position: 'absolute', bottom: 0, textAlign: 'center' }}>
         <p className="text-3xl font-bold" style={{ color }}>{score}</p>
@@ -40,38 +41,108 @@ function ScoreGauge({ score, size = 120 }: { score: number; size?: number }) {
   );
 }
 
-const MOCK_REVIEWS = [
-  { date: '2026-03-01', reviewer: 'James Patel', score: 87, notes: 'Renewed DPA. Security posture strong, minor compliance gaps identified.', result: 'passed' },
-  { date: '2025-09-15', reviewer: 'David Kim', score: 84, notes: 'Annual review completed. Data residency controls need improvement.', result: 'passed' },
-  { date: '2025-03-10', reviewer: 'Emma Wilson', score: 79, notes: 'Initial vendor assessment. SOC 2 pending, some open findings.', result: 'passed' },
-];
-
-interface ContractDoc {
-  name: string;
-  type: string;
-  status: 'active' | 'expired' | 'pending' | 'missing';
-  size: string;
-  uploaded: string;
-  icon: typeof FilePdf;
+function dimColor(v: number) {
+  if (v >= 80) return '#10b981';
+  if (v >= 60) return '#f97316';
+  return '#ef4444';
 }
 
-function contractDocs(vendorName: string): ContractDoc[] {
-  return [
-    { name: `${vendorName} — Data Processing Agreement (DPA)`, type: 'DPA', status: 'active', size: '420 KB', uploaded: '2026-02-10', icon: FilePdf },
-    { name: `${vendorName} — SOC 2 Type II Report`, type: 'SOC 2', status: 'active', size: '3.8 MB', uploaded: '2026-01-15', icon: FilePdf },
-    { name: `${vendorName} — ISO 27001 Certificate`, type: 'ISO 27001', status: 'active', size: '180 KB', uploaded: '2025-12-01', icon: FileText },
-    { name: `${vendorName} — Penetration Test Report`, type: 'PenTest', status: 'pending', size: '—', uploaded: '—', icon: FileDashed },
+function daysToExpiry(dateStr: string): number {
+  return Math.ceil((new Date(dateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+}
+
+function assessmentStatusBadge(status: VendorAssessment['status']) {
+  const map: Record<VendorAssessment['status'], { bg: string; text: string; label: string }> = {
+    draft:                    { bg: '#6366f120', text: '#6366f1', label: 'Draft' },
+    in_progress:              { bg: '#f9731620', text: '#f97316', label: 'In Progress' },
+    submitted:                { bg: '#3b82f620', text: '#3b82f6', label: 'Submitted' },
+    under_review:             { bg: '#eab30820', text: '#eab308', label: 'Under Review' },
+    approved:                 { bg: '#10b98120', text: '#10b981', label: 'Approved' },
+    approved_with_conditions: { bg: '#84cc1620', text: '#65a30d', label: 'Approved w/ Conditions' },
+    rejected:                 { bg: '#ef444420', text: '#ef4444', label: 'Rejected' },
+    expired:                  { bg: '#94a3b820', text: '#64748b', label: 'Expired' },
+  };
+  return map[status] ?? { bg: '#94a3b820', text: '#64748b', label: status };
+}
+
+function slaStatusBadge(status: VendorSLA['status']) {
+  const map: Record<VendorSLA['status'], { bg: string; text: string; label: string }> = {
+    healthy:  { bg: '#10b98120', text: '#10b981', label: 'Healthy' },
+    at_risk:  { bg: '#f9731620', text: '#f97316', label: 'At Risk' },
+    breached: { bg: '#ef444420', text: '#ef4444', label: 'Breached' },
+    waived:   { bg: '#6366f120', text: '#6366f1', label: 'Waived' },
+    retired:  { bg: '#94a3b820', text: '#64748b', label: 'Retired' },
+  };
+  return map[status] ?? { bg: '#94a3b820', text: '#64748b', label: status };
+}
+
+function issueStatusBadge(status: TPRMIssue['status']) {
+  const map: Record<TPRMIssue['status'], { bg: string; text: string; label: string }> = {
+    open:        { bg: '#ef444420', text: '#ef4444', label: 'Open' },
+    in_progress: { bg: '#f9731620', text: '#f97316', label: 'In Progress' },
+    mitigated:   { bg: '#10b98120', text: '#10b981', label: 'Mitigated' },
+    accepted:    { bg: '#6366f120', text: '#6366f1', label: 'Accepted' },
+    closed:      { bg: '#94a3b820', text: '#64748b', label: 'Closed' },
+  };
+  return map[status] ?? { bg: '#94a3b820', text: '#64748b', label: status };
+}
+
+function docStatusBadge(status: VendorDocument['status']) {
+  const map: Record<VendorDocument['status'], { bg: string; text: string; label: string }> = {
+    valid:          { bg: '#10b98120', text: '#10b981', label: 'Valid' },
+    expiring_soon:  { bg: '#f9731620', text: '#f97316', label: 'Expiring Soon' },
+    expired:        { bg: '#ef444420', text: '#ef4444', label: 'Expired' },
+    requested:      { bg: '#3b82f620', text: '#3b82f6', label: 'Requested' },
+    missing:        { bg: '#ef444420', text: '#ef4444', label: 'Missing' },
+  };
+  return map[status] ?? { bg: '#94a3b820', text: '#64748b', label: status };
+}
+
+function severityBadge(sev: string) {
+  if (sev === 'critical') return { bg: '#ef444420', text: '#ef4444', label: 'Critical' };
+  if (sev === 'high')     return { bg: '#f9731620', text: '#f97316', label: 'High' };
+  if (sev === 'medium')   return { bg: '#eab30820', text: '#eab308', label: 'Medium' };
+  return { bg: '#10b98120', text: '#10b981', label: 'Low' };
+}
+
+// ── static activity data ──────────────────────────────────────────────────────
+
+interface ActivityEvent {
+  ts: string;
+  actor: string;
+  action: string;
+  detail: string;
+  type: 'assessment' | 'sla' | 'issue' | 'document' | 'review' | 'contract' | 'risk';
+}
+
+function buildActivity(vendorId: string): ActivityEvent[] {
+  const base: ActivityEvent[] = [
+    { ts: '2026-04-01T14:30:00Z', actor: 'Emma Wilson',   action: 'Updated remediation plan', detail: 'TI-001: EU AI Act Art. 10 data lineage gap', type: 'issue' },
+    { ts: '2026-03-26T14:00:00Z', actor: 'James Patel',   action: 'Raised TPRM issue',         detail: 'Critical finding escalated to CISO', type: 'issue' },
+    { ts: '2026-03-15T10:00:00Z', actor: 'James Patel',   action: 'SLA measured',              detail: 'Monthly SLA measurement recorded', type: 'sla' },
+    { ts: '2026-03-05T10:00:00Z', actor: 'Emma Wilson',   action: 'Assessment approved',        detail: 'AI Governance assessment VA-002 approved with conditions', type: 'assessment' },
+    { ts: '2026-02-15T09:00:00Z', actor: 'David Kim',     action: 'Assessment approved',        detail: 'Security assessment VA-001 approved', type: 'assessment' },
+    { ts: '2026-02-10T11:00:00Z', actor: 'James Patel',   action: 'Document uploaded',          detail: 'DPA v4 uploaded and marked valid', type: 'document' },
+    { ts: '2026-01-28T09:00:00Z', actor: 'Emma Wilson',   action: 'Assessment submitted',       detail: 'AI Governance assessment submitted for review', type: 'assessment' },
+    { ts: '2026-01-20T14:00:00Z', actor: 'Emma Wilson',   action: 'Document uploaded',          detail: 'GPT-4o Model Card uploaded', type: 'document' },
+    { ts: '2025-12-01T10:00:00Z', actor: 'David Kim',     action: 'Annual review initiated',    detail: 'Vendor scheduled for annual re-assessment Q1 2026', type: 'review' },
+    { ts: '2025-09-15T12:00:00Z', actor: 'David Kim',     action: 'Risk linked',               detail: 'Vendor linked to RSK-004 (Supply Chain Risk)', type: 'risk' },
   ];
+  void vendorId;
+  return base;
 }
 
-interface SubProcessor {
-  name: string;
-  purpose: string;
-  location: string;
-  transfers: string;
-  risk: 'low' | 'medium' | 'high';
+function activityTypeColor(type: ActivityEvent['type']) {
+  const map: Record<ActivityEvent['type'], string> = {
+    assessment: '#6366f1', sla: '#f97316', issue: '#ef4444',
+    document: '#3b82f6', review: '#10b981', contract: '#eab308', risk: '#f97316',
+  };
+  return map[type];
 }
 
+// ── sub-processors static data ────────────────────────────────────────────────
+
+interface SubProcessor { name: string; purpose: string; location: string; transfers: string; risk: 'low' | 'medium' | 'high'; }
 function subProcessors(): SubProcessor[] {
   return [
     { name: 'AWS (Amazon Web Services)', purpose: 'Cloud infrastructure & data storage', location: 'US East / EU West', transfers: 'SCCs in place', risk: 'low' },
@@ -81,41 +152,28 @@ function subProcessors(): SubProcessor[] {
   ];
 }
 
-function docStatusBadge(status: ContractDoc['status']) {
-  const map = {
-    active: { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))', label: 'Active' },
-    expired: { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))', label: 'Expired' },
-    pending: { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))', border: 'hsl(var(--s-wn-br))', label: 'Pending' },
-    missing: { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))', border: 'hsl(var(--border))', label: 'Missing' },
-  };
-  return map[status];
+function spRiskColor(risk: 'low' | 'medium' | 'high') {
+  if (risk === 'low')    return { bg: '#10b98120', text: '#10b981', border: '#10b98140' };
+  if (risk === 'medium') return { bg: '#f9731620', text: '#f97316', border: '#f9731640' };
+  return { bg: '#ef444420', text: '#ef4444', border: '#ef444440' };
 }
 
-function riskColor(risk: 'low' | 'medium' | 'high') {
-  if (risk === 'low') return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))' };
-  if (risk === 'medium') return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))', border: 'hsl(var(--s-wn-br))' };
-  return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))' };
-}
-
-function daysToExpiry(dateStr: string): number {
-  const ms = new Date(dateStr).getTime() - Date.now();
-  return Math.ceil(ms / (1000 * 60 * 60 * 24));
-}
+// ── component ─────────────────────────────────────────────────────────────────
 
 export default function VendorDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { orgName } = useSettingsStore();
+  const [uploadedDoc, setUploadedDoc] = useState(false);
 
   const vendor = VENDORS.find(v => v.id === id);
-  const [uploadedDocs, setUploadedDocs] = useState(false);
 
   if (!vendor) {
     return (
       <div className="p-6 flex flex-col items-center justify-center" style={{ minHeight: 400 }}>
         <Warning size={48} style={{ color: '#f97316' }} />
         <p className="mt-4 text-lg font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Vendor not found</p>
-        <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>Vendor ID "{id}" does not exist in the registry.</p>
+        <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>Vendor ID &ldquo;{id}&rdquo; does not exist in the registry.</p>
         <Button className="mt-4" onClick={() => navigate('/vendors')} style={{ borderRadius: 0 }}>
           <ArrowLeft size={14} className="mr-1" /> Back to Vendors
         </Button>
@@ -123,71 +181,74 @@ export default function VendorDetail() {
     );
   }
 
-  const linkedModels = MODELS.filter(m => vendor.linkedModels.includes(m.id));
-  const sc = statusColor(vendor.status);
-  const rc = severityColor(vendor.risk);
-  const scoreColor = vendor.score >= 80 ? '#10b981' : vendor.score >= 60 ? '#f97316' : '#ef4444';
+  const linkedModels   = MODELS.filter(m => vendor.linkedModels.includes(m.id));
+  const assessments    = VENDOR_ASSESSMENTS.filter(a => a.vendorId === vendor.id);
+  const slas           = VENDOR_SLAS.filter(s => s.vendorId === vendor.id);
+  const issues         = TPRM_ISSUES.filter(i => i.vendorId === vendor.id);
+  const documents      = VENDOR_DOCUMENTS.filter(d => d.vendorId === vendor.id);
+  const activityLog    = buildActivity(vendor.id);
+  const subs           = subProcessors();
 
-  const dimentionBars = [
-    { label: 'Security', value: vendor.scoreBreakdown.security },
-    { label: 'Compliance', value: vendor.scoreBreakdown.compliance },
-    { label: 'Reliability', value: vendor.scoreBreakdown.reliability },
+  const sc          = statusColor(vendor.status);
+  const rc          = severityColor(vendor.risk);
+  const scoreColor  = vendor.score >= 80 ? '#10b981' : vendor.score >= 60 ? '#f97316' : '#ef4444';
+  const contractExpiry = '2026-12-31';
+  const dte = daysToExpiry(contractExpiry);
+
+  const dimBars = [
+    { label: 'Security',     value: vendor.scoreBreakdown.security },
+    { label: 'Compliance',   value: vendor.scoreBreakdown.compliance },
+    { label: 'Reliability',  value: vendor.scoreBreakdown.reliability },
     { label: 'Data Privacy', value: vendor.scoreBreakdown.dataPrivacy },
   ];
 
-  function dimColor(v: number) {
-    if (v >= 80) return '#10b981';
-    if (v >= 60) return '#f97316';
-    return '#ef4444';
-  }
-
-  const contractExpiry = '2026-12-31';
-  const contractValue = 48000;
-  const dte = daysToExpiry(contractExpiry);
-  const docs = contractDocs(vendor.name);
-  const subs = subProcessors();
+  const openIssues      = issues.filter(i => i.status === 'open' || i.status === 'in_progress');
+  const criticalIssues  = issues.filter(i => i.severity === 'critical');
+  const breachedSLAs    = slas.filter(s => s.status === 'breached');
+  const missingDocs     = documents.filter(d => d.status === 'missing' || d.status === 'expired');
 
   return (
     <div className="space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
-      {/* Back + Header */}
+
+      {/* Back + Alert Banners */}
       <div>
         <Button variant="ghost" size="sm" onClick={() => navigate('/vendors')} style={{ marginBottom: 12, padding: '4px 8px' }}>
           <ArrowLeft size={14} className="mr-1" /> Back to Vendors
         </Button>
 
-        {/* DPA Banner */}
         {vendor.dpaStatus === 'not_signed' && (
-          <div style={{ background: '#ef444415', border: '1px solid #ef4444', padding: '10px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ background: '#ef444415', border: '1px solid #ef4444', padding: '10px 16px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
             <Warning size={18} style={{ color: '#ef4444', flexShrink: 0 }} />
             <div>
               <p className="text-sm font-semibold" style={{ color: '#ef4444' }}>DPA Not Signed — Immediate Action Required</p>
-              <p className="text-xs" style={{ color: '#ef4444', opacity: 0.8 }}>
-                This vendor does not have a signed Data Processing Agreement. GDPR compliance is at risk. Suspend data sharing until resolved.
-              </p>
+              <p className="text-xs" style={{ color: '#ef4444', opacity: 0.8 }}>GDPR Art. 28 compliance is at risk. Suspend data sharing until DPA is executed.</p>
             </div>
-            <Button size="sm" style={{ marginLeft: 'auto', background: '#ef4444', color: 'white', borderRadius: 0, flexShrink: 0 }}>
-              Initiate DPA
-            </Button>
+            <Button size="sm" style={{ marginLeft: 'auto', background: '#ef4444', color: 'white', borderRadius: 0, flexShrink: 0 }} onClick={() => toast.success('DPA initiation email sent to legal')}>Initiate DPA</Button>
           </div>
         )}
-
         {vendor.dpaStatus === 'pending' && (
-          <div style={{ background: '#f9731615', border: '1px solid #f97316', padding: '10px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ background: '#f9731615', border: '1px solid #f97316', padding: '10px 16px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
             <Clock size={18} style={{ color: '#f97316', flexShrink: 0 }} />
-            <p className="text-sm font-medium" style={{ color: '#f97316' }}>DPA Pending Signature — Follow up with vendor to expedite.</p>
+            <p className="text-sm font-medium" style={{ color: '#f97316' }}>DPA Pending Signature — Follow up with vendor to expedite execution.</p>
           </div>
         )}
-
-        {/* Contract expiry warning */}
         {dte <= 90 && dte > 0 && (
-          <div style={{ background: '#f9731615', border: '1px solid #f97316', padding: '10px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ background: '#f9731615', border: '1px solid #f97316', padding: '10px 16px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
             <CalendarBlank size={18} style={{ color: '#f97316', flexShrink: 0 }} />
             <p className="text-sm font-medium" style={{ color: '#f97316' }}>
-              Master contract expires in <strong>{dte} days</strong> ({contractExpiry}) — initiate renewal to avoid service disruption.
+              Master contract expires in <strong>{dte} days</strong> ({contractExpiry}) — initiate renewal to avoid disruption.
             </p>
-            <Button size="sm" variant="outline" style={{ marginLeft: 'auto', borderRadius: 0, borderColor: '#f97316', color: '#f97316', flexShrink: 0 }}>
+            <Button size="sm" variant="outline" style={{ marginLeft: 'auto', borderRadius: 0, borderColor: '#f97316', color: '#f97316', flexShrink: 0 }} onClick={() => toast.success('Renewal workflow initiated')}>
               Start Renewal
             </Button>
+          </div>
+        )}
+        {breachedSLAs.length > 0 && (
+          <div style={{ background: '#ef444415', border: '1px solid #ef4444', padding: '10px 16px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Warning size={18} style={{ color: '#ef4444', flexShrink: 0 }} />
+            <p className="text-sm font-medium" style={{ color: '#ef4444' }}>
+              <strong>{breachedSLAs.length} SLA{breachedSLAs.length > 1 ? 's' : ''} currently breached</strong> — immediate escalation required.
+            </p>
           </div>
         )}
 
@@ -195,51 +256,63 @@ export default function VendorDetail() {
           <div>
             <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>{vendor.name}</h1>
             <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>
-              {orgName} · {vendor.category} · Vendor ID: {vendor.id}
+              {orgName} · {vendor.category} · {vendor.id}
             </p>
           </div>
-          <div className="flex gap-2">
-            <Badge style={{ background: rc.bg, color: rc.text, border: `1px solid ${rc.border}`, borderRadius: 0 }}>
-              {vendor.risk} risk
-            </Badge>
-            <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0 }}>
-              {vendor.status}
-            </Badge>
+          <div className="flex items-center gap-2">
+            <Badge style={{ background: rc.bg, color: rc.text, border: `1px solid ${rc.border}`, borderRadius: 0 }}>{vendor.risk} risk</Badge>
+            <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0 }}>{vendor.status}</Badge>
+            <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={() => toast.info('Edit vendor form opened')}>Edit</Button>
+            <Button size="sm" variant="outline" style={{ borderRadius: 0, borderColor: '#ef4444', color: '#ef4444' }} onClick={() => toast.warning('Archive workflow initiated')}>Archive</Button>
           </div>
         </div>
+      </div>
+
+      {/* KPI strip */}
+      <div className="grid grid-cols-5 gap-3">
+        {[
+          { label: 'Vendor Score',       value: `${vendor.score}/100`, color: scoreColor },
+          { label: 'Open Issues',        value: openIssues.length,     color: openIssues.length > 0 ? '#f97316' : '#10b981' },
+          { label: 'Critical Findings',  value: criticalIssues.length, color: criticalIssues.length > 0 ? '#ef4444' : '#10b981' },
+          { label: 'Breached SLAs',      value: breachedSLAs.length,   color: breachedSLAs.length > 0 ? '#ef4444' : '#10b981' },
+          { label: 'Doc Gaps',           value: missingDocs.length,    color: missingDocs.length > 0 ? '#ef4444' : '#10b981' },
+        ].map(k => (
+          <Card key={k.label} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardContent className="p-4">
+              <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{k.label}</p>
+              <p className="text-2xl font-bold mt-1" style={{ color: k.color }}>{k.value}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Tabs */}
       <Tabs defaultValue="overview">
         <TabsList style={{ borderRadius: 0, background: 'hsl(var(--bg-muted))' }}>
-          <TabsTrigger value="overview" style={{ borderRadius: 0 }}>Overview</TabsTrigger>
-          <TabsTrigger value="contract" style={{ borderRadius: 0 }}>Contract</TabsTrigger>
-          <TabsTrigger value="documents" style={{ borderRadius: 0 }}>Documents</TabsTrigger>
-          <TabsTrigger value="subprocessors" style={{ borderRadius: 0 }}>Sub-processors ({subs.length})</TabsTrigger>
-          <TabsTrigger value="scorecard" style={{ borderRadius: 0 }}>Scorecard</TabsTrigger>
-          <TabsTrigger value="models" style={{ borderRadius: 0 }}>Linked Models ({linkedModels.length})</TabsTrigger>
-          <TabsTrigger value="reviews" style={{ borderRadius: 0 }}>Review History</TabsTrigger>
+          <TabsTrigger value="overview"     style={{ borderRadius: 0 }}>Overview</TabsTrigger>
+          <TabsTrigger value="assessments"  style={{ borderRadius: 0 }}>Assessments ({assessments.length})</TabsTrigger>
+          <TabsTrigger value="sla"          style={{ borderRadius: 0 }}>SLA ({slas.length})</TabsTrigger>
+          <TabsTrigger value="issues"       style={{ borderRadius: 0 }}>Issues ({issues.length})</TabsTrigger>
+          <TabsTrigger value="documents"    style={{ borderRadius: 0 }}>Documents ({documents.length})</TabsTrigger>
+          <TabsTrigger value="activity"     style={{ borderRadius: 0 }}>Activity</TabsTrigger>
+          <TabsTrigger value="linked"       style={{ borderRadius: 0 }}>Linked Objects</TabsTrigger>
         </TabsList>
 
-        {/* Overview Tab */}
-        <TabsContent value="overview" className="mt-4">
+        {/* ── OVERVIEW ── */}
+        <TabsContent value="overview" className="mt-4 space-y-4">
           <div className="grid grid-cols-3 gap-4">
-            {/* Score Gauge */}
-            <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', gridColumn: '1' }}>
+            <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Overall Score</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col items-center pb-4">
                 <ScoreGauge score={vendor.score} size={160} />
-                <div className="mt-3 text-center">
-                  <Badge style={{ background: `${scoreColor}20`, color: scoreColor, border: `1px solid ${scoreColor}`, borderRadius: 0, fontSize: 12 }}>
-                    {vendor.score >= 80 ? 'Low Risk' : vendor.score >= 60 ? 'Medium Risk' : 'High Risk'}
-                  </Badge>
-                </div>
+                <Badge style={{ background: `${scoreColor}20`, color: scoreColor, border: `1px solid ${scoreColor}40`, borderRadius: 0, fontSize: 12, marginTop: 12 }}>
+                  {vendor.score >= 80 ? 'Low Risk' : vendor.score >= 60 ? 'Medium Risk' : 'High Risk'}
+                </Badge>
               </CardContent>
             </Card>
 
-            {/* Details */}
             <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', gridColumn: '2 / 4' }}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Vendor Information</CardTitle>
@@ -248,162 +321,387 @@ export default function VendorDetail() {
                 <p className="text-sm mb-4" style={{ color: 'hsl(var(--text-2))' }}>{vendor.description}</p>
                 <div className="grid grid-cols-2 gap-x-8">
                   {[
-                    { label: 'Category', value: vendor.category, icon: Buildings },
-                    { label: 'Website', value: vendor.website, icon: Globe },
-                    { label: 'Contact', value: vendor.contact, icon: EnvelopeSimple },
-                    { label: 'Last Review', value: formatDate(vendor.lastReview), icon: CalendarBlank },
-                    { label: 'DPA Status', value: vendor.dpaStatus, icon: Shield },
-                    { label: 'Linked Models', value: vendor.linkedModels.length || 'None', icon: Robot },
+                    { label: 'Category',       value: vendor.category,                  icon: Buildings },
+                    { label: 'Website',        value: vendor.website,                   icon: Globe },
+                    { label: 'Contact',        value: vendor.contact,                   icon: EnvelopeSimple },
+                    { label: 'Last Review',    value: formatDate(vendor.lastReview),    icon: CalendarBlank },
+                    { label: 'DPA Status',     value: vendor.dpaStatus.replace('_', ' '), icon: Shield },
+                    { label: 'Linked Models',  value: `${vendor.linkedModels.length} model${vendor.linkedModels.length !== 1 ? 's' : ''}`, icon: Robot },
                   ].map(r => (
                     <div key={r.label} className="flex items-center gap-2 py-2" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
                       <r.icon size={14} style={{ color: 'hsl(var(--text-3))', flexShrink: 0 }} />
                       <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{r.label}</span>
-                      <span className="text-xs font-medium ml-auto" style={{ color: 'hsl(var(--text-1))' }}>
-                        {typeof r.value === 'number' ? r.value : r.value}
-                      </span>
+                      <span className="text-xs font-medium ml-auto" style={{ color: 'hsl(var(--text-1))' }}>{r.value}</span>
                     </div>
                   ))}
                 </div>
               </CardContent>
             </Card>
           </div>
+
+          {/* Scorecard + Contract */}
+          <div className="grid grid-cols-2 gap-4">
+            <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Risk Dimension Scorecard</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {dimBars.map(d => {
+                  const color = dimColor(d.value);
+                  return (
+                    <div key={d.label}>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-2))' }}>{d.label}</span>
+                        <span className="text-xs font-bold" style={{ color }}>{d.value}/100</span>
+                      </div>
+                      <div style={{ height: 8, background: 'hsl(var(--bg-muted))' }}>
+                        <div style={{ width: `${d.value}%`, height: '100%', background: color, transition: 'width 0.5s ease' }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+
+            <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Contract Summary</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-0 p-0">
+                {[
+                  { term: 'Contract Type',  value: 'Enterprise SaaS Agreement' },
+                  { term: 'Effective Date', value: '2024-01-01' },
+                  { term: 'Expiry Date',    value: contractExpiry },
+                  { term: 'Auto-Renewal',   value: '60 days notice required' },
+                  { term: 'SLA — Uptime',   value: '99.9% monthly' },
+                  { term: 'SLA — Response', value: 'P1: 1h / P2: 4h / P3: 24h' },
+                  { term: 'Audit Rights',   value: 'Annual — GDPR Art. 28' },
+                  { term: 'Liability Cap',  value: '12 months contract value' },
+                ].map((r, i) => (
+                  <div key={r.term} className="flex justify-between px-4 py-2" style={{ borderBottom: '1px solid hsl(var(--border))', background: i % 2 === 0 ? 'transparent' : 'hsl(var(--bg-muted) / 0.4)' }}>
+                    <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{r.term}</span>
+                    <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{r.value}</span>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
-        {/* Contract Tab */}
-        <TabsContent value="contract" className="mt-4 space-y-4">
-          <div className="grid grid-cols-4 gap-4">
-            {[
-              { label: 'Contract Value', value: `$${contractValue.toLocaleString()}/yr`, icon: CurrencyDollar, color: '#6366f1' },
-              { label: 'Expiry Date', value: contractExpiry, icon: CalendarBlank, color: dte <= 90 ? '#f97316' : '#10b981' },
-              { label: 'Days to Expiry', value: dte > 0 ? `${dte}d` : 'Expired', icon: Clock, color: dte <= 30 ? '#ef4444' : dte <= 90 ? '#f97316' : '#10b981' },
-              { label: 'SLA Uptime', value: '99.9%', icon: Star, color: '#10b981' },
-            ].map(s => (
-              <Card key={s.label} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{s.label}</p>
-                    <p className="text-xl font-bold mt-1" style={{ color: s.color }}>{s.value}</p>
-                  </div>
-                  <s.icon size={22} style={{ color: s.color }} />
+        {/* ── ASSESSMENTS ── */}
+        <TabsContent value="assessments" className="mt-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>
+              {assessments.length} assessment{assessments.length !== 1 ? 's' : ''} on record for {vendor.name}
+            </p>
+            <Button size="sm" style={{ borderRadius: 0 }} onClick={() => toast.success('New assessment draft created')}>
+              <ClipboardText size={14} className="mr-1" /> New Assessment
+            </Button>
+          </div>
+
+          {assessments.length === 0 ? (
+            <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <ClipboardText size={36} style={{ color: 'hsl(var(--text-3))' }} />
+                <p className="mt-3 text-sm font-medium" style={{ color: 'hsl(var(--text-2))' }}>No assessments yet</p>
+                <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>Create an assessment to evaluate this vendor against your risk frameworks.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+              <CardContent className="p-0">
+                <table className="w-full">
+                  <thead style={{ background: 'hsl(var(--bg-muted))' }}>
+                    <tr>
+                      {['ID', 'Type', 'Framework', 'Status', 'Score', 'Findings', 'Owner', 'Due / Approved', 'Recommendation', 'Actions'].map(h => (
+                        <th key={h} className="text-left p-3 text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {assessments.map(a => {
+                      const sb = assessmentStatusBadge(a.status);
+                      const cf = a.criticalFindingsCount > 0;
+                      return (
+                        <tr key={a.id} style={{ borderTop: '1px solid hsl(var(--border))' }}>
+                          <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{a.id}</td>
+                          <td className="p-3">
+                            <Badge variant="outline" style={{ borderRadius: 0, fontSize: 10 }}>{a.assessmentType}</Badge>
+                          </td>
+                          <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{a.frameworkBasis}</td>
+                          <td className="p-3">
+                            <Badge style={{ background: sb.bg, color: sb.text, borderRadius: 0, fontSize: 10 }}>{sb.label}</Badge>
+                          </td>
+                          <td className="p-3">
+                            {a.score !== null ? (
+                              <span className="text-sm font-bold" style={{ color: a.score >= 80 ? '#10b981' : a.score >= 60 ? '#f97316' : '#ef4444' }}>{a.score}</span>
+                            ) : <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>—</span>}
+                          </td>
+                          <td className="p-3">
+                            <span className="text-xs" style={{ color: cf ? '#ef4444' : 'hsl(var(--text-2))' }}>
+                              {a.riskFindingsCount} total{cf ? `, ${a.criticalFindingsCount} critical` : ''}
+                            </span>
+                          </td>
+                          <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{a.owner}</td>
+                          <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>
+                            {a.approvedAt ? formatDate(a.approvedAt) : formatDate(a.dueDate)}
+                          </td>
+                          <td className="p-3">
+                            {a.recommendation ? (
+                              <Badge style={{
+                                background: a.recommendation === 'Approve' ? '#10b98120' : a.recommendation === 'Reject' ? '#ef444420' : '#f9731620',
+                                color: a.recommendation === 'Approve' ? '#10b981' : a.recommendation === 'Reject' ? '#ef4444' : '#f97316',
+                                borderRadius: 0, fontSize: 10
+                              }}>{a.recommendation}</Badge>
+                            ) : <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Pending</span>}
+                          </td>
+                          <td className="p-3">
+                            <Button size="sm" variant="ghost" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => toast.info(`Viewing assessment ${a.id}`)}>
+                              <Eye size={12} className="mr-1" /> View
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* ── SLA ── */}
+        <TabsContent value="sla" className="mt-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>
+              {slas.length} SLA obligation{slas.length !== 1 ? 's' : ''} tracked for {vendor.name}
+            </p>
+            <Button size="sm" style={{ borderRadius: 0 }} onClick={() => navigate('/vendors/sla')}>
+              <ArrowSquareOut size={14} className="mr-1" /> SLA Monitor
+            </Button>
+          </div>
+
+          {slas.length === 0 ? (
+            <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <Star size={36} style={{ color: 'hsl(var(--text-3))' }} />
+                <p className="mt-3 text-sm font-medium" style={{ color: 'hsl(var(--text-2))' }}>No SLAs defined</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {breachedSLAs.length > 0 && (
+                <div style={{ background: '#ef444415', border: '1px solid #ef4444', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Warning size={16} style={{ color: '#ef4444', flexShrink: 0 }} />
+                  <p className="text-sm font-semibold" style={{ color: '#ef4444' }}>
+                    {breachedSLAs.length} SLA{breachedSLAs.length > 1 ? 's' : ''} currently in breach: {breachedSLAs.map(s => s.serviceName).join(', ')}
+                  </p>
+                </div>
+              )}
+              <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+                <CardContent className="p-0">
+                  <table className="w-full">
+                    <thead style={{ background: 'hsl(var(--bg-muted))' }}>
+                      <tr>
+                        {['Service', 'Type', 'Target', 'Current', 'Status', 'Owner', 'Last Measured', 'Escalation', 'Actions'].map(h => (
+                          <th key={h} className="text-left p-3 text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {slas.map(s => {
+                        const sb = slaStatusBadge(s.status);
+                        const isBreached = s.status === 'breached';
+                        return (
+                          <tr key={s.id} style={{ borderTop: '1px solid hsl(var(--border))', background: isBreached ? '#ef444408' : 'transparent' }}>
+                            <td className="p-3">
+                              <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{s.serviceName}</p>
+                              <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{s.id}</p>
+                            </td>
+                            <td className="p-3">
+                              <Badge variant="outline" style={{ borderRadius: 0, fontSize: 10 }}>{s.slaType}</Badge>
+                            </td>
+                            <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--text-2))' }}>{s.target}</td>
+                            <td className="p-3 text-xs font-bold" style={{ color: isBreached ? '#ef4444' : s.status === 'at_risk' ? '#f97316' : '#10b981' }}>
+                              {s.currentPerformance}
+                            </td>
+                            <td className="p-3">
+                              <Badge style={{ background: sb.bg, color: sb.text, borderRadius: 0, fontSize: 10 }}>{sb.label}</Badge>
+                            </td>
+                            <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{s.owner}</td>
+                            <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{formatDate(s.lastMeasuredAt)}</td>
+                            <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {s.escalationPath.split('→')[0].trim()} →
+                            </td>
+                            <td className="p-3">
+                              <Button size="sm" variant="ghost" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => toast.info(`Viewing SLA ${s.id}`)}>
+                                <Eye size={12} className="mr-1" /> View
+                              </Button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-
-          <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Master Service Agreement — Key Terms</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-0 p-0">
-              {[
-                { term: 'Contract Type', value: 'Enterprise SaaS Agreement' },
-                { term: 'Effective Date', value: '2024-01-01' },
-                { term: 'Expiry Date', value: contractExpiry },
-                { term: 'Auto-Renewal', value: '60 days notice required' },
-                { term: 'Governing Law', value: 'New York, USA' },
-                { term: 'SLA — Uptime', value: '99.9% monthly (excl. maintenance)' },
-                { term: 'SLA — Response Time', value: 'P1: 1h / P2: 4h / P3: 24h' },
-                { term: 'SLA — Penalty', value: 'Service credits up to 30% monthly fee' },
-                { term: 'Data Residency', value: 'EU & US regions available' },
-                { term: 'Audit Rights', value: 'Annual audit clause — Article 28 GDPR' },
-                { term: 'Termination', value: '90 days written notice, either party' },
-                { term: 'Liability Cap', value: '12 months contract value' },
-              ].map((r, i) => (
-                <div key={r.term} className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: '1px solid hsl(var(--border))', background: i % 2 === 0 ? 'transparent' : 'hsl(var(--bg-muted) / 0.4)' }}>
-                  <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>{r.term}</span>
-                  <span className="text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{r.value}</span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          <div className="flex gap-3">
-            <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={() => toast.success('Contract renewal initiated — email sent to vendor')}>
-              <CalendarBlank size={14} className="mr-1" /> Initiate Renewal
-            </Button>
-            <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={() => toast.info('SLA report generated')}>
-              <FileText size={14} className="mr-1" /> Generate SLA Report
-            </Button>
-          </div>
+            </>
+          )}
         </TabsContent>
 
-        {/* Documents Tab */}
+        {/* ── ISSUES ── */}
+        <TabsContent value="issues" className="mt-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>
+              {openIssues.length} open · {issues.filter(i => i.status === 'mitigated' || i.status === 'closed').length} resolved
+            </p>
+            <Button size="sm" style={{ borderRadius: 0 }} onClick={() => toast.success('New TPRM issue created')}>
+              <Warning size={14} className="mr-1" /> Raise Issue
+            </Button>
+          </div>
+
+          {issues.length === 0 ? (
+            <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <CheckCircle size={36} style={{ color: '#10b981' }} />
+                <p className="mt-3 text-sm font-medium" style={{ color: 'hsl(var(--text-2))' }}>No open issues</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+              <CardContent className="p-0">
+                <table className="w-full">
+                  <thead style={{ background: 'hsl(var(--bg-muted))' }}>
+                    <tr>
+                      {['ID', 'Title', 'Source', 'Severity', 'Status', 'Owner', 'Due Date', 'Remediation Plan', 'Actions'].map(h => (
+                        <th key={h} className="text-left p-3 text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {issues.map(i => {
+                      const sev = severityBadge(i.severity);
+                      const ist = issueStatusBadge(i.status);
+                      const overdue = new Date(i.dueDate) < new Date() && (i.status === 'open' || i.status === 'in_progress');
+                      return (
+                        <tr key={i.id} style={{ borderTop: '1px solid hsl(var(--border))', background: i.severity === 'critical' && i.status === 'open' ? '#ef444406' : 'transparent' }}>
+                          <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{i.id}</td>
+                          <td className="p-3" style={{ maxWidth: 200 }}>
+                            <p className="text-sm font-medium leading-tight" style={{ color: 'hsl(var(--text-1))' }}>{i.title}</p>
+                          </td>
+                          <td className="p-3">
+                            <Badge variant="outline" style={{ borderRadius: 0, fontSize: 10 }}>{i.sourceType}</Badge>
+                          </td>
+                          <td className="p-3">
+                            <Badge style={{ background: sev.bg, color: sev.text, borderRadius: 0, fontSize: 10 }}>{sev.label}</Badge>
+                          </td>
+                          <td className="p-3">
+                            <Badge style={{ background: ist.bg, color: ist.text, borderRadius: 0, fontSize: 10 }}>{ist.label}</Badge>
+                          </td>
+                          <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{i.owner}</td>
+                          <td className="p-3 text-xs" style={{ color: overdue ? '#ef4444' : 'hsl(var(--text-3))' }}>
+                            {formatDate(i.dueDate)}{overdue ? ' ⚠' : ''}
+                          </td>
+                          <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {i.remediationPlan.substring(0, 60)}…
+                          </td>
+                          <td className="p-3">
+                            <Button size="sm" variant="ghost" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => toast.info(`Viewing issue ${i.id}`)}>
+                              <Eye size={12} className="mr-1" /> View
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* ── DOCUMENTS ── */}
         <TabsContent value="documents" className="mt-4 space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>
-              Compliance documents, certificates, and agreements for {vendor.name}
+              {documents.filter(d => d.status === 'valid').length} valid · {missingDocs.length} gaps requiring attention
             </p>
-            <Button size="sm" style={{ borderRadius: 0 }} onClick={() => { setUploadedDocs(true); toast.success('Document uploaded to vault'); }}>
+            <Button size="sm" style={{ borderRadius: 0 }} onClick={() => { setUploadedDoc(true); toast.success('Document uploaded'); }}>
               <UploadSimple size={14} className="mr-1" /> Upload Document
             </Button>
           </div>
+
+          {missingDocs.length > 0 && (
+            <div style={{ background: '#ef444415', border: '1px solid #ef4444', padding: '10px 16px' }}>
+              <p className="text-sm font-semibold" style={{ color: '#ef4444' }}>
+                {missingDocs.length} document gap{missingDocs.length > 1 ? 's' : ''}: {missingDocs.map(d => d.type).join(', ')}
+              </p>
+            </div>
+          )}
 
           <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
             <CardContent className="p-0">
               <table className="w-full">
                 <thead style={{ background: 'hsl(var(--bg-muted))' }}>
                   <tr>
-                    {['Document', 'Type', 'Status', 'Uploaded', 'Size', 'Actions'].map(h => (
+                    {['Document', 'Type', 'Status', 'Owner', 'Uploaded', 'Expires', 'Actions'].map(h => (
                       <th key={h} className="text-left p-3 text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {docs.map((doc, i) => {
+                  {documents.map((doc, idx) => {
                     const ds = docStatusBadge(doc.status);
+                    const isExpiring = doc.status === 'expiring_soon' || doc.status === 'expired';
                     return (
-                      <tr key={i} style={{ borderTop: '1px solid hsl(var(--border))' }}>
+                      <tr key={doc.id} style={{ borderTop: '1px solid hsl(var(--border))', background: (idx % 2 === 1) ? 'hsl(var(--bg-muted) / 0.4)' : 'transparent' }}>
                         <td className="p-3">
                           <div className="flex items-center gap-2">
-                            <doc.icon size={16} style={{ color: doc.status === 'active' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-4))', flexShrink: 0 }} />
-                            <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{doc.name}</span>
+                            <FilePdf size={16} style={{ color: isExpiring ? '#ef4444' : 'hsl(var(--text-3))', flexShrink: 0 }} />
+                            <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{doc.fileName}</span>
                           </div>
                         </td>
                         <td className="p-3">
                           <Badge variant="outline" style={{ borderRadius: 0, fontSize: 10 }}>{doc.type}</Badge>
                         </td>
                         <td className="p-3">
-                          <Badge style={{ background: ds.bg, color: ds.text, border: `1px solid ${ds.border}`, borderRadius: 0, fontSize: 10 }}>
-                            {ds.label}
-                          </Badge>
+                          <Badge style={{ background: ds.bg, color: ds.text, borderRadius: 0, fontSize: 10 }}>{ds.label}</Badge>
                         </td>
-                        <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>
-                          {doc.uploaded !== '—' ? formatDate(doc.uploaded) : '—'}
+                        <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{doc.owner}</td>
+                        <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{doc.uploadedAt ? formatDate(doc.uploadedAt) : '—'}</td>
+                        <td className="p-3 text-xs" style={{ color: isExpiring ? '#ef4444' : 'hsl(var(--text-3))' }}>
+                          {doc.expiresAt ? formatDate(doc.expiresAt) : '—'}
                         </td>
-                        <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{doc.size}</td>
                         <td className="p-3">
-                          <div className="flex gap-1">
-                            {doc.status === 'active' ? (
-                              <Button size="sm" variant="ghost" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => toast.success(`Downloading ${doc.type}...`)}>
-                                <Download size={13} className="mr-1" /> Download
-                              </Button>
-                            ) : (
-                              <Button size="sm" variant="ghost" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => toast.info(`Request sent to ${vendor.name} for ${doc.type}`)}>
-                                <UploadSimple size={13} className="mr-1" /> Request
-                              </Button>
-                            )}
-                          </div>
+                          {doc.status === 'valid' || doc.status === 'expiring_soon' ? (
+                            <Button size="sm" variant="ghost" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => toast.success(`Downloading ${doc.type}`)}>
+                              <Download size={12} className="mr-1" /> Download
+                            </Button>
+                          ) : (
+                            <Button size="sm" variant="ghost" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => toast.info(`Request sent for ${doc.type}`)}>
+                              <UploadSimple size={12} className="mr-1" /> Request
+                            </Button>
+                          )}
                         </td>
                       </tr>
                     );
                   })}
-                  {uploadedDocs && (
+                  {uploadedDoc && (
                     <tr style={{ borderTop: '1px solid hsl(var(--border))' }}>
                       <td className="p-3">
                         <div className="flex items-center gap-2">
-                          <FileText size={16} style={{ color: 'hsl(var(--s-ok-tx))' }} />
-                          <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{vendor.name} — Custom Document</span>
+                          <FileText size={16} style={{ color: '#10b981' }} />
+                          <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{vendor.name} — Uploaded Document</span>
                         </div>
                       </td>
                       <td className="p-3"><Badge variant="outline" style={{ borderRadius: 0, fontSize: 10 }}>Custom</Badge></td>
-                      <td className="p-3">
-                        <Badge style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', border: '1px solid hsl(var(--s-ok-br))', borderRadius: 0, fontSize: 10 }}>Active</Badge>
-                      </td>
+                      <td className="p-3"><Badge style={{ background: '#10b98120', color: '#10b981', borderRadius: 0, fontSize: 10 }}>Valid</Badge></td>
+                      <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>You</td>
                       <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{new Date().toISOString().split('T')[0]}</td>
                       <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>—</td>
                       <td className="p-3">
                         <Button size="sm" variant="ghost" style={{ padding: '4px 8px', fontSize: 11 }}>
-                          <Download size={13} className="mr-1" /> Download
+                          <Download size={12} className="mr-1" /> Download
                         </Button>
                       </td>
                     </tr>
@@ -414,169 +712,190 @@ export default function VendorDetail() {
           </Card>
         </TabsContent>
 
-        {/* Sub-processors Tab */}
-        <TabsContent value="subprocessors" className="mt-4 space-y-4">
-          <div style={{ padding: '10px 14px', background: 'hsl(var(--s-in-bg))', border: '1px solid hsl(var(--s-in-br))' }}>
-            <p className="text-xs" style={{ color: 'hsl(var(--s-in-tx))' }}>
-              Under GDPR Article 28, {vendor.name} must maintain an up-to-date list of sub-processors and notify {orgName} of changes with 30 days notice.
-              Standard Contractual Clauses (SCCs) or Binding Corporate Rules (BCRs) must be in place for any EEA data transfers.
-            </p>
-          </div>
-
-          <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
-                <div className="flex items-center gap-2">
-                  <Users size={16} />
-                  Sub-processors List
-                </div>
-              </CardTitle>
-              <Badge variant="outline" style={{ borderRadius: 0 }}>Last updated: 2026-03-01</Badge>
-            </CardHeader>
-            <CardContent className="p-0">
-              <table className="w-full">
-                <thead style={{ background: 'hsl(var(--bg-muted))' }}>
-                  <tr>
-                    {['Sub-processor', 'Purpose', 'Location', 'Transfer Mechanism', 'Risk', 'Actions'].map(h => (
-                      <th key={h} className="text-left p-3 text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {subs.map((sp, i) => {
-                    const rc = riskColor(sp.risk);
-                    return (
-                      <tr key={i} style={{ borderTop: '1px solid hsl(var(--border))' }}>
-                        <td className="p-3">
-                          <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{sp.name}</p>
-                        </td>
-                        <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{sp.purpose}</td>
-                        <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{sp.location}</td>
-                        <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{sp.transfers}</td>
-                        <td className="p-3">
-                          <Badge style={{ background: rc.bg, color: rc.text, border: `1px solid ${rc.border}`, borderRadius: 0, fontSize: 10 }}>
-                            {sp.risk}
-                          </Badge>
-                        </td>
-                        <td className="p-3">
-                          <Button size="sm" variant="ghost" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => toast.info(`Reviewing ${sp.name} transfer impact...`)}>
-                            Review
-                          </Button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
-
-          <div className="flex items-center justify-between px-1">
-            <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
-              {subs.length} sub-processors · {subs.filter(s => s.risk === 'low').length} low risk · {subs.filter(s => s.risk === 'medium').length} medium risk · {subs.filter(s => s.risk === 'high').length} high risk
-            </p>
-            <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={() => toast.success('Sub-processor change notification requested from vendor')}>
-              Request Update
+        {/* ── ACTIVITY ── */}
+        <TabsContent value="activity" className="mt-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>Immutable audit trail of all vendor-related activity</p>
+            <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={() => toast.info('Activity log exported')}>
+              <Download size={14} className="mr-1" /> Export Log
             </Button>
           </div>
-        </TabsContent>
 
-        {/* Scorecard Tab */}
-        <TabsContent value="scorecard" className="mt-4">
           <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-            <CardHeader>
-              <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Risk Dimension Scorecard</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {dimentionBars.map(d => {
-                const color = dimColor(d.value);
-                return (
-                  <div key={d.label}>
-                    <div className="flex justify-between mb-1.5">
-                      <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{d.label}</span>
-                      <span className="text-sm font-bold" style={{ color }}>{d.value} / 100</span>
-                    </div>
-                    <div style={{ height: 10, background: 'hsl(var(--bg-muted))' }}>
-                      <div style={{ width: `${d.value}%`, height: '100%', background: color, transition: 'width 0.5s ease' }} />
-                    </div>
-                    <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-3))' }}>
-                      {d.value >= 80 ? 'Meets requirements' : d.value >= 60 ? 'Partial compliance — remediation recommended' : 'Below threshold — immediate action required'}
-                    </p>
-                  </div>
-                );
-              })}
-
-              <div style={{ padding: '12px 16px', background: 'hsl(var(--bg-muted))', borderTop: '2px solid hsl(var(--border))' }}>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Overall Vendor Score</span>
-                  <span className="text-2xl font-bold" style={{ color: scoreColor }}>{vendor.score} / 100</span>
+            <CardContent className="p-4">
+              <div className="relative">
+                <div style={{ position: 'absolute', left: 15, top: 0, bottom: 0, width: 2, background: 'hsl(var(--border))' }} />
+                <div className="space-y-4">
+                  {activityLog.map((evt, idx) => {
+                    const color = activityTypeColor(evt.type);
+                    return (
+                      <div key={idx} className="flex gap-4 relative">
+                        <div style={{ width: 30, height: 30, borderRadius: '50%', background: `${color}20`, border: `2px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, zIndex: 1 }}>
+                          <Activity size={12} style={{ color }} />
+                        </div>
+                        <div className="flex-1 pb-2" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{evt.action}</p>
+                            <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{new Date(evt.ts).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                          </div>
+                          <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-3))' }}>{evt.detail}</p>
+                          <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>by {evt.actor}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Linked Models Tab */}
-        <TabsContent value="models" className="mt-4">
-          {linkedModels.length === 0 ? (
+        {/* ── LINKED OBJECTS ── */}
+        <TabsContent value="linked" className="mt-4 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+
+            {/* Linked Models */}
             <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-              <CardContent className="flex flex-col items-center justify-center py-16">
-                <Robot size={40} style={{ color: 'hsl(var(--text-3))' }} />
-                <p className="mt-3 text-sm font-medium" style={{ color: 'hsl(var(--text-3))' }}>No models linked to this vendor</p>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+                  <div className="flex items-center gap-2"><Robot size={14} /> Linked AI Models ({linkedModels.length})</div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {linkedModels.length === 0 ? (
+                  <p className="px-4 pb-4 text-xs" style={{ color: 'hsl(var(--text-4))' }}>No linked models.</p>
+                ) : linkedModels.map((m, i) => (
+                  <div key={m.id} className="px-4 py-2.5 flex items-center gap-3" style={{ borderTop: i > 0 ? '1px solid hsl(var(--border))' : undefined }}>
+                    <div>
+                      <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{m.name}</p>
+                      <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{m.type} · {m.status} · Risk: {m.riskTier}</p>
+                    </div>
+                    <Button size="sm" variant="ghost" style={{ marginLeft: 'auto', padding: '4px 8px', fontSize: 11 }} onClick={() => navigate(`/models/inventory/${m.id}`)}>
+                      <ArrowSquareOut size={12} />
+                    </Button>
+                  </div>
+                ))}
               </CardContent>
             </Card>
-          ) : (
-            <div className="space-y-3">
-              {linkedModels.map(m => (
-                <Card key={m.id} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{m.id}</span>
-                          <Badge style={{ background: statusColor(m.status).bg, color: statusColor(m.status).text, border: `1px solid ${statusColor(m.status).border}`, borderRadius: 0, fontSize: 10 }}>{m.status}</Badge>
-                        </div>
-                        <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{m.name}</p>
-                        <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-3))' }}>{m.type} · {m.department}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Accuracy</p>
-                        <p className="text-lg font-bold" style={{ color: '#10b981' }}>{m.accuracy}%</p>
-                        <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Fairness: {m.fairnessScore}</p>
-                      </div>
-                    </div>
-                    <p className="text-xs mt-2" style={{ color: 'hsl(var(--text-2))' }}>{m.description}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
 
-        {/* Review History Tab */}
-        <TabsContent value="reviews" className="mt-4">
-          <div className="space-y-3">
-            {MOCK_REVIEWS.map((review, i) => (
-              <Card key={i} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Review #{MOCK_REVIEWS.length - i}</p>
-                      <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{formatDate(review.date)} · Reviewed by {review.reviewer}</p>
+            {/* Linked Assessments */}
+            <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+                  <div className="flex items-center gap-2"><ClipboardText size={14} /> Assessments ({assessments.length})</div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {assessments.length === 0 ? (
+                  <p className="px-4 pb-4 text-xs" style={{ color: 'hsl(var(--text-4))' }}>No assessments.</p>
+                ) : assessments.slice(0, 4).map((a, i) => {
+                  const sb = assessmentStatusBadge(a.status);
+                  return (
+                    <div key={a.id} className="px-4 py-2.5 flex items-center gap-3" style={{ borderTop: i > 0 ? '1px solid hsl(var(--border))' : undefined }}>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate" style={{ color: 'hsl(var(--text-1))' }}>{a.assessmentType} — {a.frameworkBasis}</p>
+                        <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{a.id} · {a.owner}</p>
+                      </div>
+                      <Badge style={{ background: sb.bg, color: sb.text, borderRadius: 0, fontSize: 10, flexShrink: 0 }}>{sb.label}</Badge>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl font-bold" style={{ color: dimColor(review.score) }}>{review.score}</span>
-                      <Badge style={{ background: '#10b98120', color: '#10b981', border: '1px solid #10b981', borderRadius: 0, fontSize: 10 }}>
-                        <CheckCircle size={10} className="mr-1" /> {review.result}
-                      </Badge>
+                  );
+                })}
+              </CardContent>
+            </Card>
+
+            {/* Sub-processors */}
+            <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+                    <div className="flex items-center gap-2"><Users size={14} /> Sub-processors ({subs.length})</div>
+                  </CardTitle>
+                  <Badge variant="outline" style={{ borderRadius: 0, fontSize: 10 }}>Last updated 2026-03-01</Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                {subs.map((sp, i) => {
+                  const rc = spRiskColor(sp.risk);
+                  return (
+                    <div key={i} className="px-4 py-2.5 flex items-center gap-3" style={{ borderTop: i > 0 ? '1px solid hsl(var(--border))' : undefined }}>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{sp.name}</p>
+                        <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{sp.purpose} · {sp.location} · {sp.transfers}</p>
+                      </div>
+                      <Badge style={{ background: rc.bg, color: rc.text, border: `1px solid ${rc.border}`, borderRadius: 0, fontSize: 10, flexShrink: 0 }}>{sp.risk}</Badge>
                     </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+
+            {/* Open Issues summary */}
+            <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+                  <div className="flex items-center gap-2"><Warning size={14} /> Open Issues ({openIssues.length})</div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {openIssues.length === 0 ? (
+                  <div className="px-4 pb-4 flex items-center gap-2">
+                    <CheckCircle size={16} style={{ color: '#10b981' }} />
+                    <p className="text-xs" style={{ color: '#10b981' }}>No open issues — vendor is in good standing.</p>
                   </div>
-                  <p className="text-sm" style={{ color: 'hsl(var(--text-2))' }}>{review.notes}</p>
-                </CardContent>
-              </Card>
-            ))}
+                ) : openIssues.slice(0, 4).map((iss, i) => {
+                  const sev = severityBadge(iss.severity);
+                  return (
+                    <div key={iss.id} className="px-4 py-2.5 flex items-center gap-3" style={{ borderTop: i > 0 ? '1px solid hsl(var(--border))' : undefined }}>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate" style={{ color: 'hsl(var(--text-1))' }}>{iss.title}</p>
+                        <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{iss.id} · Due {formatDate(iss.dueDate)}</p>
+                      </div>
+                      <Badge style={{ background: sev.bg, color: sev.text, borderRadius: 0, fontSize: 10, flexShrink: 0 }}>{sev.label}</Badge>
+                    </div>
+                  );
+                })}
+                {openIssues.length > 4 && (
+                  <p className="px-4 py-2 text-xs" style={{ color: 'hsl(var(--text-4))', borderTop: '1px solid hsl(var(--border))' }}>
+                    + {openIssues.length - 4} more — view the Issues tab for all findings
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Integrations / linked policies / controls placeholder */}
+            <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', gridColumn: '1 / 3' }}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+                  <div className="flex items-center gap-2"><Plugs size={14} /> Related Governance Objects</div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-4 gap-4">
+                  {[
+                    { label: 'Linked Risks',     count: 2, icon: Warning,      color: '#f97316', route: '/risks' },
+                    { label: 'Linked Controls',  count: 4, icon: SealCheck,    color: '#6366f1', route: '/compliance/controls' },
+                    { label: 'Linked Policies',  count: 3, icon: ClipboardText,color: '#3b82f6', route: '/policies' },
+                    { label: 'Linked Incidents', count: 1, icon: XCircle,      color: '#ef4444', route: '/risk/incidents' },
+                  ].map(obj => (
+                    <button
+                      key={obj.label}
+                      onClick={() => navigate(obj.route)}
+                      className="flex flex-col items-center justify-center py-4 gap-2 transition-colors hover:bg-[hsl(var(--bg-raised))]"
+                      style={{ border: '1px solid hsl(var(--border))' }}
+                    >
+                      <obj.icon size={22} style={{ color: obj.color }} />
+                      <span className="text-2xl font-bold" style={{ color: obj.color }}>{obj.count}</span>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{obj.label}</span>
+                      <ArrowsClockwise size={12} style={{ color: 'hsl(var(--text-4))' }} />
+                    </button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
           </div>
         </TabsContent>
+
       </Tabs>
     </div>
   );

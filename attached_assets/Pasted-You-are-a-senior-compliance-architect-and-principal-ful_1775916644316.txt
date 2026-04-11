@@ -1,0 +1,599 @@
+You are a senior compliance architect and principal full-stack engineer with 15+ years of experience in AI/ML governance, GRC platforms, React, TypeScript, enterprise UX, and regulated workflow systems.
+
+You are extending the Sentinel AI GRC Platform.
+
+Your task is to FIX, ENHANCE, and COMPLETE the current codebase for:
+1. Vendor Management
+2. TPRM workspace
+3. Vendor Assessments
+4. Vendor SLA management
+5. Sidebar / navigation information architecture, because the current menu and submenu are too long and reduce usability
+
+CRITICAL EXECUTION RULES
+- Read ALL existing files first before making changes.
+- Preserve working code. Do not rewrite modules that already work.
+- Only enhance what is missing, broken, duplicated, or poorly wired.
+- Prefer surgical edits over large rewrites.
+- Reuse existing shared components, route patterns, types, dialogs, drawers, data-table utilities, badges, page headers, seed-data structure, and form patterns.
+- Output complete files only for files you change.
+- If context grows long, print exactly: CHECKPOINT: [file]
+- TypeScript strict mode only.
+- No any.
+- No TODOs.
+- No dead routes.
+- No placeholder labels.
+- No fake loading-only screens.
+- Every changed page must support loading, empty, error, and populated states.
+- Every changed table must support search, filter, sorting, pagination, row click-through, row actions, bulk selection, bulk actions, export, active filter state, and clear filters.
+- Do not introduce a new architecture if current patterns already exist in the repo.
+
+FIRST DO THIS BEFORE CODING
+Inspect and summarize:
+1. Existing route map
+2. Existing sidebar/navigation structure
+3. Existing vendor / assessment / SLA / procurement / TPRM related files
+4. Existing shared table, drawer, form, dialog, badge, and layout components
+5. Existing types, seed data, mocks, hooks, and stores
+6. Existing broken handlers, dead routes, compile issues, and duplicate code
+7. Which routes already exist but are incomplete
+
+Then produce:
+A. Repo findings
+B. Gap analysis
+C. Minimal enhancement plan
+D. Complete file changes
+E. Build-fix pass
+F. Remaining risks
+
+PRIMARY GOALS
+
+GOAL 1 — FIX OVERLONG SIDEBAR / NAVIGATION
+The current menu is too long and hard to scan.
+Do NOT simply delete items.
+Improve information architecture while preserving module coverage.
+
+CURRENT NAV IS TOO LONG:
+OVERVIEW
+Dashboard
+Tasks
+Notifications
+Reporting
+
+AI GOVERNANCE
+Model Inventory
+Model Lifecycle
+Model Validation Lab
+Trust Engine
+Guardrails
+Live Traces
+Cost & Tokens
+Fallback Log
+Tool Monitor
+Configuration
+Agent Discovery
+Shadow AI
+Bias Audits
+AI Impact Assessments
+Explainability
+Use Cases
+Prompt Registry
+
+AGENTIC GOVERNANCE
+Agent Registry
+Agent IAM
+Multi-Agent Choreography
+Kill Switch Events
+Performance Monitoring
+
+SECURITY
+Security Overview
+Threat Feed
+Scan Center
+Attack Surface
+Vulnerabilities
+Red Team Lab
+Policy Firewall
+Keys Vault
+Model Arena
+Reports
+Red Team Findings
+
+COMPLIANCE
+Compliance Dashboard
+Frameworks
+Controls
+Audit Management
+Evidence
+Evidence Hub
+Evidence Vault
+Gap Analysis
+Conformity Assessment
+Policies
+Policy Templates
+Policy Editor
+Compliance Calendar
+Document Management
+Audit Trail
+System Audit Log
+
+RISK & INCIDENTS
+Risk Register
+Risk Matrix
+Incidents
+Incident Workflow
+Remediation
+Remediation Tracker
+Incident Playbooks
+Exception Management
+Financial Risk Quantification
+
+AI SUPPLY CHAIN
+AIBOM Registry
+Provenance Graph
+Vendor Upload Portal
+Supply Chain Attestations
+
+EVALUATIONS
+Quality Metrics
+Eval Techniques
+Benchmark
+Datasets
+Data Governance
+Data Lineage
+
+OPERATIONS
+HITL Reviews
+Vendors
+Regulatory Radar
+Approval Workflows
+Export Center
+Integrations
+
+PRIVACY & CONSENT
+DSR / Rights Management
+Consent Management
+
+SUSTAINABILITY & ESG
+Carbon Ledger
+Energy Efficiency
+ESG Reports
+Model Efficiency Benchmarking
+
+ORGANIZATION
+Committee Management
+Training & Awareness
+Access Control
+Benchmarking & Maturity
+Business Continuity
+
+SYSTEM
+Settings
+Import Sample Data
+AI Advisor
+
+NAVIGATION ENHANCEMENT REQUIREMENTS
+- Keep all major platform capabilities accessible.
+- Reduce visible sidebar clutter.
+- Group related leaf pages under better parent groupings.
+- Use progressive disclosure.
+- Only one top-level section expanded at a time.
+- Auto-expand active parent section.
+- Keep expanded width 240px and collapsed width 64px if current system supports it.
+- Sidebar body scrolls independently.
+- Pinned footer with Settings + AI Advisor + profile if pattern exists.
+- Hover flyout in collapsed mode if current sidebar architecture supports it.
+- On mobile, sidebar must become overlay drawer and close on route change.
+
+REQUIRED IA IMPROVEMENT APPROACH
+Refactor navigation into fewer, clearer top-level sections and move highly operational pages into contextual sub-navigation where appropriate.
+
+Suggested target structure:
+1. Overview
+- Dashboard
+- Tasks
+- Notifications
+- Reporting
+
+2. Governance
+- Model Inventory
+- Model Lifecycle
+- Agent Discovery
+- Shadow AI
+- Use Cases
+- AI Impact Assessments
+- Bias Audits
+- Explainability
+- Prompt Registry
+- Model Validation Lab
+
+3. Trust Engine
+- Trust Overview
+- Guardrails
+- Live Traces
+- Cost & Tokens
+- Fallback Log
+- Tool Monitor
+- Configuration
+
+4. Security
+- Security Overview
+- Threat Feed
+- Scan Center
+- Attack Surface
+- Vulnerabilities
+- Red Team Lab
+- Red Team Findings
+- Policy Firewall
+- Keys Vault
+- Model Arena
+- Security Reports
+
+5. Compliance
+- Compliance Dashboard
+- Frameworks
+- Controls
+- Policies
+- Policy Templates
+- Policy Editor
+- Evidence Hub
+- Evidence Vault
+- Gap Analysis
+- Conformity Assessment
+- Audit Management
+- Audit Trail
+- Compliance Calendar
+- Document Management
+- System Audit Log
+
+6. Risk & Response
+- Risk Register
+- Risk Matrix
+- Incidents
+- Incident Workflow
+- Incident Playbooks
+- Remediation Tracker
+- Exception Management
+- Financial Risk Quantification
+
+7. Third-Party & Operations
+- Vendors
+- TPRM Workspace
+- Vendor Assessments
+- Vendor SLA
+- Regulatory Radar
+- Approval Workflows
+- HITL Reviews
+- Integrations
+- Export Center
+
+8. Privacy
+- DSR / Rights Management
+- Consent Management
+
+9. Supply Chain
+- AIBOM Registry
+- Provenance Graph
+- Vendor Upload Portal
+- Supply Chain Attestations
+
+10. Sustainability
+- Carbon Ledger
+- Energy Efficiency
+- ESG Reports
+- Model Efficiency Benchmarking
+
+11. Organization
+- Committee Management
+- Training & Awareness
+- Access Control
+- Benchmarking & Maturity
+- Business Continuity
+
+12. System
+- Settings
+- Import Sample Data
+- AI Advisor
+
+IMPORTANT:
+- If route names already exist, preserve them.
+- If “Trust Engine” is currently misplaced inside AI Governance, move it to its own top-level section.
+- Remove duplicate semantic labels such as “Remediation” + “Remediation Tracker” if both exist and one is redundant.
+- Remove duplicate semantic labels such as “Evidence” + “Evidence Hub” if one is a dead or duplicate route.
+- If a page is really a child utility page, keep it routed but reduce its prominence in sidebar.
+- Improve labels to be explicit and enterprise-friendly.
+
+GOAL 2 — COMPLETE VENDOR MANAGEMENT MODULE
+
+Implement or complete full CRUD and detail workflows for vendor management with realistic seed data.
+
+Required vendor capabilities:
+- Vendor inventory list page
+- Vendor detail page or detail drawer
+- Create vendor
+- Edit vendor
+- Archive / offboard vendor
+- Activity log
+- Audit trail feel
+- Relational links to assessments, SLA, issues, incidents, risks, controls, policies, evidence, contracts, subprocessors, and business owners
+
+Vendor fields:
+- id
+- name
+- legalName
+- category
+- serviceDescription
+- businessOwner
+- vendorManager
+- status (Prospective, Onboarding, Active, Under Review, Restricted, Offboarding, Archived)
+- criticality (Low, Moderate, High, Critical)
+- inherentRisk (Low, Moderate, High, Critical)
+- residualRisk (Low, Moderate, High, Critical)
+- securityRating
+- privacyImpact
+- dataAccessLevel
+- regions
+- subprocessorCount
+- contractStart
+- contractEnd
+- renewalDate
+- reassessmentDue
+- slaProfileId
+- dpaStatus
+- certifications
+- aiUse
+- fourthPartyExposure
+- incidentCount
+- openIssues
+- linkedRisks
+- linkedControls
+- linkedPolicies
+- linkedAssets
+- notes
+- createdAt
+- updatedAt
+
+Vendor list page requirements:
+- KPI tiles
+- searchable/filterable table
+- row click-through
+- row actions
+- bulk actions
+- export
+- active filters + clear filters
+- overdue reassessment highlighting
+- breached SLA indicator
+- missing DPA indicator
+
+Vendor detail requirements:
+Tabs:
+- Overview
+- Assessments
+- SLA
+- Issues
+- Documents
+- Activity
+- Linked Objects
+
+GOAL 3 — COMPLETE TPRM WORKSPACE
+
+Create or complete a TPRM operational workspace that gives security, compliance, procurement, and risk teams a real operating console.
+
+TPRM workspace must show:
+- vendors by criticality and residual risk
+- vendors due for reassessment
+- vendors with expired or expiring documents
+- vendors with open critical issues
+- vendors with breached SLAs
+- third-party incident linkage
+- external monitoring / security rating view if current repo pattern exists
+- recent third-party activity feed
+- operational filters
+- chart-to-table drilldown where pattern exists
+
+TPRM best-practice logic should include:
+- complete inventory
+- risk-based tiering
+- due diligence
+- evidence review
+- contract and DPA review
+- continuous monitoring
+- reassessment cadence
+- remediation tracking
+- fourth-party visibility
+
+GOAL 4 — COMPLETE VENDOR ASSESSMENTS
+
+Implement or complete vendor assessment workflows.
+
+Required:
+- list page and vendor-linked list
+- create assessment form/dialog
+- edit assessment
+- detail view
+- workflow status transitions
+- findings summary
+- evidence upload/link support
+- scoring
+- due date tracking
+- recommendation field
+- next review date
+- create risk from finding if risk entity exists
+- request changes
+- approve with conditions
+
+Assessment fields:
+- id
+- vendorId
+- assessmentType
+- version
+- status
+- frameworkBasis
+- owner
+- dueDate
+- submittedAt
+- reviewedAt
+- approvedAt
+- score
+- riskFindingsCount
+- criticalFindingsCount
+- evidenceCount
+- summary
+- recommendation
+- nextReviewDate
+
+Use realistic frameworks:
+- SIG Lite
+- CAIQ
+- ISO 27001
+- ISO 42001
+- GDPR
+- SOC 2
+- Internal
+
+GOAL 5 — COMPLETE VENDOR SLA MANAGEMENT
+
+Implement vendor SLA tracking, not just a generic SLA page.
+
+Required:
+- vendor SLA list page
+- vendor SLA detail drawer/page
+- create/edit vendor SLA form
+- thresholds and status logic
+- warning / breach highlighting
+- escalation path display
+- linked vendor
+- linked incidents or tickets if current data model supports it
+- upcoming SLA review or renewal indicators
+- dashboard for healthy / at-risk / breached vendor obligations
+
+Vendor SLA fields:
+- id
+- vendorId
+- serviceName
+- slaType (Availability, Support Response, Incident Notification, RTO, RPO, Review Turnaround, DSR Support, Custom)
+- target
+- warningThreshold
+- breachThreshold
+- measurementWindow
+- currentPerformance
+- status (Healthy, At Risk, Breached, Waived, Retired)
+- owner
+- escalationPath
+- lastMeasuredAt
+- lastBreachAt
+- linkedTickets
+- notes
+
+GOAL 6 — TPRM ISSUES / REMEDIATION
+
+Create or complete third-party remediation issue tracking if current module exists.
+Fields:
+- id
+- vendorId
+- sourceType
+- title
+- severity
+- status
+- owner
+- dueDate
+- remediationPlan
+- linkedAssessmentId
+- linkedRiskId
+- linkedIncidentId
+- createdAt
+- updatedAt
+
+GOAL 7 — SEED DATA
+
+Generate realistic 2026 enterprise seed data:
+- 12 vendors minimum
+- 4 critical vendors
+- 6 assessments minimum
+- 8 vendor SLA records minimum
+- 10 TPRM issues minimum
+- 16 vendor documents minimum
+
+Seed data must include:
+- cloud hosting vendor
+- model API vendor
+- annotation vendor
+- IAM vendor
+- ticketing vendor
+- analytics vendor
+- messaging provider
+- legal/compliance vendor
+
+Seed data realism:
+- some overdue reassessments
+- some approved with conditions
+- some missing DPA
+- some expired documents
+- some breached SLAs
+- some high AI dependency
+- some fourth-party concentration
+
+GOAL 8 — SHARED COMPONENT / WORKFLOW FIXES
+
+Use or enhance current shared patterns:
+- DataTable
+- PageHeader
+- Breadcrumbs
+- DetailDrawer
+- StatusBadge
+- RiskBadge
+- DueDateBadge
+- ActivityLog
+- EmptyState
+- ErrorState
+- LoadingSkeleton
+- ConfirmDialog
+- MetricTile
+
+Fix broken handlers:
+- row click not navigating
+- actions not opening drawers/dialogs
+- edit forms not saving to local state/mock store
+- detail views missing tabs
+- exports not wired
+- filters not visible
+- pagination not applied
+- dead submenu routes
+
+IMPLEMENTATION RULES
+- Fix existing code first.
+- If code exists, extend it.
+- If a file is broken, repair it.
+- If a module is partially scaffolded, finish it.
+- If shared abstractions exist, reuse them.
+- Only create new files where necessary.
+- Do not create parallel vendor systems.
+- Keep route names stable wherever possible.
+- Ensure all new items appear correctly in nav.
+- Use toasts for success/error feedback.
+- Make all row-heavy workflows keyboard accessible.
+- Keep dark mode compatible.
+- No hardcoded light-only colors in cards, tables, charts, dialogs, or tooltips.
+
+DELIVERABLE FORMAT
+Return in this structure:
+1. Repo findings
+2. Navigation refactor plan
+3. Gap analysis
+4. Changed files
+5. Complete file contents
+6. Build issues fixed
+7. Remaining risks
+
+SUCCESS CRITERIA
+Done means:
+- Sidebar is shorter, clearer, and more usable
+- Trust Engine is moved into the right IA position
+- Vendor Management works end-to-end
+- TPRM workspace works end-to-end
+- Vendor Assessments work end-to-end
+- Vendor SLA works end-to-end
+- Existing code is preserved where possible
+- TypeScript compiles
+- Routes are wired
+- Seed data is realistic
+- No unnecessary rewrites
