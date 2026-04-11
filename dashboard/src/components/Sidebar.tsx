@@ -16,6 +16,7 @@ import {
   CaretDown, List, SidebarSimple as SidebarCollapseIcon,
   Sun, Moon, Monitor, SignOut,
   X,
+  Eye, ArrowsLeftRight, CheckCircle, Megaphone,
 } from '@phosphor-icons/react'
 import { cn } from '../lib/utils'
 import { useTheme, type Theme } from '../providers/theme'
@@ -94,10 +95,13 @@ const NAV: NavSection[] = [
           { label: 'Configuration', to: '/trust-engine/config' },
         ],
       },
-      { label: 'Bias Audits',         to: '/bias-audits', icon: Scales },
-      { label: 'AI Impact',           to: '/aiia',         icon: FileMagnifyingGlass },
-      { label: 'Use Cases',           to: '/use-cases',    icon: Briefcase },
-      { label: 'Prompt Registry',     to: '/prompt-registry', icon: ChatTeardropText },
+      { label: 'Bias Audits',         to: '/bias-audits',    icon: Scales },
+      { label: 'AI Impact',           to: '/aiia',           icon: FileMagnifyingGlass },
+      { label: 'Use Cases',           to: '/use-cases',      icon: Briefcase },
+      { label: 'Prompt Registry',     to: '/prompt-registry',icon: ChatTeardropText },
+      { label: 'AI Risk Classification', to: '/ai-risk-tiering', icon: Scales },
+      { label: 'Post-Market Surveillance', to: '/post-market', icon: ChartLine },
+      { label: 'GenAI Risk Profiles', to: '/genai-risks',    icon: Robot },
     ],
   },
   {
@@ -160,6 +164,9 @@ const NAV: NavSection[] = [
       { label: 'Gap Analysis',       to: '/compliance/gap-analysis', icon: Target },
       { label: 'Document Mgmt',      to: '/documents',               icon: FileText },
       { label: 'Conformity Assess',  to: '/conformity',              icon: Scan },
+      { label: 'DPIA Workflow',      to: '/dpia',                    icon: ShieldCheck },
+      { label: 'Transparency Reports', to: '/transparency-reports',  icon: Eye },
+      { label: 'Framework Mapping',  to: '/framework-mapping',       icon: ArrowsLeftRight },
     ],
   },
   {
@@ -219,6 +226,7 @@ const NAV: NavSection[] = [
       { label: 'Carbon Ledger',    to: '/carbon-ledger',    icon: Leaf },
       { label: 'Energy Efficiency',to: '/energy-efficiency',icon: Lightning },
       { label: 'ESG Reports',      to: '/esg-reports',      icon: EsgIcon },
+      { label: 'Data Quality',     to: '/data-quality',     icon: CheckCircle },
     ],
   },
   {
@@ -229,6 +237,7 @@ const NAV: NavSection[] = [
       { label: 'Training',        to: '/training',         icon: GraduationCap },
       { label: 'Maturity',        to: '/maturity',         icon: ChartBar },
       { label: 'Continuity',      to: '/continuity',       icon: Lifebuoy },
+      { label: 'Ethics Reporting', to: '/ethics-reporting', icon: Megaphone },
     ],
   },
 ]

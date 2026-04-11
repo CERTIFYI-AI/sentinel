@@ -8,7 +8,7 @@ import {
   Users, Database, StackSimple, ArrowRight, ChartLine, CheckCircle,
   TrendUp, TrendDown, Minus, ShieldCheck, Siren, Plus,
   Robot, Scales, UserCircleCheck, Eye, Lightning, PresentationChart, Exam,
-  ArrowSquareOut, Sparkle, X, ArrowUp, ArrowDown, Timer,
+  ArrowSquareOut, Sparkle, X, ArrowUp, ArrowDown, Timer, Megaphone,
 } from '@phosphor-icons/react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer,
@@ -213,6 +213,17 @@ export default function Overview() {
     { label: 'Create Incident', desc: 'Report a new risk incident', icon: Lightning, to: '/risk/incidents' },
     { label: 'Run Assessment', desc: 'Conformity assessment', icon: Exam, to: '/conformity' },
     { label: 'Generate Report', desc: 'Board-ready reports', icon: PresentationChart, to: '/reporting' },
+    { label: 'Classify AI System', desc: 'EU AI Act risk tiering', icon: Scales, to: '/ai-risk-tiering' },
+    { label: 'Start DPIA', desc: 'GDPR Art.35 assessment', icon: ShieldCheck, to: '/dpia' },
+    { label: 'Post-Market Plan', desc: 'EU AI Act Art.72', icon: ChartLine, to: '/post-market' },
+    { label: 'Ethics Report', desc: 'Anonymous reporting', icon: Megaphone, to: '/ethics-reporting' },
+  ];
+
+  const REGULATORY_SCORECARD = [
+    { label: 'EU AI Act', score: 65, target: 80, trend: 'up' as const, link: '/ai-risk-tiering' },
+    { label: 'ISO 42001', score: 72, target: 90, trend: 'up' as const, link: '/frameworks' },
+    { label: 'NIST AI RMF', score: 71, target: 85, trend: 'stable' as const, link: '/framework-mapping' },
+    { label: 'GDPR', score: 88, target: 95, trend: 'up' as const, link: '/dpia' },
   ];
 
   const ALERT_ITEMS = [
@@ -587,6 +598,45 @@ export default function Overview() {
           </Link>
         ))}
       </div>
+
+      {/* ═══════ REGULATORY SCORECARD ═══════ */}
+      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+        <CardHeader className="pb-3 flex flex-row items-center justify-between">
+          <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+            Regulatory Compliance Scorecard
+          </CardTitle>
+          <span className="text-xs px-2 py-0.5" style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))', borderRadius: 0 }}>EU AI Act · ISO 42001 · NIST AI RMF · GDPR</span>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+            {REGULATORY_SCORECARD.map(rs => {
+              const pct = rs.score;
+              const barColor = pct >= 85 ? 'hsl(var(--s-ok-tx))' : pct >= 70 ? 'hsl(var(--brand))' : 'hsl(var(--s-er-tx))';
+              const gapColor = pct >= 85 ? 'hsl(var(--s-ok-bg))' : pct >= 70 ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-er-bg))';
+              const gapPct = rs.target - pct;
+              return (
+                <Link key={rs.label} to={rs.link} style={{ textDecoration: 'none', display: 'block' }}>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{rs.label}</p>
+                      <p className="text-lg font-bold" style={{ color: barColor }}>{pct}%</p>
+                    </div>
+                    <div className="w-full h-2 bg-[hsl(var(--bg-raised))]">
+                      <div className="h-full transition-all" style={{ width: `${pct}%`, background: barColor }} />
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span style={{ color: 'hsl(var(--text-4))' }}>Target: {rs.target}%</span>
+                      <span className="px-1.5 py-0.5 font-medium" style={{ background: gapColor, color: pct >= 85 ? 'hsl(var(--s-ok-tx))' : pct >= 70 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-er-tx))', borderRadius: 0 }}>
+                        {gapPct > 0 ? `${gapPct}% gap` : '✓ Met'}
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Charts row */}
       <div className="grid grid-cols-2 gap-4">
