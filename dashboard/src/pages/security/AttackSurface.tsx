@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import {
   Globe, Eye, PencilSimple, Trash, Plus, Scan, Fire,
   CheckCircle, Warning, Clock, Target, ShieldWarning,
@@ -99,6 +99,8 @@ export default function AttackSurface() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<AttackSurfaceAsset | null>(null);
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
+  const [topoOpen, setTopoOpen] = useState(true);
+  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
 
   const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
     const id = Date.now();
@@ -206,6 +208,263 @@ export default function AttackSurface() {
           </ResponsiveContainer>
         </CardContent>
       </Card>
+
+      {/* ── SVG Network Topology ─────────────────────────────────────────── */}
+      {(() => {
+        const externalAssetNodes = assets.filter(a => a.exposure === 'public');
+        const internalAssetNodes = assets.filter(a => a.exposure !== 'public');
+        const W = 900;
+        const extY = 140;
+        const intY = 250;
+        const INET = { id: '_inet', x: W / 2, y: 42 };
+
+        // Spread external assets evenly
+        const extNodes = externalAssetNodes.map((a, i) => {
+          const step = W / (externalAssetNodes.length + 1);
+          return { ...a, x: step * (i + 1), y: extY };
+        });
+
+        // Spread internal assets evenly
+        const intNodes = internalAssetNodes.map((a, i) => {
+          const step = W / (internalAssetNodes.length + 1);
+          return { ...a, x: step * (i + 1), y: intY };
+        });
+
+        const nodeColor = (a: AttackSurfaceAsset) => {
+          if (a.risk === 'critical') return '#ef4444';
+          if (a.risk === 'high') return '#f97316';
+          if (a.risk === 'medium') return '#eab308';
+          return '#10b981';
+        };
+
+        return (
+          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardHeader className="pb-1">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Graph size={15} style={{ color: 'hsl(var(--brand))' }} />
+                  <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Network Topology</CardTitle>
+                  <span className="text-xs px-1.5 py-0.5" style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-4))' }}>
+                    {assets.length} assets · {externalAssetNodes.length} public exposure
+                  </span>
+                </div>
+                <button
+                  onClick={() => setTopoOpen(o => !o)}
+                  className="flex items-center gap-1 text-xs"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'hsl(var(--text-4))' }}
+                >
+                  {topoOpen ? <CaretUp size={13} /> : <CaretDown size={13} />}
+                  {topoOpen ? 'Collapse' : 'Expand'}
+                </button>
+              </div>
+            </CardHeader>
+            {topoOpen && (
+              <CardContent className="pt-0 pb-2">
+                <div style={{ position: 'relative' }}>
+                  <svg
+                    viewBox={`0 0 ${W} 300`}
+                    style={{ width: '100%', height: 'auto', overflow: 'visible', display: 'block' }}
+                    aria-label="Attack surface network topology"
+                  >
+                    <defs>
+                      <marker id="arrowhead" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
+                        <polygon points="0 0, 6 2, 0 4" fill="hsl(var(--border-mid))" />
+                      </marker>
+                      {/* Pulse animation for exposed nodes */}
+                      <style>{`
+                        @keyframes nodePulse {
+                          0%,100% { opacity: 1; r: 10; }
+                          50% { opacity: 0.5; r: 15; }
+                        }
+                      `}</style>
+                    </defs>
+
+                    {/* Edges: Internet → external */}
+                    {extNodes.map(n => (
+                      <line
+                        key={`ie-${n.id}`}
+                        x1={INET.x} y1={INET.y + 14} x2={n.x} y2={n.y - 14}
+                        stroke={n.risk === 'critical' || n.risk === 'high' ? 'hsl(0 72% 51% / 0.4)' : 'hsl(var(--border-mid))'}
+                        strokeWidth={n.risk === 'critical' ? 2.5 : 1.5}
+                        strokeDasharray={n.risk === 'critical' ? '4 2' : 'none'}
+                        markerEnd="url(#arrowhead)"
+                      />
+                    ))}
+
+                    {/* Edges: external → internal (first external to all internal) */}
+                    {extNodes.slice(0, 2).map(en =>
+                      intNodes.map(n => (
+                        <line
+                          key={`ei-${en.id}-${n.id}`}
+                          x1={en.x} y1={en.y + 14} x2={n.x} y2={n.y - 14}
+                          stroke="hsl(var(--border))"
+                          strokeWidth={1}
+                        />
+                      ))
+                    )}
+
+                    {/* Internet gateway node */}
+                    <g
+                      style={{ cursor: 'default' }}
+                      role="img"
+                      aria-label="Internet gateway"
+                    >
+                      <rect
+                        x={INET.x - 40} y={INET.y - 14}
+                        width={80} height={28}
+                        fill="hsl(220 90% 56% / 0.12)"
+                        stroke="hsl(220 90% 56% / 0.5)"
+                        strokeWidth={1.5}
+                      />
+                      <text x={INET.x} y={INET.y + 4} textAnchor="middle" fontSize={10} fontWeight={700} fill="hsl(var(--s-in-tx))">
+                        INTERNET
+                      </text>
+                    </g>
+
+                    {/* External nodes */}
+                    {extNodes.map(n => {
+                      const isHov = hoveredNode === n.id;
+                      const color = nodeColor(n);
+                      return (
+                        <g
+                          key={n.id}
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => { setSelected(n); setSheetOpen(true); }}
+                          onMouseEnter={() => setHoveredNode(n.id)}
+                          onMouseLeave={() => setHoveredNode(null)}
+                          role="button"
+                          aria-label={`${n.name} — ${n.risk} risk`}
+                        >
+                          {/* Pulse ring for high/critical */}
+                          {(n.risk === 'critical' || n.risk === 'high') && (
+                            <circle cx={n.x} cy={n.y} r={isHov ? 22 : 18} fill={`${color}20`} />
+                          )}
+                          <rect
+                            x={n.x - 36} y={n.y - 13}
+                            width={72} height={26}
+                            fill={isHov ? `${color}22` : 'hsl(var(--bg-surface))'}
+                            stroke={color}
+                            strokeWidth={isHov ? 2 : 1.5}
+                          />
+                          <text x={n.x} y={n.y - 0} textAnchor="middle" fontSize={8.5} fill={color} fontWeight={600}>
+                            {n.name.split('.')[0].substring(0, 10)}
+                          </text>
+                          <text x={n.x} y={n.y + 9} textAnchor="middle" fontSize={7} fill="hsl(var(--text-4))">
+                            {n.type.substring(0, 12)}
+                          </text>
+                          {/* Severity dot */}
+                          <circle cx={n.x + 34} cy={n.y - 11} r={4} fill={color} />
+                        </g>
+                      );
+                    })}
+
+                    {/* Internal / restricted nodes */}
+                    {intNodes.map(n => {
+                      const isHov = hoveredNode === n.id;
+                      const color = nodeColor(n);
+                      return (
+                        <g
+                          key={n.id}
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => { setSelected(n); setSheetOpen(true); }}
+                          onMouseEnter={() => setHoveredNode(n.id)}
+                          onMouseLeave={() => setHoveredNode(null)}
+                          role="button"
+                          aria-label={`${n.name} — ${n.risk} risk`}
+                        >
+                          <rect
+                            x={n.x - 36} y={n.y - 13}
+                            width={72} height={26}
+                            fill={isHov ? `${color}18` : 'hsl(var(--bg-muted))'}
+                            stroke={isHov ? color : 'hsl(var(--border-mid))'}
+                            strokeWidth={1.5}
+                            strokeDasharray={n.exposure === 'restricted' ? '3 2' : 'none'}
+                          />
+                          <text x={n.x} y={n.y} textAnchor="middle" fontSize={8.5} fill="hsl(var(--text-2))" fontWeight={500}>
+                            {n.name.split('.')[0].substring(0, 12)}
+                          </text>
+                          <text x={n.x} y={n.y + 9} textAnchor="middle" fontSize={7} fill="hsl(var(--text-4))">
+                            {n.exposure === 'restricted' ? 'Restricted' : n.type.substring(0, 10)}
+                          </text>
+                          {n.risk === 'critical' && (
+                            <circle cx={n.x + 34} cy={n.y - 11} r={4} fill={color} />
+                          )}
+                        </g>
+                      );
+                    })}
+
+                    {/* Zone labels */}
+                    <text x={8} y={extY} fontSize={8} fill="hsl(var(--text-4))" fontWeight={600}>PUBLIC</text>
+                    <text x={8} y={intY} fontSize={8} fill="hsl(var(--text-4))" fontWeight={600}>INTERNAL</text>
+
+                    {/* Zone separator line */}
+                    <line x1={0} y1={(extY + intY) / 2} x2={W} y2={(extY + intY) / 2}
+                      stroke="hsl(var(--border))" strokeWidth={1} strokeDasharray="6 4" />
+                  </svg>
+
+                  {/* Hover tooltip */}
+                  {hoveredNode && (() => {
+                    const node = [...extNodes, ...intNodes].find(n => n.id === hoveredNode);
+                    if (!node) return null;
+                    return (
+                      <div style={{
+                        position: 'absolute', bottom: 8, right: 8,
+                        background: 'hsl(var(--bg-surface))',
+                        border: '1px solid hsl(var(--border))',
+                        padding: '8px 12px', minWidth: 200, zIndex: 10,
+                        boxShadow: 'var(--shadow-md)',
+                      }}>
+                        <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-1))' }}>{node.name}</p>
+                        <div className="space-y-0.5">
+                          {[
+                            ['Type', node.type],
+                            ['Exposure', node.exposure],
+                            ['Risk', node.risk],
+                            ['Protocol', node.protocol],
+                            ['Ports', String(node.openPorts)],
+                          ].map(([k, v]) => (
+                            <div key={k} className="flex justify-between gap-4">
+                              <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{k}</span>
+                              <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{v}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-xs mt-1.5 pt-1.5" style={{ color: 'hsl(var(--text-4))', borderTop: '1px solid hsl(var(--border))' }}>
+                          Click to view details →
+                        </p>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Legend */}
+                <div className="flex items-center gap-4 px-2 pb-1 flex-wrap">
+                  {[
+                    { color: '#ef4444', label: 'Critical' },
+                    { color: '#f97316', label: 'High' },
+                    { color: '#eab308', label: 'Medium' },
+                    { color: '#10b981', label: 'Low' },
+                  ].map(({ color, label }) => (
+                    <div key={label} className="flex items-center gap-1.5">
+                      <div style={{ width: 10, height: 10, background: color, borderRadius: 0 }} />
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{label}</span>
+                    </div>
+                  ))}
+                  <div className="flex items-center gap-1.5">
+                    <div style={{ width: 16, height: 2, borderTop: '2px dashed hsl(var(--border-mid))' }} />
+                    <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Restricted</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div style={{ width: 16, height: 2, borderTop: '2px solid hsl(0 72% 51% / 0.6)' }} />
+                    <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>High-risk flow</span>
+                  </div>
+                  <span className="text-xs ml-auto" style={{ color: 'hsl(var(--text-4))' }}>Click any node to inspect</span>
+                </div>
+              </CardContent>
+            )}
+          </Card>
+        );
+      })()}
 
       {/* Filters */}
       <div className="flex items-center gap-3">
