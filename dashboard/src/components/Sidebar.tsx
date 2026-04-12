@@ -18,6 +18,7 @@ import {
   X,
   Eye, ArrowsLeftRight, CheckCircle, Megaphone,
   Storefront, Certificate, TreeStructure,
+  PresentationChart, Gavel, Buildings, Play,
 } from '@phosphor-icons/react'
 import { cn } from '../lib/utils'
 import { useTheme, type Theme } from '../providers/theme'
@@ -60,6 +61,8 @@ const NAV: NavSection[] = [
           { label: 'Board Report', to: '/ciso/report' },
         ],
       },
+      { label: 'Executive Command Center', to: '/executive-center', icon: PresentationChart },
+      { label: 'ROI & Value Realization',  to: '/roi',              icon: HandCoins },
       { label: 'Risk Intelligence', to: '/risk-intelligence', icon: ChartLine },
     ],
   },
@@ -106,6 +109,7 @@ const NAV: NavSection[] = [
       { label: 'AI Risk Classification', to: '/ai-risk-tiering', icon: Scales },
       { label: 'Post-Market Surveillance', to: '/post-market', icon: ChartLine },
       { label: 'GenAI Risk Profiles', to: '/genai-risks',    icon: Robot },
+      { label: 'Model Risk Committee',    to: '/mrc',            icon: Gavel },
     ],
   },
   {
@@ -173,6 +177,8 @@ const NAV: NavSection[] = [
       { label: 'Transparency Reports', to: '/transparency-reports',  icon: Eye },
       { label: 'Framework Mapping',  to: '/framework-mapping',       icon: ArrowsLeftRight },
       { label: 'Gov. Framework',     to: '/governance-framework',    icon: Globe },
+      { label: 'Exam Manager',       to: '/examination-manager',     icon: Buildings },
+      { label: 'Control Testing',    to: '/control-testing',         icon: Play },
     ],
   },
   {

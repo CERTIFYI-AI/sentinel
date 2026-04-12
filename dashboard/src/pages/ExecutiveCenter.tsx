@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -132,6 +132,36 @@ function ScoreRing({ score }: { score: number }) {
   );
 }
 
+// ── Live Pulse Ticker ──────────────────────────────────────────────────────────
+function PulseTicker({ fineExposure, score }: { fineExposure: number; score: number }) {
+  const [tick, setTick] = useState(0);
+  const [time, setTime] = useState(new Date());
+  useEffect(() => {
+    const id = setInterval(() => { setTick(t => t + 1); setTime(new Date()); }, 8000);
+    return () => clearInterval(id);
+  }, []);
+  const msgs = [
+    `Live risk score: ${score}/100 — ${score >= 80 ? 'STRONG' : score >= 65 ? 'PROGRESSING' : 'NEEDS ATTENTION'}`,
+    `Maximum fine exposure: $${fineExposure}M across 5 regulatory frameworks`,
+    `Next MRC meeting: Apr 25, 2026 — 2 models awaiting vote`,
+    `EU AI Act compliance deadline: Aug 2, 2026 — 112 days remaining`,
+    `Q1 2026: Compliance score improved +${score - 65}pts from baseline`,
+  ];
+  return (
+    <div className="flex items-center gap-3 px-3 py-2 text-[10px]"
+      style={{ border: '1px solid hsl(var(--brand) / 0.25)', background: 'hsl(var(--brand) / 0.04)' }}>
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'hsl(var(--s-ok-tx))' }} />
+        <span className="font-bold uppercase tracking-wider" style={{ color: 'hsl(var(--brand))' }}>LIVE</span>
+      </div>
+      <span style={{ color: 'hsl(var(--text-3))' }}>{msgs[tick % msgs.length]}</span>
+      <span className="ml-auto flex-shrink-0" style={{ color: 'hsl(var(--text-4))' }}>
+        Updated {time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+      </span>
+    </div>
+  );
+}
+
 // ── Custom Tooltip ─────────────────────────────────────────────────────────────
 function ChartTip({ active, payload, label, ct }: any) {
   if (!active || !payload?.length) return null;
@@ -178,6 +208,9 @@ export default function ExecutiveCenter() {
           </div>
         </div>
 
+        {/* Live Pulse Ticker */}
+        <PulseTicker fineExposure={fineExposure} score={aiRiskScore} />
+
         {/* Top KPI Strip */}
         <div className="grid grid-cols-6 gap-2">
           {[
@@ -214,6 +247,7 @@ export default function ExecutiveCenter() {
             <TabsTrigger value="frameworks" style={{ borderRadius: 0 }}>Regulatory Exposure</TabsTrigger>
             <TabsTrigger value="portfolio" style={{ borderRadius: 0 }}>Model Portfolio</TabsTrigger>
             <TabsTrigger value="board" style={{ borderRadius: 0 }}>Board Trend</TabsTrigger>
+            <TabsTrigger value="heatmap" style={{ borderRadius: 0 }}>Risk Heat Map</TabsTrigger>
           </TabsList>
 
           {/* ── Risk Posture ── */}
@@ -427,6 +461,93 @@ export default function ExecutiveCenter() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+          {/* ── Risk Heat Map ── */}
+          <TabsContent value="heatmap" className="mt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+                <CardContent className="p-4">
+                  <p className="text-sm font-semibold mb-1" style={{ color: 'hsl(var(--text-1))' }}>Model Risk Portfolio — Heat Grid</p>
+                  <p className="text-[10px] mb-4" style={{ color: 'hsl(var(--text-4))' }}>Risk tier × compliance score × drift status for all production models</p>
+                  <div className="space-y-2">
+                    {MODELS.map((m, i) => {
+                      const compliance = MODEL_PORTFOLIO[i]?.compliance ?? 50;
+                      const heatColor = m.riskTier === 'high' && m.driftStatus === 'critical'
+                        ? 'hsl(var(--destructive))'
+                        : m.riskTier === 'high' || m.driftStatus === 'warning'
+                        ? '#f59e0b'
+                        : 'hsl(var(--s-ok-tx))';
+                      const heatBg = m.riskTier === 'high' && m.driftStatus === 'critical'
+                        ? 'hsl(var(--s-er-bg))'
+                        : m.riskTier === 'high' || m.driftStatus === 'warning'
+                        ? 'hsl(var(--s-wn-bg) / 0.5)'
+                        : 'hsl(var(--s-ok-bg) / 0.5)';
+                      return (
+                        <div key={m.id} className="flex items-center gap-3 p-2.5"
+                          style={{ border: `1px solid ${heatColor}33`, background: heatBg }}>
+                          <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: heatColor }} />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-0.5">
+                              <span className="text-xs font-medium truncate" style={{ color: 'hsl(var(--text-1))' }}>{m.name}</span>
+                              <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                                <span className="text-[9px] px-1.5 py-0.5 uppercase font-bold"
+                                  style={{ background: m.riskTier === 'high' ? 'hsl(var(--s-er-bg))' : 'hsl(var(--s-wn-bg))', color: m.riskTier === 'high' ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-wn-tx))' }}>
+                                  {m.riskTier}
+                                </span>
+                                <span className="text-[10px] font-bold" style={{ color: heatColor }}>{compliance}%</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="h-1 flex-1 overflow-hidden" style={{ background: 'hsl(var(--border))' }}>
+                                <div style={{ width: `${compliance}%`, height: '100%', background: heatColor }} />
+                              </div>
+                              <span className="text-[9px]" style={{ color: 'hsl(var(--text-4))' }}>{m.driftStatus} drift</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+                <CardContent className="p-4">
+                  <p className="text-sm font-semibold mb-1" style={{ color: 'hsl(var(--text-1))' }}>Shareholder & Financial Impact</p>
+                  <p className="text-[10px] mb-4" style={{ color: 'hsl(var(--text-4))' }}>Translating regulatory risk into financial exposure and market impact</p>
+                  <div className="space-y-3">
+                    {[
+                      { label: 'EU AI Act Max Fine', value: '$35M', pct: '2.1% revenue', color: 'hsl(var(--destructive))', note: 'Art. 9 gaps — 112 days to deadline' },
+                      { label: 'GDPR Max Fine', value: '$20M', pct: '1.2% revenue', color: '#f59e0b', note: 'Strong controls, 88% compliant' },
+                      { label: 'ECOA Reg B Exposure', value: '$2.4M', pct: 'Class action risk', color: '#f59e0b', note: 'MDL-001 bias DI below threshold' },
+                      { label: 'Contract Risk (SOC 2)', value: '$8.5M', pct: 'Customer churn risk', color: 'hsl(var(--s-ok-tx))', note: '85% compliant, low risk' },
+                      { label: 'NIST Fed Contract Risk', value: '$3M', pct: 'Federal revenue at risk', color: '#f59e0b', note: '71% compliant — 3 gaps open' },
+                    ].map((row, i) => (
+                      <div key={i} className="flex items-start justify-between p-2.5"
+                        style={{ border: `1px solid ${row.color}22`, background: `${row.color}08` }}>
+                        <div>
+                          <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{row.label}</p>
+                          <p className="text-[10px] mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>{row.note}</p>
+                        </div>
+                        <div className="text-right ml-4 flex-shrink-0">
+                          <p className="text-base font-bold" style={{ color: row.color }}>{row.value}</p>
+                          <p className="text-[9px]" style={{ color: 'hsl(var(--text-4))' }}>{row.pct}</p>
+                        </div>
+                      </div>
+                    ))}
+                    <div className="p-3" style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-raised))' }}>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="font-bold" style={{ color: 'hsl(var(--text-1))' }}>Total Maximum Exposure</span>
+                        <span className="font-bold text-sm" style={{ color: 'hsl(var(--destructive))' }}>${fineExposure}M+</span>
+                      </div>
+                      <p className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>
+                        Resolving the 5 critical gaps would reduce maximum exposure by an estimated <strong style={{ color: 'hsl(var(--s-ok-tx))' }}>$28M (75%)</strong> and add an estimated <strong style={{ color: 'hsl(var(--brand))' }}>$0.14/share</strong> in risk-adjusted earnings.
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>

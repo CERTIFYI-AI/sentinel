@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import {
   Users, CheckCircle, XCircle, Warning, Clock, FileText, ChartBar,
   ArrowRight, Robot, ShieldCheck, Gavel, User, Calendar, Sparkle,
-  CheckSquare, ArrowUp, Buildings, Star, Scales,
+  CheckSquare, ArrowUp, Buildings, Star, Scales, Minus,
 } from '@phosphor-icons/react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip,
@@ -226,6 +226,7 @@ export default function ModelRiskCommittee() {
             <TabsTrigger value="history" style={{ borderRadius: 0 }}>Decision History</TabsTrigger>
             <TabsTrigger value="committee" style={{ borderRadius: 0 }}>Committee Members</TabsTrigger>
             <TabsTrigger value="analytics" style={{ borderRadius: 0 }}>Approval Analytics</TabsTrigger>
+            <TabsTrigger value="policy" style={{ borderRadius: 0 }}>SR 11-7 Policy Library</TabsTrigger>
           </TabsList>
 
           {/* ── Agenda ── */}
@@ -424,6 +425,55 @@ export default function ModelRiskCommittee() {
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
+            </div>
+          </TabsContent>
+          {/* ── SR 11-7 Policy Library ── */}
+          <TabsContent value="policy" className="mt-4">
+            <div className="space-y-4">
+              <div className="p-3 text-xs" style={{ border: '1px solid hsl(var(--brand) / 0.3)', background: 'hsl(var(--brand) / 0.04)' }}>
+                <p style={{ color: 'hsl(var(--text-3))' }}>
+                  <strong style={{ color: 'hsl(var(--brand))' }}>SR 11-7 Model Risk Management</strong> — Federal Reserve supervisory guidance governing model development, implementation, use, validation, and governance at financial institutions.
+                  The MRC is the primary governance body responsible for ensuring adherence to this guidance across all AI/ML models.
+                </p>
+              </div>
+              {[
+                { section: 'SR 11-7 §I', title: 'Model Definition and Scope', summary: 'Defines what constitutes a model under supervisory guidance — quantitative methods, assumptions, and systems that produce outputs used in decision-making.', mrcRole: 'Approve model classifications and scope decisions', status: 'compliant', docs: ['Model Inventory Policy v2.3', 'Classification Framework'] },
+                { section: 'SR 11-7 §II', title: 'Model Risk', summary: 'Establishes that model risk arises from models that produce inaccurate outputs and from inappropriate use of model outputs. Banks must apply model risk management commensurate with model risk.', mrcRole: 'Review and approve model risk ratings; oversee material change thresholds', status: 'compliant', docs: ['Risk Tiering Policy v1.8', 'Material Change SOP'] },
+                { section: 'SR 11-7 §III', title: 'Model Development, Implementation, and Use', summary: 'Addresses the complete model development lifecycle including data quality, documentation, testing, and implementation controls.', mrcRole: 'Approve initial deployment; review quarterly for material changes', status: 'amber', docs: ['Development Lifecycle Standard', 'Data Governance Policy'] },
+                { section: 'SR 11-7 §IV', title: 'Model Validation', summary: 'Requires effective challenge — robust validation activities including conceptual soundness review, ongoing monitoring, outcomes analysis, and back-testing.', mrcRole: 'Receive and evaluate validation findings; require remediation with timelines', status: 'compliant', docs: ['Validation Framework v3.1', 'Independent Validation SOP'] },
+                { section: 'SR 11-7 §V', title: 'Governance, Policies, and Controls', summary: 'Describes requirements for strong governance including board-level oversight, policies defining model risk tolerance, and comprehensive model inventory.', mrcRole: 'Primary owner of model governance policy; quorum requirements; documentation of votes', status: 'compliant', docs: ['MRC Charter v2.0', 'Model Inventory Policy', 'Quorum & Voting Procedures'] },
+                { section: 'SR 11-7 §VI', title: 'Examiner Guidance', summary: 'Provides examination procedures for assessing model risk management programs, including review of governance, validation, and model inventory.', mrcRole: 'Produce documentation for examination; respond to examiner findings within MRC scope', status: 'amber', docs: ['Exam Response Playbook', 'MRC Meeting Minutes Archive'] },
+              ].map((item, i) => (
+                <Card key={i} style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: `1px solid ${item.status === 'amber' ? 'hsl(var(--s-wn-br))' : 'hsl(var(--border))'}` }}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[9px] font-mono px-1.5 py-0.5 font-bold" style={{ background: 'hsl(var(--brand) / 0.1)', color: 'hsl(var(--brand))' }}>{item.section}</span>
+                          <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{item.title}</p>
+                          <span className="text-[9px] px-1.5 py-0.5 font-semibold" style={{ background: item.status === 'compliant' ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-wn-bg))', color: item.status === 'compliant' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))' }}>
+                            {item.status === 'compliant' ? 'COMPLIANT' : 'REVIEW NEEDED'}
+                          </span>
+                        </div>
+                        <p className="text-xs mb-2" style={{ color: 'hsl(var(--text-3))' }}>{item.summary}</p>
+                        <div className="p-2 text-xs mb-2" style={{ background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))' }}>
+                          <span className="font-semibold" style={{ color: 'hsl(var(--text-3))' }}>MRC Responsibility: </span>
+                          <span style={{ color: 'hsl(var(--text-4))' }}>{item.mrcRole}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {item.docs.map((d, di) => (
+                            <button key={di} className="text-[9px] px-2 py-1 flex items-center gap-1" style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-raised))', color: 'hsl(var(--brand))' }}
+                              onClick={() => toast.info(`Opening: ${d}`)}>
+                              <FileText size={9} />
+                              {d}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </TabsContent>
         </Tabs>

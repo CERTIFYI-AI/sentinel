@@ -122,6 +122,10 @@ export default function ControlTesting() {
               <Badge style={{ borderRadius: 0, fontSize: 9, background: 'hsl(var(--brand) / 0.12)', color: 'hsl(var(--brand))', border: '1px solid hsl(var(--brand) / 0.3)' }}>
                 AUTOMATED ASSURANCE
               </Badge>
+              <div className="flex items-center gap-1.5 px-2 py-0.5" style={{ background: 'hsl(var(--s-ok-bg))', border: '1px solid hsl(var(--s-ok-br))' }}>
+                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'hsl(var(--s-ok-tx))' }} />
+                <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: 'hsl(var(--s-ok-tx))' }}>Live · {CONTROL_TESTS.filter(t => t.frequency === 'continuous').length} monitors active</span>
+              </div>
             </div>
             <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>
               {orgName} · {CONTROL_TESTS.filter(t => t.testType === 'automated' || t.testType === 'hybrid').length} automated tests running continuously · Replaces manual quarterly control testing
@@ -162,6 +166,7 @@ export default function ControlTesting() {
               {(failed + overdue) > 0 && <span className="ml-1.5 text-[9px] px-1 py-0.5 font-bold" style={{ background: 'hsl(var(--destructive))', color: '#fff' }}>{failed + overdue}</span>}
             </TabsTrigger>
             <TabsTrigger value="analytics" style={{ borderRadius: 0 }}>Trend Analytics</TabsTrigger>
+            <TabsTrigger value="schedule" style={{ borderRadius: 0 }}>Test Schedule</TabsTrigger>
           </TabsList>
 
           {/* ── All Tests ── */}
@@ -311,6 +316,94 @@ export default function ControlTesting() {
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* ── Test Schedule ── */}
+          <TabsContent value="schedule" className="mt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+                <CardContent className="p-4">
+                  <p className="text-sm font-semibold mb-3" style={{ color: 'hsl(var(--text-1))' }}>Upcoming Test Runs — Next 7 Days</p>
+                  <div className="space-y-2">
+                    {CONTROL_TESTS
+                      .filter(t => t.frequency !== 'continuous')
+                      .sort((a, b) => new Date(a.nextRun).getTime() - new Date(b.nextRun).getTime())
+                      .map(test => {
+                        const ss = testStatusStyle(test.status);
+                        const nextDate = new Date(test.nextRun);
+                        const hoursUntil = Math.round((nextDate.getTime() - Date.now()) / 3600000);
+                        const daysUntil = Math.floor(hoursUntil / 24);
+                        return (
+                          <div key={test.id} className="flex items-center gap-3 p-2.5"
+                            style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-raised))' }}>
+                            <div className="w-10 text-center flex-shrink-0">
+                              <p className="text-[8px] uppercase font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{nextDate.toLocaleDateString('en-US', { month: 'short' })}</p>
+                              <p className="text-base font-bold leading-none" style={{ color: 'hsl(var(--text-1))' }}>{nextDate.getDate()}</p>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium truncate" style={{ color: 'hsl(var(--text-1))' }}>{test.control}</p>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-[9px] px-1.5 py-0.5" style={{ background: ss.bg, color: ss.tx }}>{ss.label}</span>
+                                <span className="text-[9px]" style={{ color: 'hsl(var(--text-4))' }}>{test.framework} · {test.testType}</span>
+                              </div>
+                            </div>
+                            <div className="text-right flex-shrink-0">
+                              <p className="text-[10px] font-semibold" style={{ color: hoursUntil < 24 ? 'hsl(var(--brand))' : 'hsl(var(--text-3))' }}>
+                                {hoursUntil < 24 ? `${hoursUntil}h` : `${daysUntil}d`}
+                              </p>
+                              <p className="text-[9px]" style={{ color: 'hsl(var(--text-4))' }}>{test.frequency}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+                <CardContent className="p-4">
+                  <p className="text-sm font-semibold mb-3" style={{ color: 'hsl(var(--text-1))' }}>Continuous Tests — Live Status</p>
+                  <div className="space-y-2 mb-4">
+                    {CONTROL_TESTS.filter(t => t.frequency === 'continuous').map(test => {
+                      const ss = testStatusStyle(test.status);
+                      return (
+                        <div key={test.id} className="flex items-center gap-3 p-2.5"
+                          style={{ border: `1px solid ${test.status === 'passed' ? 'hsl(var(--s-ok-br))' : 'hsl(var(--destructive) / 0.3)'}`, background: test.status === 'passed' ? 'hsl(var(--s-ok-bg) / 0.4)' : 'hsl(var(--s-er-bg) / 0.3)' }}>
+                          <div className="w-2 h-2 rounded-full flex-shrink-0 animate-pulse"
+                            style={{ background: test.status === 'passed' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))' }} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium truncate" style={{ color: 'hsl(var(--text-1))' }}>{test.control}</p>
+                            <p className="text-[9px]" style={{ color: 'hsl(var(--text-4))' }}>
+                              Runs every hour · Next: {new Date(test.nextRun).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                          <span className="text-[9px] px-1.5 py-0.5 font-semibold" style={{ background: ss.bg, color: ss.tx }}>{ss.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="p-3" style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-raised))' }}>
+                    <p className="text-[10px] font-semibold mb-2" style={{ color: 'hsl(var(--text-1))' }}>30-Day SLA Performance</p>
+                    {[
+                      { label: 'Test execution SLA (< 5min)', met: 98.2 },
+                      { label: 'Alert notification SLA (< 15min)', met: 99.6 },
+                      { label: 'Remediation task creation SLA (< 1hr)', met: 94.1 },
+                      { label: 'Overall control coverage', met: 80 },
+                    ].map((s, i) => (
+                      <div key={i} className="mb-2">
+                        <div className="flex justify-between text-[9px] mb-0.5">
+                          <span style={{ color: 'hsl(var(--text-4))' }}>{s.label}</span>
+                          <span className="font-bold" style={{ color: s.met >= 95 ? 'hsl(var(--s-ok-tx))' : '#f59e0b' }}>{s.met}%</span>
+                        </div>
+                        <div className="h-1 w-full overflow-hidden" style={{ background: 'hsl(var(--border))' }}>
+                          <div style={{ width: `${s.met}%`, height: '100%', background: s.met >= 95 ? 'hsl(var(--s-ok-tx))' : '#f59e0b' }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             </div>
