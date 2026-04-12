@@ -4,6 +4,8 @@ import { toast } from 'sonner'
 import { SEED_DEPARTMENTS, SEED_USERS } from '../../features/access-control/seed'
 import type { Department } from '../../features/access-control/types'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
+import { isSupabaseConfigured } from "../../lib/supabase"
+import { fetchDepartments as sbFetchDepts, fetchUsers as sbFetchUsers, createDepartment as sbCreateDept, updateDepartment as sbUpdateDept, deleteDepartment as sbDeleteDept } from "../../lib/supabase-access-control"
 
 const BLANK: Omit<Department, 'id' | 'createdAt' | 'updatedAt'> = {
   name: '', code: '', description: '', headCount: 0, status: 'active',
@@ -23,8 +25,8 @@ function validate(f: typeof BLANK, editing: boolean, existing: Department[], edi
 }
 
 export default function DepartmentsPage() {
-  const [departments, setDepartments] = useState<Department[]>(SEED_DEPARTMENTS)
-  const [users] = useState(SEED_USERS)
+  const [departments, setDepartments] = useState<Department[]>([])
+  const [users, setUsers] = useState<any[]>([])
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'All' | 'active' | 'inactive'>('All')
   const [sortKey, setSortKey] = useState<SortKey>('name')
@@ -36,6 +38,18 @@ export default function DepartmentsPage() {
   const [form, setForm] = useState(BLANK)
   const [formError, setFormError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const loadData = useCallback(async () => {
+    setLoading(true)
+    try {
+      if (isSupabaseConfigured()) {
+        const [d, u] = await Promise.all([sbFetchDepts(), sbFetchUsers()])
+        setDepartments(d); setUsers(u)
+      } else { setDepartments(SEED_DEPARTMENTS); setUsers(SEED_USERS) }
+    } catch(e) { console.error(e); setDepartments(SEED_DEPARTMENTS); setUsers(SEED_USERS) }
+    finally { setLoading(false) }
+  }, [])
+  useEffect(() => { loadData() }, [loadData])
 
   const userCount = useMemo(() => {
     const map: Record<string, number> = {}
