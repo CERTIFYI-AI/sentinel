@@ -5,6 +5,8 @@ import { SEED_USERS, SEED_ROLES, SEED_DEPARTMENTS } from '../../features/access-
 import { PERMISSIONS, PERMISSION_SECTIONS } from '../../features/access-control/permissions'
 import type { ACUser, UserStatus, Role, Department } from '../../features/access-control/types'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
+import { isSupabaseConfigured } from "../../lib/supabase"
+import { fetchUsers as sbFetchUsers, fetchRoles as sbFetchRoles, fetchDepartments as sbFetchDepts, createUser as sbCreateUser, updateUser as sbUpdateUser, deleteUser as sbDeleteUser, suspendUser as sbSuspendUser } from "../../lib/supabase-access-control"
 
 const STATUS_STYLE: Record<UserStatus, { bg: string; color: string }> = {
   active:    { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
@@ -64,9 +66,9 @@ const BLANK_FORM = {
 }
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<ACUser[]>(SEED_USERS)
-  const [roles] = useState<Role[]>(SEED_ROLES)
-  const [departments] = useState<Department[]>(SEED_DEPARTMENTS)
+  const [users, setUsers] = useState<ACUser[]>([])
+  const [roles, setRoles] = useState<Role[]>([])
+  const [departments, setDepartments] = useState<Department[]>([])
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
@@ -83,6 +85,18 @@ export default function UsersPage() {
   const [form, setForm] = useState(BLANK_FORM)
   const [formError, setFormError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const loadData = useCallback(async () => {
+    setLoading(true)
+    try {
+      if (isSupabaseConfigured()) {
+        const [u, r, d] = await Promise.all([sbFetchUsers(), sbFetchRoles(), sbFetchDepts()])
+        setUsers(u); setRoles(r); setDepartments(d)
+      } else { setUsers(SEED_USERS); setRoles(SEED_ROLES); setDepartments(SEED_DEPARTMENTS) }
+    } catch(e) { console.error(e); setUsers(SEED_USERS); setRoles(SEED_ROLES); setDepartments(SEED_DEPARTMENTS) }
+    finally { setLoading(false) }
+  }, [])
+  useEffect(() => { loadData() }, [loadData])
 
   const filtered = useMemo(() => {
     return users.filter(u => {

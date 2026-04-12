@@ -5,6 +5,8 @@ import { SEED_ROLES, SEED_USERS } from '../../features/access-control/seed'
 import { PERMISSIONS, PERMISSION_SECTIONS, PERMISSION_MODULES_BY_SECTION } from '../../features/access-control/permissions'
 import type { Role, RoleColor } from '../../features/access-control/types'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
+import { isSupabaseConfigured } from "../../lib/supabase"
+import { fetchRoles as sbFetchRoles, fetchUsers as sbFetchUsers, createRole as sbCreateRole, updateRole as sbUpdateRole, deleteRole as sbDeleteRole } from "../../lib/supabase-access-control"
 
 const COLOR_STYLES: Record<RoleColor, { bg: string; color: string }> = {
   zinc:    { bg: 'hsl(240 5% 64% / 0.15)',  color: 'hsl(240 5% 45%)' },
@@ -146,8 +148,8 @@ function PermissionTree({ selected, onChange, readOnly }: {
 const BLANK_FORM = { name: '', code: '', description: '', color: 'emerald' as RoleColor, permissions: [] as string[] }
 
 export default function RolesPage() {
-  const [roles, setRoles] = useState<Role[]>(SEED_ROLES)
-  const [users] = useState(SEED_USERS)
+  const [roles, setRoles] = useState<Role[]>([])
+  const [users, setUsers] = useState<any[]>([])
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<'All' | 'System' | 'Custom'>('All')
   const [showForm, setShowForm] = useState(false)
@@ -157,6 +159,18 @@ export default function RolesPage() {
   const [form, setForm] = useState(BLANK_FORM)
   const [formError, setFormError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const loadData = useCallback(async () => {
+    setLoading(true)
+    try {
+      if (isSupabaseConfigured()) {
+        const [r, u] = await Promise.all([sbFetchRoles(), sbFetchUsers()])
+        setRoles(r); setUsers(u)
+      } else { setRoles(SEED_ROLES); setUsers(SEED_USERS) }
+    } catch(e) { console.error(e); setRoles(SEED_ROLES); setUsers(SEED_USERS) }
+    finally { setLoading(false) }
+  }, [])
+  useEffect(() => { loadData() }, [loadData])
 
   const filtered = useMemo(() => {
     let list = roles.filter(r => {
