@@ -60,9 +60,10 @@ const CostTokenDashboard = lazy(() => import('./pages/trust-engine/CostTokenDash
 const FallbackLog = lazy(() => import('./pages/trust-engine/FallbackLog'));
 const ToolCallMonitor = lazy(() => import('./pages/trust-engine/ToolCallMonitor'));
 const TrustConfig = lazy(() => import('./pages/trust-engine/TrustConfig'));
-const RBACDashboard = lazy(() => import('./pages/rbac/RBACDashboard'));
-const RoleManager = lazy(() => import('./pages/rbac/RoleManager'));
-const UserManager = lazy(() => import('./pages/rbac/UserManager'));
+const AccessControlOverview = lazy(() => import('./pages/rbac/AccessControlOverview'));
+const RolesPage = lazy(() => import('./pages/rbac/RolesPage'));
+const UsersPage = lazy(() => import('./pages/rbac/UsersPage'));
+const DepartmentsPage = lazy(() => import('./pages/rbac/DepartmentsPage'));
 const AgentDiscovery = lazy(() => import('./pages/agents/AgentDiscovery'));
 const ShadowAI = lazy(() => import('./pages/agents/ShadowAI'));
 const AgentDetail = lazy(() => import('./pages/agents/AgentDetail'));
@@ -306,10 +307,11 @@ export default function App() {
           <Route path="/trust-engine/tools" element={<ToolCallMonitor />} />
           <Route path="/trust-engine/config" element={<TrustConfig />} />
 
-          {/* Administration */}
-          <Route path="/access-control" element={<RBACDashboard />} />
-          <Route path="/access-control/roles" element={<RoleManager />} />
-          <Route path="/access-control/users" element={<UserManager />} />
+          {/* Administration — Access Control */}
+          <Route path="/access-control" element={<AccessControlOverview />} />
+          <Route path="/access-control/roles" element={<RolesPage />} />
+          <Route path="/access-control/users" element={<UsersPage />} />
+          <Route path="/access-control/departments" element={<DepartmentsPage />} />
           <Route path="/ai-advisor" element={<Suspense fallback={null}><AiAdvisor /></Suspense>} />
           <Route path="/compliance/policy-templates" element={<Suspense fallback={null}><PolicyTemplates /></Suspense>} />
           <Route path="/compliance/controls/:id" element={<ControlDetail />} />

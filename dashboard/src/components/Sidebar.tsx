@@ -233,7 +233,11 @@ const NAV: NavSection[] = [
   {
     title: 'ORGANIZATION',
     items: [
-      { label: 'Access Control',  to: '/access-control', icon: Lock },
+      { label: 'Access Control',  to: '/access-control', icon: Lock, children: [
+        { label: 'Users',        to: '/access-control/users' },
+        { label: 'Roles',        to: '/access-control/roles' },
+        { label: 'Departments',  to: '/access-control/departments' },
+      ]},
       { label: 'Committee Mgmt',  to: '/committee',       icon: Users },
       { label: 'Training',        to: '/training',         icon: GraduationCap },
       { label: 'Maturity',        to: '/maturity',         icon: ChartBar },
