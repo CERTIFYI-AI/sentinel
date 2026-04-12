@@ -17,6 +17,7 @@ import {
   Sun, Moon, Monitor, SignOut,
   X,
   Eye, ArrowsLeftRight, CheckCircle, Megaphone,
+  Storefront, Certificate, TreeStructure,
 } from '@phosphor-icons/react'
 import { cn } from '../lib/utils'
 import { useTheme, type Theme } from '../providers/theme'
@@ -59,6 +60,7 @@ const NAV: NavSection[] = [
           { label: 'Board Report', to: '/ciso/report' },
         ],
       },
+      { label: 'Risk Intelligence', to: '/risk-intelligence', icon: ChartLine },
     ],
   },
   {
@@ -168,6 +170,7 @@ const NAV: NavSection[] = [
       { label: 'DPIA Workflow',      to: '/dpia',                    icon: ShieldCheck },
       { label: 'Transparency Reports', to: '/transparency-reports',  icon: Eye },
       { label: 'Framework Mapping',  to: '/framework-mapping',       icon: ArrowsLeftRight },
+      { label: 'Gov. Framework',     to: '/governance-framework',    icon: Globe },
     ],
   },
   {
@@ -210,12 +213,14 @@ const NAV: NavSection[] = [
         label: 'Supply Chain', to: '/aibom', icon: Package,
         children: [
           { label: 'Provenance Graph',   to: '/provenance' },
+          { label: 'Supply Chain Graph', to: '/supply-chain/graph' },
           { label: 'Vendor Upload',      to: '/vendor-upload' },
           { label: 'Attestations',       to: '/supply-chain' },
         ],
       },
-      { label: 'Integrations',   to: '/integrations', icon: Plugs },
-      { label: 'Export Center',  to: '/export',        icon: DownloadSimple },
+      { label: 'Marketplace',    to: '/marketplace',   icon: Storefront },
+      { label: 'Integrations',   to: '/integrations',  icon: Plugs },
+      { label: 'Export Center',  to: '/export',         icon: DownloadSimple },
     ],
   },
   {
@@ -243,6 +248,7 @@ const NAV: NavSection[] = [
       { label: 'Maturity',        to: '/maturity',         icon: ChartBar },
       { label: 'Continuity',      to: '/continuity',       icon: Lifebuoy },
       { label: 'Ethics Reporting', to: '/ethics-reporting', icon: Megaphone },
+      { label: 'Licensing',        to: '/admin/licensing',   icon: Certificate },
     ],
   },
 ]
