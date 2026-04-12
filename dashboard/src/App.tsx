@@ -140,6 +140,13 @@ const ModelEfficiency = lazy(() => import('./pages/ModelEfficiency'));
 const DataLineage = lazy(() => import('./pages/DataLineage'));
 const IntegrationsPage = lazy(() => import('./pages/IntegrationsPage'));
 
+// ── 6 Strategic Moat Features ────────────────────────────────────────────────
+const RiskIntelligence = lazy(() => import('./pages/RiskIntelligence'));
+const Marketplace = lazy(() => import('./pages/Marketplace'));
+const SupplyChainGraph = lazy(() => import('./pages/SupplyChainGraph'));
+const Licensing = lazy(() => import('./pages/admin/Licensing'));
+const GovernanceFramework = lazy(() => import('./pages/GovernanceFramework'));
+
 // ── New GRC Modules ─────────────────────────────────────────────────────────
 const CommitteeManagement = lazy(() => import('./pages/committee/CommitteeManagement'));
 const ModelValidationLab = lazy(() => import('./pages/validation/ModelValidationLab'));
@@ -401,6 +408,13 @@ export default function App() {
           <Route path="/genai-risks" element={<Suspense fallback={<Loading />}><GenAIRisks /></Suspense>} />
           <Route path="/data-quality" element={<Suspense fallback={<Loading />}><DataQuality /></Suspense>} />
           <Route path="/ethics-reporting" element={<Suspense fallback={<Loading />}><EthicsReporting /></Suspense>} />
+
+          {/* 6 Strategic Moat Features */}
+          <Route path="/risk-intelligence" element={<Suspense fallback={<Loading />}><RiskIntelligence /></Suspense>} />
+          <Route path="/marketplace" element={<Suspense fallback={<Loading />}><Marketplace /></Suspense>} />
+          <Route path="/supply-chain/graph" element={<Suspense fallback={<Loading />}><SupplyChainGraph /></Suspense>} />
+          <Route path="/admin/licensing" element={<Suspense fallback={<Loading />}><Licensing /></Suspense>} />
+          <Route path="/governance-framework" element={<Suspense fallback={<Loading />}><GovernanceFramework /></Suspense>} />
 
           <Route path="*" element={<Suspense fallback={<Loading />}><NotFound /></Suspense>} />
         </Route>
