@@ -26,6 +26,31 @@ Required for full functionality (set via Replit Secrets):
 Frontend env vars:
 - `VITE_API_URL` — API base URL (leave empty for proxied local dev)
 
+## Recent Changes (April 2026 — Session 5)
+
+### Enhanced: ExceptionManagement.tsx (`/compliance/exceptions`)
+- **Working Approve/Deny workflow**: Buttons now open a confirmation dialog requiring reviewer notes, then update the exception's status, approval chain step, and advance to next approver (Under Review → Approved when all steps pass, Denied if any step denied)
+- **Comprehensive create form** with all enterprise fields: Policy name/ref, department, approver authority, risk level, likelihood (1–5) + impact (1–5) risk score calculator, description, justification, risk analysis, compensating controls, impact scope, regulatory reference (GDPR/EU AI Act/SR 11-7 style), affected systems (add/remove chips), framework mapping (toggle chips: GDPR/EU AI Act/ISO 42001/ISO 27001/NIST AI RMF/SOC 2/SR 11-7/CCPA/DORA/MAS TRM/PCI DSS/HIPAA), tags
+- **Inline table actions**: Hover-reveal action column shows View, Approve (✓), Deny (✕), Delete per row
+- **5-column KPI bar**: Active Exceptions, Pending Review, Expiring ≤30d, Expired, High/Critical Risk (active)
+- **Risk score pill**: Likelihood × Impact displayed as colored pill (green/amber/red)
+- **Framework chips**: Table shows up to 2 framework tags per exception with overflow count
+- **Status badge system**: Approved/Pending/Under Review/Denied/Expired with semantic colors
+- **Renewal dialog**: Captures new expiry date + justification, creates renewal record, resets status to Pending
+- **Delete with AlertDialog** confirm
+
+### Enhanced: AutomationStudio.tsx (`/automation`)
+- **New Workflow dialog**: Full creation form with name, description, trigger type (10 options), category, and multi-select action picker (10 actions with icons, toggle-select) — creates real Workflow with default node configs, opens in Flow Builder
+- **Import YAML dialog**: Paste YAML → imports as Draft workflow with builder review prompt
+- **Editable Flow Builder**: Every node in the pipeline is now interactive — click pencil to expand config editing with live key/value fields, Save/Cancel buttons that update state
+- **Add Action step**: Bottom of flow builder has "+ Action" buttons for all 10 action types — adds new node to pipeline
+- **Delete node**: Each node has a delete button
+- **Test Run**: New "Test" button on each workflow card and in drawer footer — simulates execution with 2s delay, adds log entry to Run Logs, updates run count and success rate
+- **Run Logs**: Real log entries (time, status, duration, trigger, actions run, optional message) with failure styling
+- **Delete workflow**: Trash button with AlertDialog confirmation on both card and drawer
+- **Status left-border**: Green border = Active, Red = Error, no border = Draft/Paused
+- **"Import YAML"** replaces stub "Import from YAML" toast
+
 ## Recent Changes (April 2026 — Session 4)
 
 ### Sidebar Restructure & Deduplication
