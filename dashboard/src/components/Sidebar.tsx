@@ -161,6 +161,7 @@ const NAV: NavSection[] = [
         children: [
           { label: 'Audit Trail',        to: '/audit-trail' },
           { label: 'System Audit Log',   to: '/system-audit-log' },
+          { label: 'Evidence Chain',     to: '/evidence-chain' },
           { label: 'Compliance Calendar',to: '/calendar' },
         ],
       },
@@ -194,6 +195,7 @@ const NAV: NavSection[] = [
       { label: 'Financial Risk',   to: '/financial-risk',       icon: HandCoins },
       { label: 'HITL Reviews',     to: '/hitl',                 icon: UserCircleCheck, badge: 3 },
       { label: 'Approval Flows',   to: '/workflows',            icon: FlowArrow },
+      { label: 'Automation Studio',to: '/automation-studio',    icon: Lightning },
     ],
   },
   {
