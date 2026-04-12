@@ -49,6 +49,7 @@ const Settings = lazy(() => import('./pages/Settings'));
 const Vendors = lazy(() => import('./pages/Vendors'));
 const Login = lazy(() => import('./pages/Login'));
 const Signup = lazy(() => import('./pages/Signup'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 
 const TrustEngineDashboard = lazy(() => import('./pages/trust-engine/TrustEngineDashboard'));
 const LiveTraceFeed = lazy(() => import('./pages/trust-engine/LiveTraceFeed'));
@@ -213,6 +214,7 @@ export default function App() {
         <Route element={<PublicRoute />}>
           <Route path="/login" element={<Suspense fallback={<Loading />}><Login /></Suspense>} />
           <Route path="/signup" element={<Suspense fallback={<Loading />}><Signup /></Suspense>} />
+          <Route path="/forgot-password" element={<Suspense fallback={<Loading />}><ForgotPassword /></Suspense>} />
         </Route>
 
         {/* Fully public — no auth required */}
