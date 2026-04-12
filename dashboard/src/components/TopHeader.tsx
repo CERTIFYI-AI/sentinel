@@ -6,6 +6,7 @@ import { CommandPalette } from './ui/CommandPalette'
 import { NotificationDrawer } from './ui/NotificationDrawer'
 import { useTheme } from '../providers/theme'
 import { getStoredAccent, setAccent, type Accent } from '../store/accentStore'
+import { useAuthStore } from '../store/authStore'
 
 const UNREAD_COUNT = 5
 
@@ -128,6 +129,12 @@ export default function TopHeader() {
   const navigate = useNavigate()
   const { theme, resolved, setTheme } = useTheme()
   const breadcrumbs = buildBreadcrumbs(location.pathname)
+  const user = useAuthStore(s => s.user)
+  const logout = useAuthStore(s => s.logout)
+
+  const initials = user?.name
+    ? user.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
+    : 'AI'
 
   const [avatarOpen, setAvatarOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -153,6 +160,12 @@ export default function TopHeader() {
   const handleThemeChange = (t: 'light' | 'dark' | 'system') => {
     setTheme(t)
     setThemeOpen(false)
+  }
+
+  const handleSignOut = () => {
+    closeDropdown()
+    logout()
+    navigate('/login', { replace: true })
   }
 
   // Close dropdowns on outside click / Escape
@@ -384,21 +397,31 @@ export default function TopHeader() {
                 data-avatar='true'
                 className='h-8 w-8 bg-[hsl(var(--brand))] flex items-center justify-center text-white text-xs font-bold'
               >
-                SC
+                {initials}
               </div>
             </button>
 
             {avatarOpen && (
               <div
                 role='menu'
-                className='absolute right-0 top-full mt-2 w-52 bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] shadow-[var(--shadow-md)] z-50'
+                className='absolute right-0 top-full mt-2 w-56 bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] shadow-[var(--shadow-md)] z-50'
               >
-                <div className='px-3 py-2.5 border-b border-[hsl(var(--border))]'>
-                  <p className='text-sm font-semibold text-[hsl(var(--text-1))]'>Sarah Chen</p>
-                  <p className='text-xs text-[hsl(var(--text-4))]'>sarah.chen@sentinel-grc.com</p>
-                  <span className='inline-block mt-1 text-[10px] font-medium px-1.5 py-0.5 bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))]'>
-                    CISO
-                  </span>
+                <div className='px-3 py-3 border-b border-[hsl(var(--border))]'>
+                  <div className='flex items-center gap-2.5 mb-2'>
+                    <div className='w-8 h-8 bg-[hsl(var(--brand))] flex items-center justify-center text-white text-xs font-bold flex-shrink-0'>
+                      {initials}
+                    </div>
+                    <div className='min-w-0'>
+                      <p className='text-sm font-semibold text-[hsl(var(--text-1))] truncate'>{user?.name ?? 'User'}</p>
+                      <p className='text-xs text-[hsl(var(--text-4))] truncate'>{user?.email ?? ''}</p>
+                    </div>
+                  </div>
+                  <div className='flex items-center gap-1.5'>
+                    <span className='text-[10px] font-medium px-1.5 py-0.5 bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))]'>
+                      {user?.jobTitle ?? user?.role?.toUpperCase() ?? 'ADMIN'}
+                    </span>
+                    <span className='text-[10px] text-[hsl(var(--text-4))]'>{user?.organization}</span>
+                  </div>
                 </div>
                 <div className='py-1'>
                   <button
@@ -418,8 +441,8 @@ export default function TopHeader() {
                   <div className='border-t border-[hsl(var(--border))] my-1' />
                   <button
                     role='menuitem'
-                    onClick={() => closeDropdown()}
-                    className='w-full flex items-center gap-2.5 px-3 py-2 text-sm text-[hsl(var(--s-er-tx))] hover:bg-[hsl(var(--bg-raised))] transition-colors'
+                    onClick={handleSignOut}
+                    className='w-full flex items-center gap-2.5 px-3 py-2 text-sm text-[hsl(var(--s-er-tx))] hover:bg-[hsl(var(--s-er-bg))] transition-colors'
                   >
                     <SignOut size={14} className='flex-shrink-0' /> Sign Out
                   </button>

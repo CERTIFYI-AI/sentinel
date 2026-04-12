@@ -9,6 +9,7 @@ export interface User {
   organization: string;
   tenantId: string;
   avatarUrl?: string;
+  jobTitle?: string;
 }
 
 interface AuthState {
@@ -22,30 +23,55 @@ interface AuthState {
   setUser: (user: User) => void;
 }
 
+const DEMO_USERS: Record<string, User> = {
+  'admin@sentinel-grc.com': {
+    id: 'usr-001',
+    name: 'Sarah Chen',
+    email: 'admin@sentinel-grc.com',
+    role: 'admin',
+    organization: 'Sentinel Financial Corp',
+    tenantId: 'tenant-001',
+    jobTitle: 'CISO',
+  },
+  'auditor@sentinel-grc.com': {
+    id: 'usr-002',
+    name: 'James Patel',
+    email: 'auditor@sentinel-grc.com',
+    role: 'auditor',
+    organization: 'Sentinel Financial Corp',
+    tenantId: 'tenant-001',
+    jobTitle: 'Compliance Auditor',
+  },
+  'viewer@sentinel-grc.com': {
+    id: 'usr-003',
+    name: 'Emma Wilson',
+    email: 'viewer@sentinel-grc.com',
+    role: 'viewer',
+    organization: 'Sentinel Financial Corp',
+    tenantId: 'tenant-001',
+    jobTitle: 'Risk Analyst',
+  },
+};
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      isAuthenticated: true,
-      user: {
-        id: 'usr-001',
-        name: 'Bhaskar Admin',
-        email: 'admin@sentinel-grc.com',
-        role: 'admin',
-        organization: 'Sentinel Financial Corp',
-        tenantId: 'tenant-001',
-      },
-      token: 'demo_token',
+      isAuthenticated: false,
+      user: null,
+      token: null,
       refreshToken: null,
+
       login: async (email: string, _password: string) => {
-        // Simulate API call
-        await new Promise((r) => setTimeout(r, 500));
-        const user: User = {
-          id: 'usr-001',
-          name: email.split('@')[0].replace(/[^a-zA-Z]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-          email,
+        await new Promise((r) => setTimeout(r, 700));
+        const lower = email.toLowerCase().trim();
+        const user: User = DEMO_USERS[lower] ?? {
+          id: 'usr-' + Math.random().toString(36).slice(2, 7),
+          name: email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+          email: lower,
           role: 'admin',
-          organization: 'Certifyi Inc.',
+          organization: 'Your Organization',
           tenantId: 'tenant-001',
+          jobTitle: 'Administrator',
         };
         set({
           isAuthenticated: true,
@@ -54,13 +80,15 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: 'rtok_' + Math.random().toString(36).slice(2),
         });
       },
+
       signup: async (_data) => {
-        await new Promise((r) => setTimeout(r, 500));
-        // Signup just succeeds, user must login after
+        await new Promise((r) => setTimeout(r, 700));
       },
+
       logout: () => {
         set({ isAuthenticated: false, user: null, token: null, refreshToken: null });
       },
+
       setUser: (user) => set({ user }),
     }),
     {

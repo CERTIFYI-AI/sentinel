@@ -21,6 +21,7 @@ import {
 import { cn } from '../lib/utils'
 import { useTheme, type Theme } from '../providers/theme'
 import { useIsMobile } from '../hooks/use-mobile'
+import { useAuthStore } from '../store/authStore'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -306,6 +307,17 @@ export default function Sidebar() {
   const navigate  = useNavigate()
   const isMobile  = useIsMobile()
   const { theme, cycleTheme } = useTheme()
+  const user   = useAuthStore(s => s.user)
+  const logout = useAuthStore(s => s.logout)
+
+  const initials = user?.name
+    ? user.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
+    : 'AI'
+
+  const handleSignOut = () => {
+    logout()
+    navigate('/login', { replace: true })
+  }
 
   const [sidebarState, setSidebarState] = useState<'expanded' | 'icon-only'>(loadSidebarState)
   const [mobileOpen,   setMobileOpen]   = useState(false)
@@ -597,8 +609,16 @@ export default function Sidebar() {
             >
               {THEME_ICONS[theme]}
             </button>
+            <button
+              onClick={handleSignOut}
+              className='flex items-center justify-center w-8 h-8 text-[hsl(var(--text-3))] hover:bg-[hsl(var(--s-er-bg))] hover:text-[hsl(var(--s-er-tx))] transition-colors'
+              title='Sign Out'
+              aria-label='Sign Out'
+            >
+              <SignOut size={14} />
+            </button>
             <div className='w-7 h-7 bg-[hsl(var(--brand))] flex items-center justify-center mt-1'>
-              <span className='text-[10px] font-bold text-white'>SC</span>
+              <span className='text-[10px] font-bold text-white'>{initials}</span>
             </div>
           </div>
         ) : (
@@ -642,17 +662,17 @@ export default function Sidebar() {
             {/* User profile */}
             <div className='flex items-center gap-2 px-1.5 py-1.5 border-t border-[hsl(var(--border))]'>
               <div className='w-7 h-7 bg-[hsl(var(--brand))] flex items-center justify-center flex-shrink-0'>
-                <span className='text-[10px] font-bold text-white'>SC</span>
+                <span className='text-[10px] font-bold text-white'>{initials}</span>
               </div>
               <div className='flex-1 min-w-0'>
-                <p className='text-[11px] font-semibold text-[hsl(var(--text-1))] truncate leading-tight'>Sarah Chen</p>
-                <p className='text-[10px] text-[hsl(var(--text-4))] leading-tight'>CISO</p>
+                <p className='text-[11px] font-semibold text-[hsl(var(--text-1))] truncate leading-tight'>{user?.name ?? 'User'}</p>
+                <p className='text-[10px] text-[hsl(var(--text-4))] leading-tight'>{user?.jobTitle ?? user?.role ?? 'Admin'}</p>
               </div>
               <button
-                onClick={() => navigate('/settings')}
-                className='p-1 text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-1))] hover:bg-[hsl(var(--bg-raised))] transition-colors'
-                title='Settings'
-                aria-label='Settings'
+                onClick={handleSignOut}
+                className='p-1 text-[hsl(var(--text-4))] hover:text-[hsl(var(--s-er-tx))] hover:bg-[hsl(var(--s-er-bg))] transition-colors'
+                title='Sign Out'
+                aria-label='Sign Out'
               >
                 <SignOut size={13} />
               </button>

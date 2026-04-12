@@ -162,9 +162,34 @@ export default function Login() {
 
         <div className="w-full max-w-[400px]">
           {/* Heading */}
-          <div className="mb-8">
+          <div className="mb-6">
             <h1 className="text-2xl font-bold mb-1" style={{ color: 'hsl(var(--text-1))' }}>Sign in to your workspace</h1>
             <p className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>Enter your credentials to continue to Sentinel AI</p>
+          </div>
+
+          {/* Demo credentials banner */}
+          <div className="mb-6 p-3.5 border" style={{ borderColor: 'hsl(var(--brand)/30%)', background: 'hsl(var(--brand)/5%)', borderRadius: 0 }}>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold mb-1.5" style={{ color: 'hsl(var(--brand))' }}>Demo Access</p>
+                <div className="space-y-0.5">
+                  {[
+                    { label: 'CISO', email: 'admin@sentinel-grc.com' },
+                    { label: 'Auditor', email: 'auditor@sentinel-grc.com' },
+                  ].map(u => (
+                    <button key={u.email} onClick={() => { setEmail(u.email); setPassword('Demo@12345'); setErrors({}); }}
+                      className="flex items-center gap-2 text-xs w-full text-left hover:opacity-80 transition-opacity">
+                      <span className="px-1.5 py-0.5 text-[9px] font-bold" style={{ background: 'hsl(var(--brand)/15%)', color: 'hsl(var(--brand))', borderRadius: 0 }}>{u.label}</span>
+                      <span style={{ color: 'hsl(var(--text-3))' }}>{u.email}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="text-right flex-shrink-0">
+                <p className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>Password</p>
+                <p className="text-xs font-mono font-semibold" style={{ color: 'hsl(var(--text-2))' }}>Demo@12345</p>
+              </div>
+            </div>
           </div>
 
           {/* Error alert */}
