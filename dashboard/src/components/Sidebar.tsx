@@ -19,6 +19,8 @@ import {
   Eye, ArrowsLeftRight, CheckCircle, Megaphone,
   Storefront, Certificate, TreeStructure,
   PresentationChart, Gavel, Buildings, Play,
+  Flask, Funnel, Sparkle, Compass, BatteryCharging, Broadcast,
+  Rocket, ChartDonut, Signature, GitBranch, Pulse,
 } from '@phosphor-icons/react'
 import { cn } from '../lib/utils'
 import { useTheme, type Theme } from '../providers/theme'
@@ -45,25 +47,30 @@ interface NavSection {
   items: NavItem[]
 }
 
-// ── Navigation Structure (7 sections, was 13) ─────────────────────────────────
+// ── Navigation Structure ───────────────────────────────────────────────────────
+// Duplicates removed: Conformity (was in Model Inventory + Compliance → kept in Compliance only)
+// Model DNA (was in Model Inventory + Enterprise Intelligence → kept in Model Inventory only)
+// Evaluations moved: SECURITY → AI GOVERNANCE
+// Red Team Findings merged: standalone → child of Security
+// Risk Intelligence moved: OVERVIEW → RISK & RESPONSE
+// Compliance "Dashboard" renamed to "Overview" to avoid confusion
 
 const NAV: NavSection[] = [
   {
     title: 'OVERVIEW',
     items: [
-      { label: 'Dashboard',    to: '/overview',   icon: SquaresFour },
-      { label: 'Tasks',        to: '/tasks',       icon: CheckSquare },
-      { label: 'Notifications',to: '/notifications',icon: Bell },
-      { label: 'Reporting',    to: '/reporting',   icon: ChartPieSlice },
+      { label: 'Dashboard',             to: '/overview',          icon: SquaresFour },
+      { label: 'Tasks',                 to: '/tasks',             icon: CheckSquare },
+      { label: 'Notifications',         to: '/notifications',     icon: Bell },
+      { label: 'Reporting',             to: '/reporting',         icon: ChartPieSlice },
       {
-        label: 'CISO Dashboard', to: '/ciso', icon: ShieldCheck,
+        label: 'CISO Dashboard', to: '/ciso', icon: ShieldStar,
         children: [
           { label: 'Board Report', to: '/ciso/report' },
         ],
       },
-      { label: 'Executive Command Center', to: '/executive-center', icon: PresentationChart },
-      { label: 'ROI & Value Realization',  to: '/roi',              icon: HandCoins },
-      { label: 'Risk Intelligence', to: '/risk-intelligence', icon: ChartLine },
+      { label: 'Executive Center',      to: '/executive-center',  icon: PresentationChart },
+      { label: 'ROI & Value',           to: '/roi',               icon: HandCoins },
     ],
   },
   {
@@ -75,7 +82,6 @@ const NAV: NavSection[] = [
           { label: 'Model Lifecycle',  to: '/models/lifecycle' },
           { label: 'Validation Lab',   to: '/model-validation' },
           { label: 'Explainability',   to: '/explainability' },
-          { label: 'Conformity',       to: '/conformity' },
           { label: 'Model Efficiency', to: '/model-efficiency' },
           { label: 'Model DNA',        to: '/models/dna' },
         ],
@@ -102,14 +108,22 @@ const NAV: NavSection[] = [
           { label: 'Configuration', to: '/trust-engine/config' },
         ],
       },
-      { label: 'Bias Audits',         to: '/bias-audits',    icon: Scales },
-      { label: 'AI Impact',           to: '/aiia',           icon: FileMagnifyingGlass },
-      { label: 'Use Cases',           to: '/use-cases',      icon: Briefcase },
-      { label: 'Prompt Registry',     to: '/prompt-registry',icon: ChatTeardropText },
-      { label: 'AI Risk Classification', to: '/ai-risk-tiering', icon: Scales },
-      { label: 'Post-Market Surveillance', to: '/post-market', icon: ChartLine },
-      { label: 'GenAI Risk Profiles', to: '/genai-risks',    icon: Robot },
-      { label: 'Model Risk Committee',    to: '/mrc',            icon: Gavel },
+      {
+        label: 'Evaluations', to: '/evals', icon: Flask,
+        children: [
+          { label: 'Results Viewer',  to: '/evals/results' },
+          { label: 'Eval Techniques', to: '/evals/techniques' },
+          { label: 'Benchmark',       to: '/evals/benchmark' },
+        ],
+      },
+      { label: 'Bias Audits',              to: '/bias-audits',      icon: Scales },
+      { label: 'AI Impact',                to: '/aiia',             icon: FileMagnifyingGlass },
+      { label: 'Use Cases',                to: '/use-cases',        icon: Briefcase },
+      { label: 'Prompt Registry',          to: '/prompt-registry',  icon: ChatTeardropText },
+      { label: 'AI Risk Classification',   to: '/ai-risk-tiering',  icon: Funnel },
+      { label: 'Post-Market Surveillance', to: '/post-market',      icon: Pulse },
+      { label: 'GenAI Risk Profiles',      to: '/genai-risks',      icon: Sparkle },
+      { label: 'Model Risk Committee',     to: '/mrc',              icon: Gavel },
     ],
   },
   {
@@ -130,23 +144,15 @@ const NAV: NavSection[] = [
           { label: 'Reports',           to: '/security/reports' },
         ],
       },
-      {
-        label: 'Evaluations', to: '/evals', icon: ChartBar,
-        children: [
-          { label: 'Results Viewer',  to: '/evals/results' },
-          { label: 'Eval Techniques', to: '/evals/techniques' },
-          { label: 'Benchmark',       to: '/evals/benchmark' },
-        ],
-      },
     ],
   },
   {
     title: 'COMPLIANCE',
     items: [
-      { label: 'Dashboard',    to: '/compliance',          icon: ChartBar },
-      { label: 'Frameworks',   to: '/frameworks',           icon: BookOpen },
-      { label: 'Controls',     to: '/compliance/controls',  icon: ListChecks },
-      { label: 'Reg Radar',    to: '/reg-radar',            icon: Globe },
+      { label: 'Overview',         to: '/compliance',                icon: ChartDonut },
+      { label: 'Frameworks',       to: '/frameworks',                icon: BookOpen },
+      { label: 'Controls',         to: '/compliance/controls',       icon: ListChecks },
+      { label: 'Reg Radar',        to: '/reg-radar',                 icon: Globe },
       {
         label: 'Policies', to: '/policies', icon: Scroll,
         children: [
@@ -159,26 +165,26 @@ const NAV: NavSection[] = [
         children: [
           { label: 'Evidence Hub',   to: '/compliance/evidence' },
           { label: 'Evidence Vault', to: '/evidence-vault' },
+          { label: 'Evidence Chain', to: '/evidence-chain' },
         ],
       },
       {
         label: 'Audits', to: '/audits', icon: ClipboardText,
         children: [
-          { label: 'Audit Trail',        to: '/audit-trail' },
-          { label: 'System Audit Log',   to: '/system-audit-log' },
-          { label: 'Evidence Chain',     to: '/evidence-chain' },
-          { label: 'Compliance Calendar',to: '/calendar' },
+          { label: 'Audit Trail',         to: '/audit-trail' },
+          { label: 'System Audit Log',    to: '/system-audit-log' },
+          { label: 'Compliance Calendar', to: '/calendar' },
         ],
       },
-      { label: 'Gap Analysis',       to: '/compliance/gap-analysis', icon: Target },
-      { label: 'Document Mgmt',      to: '/documents',               icon: FileText },
-      { label: 'Conformity Assess',  to: '/conformity',              icon: Scan },
-      { label: 'DPIA Workflow',      to: '/dpia',                    icon: ShieldCheck },
-      { label: 'Transparency Reports', to: '/transparency-reports',  icon: Eye },
-      { label: 'Framework Mapping',  to: '/framework-mapping',       icon: ArrowsLeftRight },
-      { label: 'Gov. Framework',     to: '/governance-framework',    icon: Globe },
-      { label: 'Exam Manager',       to: '/examination-manager',     icon: Buildings },
-      { label: 'Control Testing',    to: '/control-testing',         icon: Play },
+      { label: 'Gap Analysis',         to: '/compliance/gap-analysis', icon: Target },
+      { label: 'Document Mgmt',        to: '/documents',               icon: FileText },
+      { label: 'Conformity',           to: '/conformity',              icon: Scan },
+      { label: 'DPIA Workflow',        to: '/dpia',                    icon: Eye },
+      { label: 'Transparency Reports', to: '/transparency-reports',    icon: Broadcast },
+      { label: 'Framework Mapping',    to: '/framework-mapping',       icon: ArrowsLeftRight },
+      { label: 'Gov. Framework',       to: '/governance-framework',    icon: Compass },
+      { label: 'Exam Manager',         to: '/examination-manager',     icon: Buildings },
+      { label: 'Control Testing',      to: '/control-testing',         icon: Play },
     ],
   },
   {
@@ -190,19 +196,20 @@ const NAV: NavSection[] = [
           { label: 'Risk Matrix', to: '/risk/matrix' },
         ],
       },
+      { label: 'Risk Intelligence', to: '/risk-intelligence', icon: ChartLine },
       {
         label: 'Incidents', to: '/risk/incidents', icon: ShieldWarning,
         children: [
           { label: 'Incident Workflow', to: '/incident-workflow' },
-          { label: 'Incident Playbooks',to: '/incidents/playbooks' },
+          { label: 'Incident Playbooks', to: '/incidents/playbooks' },
         ],
       },
-      { label: 'Remediation',      to: '/remediation-tracker', icon: ClockCounterClockwise },
-      { label: 'Exception Mgmt',   to: '/exceptions',           icon: ShieldStar },
-      { label: 'Financial Risk',   to: '/financial-risk',       icon: HandCoins },
-      { label: 'HITL Reviews',     to: '/hitl',                 icon: UserCircleCheck, badge: 3 },
-      { label: 'Approval Flows',   to: '/workflows',            icon: FlowArrow },
-      { label: 'Automation Studio',to: '/automation-studio',    icon: Lightning },
+      { label: 'Remediation',       to: '/remediation-tracker',  icon: ClockCounterClockwise },
+      { label: 'Exception Mgmt',    to: '/exceptions',            icon: ShieldStar },
+      { label: 'Financial Risk',    to: '/financial-risk',        icon: HandCoins },
+      { label: 'HITL Reviews',      to: '/hitl',                  icon: UserCircleCheck, badge: 3 },
+      { label: 'Approval Flows',    to: '/workflows',             icon: FlowArrow },
+      { label: 'Automation Studio', to: '/automation-studio',     icon: Lightning },
     ],
   },
   {
@@ -211,13 +218,13 @@ const NAV: NavSection[] = [
       {
         label: 'Vendors', to: '/vendors', icon: BuildingOffice,
         children: [
-          { label: 'Assessments',   to: '/vendors/assessments' },
-          { label: 'SLA Monitor',   to: '/vendors/sla' },
-          { label: 'TPRM Workspace',to: '/vendors/tprm' },
+          { label: 'Assessments',    to: '/vendors/assessments' },
+          { label: 'SLA Monitor',    to: '/vendors/sla' },
+          { label: 'TPRM Workspace', to: '/vendors/tprm' },
         ],
       },
-      { label: 'DSR / Rights',      to: '/dsr',                icon: UserList },
-      { label: 'Consent Mgmt',      to: '/consent-management', icon: CheckSquare },
+      { label: 'DSR / Rights',   to: '/dsr',                icon: UserList },
+      { label: 'Consent Mgmt',   to: '/consent-management', icon: Signature },
       {
         label: 'Supply Chain', to: '/aibom', icon: Package,
         children: [
@@ -227,48 +234,47 @@ const NAV: NavSection[] = [
           { label: 'Attestations',       to: '/supply-chain' },
         ],
       },
-      { label: 'Marketplace',    to: '/marketplace',   icon: Storefront },
-      { label: 'Integrations',   to: '/integrations',  icon: Plugs },
-      { label: 'Export Center',  to: '/export',         icon: DownloadSimple },
+      { label: 'Marketplace',   to: '/marketplace',   icon: Storefront },
+      { label: 'Integrations',  to: '/integrations',  icon: Plugs },
+      { label: 'Export Center', to: '/export',         icon: DownloadSimple },
     ],
   },
   {
     title: 'DATA & SUSTAINABILITY',
     items: [
-      { label: 'Datasets',         to: '/datasets',         icon: Database },
-      { label: 'Data Governance',  to: '/data-governance',  icon: Table },
-      { label: 'Data Lineage',     to: '/data-lineage',     icon: ChartLine },
-      { label: 'Carbon Ledger',    to: '/carbon-ledger',    icon: Leaf },
-      { label: 'Energy Efficiency',to: '/energy-efficiency',icon: Lightning },
-      { label: 'ESG Reports',      to: '/esg-reports',      icon: EsgIcon },
-      { label: 'Data Quality',     to: '/data-quality',     icon: CheckCircle },
+      { label: 'Datasets',          to: '/datasets',          icon: Database },
+      { label: 'Data Governance',   to: '/data-governance',   icon: Table },
+      { label: 'Data Lineage',      to: '/data-lineage',      icon: GitBranch },
+      { label: 'Data Quality',      to: '/data-quality',      icon: CheckCircle },
+      { label: 'Carbon Ledger',     to: '/carbon-ledger',     icon: Leaf },
+      { label: 'Energy Efficiency', to: '/energy-efficiency', icon: BatteryCharging },
+      { label: 'ESG Reports',       to: '/esg-reports',       icon: EsgIcon },
     ],
   },
   {
     title: 'ENTERPRISE INTELLIGENCE',
     items: [
-      { label: 'Peer Benchmarking',      to: '/peer-intelligence', icon: ChartBar },
-      { label: 'Model DNA & Provenance', to: '/models/dna',        icon: Certificate },
-      { label: 'Compliance Autopilot',   to: '/autopilot',         icon: Robot },
-      { label: 'Narrative Engine',       to: '/narrative-engine',  icon: Brain },
-      { label: 'Knowledge Graph',        to: '/knowledge-graph',   icon: TreeStructure },
-      { label: 'Regulatory Velocity',    to: '/reg-velocity',      icon: Lightning },
+      { label: 'Peer Benchmarking',    to: '/peer-intelligence', icon: ChartBar },
+      { label: 'Compliance Autopilot', to: '/autopilot',         icon: Rocket },
+      { label: 'Narrative Engine',     to: '/narrative-engine',  icon: Brain },
+      { label: 'Knowledge Graph',      to: '/knowledge-graph',   icon: TreeStructure },
+      { label: 'Regulatory Velocity',  to: '/reg-velocity',      icon: Gauge },
     ],
   },
   {
     title: 'ORGANIZATION',
     items: [
-      { label: 'Access Control',  to: '/access-control', icon: Lock, children: [
-        { label: 'Users',        to: '/access-control/users' },
-        { label: 'Roles',        to: '/access-control/roles' },
-        { label: 'Departments',  to: '/access-control/departments' },
+      { label: 'Access Control', to: '/access-control', icon: Lock, children: [
+        { label: 'Users',       to: '/access-control/users' },
+        { label: 'Roles',       to: '/access-control/roles' },
+        { label: 'Departments', to: '/access-control/departments' },
       ]},
-      { label: 'Committee Mgmt',  to: '/committee',       icon: Users },
-      { label: 'Training',        to: '/training',         icon: GraduationCap },
-      { label: 'Maturity',        to: '/maturity',         icon: ChartBar },
-      { label: 'Continuity',      to: '/continuity',       icon: Lifebuoy },
+      { label: 'Committee Mgmt',  to: '/committee',        icon: Users },
+      { label: 'Training',        to: '/training',          icon: GraduationCap },
+      { label: 'Maturity',        to: '/maturity',          icon: ChartBar },
+      { label: 'Continuity',      to: '/continuity',        icon: Lifebuoy },
       { label: 'Ethics Reporting', to: '/ethics-reporting', icon: Megaphone },
-      { label: 'Licensing',        to: '/admin/licensing',   icon: Certificate },
+      { label: 'Licensing',       to: '/admin/licensing',   icon: Certificate },
     ],
   },
 ]
@@ -317,7 +323,6 @@ function findActiveItemTo(pathname: string): string | null {
 
 // ── Theme ─────────────────────────────────────────────────────────────────────
 
-
 const THEME_ICONS: Record<Theme, React.ReactNode> = {
   dark:   <Moon size={13} weight='duotone' />,
   light:  <Sun size={13} weight='duotone' />,
@@ -359,7 +364,6 @@ export default function Sidebar() {
     return activeItemTo ? [activeItemTo] : []
   })
 
-
   const collapsed = !isMobile && sidebarState === 'icon-only'
 
   // Persist sidebar state
@@ -377,7 +381,6 @@ export default function Sidebar() {
         prev.includes(activeItemTo) ? prev : [...prev, activeItemTo]
       )
     }
-    // Close mobile overlay on route change
     if (isMobile) setMobileOpen(false)
   }, [location.pathname, isMobile])
 
@@ -391,9 +394,6 @@ export default function Sidebar() {
 
   const toggleSidebar = () =>
     setSidebarState(prev => prev === 'expanded' ? 'icon-only' : 'expanded')
-
-  // ── Mobile hamburger button (rendered in TopHeader via portal is complex;
-  //    instead render a floating hamburger over content on mobile) ─────────────
 
   // ── Sidebar Panel ─────────────────────────────────────────────────────────
 
@@ -533,8 +533,7 @@ export default function Sidebar() {
                                   size={10}
                                   className={cn(
                                     'flex-shrink-0 transition-transform duration-150',
-                                    childrenExpanded ? 'rotate-0' : '-rotate-90',
-                                    isHighlighted ? 'text-[hsl(var(--brand))]' : 'text-[hsl(var(--text-4))]'
+                                    childrenExpanded ? 'rotate-0' : '-rotate-90'
                                   )}
                                 />
                               </>
@@ -543,9 +542,9 @@ export default function Sidebar() {
                         ) : (
                           <NavLink
                             to={item.to}
-                            className={({ isActive }) => cn(
+                            className={({ isActive: _isActive }) => cn(
                               'flex items-center gap-2.5 px-2 py-1.5 text-[13px] transition-colors group',
-                              isActive
+                              isHighlighted
                                 ? 'bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))] border-l-2 border-[hsl(var(--brand))]'
                                 : 'text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-1))]',
                               collapsed && 'justify-center px-0'
@@ -554,10 +553,10 @@ export default function Sidebar() {
                           >
                             <Icon
                               size={16}
-                              weight={active ? 'fill' : 'regular'}
+                              weight={isHighlighted ? 'fill' : 'regular'}
                               className={cn(
                                 'flex-shrink-0 transition-colors',
-                                active
+                                isHighlighted
                                   ? 'text-[hsl(var(--brand))]'
                                   : 'text-[hsl(var(--text-4))] group-hover:text-[hsl(var(--text-2))]'
                               )}
@@ -575,27 +574,23 @@ export default function Sidebar() {
                           </NavLink>
                         )}
 
-                        {/* Sub-items */}
-                        {!collapsed && hasChildren && childrenExpanded && (
-                          <div className='ml-5 mt-0.5 space-y-0.5 border-l border-[hsl(var(--border))]'>
+                        {/* Children */}
+                        {hasChildren && childrenExpanded && !collapsed && (
+                          <div className='ml-6 mt-0.5 space-y-0.5 border-l border-[hsl(var(--border))] pl-2'>
                             {item.children!.map(child => {
-                              const cActive = isItemActive(child.to, location.pathname)
+                              const childIsActive = isItemActive(child.to, location.pathname)
                               return (
                                 <NavLink
                                   key={child.to}
                                   to={child.to}
                                   className={cn(
-                                    'flex items-center gap-2 pl-3 pr-2 py-1.5 text-[12px] transition-colors',
-                                    cActive
+                                    'flex items-center px-2 py-1 text-[12px] transition-colors',
+                                    childIsActive
                                       ? 'text-[hsl(var(--brand))] font-medium'
                                       : 'text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]'
                                   )}
                                 >
-                                  <span className={cn(
-                                    'w-1 h-1 flex-shrink-0 rounded-full',
-                                    cActive ? 'bg-[hsl(var(--brand))]' : 'bg-current opacity-40'
-                                  )} />
-                                  <span className='truncate'>{child.label}</span>
+                                  {child.label}
                                 </NavLink>
                               )
                             })}
@@ -611,144 +606,114 @@ export default function Sidebar() {
         })}
       </div>
 
-      {/* Footer — pinned: AI Advisor · Settings · Profile · Theme */}
-      <div className='border-t border-[hsl(var(--border))] flex-shrink-0'>
-        {collapsed ? (
-          <div className='flex flex-col items-center gap-1 py-2'>
-            <button
-              onClick={() => navigate('/ai-advisor')}
-              className='flex items-center justify-center w-8 h-8 text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--brand))] transition-colors'
-              title='AI Advisor'
-              aria-label='AI Advisor'
-            >
-              <AdvisorIcon size={14} />
-            </button>
-            <button
-              onClick={() => navigate('/settings')}
-              className='flex items-center justify-center w-8 h-8 text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-1))] transition-colors'
-              title='Settings'
-              aria-label='Settings'
-            >
-              <Gear size={14} />
-            </button>
-            <button
-              onClick={cycleTheme}
-              className='flex items-center justify-center w-8 h-8 text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-1))] transition-colors'
-              title={THEME_NEXT_LABEL[theme]}
-              aria-label={THEME_NEXT_LABEL[theme]}
-            >
-              {THEME_ICONS[theme]}
-            </button>
-            <button
-              onClick={handleSignOut}
-              className='flex items-center justify-center w-8 h-8 text-[hsl(var(--text-3))] hover:bg-[hsl(var(--s-er-bg))] hover:text-[hsl(var(--s-er-tx))] transition-colors'
-              title='Sign Out'
-              aria-label='Sign Out'
-            >
-              <SignOut size={14} />
-            </button>
-            <div className='w-7 h-7 bg-[hsl(var(--brand))] flex items-center justify-center mt-1'>
-              <span className='text-[10px] font-bold text-white'>{initials}</span>
+      {/* Footer */}
+      {!collapsed && (
+        <div className='border-t border-[hsl(var(--border))] px-3 py-2.5 flex-shrink-0 space-y-1'>
+          {/* User row */}
+          <div className='flex items-center gap-2 min-w-0'>
+            <div className='w-6 h-6 rounded-full bg-[hsl(var(--brand-subtle))] flex items-center justify-center flex-shrink-0'>
+              <span className='text-[10px] font-bold text-[hsl(var(--brand))]'>{initials}</span>
             </div>
-          </div>
-        ) : (
-          <div className='p-2 space-y-0.5'>
-            {/* Quick-access footer buttons */}
-            <div className='flex items-center gap-1'>
-              <button
-                onClick={() => navigate('/ai-advisor')}
-                className={cn(
-                  'flex-1 flex items-center gap-2 px-2 py-1.5 text-[12px] transition-colors',
-                  isItemActive('/ai-advisor', location.pathname)
-                    ? 'bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))]'
-                    : 'text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-1))]'
-                )}
-              >
-                <AdvisorIcon size={14} className='flex-shrink-0' />
-                <span className='font-[450]'>AI Advisor</span>
-              </button>
-              <button
-                onClick={() => navigate('/settings')}
-                className={cn(
-                  'flex items-center justify-center w-7 h-7 transition-colors',
-                  isItemActive('/settings', location.pathname)
-                    ? 'text-[hsl(var(--brand))]'
-                    : 'text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-1))] hover:bg-[hsl(var(--bg-raised))]'
-                )}
-                title='Settings'
-                aria-label='Settings'
-              >
-                <Gear size={13} />
-              </button>
+            <div className='flex-1 min-w-0'>
+              <p className='text-[11px] font-medium text-[hsl(var(--text-2))] truncate leading-tight'>
+                {user?.name ?? 'User'}
+              </p>
+              <p className='text-[10px] text-[hsl(var(--text-4))] truncate leading-tight'>
+                {user?.role ?? 'Member'}
+              </p>
+            </div>
+            <div className='flex items-center gap-1 flex-shrink-0'>
+              {/* Theme toggle */}
               <button
                 onClick={cycleTheme}
-                className='flex items-center justify-center w-7 h-7 text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-1))] hover:bg-[hsl(var(--bg-raised))] transition-colors'
+                className='p-1 text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))] hover:bg-[hsl(var(--bg-raised))] transition-colors'
                 title={THEME_NEXT_LABEL[theme]}
                 aria-label={THEME_NEXT_LABEL[theme]}
               >
                 {THEME_ICONS[theme]}
               </button>
-            </div>
-            {/* User profile */}
-            <div className='flex items-center gap-2 px-1.5 py-1.5 border-t border-[hsl(var(--border))]'>
-              <div className='w-7 h-7 bg-[hsl(var(--brand))] flex items-center justify-center flex-shrink-0'>
-                <span className='text-[10px] font-bold text-white'>{initials}</span>
-              </div>
-              <div className='flex-1 min-w-0'>
-                <p className='text-[11px] font-semibold text-[hsl(var(--text-1))] truncate leading-tight'>{user?.name ?? 'User'}</p>
-                <p className='text-[10px] text-[hsl(var(--text-4))] leading-tight'>{user?.jobTitle ?? user?.role ?? 'Admin'}</p>
-              </div>
+              {/* Settings */}
+              <NavLink
+                to='/settings'
+                className='p-1 text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))] hover:bg-[hsl(var(--bg-raised))] transition-colors'
+                title='Settings'
+              >
+                <Gear size={13} />
+              </NavLink>
+              {/* Sign out */}
               <button
                 onClick={handleSignOut}
-                className='p-1 text-[hsl(var(--text-4))] hover:text-[hsl(var(--s-er-tx))] hover:bg-[hsl(var(--s-er-bg))] transition-colors'
-                title='Sign Out'
-                aria-label='Sign Out'
+                className='p-1 text-[hsl(var(--text-4))] hover:text-red-500 hover:bg-[hsl(var(--bg-raised))] transition-colors'
+                title='Sign out'
+                aria-label='Sign out'
               >
                 <SignOut size={13} />
               </button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Collapsed footer */}
+      {collapsed && (
+        <div className='border-t border-[hsl(var(--border))] py-2 flex flex-col items-center gap-1 flex-shrink-0'>
+          <button
+            onClick={cycleTheme}
+            className='p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))] hover:bg-[hsl(var(--bg-raised))] transition-colors'
+            title={THEME_NEXT_LABEL[theme]}
+          >
+            {THEME_ICONS[theme]}
+          </button>
+          <NavLink
+            to='/settings'
+            className='p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))] hover:bg-[hsl(var(--bg-raised))] transition-colors'
+            title='Settings'
+          >
+            <Gear size={13} />
+          </NavLink>
+          <button
+            onClick={handleSignOut}
+            className='p-1.5 text-[hsl(var(--text-4))] hover:text-red-500 hover:bg-[hsl(var(--bg-raised))] transition-colors'
+            title='Sign out'
+          >
+            <SignOut size={13} />
+          </button>
+        </div>
+      )}
     </aside>
   )
 
-  // ── Mobile: overlay drawer ────────────────────────────────────────────────
+  // ── Mobile overlay ─────────────────────────────────────────────────────────
 
   if (isMobile) {
     return (
       <>
-        {/* Hamburger trigger (absolute-positioned top-left over content) */}
+        {/* Hamburger button */}
         {!mobileOpen && (
           <button
             onClick={() => setMobileOpen(true)}
-            className='fixed top-3.5 left-3 z-40 flex items-center justify-center w-9 h-9 bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] text-[hsl(var(--text-1))] hover:bg-[hsl(var(--bg-raised))] transition-colors'
-            aria-label='Open navigation'
+            className='fixed top-3 left-3 z-50 p-2 bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] shadow-md text-[hsl(var(--text-2))] hover:text-[hsl(var(--brand))] transition-colors'
+            aria-label='Open menu'
           >
             <List size={18} />
           </button>
         )}
 
-        {/* Backdrop */}
+        {/* Overlay */}
         {mobileOpen && (
-          <div
-            className='fixed inset-0 z-40 bg-black/50 backdrop-blur-sm'
-            onClick={() => setMobileOpen(false)}
-          />
+          <>
+            <div
+              className='fixed inset-0 z-40 bg-black/40 backdrop-blur-sm'
+              onClick={() => setMobileOpen(false)}
+            />
+            <div className='fixed left-0 top-0 h-full z-50'>
+              {panel}
+            </div>
+          </>
         )}
-
-        {/* Drawer */}
-        <div className={cn(
-          'fixed top-0 left-0 h-full z-50 transform transition-transform duration-200',
-          mobileOpen ? 'translate-x-0' : '-translate-x-full'
-        )}>
-          {panel}
-        </div>
       </>
     )
   }
-
-  // ── Desktop: inline sidebar ───────────────────────────────────────────────
 
   return panel
 }

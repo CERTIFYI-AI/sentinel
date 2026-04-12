@@ -26,6 +26,17 @@ Required for full functionality (set via Replit Secrets):
 Frontend env vars:
 - `VITE_API_URL` — API base URL (leave empty for proxied local dev)
 
+## Recent Changes (April 2026 — Session 4)
+
+### Sidebar Restructure & Deduplication
+- **Removed duplicates**: `Conformity` was in both Model Inventory children and Compliance — removed from Model Inventory (kept in Compliance only). `Model DNA` was in both Model Inventory children and Enterprise Intelligence — removed from Enterprise Intelligence (kept in Model Inventory only).
+- **Moved Evaluations**: Moved from SECURITY section to AI GOVERNANCE (semantically correct — evals are an AI governance concern).
+- **Merged Red Team Findings**: Was a standalone top-level item, now merged as a child of Security → Security > Red Team Findings.
+- **Moved Risk Intelligence**: Moved from OVERVIEW to RISK & RESPONSE section.
+- **Renamed**: Compliance section "Dashboard" → "Overview" to avoid label collision with OVERVIEW section's "Dashboard".
+- **Evidence consolidation**: Moved Evidence Chain from Audits into Evidence children (Hub, Vault, Chain all under one parent).
+- **Fixed duplicate icons**: AI Risk Classification now uses `Funnel` (was `Scales`, same as Bias Audits). GenAI Risk Profiles uses `Sparkle`. Compliance Autopilot uses `Rocket`. Consent Mgmt uses `Signature`. Energy Efficiency uses `BatteryCharging`. Gov. Framework uses `Compass`. Data Lineage uses `GitBranch`. Post-Market Surveillance uses `Pulse`. Evaluations uses `Flask`. Compliance Overview uses `ChartDonut`. Transparency Reports uses `Broadcast`. CISO Dashboard icon changed to `ShieldStar`.
+
 ## Recent Changes (April 2026 — Session 3)
 
 ### Enhanced: GuardrailActivity.tsx (`/trust-engine/guardrails`)
