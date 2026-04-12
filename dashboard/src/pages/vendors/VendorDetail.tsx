@@ -20,6 +20,8 @@ import {
 import { useSettingsStore } from '../../stores/settingsStore';
 import { toast } from 'sonner';
 
+const Activity = Clock;
+
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 function ScoreGauge({ score, size = 120 }: { score: number; size?: number }) {
