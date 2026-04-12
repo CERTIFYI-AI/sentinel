@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -74,6 +74,115 @@ const totalHrsAutomated = AUTOMATION_VALUE.reduce((s, a) => s + Math.round(a.man
 const totalFTEEquivalent = (totalHrsAutomated / 2080).toFixed(1);
 const totalROI = totalFineAvoidance + totalAutomationValue * 3; // 3-year
 
+// ── Interactive ROI Calculator ──────────────────────────────────────────────────
+function CalcTab({ orgName }: { orgName: string }) {
+  const [fte, setFte] = useState(12);
+  const [avgSalary, setAvgSalary] = useState(185);
+  const [fineRisk, setFineRisk] = useState(35);
+  const [automationRate, setAutomationRate] = useState(80);
+  const [auditWeeks, setAuditWeeks] = useState(18);
+
+  const fteSavings = useMemo(() => Math.round(fte * avgSalary * 1000 * (automationRate / 100) * 0.4), [fte, avgSalary, automationRate]);
+  const fineAvoidance = useMemo(() => Math.round(fineRisk * 1_000_000 * 0.82), [fineRisk]);
+  const auditSavings = useMemo(() => Math.round((auditWeeks - Math.round(auditWeeks * 0.28)) * fte * (avgSalary * 1000 / 52)), [auditWeeks, fte, avgSalary]);
+  const totalValue = fteSavings + fineAvoidance + auditSavings;
+  const sentinelCost = 480_000;
+  const roi = Math.round((totalValue - sentinelCost) / sentinelCost * 100);
+
+  function SliderRow({ label, value, min, max, step, unit, onChange }: {
+    label: string; value: number; min: number; max: number; step: number; unit: string; onChange: (v: number) => void;
+  }) {
+    return (
+      <div>
+        <div className="flex justify-between text-xs mb-1">
+          <span style={{ color: 'hsl(var(--text-3))' }}>{label}</span>
+          <span className="font-bold" style={{ color: 'hsl(var(--brand))' }}>{unit === '$' ? `$${value}K` : unit === 'wk' ? `${value} wks` : `${value}${unit}`}</span>
+        </div>
+        <input type="range" min={min} max={max} step={step} value={value}
+          onChange={e => onChange(Number(e.target.value))}
+          className="w-full h-1.5 appearance-none cursor-pointer"
+          style={{ accentColor: 'hsl(var(--brand))' }} />
+        <div className="flex justify-between text-[9px] mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>
+          <span>{unit === '$' ? `$${min}K` : unit === 'wk' ? `${min} wks` : `${min}${unit}`}</span>
+          <span>{unit === '$' ? `$${max}K` : unit === 'wk' ? `${max} wks` : `${max}${unit}`}</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-2 gap-4">
+      <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+        <CardContent className="p-4">
+          <p className="text-sm font-semibold mb-1" style={{ color: 'hsl(var(--text-1))' }}>Adjust Your Assumptions</p>
+          <p className="text-[10px] mb-4" style={{ color: 'hsl(var(--text-4))' }}>
+            Customize for {orgName}'s specific profile to generate a tailored ROI model
+          </p>
+          <div className="space-y-5">
+            <SliderRow label="Compliance / GRC headcount (FTE)" value={fte} min={2} max={50} step={1} unit=" FTE" onChange={setFte} />
+            <SliderRow label="Average fully-loaded salary (GRC/Risk staff)" value={avgSalary} min={80} max={350} step={5} unit="$" onChange={setAvgSalary} />
+            <SliderRow label="Maximum fine exposure — primary regulation" value={fineRisk} min={1} max={100} step={1} unit="M$" onChange={setFineRisk} />
+            <SliderRow label="Sentinel automation coverage rate" value={automationRate} min={50} max={95} step={5} unit="%" onChange={setAutomationRate} />
+            <SliderRow label="Pre-Sentinel audit prep time" value={auditWeeks} min={4} max={52} step={2} unit="wk" onChange={setAuditWeeks} />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+        <CardContent className="p-4">
+          <p className="text-sm font-semibold mb-1" style={{ color: 'hsl(var(--text-1))' }}>Your Custom ROI Model</p>
+          <p className="text-[10px] mb-4" style={{ color: 'hsl(var(--text-4))' }}>Annual value delivered based on your inputs</p>
+
+          <div className="space-y-3 mb-4">
+            {[
+              { label: 'Compliance Automation Savings', value: fteSavings, desc: `${fte} FTE × ${automationRate}% automation × 40% effort redirect`, color: 'hsl(var(--brand))' },
+              { label: 'Regulatory Fine Avoidance', value: fineAvoidance, desc: `$${fineRisk}M exposure × 82% risk reduction from controls`, color: 'hsl(var(--s-ok-tx))' },
+              { label: 'Audit Efficiency Gains', value: auditSavings, desc: `${auditWeeks}→${Math.round(auditWeeks * 0.28)} weeks saved × team cost`, color: '#8b5cf6' },
+            ].map((row, i) => (
+              <div key={i} className="p-3" style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-raised))' }}>
+                <div className="flex justify-between text-xs mb-1">
+                  <span style={{ color: 'hsl(var(--text-3))' }}>{row.label}</span>
+                  <span className="font-bold" style={{ color: row.color }}>{fmt$(row.value)}</span>
+                </div>
+                <div className="h-1.5 w-full overflow-hidden mb-1" style={{ background: 'hsl(var(--border))' }}>
+                  <div style={{ width: `${Math.min((row.value / totalValue) * 100, 100)}%`, height: '100%', background: row.color }} />
+                </div>
+                <p className="text-[9px]" style={{ color: 'hsl(var(--text-4))' }}>{row.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="p-4" style={{ border: `2px solid hsl(var(--brand) / 0.4)`, background: 'hsl(var(--brand) / 0.06)' }}>
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <p className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Annual Value Delivered</p>
+                <p className="text-3xl font-bold mt-0.5" style={{ color: 'hsl(var(--brand))' }}>{fmt$(totalValue)}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: 'hsl(var(--text-4))' }}>1-Year ROI</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: roi > 0 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))' }}>{roi}%</p>
+              </div>
+            </div>
+            <div className="flex justify-between text-xs pt-2" style={{ borderTop: '1px solid hsl(var(--border))' }}>
+              <span style={{ color: 'hsl(var(--text-4))' }}>Annual platform cost</span>
+              <span style={{ color: 'hsl(var(--text-3))' }}>{fmt$(sentinelCost)}</span>
+            </div>
+            <div className="flex justify-between text-xs mt-1">
+              <span style={{ color: 'hsl(var(--text-4))' }}>Net annual benefit</span>
+              <span className="font-bold" style={{ color: 'hsl(var(--s-ok-tx))' }}>{fmt$(totalValue - sentinelCost)}</span>
+            </div>
+          </div>
+
+          <Button className="w-full mt-3 h-8 text-xs" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+            onClick={() => toast.success('Custom ROI report emailing to CFO — includes methodology and assumptions')}>
+            <Calculator size={12} className="mr-1.5" />Email Custom ROI Report to CFO
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function ValueRealization() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
@@ -123,6 +232,7 @@ export default function ValueRealization() {
             <TabsTrigger value="automation" style={{ borderRadius: 0 }}>Automation Value</TabsTrigger>
             <TabsTrigger value="audit" style={{ borderRadius: 0 }}>Audit Efficiency</TabsTrigger>
             <TabsTrigger value="tco" style={{ borderRadius: 0 }}>TCO Analysis</TabsTrigger>
+            <TabsTrigger value="calculator" style={{ borderRadius: 0 }}>ROI Calculator</TabsTrigger>
           </TabsList>
 
           {/* ── ROI Overview ── */}
@@ -358,6 +468,11 @@ export default function ValueRealization() {
                 </div>
               ))}
             </div>
+          </TabsContent>
+
+          {/* ── ROI Calculator ── */}
+          <TabsContent value="calculator" className="mt-4">
+            <CalcTab orgName={orgName} />
           </TabsContent>
         </Tabs>
       </div>

@@ -212,6 +212,7 @@ export default function ExaminationManager() {
               Findings
               {openFindings > 0 && <span className="ml-1.5 text-[9px] px-1 py-0.5 font-bold" style={{ background: 'hsl(var(--destructive))', color: '#fff' }}>{openFindings}</span>}
             </TabsTrigger>
+            <TabsTrigger value="readiness" style={{ borderRadius: 0 }}>Pre-Exam Readiness</TabsTrigger>
           </TabsList>
 
           {/* ── Examinations ── */}
@@ -366,6 +367,89 @@ export default function ExaminationManager() {
                 </CardContent>
               </Card>
             ))}
+          </TabsContent>
+
+          {/* ── Pre-Exam Readiness ── */}
+          <TabsContent value="readiness" className="mt-4">
+            <div className="space-y-4">
+              <div className="p-3 text-xs flex items-start gap-2" style={{ border: '1px solid hsl(var(--brand) / 0.3)', background: 'hsl(var(--brand) / 0.04)' }}>
+                <ShieldCheck size={14} style={{ color: 'hsl(var(--brand))', flexShrink: 0, marginTop: 1 }} />
+                <div>
+                  <p className="font-semibold mb-0.5" style={{ color: 'hsl(var(--brand))' }}>OCC Examination Pre-Readiness Checklist — May 2026</p>
+                  <p style={{ color: 'hsl(var(--text-3))' }}>Preparation required before OCC AI/ML Risk Management Examination begins. Assigned to Sarah Chen (Lead). Complete all critical items by April 30, 2026.</p>
+                </div>
+              </div>
+              {([
+                { category: 'Model Inventory & Documentation', items: [
+                  { task: 'Complete model inventory — all AI/ML models in scope with risk ratings', owner: 'Raj Gupta', status: 'done', critical: true },
+                  { task: 'Ensure model cards / factsheets current for CreditRisk-XGB and FraudDetect-LSTM', owner: 'Maria Santos', status: 'in_progress', critical: true },
+                  { task: 'Update model version history and change logs for past 12 months', owner: 'Raj Gupta', status: 'done', critical: false },
+                ]},
+                { category: 'Governance & MRC Documentation', items: [
+                  { task: 'Compile MRC meeting minutes for last 4 quarters (2025–2026)', owner: 'James Patel', status: 'done', critical: true },
+                  { task: 'Prepare SR 11-7 governance self-assessment — board-approved model risk policy', owner: 'Sarah Chen', status: 'in_progress', critical: true },
+                  { task: 'Confirm quorum records and voting documentation are audit-ready', owner: 'James Patel', status: 'not_started', critical: false },
+                ]},
+                { category: 'Bias & Fairness Evidence', items: [
+                  { task: 'Complete bias audit for CreditRisk-XGB (ECOA Reg B DI ≥ 0.85)', owner: 'Maria Santos', status: 'not_started', critical: true },
+                  { task: 'Compile statistical parity and equalized odds test results for all high-risk models', owner: 'Maria Santos', status: 'in_progress', critical: true },
+                  { task: 'Prepare adverse action notice sampling and review evidence', owner: 'Raj Gupta', status: 'not_started', critical: false },
+                ]},
+                { category: 'Consumer Harm & Explainability', items: [
+                  { task: 'Document SHAP/LIME methodology and output review process', owner: 'Maria Santos', status: 'done', critical: true },
+                  { task: 'Test adverse action notice accuracy for borderline credit decision cases', owner: 'Raj Gupta', status: 'not_started', critical: true },
+                  { task: 'Prepare human oversight escalation workflow documentation', owner: 'David Kim', status: 'done', critical: false },
+                ]},
+                { category: 'Vendor & Third-Party AI Oversight', items: [
+                  { task: 'Complete OpenAI and Anthropic API risk assessments', owner: 'David Kim', status: 'not_started', critical: true },
+                  { task: 'Ensure vendor contracts include AI governance terms and right-to-audit', owner: 'James Patel', status: 'in_progress', critical: false },
+                ]},
+              ] as const).map((section, si) => {
+                const done = section.items.filter(i => i.status === 'done').length;
+                const pct = Math.round((done / section.items.length) * 100);
+                return (
+                  <Card key={si} style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{section.category}</p>
+                        <div className="flex items-center gap-2">
+                          <div className="h-1.5 w-24 overflow-hidden" style={{ background: 'hsl(var(--border))' }}>
+                            <div style={{ width: `${pct}%`, height: '100%', background: pct === 100 ? 'hsl(var(--s-ok-tx))' : pct >= 50 ? 'hsl(var(--brand))' : '#f59e0b' }} />
+                          </div>
+                          <span className="text-xs font-bold" style={{ color: pct === 100 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-3))' }}>{done}/{section.items.length}</span>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        {section.items.map((item, ii) => (
+                          <div key={ii} className="flex items-start gap-3 p-2"
+                            style={{ background: item.status === 'done' ? 'hsl(var(--s-ok-bg) / 0.5)' : item.status === 'not_started' && item.critical ? 'hsl(var(--s-er-bg) / 0.3)' : 'hsl(var(--bg-raised))', border: `1px solid ${item.status === 'done' ? 'hsl(var(--s-ok-br))' : item.status === 'not_started' && item.critical ? 'hsl(var(--s-er-br) / 0.4)' : 'hsl(var(--border))'}` }}>
+                            <div className="mt-0.5 flex-shrink-0">
+                              {item.status === 'done'
+                                ? <CheckCircle size={13} weight="fill" style={{ color: 'hsl(var(--s-ok-tx))' }} />
+                                : item.status === 'in_progress'
+                                ? <Clock size={13} style={{ color: 'hsl(var(--brand))' }} />
+                                : <Warning size={13} weight="fill" style={{ color: item.critical ? 'hsl(var(--destructive))' : '#f59e0b' }} />}
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-start justify-between gap-2">
+                                <p className="text-xs" style={{ color: item.status === 'done' ? 'hsl(var(--text-3))' : 'hsl(var(--text-1))', textDecoration: item.status === 'done' ? 'line-through' : 'none' }}>{item.task}</p>
+                                <div className="flex items-center gap-1.5 flex-shrink-0">
+                                  {item.critical && item.status !== 'done' && <span className="text-[8px] px-1 py-0.5 font-bold" style={{ background: 'hsl(var(--destructive))', color: '#fff' }}>CRITICAL</span>}
+                                  <span className="text-[9px] px-1.5 py-0.5" style={{ background: item.status === 'done' ? 'hsl(var(--s-ok-bg))' : item.status === 'in_progress' ? 'hsl(var(--brand) / 0.1)' : 'hsl(var(--s-nt-bg))', color: item.status === 'done' ? 'hsl(var(--s-ok-tx))' : item.status === 'in_progress' ? 'hsl(var(--brand))' : 'hsl(var(--text-3))' }}>
+                                    {item.status.replace('_', ' ').toUpperCase()}
+                                  </span>
+                                </div>
+                              </div>
+                              <p className="text-[9px] mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>Owner: {item.owner}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
           </TabsContent>
         </Tabs>
       </div>

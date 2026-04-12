@@ -156,6 +156,13 @@ const GovernanceFramework = lazy(() => import('./pages/GovernanceFramework'));
 const EvidenceChain = lazy(() => import('./pages/EvidenceChain'));
 const AutomationStudio = lazy(() => import('./pages/AutomationStudio'));
 
+// ── 5 Enterprise Command Modules ─────────────────────────────────────────────
+const ExecutiveCenter = lazy(() => import('./pages/ExecutiveCenter'));
+const ModelRiskCommittee = lazy(() => import('./pages/ModelRiskCommittee'));
+const ValueRealization = lazy(() => import('./pages/ValueRealization'));
+const ExaminationManager = lazy(() => import('./pages/ExaminationManager'));
+const ControlTesting = lazy(() => import('./pages/ControlTesting'));
+
 // ── New GRC Modules ─────────────────────────────────────────────────────────
 const CommitteeManagement = lazy(() => import('./pages/committee/CommitteeManagement'));
 const ModelValidationLab = lazy(() => import('./pages/validation/ModelValidationLab'));
@@ -401,6 +408,13 @@ export default function App() {
 
           {/* Operations */}
           <Route path="/integrations" element={<IntegrationsPage />} />
+
+          {/* 5 Enterprise Command Modules */}
+          <Route path="/executive-center" element={<Suspense fallback={<Loading />}><ExecutiveCenter /></Suspense>} />
+          <Route path="/mrc" element={<Suspense fallback={<Loading />}><ModelRiskCommittee /></Suspense>} />
+          <Route path="/roi" element={<Suspense fallback={<Loading />}><ValueRealization /></Suspense>} />
+          <Route path="/examination-manager" element={<Suspense fallback={<Loading />}><ExaminationManager /></Suspense>} />
+          <Route path="/control-testing" element={<Suspense fallback={<Loading />}><ControlTesting /></Suspense>} />
 
           {/* New GRC Modules */}
           <Route path="/committee" element={<CommitteeManagement />} />
