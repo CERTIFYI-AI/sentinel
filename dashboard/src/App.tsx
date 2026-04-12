@@ -146,6 +146,8 @@ const Marketplace = lazy(() => import('./pages/Marketplace'));
 const SupplyChainGraph = lazy(() => import('./pages/SupplyChainGraph'));
 const Licensing = lazy(() => import('./pages/admin/Licensing'));
 const GovernanceFramework = lazy(() => import('./pages/GovernanceFramework'));
+const EvidenceChain = lazy(() => import('./pages/EvidenceChain'));
+const AutomationStudio = lazy(() => import('./pages/AutomationStudio'));
 
 // ── New GRC Modules ─────────────────────────────────────────────────────────
 const CommitteeManagement = lazy(() => import('./pages/committee/CommitteeManagement'));
@@ -415,6 +417,8 @@ export default function App() {
           <Route path="/supply-chain/graph" element={<Suspense fallback={<Loading />}><SupplyChainGraph /></Suspense>} />
           <Route path="/admin/licensing" element={<Suspense fallback={<Loading />}><Licensing /></Suspense>} />
           <Route path="/governance-framework" element={<Suspense fallback={<Loading />}><GovernanceFramework /></Suspense>} />
+          <Route path="/evidence-chain" element={<Suspense fallback={<Loading />}><EvidenceChain /></Suspense>} />
+          <Route path="/automation-studio" element={<Suspense fallback={<Loading />}><AutomationStudio /></Suspense>} />
 
           <Route path="*" element={<Suspense fallback={<Loading />}><NotFound /></Suspense>} />
         </Route>
