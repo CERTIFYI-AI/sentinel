@@ -164,7 +164,7 @@ async def event_stream(
     """SSE stream: sends events as text/event-stream."""
     async def generate():
         # Send a heartbeat first
-        yield f"data: {{\"type\": \"connected\", \"tenant_id\": \"{tenant_id}\"}}\ n\ n"
+        yield f"data: {{\"type\": \"connected\", \"tenant_id\": \"{tenant_id}\"}}\\n\\n"
         last_idx = len(_event_log)
         while True:
             await asyncio.sleep(1)

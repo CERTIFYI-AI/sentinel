@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 
 from sentinel.models.approval_engine import ApprovalEngine, STAGE_ROLES, ROLE_LABELS
 
-router = APIRouter(tags=["approvals"])
+router = APIRouter(prefix="/api/v1/approvals", tags=["approvals"])
 _engine = ApprovalEngine()
 
 
@@ -82,7 +82,7 @@ async def request_approval(
         raise HTTPException(400, str(e))
 
 
-@router.get("")
+@router.get("/")
 async def list_approvals(
     status: Optional[str] = Query(None),
     model_id: Optional[str] = Query(None),
