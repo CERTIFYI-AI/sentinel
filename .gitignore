@@ -218,3 +218,11 @@ dashboard/.next/
 dashboard/out/
 .DS_Store
 *.sqlite3
+
+# Secrets and env files
+*.env
+.secrets.baseline
+
+# Build outputs
+dashboard/dist/
+dashboard/build/
