@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
-import { HandCoins, MagnifyingGlass, Plus, Eye, X, Export, TrendUp, TrendDown, ChartLine, Calculator, Target, Sliders } from '@phosphor-icons/react'
+import { HandCoins, MagnifyingGlass, Plus, Eye, X, Export, TrendUp, TrendDown, ChartLine, Calculator, Target, Sliders, PencilSimple, Trash } from '@phosphor-icons/react'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LineChart, Line, CartesianGrid, ReferenceLine, Legend, ScatterChart, Scatter, ZAxis } from 'recharts'
 
 interface FinancialRiskItem {
@@ -42,20 +43,64 @@ function formatCurrency(n: number): string {
   return `$${n}`
 }
 
+const CATEGORIES = ['Regulatory', 'Operational', 'Third-Party', 'Fraud', 'Legal', 'Reputational']
+const OWNERS = ['Sarah Chen', 'James Liu', 'Marcus Johnson', 'Maria Santos']
+
 export default function FinancialRisk() {
+  const [items, setItems] = useState<FinancialRiskItem[]>(SEED)
   const [selected, setSelected] = useState<FinancialRiskItem | null>(null)
   const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('All')
+  const [deleteTarget, setDeleteTarget] = useState<FinancialRiskItem | null>(null)
+  const [editTarget, setEditTarget] = useState<FinancialRiskItem | null>(null)
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState({ riskName: '', category: 'Regulatory', aiSystem: '', annualExpectedLoss: 0, annualExpectedLossWorstCase: 0, probability: 0.1, controlEffectiveness: 0.5, residualRisk: 0, framework: 'FAIR', status: 'Monitored' as FinancialRiskItem['status'], owner: 'Sarah Chen', notes: '' })
 
-  const filtered = SEED.filter(r =>
-    r.riskName.toLowerCase().includes(search.toLowerCase()) ||
-    r.aiSystem.toLowerCase().includes(search.toLowerCase())
+  const filtered = items.filter(r =>
+    (statusFilter === 'All' || r.status === statusFilter) &&
+    (!search || r.riskName.toLowerCase().includes(search.toLowerCase()) || r.aiSystem.toLowerCase().includes(search.toLowerCase()) || r.id.toLowerCase().includes(search.toLowerCase()))
   )
 
-  const totalAEL = SEED.reduce((s, r) => s + r.annualExpectedLoss, 0)
-  const totalResidual = SEED.reduce((s, r) => s + r.residualRisk, 0)
-  const worstCase = SEED.reduce((s, r) => s + r.annualExpectedLossWorstCase, 0)
+  const totalAEL = items.reduce((s, r) => s + r.annualExpectedLoss, 0)
+  const totalResidual = items.reduce((s, r) => s + r.residualRisk, 0)
+  const worstCase = items.reduce((s, r) => s + r.annualExpectedLossWorstCase, 0)
 
-  const chartData = SEED.map(r => ({
+  const openCreate = () => {
+    setEditTarget(null)
+    setForm({ riskName: '', category: 'Regulatory', aiSystem: '', annualExpectedLoss: 0, annualExpectedLossWorstCase: 0, probability: 0.1, controlEffectiveness: 0.5, residualRisk: 0, framework: 'FAIR', status: 'Monitored', owner: 'Sarah Chen', notes: '' })
+    setShowForm(true)
+  }
+
+  const openEdit = (r: FinancialRiskItem) => {
+    setEditTarget(r)
+    setForm({ riskName: r.riskName, category: r.category, aiSystem: r.aiSystem, annualExpectedLoss: r.annualExpectedLoss, annualExpectedLossWorstCase: r.annualExpectedLossWorstCase, probability: r.probability, controlEffectiveness: r.controlEffectiveness, residualRisk: r.residualRisk, framework: r.framework, status: r.status, owner: r.owner, notes: r.notes })
+    setShowForm(true)
+    setSelected(null)
+  }
+
+  const saveForm = () => {
+    if (!form.riskName.trim() || !form.aiSystem.trim()) { toast.error('Risk name and AI system are required'); return }
+    if (editTarget) {
+      setItems(prev => prev.map(r => r.id === editTarget.id ? { ...r, ...form, lastQuantified: new Date().toISOString().slice(0, 10) } : r))
+      toast.success('Risk updated')
+    } else {
+      const newId = `FRQ-${String(items.length + 1).padStart(3, '0')}`
+      setItems(prev => [...prev, { ...form, id: newId, lastQuantified: new Date().toISOString().slice(0, 10) }])
+      toast.success('Risk quantification added')
+    }
+    setShowForm(false)
+    setEditTarget(null)
+  }
+
+  const confirmDelete = () => {
+    if (!deleteTarget) return
+    setItems(prev => prev.filter(r => r.id !== deleteTarget.id))
+    toast.success(`${deleteTarget.id} removed`)
+    setDeleteTarget(null)
+    setSelected(null)
+  }
+
+  const chartData = items.map(r => ({
     name: r.id,
     ael: r.annualExpectedLoss / 1000000,
     residual: r.residualRisk / 1000000,
@@ -75,7 +120,7 @@ export default function FinancialRisk() {
           <button onClick={() => toast.success('Exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
             <Export size={14} /> Export
           </button>
-          <button onClick={() => toast.info('FAIR quantification wizard')} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90">
+          <button onClick={openCreate} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90">
             <Plus size={14} /> Quantify Risk
           </button>
         </div>
@@ -110,17 +155,20 @@ export default function FinancialRisk() {
       </div>
 
       <div className="flex gap-3">
-        <div className="relative flex-1 max-w-xs">
-          <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search risks…" className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+        <div className="flex items-center gap-2 flex-1 max-w-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] px-3">
+          <MagnifyingGlass size={14} className="text-[hsl(var(--text-4))] flex-shrink-0" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search risks…" className="flex-1 py-2 text-sm bg-transparent text-[hsl(var(--text-1))] placeholder-[hsl(var(--text-4))] focus:outline-none" />
         </div>
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+          {['All', 'Critical', 'Elevated', 'Monitored', 'Mitigated'].map(s => <option key={s}>{s}</option>)}
+        </select>
       </div>
 
       <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
-              {['ID', 'Risk', 'AI System', 'Gross AEL', 'Worst Case', 'Probability', 'Control Eff.', 'Residual', 'Status', ''].map(h => (
+              {['ID', 'Risk', 'AI System', 'Gross AEL', 'Worst Case', 'Probability', 'Control Eff.', 'Residual', 'Status', 'Actions'].map(h => (
                 <th key={h} className="text-left px-4 py-3 text-[11px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wide">{h}</th>
               ))}
             </tr>
@@ -137,11 +185,17 @@ export default function FinancialRisk() {
                 <td className="px-4 py-3 text-xs text-[hsl(var(--text-3))]">{(r.controlEffectiveness * 100).toFixed(0)}%</td>
                 <td className="px-4 py-3 font-mono text-sm font-semibold" style={{ color: r.residualRisk > 1000000 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))' }}>{formatCurrency(r.residualRisk)}</td>
                 <td className="px-4 py-3"><span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[r.status]}>{r.status}</span></td>
-                <td className="px-4 py-3"><Eye size={14} className="text-[hsl(var(--text-4))]" /></td>
+                <td className="px-4 py-3" onClick={ev => ev.stopPropagation()}>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => openEdit(r)} className="p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))] hover:bg-[hsl(var(--bg-raised))]"><PencilSimple size={13} /></button>
+                    <button onClick={() => setDeleteTarget(r)} className="p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(0_72%_51%/0.05)]"><Trash size={13} /></button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
+        {filtered.length === 0 && <div className="text-center py-10 text-[hsl(var(--text-4))] text-sm">No risks match the current filters</div>}
       </div>
 
       {/* ── Monte Carlo Simulation Panel ─────────────────────────────────────── */}
@@ -335,9 +389,94 @@ export default function FinancialRisk() {
               <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">AI System</p><p className="text-sm text-[hsl(var(--text-2))] p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{selected.aiSystem}</p></div>
               <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">Notes</p><p className="text-sm text-[hsl(var(--text-2))] p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] leading-relaxed">{selected.notes}</p></div>
             </div>
+            <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
+              <button onClick={() => openEdit(selected)} className="flex-1 flex items-center justify-center gap-1.5 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]"><PencilSimple size={13} /> Edit</button>
+              <button onClick={() => setDeleteTarget(selected)} className="px-4 py-2 border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] text-sm hover:bg-[hsl(0_72%_51%/0.05)]"><Trash size={13} /></button>
+            </div>
           </div>
         </div>
       )}
+
+      {/* ── Create / Edit Modal ─────────────────────────────────────────────── */}
+      {showForm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowForm(false)} />
+          <div className="relative w-[560px] max-h-[90vh] overflow-y-auto bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))]">
+            <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))]">
+              <h2 className="text-sm font-semibold text-[hsl(var(--text-1))]">{editTarget ? 'Edit Risk Quantification' : 'Quantify New Risk'}</h2>
+              <button onClick={() => setShowForm(false)}><X size={16} className="text-[hsl(var(--text-4))]" /></button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <label className="text-xs font-medium text-[hsl(var(--text-2))] block mb-1">Risk Name *</label>
+                  <input value={form.riskName} onChange={e => setForm(p => ({ ...p, riskName: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-transparent text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. Biased lending decisions — regulatory fine exposure" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-[hsl(var(--text-2))] block mb-1">Category</label>
+                  <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+                    {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-[hsl(var(--text-2))] block mb-1">Status</label>
+                  <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value as FinancialRiskItem['status'] }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+                    {['Monitored', 'Elevated', 'Critical', 'Mitigated'].map(s => <option key={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div className="col-span-2">
+                  <label className="text-xs font-medium text-[hsl(var(--text-2))] block mb-1">AI System *</label>
+                  <input value={form.aiSystem} onChange={e => setForm(p => ({ ...p, aiSystem: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-transparent text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. Loan Approval Model v3.0" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-[hsl(var(--text-2))] block mb-1">Gross AEL ($)</label>
+                  <input type="number" value={form.annualExpectedLoss} onChange={e => setForm(p => ({ ...p, annualExpectedLoss: Number(e.target.value) }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-transparent text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-[hsl(var(--text-2))] block mb-1">Worst Case AEL ($)</label>
+                  <input type="number" value={form.annualExpectedLossWorstCase} onChange={e => setForm(p => ({ ...p, annualExpectedLossWorstCase: Number(e.target.value) }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-transparent text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-[hsl(var(--text-2))] block mb-1">Probability (0–1)</label>
+                  <input type="number" min="0" max="1" step="0.01" value={form.probability} onChange={e => setForm(p => ({ ...p, probability: Number(e.target.value) }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-transparent text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-[hsl(var(--text-2))] block mb-1">Control Effectiveness (0–1)</label>
+                  <input type="number" min="0" max="1" step="0.01" value={form.controlEffectiveness} onChange={e => setForm(p => ({ ...p, controlEffectiveness: Number(e.target.value) }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-transparent text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-[hsl(var(--text-2))] block mb-1">Residual Risk ($)</label>
+                  <input type="number" value={form.residualRisk} onChange={e => setForm(p => ({ ...p, residualRisk: Number(e.target.value) }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-transparent text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-[hsl(var(--text-2))] block mb-1">Owner</label>
+                  <select value={form.owner} onChange={e => setForm(p => ({ ...p, owner: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+                    {OWNERS.map(o => <option key={o}>{o}</option>)}
+                  </select>
+                </div>
+                <div className="col-span-2">
+                  <label className="text-xs font-medium text-[hsl(var(--text-2))] block mb-1">Notes</label>
+                  <textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={3} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-transparent text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))] resize-none" placeholder="FAIR model assumptions, data sources…" />
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 p-4 border-t border-[hsl(var(--border))]">
+              <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">Cancel</button>
+              <button onClick={saveForm} className="px-4 py-2 text-sm bg-[hsl(var(--brand))] text-white hover:opacity-90">{editTarget ? 'Save Changes' : 'Add Risk'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete Risk Quantification"
+        description={`Delete ${deleteTarget?.id} — "${deleteTarget?.riskName}"? This will remove the FAIR model data permanently.`}
+        confirmLabel="Delete"
+        type="danger"
+        onConfirm={confirmDelete}
+        onClose={() => setDeleteTarget(null)}
+      />
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Power, Warning, MagnifyingGlass, Plus, Eye, X, Export, ShieldWarning, CheckCircle, Siren, ClipboardText, ArrowsClockwise } from '@phosphor-icons/react'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 
 type KillSwitchTrigger = 'Manual' | 'Automated — Trust Score' | 'Automated — Error Rate' | 'Automated — Bias Threshold' | 'Regulatory Order' | 'Security Incident'
 type KSStatus = 'Active — Agent Suspended' | 'Resolved' | 'Under Investigation' | 'Escalated'
@@ -41,14 +42,19 @@ const STATUS_STYLE: Record<KSStatus, { bg: string; color: string }> = {
 export default function KillSwitchEvents() {
   const [selected, setSelected] = useState<KillSwitchEvent | null>(null)
   const [statusFilter, setStatusFilter] = useState('All')
+  const [search, setSearch] = useState('')
   const [events, setEvents] = useState(SEED)
   const [killAllOpen, setKillAllOpen] = useState(false)
   const [killAllCode, setKillAllCode] = useState('')
   const [killAllStep, setKillAllStep] = useState<'confirm' | 'mfa' | 'done'>('confirm')
   const [mfaInput, setMfaInput] = useState('')
   const [postMortemOpen, setPostMortemOpen] = useState<KillSwitchEvent | null>(null)
+  const [resumeTarget, setResumeTarget] = useState<KillSwitchEvent | null>(null)
 
-  const filtered = statusFilter === 'All' ? events : events.filter(e => e.status === statusFilter)
+  const filtered = events.filter(e =>
+    (statusFilter === 'All' || e.status === statusFilter) &&
+    (!search || e.agentName.toLowerCase().includes(search.toLowerCase()) || e.id.toLowerCase().includes(search.toLowerCase()) || e.reason.toLowerCase().includes(search.toLowerCase()))
+  )
 
   const stats = {
     total: events.length,
@@ -136,6 +142,10 @@ export default function KillSwitchEvents() {
       )}
 
       <div className="flex gap-3">
+        <div className="flex items-center gap-2 flex-1 max-w-xs border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] px-3">
+          <MagnifyingGlass size={14} className="text-[hsl(var(--text-4))] flex-shrink-0" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search events…" className="flex-1 py-2 text-sm bg-transparent text-[hsl(var(--text-1))] placeholder-[hsl(var(--text-4))] focus:outline-none" />
+        </div>
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
           {['All', 'Active — Agent Suspended', 'Resolved', 'Under Investigation', 'Escalated'].map(s => <option key={s}>{s}</option>)}
         </select>
@@ -372,13 +382,29 @@ export default function KillSwitchEvents() {
             </div>
             {selected.status === 'Active — Agent Suspended' && (
               <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
-                <button onClick={() => { toast.success('Resumption approved — agent restarting'); setEvents(prev => prev.map(e => e.id === selected.id ? { ...e, status: 'Resolved' as KSStatus, resumedAt: new Date().toISOString() } : e)); setSelected(null) }} className="flex-1 py-2 bg-[hsl(var(--s-ok-tx))] text-white text-sm font-medium hover:opacity-90">Approve Resumption</button>
+                <button onClick={() => setResumeTarget(selected)} className="flex-1 py-2 bg-[hsl(var(--s-ok-tx))] text-white text-sm font-medium hover:opacity-90">Approve Resumption</button>
                 <button onClick={() => toast.info('Escalation path opened')} className="px-4 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">Escalate</button>
               </div>
             )}
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!resumeTarget}
+        title="Approve Agent Resumption"
+        description={`Resume ${resumeTarget?.agentName} (${resumeTarget?.agentId})? The agent will restart and re-enter production. Ensure the root cause has been remediated before approving.`}
+        confirmLabel="Approve Resumption"
+        type="info"
+        onConfirm={() => {
+          if (!resumeTarget) return
+          setEvents(prev => prev.map(e => e.id === resumeTarget.id ? { ...e, status: 'Resolved' as KSStatus, resumedAt: new Date().toISOString().replace('T', ' ').slice(0, 19), approvedBy: 'Sarah Chen' } : e))
+          toast.success(`${resumeTarget.agentName} approved for resumption — agent restarting`)
+          setResumeTarget(null)
+          setSelected(null)
+        }}
+        onClose={() => setResumeTarget(null)}
+      />
     </div>
   )
 }

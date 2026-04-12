@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
-import { CloudArrowUp, FileText, CheckCircle, Warning, X, Eye, Clock } from '@phosphor-icons/react'
+import { CloudArrowUp, FileText, CheckCircle, Warning, X, Eye, Clock, MagnifyingGlass, Trash } from '@phosphor-icons/react'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 
 interface UploadSubmission {
   id: string
@@ -38,9 +39,15 @@ export default function VendorUpload() {
   const [submissions, setSubmissions] = useState(SEED)
   const [selected, setSelected] = useState<UploadSubmission | null>(null)
   const [statusFilter, setStatusFilter] = useState('All')
+  const [search, setSearch] = useState('')
+  const [rejectTarget, setRejectTarget] = useState<UploadSubmission | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<UploadSubmission | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const filtered = statusFilter === 'All' ? submissions : submissions.filter(s => s.status === statusFilter)
+  const filtered = submissions.filter(s =>
+    (statusFilter === 'All' || s.status === statusFilter) &&
+    (!search || s.vendor.toLowerCase().includes(search.toLowerCase()) || s.filename.toLowerCase().includes(search.toLowerCase()) || s.type.toLowerCase().includes(search.toLowerCase()))
+  )
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
@@ -57,10 +64,20 @@ export default function VendorUpload() {
     toast.success('Submission accepted')
   }
 
-  const handleReject = (id: string) => {
-    setSubmissions(prev => prev.map(s => s.id === id ? { ...s, status: 'Rejected' as const } : s))
+  const confirmReject = () => {
+    if (!rejectTarget) return
+    setSubmissions(prev => prev.map(s => s.id === rejectTarget.id ? { ...s, status: 'Rejected' as const, reviewedBy: 'Sarah Chen' } : s))
     setSelected(null)
-    toast.success('Submission rejected')
+    setRejectTarget(null)
+    toast.error('Submission rejected')
+  }
+
+  const confirmDelete = () => {
+    if (!deleteTarget) return
+    setSubmissions(prev => prev.filter(s => s.id !== deleteTarget.id))
+    toast.success(`${deleteTarget.id} removed`)
+    setDeleteTarget(null)
+    setSelected(null)
   }
 
   return (
@@ -105,6 +122,10 @@ export default function VendorUpload() {
       </div>
 
       <div className="flex gap-3">
+        <div className="flex items-center gap-2 flex-1 max-w-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] px-3">
+          <MagnifyingGlass size={14} className="text-[hsl(var(--text-4))] flex-shrink-0" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search vendors, files…" className="flex-1 py-2 text-sm bg-transparent text-[hsl(var(--text-1))] placeholder-[hsl(var(--text-4))] focus:outline-none" />
+        </div>
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
           {['All', 'Pending Review', 'Under Review', 'Accepted', 'Rejected'].map(s => <option key={s}>{s}</option>)}
         </select>
@@ -114,7 +135,7 @@ export default function VendorUpload() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
-              {['ID', 'Vendor', 'Document Type', 'File', 'Uploaded', 'Size', 'Expires', 'Reviewed By', 'Status', ''].map(h => (
+              {['ID', 'Vendor', 'Document Type', 'File', 'Uploaded', 'Size', 'Expires', 'Reviewed By', 'Status', 'Actions'].map(h => (
                 <th key={h} className="text-left px-4 py-3 text-[11px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wide">{h}</th>
               ))}
             </tr>
@@ -136,7 +157,9 @@ export default function VendorUpload() {
                 <td className="px-4 py-3 text-xs text-[hsl(var(--text-4))]">{s.expiryDate ?? '—'}</td>
                 <td className="px-4 py-3 text-xs text-[hsl(var(--text-3))]">{s.reviewedBy ?? '—'}</td>
                 <td className="px-4 py-3"><span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[s.status]}>{s.status}</span></td>
-                <td className="px-4 py-3"><Eye size={14} className="text-[hsl(var(--text-4))]" /></td>
+                <td className="px-4 py-3" onClick={ev => ev.stopPropagation()}>
+                  <button onClick={() => setDeleteTarget(s)} className="p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(0_72%_51%/0.05)]"><Trash size={13} /></button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -176,12 +199,36 @@ export default function VendorUpload() {
             {(selected.status === 'Pending Review' || selected.status === 'Under Review') && (
               <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
                 <button onClick={() => handleAccept(selected.id)} className="flex-1 py-2 bg-[hsl(var(--s-ok-tx))] text-white text-sm font-medium hover:opacity-90">Accept</button>
-                <button onClick={() => handleReject(selected.id)} className="flex-1 py-2 border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] text-sm font-medium hover:bg-[hsl(0_72%_51%/0.05)]">Reject</button>
+                <button onClick={() => setRejectTarget(selected)} className="flex-1 py-2 border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] text-sm font-medium hover:bg-[hsl(0_72%_51%/0.05)]">Reject</button>
               </div>
             )}
+            <div className="px-4 pb-4">
+              <button onClick={() => setDeleteTarget(selected)} className="w-full flex items-center justify-center gap-1.5 py-2 border border-[hsl(var(--border))] text-xs text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))] hover:border-[hsl(var(--destructive))]">
+                <Trash size={12} /> Remove Submission
+              </button>
+            </div>
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!rejectTarget}
+        title="Reject Submission"
+        description={`Reject "${rejectTarget?.filename}" from ${rejectTarget?.vendor}? The vendor will be notified that their submission was not accepted.`}
+        confirmLabel="Reject"
+        type="danger"
+        onConfirm={confirmReject}
+        onClose={() => setRejectTarget(null)}
+      />
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Remove Submission"
+        description={`Permanently remove "${deleteTarget?.filename}" from ${deleteTarget?.vendor}? This cannot be undone.`}
+        confirmLabel="Remove"
+        type="danger"
+        onConfirm={confirmDelete}
+        onClose={() => setDeleteTarget(null)}
+      />
     </div>
   )
 }
