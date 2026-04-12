@@ -6,12 +6,12 @@ build-backend = "hatchling.build"
 packages = ["sentinel"]
 
 [project]
-name = "certifyi-sentinel"
+name = "sentinel-ai-grc"
 version = "0.1.0"
-description = "Real-time AI reliability and governance middleware"
+description = "Enterprise AI governance, risk, and compliance platform"
 readme = "README.md"
 license = {text = "Apache-2.0"}
-authors = [{name = "Certifyi", email = "get@certifyi.ai"}]
+authors = ["Bhaskar <bhaskar@certifyi.ai>"]
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.111.0",
@@ -77,3 +77,11 @@ disable_error_code = ["import-untyped", "assignment", "call-arg"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+tag_format = "v$version"
+version_scheme = "semver"
+version_provider = "poetry"
+update_changelog_on_bump = true
+major_version_zero = true
