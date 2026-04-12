@@ -316,7 +316,7 @@ export default function Sidebar() {
     const activeItemTo = findActiveItemTo(location.pathname)
     return activeItemTo ? [activeItemTo] : []
   })
-  const [logoError, setLogoError] = useState(false)
+
 
   const collapsed = !isMobile && sidebarState === 'icon-only'
 
@@ -377,18 +377,11 @@ export default function Sidebar() {
         </div>
       ) : (
         <div className='flex items-center gap-2.5 px-3 h-14 border-b border-[hsl(var(--border))] flex-shrink-0'>
-          {!logoError ? (
-            <img
-              src='https://dignep.com.np/wp-content/uploads/2026/03/sentinel_logo.svg'
-              alt='Sentinel'
-              className='w-7 h-7 flex-shrink-0'
-              onError={() => setLogoError(true)}
-            />
-          ) : (
-            <div className='w-7 h-7 bg-[hsl(var(--brand))] flex items-center justify-center flex-shrink-0'>
-              <ShieldCheck size={16} weight='fill' className='text-white' />
-            </div>
-          )}
+          <img
+            src='/sentinel-icon.svg'
+            alt='Sentinel'
+            className='w-7 h-7 flex-shrink-0'
+          />
           <div className='flex-1 min-w-0'>
             <p className='text-sm font-semibold text-[hsl(var(--text-1))] truncate leading-tight'>Sentinel AI</p>
             <p className='text-[10px] text-[hsl(var(--text-4))] leading-tight'>GRC Platform</p>
