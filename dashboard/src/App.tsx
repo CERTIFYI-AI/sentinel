@@ -140,7 +140,14 @@ const ModelEfficiency = lazy(() => import('./pages/ModelEfficiency'));
 const DataLineage = lazy(() => import('./pages/DataLineage'));
 const IntegrationsPage = lazy(() => import('./pages/IntegrationsPage'));
 
-// ── 6 Strategic Moat Features ────────────────────────────────────────────────
+// ── Strategic Moat Features (6 irreplaceable enterprise capabilities) ─────────
+const PeerIntelligence = lazy(() => import('./pages/PeerIntelligence'));
+const ModelDNA = lazy(() => import('./pages/models/ModelDNA'));
+const ComplianceAutopilot = lazy(() => import('./pages/ComplianceAutopilot'));
+const NarrativeEngine = lazy(() => import('./pages/NarrativeEngine'));
+const KnowledgeGraph = lazy(() => import('./pages/KnowledgeGraph'));
+const RegulatoryVelocity = lazy(() => import('./pages/RegulatoryVelocity'));
+
 const RiskIntelligence = lazy(() => import('./pages/RiskIntelligence'));
 const Marketplace = lazy(() => import('./pages/Marketplace'));
 const SupplyChainGraph = lazy(() => import('./pages/SupplyChainGraph'));
@@ -411,7 +418,14 @@ export default function App() {
           <Route path="/data-quality" element={<Suspense fallback={<Loading />}><DataQuality /></Suspense>} />
           <Route path="/ethics-reporting" element={<Suspense fallback={<Loading />}><EthicsReporting /></Suspense>} />
 
-          {/* 6 Strategic Moat Features */}
+          {/* Strategic Moat Features */}
+          <Route path="/peer-intelligence" element={<Suspense fallback={<Loading />}><PeerIntelligence /></Suspense>} />
+          <Route path="/models/dna" element={<Suspense fallback={<Loading />}><ModelDNA /></Suspense>} />
+          <Route path="/autopilot" element={<Suspense fallback={<Loading />}><ComplianceAutopilot /></Suspense>} />
+          <Route path="/narrative-engine" element={<Suspense fallback={<Loading />}><NarrativeEngine /></Suspense>} />
+          <Route path="/knowledge-graph" element={<Suspense fallback={<Loading />}><KnowledgeGraph /></Suspense>} />
+          <Route path="/reg-velocity" element={<Suspense fallback={<Loading />}><RegulatoryVelocity /></Suspense>} />
+
           <Route path="/risk-intelligence" element={<Suspense fallback={<Loading />}><RiskIntelligence /></Suspense>} />
           <Route path="/marketplace" element={<Suspense fallback={<Loading />}><Marketplace /></Suspense>} />
           <Route path="/supply-chain/graph" element={<Suspense fallback={<Loading />}><SupplyChainGraph /></Suspense>} />

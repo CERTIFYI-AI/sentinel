@@ -74,6 +74,7 @@ const NAV: NavSection[] = [
           { label: 'Explainability',   to: '/explainability' },
           { label: 'Conformity',       to: '/conformity' },
           { label: 'Model Efficiency', to: '/model-efficiency' },
+          { label: 'Model DNA',        to: '/models/dna' },
         ],
       },
       {
@@ -235,6 +236,17 @@ const NAV: NavSection[] = [
       { label: 'Energy Efficiency',to: '/energy-efficiency',icon: Lightning },
       { label: 'ESG Reports',      to: '/esg-reports',      icon: EsgIcon },
       { label: 'Data Quality',     to: '/data-quality',     icon: CheckCircle },
+    ],
+  },
+  {
+    title: 'ENTERPRISE INTELLIGENCE',
+    items: [
+      { label: 'Peer Benchmarking',      to: '/peer-intelligence', icon: ChartBar },
+      { label: 'Model DNA & Provenance', to: '/models/dna',        icon: Certificate },
+      { label: 'Compliance Autopilot',   to: '/autopilot',         icon: Robot },
+      { label: 'Narrative Engine',       to: '/narrative-engine',  icon: Brain },
+      { label: 'Knowledge Graph',        to: '/knowledge-graph',   icon: TreeStructure },
+      { label: 'Regulatory Velocity',    to: '/reg-velocity',      icon: Lightning },
     ],
   },
   {
