@@ -94,7 +94,7 @@ class ProxyConfig(BaseModel):
     port: int = 8080
     workers: int = 4
     timeout: float = 30.0
-    allowed_origins: list[str] = Field(default_factory=lambda: ["*"])
+    allowed_origins: list[str] = Field(default_factory=list  # No default: must be set via ALLOWED_ORIGINS env var)
 
 
 class PolicyConfig(BaseSettings):
@@ -223,7 +223,7 @@ class SentinelSettings(BaseSettings):
         description="Redis URL. Falls back to in-memory if absent.",
     )
     secret_key: str = Field(
-        default="changeme-dev-secret-key-32chars!!",
+          # No default: must be set via SECRET_KEY env var,
         min_length=32,
         description="Secret for JWT signing",
     )
@@ -275,7 +275,7 @@ class SentinelSettings(BaseSettings):
     # --- server ---
     host: str = "0.0.0.0"
     port: int = 8000
-    allowed_origins: list[str] = Field(default_factory=lambda: ["*"])
+    allowed_origins: list[str] = Field(default_factory=list  # No default: must be set via ALLOWED_ORIGINS env var)
     rate_limit_rpm: int = Field(default=60, ge=1)
 
     @model_validator(mode="after")

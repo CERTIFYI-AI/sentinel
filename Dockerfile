@@ -1,27 +1,34 @@
 FROM python:3.11-slim AS builder
-WORKDIR /build
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc g++ build-essential libpq-dev curl && \
-    rm -rf /var/lib/apt/lists/*
-COPY pyproject.toml poetry.lock* ./
-RUN pip install --no-cache-dir poetry && \
-    poetry config virtualenvs.create false && \
-    poetry install --no-dev --no-interaction
-RUN python -m spacy download en_core_web_lg
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
-RUN python -c "from transformers import AutoModelForSequenceClassification, AutoTokenizer; AutoModelForSequenceClassification.from_pretrained('cross-encoder/nli-deberta-v3-large'); AutoTokenizer.from_pretrained('cross-encoder/nli-deberta-v3-large')"
 
-FROM python:3.11-slim
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    POETRY_VERSION=1.8.3 \
+    POETRY_NO_INTERACTION=1 \
+    POETRY_VIRTUALENVS_CREATE=false
+
+RUN pip install --no-cache-dir "poetry==${POETRY_VERSION}"
+
 WORKDIR /app
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq5 curl && rm -rf /var/lib/apt/lists/*
+COPY pyproject.toml poetry.lock ./
+RUN poetry install --only main --no-root
+
+COPY . .
+
+FROM python:3.11-slim AS runtime
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+RUN groupadd --gid 1001 sentinel && \
+    useradd --uid 1001 --gid sentinel --shell /bin/bash --create-home sentinel
+
+WORKDIR /app
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
-COPY --from=builder /root/.cache /root/.cache
-COPY sentinel/ ./sentinel/
-COPY scripts/ ./scripts/
-COPY dashboard/dist/ ./static/
+COPY --from=builder /app /app
+
+RUN chown -R sentinel:sentinel /app
+USER sentinel
+
 EXPOSE 8000
-HEALTHCHECK --interval=10s --timeout=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
-CMD ["uvicorn", "sentinel.proxy:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2", "--loop", "uvloop"]
+CMD ["uvicorn", "sentinel.main:app", "--host", "0.0.0.0", "--port", "8000"]
