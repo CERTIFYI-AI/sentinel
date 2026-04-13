@@ -226,3 +226,65 @@ dashboard/out/
 # Build outputs
 dashboard/dist/
 dashboard/build/
+
+# === OSS Security Remediation Additions ===
+
+# Databases — NEVER commit
+*.db
+*.sqlite
+*.sqlite3
+sentinel.db
+
+# Replit platform artifacts
+.replit
+replit.md
+replit.nix
+.breakpoints
+
+# Codegen / internal toolchain scripts
+gen.py
+gen_*.py
+*_gen.py
+ship_final.py
+implement_*.py
+fix_audit.py
+enterprise_ui.py
+wiring_fix.py
+start.sh
+
+# Attached / pasted assets
+attached_assets/
+
+# Build artifacts
+static/assets/
+dashboard/dist/
+dashboard/.vite/
+
+# Malformed pip artifacts
+=*.0
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Node
+node_modules/
+.npm/
+
+# Secrets
+.secrets.baseline

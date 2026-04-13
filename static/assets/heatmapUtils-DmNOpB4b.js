@@ -1,1 +1,0 @@
-function c(t,n=60,a=99){let r=0;for(let e=0;e<t.length;e++){const o=t.charCodeAt(e);r=(r<<5)-r+o,r=r&r}const i=(r<0?-r:r)%1e3/1e3;return n+i*(a-n)|0}function s(t){return t>=80?"pass":t>=60?"warn":"fail"}export{c as d,s};

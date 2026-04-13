@@ -1,23 +1,21 @@
-# Sentinel AI GRC Platform - Code Ownership
-# Changes to paths listed here require review from the designated team.
-# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+# Sentinel AI GRC — CODEOWNERS
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
-# Authentication, authorization, and security middleware
-/sentinel/auth/                  @CERTIFYI-AI/security
-/sentinel/middleware/             @CERTIFYI-AI/security
+# Default: platform team reviews everything
+* @CERTIFYI-AI/platform
 
-# Database schema and migrations
-/migrations/                     @CERTIFYI-AI/platform
+# Security-critical: auth, middleware, config, secrets
+/sentinel/auth/                    @CERTIFYI-AI/security
+/sentinel/middleware/              @CERTIFYI-AI/security
+/sentinel/config.py                @CERTIFYI-AI/security
+SECURITY.md                        @CERTIFYI-AI/security
+.env.example                       @CERTIFYI-AI/security
+scripts/preflight-check.sh         @CERTIFYI-AI/security
 
-# Infrastructure and deployment
-/k8s/                            @CERTIFYI-AI/platform
-/docker-compose.yml              @CERTIFYI-AI/platform
-/Dockerfile                      @CERTIFYI-AI/platform
-/.github/workflows/              @CERTIFYI-AI/platform
-
-# Environment and secrets configuration
-/.env.example                    @CERTIFYI-AI/security
-
-# Security policies and disclosure
-/SECURITY.md                     @CERTIFYI-AI/security
-/scripts/preflight-check.sh      @CERTIFYI-AI/security
+# Infrastructure: docker, CI, k8s, migrations
+Dockerfile                         @CERTIFYI-AI/platform
+.dockerignore                      @CERTIFYI-AI/platform
+docker-compose.yml                 @CERTIFYI-AI/platform
+/k8s/                              @CERTIFYI-AI/platform
+/migrations/                       @CERTIFYI-AI/platform
+.github/workflows/                 @CERTIFYI-AI/platform
