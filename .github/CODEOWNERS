@@ -1,13 +1,23 @@
-# Default owners for everything in the repo
-* @CERTIFYI-AI/engineering
+# Sentinel AI GRC Platform - Code Ownership
+# Changes to paths listed here require review from the designated team.
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
-# Sentinel core
-sentinel/ @CERTIFYI-AI/engineering
+# Authentication, authorization, and security middleware
+/sentinel/auth/                  @CERTIFYI-AI/security
+/sentinel/middleware/             @CERTIFYI-AI/security
 
-# Dashboard
-dashboard/ @CERTIFYI-AI/engineering
+# Database schema and migrations
+/migrations/                     @CERTIFYI-AI/platform
 
-# CI/CD and infrastructure
-.github/ @CERTIFYI-AI/engineering
-Dockerfile @CERTIFYI-AI/engineering
-docker-compose.yml @CERTIFYI-AI/engineering
+# Infrastructure and deployment
+/k8s/                            @CERTIFYI-AI/platform
+/docker-compose.yml              @CERTIFYI-AI/platform
+/Dockerfile                      @CERTIFYI-AI/platform
+/.github/workflows/              @CERTIFYI-AI/platform
+
+# Environment and secrets configuration
+/.env.example                    @CERTIFYI-AI/security
+
+# Security policies and disclosure
+/SECURITY.md                     @CERTIFYI-AI/security
+/scripts/preflight-check.sh      @CERTIFYI-AI/security
