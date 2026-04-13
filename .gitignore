@@ -288,3 +288,8 @@ node_modules/
 
 # Secrets
 .secrets.baseline
+
+# Post-audit additions
+start.sh
+static/index.html
+frontend/
