@@ -293,3 +293,11 @@ node_modules/
 start.sh
 static/index.html
 frontend/
+
+# === Post-Audit Scaffold Cleanup ===
+data/audit.db
+build_ui.py
+dashboard/fix_*.py
+dashboard/gen_*.py
+dashboard/gen_*.js
+dashboard/master_upgrade.py
