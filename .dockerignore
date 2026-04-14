@@ -27,4 +27,8 @@ __pycache__/
 .coverage
 htmlcov/
 pyproject.toml
+server/
+build_ui.py
+*.pyc
+__pycache__/
 poetry.lock
