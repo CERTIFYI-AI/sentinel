@@ -1,3 +1,24 @@
+## [0.3.2] – 2025-03-12
+
+### Removed
+
+- Deleted `frontend/` duplicate directory — `dashboard/` is the canonical frontend
+- Deleted root-level codegen artifacts: `build_ui.py`, `enterprise_ui.py`, `fix_audit.py`, `ship_final.py`, `wiring_fix.py`, `sentinel_ui_gen.py`
+- Deleted `data/audit.db` tracked binary from repository
+- Removed 9 dashboard scaffolding scripts (`fix_*.py`, `gen_*.py`)
+
+### Fixed
+
+- Updated `.gitignore` — added `*.db`, `audit.db`, `*.sqlite3`, codegen patterns
+- Updated `.dockerignore` — added `*.db`, `data/*.db`, codegen patterns
+- Updated `docs/AUDIT_REPORT.md` with remediation addendum documenting all resolved infrastructure issues
+
+### Infrastructure
+
+- Zero scaffolding residue in repo root and `dashboard/` directory
+- All binary artifacts excluded from version control
+- Repository is OSS-release clean
+
 ## [0.3.1] – 2025-03-09
 
 ### Added
