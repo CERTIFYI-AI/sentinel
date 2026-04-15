@@ -94,7 +94,7 @@ class ProxyConfig(BaseModel):
     port: int = 8080
     workers: int = 4
     timeout: float = 30.0
-    allowed_origins: list[str] = Field(default_factory=list  # No default: must be set via ALLOWED_ORIGINS env var)
+    allowed_origins: list[str] = Field(default_factory=list)  # Set via ALLOWED_ORIGINS env var
 
 
 class PolicyConfig(BaseSettings):
@@ -275,7 +275,7 @@ class SentinelSettings(BaseSettings):
     # --- server ---
     host: str = "0.0.0.0"
     port: int = 8000
-    allowed_origins: list[str] = Field(default_factory=list  # No default: must be set via ALLOWED_ORIGINS env var)
+    allowed_origins: list[str] = Field(default_factory=list)  # Set via ALLOWED_ORIGINS env var
     rate_limit_rpm: int = Field(default=60, ge=1)
 
     @model_validator(mode="after")

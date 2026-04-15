@@ -208,6 +208,7 @@ __marimo__/
 
 # Sentinel project-specific
 .env.local
+.env
 .env.production
 .env.*.local
 *.pem
