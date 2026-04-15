@@ -5,7 +5,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY pyproject.toml ./
+COPY pyproject.toml README.md ./
 COPY sentinel/ sentinel/
 
 RUN pip install --no-cache-dir .
