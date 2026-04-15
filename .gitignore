@@ -301,3 +301,4 @@ dashboard/fix_*.py
 dashboard/gen_*.py
 dashboard/gen_*.js
 dashboard/master_upgrade.py
+poetry.lock
