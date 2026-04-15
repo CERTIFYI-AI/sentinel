@@ -1,25 +1,24 @@
-// src/hooks/use-auth.ts
-import { useCallback, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { getToken, setToken, clearToken } from "../api/client";
-
-function decodePayload(token: string): Record<string, unknown> {
-  try {
-    const base64 = token.split(".")[1];
-    return JSON.parse(atob(base64));
-  } catch { return {}; }
-}
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
+import { supabase } from '../lib/supabase';
 
 export function useAuth() {
-  const token = getToken();
-  const user = useMemo(() => token ? decodePayload(token) : null, [token]);
-  const isAuthenticated = Boolean(token);
+  const { token, user, isAuthenticated, login, logout, initializeAuth, setSession } = useAuthStore();
 
-  const loginFn = useCallback((t: string) => { setToken(t); }, []);
-  const logout = useCallback(() => {
-    clearToken();
-    window.location.href = "/login";
-  }, []);
+  useEffect(() => {
+    initializeAuth();
+
+    if (!supabase) return;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+    return () => subscription.unsubscribe();
+  }, [initializeAuth, setSession]);
+
+  const loginFn = async (email: string, password: string) => {
+    await login(email, password);
+  };
 
   return { token, user, isAuthenticated, login: loginFn, logout };
 }

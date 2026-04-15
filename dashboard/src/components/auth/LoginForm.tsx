@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Eye, EyeSlash, SpinnerGap } from "@phosphor-icons/react";
-import { login } from "../../api/client";
+import { useAuthStore } from "../../store/authStore";
 
 export function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   const [tab, setTab] = useState<"apikey" | "email">("apikey");
@@ -13,16 +13,18 @@ export function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const storeLogin = useAuthStore((s) => s.login);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true); setError(null);
+    setError("");
+    setLoading(true);
     try {
-      const body = tab === "apikey" ? { api_key: apiKey } : { email, password };
-      const res = await login(body);
-      localStorage.setItem("sentinel_token", res.access_token);
+      await storeLogin(email, password);
       onSuccess();
     } catch (err: unknown) {
-      setError("Invalid credentials. Please try again.");
+      const msg = err instanceof Error ? err.message : "Invalid credentials. Please try again.";
+      setError(msg);
     } finally { setLoading(false); }
   }
 

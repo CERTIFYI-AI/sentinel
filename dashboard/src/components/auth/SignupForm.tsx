@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { SpinnerGap, ArrowLeft, ArrowRight, Check } from "@phosphor-icons/react";
-import { register, login } from "../../api/client";
+import { useAuthStore } from "../../store/authStore";
 
 function strengthLevel(pw: string): number {
   if (pw.length < 8) return 0;
@@ -31,17 +31,25 @@ export function SignupForm({ onSuccess }: { onSuccess: () => void }) {
   const strength = strengthLevel(password);
   const canStep1 = orgName.length >= 2 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && password === confirm && strength >= 1;
 
+  const storeSignup = useAuthStore((s) => s.signup);
+
   async function handleSubmit() {
-    setLoading(true); setErrors({});
+    if (password !== confirmPassword) {
+      setErrors({ form: "Passwords do not match" });
+      return;
+    }
+    setErrors({});
+    setLoading(true);
     try {
-      await register({ org_name: orgName, email, password, plan });
-      const tok = await login({ email, password });
-      localStorage.setItem("sentinel_token", tok.access_token);
+      await storeSignup({ name: fullName, email, password, organization: orgName });
       onSuccess();
     } catch (err: unknown) {
-      const e = err as { status?: number };
-      if (e.status === 409) setErrors({ email: "An account with this email already exists" });
-      else setErrors({ form: "Registration failed. Please try again." });
+      const msg = err instanceof Error ? err.message : "Registration failed. Please try again.";
+      if (msg.toLowerCase().includes("already")) {
+        setErrors({ email: msg });
+      } else {
+        setErrors({ form: msg });
+      }
     } finally { setLoading(false); }
   }
 

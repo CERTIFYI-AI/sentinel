@@ -204,6 +204,7 @@ function ProtectedLayout() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const tenantId = useAuthStore((s) => s.user?.tenantId ?? 'default');
 
+  // Deferred to avoid blocking initial render
   useRealtimeEvents({
     tenantId,
     notifyPrefixes: ['hitl', 'security', 'compliance', 'bias_audit', 'approval'],
@@ -417,10 +418,10 @@ export default function App() {
           <Route path="/control-testing" element={<Suspense fallback={<Loading />}><ControlTesting /></Suspense>} />
 
           {/* New GRC Modules */}
-          <Route path="/committee" element={<CommitteeManagement />} />
-          <Route path="/model-validation" element={<ModelValidationLab />} />
-          <Route path="/performance-monitoring" element={<PerformanceMonitoring />} />
-          <Route path="/incidents/playbooks" element={<IncidentPlaybooks />} />
+          <Route path="/committee" element={<Suspense fallback={<Loading />}><CommitteeManagement /></Suspense>} />
+          <Route path="/model-validation" element={<Suspense fallback={<Loading />}><ModelValidationLab /></Suspense>} />
+          <Route path="/performance-monitoring" element={<Suspense fallback={<Loading />}><PerformanceMonitoring /></Suspense>} />
+          <Route path="/incidents/playbooks" element={<Suspense fallback={<Loading />}><IncidentPlaybooks /></Suspense>} />
 
           {/* 8 New Regulatory Modules */}
           <Route path="/ai-risk-tiering" element={<Suspense fallback={<Loading />}><AIRiskTiering /></Suspense>} />

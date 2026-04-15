@@ -1,15 +1,16 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { supabase } from '../lib/supabase';
+import type { User as SupabaseUser, Session } from '@supabase/supabase-js';
 
 export interface User {
   id: string;
-  name: string;
   email: string;
-  role: 'admin' | 'auditor' | 'viewer';
-  organization: string;
-  tenantId: string;
-  avatarUrl?: string;
-  jobTitle?: string;
+  name: string;
+  role: string;
+  avatar?: string;
+  tenant?: string;
+  organization?: string;
 }
 
 interface AuthState {
@@ -17,79 +18,117 @@ interface AuthState {
   user: User | null;
   token: string | null;
   refreshToken: string | null;
+  loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (data: { name: string; email: string; password: string; organization: string }) => Promise<void>;
-  logout: () => void;
+  signup: (params: { name: string; email: string; password: string; organization?: string }) => Promise<void>;
+  logout: () => Promise<void>;
   setUser: (user: User) => void;
+  setSession: (session: Session | null) => void;
+  initializeAuth: () => Promise<void>;
 }
 
-const DEMO_USERS: Record<string, User> = {
-  'admin@sentinel-grc.com': {
-    id: 'usr-001',
-    name: 'Sarah Chen',
-    email: 'admin@sentinel-grc.com',
-    role: 'admin',
-    organization: 'Sentinel Financial Corp',
-    tenantId: 'tenant-001',
-    jobTitle: 'CISO',
-  },
-  'auditor@sentinel-grc.com': {
-    id: 'usr-002',
-    name: 'James Patel',
-    email: 'auditor@sentinel-grc.com',
-    role: 'auditor',
-    organization: 'Sentinel Financial Corp',
-    tenantId: 'tenant-001',
-    jobTitle: 'Compliance Auditor',
-  },
-  'viewer@sentinel-grc.com': {
-    id: 'usr-003',
-    name: 'Emma Wilson',
-    email: 'viewer@sentinel-grc.com',
-    role: 'viewer',
-    organization: 'Sentinel Financial Corp',
-    tenantId: 'tenant-001',
-    jobTitle: 'Risk Analyst',
-  },
-};
+function mapSupabaseUser(su: SupabaseUser): User {
+  return {
+    id: su.id,
+    email: su.email || '',
+    name: su.user_metadata?.name || su.user_metadata?.full_name || su.email?.split('@')[0] || '',
+    role: su.user_metadata?.role || 'viewer',
+    avatar: su.user_metadata?.avatar_url,
+    tenant: su.user_metadata?.tenant || 'default',
+    organization: su.user_metadata?.organization,
+  };
+}
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       isAuthenticated: false,
       user: null,
       token: null,
       refreshToken: null,
+      loading: true,
 
-      login: async (email: string, _password: string) => {
-        await new Promise((r) => setTimeout(r, 700));
-        const lower = email.toLowerCase().trim();
-        const user: User = DEMO_USERS[lower] ?? {
-          id: 'usr-' + Math.random().toString(36).slice(2, 7),
-          name: email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-          email: lower,
-          role: 'admin',
-          organization: 'Your Organization',
-          tenantId: 'tenant-001',
-          jobTitle: 'Administrator',
-        };
-        set({
-          isAuthenticated: true,
-          user,
-          token: 'tok_' + Math.random().toString(36).slice(2),
-          refreshToken: 'rtok_' + Math.random().toString(36).slice(2),
+      login: async (email: string, password: string) => {
+        if (!supabase) throw new Error('Supabase not configured');
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) { console.error("SUPABASE_SIGNUP_ERROR:", JSON.stringify(error)); throw error; }
+        if (data.session && data.user) {
+          set({
+            isAuthenticated: true,
+            user: mapSupabaseUser(data.user),
+            token: data.session.access_token,
+            refreshToken: data.session.refresh_token,
+            loading: false,
+          });
+        }
+      },
+
+      signup: async ({ name, email, password, organization }) => {
+        if (!supabase) throw new Error('Supabase not configured');
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { name, organization, role: 'viewer' },
+          },
         });
+        if (error) { console.error("SUPABASE_SIGNUP_ERROR:", JSON.stringify(error)); throw error; }
+        if (data.session && data.user) {
+          set({
+            isAuthenticated: true,
+            user: mapSupabaseUser(data.user),
+            token: data.session.access_token,
+            refreshToken: data.session.refresh_token,
+            loading: false,
+          });
+        }
       },
 
-      signup: async (_data) => {
-        await new Promise((r) => setTimeout(r, 700));
-      },
-
-      logout: () => {
-        set({ isAuthenticated: false, user: null, token: null, refreshToken: null });
+      logout: async () => {
+        if (supabase) {
+          await supabase.auth.signOut();
+        }
+        set({ isAuthenticated: false, user: null, token: null, refreshToken: null, loading: false });
       },
 
       setUser: (user) => set({ user }),
+
+      setSession: (session) => {
+        if (session?.user) {
+          set({
+            isAuthenticated: true,
+            user: mapSupabaseUser(session.user),
+            token: session.access_token,
+            refreshToken: session.refresh_token,
+            loading: false,
+          });
+        } else {
+          set({ isAuthenticated: false, user: null, token: null, refreshToken: null, loading: false });
+        }
+      },
+
+      initializeAuth: async () => {
+        if (!supabase) {
+          set({ loading: false });
+          return;
+        }
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+            set({
+              isAuthenticated: true,
+              user: mapSupabaseUser(session.user),
+              token: session.access_token,
+              refreshToken: session.refresh_token,
+              loading: false,
+            });
+          } else {
+            set({ isAuthenticated: false, user: null, token: null, refreshToken: null, loading: false });
+          }
+        } catch {
+          set({ loading: false });
+        }
+      },
     }),
     {
       name: 'sentinel-auth',
