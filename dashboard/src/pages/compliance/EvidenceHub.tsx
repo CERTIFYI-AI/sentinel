@@ -13,7 +13,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import {
   ClipboardText, CheckCircle, Clock, XCircle, Plus, Eye, PencilSimple,
-  Trash, MagnifyingGlass, ArrowsClockwise, UploadSimple, Warning, FilePlus, History,
+  Trash, MagnifyingGlass, ArrowsClockwise, UploadSimple, Warning, FilePlus, ClockCounterClockwise,
 } from '@phosphor-icons/react';
 import { EVIDENCE, Evidence, EvidenceStatus, statusColor, formatDate } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
@@ -134,7 +134,7 @@ export default function EvidenceHub() {
     { label: 'Synced', value: synced, icon: CheckCircle, color: '#10b981' },
     { label: 'Pending', value: pending, icon: Clock, color: '#f97316' },
     { label: 'Expired', value: expired, icon: Warning, color: '#ef4444' },
-    { label: 'Stale (>90d)', value: stale, icon: History, color: '#8b5cf6' },
+    { label: 'Stale (>90d)', value: stale, icon: ClockCounterClockwise, color: '#8b5cf6' },
   ];
 
   function handleSyncAll() {
@@ -249,7 +249,7 @@ export default function EvidenceHub() {
       {/* Staleness banner */}
       {stale > 0 && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', background: 'hsl(263 30% 14%)', border: '1px solid #8b5cf6' }}>
-          <History size={16} style={{ color: '#8b5cf6', flexShrink: 0 }} />
+          <ClockCounterClockwise size={16} style={{ color: '#8b5cf6', flexShrink: 0 }} />
           <p className="text-xs flex-1" style={{ color: '#8b5cf6' }}>
             <strong>{stale} evidence item{stale !== 1 ? 's' : ''}</strong> have not been updated in over 90 days — consider refreshing or re-syncing to maintain audit readiness.
           </p>
@@ -360,8 +360,8 @@ export default function EvidenceHub() {
                           <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => { setViewItem(e); setViewTab('details'); }}>
                             <Eye size={14} />
                           </Button>
-                          <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => { setViewItem(e); setViewTab('history'); }}>
-                            <History size={14} />
+                          <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => { setViewItem(e); setViewTab('ClockCounterClockwise'); }}>
+                            <ClockCounterClockwise size={14} />
                           </Button>
                           <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} title="Re-sync" onClick={() => handleSyncItem(e.id)}>
                             <ArrowsClockwise size={14} />
@@ -408,7 +408,7 @@ export default function EvidenceHub() {
               <Tabs value={viewTab} onValueChange={setViewTab}>
                 <TabsList style={{ borderRadius: 0, background: 'hsl(var(--bg-muted))', marginBottom: 16 }}>
                   <TabsTrigger value="details" style={{ borderRadius: 0 }}>Details</TabsTrigger>
-                  <TabsTrigger value="history" style={{ borderRadius: 0 }}>Version History</TabsTrigger>
+                  <TabsTrigger value="ClockCounterClockwise" style={{ borderRadius: 0 }}>Version ClockCounterClockwise</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="details">
@@ -444,10 +444,10 @@ export default function EvidenceHub() {
                   </div>
                 </TabsContent>
 
-                <TabsContent value="history">
+                <TabsContent value="ClockCounterClockwise">
                   <div className="space-y-3">
                     <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
-                      Version history for <strong style={{ color: 'hsl(var(--text-2))' }}>{viewItem.id}</strong>
+                      Version ClockCounterClockwise for <strong style={{ color: 'hsl(var(--text-2))' }}>{viewItem.id}</strong>
                     </p>
                     {mockVersionHistory(viewItem).map((v, i) => (
                       <div key={v.version} style={{
