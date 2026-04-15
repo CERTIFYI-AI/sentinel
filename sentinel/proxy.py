@@ -200,7 +200,7 @@ def create_app() -> FastAPI:
     app.include_router(health_router)
     app.include_router(security_router)
     app.include_router(tasks_router, prefix="/tasks")
-    app.include_router(notifications_router)
+    app.include_router(notifications_router, prefix="/notifications")
     app.include_router(hitl_router)
     import os
     static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static')
