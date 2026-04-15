@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChartLine, Export, X, ArrowRight, Warning, Plus, MagnifyingGlass, Pencil, Trash, DatabaseZap, ArrowsDownUp, GitBranch } from '@phosphor-icons/react'
+import { ChartLine, Export, X, ArrowRight, Warning, Plus, MagnifyingGlass, Pencil, Trash, Database, ArrowsDownUp, GitBranch } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 
@@ -258,7 +258,7 @@ export default function DataLineage() {
             <div className="flex border-b border-[hsl(var(--border))]">
               {(['overview', 'upstream', 'downstream'] as const).map(tab => (
                 <button key={tab} onClick={() => setDrawerTab(tab)} className="flex-1 py-2.5 text-xs font-medium capitalize transition-colors" style={drawerTab === tab ? { color: 'hsl(var(--brand))', borderBottom: '2px solid hsl(var(--brand))' } : { color: 'hsl(var(--text-4))' }}>
-                  {tab === 'overview' && <DatabaseZap size={12} className="inline mr-1" />}
+                  {tab === 'overview' && <Database size={12} className="inline mr-1" />}
                   {tab === 'upstream' && <ArrowsDownUp size={12} className="inline mr-1" />}
                   {tab === 'downstream' && <GitBranch size={12} className="inline mr-1" />}
                   {tab.charAt(0).toUpperCase() + tab.slice(1)}
