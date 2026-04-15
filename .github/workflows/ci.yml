@@ -42,7 +42,7 @@ jobs:
       - name: Run tests
         run: pytest tests/ -v --tb=short --cov=sentinel --cov-report=xml
         env:
-          SENTINEL_DATABASE_URL: sqlite:///./test.db
+          SENTINEL_DATABASE_URL: sqlite+aiosqlite:///./test.db
           SENTINEL_SECRET_KEY: test-secret-key-for-ci-only-32char
           SENTINEL_ENVIRONMENT: test
 

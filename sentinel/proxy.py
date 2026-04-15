@@ -193,7 +193,7 @@ def create_app() -> FastAPI:
     app.include_router(dashboard_router)
     app.include_router(compliance_router)
     app.include_router(approval_router)
-    app.include_router(audit_log_router)
+    app.include_router(audit_log_router, prefix="/audit")
     app.include_router(ciso_router)
     app.include_router(evals_router)
     app.include_router(events_router)
