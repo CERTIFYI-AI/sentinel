@@ -303,3 +303,9 @@ dashboard/gen_*.py
 dashboard/gen_*.js
 dashboard/master_upgrade.py
 poetry.lock
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example
