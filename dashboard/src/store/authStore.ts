@@ -1,3 +1,4 @@
+import logger from '@/lib/logger';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '../lib/supabase';
@@ -51,7 +52,7 @@ export const useAuthStore = create<AuthState>()(
       login: async (email: string, password: string) => {
         if (!supabase) throw new Error('Supabase not configured');
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) { console.error("SUPABASE_SIGNUP_ERROR:", JSON.stringify(error)); throw error; }
+        if (error) { logger.error("SUPABASE_SIGNUP_ERROR:", JSON.stringify(error)); throw error; }
         if (data.session && data.user) {
           set({
             isAuthenticated: true,
@@ -72,7 +73,7 @@ export const useAuthStore = create<AuthState>()(
             data: { name, organization, role: 'viewer' },
           },
         });
-        if (error) { console.error("SUPABASE_SIGNUP_ERROR:", JSON.stringify(error)); throw error; }
+        if (error) { logger.error("SUPABASE_SIGNUP_ERROR:", JSON.stringify(error)); throw error; }
         if (data.session && data.user) {
           set({
             isAuthenticated: true,

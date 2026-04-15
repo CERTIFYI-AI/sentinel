@@ -1,3 +1,4 @@
+import logger from '@/lib/logger';
 import { create } from 'zustand';
 import { ComplianceEvent, ComplianceEventType } from '../types/events';
 
@@ -31,7 +32,7 @@ export const useEventBus = create<EventBusState>((set, get) => ({
       ...(subs.get(event.type) || []),
       ...(subs.get('*') || []),
     ];
-    handlers.forEach(fn => { try { fn(event); } catch(e) { console.error('Event handler error:', e); } });
+    handlers.forEach(fn => { try { fn(event); } catch(e) { logger.error('Event handler error:', e); } });
   },
   subscribe: (eventType, callback) => {
     set(s => {

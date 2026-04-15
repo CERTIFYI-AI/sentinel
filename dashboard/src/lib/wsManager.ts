@@ -1,3 +1,4 @@
+import logger from '@/lib/logger';
 import { eventBus } from "./eventBus";
 import type { EventMap } from "./eventBus";
 import { queryClient } from "./queryClient";
@@ -25,7 +26,7 @@ function routeMessage(raw: string): void {
   try {
     msg = JSON.parse(raw);
   } catch {
-    console.warn("[WS] Non-JSON message:", raw);
+    logger.warn("[WS] Non-JSON message:", raw);
     return;
   }
 
@@ -69,7 +70,7 @@ function routeMessage(raw: string): void {
       queryClient.invalidateQueries({ queryKey: QK.unreadCount });
       break;
     default:
-      console.warn("[WS] Unknown event:", event);
+      logger.warn("[WS] Unknown event:", event);
   }
 }
 

@@ -1,3 +1,4 @@
+import logger from '@/lib/logger';
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { ShieldCheck, Plus, PencilSimple, Trash, Copy, X, Check, CaretDown, CaretRight, MagnifyingGlass, Warning } from '@phosphor-icons/react'
 import { toast } from 'sonner'
@@ -167,7 +168,7 @@ export default function RolesPage() {
         const [r, u] = await Promise.all([sbFetchRoles(), sbFetchUsers()])
         setRoles(r); setUsers(u)
       } else { setRoles(SEED_ROLES); setUsers(SEED_USERS) }
-    } catch(e) { console.error(e); setRoles(SEED_ROLES); setUsers(SEED_USERS) }
+    } catch(e) { logger.error(e); setRoles(SEED_ROLES); setUsers(SEED_USERS) }
     finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])

@@ -1,3 +1,4 @@
+import logger from '@/lib/logger';
 /**
  * eventStore.ts — Sentinel Real-Time Event Store
  *
@@ -67,12 +68,12 @@ export const useEventStore = create<EventStore>((set, get) => ({
           events: [...state.events.slice(-MAX_EVENTS + 1), event],
         }));
       } catch {
-        console.warn('[EventStore] Failed to parse event:', msg.data);
+        logger.warn('[EventStore] Failed to parse event:', msg.data);
       }
     };
 
     socket.onerror = (err) => {
-      console.error('[EventStore] WebSocket error:', err);
+      logger.error('[EventStore] WebSocket error:', err);
       set({ error: 'WebSocket connection error', connected: false });
     };
 
@@ -103,7 +104,7 @@ export const useEventStore = create<EventStore>((set, get) => ({
     if (socket && socket.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify(event));
     } else {
-      console.warn('[EventStore] Cannot publish - not connected');
+      logger.warn('[EventStore] Cannot publish - not connected');
     }
   },
 

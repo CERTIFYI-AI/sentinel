@@ -1,3 +1,4 @@
+import logger from '@/lib/logger';
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { Users, MagnifyingGlass, Plus, PencilSimple, Trash, X, Warning, CaretLeft, CaretRight, Eye } from '@phosphor-icons/react'
 import { toast } from 'sonner'
@@ -93,7 +94,7 @@ export default function UsersPage() {
         const [u, r, d] = await Promise.all([sbFetchUsers(), sbFetchRoles(), sbFetchDepts()])
         setUsers(u); setRoles(r); setDepartments(d)
       } else { setUsers(SEED_USERS); setRoles(SEED_ROLES); setDepartments(SEED_DEPARTMENTS) }
-    } catch(e) { console.error(e); setUsers(SEED_USERS); setRoles(SEED_ROLES); setDepartments(SEED_DEPARTMENTS) }
+    } catch(e) { logger.error(e); setUsers(SEED_USERS); setRoles(SEED_ROLES); setDepartments(SEED_DEPARTMENTS) }
     finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])

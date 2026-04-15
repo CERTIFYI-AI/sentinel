@@ -1,3 +1,4 @@
+import logger from '@/lib/logger';
 type Listener<T = unknown> = (payload: T) => void;
 
 interface EventMap {
@@ -38,7 +39,7 @@ class EventBus {
       try {
         fn(payload);
       } catch (err) {
-        console.error(`[EventBus] Error in listener for ${event}:`, err);
+        logger.error(`[EventBus] Error in listener for ${event}:`, err);
       }
     });
   }
