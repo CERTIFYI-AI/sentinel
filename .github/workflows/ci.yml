@@ -42,9 +42,9 @@ jobs:
       - name: Run tests
         run: pytest tests/ -v --tb=short --cov=sentinel --cov-report=xml
         env:
-          DATABASE_URL: sqlite:///./test.db
-          SECRET_KEY: test-secret-key-for-ci-only
-          ENVIRONMENT: test
+          SENTINEL_DATABASE_URL: sqlite:///./test.db
+          SENTINEL_SECRET_KEY: test-secret-key-for-ci-only-32char
+          SENTINEL_ENVIRONMENT: test
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
