@@ -199,7 +199,7 @@ def create_app() -> FastAPI:
     app.include_router(events_router)
     app.include_router(health_router)
     app.include_router(security_router)
-    app.include_router(tasks_router)
+    app.include_router(tasks_router, prefix="/tasks")
     app.include_router(notifications_router)
     app.include_router(hitl_router)
     import os
