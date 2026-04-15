@@ -29,7 +29,6 @@ function TabBtn({ active, onClick, children }: { active: boolean; onClick: () =>
         fontSize: 13,
         fontWeight: active ? 600 : 400,
         color: active ? 'hsl(var(--brand))' : 'hsl(var(--text-3))',
-        borderBottom: `2px solid ${active ? 'hsl(var(--brand))' : 'transparent'}`,
         background: 'none',
         border: 'none',
         borderBottom: `2px solid ${active ? 'hsl(var(--brand))' : 'transparent'}`,
