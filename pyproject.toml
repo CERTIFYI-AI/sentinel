@@ -9,7 +9,6 @@ packages = ["sentinel"]
 name = "sentinel-ai-grc"
 version = "0.3.2"
 description = "Enterprise AI governance, risk, and compliance platform"
-readme = "README.md"
 license = {text = "Apache-2.0"}
 authors = [{name = "Bhaskar", email = "bhaskar@certifyi.ai"}]
 requires-python = ">=3.11"
