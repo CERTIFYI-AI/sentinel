@@ -1,54 +1,46 @@
-import { supabase, isSupabaseConfigured } from '@/lib/supabase'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
-const TENANT_ID = 'TNT-001'
+const TENANT_ID = 'default'
 
-export interface ModelRecord {
-  id: string
-  name: string
-  type: string
-  status: string
-  riskLevel: string
-  version: string
-  description: string
-  lastAuditDate: string | null
-  vendorId: string | null
-  datasetId: string | null
-  ownerId: string | null
-  tenantId: string
-  createdAt: string
-  updatedAt: string
-}
-
-export async function fetchModels(): Promise<ModelRecord[]> {
+export async function fetchAllModels(): Promise<any[]> {
   if (!isSupabaseConfigured() || !supabase) return []
   try {
     const { data, error } = await supabase
-      .from('Model')
+      .from('models')
       .select('*')
-      .eq('tenantId', TENANT_ID)
-      .order('createdAt', { ascending: false })
+      .eq('tenant_id', TENANT_ID)
+      .order('created_at', { ascending: false })
     if (error) { console.warn('[modelService] fetch failed:', error.message); return [] }
-    return (data || []) as ModelRecord[]
-  } catch { return [] }
+    return data ?? []
+  } catch (e) { return [] }
 }
 
-export async function upsertModel(model: Partial<ModelRecord>): Promise<ModelRecord | null> {
-  if (!isSupabaseConfigured() || !supabase) return null
+export async function upsertModel(record: Record<string, unknown>): Promise<any> {
+  if (!isSupabaseConfigured() || !supabase) return record
   try {
-    const record = { ...model, tenantId: TENANT_ID, updatedAt: new Date().toISOString() }
-    if (!record.id) record.id = `MDL-${String(Date.now()).slice(-6)}`
-    if (!record.createdAt) record.createdAt = new Date().toISOString()
-    const { data, error } = await supabase.from('Model').upsert(record).select().single()
-    if (error) { console.warn('[modelService] upsert failed:', error.message); return null }
-    return data as ModelRecord
-  } catch { return null }
+    const { data, error } = await supabase
+      .from('models')
+      .upsert({ ...record, tenant_id: TENANT_ID })
+      .select()
+      .single()
+    if (error) { console.warn('[modelService] upsert failed:', error.message); return record }
+    return data
+  } catch (e) { return record }
 }
 
 export async function deleteModel(id: string): Promise<boolean> {
   if (!isSupabaseConfigured() || !supabase) return false
   try {
-    const { error } = await supabase.from('Model').delete().eq('id', id).eq('tenantId', TENANT_ID)
+    const { error } = await supabase
+      .from('models')
+      .delete()
+      .eq('id', id)
+      .eq('tenant_id', TENANT_ID)
     if (error) { console.warn('[modelService] delete failed:', error.message); return false }
     return true
-  } catch { return false }
+  } catch (e) { return false }
 }
+
+// Backward-compatible aliases
+export const fetchModels = fetchAllModels
+export const saveModel = upsertModel

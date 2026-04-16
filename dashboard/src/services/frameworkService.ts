@@ -23,5 +23,5 @@ export async function fetchFrameworks(): Promise<FrameworkRecord[]> {
       .order('name', { ascending: true })
     if (error) { console.warn('[frameworkService] fetch failed:', error.message); return [] }
     return (data || []) as FrameworkRecord[]
-  } catch { return [] }
+  } catch (e) { return [] }
 }

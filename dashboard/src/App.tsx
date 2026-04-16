@@ -1,3 +1,5 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+const queryClient = new QueryClient()
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import React from 'react';
 import { lazy, Suspense, useEffect } from 'react';
@@ -241,7 +243,8 @@ function ProtectedLayout() {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+<BrowserRouter>
       <Routes>
         {/* Public routes — no sidebar/header layout */}
         <Route element={<PublicRoute />}>
@@ -461,5 +464,6 @@ export default function App() {
         </Route>
       </Routes>
     </BrowserRouter>
+</QueryClientProvider>
   );
 }

@@ -26,7 +26,7 @@ export async function fetchTenantSettings(): Promise<TenantSettings | null> {
       .single()
     if (error) { console.warn('[settingsService] fetch failed:', error.message); return null }
     return (data?.settings as TenantSettings) ?? null
-  } catch { return null }
+  } catch (e) { return null }
 }
 
 export async function saveTenantSettings(patch: Partial<TenantSettings>): Promise<boolean> {
@@ -41,7 +41,7 @@ export async function saveTenantSettings(patch: Partial<TenantSettings>): Promis
       .eq('id', TENANT_ID)
     if (error) { console.warn('[settingsService] save failed:', error.message); return false }
     return true
-  } catch { return false }
+  } catch (e) { return false }
 }
 
 export async function logSettingsAudit(entry: {
@@ -60,4 +60,11 @@ export async function logSettingsAudit(entry: {
       timestamp: new Date().toISOString(),
     })
   } catch { /* non-critical */ }
+}
+
+export type TenantSettings = Record<string, unknown>
+export const fetchTenantSettings = fetchAllSettings
+export const saveTenantSettings = upsertSettings
+export async function logSettingsAudit(_action: string, _details?: Record<string, unknown>): Promise<void> {
+  // TODO: wire to governance_events table
 }

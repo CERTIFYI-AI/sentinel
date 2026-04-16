@@ -32,6 +32,21 @@ export async function fetchOne<T>(
   }
 }
 
+export async function mutateDB<T>(
+  mutation: () => Promise<{ data: T | null; error: any }>,
+  fallbackAction: () => T
+): Promise<T> {
+  if (!isSupabaseConfigured() || !supabase) return fallbackAction()
+  try {
+    const { data, error } = await mutation()
+    if (error) throw error
+    return data ?? fallbackAction()
+  } catch (e) {
+    console.warn('[dataSource] Mutation fallback:', e)
+    return fallbackAction()
+  }
+}
+
 export async function upsertData<T extends Record<string, unknown>>(
   table: string,
   record: T

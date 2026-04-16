@@ -1104,3 +1104,23 @@ export const VENDOR_DOCUMENTS: VendorDocument[] = [
   { id: 'VD-017', vendorId: 'V-010', vendorName: 'Databricks', type: 'SOC 2', fileName: 'Databricks_SOC2_TypeII_2025.pdf', status: 'valid', uploadedAt: '2025-09-01', expiresAt: '2026-09-01', owner: 'Raj Gupta' },
   { id: 'VD-018', vendorId: 'V-010', vendorName: 'Databricks', type: 'DPA', fileName: 'Databricks_DPA_2023.pdf', status: 'valid', uploadedAt: '2023-07-01', expiresAt: '2028-06-30', owner: 'James Patel' },
 ];
+
+export interface Task {
+  id: string;
+  title: string;
+  status: 'open' | 'in_progress' | 'completed' | 'blocked';
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  assignee: string;
+  due_date: string;
+  created_at: string;
+}
+
+export const TASKS: Task[] = [
+  { id: 'task-1', title: 'Complete SOC-2 evidence collection', status: 'in_progress', priority: 'high', assignee: 'compliance-team', due_date: '2026-05-01', created_at: '2026-04-01T00:00:00Z' },
+  { id: 'task-2', title: 'Review vendor risk assessments', status: 'open', priority: 'medium', assignee: 'risk-team', due_date: '2026-04-30', created_at: '2026-04-05T00:00:00Z' },
+  { id: 'task-3', title: 'Update privacy policy for GDPR', status: 'completed', priority: 'critical', assignee: 'legal-team', due_date: '2026-04-15', created_at: '2026-03-20T00:00:00Z' },
+]
+
+export const EVIDENCE_ITEMS = EVIDENCE;
+export type Notification = typeof NOTIFICATION_TEMPLATES[number];
+export const NOTIFICATIONS = NOTIFICATION_TEMPLATES;

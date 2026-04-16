@@ -1,53 +1,49 @@
-import { supabase, isSupabaseConfigured } from '@/lib/supabase'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
-const TENANT_ID = 'TNT-001'
+const TENANT_ID = 'default'
 
-export interface VendorRecord {
-  id: string
-  name: string
-  status: string
-  category: string
-  contact_email: string | null
-  risk_tier: number
-  business_criticality: number
-  regulatory_exposure: number
-  is_deleted: boolean
-  tenant_id: string
-  created_at: string
-  updated_at: string
-}
-
-export async function fetchVendors(): Promise<VendorRecord[]> {
+export async function fetchAllVendors(): Promise<any[]> {
   if (!isSupabaseConfigured() || !supabase) return []
   try {
     const { data, error } = await supabase
       .from('vendors')
       .select('*')
       .eq('tenant_id', TENANT_ID)
-      .eq('is_deleted', false)
       .order('created_at', { ascending: false })
     if (error) { console.warn('[vendorService] fetch failed:', error.message); return [] }
-    return (data || []) as VendorRecord[]
-  } catch { return [] }
+    return data ?? []
+  } catch (e) { return [] }
 }
 
-export async function upsertVendor(vendor: Partial<VendorRecord>): Promise<VendorRecord | null> {
-  if (!isSupabaseConfigured() || !supabase) return null
+export async function upsertVendor(record: Record<string, unknown>): Promise<any> {
+  if (!isSupabaseConfigured() || !supabase) return record
   try {
-    const record = { ...vendor, tenant_id: TENANT_ID, updated_at: new Date().toISOString() }
-    if (!record.id) record.id = crypto.randomUUID()
-    if (!record.created_at) record.created_at = new Date().toISOString()
-    const { data, error } = await supabase.from('vendors').upsert(record).select().single()
-    if (error) { console.warn('[vendorService] upsert failed:', error.message); return null }
-    return data as VendorRecord
-  } catch { return null }
+    const { data, error } = await supabase
+      .from('vendors')
+      .upsert({ ...record, tenant_id: TENANT_ID })
+      .select()
+      .single()
+    if (error) { console.warn('[vendorService] upsert failed:', error.message); return record }
+    return data
+  } catch (e) { return record }
 }
 
 export async function deleteVendor(id: string): Promise<boolean> {
   if (!isSupabaseConfigured() || !supabase) return false
   try {
-    const { error } = await supabase.from('vendors').update({ is_deleted: true, updated_at: new Date().toISOString() }).eq('id', id).eq('tenant_id', TENANT_ID)
+    const { error } = await supabase
+      .from('vendors')
+      .delete()
+      .eq('id', id)
+      .eq('tenant_id', TENANT_ID)
     if (error) { console.warn('[vendorService] delete failed:', error.message); return false }
     return true
-  } catch { return false }
+  } catch (e) { return false }
 }
+
+// Backward-compatible aliases
+export const fetchVendors = fetchAllVendors
+export const saveVendor = upsertVendor
+
+export type VendorRecord = Record<string, unknown>
+export const fetchVendors = fetchAllVendors

@@ -5,19 +5,19 @@ export async function fetchPromptRecords(): Promise<any[]> {
     const { data, error } = await supabase.from('prompt_registry').select('*').eq('tenant_id', TENANT_ID).order('created_at', { ascending: false })
     if (error) { console.warn('[promptService] fetch failed:', error.message); return [] }
     return data || []
-  } catch { return [] }
+  } catch (e) { return [] }
 }
 export async function upsertPromptRecord(record: any): Promise<any> {
   try {
     const { data, error } = await supabase.from('prompt_registry').upsert({ ...record, tenant_id: TENANT_ID }).select().single()
     if (error) { console.warn('[promptService] upsert failed:', error.message); return record }
     return data
-  } catch { return record }
+  } catch (e) { return record }
 }
 export async function deletePromptRecord(id: string): Promise<boolean> {
   try {
     const { error } = await supabase.from('prompt_registry').delete().eq('id', id)
     if (error) { console.warn('[promptService] delete failed:', error.message); return false }
     return true
-  } catch { return false }
+  } catch (e) { return false }
 }

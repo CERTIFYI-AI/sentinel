@@ -1,8 +1,8 @@
-import { supabase, isSupabaseConfigured } from '@/lib/supabase'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
-const TENANT_ID = 'TNT-001'
+const TENANT_ID = 'default'
 
-export async function fetchRisks(): Promise<any[]> {
+export async function fetchAllRisks(): Promise<any[]> {
   if (!isSupabaseConfigured() || !supabase) return []
   try {
     const { data, error } = await supabase
@@ -11,27 +11,36 @@ export async function fetchRisks(): Promise<any[]> {
       .eq('tenant_id', TENANT_ID)
       .order('created_at', { ascending: false })
     if (error) { console.warn('[riskService] fetch failed:', error.message); return [] }
-    return data || []
-  } catch { return [] }
+    return data ?? []
+  } catch (e) { return [] }
 }
 
-export async function upsertRisk(risk: any): Promise<any> {
-  if (!isSupabaseConfigured() || !supabase) return null
+export async function upsertRisk(record: Record<string, unknown>): Promise<any> {
+  if (!isSupabaseConfigured() || !supabase) return record
   try {
-    const record = { ...risk, tenant_id: TENANT_ID, updated_at: new Date().toISOString() }
-    if (!record.id) record.id = crypto.randomUUID()
-    if (!record.created_at) record.created_at = new Date().toISOString()
-    const { data, error } = await supabase.from('risks').upsert(record).select().single()
-    if (error) { console.warn('[riskService] upsert failed:', error.message); return null }
+    const { data, error } = await supabase
+      .from('risks')
+      .upsert({ ...record, tenant_id: TENANT_ID })
+      .select()
+      .single()
+    if (error) { console.warn('[riskService] upsert failed:', error.message); return record }
     return data
-  } catch { return null }
+  } catch (e) { return record }
 }
 
 export async function deleteRisk(id: string): Promise<boolean> {
   if (!isSupabaseConfigured() || !supabase) return false
   try {
-    const { error } = await supabase.from('risks').delete().eq('id', id).eq('tenant_id', TENANT_ID)
+    const { error } = await supabase
+      .from('risks')
+      .delete()
+      .eq('id', id)
+      .eq('tenant_id', TENANT_ID)
     if (error) { console.warn('[riskService] delete failed:', error.message); return false }
     return true
-  } catch { return false }
+  } catch (e) { return false }
 }
+
+// Backward-compatible aliases
+export const fetchRisks = fetchAllRisks
+export const saveRisk = upsertRisk
