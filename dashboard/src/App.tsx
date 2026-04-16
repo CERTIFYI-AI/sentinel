@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import React from 'react';
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { PageSkeleton } from './components/ui/PageSkeleton';
 import Sidebar from './components/Sidebar';
 import TopHeader from './components/TopHeader';
@@ -8,6 +8,7 @@ import CommandPalette from './components/CommandPalette';
 import { useRealtimeEvents } from './hooks/useRealtimeEvents';
 import { useRealtimeInvalidation } from './hooks/useRealtimeInvalidation';
 import { useAuthStore } from './store/authStore';
+import { initSessionGuard, destroySessionGuard } from './lib/sessionGuard';
 
 const SecurityHome = lazy(() => import('./pages/security/SecurityHome'));
 const SecurityOverview = lazy(() => import('./pages/security/SecurityOverview'));
@@ -190,6 +191,13 @@ function Loading() {
 /** Redirects authenticated users away from login/signup to the dashboard */
 function PublicRoute() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      initSessionGuard();
+      return () => destroySessionGuard();
+    }
+  }, [isAuthenticated]);
   if (isAuthenticated) {
     return <Navigate to="/overview" replace />;
   }
