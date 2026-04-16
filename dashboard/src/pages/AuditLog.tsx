@@ -1,3 +1,4 @@
+import { useAuditLogData } from "@/hooks/useAuditLogData";
 import { useState } from 'react';
 import { ClockCounterClockwise, MagnifyingGlass, Export, Funnel, Eye } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -50,6 +51,9 @@ function filterByDateRange(entries: AuditEntry[], range: string): AuditEntry[] {
 }
 
 export default function AuditLog() {
+  const { logs: supabaseLogs } = useAuditLogData();
+  // Use Supabase data when available, fall back to mock AUDIT_LOG
+  const effectiveAuditLog = supabaseLogs.length > 0 ? supabaseLogs as any : AUDIT_LOG;
   const { orgName } = useSettingsStore();
   const [search, setSearch] = useState('');
   const [dateRange, setDateRange] = useState('all');

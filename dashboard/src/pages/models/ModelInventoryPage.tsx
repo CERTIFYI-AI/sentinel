@@ -1,3 +1,4 @@
+import { useModelsData } from "@/hooks/useModelsData";
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -153,6 +154,8 @@ export default function ModelInventoryPage() {
   const navigate = useNavigate();
 
   const [models, setModels] = useState<Model[]>(MODELS);
+  const { models: supabaseModels, isLoading: isLoadingModels } = useModelsData();
+  useEffect(() => { if (supabaseModels.length > 0) setModels(supabaseModels as any); }, [supabaseModels]);
   const [search, setSearch] = useState('');
   const [riskFilter, setRiskFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');

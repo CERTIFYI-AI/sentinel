@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react';
+import { useVendorsData } from "@/hooks/useVendorsData";
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Eye, PencilSimple, Trash, Plus, Buildings, MagnifyingGlass, Funnel,
@@ -88,6 +89,8 @@ export default function VendorRegistry() {
   const { orgName } = useSettingsStore();
   const navigate = useNavigate();
   const [vendors, setVendors] = useState<Vendor[]>(VENDORS);
+  const { vendors: supabaseVendors } = useVendorsData();
+  useEffect(() => { if (supabaseVendors.length > 0) setVendors(supabaseVendors as any); }, [supabaseVendors]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);

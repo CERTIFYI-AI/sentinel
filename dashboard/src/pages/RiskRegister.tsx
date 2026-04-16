@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useRisksData } from "@/hooks/useRisksData";
+import { useState, useMemo, useEffect } from 'react';
 import {
   Eye, PencilSimple, Trash, Plus, ArrowUp, ArrowRight, ArrowDown,
   Warning, ShieldCheck, GridFour, ListBullets, Funnel, Info,
@@ -303,6 +304,8 @@ function RiskHeatmap({
 export default function RiskRegister() {
   const { orgName } = useSettingsStore();
   const [risks, setRisks] = useState<Risk[]>(RISKS);
+  const { risks: supabaseRisks } = useRisksData();
+  useEffect(() => { if (supabaseRisks.length > 0) setRisks(supabaseRisks as any); }, [supabaseRisks]);
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');

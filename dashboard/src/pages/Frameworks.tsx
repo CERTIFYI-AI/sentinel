@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useFrameworksData } from "@/hooks/useFrameworksData";
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -98,6 +99,8 @@ export default function Frameworks() {
   const navigate = useNavigate();
 
   const [frameworks, setFrameworks] = useState<Framework[]>(FRAMEWORKS);
+  const { frameworks: supabaseFrameworks } = useFrameworksData();
+  useEffect(() => { if (supabaseFrameworks.length > 0) setFrameworks(supabaseFrameworks as any); }, [supabaseFrameworks]);
   const [viewItem, setViewItem] = useState<Framework | null>(null);
   const [editItem, setEditItem] = useState<Framework | null>(null);
   const [deleteItem, setDeleteItem] = useState<Framework | null>(null);
