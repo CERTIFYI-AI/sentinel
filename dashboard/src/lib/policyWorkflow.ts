@@ -1,4 +1,4 @@
-export type PolicyStatus = 'Draft' | 'In Review' | 'Approved' | 'Published' | 'Archived' | 'Expired';
+export type PolicyStatus = 'Draft' | 'In Review' | 'Pending Review' | 'Approved' | 'Published' | 'Archived' | 'Expired';
 
 export interface PolicyTransition {
   from: PolicyStatus;
@@ -49,3 +49,5 @@ export function getPriorityColor(priority: string): string {
   };
   return colors[priority] || colors['Medium'];
 }
+
+export type WorkflowTransition = PolicyTransition;

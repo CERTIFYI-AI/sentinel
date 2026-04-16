@@ -62,9 +62,3 @@ export async function logSettingsAudit(entry: {
   } catch { /* non-critical */ }
 }
 
-export type TenantSettings = Record<string, unknown>
-export const fetchTenantSettings = fetchAllSettings
-export const saveTenantSettings = upsertSettings
-export async function logSettingsAudit(_action: string, _details?: Record<string, unknown>): Promise<void> {
-  // TODO: wire to governance_events table
-}

@@ -24,12 +24,12 @@ export const useEventBus = create<EventBusState>((set, get) => ({
     const event: ComplianceEvent = {
       ...eventData,
       id: uid('EVT'),
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(),
     };
     set(s => ({ events: [event, ...s.events].slice(0, 1000) }));
     const subs = get().subscribers;
     const handlers = [
-      ...(subs.get(event.type) || []),
+      ...(subs.get(event.entityType) || []),
       ...(subs.get('*') || []),
     ];
     handlers.forEach(fn => { try { fn(event); } catch(e) { logger.error('Event handler error:', e); } });

@@ -46,4 +46,3 @@ export const fetchVendors = fetchAllVendors
 export const saveVendor = upsertVendor
 
 export type VendorRecord = Record<string, unknown>
-export const fetchVendors = fetchAllVendors
