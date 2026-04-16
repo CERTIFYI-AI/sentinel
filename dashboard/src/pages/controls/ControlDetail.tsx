@@ -10,6 +10,7 @@ import {
 import { CONTROLS, RISKS, EVIDENCE, severityColor, statusColor, formatDate } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
 
+import { useControls } from '../../hooks/queries/useControls'
 const MOCK_TEST_HISTORY = [
   {
     id: 'TEST-001',

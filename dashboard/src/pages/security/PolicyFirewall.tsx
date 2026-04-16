@@ -21,6 +21,8 @@ import {
 import { formatDate } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useChartTheme } from '../../hooks/useChartTheme';
+import { useEffect } from 'react'
+import { useGuardrails } from '../../hooks/queries/useSecurity'
 
 interface FirewallRule {
   id: string;
@@ -76,7 +78,9 @@ export default function PolicyFirewall() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
 
-  const [rules, setRules] = useState<FirewallRule[]>(MOCK_RULES);
+  const { data: supabaseRules = [] } = useGuardrails()
+  const [rules, setRules] = useState<FirewallRule[]>([]);
+  useEffect(() => { if (supabaseRules.length > 0) setRules(supabaseRules as any) }, [supabaseRules]);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterEnabled, setFilterEnabled] = useState('all');

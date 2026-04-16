@@ -9,6 +9,8 @@ import {
 } from '@phosphor-icons/react';
 import { BIAS_AUDITS, severityColor, formatDate } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
+import { useEffect } from 'react'
+import { useBiasAudits } from '../../hooks/queries/useBiasAudits'
 
 function ScoreGauge({ score, size = 120 }: { score: number; size?: number }) {
   const color = score >= 0.85 ? '#10b981' : score >= 0.70 ? '#f97316' : '#ef4444';
@@ -38,6 +40,7 @@ function ScoreGauge({ score, size = 120 }: { score: number; size?: number }) {
   );
 }
 
+// MOCK_TIMELINE kept for reference - Supabase bias_audits loaded below
 const MOCK_TIMELINE = [
   { date: '2026-01-15', action: 'Audit scheduled', actor: 'System' },
   { date: '2026-01-18', action: 'Dataset prepared and validated', actor: 'David Kim' },

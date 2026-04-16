@@ -20,6 +20,8 @@ import {
 import { severityColor, formatDate } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useChartTheme } from '../../hooks/useChartTheme';
+import { useEffect } from 'react'
+import { useSecurityScans } from '../../hooks/queries/useSecurity'
 
 interface SecurityScan {
   id: string;
@@ -74,7 +76,9 @@ export default function ScanCenter() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
 
-  const [scans, setScans] = useState<SecurityScan[]>(MOCK_SCANS);
+  const { data: supabaseScans = [] } = useSecurityScans()
+  const [scans, setScans] = useState<SecurityScan[]>([]);
+  useEffect(() => { if (supabaseScans.length > 0) setScans(supabaseScans as any) }, [supabaseScans]);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterType, setFilterType] = useState('all');

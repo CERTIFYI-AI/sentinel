@@ -20,6 +20,8 @@ import {
 } from 'recharts';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useChartTheme } from '../../hooks/useChartTheme';
+import { useEffect } from 'react'
+import { useRedTeamCampaigns } from '../../hooks/queries/useSecurity'
 
 interface ModelBenchmark {
   id: string;
@@ -96,7 +98,9 @@ export default function ModelArena() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
 
-  const [models, setModels] = useState<ModelBenchmark[]>(MOCK_MODELS);
+  const { data: supabaseModels = [] } = useRedTeamCampaigns()
+  const [models, setModels] = useState<ModelBenchmark[]>([]);
+  useEffect(() => { if (supabaseModels.length > 0) setModels(supabaseModels as any) }, [supabaseModels]);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedModel, setSelectedModel] = useState<ModelBenchmark>(MOCK_MODELS[1]);

@@ -18,6 +18,8 @@ import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { DATA_GOVERNANCE, DATASETS, formatDate } from '../../data/seed';
+import { useEffect } from 'react'
+import { useDsarRequests } from '../../hooks/queries/useDataGovernance'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -136,7 +138,9 @@ function LineageFlow({ lineage }: { lineage: string[] }) {
 
 export default function DataGovernancePage() {
   const [dataAssets] = useState<DG[]>(DATA_GOVERNANCE as DG[]);
-  const [dsars, setDsars] = useState<DSAR[]>(MOCK_DSARS);
+  const { data: supabaseDsars = [] } = useDsarRequests()
+  const [dsars, setDsars] = useState<DSAR[]>([]);
+  useEffect(() => { if (supabaseDsars.length > 0) setDsars(supabaseDsars as any) }, [supabaseDsars]);
   const [activeTab, setActiveTab] = useState('inventory');
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedDG, setSelectedDG] = useState<DG | null>(null);

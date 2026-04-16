@@ -10,6 +10,7 @@ import {
 import { REGULATIONS, severityColor, statusColor, formatDate } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
 
+import { useRegulations } from '../../hooks/queries/useRegulations'
 const MOCK_TIMELINES: Record<string, Array<{ date: string; event: string; actor: string }>> = {
   'REG-001': [
     { date: '2026-01-10', event: 'EU AI Act impact assessment initiated', actor: 'James Patel' },

@@ -7,6 +7,8 @@ import {
 import { TASK_STATUS_CONFIG, type Task, type TaskStatus } from './taskData';
 import { severityColor, formatDate, USERS } from '../../data/seed';
 import type { Severity } from '../../data/seed';
+import { useEffect } from 'react'
+import { useTasks } from '../../hooks/queries/useTasks'
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -51,6 +53,7 @@ interface Comment {
   text: string;
 }
 
+// MOCK_ACTIVITY kept for reference - Supabase tasks loaded below
 const MOCK_ACTIVITY = [
   { time: '2026-03-29T09:00:00Z', action: 'Task created from risk assessment', actor: 'System' },
   { time: '2026-03-29T09:05:00Z', action: 'Assigned to owner', actor: 'System' },

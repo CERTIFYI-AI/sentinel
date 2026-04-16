@@ -16,6 +16,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/ta
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { EXPLAINABILITY_REPORTS, MODELS, formatDate } from '../../data/seed';
 import { useChartTheme } from '../../hooks/useChartTheme';
+import { useEffect } from 'react'
+import { useExplainabilityReports } from '../../hooks/queries/useExplainability'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -23,6 +25,7 @@ interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info
 
 // ── Mock Decision Audit Trail ────────────────────────────────────────────────
 
+// MOCK_DECISIONS kept for reference
 const MOCK_DECISIONS: Record<string, Array<{
   id: string; inputSummary: string; topFeature: string; score: number; date: string; status: string;
 }>> = {

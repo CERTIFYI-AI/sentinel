@@ -20,6 +20,8 @@ import {
 import { formatDate } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useChartTheme } from '../../hooks/useChartTheme';
+import { useEffect } from 'react'
+import { useApiKeys } from '../../hooks/queries/useSecurity'
 
 interface ApiKey {
   id: string;
@@ -75,7 +77,9 @@ export default function KeysVault() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
 
-  const [keys, setKeys] = useState<ApiKey[]>(MOCK_KEYS);
+  const { data: supabaseKeys = [] } = useApiKeys()
+  const [keys, setKeys] = useState<ApiKey[]>([]);
+  useEffect(() => { if (supabaseKeys.length > 0) setKeys(supabaseKeys as any) }, [supabaseKeys]);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterProvider, setFilterProvider] = useState('all');
