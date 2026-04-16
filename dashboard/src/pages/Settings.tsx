@@ -12,6 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { useSettingsStore } from '../stores/settingsStore';
+import { useEffect } from 'react';
+import { useSettingsData } from "../hooks/useSettingsData";
 
 // ── API Keys ─────────────────────────────────────────────────────────────────
 interface ApiKey {
@@ -110,7 +112,7 @@ export default function Settings() {
     setOrgDirty(true);
     setOrgSaved(false);
   };
-  const saveOrg = () => {
+  const saveOrg = async () => {
     const prev = { orgName, domain, industry, companySize, primaryContact, timezone, fiscalYearStart } as Record<string, string>;
     const labels: Record<string, string> = { orgName: 'Organization Name', domain: 'Domain', industry: 'Industry', companySize: 'Company Size', primaryContact: 'Primary Contact', timezone: 'Timezone', fiscalYearStart: 'Fiscal Year Start' };
     Object.keys(orgForm).forEach(key => {
@@ -122,6 +124,7 @@ export default function Settings() {
     updateSettings(orgForm);
     setOrgDirty(false);
     setOrgSaved(true);
+    await persistToSupabase();
     setTimeout(() => setOrgSaved(false), 3000);
   };
   const cancelOrg = () => {
@@ -177,6 +180,36 @@ export default function Settings() {
 
   // Audit Trail
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>(INITIAL_AUDIT_ENTRIES);
+
+  // ── Supabase backend wiring ──────────────────────────────────────────
+  const { settings: backendSettings, saveSettings, isSaving } = useSettingsData();
+
+  // Hydrate local state from Supabase on first load
+  useEffect(() => {
+    if (!backendSettings) return;
+    const s = backendSettings;
+    if (s.org) {
+      setOrgName(s.org.name ?? orgName);
+      setDomain(s.org.domain ?? domain);
+      setIndustry(s.org.industry ?? industry);
+      setCompanySize(s.org.companySize ?? companySize);
+      setPrimaryContact(s.org.primaryContact ?? primaryContact);
+      setTimezone(s.org.timezone ?? timezone);
+      setFiscalYear(s.org.fiscalYearStart ?? fiscalYear);
+    }
+    if (s.auth) {
+      setMfaEnabled(s.auth.mfa ?? mfaEnabled);
+      setSsoEnabled(s.auth.sso ?? ssoEnabled);
+      setSsoProvider(s.auth.ssoProvider ?? ssoProvider);
+      setSessionTimeout(s.auth.sessionTimeout ?? sessionTimeout);
+    }
+    if (s.apiKeys) setApiKeys(s.apiKeys as any);
+    if (s.notifications) setNotifs(s.notifications as any);
+    if (s.retention) setRetention(s.retention as any);
+    if (s.integrations) setIntegrations(s.integrations as any);
+  }, [backendSettings]);
+  // ── End Supabase wiring ──────────────────────────────────────────────
+
   const addAuditEntry = (section: string, field: string, oldValue: string, newValue: string) => {
     const entry: AuditEntry = {
       id: `audit-${Date.now()}`,
@@ -189,6 +222,22 @@ export default function Settings() {
     };
     setAuditEntries(prev => [entry, ...prev]);
   };
+
+  
+  // ── Persist to Supabase ──────────────────────────────────────────────
+  const persistToSupabase = async () => {
+    await saveSettings({
+      patch: {
+        org: { name: orgName, domain, industry, companySize, primaryContact, timezone, fiscalYearStart: fiscalYear },
+        auth: { mfa: mfaEnabled, sso: ssoEnabled, ssoProvider, sessionTimeout, ipWhitelist: [] },
+        apiKeys: apiKeys as any,
+        notifications: notifs as any,
+        retention: retention as any,
+        integrations: integrations as any,
+      },
+    });
+  };
+  // ── End Persist ──────────────────────────────────────────────────────
 
   const sectionCard = (children: React.ReactNode, title?: string, icon?: React.ReactNode) => (
     <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
