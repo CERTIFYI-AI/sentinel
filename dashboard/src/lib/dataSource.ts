@@ -1,65 +1,46 @@
-import { supabase, isSupabaseConfigured } from './supabase'
+import { supabase } from './supabase';
 
-export async function fetchData<T>(
-  supabaseQuery: () => Promise<{ data: T[] | null; error: any }>,
-  mockData: T[]
+export async function fromDB<T>(
+  query: () => Promise<{ data: T[] | null; error: unknown }>,
+  fallback: T[]
 ): Promise<T[]> {
-  if (!isSupabaseConfigured() || !supabase) return mockData
+  if (!supabase) return fallback;
   try {
-    const { data, error } = await supabaseQuery()
-    if (error) {
-      console.warn('[dataSource] Supabase error, using mock:', error.message)
-      return mockData
-    }
-    return data && data.length > 0 ? data : mockData
+    const { data, error } = await query();
+    if (error) throw error;
+    return data?.length ? data : fallback;
   } catch (e) {
-    console.warn('[dataSource] Supabase unreachable, using mock:', e)
-    return mockData
+    console.warn('[Sentinel] DB fallback:', e);
+    return fallback;
   }
 }
 
-export async function fetchOne<T>(
-  supabaseQuery: () => Promise<{ data: T | null; error: any }>,
-  mockItem: T
-): Promise<T> {
-  if (!isSupabaseConfigured() || !supabase) return mockItem
+export async function fromDBSingle<T>(
+  query: () => Promise<{ data: T | null; error: unknown }>,
+  fallback: T | null = null
+): Promise<T | null> {
+  if (!supabase) return fallback;
   try {
-    const { data, error } = await supabaseQuery()
-    if (error || !data) return mockItem
-    return data
-  } catch {
-    return mockItem
+    const { data, error } = await query();
+    if (error) throw error;
+    return data ?? fallback;
+  } catch (e) {
+    console.warn('[Sentinel] DB single fallback:', e);
+    return fallback;
   }
 }
 
 export async function mutateDB<T>(
-  mutation: () => Promise<{ data: T | null; error: any }>,
+  mutation: () => Promise<{ data: T | null; error: unknown }>,
   fallbackAction: () => T
 ): Promise<T> {
-  if (!isSupabaseConfigured() || !supabase) return fallbackAction()
+  if (!supabase) return fallbackAction();
   try {
-    const { data, error } = await mutation()
-    if (error) throw error
-    return data ?? fallbackAction()
+    const { data, error } = await mutation();
+    if (error) throw error;
+    return data ?? fallbackAction();
   } catch (e) {
-    console.warn('[dataSource] Mutation fallback:', e)
-    return fallbackAction()
-  }
-}
-
-export async function upsertData<T extends Record<string, unknown>>(
-  table: string,
-  record: T
-): Promise<{ success: boolean; data?: T }> {
-  if (!isSupabaseConfigured() || !supabase) return { success: true, data: record }
-  try {
-    const { data, error } = await supabase.from(table).upsert(record as any).select().single()
-    if (error) {
-      console.warn('[dataSource] upsert failed:', error.message)
-      return { success: true, data: record }
-    }
-    return { success: true, data: data as T }
-  } catch {
-    return { success: true, data: record }
+    console.warn('[Sentinel] Mutation fallback:', e);
+    return fallbackAction();
   }
 }

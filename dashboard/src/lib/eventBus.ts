@@ -1,60 +1,39 @@
-import logger from '@/lib/logger';
-type Listener<T = unknown> = (payload: T) => void;
+import { supabase } from './supabase';
+import { riskAgent } from '@/agents/riskAgent';
+import { hitlAgent } from '@/agents/hitlAgent';
+import { complianceAgent } from '@/agents/complianceAgent';
+import { vendorAgent } from '@/agents/vendorAgent';
+import { carbonAgent } from '@/agents/carbonAgent';
 
-interface EventMap {
-  "proxy:request": { id: string; model: string; status: string };
-  "proxy:trust-update": { modelId: string; score: number };
-  "security:finding": { id: string; severity: string; title: string };
-  "security:threat": { id: string; type: string; blocked: boolean };
-  "eval:run-update": { runId: string; status: string; score: number | null };
-  "task:update": { id: string; status: string };
-  "ciso:metric-update": { metric: string; value: number };
-  "notification:new": { id: string; title: string; type: string };
-  "ws:connected": undefined;
-  "ws:disconnected": { reason: string };
-  "ws:error": { error: string };
-}
+type AgentFn = (payload: any) => Promise<void>;
 
-type EventName = keyof EventMap;
+const AGENT_MAP: Record<string, AgentFn[]> = {
+  MODEL_REGISTERED: [riskAgent, complianceAgent, hitlAgent, vendorAgent, carbonAgent],
+  RISK_DETECTED: [complianceAgent, hitlAgent],
+  INCIDENT_CREATED: [complianceAgent],
+  BIAS_AUDIT_FAILED: [hitlAgent, complianceAgent],
+  VENDOR_RISK_HIGH: [complianceAgent],
+};
 
-class EventBus {
-  private listeners = new Map<string, Set<Listener>>();
+export const eventBus = {
+  emit: async (type: string, sourceModule: string, payload: any) => {
+    // Persist event to Supabase (non-blocking)
+    supabase?.from("governance_events").insert({
+      event_type: type,
+      source_module: sourceModule,
+      payload,
+      status: "pending",
+    }).then(() => {});
 
-  on<K extends EventName>(event: K, fn: Listener<EventMap[K]>): () => void {
-    if (!this.listeners.has(event)) {
-      this.listeners.set(event, new Set());
-    }
-    const set = this.listeners.get(event)!;
-    set.add(fn as Listener);
-    return () => {
-      set.delete(fn as Listener);
-      if (set.size === 0) this.listeners.delete(event);
-    };
-  }
+    // Run all registered agents for this event
+    const agents = AGENT_MAP[type] ?? [];
+    const results = await Promise.allSettled(
+      agents.map((agent) => agent(payload))
+    );
 
-  emit<K extends EventName>(event: K, payload: EventMap[K]): void {
-    const set = this.listeners.get(event);
-    if (!set) return;
-    set.forEach((fn) => {
-      try {
-        fn(payload);
-      } catch (err) {
-        logger.error(`[EventBus] Error in listener for ${event}:`, err);
-      }
-    });
-  }
-
-  off<K extends EventName>(event: K, fn: Listener<EventMap[K]>): void {
-    const set = this.listeners.get(event);
-    if (!set) return;
-    set.delete(fn as Listener);
-    if (set.size === 0) this.listeners.delete(event);
-  }
-
-  clear(): void {
-    this.listeners.clear();
-  }
-}
-
-export const eventBus = new EventBus();
-export type { EventMap, EventName };
+    // Update event status
+    const failed = results.filter((r) => r.status === "rejected").length;
+    const status = failed === 0 ? "completed" : failed === results.length ? "failed" : "completed";
+    console.log(`[EventBus] ${type}: ${results.length} agents, ${failed} failed, status=${status}`);
+  },
+};

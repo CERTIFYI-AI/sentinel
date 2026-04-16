@@ -1,36 +1,27 @@
 # Sentinel API Reference
 
-## Data Layer Pattern
-Every module follows the same pattern:
-1. **Service** (`src/services/{module}Service.ts`): Supabase queries with mock fallback
-2. **Hook** (`src/hooks/use{Module}Data.ts`): React Query wrapper with cache invalidation
-3. **Audit**: Every mutation calls `logAction()` for compliance trail
+## Pattern
+Every module follows the same API pattern:
 
-## Service API Pattern
 ```typescript
-// Fetch all records (with mock fallback)
-export async function fetchModels(): Promise<Model[]>
-
-// Upsert (create or update)
-export async function upsertModel(record: Partial<Model>): Promise<Model>
-
-// Delete
-export async function deleteModel(id: string): Promise<boolean>
-```
-
-## Hook API Pattern
-```typescript
-// Query hook
-export function useModels() {
-  return useQuery({ queryKey: ["models"], queryFn: fetchModels })
-}
-
-// Mutation hook
-export function useUpsertModel() {
-  return useMutation({ mutationFn: upsertModel, onSuccess: invalidate })
+const moduleApi = {
+  list(filters?)    // GET all with optional filters
+  getById(id)       // GET single by UUID
+  create(data)      // POST new record + audit log
+  update(id, data)  // PATCH record + audit log
+  delete(id, name?) // DELETE record + audit log
 }
 ```
 
-## Tables
-All tables use UUID primary keys, timestamptz for dates, and jsonb for flexible data.
-Generated columns: `risks.risk_score`, `risks.severity`, `risks.residual_score`
+## Data Flow
+1. React component calls hook (e.g., `useModels()`)
+2. Hook calls API function (e.g., `modelsApi.list()`)
+3. API uses `fromDB()` to query Supabase with mock fallback
+4. Mutations use `mutateDB()` + `logAction()` for audit trail
+5. Event bus triggers autonomous agents on key actions
+
+## Realtime Subscriptions
+- `notifications` - New alerts pushed to all users
+- `guardrail_events` - Real-time guardrail violations
+- `live_traces` - Live AI agent activity traces
+- `hitl_reviews` - New HITL review requests

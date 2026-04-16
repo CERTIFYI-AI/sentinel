@@ -1,14 +1,23 @@
-/**
- * Carbon Impact Agent
- * Triggered by: MODEL_REGISTERED
- * Action: estimates carbon footprint, updates carbon ledger
- */
-export async function carbonAgent(
-  payload: Record<string, unknown>,
-  orgId: string
-) {
-  const { modelId, modelName, modelType } = payload as any
-  const estimatedCO2 = modelType === 'LLM' ? 4.2 : 0.8
+import { supabase } from '@/lib/supabase';
 
-  console.log(`[CarbonAgent] Estimated ${estimatedCO2}kg CO2 for ${modelName}`)
+export async function carbonAgent(payload: any): Promise<void> {
+  const { modelId, modelName, modelType } = payload;
+  if (!modelId) return;
+
+  // Estimate carbon emissions based on model type
+  const estimatedKg = modelType === 'GPAI' ? 4.2 : modelType === 'Fine-tuned' ? 1.5 : 0.8;
+
+  // Try to log to a carbon/sustainability tracking table if it exists
+  try {
+    await supabase?.from('observability_metrics').insert({
+      metric_type: 'carbon_emissions',
+      model_id: modelId,
+      value: estimatedKg,
+      unit: 'kg_co2',
+      source: `Auto-estimated for ${modelName}`,
+    });
+    console.log(`[CarbonAgent] Estimated ${estimatedKg}kg CO2 for ${modelName}`);
+  } catch {
+    console.warn('[CarbonAgent] Could not log carbon estimate');
+  }
 }

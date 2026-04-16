@@ -1,46 +1,19 @@
-# Sentinel Modules
+# Sentinel Modules Reference
 
-## Model Inventory
-- Purpose: Track all AI/ML models across the organization
-- Standards: EU AI Act Art.27, ISO 42001
-- CRUD: Create, Read, Update, Delete models
-- Service: `modelService.ts` | Hook: `use-models.ts`
-
-## Agent Registry
-- Purpose: Discover and govern AI agents
-- CRUD: Create, Read, Update, Delete, Quarantine agents
-- Service: `agentService.ts` | Hook: `useAgentData.ts`
-
-## Bias Audits
-- Purpose: Run fairness audits on AI models
-- Standards: EU AI Act Art.10, NIST AI RMF
-- Service: `biasAuditService.ts` | Hook: `useBiasAuditData.ts`
-
-## Risk Register
-- Purpose: Enterprise AI risk management
-- Standards: ISO 31000, NIST CSF
-- CRUD: Create, Read, Update, Delete risks
-- Service: `riskService.ts` | Hook: `useRiskData.ts`
-
-## Compliance Frameworks
-- Purpose: Map controls to regulatory frameworks
-- Standards: ISO 27001, SOC-2, EU AI Act, NIST
-- Service: `frameworkService.ts` | Hook: `useFrameworkData.ts`
-
-## Incidents
-- Purpose: Track and respond to AI incidents
-- Service: `incidentService.ts` | Hook: `useIncidentData.ts`
-
-## HITL Reviews
-- Purpose: Human-in-the-loop oversight for high-risk AI
-- Standards: EU AI Act Art.14
-- Service: `hitlService.ts` | Hook: `useHITLData.ts`
-
-## Vendors
-- Purpose: Third-party AI vendor risk management
-- Standards: GDPR Art.28
-- Service: `vendorService.ts` | Hook: `useVendorsData.ts`
-
-## Datasets
-- Purpose: Data governance and lineage
-- Service: `datasetService.ts` | Hook: `useDatasetData.ts`
+| Module | Purpose | GRC Standard | API File | Hook File |
+|--------|---------|-------------|----------|----------|
+| Models | AI Model Registry | EU AI Act Art.51 | api/models.ts | hooks/useModelsData.ts |
+| Agents | AI Agent Inventory | EU AI Act Art.52 | api/agents.ts | hooks/useAgentData.ts |
+| Bias Audits | Fairness Testing | EU AI Act Art.10 | api/biasAudits.ts | hooks/useBiasAuditData.ts |
+| Trust Policies | Guardrail Rules | NIST AI RMF | api/trustPolicies.ts | hooks/useTrustTraceData.ts |
+| Frameworks | Compliance Frameworks | ISO 27001/SOC-2 | api/frameworks.ts | hooks/useFrameworksData.ts |
+| Controls | Security Controls | ISO 27001 A.x | api/controls.ts | hooks/useControlData.ts |
+| Policies | GRC Policies | GDPR Art.24 | api/policies.ts | hooks/usePolicyData.ts |
+| Evidence | Audit Evidence | ISO 27001 | api/evidence.ts | hooks/useEvidenceData.ts |
+| Risks | Risk Register | ISO 31000 | api/risks.ts | hooks/useRisksData.ts |
+| Incidents | Incident Management | GDPR Art.33 | api/incidents.ts | hooks/useIncidentData.ts |
+| HITL | Human Oversight | EU AI Act Art.14 | api/hitl.ts | hooks/useHitlItemData.ts |
+| Vendors | Vendor Risk | GDPR Art.28 | api/vendors.ts | hooks/useVendorsData.ts |
+| Datasets | Data Governance | GDPR Art.6 | api/datasets.ts | hooks/useDatasetData.ts |
+| Tasks | Task Management | - | api/tasks.ts | hooks/useTaskData.ts |
+| Notifications | Alerts & Notifications | - | api/notifications.ts | hooks/useNotificationData.ts |

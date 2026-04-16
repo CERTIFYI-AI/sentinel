@@ -2,22 +2,42 @@
 
 ## Prerequisites
 - Node.js 18+
-- Supabase project (free tier works)
+- Supabase account (free tier works)
 
 ## Steps
-1. Clone: `git clone https://github.com/CERTIFYI-AI/sentinel.git`
-2. Create Supabase project at supabase.com
-3. Run migrations in order: 001 -> 006 in SQL Editor
-4. Copy `.env.example` -> `.env.local`
-5. Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
-6. `cd dashboard && npm install && npm run dev`
+
+1. **Clone repo**
+   ```bash
+   git clone https://github.com/CERTIFYI-AI/sentinel.git
+   cd sentinel
+   ```
+
+2. **Create Supabase project** at supabase.com
+
+3. **Run migrations** in Supabase SQL Editor (in order):
+   - `supabase/migrations/006_core.sql`
+
+4. **Configure environment**
+   ```bash
+   cp dashboard/.env.example dashboard/.env.local
+   # Add your Supabase URL and anon key
+   ```
+
+5. **Install and run**
+   ```bash
+   cd dashboard
+   npm install
+   npm run dev
+   ```
+
+6. **Deploy to Cloudflare**
+   ```bash
+   npm run build
+   npx wrangler deploy
+   ```
 
 ## Environment Variables
-```
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
-```
-
-## Without Supabase
-The app works fully with mock data when env vars are not set.
-All services gracefully fall back to local mock data.
+| Variable | Description |
+|----------|-------------|
+| VITE_SUPABASE_URL | Supabase project URL |
+| VITE_SUPABASE_ANON_KEY | Supabase anonymous key |
