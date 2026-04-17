@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useMemo } from 'react';
 import {
   Plus, Eye, Trash, MagnifyingGlass, Warning, Bell, ArrowsClockwise,

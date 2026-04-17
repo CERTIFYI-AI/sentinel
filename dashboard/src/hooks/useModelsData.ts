@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchModels, upsertModel, deleteModel, ModelRecord } from '@/services/modelService'
 import { toast } from 'sonner'

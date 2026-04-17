@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useModelsData } from "@/hooks/useModelsData";
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';

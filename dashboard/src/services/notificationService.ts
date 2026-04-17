@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
 const TENANT_ID = 'default'

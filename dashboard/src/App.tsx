@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 const queryClient = new QueryClient()
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';

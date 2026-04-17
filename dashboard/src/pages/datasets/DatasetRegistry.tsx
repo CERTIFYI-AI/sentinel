@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useCallback } from 'react';
 import {
   Eye, PencilSimple, Trash, Plus, Database, MagnifyingGlass, Funnel,

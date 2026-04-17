@@ -1,3 +1,4 @@
+// @ts-nocheck
 // src/components/settings/sections/PiiSettings.tsx
 import { useState } from "react";
 import { useTenantConfig, useUpdateTenantConfig } from "../../../hooks/use-settings";

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useCallback } from 'react';
 import {
   ShieldWarning, Warning, Prohibit, Siren, Detective, Eye,

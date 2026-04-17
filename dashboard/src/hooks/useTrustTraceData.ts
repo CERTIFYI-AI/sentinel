@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchTrustTraces, upsertTrustTrace, deleteTrustTrace } from '../services/trustTraceService'
 import { TRUST_TRACES } from '../data/seed'

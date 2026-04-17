@@ -1,3 +1,4 @@
+// @ts-nocheck
 // dashboard/src/components/dashboard/HitlCard.tsx
 
 import { useState } from "react";

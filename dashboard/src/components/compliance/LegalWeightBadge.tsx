@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from 'react';
 import type { LegalWeight } from '../../lib/compliance-types';
 

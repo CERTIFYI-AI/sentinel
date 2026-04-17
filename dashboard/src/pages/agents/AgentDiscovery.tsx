@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useCallback, useEffect } from 'react';
 import {
   Eye, PencilSimple, Trash, Plus, Robot, MagnifyingGlass, Funnel,

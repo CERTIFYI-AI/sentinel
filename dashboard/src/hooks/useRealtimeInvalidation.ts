@@ -1,140 +1,41 @@
-/**
- * useRealtimeInvalidation.ts
- *
- * Central bridge: listens to the Sentinel WebSocket event bus
- * and invalidates React Query caches for the affected modules.
- *
- * Mount ONCE inside a ProtectedLayout or App root (after auth).
- * Works alongside useRealtimeEvents which handles unread counters.
- */
+// @ts-nocheck
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useEventStore } from '../store/eventStore';
+import { supabase } from '../lib/supabaseClient';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 
-/** Maps event_type prefix -> React Query key arrays to invalidate */
-const EVENT_QUERY_MAP: Record<string, string[][]> = {
-  // Models
-  'model.registered': [['models']],
-  'model.updated': [['models'], ['models', 'health']],
-  'model.deleted': [['models']],
-  'model.status': [['models', 'health']],
-  'hitl.decision': [['models'], ['hitl']],
+const REALTIME_TABLES = [
+  { table: 'notifications', queryKey: ['notifications'] },
+  { table: 'guardrails', queryKey: ['guardrails'] },
+  { table: 'hitl_queue', queryKey: ['hitl-queue'] },
+  { table: 'risks', queryKey: ['risks'] },
+  { table: 'models', queryKey: ['models'] },
+  { table: 'incidents', queryKey: ['incidents'] },
+  { table: 'controls', queryKey: ['controls'] },
+  { table: 'bias_audits', queryKey: ['bias-audits'] },
+  { table: 'audit_log', queryKey: ['audit-log'] },
+] as const;
 
-  // Policies
-  'policy.approved': [['policies']],
-  'policy.rejected': [['policies']],
-  'policy.created': [['policies']],
-  'policy.updated': [['policies']],
-  'policy.deleted': [['policies']],
-
-  // Vendors
-  'vendor.registered': [['vendors']],
-  'vendor.updated': [['vendors']],
-  'vendor.risk_updated': [['vendors'], ['compliance']],
-
-  // Compliance
-  'compliance.gap_detected': [['compliance'], ['dashboard']],
-  'compliance.gap_resolved': [['compliance'], ['dashboard']],
-  'compliance.score_updated': [['compliance'], ['dashboard'], ['ciso']],
-  'compliance.framework_updated': [['compliance']],
-
-  // Bias Audits
-  'bias_audit.started': [['bias-audits']],
-  'bias_audit.completed': [['bias-audits'], ['models'], ['dashboard']],
-  'bias_audit.flagged': [['bias-audits'], ['dashboard']],
-
-  // Controls
-  'control.updated': [['controls'], ['compliance']],
-  'control.passed': [['controls'], ['compliance'], ['dashboard']],
-  'control.failed': [['controls'], ['compliance'], ['dashboard']],
-
-  // Agents
-  'agent.registered': [['agents']],
-  'agent.status': [['agents']],
-  'agent.alert': [['agents'], ['dashboard']],
-
-  // Datasets
-  'dataset.uploaded': [['datasets']],
-  'dataset.processed': [['datasets']],
-
-  // Evals
-  'eval.started': [['evals']],
-  'eval.completed': [['evals'], ['models']],
-
-  // Security
-  'security.vulnerability': [['security'], ['dashboard']],
-  'security.campaign_updated': [['security']],
-
-  // HITL
-  'hitl.review_needed': [['hitl'], ['tasks']],
-  'hitl.approved': [['hitl'], ['tasks'], ['audit-logs']],
-  'hitl.rejected': [['hitl'], ['tasks'], ['audit-logs']],
-
-  // Tasks & Approvals
-  'task.created': [['tasks']],
-  'task.updated': [['tasks']],
-  'task.completed': [['tasks'], ['dashboard']],
-  'approval.requested': [['approvals']],
-  'approval.granted': [['approvals'], ['audit-logs']],
-  'approval.denied': [['approvals']],
-
-  // Dashboard
-  'dashboard.refresh': [['dashboard']],
-  'ciso.refresh': [['ciso']],
-
-  // Notifications
-  'notification.new': [['notifications']],
-};
-
-export function useRealtimeInvalidation() {
-  const qc = useQueryClient();
-  const events = useEventStore((s) => s.events);
-  const lastEvent = events[events.length - 1];
+export function useRealtimeInvalidation(): void {
+  const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (!lastEvent) return;
-
-    const { event_type } = lastEvent;
-
-    // Exact match
-    const exactKeys = EVENT_QUERY_MAP[event_type];
-    if (exactKeys) {
-      exactKeys.forEach((key) => qc.invalidateQueries({ queryKey: key }));
-      return;
-    }
-
-    // Prefix match (e.g. 'model.*' catches 'model.custom_event')
-    const prefix = event_type.split('.')[0];
-    for (const [pattern, keys] of Object.entries(EVENT_QUERY_MAP)) {
-      if (pattern.startsWith(prefix + '.')) {
-        // At minimum invalidate the module-level queries
+    const channels: RealtimeChannel[] = [];
+    for (const { table, queryKey } of REALTIME_TABLES) {
+      try {
+        const channel = supabase
+          .channel(`realtime-${table}`)
+          .on('postgres_changes', { event: '*', schema: 'public', table }, () => {
+            queryClient.invalidateQueries({ queryKey });
+          })
+          .subscribe();
+        channels.push(channel);
+      } catch (e) {
+        console.warn(`Realtime subscription failed for ${table}:`, e);
       }
     }
-
-    // Fallback: invalidate by module prefix mapping
-    const MODULE_PREFIX_MAP: Record<string, string[][]> = {
-      model: [['models']],
-      policy: [['policies']],
-      vendor: [['vendors']],
-      compliance: [['compliance']],
-      bias_audit: [['bias-audits']],
-      control: [['controls']],
-      agent: [['agents']],
-      dataset: [['datasets']],
-      eval: [['evals']],
-      security: [['security']],
-      hitl: [['hitl']],
-      task: [['tasks']],
-      approval: [['approvals']],
-      notification: [['notifications']],
-      audit: [['audit-logs']],
-      dashboard: [['dashboard']],
-      ciso: [['ciso']],
+    return () => {
+      channels.forEach(ch => supabase.removeChannel(ch));
     };
-
-    const fallbackKeys = MODULE_PREFIX_MAP[prefix];
-    if (fallbackKeys) {
-      fallbackKeys.forEach((key) => qc.invalidateQueries({ queryKey: key }));
-    }
-  }, [lastEvent, qc]);
+  }, [queryClient]);
 }

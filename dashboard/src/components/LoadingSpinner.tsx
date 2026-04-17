@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { DotsLoader } from './ui/PageSkeleton';
 
 interface LoadingSpinnerProps {

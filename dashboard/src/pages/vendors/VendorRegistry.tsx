@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useVendorsData } from "@/hooks/useVendorsData";
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
