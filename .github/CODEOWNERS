@@ -1,21 +1,9 @@
-# Sentinel AI GRC — CODEOWNERS
-# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+# Sentinel AI GRC — Code Ownership
+# Require review from at least one owner
 
-# Default: platform team reviews everything
-* @CERTIFYI-AI/platform
-
-# Security-critical: auth, middleware, config, secrets
-/sentinel/auth/                    @CERTIFYI-AI/security
-/sentinel/middleware/              @CERTIFYI-AI/security
-/sentinel/config.py                @CERTIFYI-AI/security
-SECURITY.md                        @CERTIFYI-AI/security
-.env.example                       @CERTIFYI-AI/security
-scripts/preflight-check.sh         @CERTIFYI-AI/security
-
-# Infrastructure: docker, CI, k8s, migrations
-Dockerfile                         @CERTIFYI-AI/platform
-.dockerignore                      @CERTIFYI-AI/platform
-docker-compose.yml                 @CERTIFYI-AI/platform
-/k8s/                              @CERTIFYI-AI/platform
-/migrations/                       @CERTIFYI-AI/platform
-.github/workflows/                 @CERTIFYI-AI/platform
+* @8h45k4r
+dashboard/ @8h45k4r
+server/ @8h45k4r
+supabase/ @8h45k4r
+.github/ @8h45k4r
+configs/ @8h45k4r

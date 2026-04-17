@@ -1,0 +1,16 @@
+name: schema-drift
+on: [pull_request]
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+      - run: supabase db start
+      - run: supabase db diff --use-migra -f _drift_check
+      - run: |
+          if [ -s supabase/migrations/*_drift_check.sql ]; then
+            echo "::error::Schema drift detected"
+            cat supabase/migrations/*_drift_check.sql
+            exit 1
+          fi

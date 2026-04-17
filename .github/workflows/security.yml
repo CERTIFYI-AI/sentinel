@@ -1,0 +1,30 @@
+name: security
+on: [push, pull_request]
+jobs:
+  sast:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Semgrep SAST
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: "p/owasp-top-ten p/typescript p/react"
+      - name: Bandit Python SAST
+        run: pip install bandit && bandit -r server/ -ll || true
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+      - name: No service_role in client bundle
+        run: |
+          if grep -rE "service_role|SERVICE_ROLE" dashboard/src/ --include="*.ts" --include="*.tsx"; then
+            echo "::error::service_role key found in client code"
+            exit 1
+          fi
