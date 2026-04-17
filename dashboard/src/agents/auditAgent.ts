@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../lib/supabase';
 import { sha256 } from '../lib/evidenceChain';
 
 export interface AuditEntry {
