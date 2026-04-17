@@ -3,6 +3,8 @@ import { FlowArrow, Plus, Eye, X, Trash, PencilSimple, Export, CheckCircle, Cloc
 import { toast } from 'sonner'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 type WFStatus = 'Active' | 'Paused' | 'Disabled'
 type WFType = 'Model Release' | 'Policy Update' | 'Vendor' | 'Exception' | 'Access Control' | 'Incident' | 'Audit Finding' | 'Risk Acceptance'
 

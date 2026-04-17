@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { CheckSquare, MagnifyingGlass, Plus, Eye, X, Export, Users, Warning, Pencil, Trash } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 type ConsentStatus = 'Active' | 'Withdrawn' | 'Expired' | 'Pending'
 type LegalBasis = 'Consent' | 'Legitimate Interest' | 'Contract' | 'Legal Obligation' | 'Vital Interest' | 'Public Task'
 

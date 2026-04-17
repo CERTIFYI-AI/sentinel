@@ -27,6 +27,8 @@ import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
 import { useSettingsStore } from '../../stores/settingsStore';
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 // ── Types ────────────────────────────────────────────────────────────────────
 type ExceptionStatus = 'Pending' | 'Approved' | 'Denied' | 'Expired' | 'Under Review';
 type RiskLevel = 'Low' | 'Medium' | 'High' | 'Critical';

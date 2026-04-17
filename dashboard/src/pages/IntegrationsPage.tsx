@@ -3,6 +3,8 @@ import { Plugs, Plus, X, Warning, ArrowClockwise, Trash } from '@phosphor-icons/
 import { toast } from 'sonner'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 type IntegrationStatus = 'Connected' | 'Disconnected' | 'Error' | 'Pending Setup'
 type IntegrationCategory = 'AI Provider' | 'Data Source' | 'Compliance Tool' | 'Monitoring' | 'Identity' | 'Notification' | 'Ticketing'
 

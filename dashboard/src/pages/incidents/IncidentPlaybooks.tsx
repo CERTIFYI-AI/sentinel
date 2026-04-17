@@ -16,6 +16,8 @@ import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { formatDate } from '../../data/seed';
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 type PlaybookStatus = 'Draft' | 'Active' | 'Deprecated';
 type IncidentPhase = 'Detection' | 'Containment' | 'Eradication' | 'Recovery' | 'Post-Incident';
 

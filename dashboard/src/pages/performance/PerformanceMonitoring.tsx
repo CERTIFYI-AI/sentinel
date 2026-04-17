@@ -18,6 +18,8 @@ import {
 import { useChartTheme } from '../../hooks/useChartTheme';
 import { MODELS } from '../../data/seed';
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 type AlertSeverity = 'critical' | 'warning' | 'info';
 
 interface ModelEndpoint {

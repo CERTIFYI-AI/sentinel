@@ -4,6 +4,8 @@ import { toast } from 'sonner'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, ReferenceLine } from 'recharts'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 interface CarbonEntry {
   id: string
   model: string

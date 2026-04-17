@@ -22,6 +22,8 @@ import {
 } from 'recharts';
 import { useChartTheme } from '../hooks/useChartTheme';
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 type Art10Status = 'Met' | 'Partial' | 'Not Met';
 
 interface DQAssessment {

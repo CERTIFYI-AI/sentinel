@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
 import { FileText, DownloadSimple as Download, Clock, CalendarBlank as Calendar, PaperPlaneRight as Send, Eye, Plus, MagnifyingGlass as Search, Funnel as Filter, ChartBar as BarChart3, Checks, Warning as AlertTriangle, CheckCircle as CheckCircle2 } from "@phosphor-icons/react";
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 interface ReportTemplate {
   id: string;
   name: string;

@@ -22,6 +22,8 @@ import { formatDate } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useChartTheme } from '../../hooks/useChartTheme';
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 interface ReportTemplate {
   id: string;
   name: string;

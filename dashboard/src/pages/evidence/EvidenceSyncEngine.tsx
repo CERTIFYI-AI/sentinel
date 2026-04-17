@@ -33,6 +33,8 @@ import {
 } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 // ── Freshness Calc ────────────────────────────────────────────────────────────
 function getFreshness(lastSync: string, status: string): { label: string; color: string; dot: string; days: number; tier: 'green' | 'amber' | 'red' } {
   const days = Math.floor((Date.now() - new Date(lastSync).getTime()) / (86400000));

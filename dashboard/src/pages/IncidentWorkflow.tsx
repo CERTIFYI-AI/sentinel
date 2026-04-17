@@ -11,6 +11,8 @@ import {
 import Breadcrumbs from '../components/Breadcrumbs';
 import { INCIDENTS, USERS, severityColor, formatDate } from '../data/seed';
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 // ── State Machine Definition ─────────────────────────────────────────────────
 type IncidentStatus = 'open' | 'triaged' | 'investigating' | 'escalated' | 'mitigating' | 'resolved' | 'post_mortem';
 

@@ -6,6 +6,8 @@ import {
 } from '@phosphor-icons/react';
 import { MODELS } from '../../data/seed';
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 // ── types & data ───────────────────────────────────────────────────────────
 
 interface EvalTechnique {

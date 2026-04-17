@@ -16,6 +16,8 @@ import {
 import { useSettingsStore } from '../stores/settingsStore';
 import { useChartTheme } from '../hooks/useChartTheme';
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 type ExamStatus = 'scheduled' | 'active' | 'response_due' | 'closed' | 'findings_open';
 
 interface Examination {

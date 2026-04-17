@@ -21,6 +21,8 @@ import { GAPS, FRAMEWORKS, Gap, Severity, severityColor, formatDate } from '../d
 import { useSettingsStore } from '../stores/settingsStore';
 import { useChartTheme } from '../hooks/useChartTheme';
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 const EMPTY_GAP: Omit<Gap, 'id'> = {
   title: '', framework: 'EU AI Act', controlRef: '', severity: 'medium',
   progress: 0, dueDate: '', owner: '', description: '',

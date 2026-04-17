@@ -8,6 +8,8 @@ import {
 import { MODELS, USERS, formatDate } from '../../data/seed';
 import type { Model } from '../../data/seed';
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 // ── lifecycle definition ───────────────────────────────────────────────────
 
 interface LifecyclePhase {

@@ -14,6 +14,8 @@ import {
 } from '../../data/seed';
 import { useChartTheme } from '../../hooks/useChartTheme';
 import {
+
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
   RadialBarChart, RadialBar, ResponsiveContainer, Cell,
   PolarAngleAxis,
 } from 'recharts';

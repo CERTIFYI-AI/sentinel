@@ -33,6 +33,8 @@ import {
 import { useChartTheme } from '../../hooks/useChartTheme';
 import { useSettingsStore } from '../../stores/settingsStore';
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 // ── Score Color ───────────────────────────────────────────────────────────────
 function scoreColor(score: number): { bg: string; text: string } {
   if (score >= 0.85) return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))' };

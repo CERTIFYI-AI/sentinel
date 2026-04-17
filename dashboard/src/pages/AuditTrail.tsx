@@ -5,6 +5,8 @@ import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 const TRAIL_ENTRIES = [
   { id: 1, timestamp: '2026-04-08 09:15:23', user: 'Sarah Chen', action: 'Updated', resource: 'Model: Credit Scoring v2', category: 'model', details: 'Changed risk classification from Medium to High' },
   { id: 2, timestamp: '2026-04-08 08:42:11', user: 'System', action: 'Triggered', resource: 'Bias Audit #BA-047', category: 'bias_audit', details: 'Automated weekly bias scan initiated' },

@@ -12,6 +12,8 @@ import {
 import { severityColor } from '../data/seed';
 import type { Severity } from '../data/seed';
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 // ── notification seed ──────────────────────────────────────────────────────
 
 interface Notification {

@@ -1,0 +1,13 @@
+[allowlist]
+description = "Sentinel AI GRC allowlist"
+regexes = [
+  "VITE_SUPABASE_URL=.*supabase\.co",
+  "MOCK_.*=",
+  "example\.com",
+  "placeholder",
+]
+paths = [
+  ".env.example",
+  "docs/SETUP.md",
+  "dashboard/src/data/",
+]

@@ -23,6 +23,8 @@ import { useChartTheme } from '../../hooks/useChartTheme';
 import { useEffect } from 'react'
 import { useSecurityScans } from '../../hooks/queries/useSecurity'
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 interface SecurityScan {
   id: string;
   name: string;

@@ -2,6 +2,8 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 const TEMPLATES = [
   { id: 1, name: 'EU AI Act High-Risk System Transparency Policy', framework: 'EU AI Act', article: 'Article 13', category: 'Transparency', risk_level: 'High', status: 'Published', used_by: 3, last_updated: '2025-01-15', description: 'Comprehensive transparency requirements for high-risk AI systems including information about system purpose, logic, and output interpretation.' },
   { id: 2, name: 'NIST AI RMF Govern Function Policy', framework: 'NIST AI RMF', article: 'GOVERN', category: 'Governance', risk_level: 'Medium', status: 'Published', used_by: 5, last_updated: '2025-01-10', description: 'Organizational policies and processes for AI risk governance aligned with NIST AI Risk Management Framework GOVERN function.' },

@@ -1,46 +1,34 @@
-import { supabase } from './supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 
-export async function fromDB<T>(
-  query: () => PromiseLike<{ data: T[] | null; error: unknown }>,
-  fallback: T[]
-): Promise<T[]> {
-  if (!supabase) return fallback;
+const TENANT_ID = 'default'
+
+export async function fromDB<T>(supaFn: () => any, fallback: T[]): Promise<T[]> {
+  if (!isSupabaseConfigured()) return fallback
   try {
-    const { data, error } = await query();
-    if (error) throw error;
-    return data?.length ? data : fallback;
-  } catch (e) {
-    console.warn('[Sentinel] DB fallback:', e);
-    return fallback;
-  }
+    const { data, error } = await supaFn()
+    if (error) { console.warn('[fromDB]', error.message); return fallback }
+    return (data as T[]) ?? fallback
+  } catch { return fallback }
 }
 
-export async function fromDBSingle<T>(
-  query: () => PromiseLike<{ data: T | null; error: unknown }>,
-  fallback: T | null = null
-): Promise<T | null> {
-  if (!supabase) return fallback;
+export async function mutateDB<T>(supaFn: () => any, fallbackFn: () => T): Promise<T> {
+  if (!isSupabaseConfigured()) return fallbackFn()
   try {
-    const { data, error } = await query();
-    if (error) throw error;
-    return data ?? fallback;
-  } catch (e) {
-    console.warn('[Sentinel] DB single fallback:', e);
-    return fallback;
-  }
+    const { data, error } = await supaFn()
+    if (error) { console.warn('[mutateDB]', error.message); return fallbackFn() }
+    return data as T
+  } catch { return fallbackFn() }
 }
 
-export async function mutateDB<T>(
-  mutation: () => PromiseLike<{ data: T | null; error: unknown }>,
-  fallbackAction: () => T
-): Promise<T> {
-  if (!supabase) return fallbackAction();
-  try {
-    const { data, error } = await mutation();
-    if (error) throw error;
-    return data ?? fallbackAction();
-  } catch (e) {
-    console.warn('[Sentinel] Mutation fallback:', e);
-    return fallbackAction();
-  }
+export function getTenantId() { return TENANT_ID }
+
+export async function getOrgId() {
+  if (!isSupabaseConfigured()) return TENANT_ID
+  const { data } = await supabase.from('organizations').select('id').limit(1).single()
+  return data?.id ?? TENANT_ID
+}
+
+export async function getUserId() {
+  const { data } = await supabase.auth.getUser()
+  return data?.user?.id ?? 'system'
 }

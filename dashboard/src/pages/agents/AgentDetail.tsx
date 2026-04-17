@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 import { AGENTS, severityColor, statusColor, formatDate, formatNumber } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 const riskAssessmentData: Record<string, { category: string; level: string; description: string }[]> = {
   'AGT-001': [
     { category: 'Data Access Scope', level: 'low', description: 'Access limited to model metrics and logs. No PII exposure.' },

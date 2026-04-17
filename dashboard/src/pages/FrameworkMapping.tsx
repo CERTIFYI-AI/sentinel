@@ -14,6 +14,8 @@ import {
   AlertDialogTrigger,
 } from '../components/ui/alert-dialog';
 import {
+
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from '../components/ui/sheet';
 

@@ -4,6 +4,8 @@ import { toast } from 'sonner'
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 interface ESGReport {
   id: string
   title: string

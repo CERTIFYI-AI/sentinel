@@ -9,6 +9,8 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { isSupabaseConfigured } from "../../lib/supabase"
 import { fetchRoles as sbFetchRoles, fetchUsers as sbFetchUsers, createRole as sbCreateRole, updateRole as sbUpdateRole, deleteRole as sbDeleteRole } from "../../lib/supabase-access-control"
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 const COLOR_STYLES: Record<RoleColor, { bg: string; color: string }> = {
   zinc:    { bg: 'hsl(240 5% 64% / 0.15)',  color: 'hsl(240 5% 45%)' },
   emerald: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },

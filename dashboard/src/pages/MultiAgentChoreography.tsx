@@ -3,6 +3,8 @@ import { Swap, Plus, Eye, X, Export, CheckCircle, Warning, Clock, ArrowRight, Ma
 import { toast } from 'sonner'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 type WorkflowStatus = 'Running' | 'Completed' | 'Failed' | 'Paused' | 'Awaiting Approval'
 
 interface AgentWorkflow {

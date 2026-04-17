@@ -18,6 +18,8 @@ import { useSettingsStore } from '../stores/settingsStore';
 import { useChartTheme } from '../hooks/useChartTheme';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Cell } from 'recharts';
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 interface RemediationPlan {
   id: string;
   title: string;

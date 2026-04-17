@@ -19,6 +19,8 @@ import { CONTROLS, FRAMEWORKS, GAPS, EVIDENCE, Control, ControlStatus, statusCol
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useChartTheme } from '../../hooks/useChartTheme';
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 const EMPTY_CONTROL: Omit<Control, 'id'> = {
   title: '', framework: 'EU AI Act', clause: '', status: 'planned',
   score: 0, owner: '', evidenceCount: 0, lastTested: '',

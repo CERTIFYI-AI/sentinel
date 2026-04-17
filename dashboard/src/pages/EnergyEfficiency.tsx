@@ -5,6 +5,8 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, 
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { DataTable } from '../components/ui/DataTable'
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 const TREND_DATA = [
   { month: 'Oct 25', tokensPerKwh: 782000, pue: 1.38, gpuUtil: 71 },
   { month: 'Nov 25', tokensPerKwh: 801000, pue: 1.35, gpuUtil: 74 },

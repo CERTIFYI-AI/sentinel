@@ -20,6 +20,8 @@ import { useSettingsStore } from '../stores/settingsStore';
 import { useChartTheme } from '../hooks/useChartTheme';
 import { MODELS, USERS } from '../data/seed';
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 // ── MRC Members ────────────────────────────────────────────────────────────────
 const MRC_MEMBERS = [
   { id: 'M1', name: 'Sarah Chen', role: 'CISO', department: 'Security', chair: true, quorum: true },

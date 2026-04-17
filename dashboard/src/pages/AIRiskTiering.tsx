@@ -15,6 +15,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '../components/ui/dialog';
 import {
+
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger,

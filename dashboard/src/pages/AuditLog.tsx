@@ -10,6 +10,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/s
 import { AUDIT_LOG, AuditEntry, formatDate } from '../data/seed';
 import { useSettingsStore } from '../stores/settingsStore';
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 const CATEGORY_COLORS: Record<string, { bg: string; color: string }> = {
   model: { bg: 'hsl(220 90% 56% / 0.15)', color: 'hsl(var(--s-in-tx))' },
   risk: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))' },

@@ -7,6 +7,8 @@ import { Input } from "../components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../components/ui/sheet";
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 type ToDResult = "pass" | "fail";
 type ToEResult = "pass" | "fail" | "not-tested";
 

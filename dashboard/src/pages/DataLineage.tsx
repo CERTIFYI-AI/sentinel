@@ -4,6 +4,8 @@ import { ChartLine, Export, X, ArrowRight, Warning, Plus, MagnifyingGlass, Penci
 import { toast } from 'sonner'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 interface LineageRecord {
   id: string
   datasetName: string

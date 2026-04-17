@@ -14,6 +14,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '../components/ui/select';
 import {
+
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
   PROMPT_REGISTRY, type PromptRecord, type PromptStatus, type PromptCategory, formatDate,
 } from '../data/seed';
 

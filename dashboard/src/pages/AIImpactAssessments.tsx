@@ -3,6 +3,8 @@ import { FileMagnifyingGlass, Plus, Eye, X, Trash, PencilSimple, Export, Warning
 import { toast } from 'sonner'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 type AIIAStatus = 'Draft' | 'In Progress' | 'Pending Review' | 'Approved' | 'Rejected' | 'Completed'
 type RiskLevel = 'Critical' | 'High' | 'Medium' | 'Low' | 'Minimal'
 

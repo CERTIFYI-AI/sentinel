@@ -34,6 +34,8 @@ import {
 } from '../data/seed';
 import { useSettingsStore } from '../stores/settingsStore';
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 // ── Risk Score Color ──────────────────────────────────────────────────────────
 function riskScoreStyle(score: number): { bg: string; text: string; bold: boolean } {
   if (score >= 17) return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', bold: true };

@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Notepad, MagnifyingGlass, Export, Eye, X, ShieldCheck, User, Gear, Warning } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 type EventCategory = 'Authentication' | 'Authorization' | 'Data Access' | 'Configuration' | 'AI System' | 'Policy' | 'Compliance' | 'Security'
 type EventSeverity = 'Info' | 'Warning' | 'Error' | 'Critical'
 

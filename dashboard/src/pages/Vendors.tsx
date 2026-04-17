@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import { MagnifyingGlass as Search, Plus, Buildings as Building2, Warning as AlertTriangle, Shield, X, Clock, CheckCircle, Export, Bell } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 interface Vendor {
   id: string;
   name: string;

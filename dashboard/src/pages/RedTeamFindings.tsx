@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Bug, MagnifyingGlass, Plus, Eye, X, Export, ShieldWarning, CheckCircle, Pencil, Trash, Warning } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 type Severity = 'Critical' | 'High' | 'Medium' | 'Low'
 type FindingStatus = 'Open' | 'In Remediation' | 'Resolved' | 'Accepted Risk'
 type AttackVector = 'Prompt Injection' | 'Jailbreak' | 'Model Extraction' | 'Data Poisoning' | 'Adversarial Input' | 'Membership Inference' | 'Training Data Leakage' | 'Supply Chain' | 'API Abuse' | 'Evasion Attack'

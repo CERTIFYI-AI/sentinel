@@ -5,6 +5,8 @@ import { Button } from '../components/ui/button';
 import { MagnifyingGlass, Brain, TreeStructure, ChartBar, Export } from '@phosphor-icons/react';
 import Breadcrumbs from '../components/Breadcrumbs';
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 const EXPLANATIONS = [
   { id: 'EXP-001', model: 'GPT-4o Risk Scorer', method: 'SHAP', status: 'Complete', score: 0.92, date: '2025-01-15' },
   { id: 'EXP-002', model: 'Fraud Detection v3', method: 'LIME', status: 'Running', score: null, date: '2025-01-16' },

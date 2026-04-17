@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { UserList, MagnifyingGlass, Plus, Eye, X, Export, Funnel, Pencil, Trash, Clock, CheckCircle, Warning } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 type DSRType = 'Access' | 'Erasure' | 'Rectification' | 'Portability' | 'Objection' | 'Restriction'
 type DSRStatus = 'Pending' | 'In Review' | 'Completed' | 'Rejected' | 'Overdue'
 

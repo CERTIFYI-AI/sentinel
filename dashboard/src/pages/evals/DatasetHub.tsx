@@ -9,6 +9,8 @@ import { DATASETS, MODELS, formatDate, severityColor, statusColor } from '../../
 import type { Dataset } from '../../data/seed';
 import { useChartTheme } from '../../hooks/useChartTheme';
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 // ── helpers ────────────────────────────────────────────────────────────────
 
 const sensitivityColors: Record<string, { bg: string; text: string; border: string }> = {

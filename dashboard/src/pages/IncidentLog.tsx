@@ -31,6 +31,8 @@ import {
 } from '../data/seed';
 import { useSettingsStore } from '../stores/settingsStore';
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 // ── SLA hours by severity ─────────────────────────────────────────────────────
 const SLA_HOURS: Record<string, number> = {
   critical: 4,

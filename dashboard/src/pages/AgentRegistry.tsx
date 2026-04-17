@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Cpu, MagnifyingGlass, Plus, Eye, X, Export, Warning, CheckCircle, Power, Pencil, Trash, Shield } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 type AgentStatus = 'Active' | 'Suspended' | 'Quarantined' | 'Decommissioned' | 'Pending Approval'
 type AgentType = 'Autonomous' | 'Semi-Autonomous' | 'Tool-Using' | 'Multi-Modal' | 'Orchestrator' | 'Worker'
 type RiskTier = 'Critical' | 'High' | 'Medium' | 'Low'

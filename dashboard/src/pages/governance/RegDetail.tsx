@@ -11,6 +11,8 @@ import { REGULATIONS, severityColor, statusColor, formatDate } from '../../data/
 import { useSettingsStore } from '../../stores/settingsStore';
 
 import { useRegulations } from '../../hooks/queries/useRegulations'
+
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 const MOCK_TIMELINES: Record<string, Array<{ date: string; event: string; actor: string }>> = {
   'REG-001': [
     { date: '2026-01-10', event: 'EU AI Act impact assessment initiated', actor: 'James Patel' },

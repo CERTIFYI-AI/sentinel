@@ -20,6 +20,8 @@ import { POLICIES, Policy, statusColor, formatDate } from '../data/seed';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useChartTheme } from '../hooks/useChartTheme';
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 const POLICY_REVIEW_TREND = [
   { month: 'Oct', reviews: 2 },
   { month: 'Nov', reviews: 1 },

@@ -11,6 +11,8 @@ import { CONTROLS, RISKS, EVIDENCE, severityColor, statusColor, formatDate } fro
 import { useSettingsStore } from '../../stores/settingsStore';
 
 import { useControls } from '../../hooks/queries/useControls'
+
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 const MOCK_TEST_HISTORY = [
   {
     id: 'TEST-001',

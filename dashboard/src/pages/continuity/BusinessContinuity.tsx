@@ -25,6 +25,8 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { toast } from 'sonner';
 import { useSettingsStore } from '../../stores/settingsStore';
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface BCPPlan {

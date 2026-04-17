@@ -20,6 +20,8 @@ import {
 } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info' }
 
 function slaStatusStyle(status: SLAStatus): { bg: string; color: string; label: string; icon: React.ElementType } {

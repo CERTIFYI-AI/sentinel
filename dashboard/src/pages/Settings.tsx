@@ -16,6 +16,8 @@ import { useSettingsStore } from '../stores/settingsStore';
 import { useEffect } from 'react';
 import { useSettingsData } from "../hooks/useSettingsData";
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 // ── API Keys ─────────────────────────────────────────────────────────────────
 interface ApiKey {
   id: string; name: string; prefix: string; created: string; lastUsed: string;

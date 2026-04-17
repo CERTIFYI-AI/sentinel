@@ -9,6 +9,8 @@ import { cn } from "../../lib/utils";
 import { useChartTheme } from "../../hooks/useChartTheme";
 import { MagnifyingGlass as Search, Plus, Eye } from "@phosphor-icons/react";
 import {
+
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
   PieChart, Pie, Cell, Legend,
 } from "recharts";

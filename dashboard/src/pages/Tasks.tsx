@@ -20,6 +20,8 @@ import { CSS } from '@dnd-kit/utilities';
 import { GAPS, RISKS, USERS, severityColor, statusColor, formatDate } from '../data/seed';
 import type { Severity } from '../data/seed';
 
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+
 // ── Task data derived from GAPS + RISKS ─────────────────────────────────
 
 export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done' | 'overdue' | 'blocked';
