@@ -6,6 +6,9 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
+        sans: ["Outfit", "sans-serif"],
+      },
+      fontFamily: {
         sans: ['Outfit', 'sans-serif'],
       },
       borderRadius: {
