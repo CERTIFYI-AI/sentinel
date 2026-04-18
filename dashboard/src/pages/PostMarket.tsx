@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { toast } from 'sonner';
 import { useState, useMemo } from 'react';
 import {
   Plus, Eye, Trash, MagnifyingGlass, Warning, Bell, ArrowsClockwise,
@@ -152,11 +153,14 @@ export default function PostMarket() {
       owner: wOwner,
     };
     setPlans(prev => [newPlan, ...prev]);
+    toast.success(`Surveillance plan "${newPlan.name}" created`);
     setWizardOpen(false);
     setWModel(''); setWName('');
   }
 
   function deletePlan(id: string) {
+    const plan = plans.find(p => p.id === id);
+    if (plan) toast.success(`Surveillance plan "${plan.name}" removed`);
     setPlans(prev => prev.filter(p => p.id !== id));
   }
 

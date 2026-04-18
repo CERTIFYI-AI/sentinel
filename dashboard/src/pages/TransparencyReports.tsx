@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { toast } from 'sonner';
 import {
   Plus, Eye, Trash, MagnifyingGlass, ArrowRight, DownloadSimple, Globe,
 } from '@phosphor-icons/react';
@@ -14,7 +15,6 @@ import {
 } from '../components/ui/dialog';
 import {
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger,
@@ -144,11 +144,14 @@ export default function TransparencyReports() {
       status: 'Draft',
     };
     setItems(prev => [newReport, ...prev]);
+    toast.success(`Transparency report "${newReport.id}" created`);
     setWizardOpen(false);
     setWSystem(''); setWType('System Transparency Art.13'); setWAudience('Public/Regulators'); setWSections({});
   }
 
   function deleteItem(id: string) {
+    const item = items.find(i => i.id === id);
+    if (item) toast.success(`Report "${item.id}" deleted`);
     setItems(prev => prev.filter(i => i.id !== id));
   }
 

@@ -465,6 +465,13 @@ export default function ComplianceCalendar() {
           >
             <Export size={14} /> Export CSV
           </button>
+          <Button
+            size="sm"
+            style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff', gap: 6 }}
+            onClick={() => setCreateOpen(true)}
+          >
+            <Plus size={14} weight="bold" /> Schedule Event
+          </Button>
         </div>
       </div>
 
@@ -1123,6 +1130,16 @@ export default function ComplianceCalendar() {
                   >
                     {ev.owner}
                   </td>
+                  {/* Actions */}
+                  <td style={{ padding: '10px 14px' }}>
+                    <button
+                      onClick={() => setDeleteTarget(ev)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'hsl(var(--destructive))', padding: 4, borderRadius: 0 }}
+                      title="Delete event"
+                    >
+                      <Trash size={14} />
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -1147,10 +1164,103 @@ export default function ComplianceCalendar() {
               color: 'hsl(var(--text-4))',
             }}
           >
-            {filtered.length} of {EVENTS.length} events
+            {filtered.length} of {events.length} events
           </div>
         </div>
       )}
+      {/* ── Schedule Event Dialog ─────────────────────────────────────────── */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', maxWidth: 480 }}>
+          <DialogHeader>
+            <DialogTitle style={{ color: 'hsl(var(--text-1))', fontFamily: 'Outfit, sans-serif' }}>Schedule Compliance Event</DialogTitle>
+          </DialogHeader>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: '4px 0' }}>
+            <div>
+              <Label style={{ fontSize: 12, color: 'hsl(var(--text-3))' }}>Event Title *</Label>
+              <input
+                placeholder="e.g. SOC 2 Annual Audit"
+                value={createForm.title}
+                onChange={e => setCreateForm(f => ({ ...f, title: e.target.value }))}
+                style={{ width: '100%', marginTop: 4, padding: '8px 10px', background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0, color: 'hsl(var(--text-1))', fontSize: 13, fontFamily: 'Outfit, sans-serif' }}
+              />
+            </div>
+            <div>
+              <Label style={{ fontSize: 12, color: 'hsl(var(--text-3))' }}>Date *</Label>
+              <input
+                type="date"
+                value={createForm.date}
+                onChange={e => setCreateForm(f => ({ ...f, date: e.target.value }))}
+                style={{ width: '100%', marginTop: 4, padding: '8px 10px', background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0, color: 'hsl(var(--text-1))', fontSize: 13, fontFamily: 'Outfit, sans-serif' }}
+              />
+            </div>
+            <div>
+              <Label style={{ fontSize: 12, color: 'hsl(var(--text-3))' }}>Event Type *</Label>
+              <Select value={createForm.type} onValueChange={v => setCreateForm(f => ({ ...f, type: v as EventType }))}>
+                <SelectTrigger style={{ marginTop: 4, borderRadius: 0, background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', fontSize: 13 }}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  <SelectItem value="audit">Audit</SelectItem>
+                  <SelectItem value="review">Review</SelectItem>
+                  <SelectItem value="deadline">Deadline</SelectItem>
+                  <SelectItem value="certification">Certification</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label style={{ fontSize: 12, color: 'hsl(var(--text-3))' }}>Framework *</Label>
+              <input
+                placeholder="e.g. ISO 42001, EU AI Act, SOC 2"
+                value={createForm.framework}
+                onChange={e => setCreateForm(f => ({ ...f, framework: e.target.value }))}
+                style={{ width: '100%', marginTop: 4, padding: '8px 10px', background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0, color: 'hsl(var(--text-1))', fontSize: 13, fontFamily: 'Outfit, sans-serif' }}
+              />
+            </div>
+            <div>
+              <Label style={{ fontSize: 12, color: 'hsl(var(--text-3))' }}>Owner *</Label>
+              <input
+                placeholder="e.g. Sarah Chen"
+                value={createForm.owner}
+                onChange={e => setCreateForm(f => ({ ...f, owner: e.target.value }))}
+                style={{ width: '100%', marginTop: 4, padding: '8px 10px', background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0, color: 'hsl(var(--text-1))', fontSize: 13, fontFamily: 'Outfit, sans-serif' }}
+              />
+            </div>
+            <div>
+              <Label style={{ fontSize: 12, color: 'hsl(var(--text-3))' }}>Status</Label>
+              <Select value={createForm.status} onValueChange={v => setCreateForm(f => ({ ...f, status: v as EventStatus }))}>
+                <SelectTrigger style={{ marginTop: 4, borderRadius: 0, background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', fontSize: 13 }}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  <SelectItem value="Upcoming">Upcoming</SelectItem>
+                  <SelectItem value="In Progress">In Progress</SelectItem>
+                  <SelectItem value="Completed">Completed</SelectItem>
+                  <SelectItem value="Overdue">Overdue</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter style={{ marginTop: 8 }}>
+            <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setCreateOpen(false)}>Cancel</Button>
+            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }} onClick={handleCreate}>Schedule Event</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Delete Confirmation ────────────────────────────────────────────── */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={open => !open && setDeleteTarget(null)}
+        title={`Delete Event: ${deleteTarget?.title}`}
+        description="This will permanently remove this compliance event from the calendar."
+        confirmLabel="Delete Event"
+        isDestructive
+        impactList={[
+          'Event removed from compliance calendar',
+          'Calendar metrics will update',
+        ]}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

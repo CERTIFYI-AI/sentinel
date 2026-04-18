@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { toast } from 'sonner';
 import {
   Plus, Eye, Trash, MagnifyingGlass, CheckCircle,
 } from '@phosphor-icons/react';
@@ -150,11 +151,14 @@ export default function DataQuality() {
       deficiencies: [],
     };
     setItems(prev => [newItem, ...prev]);
+    toast.success(`Assessment "${newItem.id}" created for ${newItem.dataset}`);
     setCreateOpen(false);
     setWDataset(''); setWModel('');
   }
 
   function deleteItem(id: string) {
+    const item = items.find(i => i.id === id);
+    if (item) toast.success(`Assessment "${item.id}" removed`);
     setItems(prev => prev.filter(i => i.id !== id));
   }
 

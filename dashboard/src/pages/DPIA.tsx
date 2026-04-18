@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { toast } from 'sonner';
 import {
   Plus, Eye, Trash, MagnifyingGlass, ArrowRight, Check, X,
   ShieldCheck, Warning, Info,
@@ -17,7 +18,6 @@ import {
 } from '../components/ui/dialog';
 import {
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger,
@@ -156,12 +156,15 @@ export default function DPIAPage() {
       created: new Date().toISOString().split('T')[0],
     };
     setItems(prev => [newDpia, ...prev]);
+    toast.success(`DPIA "${newDpia.id}" started for ${newDpia.system}`);
     setWizardOpen(false);
     resetWizard();
   }
 
   function deleteItem(id: string) {
+    const item = items.find(i => i.id === id);
     setItems(prev => prev.filter(i => i.id !== id));
+    if (item) toast.success(`DPIA "${item.id}" deleted`);
   }
 
   const isHighRisk = wDataCats.includes('Health') || wDataCats.includes('Biometric') || wDataCats.includes('Criminal');

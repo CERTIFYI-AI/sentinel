@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { toast } from 'sonner';
 import {
   Plus, ArrowsLeftRight, MagnifyingGlass, DownloadSimple, Sparkle, X, Warning,
 } from '@phosphor-icons/react';
@@ -15,7 +16,6 @@ import {
 } from '../components/ui/alert-dialog';
 import {
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from '../components/ui/sheet';
 
@@ -147,7 +147,7 @@ function pctColor(pct: number) {
 }
 
 export default function FrameworkMappingPage() {
-  const [mappings] = useState<FrameworkMapping[]>(SEED);
+  const [mappings, setMappings] = useState<FrameworkMapping[]>(SEED);
   const [search, setSearch] = useState('');
   const [selectedFrameworks, setSelectedFrameworks] = useState<string[]>(['EU AI Act', 'ISO 42001', 'NIST AI RMF', 'GDPR']);
   const [addOpen, setAddOpen] = useState(false);
@@ -435,7 +435,12 @@ export default function FrameworkMappingPage() {
           </div>
           <div className="flex items-center justify-between pt-4 border-t" style={{ borderColor: 'hsl(var(--border))' }}>
             <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setAddOpen(false)}>Cancel</Button>
-            <Button style={{ borderRadius: 0 }} onClick={() => setAddOpen(false)}>Save Mapping</Button>
+            <Button style={{ borderRadius: 0 }} onClick={() => {
+              if (!wControl || !wClause) { toast.error('Please fill in Control and Clause/Article'); return; }
+              setMappings(prev => prev.map(m => m.id === wControl ? { ...m, mappings: [...m.mappings, { framework: wFramework, clause: wClause, coverage: wCoverage }] } : m));
+              toast.success(`Mapping added: ${wControl} → ${wFramework} ${wClause}`);
+              setAddOpen(false); setWControl(''); setWClause(''); setWNotes('');
+            }}>Save Mapping</Button>
           </div>
         </DialogContent>
       </Dialog>

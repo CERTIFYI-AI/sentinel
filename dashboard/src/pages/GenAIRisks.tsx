@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { toast } from 'sonner';
 import {
   Plus, Eye, Trash, MagnifyingGlass, Robot, ShieldWarning,
 } from '@phosphor-icons/react';
@@ -14,7 +15,6 @@ import {
 } from '../components/ui/dialog';
 import {
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger,
@@ -139,11 +139,14 @@ export default function GenAIRisks() {
       created: new Date().toISOString().split('T')[0],
     };
     setProfiles(prev => [newProfile, ...prev]);
+    toast.success(`Risk profile "${newProfile.id}" created for ${newProfile.model}`);
     setCreateOpen(false);
     setWModel(''); setWGuardrails(''); setWCoverage('None');
   }
 
   function deleteProfile(id: string) {
+    const profile = profiles.find(p => p.id === id);
+    if (profile) toast.success(`Risk profile "${profile.id}" removed`);
     setProfiles(prev => prev.filter(p => p.id !== id));
   }
 

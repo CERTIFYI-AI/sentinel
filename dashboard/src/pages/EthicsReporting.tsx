@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { toast } from 'sonner';
 import {
   Eye, Trash, MagnifyingGlass, ArrowSquareOut, Link, ShieldWarning,
   UserCircleCheck,
@@ -17,7 +18,6 @@ import {
 } from '../components/ui/alert-dialog';
 import {
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '../components/ui/dialog';
 
@@ -130,6 +130,8 @@ export default function EthicsReporting() {
   const resolved = reports.filter(r => r.status === 'Resolved' || r.status === 'Closed').length;
 
   function deleteReport(id: string) {
+    const report = reports.find(r => r.id === id);
+    if (report) toast.success(`Report "${report.id}" removed`);
     setReports(prev => prev.filter(r => r.id !== id));
   }
 
@@ -147,6 +149,7 @@ export default function EthicsReporting() {
       system: wSystem || undefined,
     };
     setReports(prev => [newReport, ...prev]);
+    toast.success(`Ethics report "${newReport.id}" submitted`);
     setCreateOpen(false);
     setWDesc(''); setWSystem('');
   }
