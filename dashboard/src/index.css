@@ -7,7 +7,7 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 220 14% 97%;  /* #F7F8FA cool gray app shell */
     --foreground: 224 71% 4%;
     --card: 0 0% 100%;
     --card-foreground: 224 71% 4%;
@@ -75,6 +75,9 @@ html,
 html *,
   body {
     @apply bg-background text-foreground;
-    font-family: "Outfit";
+    font-family: "Outfit", system-ui, -apple-system, sans-serif;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }

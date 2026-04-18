@@ -459,13 +459,13 @@ export default function Overview() {
                 <div className="flex items-center justify-center w-[90px] h-[90px]">
                   <span className="text-3xl font-bold" style={{ color: ragColor(openRisks, 'risk') }}>{openRisks}</span>
                 </div>
-                <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Open Risks</span>
+                <span className="text-xs" style={{ color: '#D97706' }}>Open Risks</span>
               </div>
               <div className="flex flex-col items-center gap-1">
                 <div className="flex items-center justify-center w-[90px] h-[90px]">
                   <span className="text-3xl font-bold" style={{ color: ragColor(criticalIncidents, 'incident') }}>{criticalIncidents}</span>
                 </div>
-                <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Critical Incidents</span>
+                <span className="text-xs" style={{ color: '#DC2626' }}>Critical Incidents</span>
               </div>
             </div>
             <div className="flex-1 min-w-0 max-w-sm">
@@ -519,6 +519,7 @@ export default function Overview() {
         {kpis.map(k => {
           const trend = KPI_TRENDS[k.label];
           const isNegative = k.label === 'Open Risks' || k.label === 'Critical Incidents' || k.label === 'Open Tasks';
+              const metricColor = k.label === 'Critical Incidents' ? 'text-red-600' : k.label === 'Open Risks' ? 'text-amber-600' : k.label === 'Compliance Score' || k.label === 'Security Score' ? 'text-emerald-600' : '';
           const trendColor = !trend || trend.dir === 'stable' ? 'hsl(var(--text-4))'
             : (trend.dir === 'up' && isNegative) || (trend.dir === 'down' && !isNegative) ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-ok-tx))';
           return (
