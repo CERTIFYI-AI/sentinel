@@ -127,7 +127,7 @@ export default function ModelArena() {
   const stats = [
     { label: 'Total Models', value: models.length, icon: Robot },
     { label: 'Production', value: models.filter(m => m.status === 'production').length, icon: ChartBar },
-    { label: 'Avg Security Score', value: `${Math.round(models.reduce((s, m) => s + m.overallScore, 0) / models.length)}%`, icon: ArrowUp },
+    { label: 'Avg Security Score', value: `${models.length > 0 ? Math.round(models.reduce((s, m) => s + m.overallScore, 0) / models.length) : 0}%`, icon: ArrowUp },
     { label: 'Under Evaluation', value: models.filter(m => m.status === 'evaluation' || m.status === 'staging').length, icon: Minus },
   ];
 

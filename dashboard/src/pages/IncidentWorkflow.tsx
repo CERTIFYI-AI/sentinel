@@ -99,6 +99,7 @@ function SlaTimer({ createdDate, slaHours, status }: { createdDate: string; slaH
   useEffect(() => {
     function update() {
       const start = new Date(createdDate).getTime();
+      if (isNaN(start)) { setRemaining("N/A"); return; }
       const slaEnd = start + slaHours * 3600000;
       const now = Date.now();
       const diff = slaEnd - now;
