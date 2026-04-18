@@ -276,6 +276,13 @@ except Exception as e:
 
 
 try:
+    from sentinel.api import migrations_router
+    app.include_router(migrations_router.router, prefix="/api/migrate", tags=["migrations"])
+    logger.info('migrations_router loaded')
+except Exception as e:
+    logger.warning(f'migrations_router error: {e}')
+
+try:
     from sentinel.api import incident_router
     app.include_router(incident_router.router, prefix="/api/incidents", tags=["incidents"])
     logger.info('incident_router loaded')

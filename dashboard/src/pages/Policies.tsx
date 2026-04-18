@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { usePolicies, useUpsertPolicy, useDeletePolicy } from '@/hooks/queries/usePolicies';
+import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -42,8 +44,12 @@ const EMPTY_POLICY: Omit<Policy, 'id'> = {
 export default function Policies() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
-
-  const [policies, setPolicies] = useState<Policy[]>(POLICIES);
+  const { data: supabasePolicies } = usePolicies();
+  const upsertMutation = useUpsertPolicy();
+  const deleteMutation = useDeletePolicy();
+  const [localPolicies, setLocalPolicies] = useState<Policy[]>(POLICIES);
+  const policies = (supabasePolicies && supabasePolicies.length > 0 ? supabasePolicies : localPolicies) as Policy[];
+  const setPolicies = (fn: (prev: Policy[]) => Policy[]) => setLocalPolicies(fn);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
 
@@ -76,6 +82,10 @@ export default function Policies() {
 
   function handleCreate() {
     const id = `POL-${String(policies.length + 1).padStart(3, '0')}`;
+    upsertMutation.mutate({ ...formData, id } as any, {
+      onSuccess: () => { toast.success('Policy created'); },
+      onError: () => { setPolicies(prev => [...prev, { ...formData, id }]); },
+    });
     setPolicies(prev => [...prev, { ...formData, id }]);
     setCreateOpen(false);
     setFormData(EMPTY_POLICY);
@@ -83,12 +93,20 @@ export default function Policies() {
 
   function handleEdit() {
     if (!editItem) return;
+    upsertMutation.mutate(editItem as any, {
+      onSuccess: () => { toast.success('Policy updated'); },
+      onError: () => { setPolicies(prev => prev.map(p => p.id === editItem!.id ? editItem! : p)); },
+    });
     setPolicies(prev => prev.map(p => p.id === editItem.id ? editItem : p));
     setEditItem(null);
   }
 
   function handleDelete() {
     if (!deleteItem) return;
+    deleteMutation.mutate(deleteItem.id, {
+      onSuccess: () => { toast.success('Policy deleted'); },
+      onError: () => { setPolicies(prev => prev.filter(p => p.id !== deleteItem!.id)); },
+    });
     setPolicies(prev => prev.filter(p => p.id !== deleteItem.id));
     setDeleteItem(null);
   }

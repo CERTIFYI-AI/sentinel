@@ -1,4 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useIncidents, useUpsertIncident, useDeleteIncident } from '@/hooks/queries/useIncidents';
+import { toast } from 'sonner';
 import {
   Eye, PencilSimple, Trash, Plus, Warning, Siren,
   ArrowUp, Clock, User, CaretRight, MagnifyingGlass,
@@ -315,7 +317,15 @@ function PhaseTimeline({ incident }: { incident: Incident }) {
 // ═════════════════════════════════════════════════════════════════════════════
 export default function IncidentLog() {
   const { orgName } = useSettingsStore();
-  const [incidents, setIncidents] = useState<Incident[]>(INCIDENTS);
+  const { data: supabaseIncidents } = useIncidents();
+  const upsertMutation = useUpsertIncident();
+  const deleteMutation = useDeleteIncident();
+  const [localIncidents, setLocalIncidents] = useState<Incident[]>(INCIDENTS);
+  const incidents = (supabaseIncidents && supabaseIncidents.length > 0 ? supabaseIncidents : localIncidents) as Incident[];
+  const setIncidents = (fn: (prev: Incident[]) => Incident[]) => {
+    const next = fn(incidents);
+    setLocalIncidents(next);
+  };
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
 

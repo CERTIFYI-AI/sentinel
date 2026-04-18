@@ -18,6 +18,11 @@ import {
   MODELS, RISKS, AGENTS, INCIDENTS, POLICIES, FRAMEWORKS, GAPS,
   AUDIT_LOG, VENDORS, DATASETS, EVIDENCE, severityColor, statusColor, formatDate,
 } from '../data/seed';
+import { useRisks } from '../hooks/queries/useRisks';
+import { useIncidents } from '../hooks/queries/useIncidents';
+import { usePolicies } from '../hooks/queries/usePolicies';
+import { useModels } from '../hooks/queries/useModels';
+import { useVendors } from '../hooks/queries/useVendors';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useChartTheme } from '../hooks/useChartTheme';
 
@@ -159,10 +164,23 @@ export default function Overview() {
   const [digestIdx, setDigestIdx] = useState(0);
   const countdown = useCountdown(AUDIT_DATE);
 
-  const openRisks = RISKS.filter(r => r.status === 'open').length;
-  const activeModels = MODELS.filter(m => m.status === 'production').length;
-  const criticalIncidents = INCIDENTS.filter(i => i.severity === 'critical').length;
-  const activePolicies = POLICIES.filter(p => p.status === 'published').length;
+  // Live Supabase data with seed fallback
+  const { data: liveRisks } = useRisks();
+  const { data: liveIncidents } = useIncidents();
+  const { data: livePolicies } = usePolicies();
+  const { data: liveModels } = useModels();
+  const { data: liveVendors } = useVendors();
+
+  const effectiveRisks = (liveRisks && liveRisks.length > 0 ? liveRisks : RISKS) as typeof RISKS;
+  const effectiveIncidents = (liveIncidents && liveIncidents.length > 0 ? liveIncidents : INCIDENTS) as typeof INCIDENTS;
+  const effectivePolicies = (livePolicies && livePolicies.length > 0 ? livePolicies : POLICIES) as typeof POLICIES;
+  const effectiveModels = (liveModels && liveModels.length > 0 ? liveModels : MODELS) as typeof MODELS;
+  const effectiveVendors = (liveVendors && liveVendors.length > 0 ? liveVendors : VENDORS) as typeof VENDORS;
+
+  const openRisks = effectiveRisks.filter((r: any) => r.status === 'open').length;
+  const activeModels = effectiveModels.filter((m: any) => m.status === 'production').length;
+  const criticalIncidents = effectiveIncidents.filter((i: any) => i.severity === 'critical').length;
+  const activePolicies = effectivePolicies.filter((p: any) => p.status === 'published').length;
   const openGaps = GAPS.length;
   const overdueGaps = GAPS.filter(g => new Date(g.dueDate) < new Date()).length;
 
@@ -177,7 +195,7 @@ export default function Overview() {
     { label: 'Critical Incidents', value: criticalIncidents, icon: WarningCircle, color: ragColor(criticalIncidents, 'incident'), link: '/risk/incidents', ragType: 'incident' as const },
     { label: 'Use Cases', value: AGENTS.length, icon: ChartLine, color: '#3b82f6', link: '/agents' },
     { label: 'Active Policies', value: activePolicies, icon: FileText, color: '#10b981', link: '/compliance/policies' },
-    { label: 'Vendors', value: VENDORS.length, icon: Briefcase, color: '#06b6d4', link: '/vendors' },
+    { label: 'Vendors', value: effectiveVendors.length, icon: Briefcase, color: '#06b6d4', link: '/vendors' },
     { label: 'Datasets', value: DATASETS.length, icon: Database, color: '#f59e0b', link: '/datasets' },
     { label: 'Frameworks', value: FRAMEWORKS.length, icon: StackSimple, color: '#6366f1', link: '/frameworks' },
   ];

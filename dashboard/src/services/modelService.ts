@@ -6,7 +6,7 @@ export async function fetchAllModels(): Promise<any[]> {
   if (!isSupabaseConfigured() || !supabase) return []
   try {
     const { data, error } = await supabase
-      .from('models')
+      .from('model_inventory')
       .select('*')
       .eq('tenant_id', TENANT_ID)
       .order('created_at', { ascending: false })
@@ -19,7 +19,7 @@ export async function upsertModel(record: Record<string, unknown>): Promise<any>
   if (!isSupabaseConfigured() || !supabase) return record
   try {
     const { data, error } = await supabase
-      .from('models')
+      .from('model_inventory')
       .upsert({ ...record, tenant_id: TENANT_ID })
       .select()
       .single()
@@ -32,7 +32,7 @@ export async function deleteModel(id: string): Promise<boolean> {
   if (!isSupabaseConfigured() || !supabase) return false
   try {
     const { error } = await supabase
-      .from('models')
+      .from('model_inventory')
       .delete()
       .eq('id', id)
       .eq('tenant_id', TENANT_ID)

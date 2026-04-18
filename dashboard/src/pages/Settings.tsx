@@ -283,6 +283,7 @@ export default function Settings() {
             { value: 'appearance', label: 'Appearance' },
             { value: 'audit-trail', label: 'Audit Trail' },
             { value: 'sso', label: 'SSO / SAML' },
+            { value: 'database', label: 'Database Setup' },
           ].map(tab => (
             <TabsTrigger key={tab.value} value={tab.value} style={{ borderRadius: 0 }}>{tab.label}</TabsTrigger>
           ))}
@@ -972,6 +973,51 @@ export default function Settings() {
                   <p className="text-sm">No configuration changes recorded yet.</p>
                 </div>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── DATABASE SETUP ─────────────────────────── */}
+        <TabsContent value="database" className="mt-4 space-y-4">
+          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-2">
+                <Database size={16} style={{ color: 'hsl(var(--brand))' }} />
+                <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Supabase Database Setup</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0 space-y-4">
+              <p className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>
+                To enable persistent data storage, run the migration SQL in your Supabase SQL Editor. The app works with mock data until tables are created.
+              </p>
+              <div className="rounded-none p-4 space-y-3" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))' }}>
+                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'hsl(var(--text-4))' }}>Steps to enable live data</p>
+                <ol className="list-decimal list-inside space-y-2 text-sm" style={{ color: 'hsl(var(--text-2))' }}>
+                  <li>Go to <strong>supabase.com</strong> → your project → <strong>SQL Editor</strong></li>
+                  <li>Open the file <code className="px-1 py-0.5 text-xs" style={{ background: 'hsl(var(--border))', borderRadius: 2 }}>supabase/migrations/20260418_core_grc_tables.sql</code> from this repo</li>
+                  <li>Paste the contents into the SQL Editor and click <strong>Run</strong></li>
+                  <li>Optionally use <code className="px-1 py-0.5 text-xs" style={{ background: 'hsl(var(--border))', borderRadius: 2 }}>GET /api/migrate/status</code> to verify table creation</li>
+                </ol>
+              </div>
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'hsl(var(--text-4))' }}>Migration API Endpoint</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 text-xs px-3 py-2" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-2))' }}>
+                    GET /api/migrate/status — check which tables exist
+                  </code>
+                </div>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 text-xs px-3 py-2" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-2))' }}>
+                    POST /api/migrate &#123; "service_role_key": "eyJ..." &#125; — run migration
+                  </code>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3" style={{ background: 'hsl(var(--s-wn-bg, 45 93% 47% / 0.1))', border: '1px solid hsl(var(--s-wn-br, 45 93% 47% / 0.3))' }}>
+                <Warning size={16} style={{ color: 'hsl(var(--s-wn-tx, 45 93% 47%))', flexShrink: 0, marginTop: 2 }} />
+                <p className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>
+                  The app gracefully falls back to rich mock seed data when tables are not yet created. All UI features work in demo mode.
+                </p>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

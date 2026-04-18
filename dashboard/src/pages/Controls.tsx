@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useControls, useUpsertControl, useDeleteControl } from "@/hooks/queries/useControls";
+import { toast } from "sonner";
 import { ShieldCheck, MagnifyingGlass, Plus, Export, Eye, Funnel, CheckCircle, XCircle, Minus } from "@phosphor-icons/react";
 import { Card, CardContent } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
@@ -7,7 +9,7 @@ import { Input } from "../components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../components/ui/sheet";
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+// WIRED_BY_PHASE_COMPLETE — Supabase hooks wired, seed data as fallback
 
 type ToDResult = "pass" | "fail";
 type ToEResult = "pass" | "fail" | "not-tested";
@@ -75,12 +77,23 @@ function toeBadge(result: ToEResult) {
 }
 
 export default function Controls() {
+  const { data: supabaseControls } = useControls();
+  const upsertMutation = useUpsertControl();
+  const deleteMutation = useDeleteControl();
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("all");
   const [selected, setSelected] = useState<typeof controls[0] | null>(null);
   const [open, setOpen] = useState(false);
 
-  const filtered = controls.filter((c) => {
+  const allControls = (supabaseControls && supabaseControls.length > 0
+    ? supabaseControls.map((c: any) => ({
+        ...c,
+        tod: (c.tod ?? 'pass') as ToDResult,
+        toe: (c.toe ?? 'not-tested') as ToEResult,
+      }))
+    : controls) as typeof controls;
+
+  const filtered = allControls.filter((c) => {
     const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.framework.toLowerCase().includes(search.toLowerCase());
     if (tab === "all") return matchSearch;
     return matchSearch && c.status === tab;
