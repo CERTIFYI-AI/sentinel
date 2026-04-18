@@ -201,6 +201,8 @@ export default function RedTeamLab() {
       description: formEx.description,
       score: 0,
       findings_list: [],
+      recommendations: [],
+      attackVectors: [],
     };
     setExercises(prev => [newExercise, ...prev]);
     toast(`Exercise "${formEx.name}" created`, 'success');

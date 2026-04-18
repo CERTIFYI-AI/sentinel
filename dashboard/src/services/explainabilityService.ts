@@ -17,3 +17,11 @@ export async function upsertExplainabilityReport(record: any) {
   if (error) throw error
   return data
 }
+
+export async function deleteExplainability(id: string) {
+  const { error } = await supabase.from('explainability_reports').delete().eq('id', id)
+  if (error) throw error
+}
+
+export const fetchAllExplainability = fetchExplainabilityReports
+export const fetchExplainabilityById = fetchExplainabilityReportById

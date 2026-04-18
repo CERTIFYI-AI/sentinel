@@ -1,0 +1,36 @@
+INSERT INTO controls (framework_id, control_ref, name, description, severity)
+SELECT f.id, v.ref, v.name, v.desc, v.sev FROM frameworks f,
+(VALUES
+('Sec 2.1','Internal Governance','Establish internal governance structures for AI.','Medium'),
+('Sec 2.2','AI Ethics Board','Create and maintain an AI ethics advisory board.','Medium'),
+('Sec 2.3','Risk Assessment Framework','Implement risk assessment framework for AI.','Medium'),
+('Sec 3.1','Algorithm Governance','Govern algorithm selection and deployment.','Medium'),
+('Sec 3.2','Data Management','Manage data used in AI systems responsibly.','Medium'),
+('Sec 3.3','Explainability','Ensure AI decisions are explainable to stakeholders.','Medium'),
+('Sec 3.4','Repeatability & Reproducibility','Ensure AI outcomes are repeatable and reproducible.','Medium'),
+('Sec 3.5','Traceability','Maintain traceability of AI decision processes.','Medium'),
+('Sec 4.1','Human-in-the-Loop','Maintain human involvement in critical AI decisions.','Medium'),
+('Sec 4.2','Human-over-the-Loop','Enable human override of AI system decisions.','Medium'),
+('Sec 4.3','Human-out-of-the-Loop','Define criteria for autonomous AI operation.','Medium'),
+('Sec 5.1','Stakeholder Interaction','Manage interactions with AI system stakeholders.','Medium'),
+('Sec 5.2','Communication Strategy','Develop communication strategy for AI deployment.','Medium'),
+('Sec 6.1','Operations Management','Manage AI system operations effectively.','Medium'),
+('Sec 6.2','Performance Monitoring','Monitor AI system performance continuously.','Medium'),
+('Sec 6.3','Incident Management','Manage incidents involving AI systems.','Medium'),
+('Sec 7.1','Regular Review','Conduct regular reviews of AI governance.','Medium'),
+('Sec 7.2','Continuous Improvement','Continuously improve AI governance practices.','Medium'),
+('Sec 8.1','Industry Collaboration','Collaborate with industry on AI best practices.','Medium'),
+('Sec 8.2','Public Trust Building','Build public trust in organizational AI use.','Medium'),
+('Sec 3.6','Bias Detection & Mitigation','Detect and mitigate bias in AI systems.','Medium'),
+('Sec 3.7','Model Validation','Validate AI models before production deployment.','Medium'),
+('Sec 3.8','Data Privacy Protection','Protect personal data in AI processing.','Medium'),
+('Sec 3.9','Security Measures','Implement security measures for AI systems.','Medium'),
+('Sec 6.4','Vendor Management','Manage AI vendors and third-party services.','Medium'),
+('Sec 5.3','Training Programs','Implement AI training programs for staff.','Medium'),
+('Sec 6.5','Documentation Standards','Maintain documentation standards for AI systems.','Medium'),
+('Sec 2.4','Accountability Measures','Establish accountability for AI system outcomes.','Medium'),
+('Sec 2.5','Impact Assessment','Assess impact of AI systems on communities.','Medium'),
+('Sec 7.3','Compliance Monitoring','Monitor compliance with AI governance requirements.','Medium')
+) AS v(ref, name, desc, sev)
+WHERE f.code='FW-004'
+ON CONFLICT (framework_id, control_ref) DO UPDATE SET name=EXCLUDED.name, description=EXCLUDED.description;
