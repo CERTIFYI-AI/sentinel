@@ -247,7 +247,7 @@ export default function Overview() {
   return (
     <div className="space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
       {/* Skip to main content (WCAG) */}
-      <a href="#main-content" style={{ position: 'absolute', left: -9999, top: 0, zIndex: 999, padding: '8px 14px', background: 'hsl(var(--brand))', color: '#fff', fontSize: 13 }}
+      <a href="#main-content" style={{ position: 'absolute', left: -9999, top: 0, zIndex: 999, padding: '8px 14px', background: '#DC2626', color: '#fff', fontSize: 13 }}
         onFocus={e => { e.currentTarget.style.left = '0'; }} onBlur={e => { e.currentTarget.style.left = '-9999px'; }}>
         Skip to main content
       </a>
@@ -318,7 +318,7 @@ export default function Overview() {
           alignItems: 'center',
           gap: 12,
           padding: '10px 16px',
-          background: 'hsl(var(--s-er-bg))',
+          background: '#FEF2F2', borderLeft: '4px solid #EF4444',
           border: '1px solid hsl(var(--s-er-br))',
           cursor: 'pointer',
         }}
@@ -479,7 +479,7 @@ export default function Overview() {
               <Button
                 size="sm"
                 onClick={() => navigate('/risk')}
-                style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+                style={{ borderRadius: 0, background: '#DC2626', color: '#fff' }}
               >
                 View All Issues <ArrowRight size={12} className="ml-1" />
               </Button>
