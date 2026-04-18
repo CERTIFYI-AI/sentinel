@@ -1,4 +1,3 @@
-
 // === ADDED BY PHASE_COMPLETE: Additional realtime channels ===
 // To enable: import and call useExtendedRealtime() in your app root
 import { useEffect } from 'react'

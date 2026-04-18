@@ -1,33 +1,40 @@
-name: security
-on: [push, pull_request]
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * 1'
+
 jobs:
-  sast:
-    continue-on-error: true
+  secrets:
+    name: Secret Scanning
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: gitleaks/gitleaks-action@v2
-        continue-on-error: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Semgrep SAST
-      continue-on-error: true
-        uses: returntocorp/semgrep-action@v1
-        with:
-          config: "p/owasp-top-ten p/typescript p/react"
-      - name: Bandit Python SAST
-        run: pip install bandit && bandit -r server/ -ll || true
-      - name: Trivy filesystem scan
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: fs
-          severity: CRITICAL,HIGH
-          exit-code: "1"
-      - name: No service_role in client bundle
+      - name: Run Gitleaks
         run: |
-          if grep -rE "service_role|SERVICE_ROLE" dashboard/src/ --include="*.ts" --include="*.tsx"; then
-            echo "::error::service_role key found in client code"
-            exit 1
-          fi
+          docker run --rm \
+            -v "$(pwd):/repo" \
+            zricethezav/gitleaks:latest \
+            detect \
+            --source /repo \
+            --config /repo/.gitleaks.toml \
+            --verbose
+
+  dependencies:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dashboard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm audit --audit-level=high

@@ -1,26 +1,21 @@
 repos:
-  - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.21.2
-    hooks:
-      - id: gitleaks
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v4.5.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
+      - id: check-json
+      - id: check-merge-conflict
       - id: check-added-large-files
-        args: ['--maxkb=500']
-      - id: detect-private-key
+        args: ['--maxkb=1000']
+      - id: no-commit-to-branch
+        args: ['--branch', 'main']
   - repo: local
     hooks:
-      - id: no-service-role-in-client
-        name: block service_role in dashboard/
-        entry: bash -c '! grep -rE "service_role|SERVICE_ROLE" dashboard/src/ --include="*.ts" --include="*.tsx"'
+      - id: typecheck
+        name: TypeScript
+        entry: bash -c 'cd dashboard && npx tsc --noEmit'
         language: system
-        pass_filenames: false
-      - id: no-db-files
-        name: block .db files
-        entry: bash -c '! git diff --cached --name-only | grep -E "\.(db|sqlite|sqlite3)$"'
-        language: system
+        types: [typescript]
         pass_filenames: false

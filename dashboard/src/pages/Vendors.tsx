@@ -1,6 +1,4 @@
-
-import { useState, useMemo } from "react";
-import { useVendors, useUpsertVendor, useDeleteVendor } from "@/hooks/queries/useVendors";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../components/ui/table";
 import { Input } from "../components/ui/input";
@@ -80,30 +78,17 @@ function statusBadge(status: string) {
 }
 
 export default function Vendors() {
-  const { data: supabaseVendors } = useVendors();
-  const upsertMutation = useUpsertVendor();
-  const deleteMutation = useDeleteVendor();
   const [search, setSearch] = useState("");
   const [sel, setSel] = useState<Vendor | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [dismissedAlerts, setDismissedAlerts] = useState<string[]>([]);
 
-  const allVendors = (supabaseVendors && supabaseVendors.length > 0
-    ? supabaseVendors.map((v: any) => ({
-        id: v.id, name: v.name, category: v.category,
-        services: v.services ?? '', riskTier: v.risk_tier ?? v.riskTier ?? 3,
-        status: v.status ?? 'active', lastAssessment: v.last_assessment ?? v.lastAssessment ?? '',
-        contractExpiry: v.contract_expiry ?? v.contractExpiry ?? '',
-        contact: v.contact ?? '',
-      }))
-    : mockVendors) as Vendor[];
-
-  const filtered = allVendors.filter(
+  const filtered = mockVendors.filter(
     v => v.name.toLowerCase().includes(search.toLowerCase()) || v.category.toLowerCase().includes(search.toLowerCase())
   );
 
-  const expiredVendors = allVendors.filter(v => daysUntilExpiry(v.contractExpiry) < 0 && !dismissedAlerts.includes(v.id));
-  const expiringSoon = allVendors.filter(v => {
+  const expiredVendors = mockVendors.filter(v => daysUntilExpiry(v.contractExpiry) < 0 && !dismissedAlerts.includes(v.id));
+  const expiringSoon = mockVendors.filter(v => {
     const d = daysUntilExpiry(v.contractExpiry);
     return d >= 0 && d <= 90 && !dismissedAlerts.includes(v.id);
   });

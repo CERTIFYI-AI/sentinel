@@ -1,4 +1,3 @@
-// Auto-generated database types matching Supabase schema
 // Phase 5 - FIX 1: Complete type definitions
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 

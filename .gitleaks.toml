@@ -1,13 +1,17 @@
+title = "Sentinel AI GRC Secret Detection"
+
 [allowlist]
-description = "Sentinel AI GRC allowlist"
-regexes = [
-  "VITE_SUPABASE_URL=.*supabase\.co",
-  "MOCK_.*=",
-  "example\.com",
-  "placeholder",
-]
+description = "Allowlisted patterns"
 paths = [
   ".env.example",
   "docs/SETUP.md",
-  "dashboard/src/data/",
+  "README.md",
+]
+regexes = [
+  "your-project.supabase.co",
+  "your-anon-key",
+  "example.com",
+  "admin@sentinel-financial.com",
+  "MOCK_",
+  "placeholder",
 ]

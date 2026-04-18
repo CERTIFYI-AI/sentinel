@@ -1,4 +1,3 @@
-
 import { useNavigate } from 'react-router-dom';
 import { MagnifyingGlass, Bell } from '@phosphor-icons/react';
 import { ThemeToggle } from '../../providers/theme';
