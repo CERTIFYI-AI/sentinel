@@ -6,7 +6,7 @@ export function useExplainabilityData(filters: Record<string, any> = {}) {
   const qc = useQueryClient()
   const { data: items = [], isLoading, error } = useQuery({
     queryKey: ['explainability', filters],
-    queryFn: () => fetchAllExplainability(filters),
+    queryFn: () => fetchAllExplainability(),
     staleTime: 30_000,
   })
 
