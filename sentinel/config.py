@@ -10,7 +10,7 @@ import logging
 from pathlib import Path
 from typing import Any, List, Optional
 
-from pydantic import BaseModel, Field, PostgresDsn, RedisDsn, model_validator
+from pydantic import AliasChoices, BaseModel, Field, PostgresDsn, RedisDsn, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger(__name__)
@@ -223,9 +223,9 @@ class SentinelSettings(BaseSettings):
         description="Redis URL. Falls back to in-memory if absent.",
     )
     secret_key: str = Field(
-          # No default: must be set via SECRET_KEY env var,
         min_length=32,
         description="Secret for JWT signing",
+        validation_alias=AliasChoices("SENTINEL_SECRET_KEY", "SECRET_KEY"),
     )
 
     # --- sub-configs ---
