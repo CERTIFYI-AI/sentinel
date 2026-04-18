@@ -655,6 +655,27 @@ export default function Reporting() {
                   </TabsList>
 
                   <TabsContent value="preview" className="mt-4 space-y-4">
+                    {/* Executive Summary Banner */}
+                    <div className="p-3" style={{ background: 'hsl(var(--brand-subtle))', borderLeft: '3px solid hsl(var(--brand))', borderRadius: 0 }}>
+                      <p className="text-xs font-semibold mb-0.5" style={{ color: 'hsl(var(--brand))' }}>EXECUTIVE SUMMARY</p>
+                      <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>
+                        {previewReport.description} — Generated for {orgName} · {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                      </p>
+                    </div>
+                    {/* KPI Metrics Row */}
+                    <div className="grid grid-cols-4 gap-2">
+                      {[
+                        { label: 'Overall Compliance', value: '74%', color: 'hsl(var(--s-wn-tx))' },
+                        { label: 'Open Risks', value: '12', color: 'hsl(var(--s-er-tx))' },
+                        { label: 'Controls Passing', value: '8/12', color: 'hsl(var(--s-ok-tx))' },
+                        { label: 'AI Models Covered', value: '6', color: 'hsl(var(--brand))' },
+                      ].map(({ label, value, color }) => (
+                        <div key={label} className="p-2 text-center" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                          <p className="text-xl font-bold" style={{ color }}>{value}</p>
+                          <p className="text-[10px] mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>{label}</p>
+                        </div>
+                      ))}
+                    </div>
                     {/* Compliance Chart */}
                     {(previewReport.id === 'RPT-001' || previewReport.id === 'RPT-007') && (
                       <div>

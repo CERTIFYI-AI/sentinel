@@ -81,7 +81,7 @@ export default function PolicyFirewall() {
   const ct = useChartTheme();
 
   const { data: supabaseRules = [] } = useGuardrails()
-  const [rules, setRules] = useState<FirewallRule[]>([]);
+  const [rules, setRules] = useState<FirewallRule[]>(MOCK_RULES);
   useEffect(() => { if (supabaseRules.length > 0) setRules(supabaseRules as any) }, [supabaseRules]);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('all');

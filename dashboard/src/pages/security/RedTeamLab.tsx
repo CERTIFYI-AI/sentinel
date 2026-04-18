@@ -8,11 +8,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/ca
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Textarea } from '../../components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { RED_TEAM_EXERCISES, RedTeamExercise, severityColor, statusColor, formatDate } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
+
+const EMPTY_EXERCISE = {
+  name: '', attackVector: 'Prompt Injection', targetModel: 'MDL-001',
+  lead: '', startDate: new Date().toISOString().split('T')[0], endDate: '',
+  description: '', methodology: 'Black-box',
+};
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -152,6 +161,8 @@ export default function RedTeamLab() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ExtExercise | null>(null);
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [formEx, setFormEx] = useState({ ...EMPTY_EXERCISE });
 
   const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
     const id = Date.now();
@@ -172,6 +183,30 @@ export default function RedTeamLab() {
   };
 
   const openDetail = (ex: ExtExercise) => { setSelected(ex); setSheetOpen(true); };
+
+  const handleCreate = () => {
+    if (!formEx.name.trim()) return;
+    const newId = `RT-${String(exercises.length + 1).padStart(3, '0')}`;
+    const newExercise: ExtExercise = {
+      id: newId,
+      name: formEx.name,
+      attackVector: formEx.attackVector,
+      status: 'planned',
+      findings: 0,
+      criticalFindings: 0,
+      lead: formEx.lead,
+      startDate: formEx.startDate,
+      endDate: formEx.endDate,
+      targetModel: formEx.targetModel,
+      description: formEx.description,
+      score: 0,
+      findings_list: [],
+    };
+    setExercises(prev => [newExercise, ...prev]);
+    toast(`Exercise "${formEx.name}" created`, 'success');
+    setFormEx({ ...EMPTY_EXERCISE });
+    setCreateOpen(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -195,7 +230,7 @@ export default function RedTeamLab() {
           <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} — Adversarial testing campaigns and AI security exercises</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" style={{ borderRadius: 0 }}>
+          <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => { setFormEx({ ...EMPTY_EXERCISE }); setCreateOpen(true); }}>
             <Plus size={14} className="mr-2" />Create Exercise
           </Button>
           <Button style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: '#fff' }}>
@@ -266,6 +301,84 @@ export default function RedTeamLab() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Create Exercise Dialog */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0, maxWidth: 580 }}>
+          <DialogHeader>
+            <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>Create Red Team Exercise</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2">
+                <Label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Exercise Name *</Label>
+                <Input
+                  placeholder="e.g. LLM Jailbreak Campaign Q2 2026"
+                  value={formEx.name}
+                  onChange={e => setFormEx(p => ({ ...p, name: e.target.value }))}
+                  style={{ borderRadius: 0 }}
+                />
+              </div>
+              <div>
+                <Label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Attack Vector</Label>
+                <select value={formEx.attackVector} onChange={e => setFormEx(p => ({ ...p, attackVector: e.target.value }))}
+                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '8px 10px', borderRadius: 0, fontSize: 13 }}>
+                  {['Prompt Injection', 'Jailbreak / DAN', 'Data Exfiltration', 'Authentication Bypass', 'Model Inversion', 'Adversarial Input', 'Supply Chain Attack', 'API Abuse'].map(v => <option key={v}>{v}</option>)}
+                </select>
+              </div>
+              <div>
+                <Label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Methodology</Label>
+                <select value={formEx.methodology} onChange={e => setFormEx(p => ({ ...p, methodology: e.target.value }))}
+                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '8px 10px', borderRadius: 0, fontSize: 13 }}>
+                  {['Black-box', 'White-box', 'Grey-box', 'Automated Fuzzing', 'Human-in-the-loop'].map(v => <option key={v}>{v}</option>)}
+                </select>
+              </div>
+              <div>
+                <Label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Target Model</Label>
+                <select value={formEx.targetModel} onChange={e => setFormEx(p => ({ ...p, targetModel: e.target.value }))}
+                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '8px 10px', borderRadius: 0, fontSize: 13 }}>
+                  {['MDL-001', 'MDL-002', 'MDL-003', 'MDL-004', 'MDL-005', 'MDL-006', 'All Models'].map(v => <option key={v}>{v}</option>)}
+                </select>
+              </div>
+              <div>
+                <Label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Team Lead</Label>
+                <select value={formEx.lead} onChange={e => setFormEx(p => ({ ...p, lead: e.target.value }))}
+                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '8px 10px', borderRadius: 0, fontSize: 13 }}>
+                  <option value="">Select lead...</option>
+                  {['Sarah Chen', 'Maria Santos', 'David Kim', 'Raj Gupta', 'Emma Wilson', 'James Patel'].map(v => <option key={v}>{v}</option>)}
+                </select>
+              </div>
+              <div>
+                <Label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Start Date</Label>
+                <Input type="date" value={formEx.startDate} onChange={e => setFormEx(p => ({ ...p, startDate: e.target.value }))} style={{ borderRadius: 0 }} />
+              </div>
+              <div>
+                <Label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>End Date (optional)</Label>
+                <Input type="date" value={formEx.endDate} onChange={e => setFormEx(p => ({ ...p, endDate: e.target.value }))} style={{ borderRadius: 0 }} />
+              </div>
+              <div className="col-span-2">
+                <Label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Description / Objectives</Label>
+                <Textarea
+                  placeholder="Describe the objectives, scope, and success criteria of this exercise..."
+                  value={formEx.description}
+                  onChange={e => setFormEx(p => ({ ...p, description: e.target.value }))}
+                  style={{ borderRadius: 0, minHeight: 80 }}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
+            <Button
+              style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: '#fff' }}
+              onClick={handleCreate}
+              disabled={!formEx.name.trim()}
+            >
+              <Plus size={14} className="mr-2" />Create Exercise
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete ConfirmDialog */}
       <ConfirmDialog

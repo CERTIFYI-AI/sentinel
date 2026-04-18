@@ -3,6 +3,7 @@ import {
   Globe, Eye, PencilSimple, Trash, Plus, Scan, Fire,
   CheckCircle, Warning, Clock, Target, ShieldWarning,
   MagnifyingGlass, Lock, ArrowRight, Graph, CaretDown, CaretUp,
+  X,
 } from '@phosphor-icons/react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
@@ -12,8 +13,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/ca
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Textarea } from '../../components/ui/textarea';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '../../components/ui/select';
@@ -21,6 +25,12 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { ATTACK_SURFACE, AttackSurfaceAsset, severityColor, statusColor, formatDate } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useChartTheme } from '../../hooks/useChartTheme';
+
+// ── Register Asset Form Defaults ──────────────────────────────────────────────
+const EMPTY_ASSET: Omit<AttackSurfaceAsset, 'id' | 'lastScanned' | 'status'> = {
+  name: '', type: 'Web Application', exposure: 'internal', risk: 'medium',
+  protocol: 'HTTPS', owner: '', description: '', openPorts: 1,
+};
 
 // WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
@@ -103,6 +113,8 @@ export default function AttackSurface() {
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
   const [topoOpen, setTopoOpen] = useState(true);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+  const [registerOpen, setRegisterOpen] = useState(false);
+  const [formAsset, setFormAsset] = useState({ ...EMPTY_ASSET });
 
   const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
     const id = Date.now();
@@ -128,6 +140,21 @@ export default function AttackSurface() {
   };
 
   const openDetail = (a: AttackSurfaceAsset) => { setSelected(a); setSheetOpen(true); };
+
+  const handleRegister = () => {
+    if (!formAsset.name.trim()) return;
+    const newId = `AS-${String(assets.length + 1).padStart(3, '0')}`;
+    const newAsset: AttackSurfaceAsset = {
+      ...formAsset,
+      id: newId,
+      lastScanned: new Date().toISOString().split('T')[0],
+      status: 'monitored',
+    };
+    setAssets(prev => [newAsset, ...prev]);
+    toast(`Asset "${formAsset.name}" registered successfully`, 'success');
+    setFormAsset({ ...EMPTY_ASSET });
+    setRegisterOpen(false);
+  };
 
   const isCriticalAsset = (a: AttackSurfaceAsset) =>
     a.name === 'data-warehouse.internal' || a.name === 'api.sentinel-grc.com';
@@ -157,7 +184,7 @@ export default function AttackSurface() {
           <Button variant="outline" style={{ borderRadius: 0 }}>
             <Scan size={14} className="mr-2" />Run Scan
           </Button>
-          <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+          <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }} onClick={() => { setFormAsset({ ...EMPTY_ASSET }); setRegisterOpen(true); }}>
             <Plus size={14} className="mr-2" />Register Asset
           </Button>
         </div>
@@ -557,6 +584,112 @@ export default function AttackSurface() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Register Asset Dialog */}
+      <Dialog open={registerOpen} onOpenChange={setRegisterOpen}>
+        <DialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0, maxWidth: 580 }}>
+          <DialogHeader>
+            <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>Register New Asset</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2">
+                <Label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Asset Name / Hostname *</Label>
+                <Input
+                  placeholder="e.g. api.company.com"
+                  value={formAsset.name}
+                  onChange={e => setFormAsset(p => ({ ...p, name: e.target.value }))}
+                  style={{ borderRadius: 0 }}
+                />
+              </div>
+              <div>
+                <Label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Asset Type</Label>
+                <select
+                  value={formAsset.type}
+                  onChange={e => setFormAsset(p => ({ ...p, type: e.target.value }))}
+                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '8px 10px', borderRadius: 0, fontSize: 13 }}
+                >
+                  {['Web Application', 'API Gateway', 'ML Pipeline', 'Data Store', 'Admin Panel', 'CDN', 'Monitoring', 'Microservice'].map(t => <option key={t}>{t}</option>)}
+                </select>
+              </div>
+              <div>
+                <Label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Protocol</Label>
+                <select
+                  value={formAsset.protocol}
+                  onChange={e => setFormAsset(p => ({ ...p, protocol: e.target.value }))}
+                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '8px 10px', borderRadius: 0, fontSize: 13 }}
+                >
+                  {['HTTPS', 'HTTPS/REST', 'gRPC', 'PostgreSQL', 'TCP', 'WebSocket', 'MQTT'].map(t => <option key={t}>{t}</option>)}
+                </select>
+              </div>
+              <div>
+                <Label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Network Exposure</Label>
+                <select
+                  value={formAsset.exposure}
+                  onChange={e => setFormAsset(p => ({ ...p, exposure: e.target.value }))}
+                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '8px 10px', borderRadius: 0, fontSize: 13 }}
+                >
+                  <option value="public">Public (Internet-facing)</option>
+                  <option value="internal">Internal (LAN only)</option>
+                  <option value="restricted">Restricted (VPN/MFA required)</option>
+                </select>
+              </div>
+              <div>
+                <Label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Risk Level</Label>
+                <select
+                  value={formAsset.risk}
+                  onChange={e => setFormAsset(p => ({ ...p, risk: e.target.value as any }))}
+                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '8px 10px', borderRadius: 0, fontSize: 13 }}
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="critical">Critical</option>
+                </select>
+              </div>
+              <div>
+                <Label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Open Ports</Label>
+                <Input
+                  type="number" min={0} max={65535}
+                  value={formAsset.openPorts}
+                  onChange={e => setFormAsset(p => ({ ...p, openPorts: Number(e.target.value) }))}
+                  style={{ borderRadius: 0 }}
+                />
+              </div>
+              <div>
+                <Label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Asset Owner</Label>
+                <select
+                  value={formAsset.owner}
+                  onChange={e => setFormAsset(p => ({ ...p, owner: e.target.value }))}
+                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '8px 10px', borderRadius: 0, fontSize: 13 }}
+                >
+                  <option value="">Select owner...</option>
+                  {['Sarah Chen', 'Maria Santos', 'David Kim', 'James Patel', 'Raj Gupta', 'Emma Wilson'].map(o => <option key={o}>{o}</option>)}
+                </select>
+              </div>
+              <div className="col-span-2">
+                <Label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Description</Label>
+                <Textarea
+                  placeholder="Brief description of this asset and its purpose..."
+                  value={formAsset.description}
+                  onChange={e => setFormAsset(p => ({ ...p, description: e.target.value }))}
+                  style={{ borderRadius: 0, minHeight: 72 }}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRegisterOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
+            <Button
+              style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+              onClick={handleRegister}
+              disabled={!formAsset.name.trim()}
+            >
+              <Plus size={14} className="mr-2" />Register Asset
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete ConfirmDialog */}
       <ConfirmDialog

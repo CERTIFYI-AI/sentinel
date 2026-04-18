@@ -295,21 +295,60 @@ export default function GenAIRisks() {
                 </TabsList>
 
                 <TabsContent value="overview" className="mt-4 space-y-3">
-                  {[
-                    { label: 'Model', value: selected.model },
-                    { label: 'NIST 600-1 Risk', value: `#${selected.riskNumber} — ${selected.riskCategory}` },
-                    { label: 'Severity', value: selected.severity },
-                    { label: 'Current Guardrails', value: selected.guardrails },
-                    { label: 'Coverage', value: selected.guardrailCoverage },
-                    { label: 'Mitigation Status', value: selected.mitigationStatus },
-                    { label: 'Owner', value: selected.owner },
-                    { label: 'Created', value: selected.created },
-                  ].map(({ label, value }) => (
-                    <div key={label} className="flex items-start justify-between py-2 border-b" style={{ borderColor: 'hsl(var(--border))' }}>
-                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{label}</span>
-                      <span className="text-sm font-medium text-right max-w-[60%]" style={{ color: 'hsl(var(--text-1))' }}>{value}</span>
+                  {/* Risk Score Bar */}
+                  {(() => {
+                    const score = selected.severity === 'Critical' ? 92 : selected.severity === 'High' ? 74 : selected.severity === 'Medium' ? 48 : 22;
+                    const sc = severityColor(selected.severity);
+                    return (
+                      <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>Risk Score</span>
+                          <span className="text-lg font-bold" style={{ color: sc.text }}>{score}/100</span>
+                        </div>
+                        <div className="w-full h-2" style={{ background: 'hsl(var(--border))' }}>
+                          <div className="h-full transition-all" style={{ width: `${score}%`, background: sc.text }} />
+                        </div>
+                        <div className="flex justify-between mt-1">
+                          <span className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>Low</span>
+                          <span className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>Critical</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  {/* Key-value grid */}
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { label: 'Model', value: selected.model },
+                      { label: 'Owner', value: selected.owner },
+                      { label: 'NIST Risk #', value: `#${selected.riskNumber}` },
+                      { label: 'Created', value: selected.created },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="p-2" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                        <p className="text-[10px] mb-0.5" style={{ color: 'hsl(var(--text-4))' }}>{label}</p>
+                        <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{value}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Status badges */}
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { label: 'Severity', badge: selected.severity, color: severityColor(selected.severity) },
+                      { label: 'Coverage', badge: selected.guardrailCoverage, color: mitigationColor(selected.mitigationStatus) },
+                      { label: 'Mitigation', badge: selected.mitigationStatus, color: mitigationColor(selected.mitigationStatus) },
+                    ].map(({ label, badge, color }) => (
+                      <div key={label} className="p-2 text-center" style={{ background: color.bg, border: `1px solid ${color.bg}`, borderRadius: 0 }}>
+                        <p className="text-[10px] mb-1" style={{ color: 'hsl(var(--text-4))' }}>{label}</p>
+                        <p className="text-xs font-bold" style={{ color: color.text }}>{badge}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Risk category description */}
+                  {selectedRiskInfo && (
+                    <div className="p-3" style={{ background: 'hsl(var(--brand-subtle))', borderLeft: '3px solid hsl(var(--brand))', borderRadius: 0 }}>
+                      <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--brand))' }}>NIST AI 600-1 — {selectedRiskInfo.name}</p>
+                      <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{selectedRiskInfo.desc}</p>
                     </div>
-                  ))}
+                  )}
                 </TabsContent>
 
                 <TabsContent value="guidance" className="mt-4 space-y-3">
@@ -320,43 +359,99 @@ export default function GenAIRisks() {
                         <p className="text-sm font-bold" style={{ color: 'hsl(var(--brand))' }}>{selectedRiskInfo.name}</p>
                         <p className="text-xs mt-2" style={{ color: 'hsl(var(--text-3))' }}>{selectedRiskInfo.desc}</p>
                       </div>
-                      <div className="space-y-1">
-                        <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>Recommended practices:</p>
-                        <ul className="space-y-1">
-                          {['Implement monitoring and detection controls', 'Establish testing protocols before deployment', 'Define escalation procedures for detected incidents', 'Document mitigation strategies and their effectiveness'].map(p => (
-                            <li key={p} className="text-xs flex items-start gap-2" style={{ color: 'hsl(var(--text-3))' }}>
-                              <span style={{ color: 'hsl(var(--brand))' }}>•</span>{p}
-                            </li>
-                          ))}
-                        </ul>
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>Recommended controls:</p>
+                        {[
+                          { action: 'Implement monitoring and detection controls', priority: 'High' },
+                          { action: 'Establish testing protocols before deployment', priority: 'High' },
+                          { action: 'Define escalation procedures for detected incidents', priority: 'Medium' },
+                          { action: 'Document mitigation strategies and their effectiveness', priority: 'Medium' },
+                          { action: 'Conduct periodic red team exercises targeting this risk', priority: 'Low' },
+                        ].map(({ action, priority }) => {
+                          const pColor = priority === 'High' ? 'hsl(var(--s-er-tx))' : priority === 'Medium' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))';
+                          return (
+                            <div key={action} className="flex items-start justify-between p-2" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                              <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{action}</span>
+                              <span className="text-[10px] font-bold ml-3 whitespace-nowrap" style={{ color: pColor }}>{priority}</span>
+                            </div>
+                          );
+                        })}
                       </div>
-                      <Button size="sm" style={{ borderRadius: 0 }}>Apply Recommended Guardrail</Button>
+                      <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>Apply Recommended Guardrail</Button>
                     </>
                   )}
                 </TabsContent>
 
-                <TabsContent value="guardrails" className="mt-4 space-y-2">
-                  <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Active guardrails for this risk profile:</p>
-                  <div className="p-3 border" style={{ borderColor: 'hsl(var(--border))' }}>
-                    <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{selected.guardrails}</p>
-                    <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>Coverage: {selected.guardrailCoverage}</p>
+                <TabsContent value="guardrails" className="mt-4 space-y-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>Guardrail Coverage</p>
+                    <Badge style={{ ...mitigationColor(selected.mitigationStatus), borderRadius: 0, fontSize: 10 }}>{selected.guardrailCoverage}</Badge>
+                  </div>
+                  {selected.guardrails !== 'None' ? (
+                    <>
+                      {selected.guardrails.split(', ').map(g => (
+                        <div key={g} className="flex items-center justify-between p-3" style={{ background: 'hsl(var(--s-ok-bg))', border: '1px solid hsl(var(--s-ok-br))', borderRadius: 0 }}>
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full" style={{ background: 'hsl(var(--s-ok-tx))' }} />
+                            <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{g}</span>
+                          </div>
+                          <span className="text-[10px] font-semibold" style={{ color: 'hsl(var(--s-ok-tx))' }}>ACTIVE</span>
+                        </div>
+                      ))}
+                    </>
+                  ) : (
+                    <div className="p-4 text-center" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-br))', borderRadius: 0 }}>
+                      <p className="text-sm font-semibold" style={{ color: 'hsl(var(--s-er-tx))' }}>No guardrails configured</p>
+                      <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>This risk has no active controls. Immediate action recommended.</p>
+                      <Button size="sm" className="mt-3" style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: '#fff' }}>Assign Guardrail</Button>
+                    </div>
+                  )}
+                  {/* Coverage breakdown */}
+                  <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                    <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-2))' }}>Coverage Dimensions</p>
+                    {[
+                      { dim: 'Input Validation', pct: selected.guardrailCoverage === 'Implemented' ? 95 : selected.guardrailCoverage === 'Partial' ? 60 : 0 },
+                      { dim: 'Output Filtering', pct: selected.guardrailCoverage === 'Implemented' ? 88 : selected.guardrailCoverage === 'Partial' ? 45 : 0 },
+                      { dim: 'Monitoring & Alerting', pct: selected.guardrailCoverage === 'Implemented' ? 100 : selected.guardrailCoverage === 'Partial' ? 70 : 0 },
+                    ].map(({ dim, pct }) => (
+                      <div key={dim} className="mb-2">
+                        <div className="flex justify-between mb-0.5">
+                          <span className="text-[11px]" style={{ color: 'hsl(var(--text-3))' }}>{dim}</span>
+                          <span className="text-[11px] font-bold" style={{ color: pct === 0 ? 'hsl(var(--s-er-tx))' : pct >= 80 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))' }}>{pct}%</span>
+                        </div>
+                        <div className="w-full h-1.5" style={{ background: 'hsl(var(--border))' }}>
+                          <div className="h-full" style={{ width: `${pct}%`, background: pct === 0 ? 'hsl(var(--s-er-tx))' : pct >= 80 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))' }} />
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </TabsContent>
 
                 <TabsContent value="log" className="mt-4 space-y-2">
+                  <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-2))' }}>Mitigation Timeline</p>
                   {[
-                    { date: selected.created, action: 'Risk profile created', user: selected.owner },
-                    { date: selected.created, action: `Severity assessed: ${selected.severity}`, user: 'System' },
-                    ...(selected.mitigationStatus !== 'Not Addressed' ? [{ date: selected.created, action: `Mitigation: ${selected.mitigationStatus}`, user: selected.owner }] : []),
-                  ].map((ev, i) => (
-                    <div key={i} className="flex items-start gap-2 p-2 border-b" style={{ borderColor: 'hsl(var(--border))' }}>
-                      <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ background: 'hsl(var(--brand))' }} />
-                      <div>
-                        <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-2))' }}>{ev.action}</p>
-                        <p className="text-[11px]" style={{ color: 'hsl(var(--text-4))' }}>{ev.date} · {ev.user}</p>
+                    { date: selected.created, action: 'Risk profile created and catalogued', user: selected.owner, type: 'info' },
+                    { date: selected.created, action: `Initial severity assessed: ${selected.severity}`, user: 'Risk Engine', type: 'info' },
+                    { date: selected.created, action: `NIST 600-1 mapping applied: Risk #${selected.riskNumber}`, user: 'System', type: 'info' },
+                    ...(selected.guardrailCoverage !== 'None' ? [{ date: selected.created, action: `Guardrail assigned: ${selected.guardrails}`, user: selected.owner, type: 'ok' }] : []),
+                    ...(selected.mitigationStatus === 'Implemented' ? [{ date: selected.created, action: 'All controls validated — risk mitigated', user: selected.owner, type: 'ok' }] : []),
+                    ...(selected.mitigationStatus === 'Partial' ? [{ date: selected.created, action: 'Partial mitigation in place — follow-up required', user: selected.owner, type: 'warn' }] : []),
+                    ...(selected.mitigationStatus === 'Not Addressed' ? [{ date: selected.created, action: 'Risk flagged as unaddressed — escalation pending', user: 'Risk Engine', type: 'error' }] : []),
+                  ].map((ev, i) => {
+                    const dotColor = ev.type === 'ok' ? 'hsl(var(--s-ok-tx))' : ev.type === 'warn' ? 'hsl(var(--s-wn-tx))' : ev.type === 'error' ? 'hsl(var(--s-er-tx))' : 'hsl(var(--brand))';
+                    return (
+                      <div key={i} className="flex items-start gap-3 pb-3" style={{ borderBottom: i < 3 ? '1px solid hsl(var(--border))' : undefined }}>
+                        <div className="flex flex-col items-center">
+                          <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ background: dotColor }} />
+                          {i < 3 && <div className="w-px flex-1 mt-1" style={{ background: 'hsl(var(--border))', minHeight: 16 }} />}
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-2))' }}>{ev.action}</p>
+                          <p className="text-[11px] mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>{ev.date} · {ev.user}</p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </TabsContent>
               </Tabs>
             </>
