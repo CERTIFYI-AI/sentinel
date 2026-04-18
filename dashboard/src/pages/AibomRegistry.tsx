@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Package, MagnifyingGlass, Plus, Eye, X, Export, Warning, CheckCircle, Trash, ShieldWarning, Scales, ListChecks } from '@phosphor-icons/react'
+import { Package, MagnifyingGlass, Plus, Eye, X, Export, Warning, CheckCircle, Trash, ShieldWarning, Scales, ListChecks, ArrowLeft, ArrowRight, DownloadSimple, Seal, FloppyDisk, Spinner, CaretRight } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 
@@ -38,7 +38,9 @@ const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
   Incomplete: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
 }
 
-const BLANK_AIBOM = { model: '', version: '', format: 'Sentinel-AIBOM' as const, baseModel: '', owner: '' }
+const BLANK_AIBOM = { model: '', version: '', format: 'Sentinel-AIBOM' as const, baseModel: '', baseModelProvider: 'Open Source', owner: '', description: '' }
+const BLANK_DS = { name: '', version: '', license: 'Proprietary' }
+const BLANK_DEP = { name: '', version: '', license: 'MIT', risk: 'Low' as 'Low' | 'Medium' | 'High' }
 
 export default function AibomRegistry() {
   const [records, setRecords] = useState<AIBOMRecord[]>(SEED)
@@ -46,27 +48,55 @@ export default function AibomRegistry() {
   const [drawerTab, setDrawerTab] = useState<'overview' | 'components' | 'vulnerabilities' | 'compliance'>('overview')
   const [search, setSearch] = useState('')
   const [showCreate, setShowCreate] = useState(false)
-  const [form, setForm] = useState(BLANK_AIBOM)
+  const [wizardStep, setWizardStep] = useState(1)
+  const [form, setForm] = useState({ ...BLANK_AIBOM })
+  const [wizardDatasets, setWizardDatasets] = useState<typeof BLANK_DS[]>([])
+  const [wizardDeps, setWizardDeps] = useState<typeof BLANK_DEP[]>([])
+  const [wizardFw, setWizardFw] = useState<string[]>([])
+  const [wizardFwInput, setWizardFwInput] = useState('')
+  const [newDs, setNewDs] = useState({ ...BLANK_DS })
+  const [newDep, setNewDep] = useState({ ...BLANK_DEP })
+  const [generating, setGenerating] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<AIBOMRecord | null>(null)
+  const [attesting, setAttesting] = useState(false)
 
   const filtered = records.filter(r =>
     r.modelName.toLowerCase().includes(search.toLowerCase()) || r.id.toLowerCase().includes(search.toLowerCase())
   )
 
+  function openWizard() {
+    setForm({ ...BLANK_AIBOM })
+    setWizardDatasets([])
+    setWizardDeps([])
+    setWizardFw([])
+    setWizardFwInput('')
+    setNewDs({ ...BLANK_DS })
+    setNewDep({ ...BLANK_DEP })
+    setWizardStep(1)
+    setShowCreate(true)
+  }
+
   function handleCreate() {
     if (!form.model || !form.version || !form.baseModel) { toast.error('Model name, version, and base model are required'); return }
-    const newR: AIBOMRecord = {
-      id: `AIBOM-${String(records.length + 1).padStart(3, '0')}`,
-      modelName: form.model, modelVersion: form.version, format: form.format as AIBOMRecord['format'],
-      generatedDate: '2026-04-10', status: 'Pending Verification', baseModel: form.baseModel,
-      baseModelProvider: 'Internal', trainingDatasets: [], frameworks: [], dependencies: [],
-      vulnerabilities: 0, licenseConflicts: 0, sha256: 'PENDING',
-      attestedBy: 'Pending', owner: form.owner || 'ML Engineering',
-    }
-    setRecords(p => [newR, ...p])
-    setShowCreate(false)
-    setForm(BLANK_AIBOM)
-    toast.success(`AIBOM ${newR.id} created for ${newR.modelName} ${newR.modelVersion} — pending verification`)
+    setGenerating(true)
+    setTimeout(() => {
+      const sha = Math.random().toString(36).slice(2, 14) + Math.random().toString(36).slice(2, 14)
+      const newR: AIBOMRecord = {
+        id: `AIBOM-${String(records.length + 1).padStart(3, '0')}`,
+        modelName: form.model, modelVersion: form.version, format: form.format as AIBOMRecord['format'],
+        generatedDate: new Date().toISOString().split('T')[0], status: 'Pending Verification',
+        baseModel: form.baseModel, baseModelProvider: form.baseModelProvider,
+        trainingDatasets: wizardDatasets, frameworks: wizardFw,
+        dependencies: wizardDeps as AIBOMRecord['dependencies'],
+        vulnerabilities: wizardDeps.filter(d => d.risk === 'High').length,
+        licenseConflicts: 0, sha256: sha.slice(0, 12) + '...',
+        attestedBy: 'Pending', owner: form.owner || 'ML Engineering',
+      }
+      setRecords(p => [newR, ...p])
+      setShowCreate(false)
+      setGenerating(false)
+      toast.success(`AIBOM ${newR.id} generated for ${newR.modelName} ${newR.modelVersion}`)
+    }, 1800)
   }
 
   function handleDelete() {
@@ -75,6 +105,41 @@ export default function AibomRegistry() {
     if (selected?.id === deleteTarget.id) setSelected(null)
     toast.success(`AIBOM ${deleteTarget.id} deleted`)
     setDeleteTarget(null)
+  }
+
+  function handleDownload(r: AIBOMRecord) {
+    const content = JSON.stringify({
+      bomFormat: r.format, specVersion: '1.4', serialNumber: r.id,
+      metadata: { component: { name: r.modelName, version: r.modelVersion }, timestamp: r.generatedDate },
+      components: r.dependencies.map(d => ({ type: 'library', name: d.name, version: d.version, licenses: [{ license: { id: d.license } }] })),
+      dependencies: [], attestedBy: r.attestedBy, sha256: r.sha256,
+    }, null, 2)
+    const blob = new Blob([content], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a'); a.href = url; a.download = `${r.id}.json`; a.click()
+    URL.revokeObjectURL(url)
+    toast.success(`Downloaded ${r.id}.json`)
+  }
+
+  function handleAttest(r: AIBOMRecord) {
+    setAttesting(true)
+    setTimeout(() => {
+      setRecords(p => p.map(x => x.id === r.id ? { ...x, attestedBy: 'James Liu', status: 'Verified' } : x))
+      if (selected?.id === r.id) setSelected(s => s ? { ...s, attestedBy: 'James Liu', status: 'Verified' } : s)
+      setAttesting(false)
+      toast.success(`Attestation signed for ${r.id} — status updated to Verified`)
+    }, 1200)
+  }
+
+  function handleExport() {
+    const csv = ['ID,Model,Version,Format,Status,Vulnerabilities,License Conflicts,Generated',
+      ...records.map(r => `${r.id},${r.modelName},${r.modelVersion},${r.format},${r.status},${r.vulnerabilities},${r.licenseConflicts},${r.generatedDate}`)
+    ].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a'); a.href = url; a.download = 'aibom-registry.csv'; a.click()
+    URL.revokeObjectURL(url)
+    toast.success('Exported AIBOM registry as CSV')
   }
 
   return (
@@ -88,10 +153,10 @@ export default function AibomRegistry() {
           <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">AI Bill of Materials — full component inventory for all AI models including base models, datasets, frameworks, and dependencies</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => toast.success('Exported AIBOM catalog')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
-            <Export size={14} /> Export
+          <button onClick={handleExport} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+            <Export size={14} /> Export CSV
           </button>
-          <button onClick={() => { setForm(BLANK_AIBOM); setShowCreate(true) }} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90">
+          <button onClick={openWizard} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90">
             <Plus size={14} /> Generate AIBOM
           </button>
         </div>
@@ -99,12 +164,12 @@ export default function AibomRegistry() {
 
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: 'Models in Registry', value: SEED.length, color: 'hsl(var(--text-1))' },
-          { label: 'Verified', value: SEED.filter(r => r.status === 'Verified').length, color: 'hsl(var(--s-ok-tx))' },
-          { label: 'Total Vulnerabilities', value: SEED.reduce((s, r) => s + r.vulnerabilities, 0), color: 'hsl(var(--destructive))' },
-          { label: 'License Conflicts', value: SEED.reduce((s, r) => s + r.licenseConflicts, 0), color: 'hsl(45 85% 40%)' },
+          { label: 'Models in Registry', value: records.length, color: 'hsl(var(--text-1))' },
+          { label: 'Verified', value: records.filter(r => r.status === 'Verified').length, color: 'hsl(var(--s-ok-tx))' },
+          { label: 'Total Vulnerabilities', value: records.reduce((s, r) => s + r.vulnerabilities, 0), color: 'hsl(var(--destructive))' },
+          { label: 'License Conflicts', value: records.reduce((s, r) => s + r.licenseConflicts, 0), color: 'hsl(45 85% 40%)' },
         ].map(s => (
-          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+          <div key={s.label} className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4" style={{ borderRadius: 0 }}>
             <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
             <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
           </div>
@@ -315,12 +380,273 @@ export default function AibomRegistry() {
             </div>
 
             <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
-              <button onClick={() => toast.success('AIBOM downloaded')} className="flex-1 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90">Download AIBOM</button>
-              <button onClick={() => toast.success('Attestation requested')} className="px-4 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">Request Attestation</button>
+              <button onClick={() => handleDownload(selected!)} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90">
+                <DownloadSimple size={14} /> Download AIBOM
+              </button>
+              <button
+                onClick={() => handleAttest(selected!)}
+                disabled={attesting || selected?.attestedBy !== 'Pending' && selected?.attestedBy !== 'Unassigned'}
+                className="flex items-center gap-1.5 px-4 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {attesting ? <Spinner size={14} className="animate-spin" /> : <Seal size={14} />}
+                {attesting ? 'Signing…' : selected?.attestedBy === 'Pending' || selected?.attestedBy === 'Unassigned' ? 'Sign Attestation' : 'Attested'}
+              </button>
             </div>
           </div>
         </div>
       )}
+      {/* ── Generate AIBOM Wizard Modal ──────────────────────────── */}
+      {showCreate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-[600px] max-h-[90vh] flex flex-col bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))]" style={{ borderRadius: 0 }}>
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
+              <div>
+                <p className="text-xs text-[hsl(var(--text-4))] mb-0.5">Step {wizardStep} of 4</p>
+                <h2 className="text-base font-semibold text-[hsl(var(--text-1))]">
+                  {wizardStep === 1 && 'Model Information'}
+                  {wizardStep === 2 && 'Training Datasets'}
+                  {wizardStep === 3 && 'Frameworks & Dependencies'}
+                  {wizardStep === 4 && 'Review & Generate'}
+                </h2>
+              </div>
+              <button onClick={() => setShowCreate(false)} className="text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-1))]"><X size={18} /></button>
+            </div>
+
+            {/* Step Progress */}
+            <div className="flex px-5 py-2 gap-1 border-b border-[hsl(var(--border))]">
+              {[1, 2, 3, 4].map(s => (
+                <div key={s} className="flex items-center gap-1 flex-1">
+                  <div className="flex items-center justify-center w-5 h-5 text-[10px] font-bold" style={{ background: s <= wizardStep ? 'hsl(var(--brand))' : 'hsl(var(--border))', color: s <= wizardStep ? '#fff' : 'hsl(var(--text-4))' }}>{s < wizardStep ? '✓' : s}</div>
+                  {s < 4 && <div className="flex-1 h-px" style={{ background: s < wizardStep ? 'hsl(var(--brand))' : 'hsl(var(--border))' }} />}
+                </div>
+              ))}
+            </div>
+
+            {/* Step Content */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+              {/* Step 1: Model Info */}
+              {wizardStep === 1 && (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide block mb-1">Model Name *</label>
+                      <input value={form.model} onChange={e => setForm(p => ({ ...p, model: e.target.value }))} placeholder="e.g. Loan Approval Model"
+                        className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide block mb-1">Version *</label>
+                      <input value={form.version} onChange={e => setForm(p => ({ ...p, version: e.target.value }))} placeholder="e.g. v3.1"
+                        className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide block mb-1">AIBOM Format</label>
+                      <select value={form.format} onChange={e => setForm(p => ({ ...p, format: e.target.value as any }))}
+                        className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+                        <option>Sentinel-AIBOM</option><option>CycloneDX</option><option>SPDX</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide block mb-1">Owner Team</label>
+                      <select value={form.owner} onChange={e => setForm(p => ({ ...p, owner: e.target.value }))}
+                        className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+                        <option value="">Select owner…</option>
+                        {['ML Engineering', 'Security AI', 'Customer Analytics', 'Risk & Compliance', 'Data Science'].map(o => <option key={o}>{o}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide block mb-1">Base Model *</label>
+                      <input value={form.baseModel} onChange={e => setForm(p => ({ ...p, baseModel: e.target.value }))} placeholder="e.g. LightGBM 4.3.0"
+                        className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide block mb-1">Base Model Provider</label>
+                      <select value={form.baseModelProvider} onChange={e => setForm(p => ({ ...p, baseModelProvider: e.target.value }))}
+                        className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+                        {['Open Source', 'OpenAI', 'Anthropic', 'Google DeepMind', 'Meta', 'Hugging Face', 'Microsoft', 'Internal'].map(p => <option key={p}>{p}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide block mb-1">Description</label>
+                    <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={2} placeholder="Brief description of this model and its purpose…"
+                      className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none resize-none" />
+                  </div>
+                </div>
+              )}
+
+              {/* Step 2: Training Datasets */}
+              {wizardStep === 2 && (
+                <div className="space-y-3">
+                  <p className="text-xs text-[hsl(var(--text-4))]">Add training datasets used for this model. Include name, version, and license type.</p>
+                  <div className="p-3 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] space-y-2">
+                    <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide">Add Dataset</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      <input value={newDs.name} onChange={e => setNewDs(p => ({ ...p, name: e.target.value }))} placeholder="Dataset name"
+                        className="px-2 py-1.5 text-xs border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none" />
+                      <input value={newDs.version} onChange={e => setNewDs(p => ({ ...p, version: e.target.value }))} placeholder="Version / Date"
+                        className="px-2 py-1.5 text-xs border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none" />
+                      <select value={newDs.license} onChange={e => setNewDs(p => ({ ...p, license: e.target.value }))}
+                        className="px-2 py-1.5 text-xs border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+                        {['Proprietary', 'Public Domain', 'Commercial', 'CC BY 4.0', 'MIT', 'Apache-2.0', 'Research Only'].map(l => <option key={l}>{l}</option>)}
+                      </select>
+                    </div>
+                    <button onClick={() => { if (newDs.name) { setWizardDatasets(p => [...p, { ...newDs }]); setNewDs({ ...BLANK_DS }) } }}
+                      disabled={!newDs.name}
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs bg-[hsl(var(--brand))] text-white disabled:opacity-40">
+                      <Plus size={12} /> Add Dataset
+                    </button>
+                  </div>
+                  <div className="space-y-1">
+                    {wizardDatasets.length === 0 && <p className="text-xs text-[hsl(var(--text-4))] text-center py-4">No datasets added yet</p>}
+                    {wizardDatasets.map((d, i) => (
+                      <div key={i} className="flex items-center justify-between p-2.5 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))]">
+                        <div>
+                          <p className="text-xs font-medium text-[hsl(var(--text-1))]">{d.name} <span className="font-normal text-[hsl(var(--text-4))]">{d.version}</span></p>
+                          <p className="text-[10px] text-[hsl(var(--text-4))]">{d.license}</p>
+                        </div>
+                        <button onClick={() => setWizardDatasets(p => p.filter((_, idx) => idx !== i))} className="text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))]"><X size={14} /></button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Step 3: Frameworks & Dependencies */}
+              {wizardStep === 3 && (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide">Frameworks & Runtime</p>
+                    <div className="flex gap-2">
+                      <input value={wizardFwInput} onChange={e => setWizardFwInput(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter' && wizardFwInput.trim()) { setWizardFw(p => [...p, wizardFwInput.trim()]); setWizardFwInput('') }}}
+                        placeholder="e.g. scikit-learn 1.4.0 (press Enter)"
+                        className="flex-1 px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none" />
+                      <button onClick={() => { if (wizardFwInput.trim()) { setWizardFw(p => [...p, wizardFwInput.trim()]); setWizardFwInput('') }}}
+                        className="px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm"><Plus size={14} /></button>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {wizardFw.map((f, i) => (
+                        <span key={i} className="flex items-center gap-1 px-2 py-0.5 text-xs border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-2))]">
+                          {f} <button onClick={() => setWizardFw(p => p.filter((_, idx) => idx !== i))}><X size={10} /></button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide">Dependencies</p>
+                    <div className="p-3 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] space-y-2">
+                      <div className="grid grid-cols-4 gap-2">
+                        <input value={newDep.name} onChange={e => setNewDep(p => ({ ...p, name: e.target.value }))} placeholder="Package"
+                          className="px-2 py-1.5 text-xs border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none" />
+                        <input value={newDep.version} onChange={e => setNewDep(p => ({ ...p, version: e.target.value }))} placeholder="Version"
+                          className="px-2 py-1.5 text-xs border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none" />
+                        <select value={newDep.license} onChange={e => setNewDep(p => ({ ...p, license: e.target.value }))}
+                          className="px-2 py-1.5 text-xs border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+                          {['MIT', 'Apache-2.0', 'BSD-3', 'GPL-3.0', 'LGPL', 'Proprietary'].map(l => <option key={l}>{l}</option>)}
+                        </select>
+                        <select value={newDep.risk} onChange={e => setNewDep(p => ({ ...p, risk: e.target.value as any }))}
+                          className="px-2 py-1.5 text-xs border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+                          <option>Low</option><option>Medium</option><option>High</option>
+                        </select>
+                      </div>
+                      <button onClick={() => { if (newDep.name) { setWizardDeps(p => [...p, { ...newDep }]); setNewDep({ ...BLANK_DEP }) }}}
+                        disabled={!newDep.name}
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs bg-[hsl(var(--brand))] text-white disabled:opacity-40">
+                        <Plus size={12} /> Add Dependency
+                      </button>
+                    </div>
+                    <div className="space-y-1">
+                      {wizardDeps.length === 0 && <p className="text-xs text-[hsl(var(--text-4))] text-center py-3">No dependencies added</p>}
+                      {wizardDeps.map((d, i) => (
+                        <div key={i} className="flex items-center justify-between p-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))]">
+                          <div className="flex items-center gap-2 flex-1">
+                            <p className="text-xs font-medium text-[hsl(var(--text-1))]">{d.name} <span className="font-normal text-[hsl(var(--text-4))]">{d.version}</span></p>
+                            <span className="text-[10px] font-mono text-[hsl(var(--text-4))]">{d.license}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] px-1.5 py-0.5 font-medium" style={{ background: d.risk === 'High' ? 'hsl(0 72% 51% / 0.12)' : d.risk === 'Medium' ? 'hsl(45 93% 47% / 0.12)' : 'hsl(142 71% 45% / 0.12)', color: d.risk === 'High' ? 'hsl(var(--destructive))' : d.risk === 'Medium' ? 'hsl(45 85% 40%)' : 'hsl(var(--s-ok-tx))' }}>{d.risk}</span>
+                            <button onClick={() => setWizardDeps(p => p.filter((_, idx) => idx !== i))} className="text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))]"><X size={12} /></button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 4: Review */}
+              {wizardStep === 4 && (
+                <div className="space-y-4">
+                  <div className="p-3 border border-[hsl(var(--brand))] bg-[hsl(var(--brand-subtle))]">
+                    <p className="text-xs font-semibold text-[hsl(var(--brand))] mb-2">AIBOM Summary</p>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                      <p className="text-[hsl(var(--text-4))]">Model</p><p className="text-[hsl(var(--text-1))] font-medium">{form.model} {form.version}</p>
+                      <p className="text-[hsl(var(--text-4))]">Format</p><p className="text-[hsl(var(--text-1))] font-medium">{form.format}</p>
+                      <p className="text-[hsl(var(--text-4))]">Base Model</p><p className="text-[hsl(var(--text-1))] font-medium">{form.baseModel}</p>
+                      <p className="text-[hsl(var(--text-4))]">Provider</p><p className="text-[hsl(var(--text-1))] font-medium">{form.baseModelProvider}</p>
+                      <p className="text-[hsl(var(--text-4))]">Owner</p><p className="text-[hsl(var(--text-1))] font-medium">{form.owner || 'ML Engineering'}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    {[
+                      { label: 'Training Datasets', value: wizardDatasets.length, color: 'hsl(var(--brand))' },
+                      { label: 'Frameworks', value: wizardFw.length, color: 'hsl(var(--s-ok-tx))' },
+                      { label: 'Dependencies', value: wizardDeps.length, color: wizardDeps.filter(d => d.risk === 'High').length > 0 ? 'hsl(var(--destructive))' : 'hsl(var(--s-ok-tx))' },
+                    ].map(({ label, value, color }) => (
+                      <div key={label} className="p-3 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))]">
+                        <p className="text-lg font-bold" style={{ color }}>{value}</p>
+                        <p className="text-[10px] text-[hsl(var(--text-4))]">{label}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {wizardDeps.filter(d => d.risk === 'High').length > 0 && (
+                    <div className="flex items-center gap-2 p-3 border border-[hsl(0_72%_51%_/_0.3)] bg-[hsl(0_72%_51%_/_0.06)]">
+                      <ShieldWarning size={16} className="text-[hsl(var(--destructive))] flex-shrink-0" />
+                      <p className="text-xs text-[hsl(var(--text-2))]">{wizardDeps.filter(d => d.risk === 'High').length} high-risk dependency(ies) detected — will flag vulnerabilities after generation</p>
+                    </div>
+                  )}
+                  <div className="p-3 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
+                    <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">Post-Generation Steps</p>
+                    <ul className="space-y-1">
+                      {['SHA-256 cryptographic hash will be auto-generated', 'Status set to "Pending Verification" — requires attestation', 'CVE scan will run against registered dependencies', 'License compatibility check will be performed'].map(s => (
+                        <li key={s} className="flex items-center gap-2 text-xs text-[hsl(var(--text-3))]">
+                          <CaretRight size={10} className="text-[hsl(var(--brand))]" /> {s}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between px-5 py-4 border-t border-[hsl(var(--border))]">
+              <button onClick={() => wizardStep > 1 ? setWizardStep(s => s - 1) : setShowCreate(false)}
+                className="flex items-center gap-1.5 px-4 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+                <ArrowLeft size={14} /> {wizardStep === 1 ? 'Cancel' : 'Back'}
+              </button>
+              {wizardStep < 4 ? (
+                <button
+                  onClick={() => {
+                    if (wizardStep === 1 && (!form.model || !form.version || !form.baseModel)) { toast.error('Model name, version, and base model are required'); return }
+                    setWizardStep(s => s + 1)
+                  }}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90">
+                  Next <ArrowRight size={14} />
+                </button>
+              ) : (
+                <button onClick={handleCreate} disabled={generating}
+                  className="flex items-center gap-1.5 px-5 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90 disabled:opacity-60">
+                  {generating ? <><Spinner size={14} className="animate-spin" /> Generating…</> : <><FloppyDisk size={14} /> Generate AIBOM</>}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={o => !o && setDeleteTarget(null)}
