@@ -87,7 +87,7 @@ html {
 }
 
 body {
-  font-family: "Outfit", sans-serif;
+  font-family: "Outfit";
   background: hsl(var(--bg-page));
   color: hsl(var(--text-1));
   -webkit-font-smoothing: antialiased;
