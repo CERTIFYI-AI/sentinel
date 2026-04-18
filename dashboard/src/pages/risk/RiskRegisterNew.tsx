@@ -9,9 +9,14 @@ import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Textarea } from '../../components/ui/textarea';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from '../../components/ui/sheet';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from '../../components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -490,13 +495,24 @@ function MiniMatrix({ likelihood, impact }: { likelihood: number; impact: number
 
 export default function RiskRegisterNew() {
   const { orgName } = useSettingsStore();
-  const [risks] = useState<RiskItem[]>(SEED_RISKS);
+  const [risks, setRisks] = useState<RiskItem[]>(SEED_RISKS);
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [selectedRisk, setSelectedRisk] = useState<RiskItem | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [detailTab, setDetailTab] = useState('overview');
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
+
+  // ── Add Risk dialog state ──────────────────────────────────────────────────
+  const [addOpen, setAddOpen] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newCategory, setNewCategory] = useState<RiskCategory>('AI Model');
+  const [newLikelihood, setNewLikelihood] = useState(3);
+  const [newImpact, setNewImpact] = useState(3);
+  const [newDescription, setNewDescription] = useState('');
+  const [newOwner, setNewOwner] = useState('');
+  const [newTreatment, setNewTreatment] = useState('');
+  const [newFramework, setNewFramework] = useState('');
 
   const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
     const id = Date.now();
@@ -543,6 +559,41 @@ export default function RiskRegisterNew() {
     toast('Risk register exported as CSV');
   };
 
+  // ── Add Risk ───────────────────────────────────────────────────────────────
+  const handleAddRisk = () => {
+    if (!newTitle.trim()) { toast('Risk title is required', 'error'); return; }
+    if (!newDescription.trim()) { toast('Description is required', 'error'); return; }
+    if (!newOwner.trim()) { toast('Risk owner is required', 'error'); return; }
+    const nextNum = risks.length + 1;
+    const id = `RSK-${String(nextNum).padStart(3, '0')}`;
+    const score = newLikelihood * newImpact;
+    const today = new Date().toISOString().split('T')[0];
+    const risk: RiskItem = {
+      id,
+      title: newTitle.trim(),
+      description: newDescription.trim(),
+      category: newCategory,
+      likelihood: newLikelihood,
+      impact: newImpact,
+      score,
+      owner: newOwner.trim(),
+      treatmentStatus: 'Planned',
+      frameworkMapping: newFramework.trim()
+        ? newFramework.split(',').map(f => f.trim()).filter(Boolean)
+        : [],
+      treatmentPlan: newTreatment.trim(),
+      controls: [],
+      history: [{ date: today, action: 'Risk registered', user: 'Current User' }],
+      createdDate: today,
+      lastUpdated: today,
+    };
+    setRisks(prev => [risk, ...prev]);
+    setAddOpen(false);
+    setNewTitle(''); setNewCategory('AI Model'); setNewLikelihood(3); setNewImpact(3);
+    setNewDescription(''); setNewOwner(''); setNewTreatment(''); setNewFramework('');
+    toast(`${id} added to risk register`);
+  };
+
   return (
     <div className="space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
       {/* Toast layer */}
@@ -577,6 +628,14 @@ export default function RiskRegisterNew() {
           >
             <Export size={14} className="mr-1" />
             Export CSV
+          </Button>
+          <Button
+            size="sm"
+            style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+            onClick={() => setAddOpen(true)}
+          >
+            <Plus size={14} className="mr-1" />
+            Add Risk
           </Button>
         </div>
       </div>
@@ -967,6 +1026,122 @@ export default function RiskRegisterNew() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* ── Add Risk Dialog ───────────────────────────────────────────────── */}
+      <Dialog open={addOpen} onOpenChange={(o) => { setAddOpen(o); }}>
+        <DialogContent style={{ borderRadius: 0, maxWidth: 560 }} className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>Register New Risk</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Risk Title *</Label>
+              <Input
+                value={newTitle}
+                onChange={e => setNewTitle(e.target.value)}
+                placeholder="e.g. Model drift in production scoring pipeline"
+                style={{ borderRadius: 0 }}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs font-medium">Category *</Label>
+                <Select value={newCategory} onValueChange={v => setNewCategory(v as RiskCategory)}>
+                  <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {(['AI Model', 'Data', 'Operational', 'Compliance', 'Security', 'Third-Party'] as RiskCategory[]).map(c => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-medium">Risk Owner *</Label>
+                <Input
+                  value={newOwner}
+                  onChange={e => setNewOwner(e.target.value)}
+                  placeholder="e.g. Sarah Chen"
+                  style={{ borderRadius: 0 }}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs font-medium">Likelihood (1–5)</Label>
+                <Select value={String(newLikelihood)} onValueChange={v => setNewLikelihood(Number(v))}>
+                  <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {[1, 2, 3, 4, 5].map(n => (
+                      <SelectItem key={n} value={String(n)}>{n} — {['Rare', 'Unlikely', 'Possible', 'Likely', 'Almost Certain'][n - 1]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-medium">Impact (1–5)</Label>
+                <Select value={String(newImpact)} onValueChange={v => setNewImpact(Number(v))}>
+                  <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {[1, 2, 3, 4, 5].map(n => (
+                      <SelectItem key={n} value={String(n)}>{n} — {['Insignificant', 'Minor', 'Moderate', 'Major', 'Catastrophic'][n - 1]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))' }}>
+              <div className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Risk Score</div>
+              <div className="text-2xl font-black" style={{
+                color: newLikelihood * newImpact >= 15 ? 'hsl(var(--destructive))' : newLikelihood * newImpact >= 8 ? 'hsl(45 85% 40%)' : 'hsl(var(--s-ok-tx))',
+              }}>
+                {newLikelihood * newImpact}
+              </div>
+              <div className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+                {newLikelihood * newImpact >= 15 ? 'Critical' : newLikelihood * newImpact >= 8 ? 'High' : newLikelihood * newImpact >= 4 ? 'Medium' : 'Low'}
+                {' '}(Likelihood {newLikelihood} × Impact {newImpact})
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Description *</Label>
+              <Textarea
+                value={newDescription}
+                onChange={e => setNewDescription(e.target.value)}
+                placeholder="Describe the risk, its source, and potential consequences..."
+                rows={3}
+                style={{ borderRadius: 0 }}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Treatment Plan</Label>
+              <Textarea
+                value={newTreatment}
+                onChange={e => setNewTreatment(e.target.value)}
+                placeholder="Proposed mitigation or remediation steps..."
+                rows={2}
+                style={{ borderRadius: 0 }}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Framework Mapping</Label>
+              <Input
+                value={newFramework}
+                onChange={e => setNewFramework(e.target.value)}
+                placeholder="e.g. EU AI Act Art. 9, ISO 42001 A.6.1 (comma-separated)"
+                style={{ borderRadius: 0 }}
+              />
+              <p className="text-[11px]" style={{ color: 'hsl(var(--text-4))' }}>Separate multiple references with commas</p>
+            </div>
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setAddOpen(false)} style={{ borderRadius: 0 }}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddRisk} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+              <Plus size={14} className="mr-1" />Register Risk
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

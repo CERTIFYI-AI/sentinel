@@ -301,7 +301,7 @@ export default function App() {
           <Route path="/audit-log" element={<AuditLog />} />
           <Route path="/evidence-vault" element={<EvidenceVault />} />
           <Route path="/export" element={<ExportCenter />} />
-          <Route path="/hitl-queue" element={<HitlQueue />} />
+          <Route path="/hitl-queue" element={<Navigate to="/hitl" replace />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/policy-editor" element={<PolicyEditor />} />
           <Route path="/remediation-tracker" element={<RemediationTracker />} />

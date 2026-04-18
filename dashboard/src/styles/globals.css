@@ -52,6 +52,11 @@
   .text-brand { color: hsl(var(--brand)); }
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .scrollbar-thin { scrollbar-width: thin; }
+  .scrollbar-thin::-webkit-scrollbar { width: 4px; height: 4px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: hsl(var(--border)); }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: hsl(var(--border-mid)); }
   .transition-base {
     transition-property: color, background-color, border-color, opacity, box-shadow;
     transition-duration: 150ms;
