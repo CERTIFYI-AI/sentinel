@@ -45,6 +45,28 @@
   --destructive: 0 72% 51%;
 }
 
+/* Explicit .light class — mirrors :root so ThemeProvider's .light on <html> resolves correctly */
+.light {
+  --bg-page:     240 5% 96%;
+  --bg-surface:  0 0% 100%;
+  --bg-raised:   240 5% 98%;
+  --bg-sunken:   240 5% 93%;
+  --bg-muted:    240 5% 95%;
+  --border:      240 6% 88%;
+  --border-mid:  240 6% 80%;
+  --text-1:      240 10% 4%;
+  --text-2:      240 6% 22%;
+  --text-3:      240 4% 44%;
+  --text-4:      240 4% 62%;
+  --text-primary:    var(--text-1);
+  --text-secondary:  var(--text-2);
+  --text-tertiary:   var(--text-3);
+  --text-muted:      var(--text-4);
+  --brand:       142 47% 38%;
+  --brand-hover: 142 47% 31%;
+  --brand-subtle:142 47% 96%;
+}
+
 .dark {
   --bg-page:    224 15% 8%;
   --bg-surface: 224 15% 11%;

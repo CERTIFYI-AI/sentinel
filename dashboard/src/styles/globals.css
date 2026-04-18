@@ -1,5 +1,4 @@
-@import './tokens.css';
-
+/* Each CSS file processed by Vite needs its own @tailwind directives for @layer to work */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -19,49 +18,43 @@
     scroll-behavior: smooth;
   }
   body {
-    font-family: var(--font-sans);
-    font-size: var(--text-sm);
-    line-height: var(--leading-normal);
+    font-family: "Outfit", sans-serif;
     background-color: hsl(var(--bg-page));
-    color: hsl(var(--text-primary));
-    transition: background-color var(--duration-slow) var(--ease-default), color var(--duration-slow) var(--ease-default);
+    color: hsl(var(--text-1));
+    transition: background-color 150ms ease, color 150ms ease;
   }
-  h1, h2, h3, h4, h5, h6 { font-weight: var(--font-semibold); }
-  h1 { font-size: var(--text-2xl); line-height: var(--leading-tight); }
-  h2 { font-size: var(--text-xl); line-height: var(--leading-tight); }
-  h3 { font-size: var(--text-lg); line-height: var(--leading-snug); }
-  code, pre, kbd, samp { font-family: var(--font-mono); font-size: var(--text-xs); }
-  :focus-visible { outline: 2px solid hsl(var(--interactive-focus)); outline-offset: 2px; }
-  ::selection { background-color: hsl(var(--brand) / 0.15); color: hsl(var(--text-primary)); }
+  h1, h2, h3, h4, h5, h6 { font-weight: 600; }
+  code, pre, kbd, samp { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.75rem; }
+  :focus-visible { outline: 2px solid hsl(var(--brand)); outline-offset: 2px; }
+  ::selection { background-color: hsl(var(--brand) / 0.15); color: hsl(var(--text-1)); }
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: hsl(var(--border-default)); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: hsl(var(--border-strong)); }
+  ::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: hsl(var(--border-mid)); }
   input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus {
     -webkit-box-shadow: 0 0 0 100px hsl(var(--bg-surface)) inset !important;
-    -webkit-text-fill-color: hsl(var(--text-primary)) !important;
-    caret-color: hsl(var(--text-primary)) !important;
+    -webkit-text-fill-color: hsl(var(--text-1)) !important;
+    caret-color: hsl(var(--text-1)) !important;
   }
 }
 
 @layer utilities {
   .surface { background-color: hsl(var(--bg-surface)); }
-  .surface-raised { background-color: hsl(var(--bg-surface-raised)); }
-  .surface-sunken { background-color: hsl(var(--bg-surface-sunken)); }
-  .border-subtle { border-color: hsl(var(--border-subtle)); }
-  .border-default { border-color: hsl(var(--border-default)); }
-  .border-strong { border-color: hsl(var(--border-strong)); }
-  .text-default { color: hsl(var(--text-primary)); }
-  .text-secondary { color: hsl(var(--text-secondary)); }
-  .text-muted { color: hsl(var(--text-tertiary)); }
-  .text-subtle { color: hsl(var(--text-muted)); }
+  .surface-raised { background-color: hsl(var(--bg-raised)); }
+  .surface-sunken { background-color: hsl(var(--bg-sunken)); }
+  .border-subtle { border-color: hsl(var(--bg-muted)); }
+  .border-default { border-color: hsl(var(--border)); }
+  .border-strong { border-color: hsl(var(--border-mid)); }
+  .text-default { color: hsl(var(--text-1)); }
+  .text-secondary { color: hsl(var(--text-2)); }
+  .text-muted { color: hsl(var(--text-3)); }
+  .text-subtle { color: hsl(var(--text-4)); }
   .text-brand { color: hsl(var(--brand)); }
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-  .font-mono { font-family: var(--font-mono); }
   .transition-base {
     transition-property: color, background-color, border-color, opacity, box-shadow;
-    transition-duration: var(--duration-normal);
-    transition-timing-function: var(--ease-default);
+    transition-duration: 150ms;
+    transition-timing-function: ease;
   }
 }

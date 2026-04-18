@@ -8,7 +8,7 @@ export const TableBody=React.forwardRef<HTMLTableSectionElement,React.HTMLAttrib
 TableBody.displayName="TableBody";
 export const TableRow=React.forwardRef<HTMLTableRowElement,React.HTMLAttributes<HTMLTableRowElement>>(({className,...p},r)=>(<tr ref={r} className={cn("hover:bg-muted/30 transition-colors",className)} {...p}/>));
 TableRow.displayName="TableRow";
-export const TableHead=React.forwardRef<HTMLTableCellElement,React.ThHTMLAttributes<HTMLTableCellElement>>(({className,...p},r)=>(<th ref={r} className={cn("h-10 px-4 text-left align-middle font-medium text-muted-foreground",className)} {...p}/>));
+export const TableHead=React.forwardRef<HTMLTableCellElement,React.ThHTMLAttributes<HTMLTableCellElement>>(({className,...p},r)=>(<th ref={r} className={cn("h-10 px-4 text-left align-middle font-semibold text-foreground",className)} {...p}/>));
 TableHead.displayName="TableHead";
 export const TableCell=React.forwardRef<HTMLTableCellElement,React.TdHTMLAttributes<HTMLTableCellElement>>(({className,...p},r)=>(<td ref={r} className={cn("px-4 py-2.5 align-middle text-foreground",className)} {...p}/>));
 TableCell.displayName="TableCell";
