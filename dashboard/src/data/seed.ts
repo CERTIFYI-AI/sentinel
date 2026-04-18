@@ -501,6 +501,18 @@ export const CONTROLS: Control[] = [
   { id: 'CTRL-013', title: 'Sensitive Information Disclosure', framework: 'OWASP LLM', clause: 'LLM06', status: 'planned', score: 40, owner: 'Raj Gupta', evidenceCount: 3, lastTested: '', description: 'Prevent LLMs from disclosing sensitive information in outputs.', testResult: 'pending' },
   { id: 'CTRL-014', title: 'Model Inventory & Lifecycle', framework: 'NIST AI RMF', clause: 'GOVERN 1.2', status: 'implemented', score: 93, owner: 'Raj Gupta', evidenceCount: 25, lastTested: '2026-03-18', description: 'Maintain comprehensive inventory of all AI models and lifecycle tracking.', testResult: 'pass' },
   { id: 'CTRL-015', title: 'Automated Decision Rights', framework: 'GDPR', clause: 'Art. 22', status: 'partial', score: 58, owner: 'James Patel', evidenceCount: 9, lastTested: '2026-02-28', description: 'Ensure individual rights around automated decision-making.', testResult: 'fail' },
+
+  { id: 'CTRL-016', title: 'Human-in-the-Loop Selection', framework: 'Singapore Model AI', clause: 'Section 2.1', status: 'planned', score: 0, owner: '', evidenceCount: 0, lastTested: '', description: 'Select appropriate human oversight level.', testResult: 'not_tested' },
+  { id: 'CTRL-017', title: 'Data Management Documentation', framework: 'Singapore Model AI', clause: 'Section 3.2', status: 'planned', score: 0, owner: '', evidenceCount: 0, lastTested: '', description: 'Document data pipelines and cleaning steps.', testResult: 'not_tested' },
+  { id: 'CTRL-018', title: 'Fairness and Non-Discrimination', framework: 'OECD AI Principles', clause: 'Principle 1.4', status: 'planned', score: 0, owner: '', evidenceCount: 0, lastTested: '', description: 'Implement non-discrimination checks.', testResult: 'not_tested' },
+  { id: 'CTRL-019', title: 'Accountability Assignment', framework: 'OECD AI Principles', clause: 'Principle 2.2', status: 'planned', score: 0, owner: '', evidenceCount: 0, lastTested: '', description: 'Assign human responsible for each system.', testResult: 'not_tested' },
+  { id: 'CTRL-020', title: 'Sustainability Assessment', framework: 'UNESCO Ethics of AI', clause: 'Policy Area 8', status: 'planned', score: 0, owner: '', evidenceCount: 0, lastTested: '', description: 'Assess environmental impact of AI training.', testResult: 'not_tested' },
+  { id: 'CTRL-021', title: 'Gender Equality in AI', framework: 'UNESCO Ethics of AI', clause: 'Policy Area 10', status: 'planned', score: 0, owner: '', evidenceCount: 0, lastTested: '', description: 'Ensure AI does not reinforce gender stereotypes.', testResult: 'not_tested' },
+  { id: 'CTRL-022', title: 'Sanitize Model Inputs', framework: 'Google SAIF', clause: 'Pillar 1', status: 'planned', score: 0, owner: '', evidenceCount: 0, lastTested: '', description: 'Standardized input filtering for model interactions.', testResult: 'not_tested' },
+  { id: 'CTRL-023', title: 'Supply Chain Integrity', framework: 'Google SAIF', clause: 'Pillar 6', status: 'planned', score: 0, owner: '', evidenceCount: 0, lastTested: '', description: 'Verify hash and source of foundational models.', testResult: 'not_tested' },
+  { id: 'CTRL-024', title: 'ML Model Evasion Defense', framework: 'MITRE ATLAS', clause: 'AML.T0015', status: 'planned', score: 0, owner: '', evidenceCount: 0, lastTested: '', description: 'Defend against adversarial examples.', testResult: 'not_tested' },
+  { id: 'CTRL-025', title: 'Data Poisoning Detection', framework: 'MITRE ATLAS', clause: 'AML.T0020', status: 'planned', score: 0, owner: '', evidenceCount: 0, lastTested: '', description: 'Monitor for malicious training inputs.', testResult: 'not_tested' },
+
 ];
 
 // ── Frameworks ─────────────────────────────────
@@ -516,6 +528,12 @@ export const FRAMEWORKS: Framework[] = [
   { id: 'FW-004', name: 'EU AI Act', description: 'European Union regulation on artificial intelligence systems.', controlsTotal: 45, controlsImplemented: 29, complianceScore: 65, status: 'Partial', nextAudit: '2026-06-01', category: 'AI Regulation' },
   { id: 'FW-005', name: 'NIST AI RMF', description: 'NIST AI Risk Management Framework for trustworthy AI.', controlsTotal: 48, controlsImplemented: 34, complianceScore: 71, status: 'Partial', nextAudit: '2026-05-15', category: 'Risk Management' },
   { id: 'FW-006', name: 'OWASP LLM Top 10', description: 'Security risks specific to Large Language Model applications.', controlsTotal: 35, controlsImplemented: 20, complianceScore: 58, status: 'Non-Compliant', nextAudit: '2026-04-20', category: 'LLM Security' },
+  { id: 'FW-007', name: 'Singapore Model AI', description: 'Singapore Model AI Governance Framework for responsible AI deployment.', controlsTotal: 25, controlsImplemented: 0, complianceScore: 0, status: 'Not Started', nextAudit: '2026-09-01', category: 'AI Governance' },
+  { id: 'FW-008', name: 'GDPR', description: 'General Data Protection Regulation with AI-specific controls.', controlsTotal: 30, controlsImplemented: 0, complianceScore: 0, status: 'Not Started', nextAudit: '2026-08-15', category: 'Privacy' },
+  { id: 'FW-009', name: 'OECD AI Principles', description: 'OECD Principles on Artificial Intelligence for trustworthy AI.', controlsTotal: 10, controlsImplemented: 0, complianceScore: 0, status: 'Not Started', nextAudit: '2026-10-01', category: 'AI Ethics' },
+  { id: 'FW-010', name: 'UNESCO Ethics of AI', description: 'UNESCO Recommendation on the Ethics of Artificial Intelligence.', controlsTotal: 11, controlsImplemented: 0, complianceScore: 0, status: 'Not Started', nextAudit: '2026-11-01', category: 'AI Ethics' },
+  { id: 'FW-011', name: 'Google SAIF', description: 'Google Secure AI Framework for securing AI systems.', controlsTotal: 20, controlsImplemented: 0, complianceScore: 0, status: 'Not Started', nextAudit: '2026-07-15', category: 'AI Security' },
+  { id: 'FW-012', name: 'MITRE ATLAS', description: 'Adversarial Threat Landscape for AI Systems.', controlsTotal: 30, controlsImplemented: 0, complianceScore: 0, status: 'Not Started', nextAudit: '2026-08-01', category: 'AI Security' },
 ];
 
 // ── Policies ───────────────────────────────────
