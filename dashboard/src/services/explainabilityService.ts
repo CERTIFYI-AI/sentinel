@@ -25,3 +25,5 @@ export async function deleteExplainability(id: string) {
 
 export const fetchAllExplainability = fetchExplainabilityReports
 export const fetchExplainabilityById = fetchExplainabilityReportById
+
+export const upsertExplainability = upsertExplainabilityReport
