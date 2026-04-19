@@ -1,19 +1,53 @@
-# Sentinel Modules Reference
+# Sentinel AI GRC Platform - Module Reference
 
-| Module | Purpose | GRC Standard | API File | Hook File |
-|--------|---------|-------------|----------|----------|
-| Models | AI Model Registry | EU AI Act Art.51 | api/models.ts | hooks/useModelsData.ts |
-| Agents | AI Agent Inventory | EU AI Act Art.52 | api/agents.ts | hooks/useAgentData.ts |
-| Bias Audits | Fairness Testing | EU AI Act Art.10 | api/biasAudits.ts | hooks/useBiasAuditData.ts |
-| Trust Policies | Guardrail Rules | NIST AI RMF | api/trustPolicies.ts | hooks/useTrustTraceData.ts |
-| Frameworks | Compliance Frameworks | ISO 27001/SOC-2 | api/frameworks.ts | hooks/useFrameworksData.ts |
-| Controls | Security Controls | ISO 27001 A.x | api/controls.ts | hooks/useControlData.ts |
-| Policies | GRC Policies | GDPR Art.24 | api/policies.ts | hooks/usePolicyData.ts |
-| Evidence | Audit Evidence | ISO 27001 | api/evidence.ts | hooks/useEvidenceData.ts |
-| Risks | Risk Register | ISO 31000 | api/risks.ts | hooks/useRisksData.ts |
-| Incidents | Incident Management | GDPR Art.33 | api/incidents.ts | hooks/useIncidentData.ts |
-| HITL | Human Oversight | EU AI Act Art.14 | api/hitl.ts | hooks/useHitlItemData.ts |
-| Vendors | Vendor Risk | GDPR Art.28 | api/vendors.ts | hooks/useVendorsData.ts |
-| Datasets | Data Governance | GDPR Art.6 | api/datasets.ts | hooks/useDatasetData.ts |
-| Tasks | Task Management | - | api/tasks.ts | hooks/useTaskData.ts |
-| Notifications | Alerts & Notifications | - | api/notifications.ts | hooks/useNotificationData.ts |
+## V1 Modules (Current Release)
+
+### Asset Management (`/assets`)
+- **Purpose**: Unified CMDB linking AI models, datasets, agents, APIs, infrastructure
+- **Standard**: ISO 42001 8.3, ISO 27001 A.8/A.9, EU AI Act Art.11
+- **CRUD**: Full register, edit, decommission, delete
+- **Key fields**: type, criticality, data_classification, lifecycle_stage, BIA RTO/RPO
+
+### Identity Governance (`/iga`)
+- **Purpose**: User access reviews, entitlement catalog, SoD conflict detection
+- **Standard**: ISO 27001 A.5.18, SOC 2 CC6.1
+- **CRUD**: Full access reviews, entitlements, SoD violations
+
+### RoPA (`/ropa`)
+- **Purpose**: GDPR Art.30 Record of Processing Activities
+- **Standard**: GDPR Art.30
+- **CRUD**: Full processing activities with DPO review workflow
+
+### Transfer Impact Assessment (`/tia`)
+- **Purpose**: Cross-border data transfer compliance (SCCs, BCRs, DPF)
+- **Standard**: GDPR Art.46, GDPR Art.49
+- **CRUD**: Full TIA with risk scoring and DPO approval
+
+### Tabletop Exercises (`/tabletop`)
+- **Purpose**: Structured scenario simulations for IR, BCP, AI incidents
+- **Standard**: ISO 22301, NIST SP 800-84, EU AI Act Art.9
+- **CRUD**: Full plan, launch, complete with findings/actions
+
+### Regulator Filing Workspace (`/regulator-filings`)
+- **Purpose**: Regulatory notification management with SLA countdown timers
+- **Standard**: NIS2, DORA, GDPR Art.33, EU AI Act Art.73, SEC Item 1.05
+- **CRUD**: Full draft, submit, track acknowledgement
+
+### Business Impact Analysis (`/bia`)
+- **Purpose**: Process criticality, RTO/RPO targets, financial impact quantification
+- **Standard**: ISO 22301 8.2.2, BCM best practice
+- **CRUD**: Full processes with dependency mapping and BCP linkage
+
+## V2 Roadmap (Planned)
+
+### Sentinel Agent
+Wazuh-compatible host agent for FIM, vuln detection, AI telemetry (prompt sampling, PII detection, jailbreak signatures), OpenTelemetry export.
+
+### Patch Management
+CVE-asset linkage with SLA-based patching deadlines, auto-close on scan verification.
+
+### Audit Requests / Auditor Portal
+External auditor read-only workspace, evidence request tracker, secure package delivery.
+
+### Integration Framework
+First-class connector framework: SIEM (Splunk, Elastic, MS Sentinel), ITSM (Jira, ServiceNow), Cloud posture (AWS SecurityHub, GCP SCC, Azure Defender), AI safety (Lakera, Garak, PyRIT), Identity (Okta, Entra).

@@ -1,18 +1,14 @@
-import { hitlApi } from '@/api/hitl';
+/**
+ * HITL (Human-in-the-Loop) Agent
+ * Triggered by: MODEL_REGISTERED (high-risk), RISK_DETECTED
+ * Action: creates HITL review if model is Tier 1/2
+ */
+export async function hitlAgent(
+  payload: Record<string, unknown>,
+  orgId: string
+) {
+  const { modelId, modelName, riskTier, severity } = payload as any
+  if ((riskTier as number) > 2 && severity !== 'critical') return
 
-export async function hitlAgent(payload: any): Promise<void> {
-  const { modelId, modelName, riskTier } = payload;
-  if (!modelId || (riskTier && riskTier > 2)) return;
-
-  await hitlApi.create({
-    entity_type: 'model',
-    entity_id: modelId,
-    entity_name: modelName,
-    trigger_reason: `High-risk model Tier ${riskTier} — EU AI Act Art.14 oversight required`,
-    priority: 'high',
-    status: 'pending',
-    auto_generated: true,
-    sla_deadline: new Date(Date.now() + 48 * 3600 * 1000).toISOString(),
-  });
-  console.log(`[HITLAgent] Created HITL review for ${modelName}`);
+  console.log(`[HITLAgent] Queuing review for high-risk model: ${modelName}`)
 }

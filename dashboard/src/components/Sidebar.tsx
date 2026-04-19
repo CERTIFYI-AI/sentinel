@@ -188,6 +188,11 @@ const NAV: NavSection[] = [
     ],
   },
   {
+          { label: 'RoPA',             to: '/ropa' },
+      { label: 'Transfer Impact',   to: '/tia' },
+    ],
+  },
+  {
     title: 'RISK & RESPONSE',
     items: [
       {
@@ -210,6 +215,11 @@ const NAV: NavSection[] = [
       { label: 'HITL Reviews',      to: '/hitl',                  icon: UserCircleCheck, badge: 3 },
       { label: 'Approval Flows',    to: '/workflows',             icon: FlowArrow },
       { label: 'Automation Studio', to: '/automation-studio',     icon: Lightning },
+    ],
+  },
+  {
+          { label: 'Regulator Filings', to: '/regulator-filings' },
+      { label: 'Tabletop Exercises', to: '/tabletop' },
     ],
   },
   {
@@ -272,6 +282,9 @@ const NAV: NavSection[] = [
       { label: 'Committee Mgmt',  to: '/committee',        icon: Users },
       { label: 'Training',        to: '/training',          icon: GraduationCap },
       { label: 'Maturity',        to: '/maturity',          icon: ChartBar },
+      { label: 'Asset Registry',       to: '/assets' },
+      { label: 'Identity Governance', to: '/iga' },
+      { label: 'Business Impact',     to: '/bia' },
       { label: 'Continuity',      to: '/continuity',        icon: Lifebuoy },
       { label: 'Ethics Reporting', to: '/ethics-reporting', icon: Megaphone },
       { label: 'Licensing',       to: '/admin/licensing',   icon: Certificate },
