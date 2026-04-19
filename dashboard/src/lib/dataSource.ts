@@ -48,3 +48,36 @@ export async function upsertData<T extends Record<string, unknown>>(
     return { success: true, data: record }
   }
 }
+
+export function fromDB<T>(table: string) {
+  return {
+    select: async (query = '*') => {
+      if (!isSupabaseConfigured() || !supabase) return { data: [] as T[], error: null }
+      const { data, error } = await supabase.from(table).select(query)
+      return { data: (data || []) as T[], error }
+    },
+    insert: async (record: Partial<T>) => {
+      if (!isSupabaseConfigured() || !supabase) return { data: null, error: null }
+      const { data, error } = await supabase.from(table).insert(record as any).select().single()
+      return { data: data as T, error }
+    },
+    update: async (id: string, record: Partial<T>) => {
+      if (!isSupabaseConfigured() || !supabase) return { data: null, error: null }
+      const { data, error } = await supabase.from(table).update(record as any).eq('id', id).select().single()
+      return { data: data as T, error }
+    },
+    delete: async (id: string) => {
+      if (!isSupabaseConfigured() || !supabase) return { error: null }
+      const { error } = await supabase.from(table).delete().eq('id', id)
+      return { error }
+    }
+  }
+}
+
+export function mutateDB<T>(table: string) {
+  return fromDB<T>(table)
+}
+
+export function getTenantId(): string {
+  return 'default'
+}
