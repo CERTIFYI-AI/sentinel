@@ -158,7 +158,9 @@ const SupplyChainGraph = lazy(() => import('./pages/SupplyChainGraph'));
 const Licensing = lazy(() => import('./pages/admin/Licensing'));
 const GovernanceFramework = lazy(() => import('./pages/GovernanceFramework'));
 const EvidenceChain = lazy(() => import('./pages/EvidenceChain'));
-const AutomationStudio = lazy(
+const AutomationStudio = lazy(() => import('./pages/AutomationStudio'));
+
+// --- V1 Missing Modules ---
 const AssetManagement = lazy(() => import("@/pages/AssetManagement"));
 const IGA = lazy(() => import("@/pages/IGA"));
 const RoPA = lazy(() => import("@/pages/RoPA"));
@@ -166,7 +168,6 @@ const TIA = lazy(() => import("@/pages/TIA"));
 const TabletopExercises = lazy(() => import("@/pages/TabletopExercises"));
 const RegulatorFilings = lazy(() => import("@/pages/RegulatorFilings"));
 const BIA = lazy(() => import("@/pages/BIA"));
-() => import('./pages/AutomationStudio'));
 
 // ── 5 Enterprise Command Modules ─────────────────────────────────────────────
 const ExecutiveCenter = lazy(() => import('./pages/ExecutiveCenter'));
@@ -467,7 +468,9 @@ export default function App() {
           <Route path="/admin/licensing" element={<Suspense fallback={<Loading />}><Licensing /></Suspense>} />
           <Route path="/governance-framework" element={<Suspense fallback={<Loading />}><GovernanceFramework /></Suspense>} />
           <Route path="/evidence-chain" element={<Suspense fallback={<Loading />}><EvidenceChain /></Suspense>} />
-          
+          <Route path="/automation-studio" element={<Suspense fallback={<Loading />}><AutomationStudio /></Suspense>} />
+
+            {/* V1 Missing Modules */}
             <Route path="/assets" element={<Suspense fallback={<Loading />}><AssetManagement /></Suspense>} />
             <Route path="/iga" element={<Suspense fallback={<Loading />}><IGA /></Suspense>} />
             <Route path="/ropa" element={<Suspense fallback={<Loading />}><RoPA /></Suspense>} />
@@ -475,8 +478,6 @@ export default function App() {
             <Route path="/tabletop" element={<Suspense fallback={<Loading />}><TabletopExercises /></Suspense>} />
             <Route path="/regulator-filings" element={<Suspense fallback={<Loading />}><RegulatorFilings /></Suspense>} />
             <Route path="/bia" element={<Suspense fallback={<Loading />}><BIA /></Suspense>} />
-<Route path="/automation-studio" element={<Suspense fallback={<Loading />}><AutomationStudio /></Suspense>} />
-
           <Route path="*" element={<Suspense fallback={<Loading />}><NotFound /></Suspense>} />
         </Route>
       </Routes>

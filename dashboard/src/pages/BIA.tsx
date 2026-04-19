@@ -33,7 +33,7 @@ export default function BIA() {
       <div className="rounded-xl border bg-card p-4"><p className="text-xs text-muted-foreground">Processes Assessed</p><p className="text-2xl font-semibold" style={{color:"hsl(var(--foreground))"}}>5</p></div>
       <div className="rounded-xl border bg-card p-4"><p className="text-xs text-muted-foreground">Critical RTO <4h</p><p className="text-2xl font-semibold" style={{color:"hsl(var(--destructive))"}}>3</p></div>
       <div className="rounded-xl border bg-card p-4"><p className="text-xs text-muted-foreground">Missing BIA</p><p className="text-2xl font-semibold" style={{color:"hsl(var(--chart-4))"}}>2</p></div>
-      <div className="rounded-xl border bg-card p-4"><p className="text-xs text-muted-foreground">Total Financial Risk/hr</p><p className="text-2xl font-semibold" style={{color:"hsl(var(--destructive))"}}>$220K</p></div>
+      <div className="rounded-xl border bg-card p-4"><p className="text-xs text-muted-foreground">Total Financial Risk/hr</p><p className="text-2xl font-semibold" style={{color:"hsl(var(--destructive))"}}>220K</p></div>
       </div>
 
       <div className="flex items-center gap-3">

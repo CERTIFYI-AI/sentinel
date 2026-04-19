@@ -33,7 +33,7 @@ export default function RegulatorFilings() {
       <div className="rounded-xl border bg-card p-4"><p className="text-xs text-muted-foreground">Total Filings</p><p className="text-2xl font-semibold" style={{color:"hsl(var(--foreground))"}}>5</p></div>
       <div className="rounded-xl border bg-card p-4"><p className="text-xs text-muted-foreground">Pending Submission</p><p className="text-2xl font-semibold" style={{color:"hsl(var(--chart-4))"}}>3</p></div>
       <div className="rounded-xl border bg-card p-4"><p className="text-xs text-muted-foreground">Submitted</p><p className="text-2xl font-semibold" style={{color:"hsl(var(--chart-2))"}}>1</p></div>
-      <div className="rounded-xl border bg-card p-4"><p className="text-xs text-muted-foreground">Critical Deadline <24h</p><p className="text-2xl font-semibold" style={{color:"hsl(var(--destructive))"}}>1</p></div>
+      <div className="rounded-xl border bg-card p-4"><p className="text-xs text-muted-foreground">Critical Deadline</p><p className="text-2xl font-semibold" style={{color:"hsl(var(--destructive))"}}>1</p></div>
       </div>
 
       <div className="flex items-center gap-3">
