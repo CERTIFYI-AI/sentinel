@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS transfer_impact_assessments (
   transfer_mechanism text CHECK (transfer_mechanism IN ('SCCs','BCRs','Adequacy','DPF','Derogation','Other')),
   status text DEFAULT 'draft' CHECK (status IN ('draft','in_progress','completed','approved','rejected')),
   risk_level text DEFAULT 'medium',
-  vendor_id uuid REFERENCES vendors(id),
+  vendor_id text REFERENCES vendors(id),
   dataset_ids uuid[] DEFAULT '{}', model_ids uuid[] DEFAULT '{}',
   adequacy_confirmed boolean DEFAULT false, supplementary_measures text,
   dpo_approved boolean DEFAULT false,
