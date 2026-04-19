@@ -5,7 +5,7 @@ import { complianceAgent } from '@/agents/complianceAgent';
 import { vendorAgent } from '@/agents/vendorAgent';
 import { carbonAgent } from '@/agents/carbonAgent';
 
-type AgentFn = (payload: any) => Promise<void>;
+type AgentFn = (...args: any[]) => Promise<any>;
 
 const AGENT_MAP: Record<string, AgentFn[]> = {
   MODEL_REGISTERED: [riskAgent, complianceAgent, hitlAgent, vendorAgent, carbonAgent],
