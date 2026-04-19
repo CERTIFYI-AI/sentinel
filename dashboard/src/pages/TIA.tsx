@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import { StatusBadge, BulkActionToolbar, PaginationBar, CrudModal, FormSection, FormFooter, MetaBar, ActivityTimeline, useSortAndPage, Th, TInput, TSelect, TTextarea, TToggle, TCheckGroup } from "@/components/ui/crud-helpers";
+import { StatusBadge, BulkActionToolbar, PaginationBar, CrudModal, CrudSlideOver, FormSection, FormFooter, MetaBar, ActivityTimeline, useSortAndPage, Th, TInput, TSelect, TTextarea, TToggle, TCheckGroup } from "@/components/ui/crud-helpers";
 import { toast } from "sonner";
 
 const TRANSFER_TOOLS = ["SCCs — C2C","SCCs — C2P","BCRs","Consent","Derogation Art.49","Binding Agreement","Adequacy Decision"];
@@ -236,7 +236,7 @@ export default function TIA() {
         <FormFooter saving={saving} onDraft={() => save(true)} onSubmit={() => save(false)} submitLabel="Complete Assessment" onCancel={() => { setModal(null); setForm(EMPTY); setEditId(null); }} />
       </CrudModal>
 
-      <CrudModal open={modal === "view"} onClose={() => { setModal(null); setViewItem(null); }} title={viewItem?.name || ""} size="lg">
+      <CrudSlideOver open={modal === "view"} onClose={() => { setModal(null); setViewItem(null); }} title={viewItem?.name || ""}>
         {viewItem && <>
           <MetaBar items={[
             { label:"Ref", value: viewItem.id },
@@ -286,7 +286,7 @@ export default function TIA() {
             <Button onClick={() => { setModal(null); setDeleteTarget(viewItem); }} variant="destructive" size="sm"><Trash size={14} className="mr-1" />Delete</Button>
           </div>
         </>}
-      </CrudModal>
+      </CrudSlideOver>
 
       <ConfirmDialog open={!!deleteTarget} onCancel={() => setDeleteTarget(null)} onConfirm={doDelete} title="Delete TIA" description={`Delete "${deleteTarget?.name}"? This cannot be undone.`} confirmLabel="Delete" destructive />
     </div>

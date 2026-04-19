@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import { StatusBadge, BulkActionToolbar, PaginationBar, CrudModal, FormSection, FormFooter, MetaBar, ActivityTimeline, useSortAndPage, Th, TInput, TSelect, TTextarea, TToggle, TCheckGroup } from "@/components/ui/crud-helpers";
+import { StatusBadge, BulkActionToolbar, PaginationBar, CrudModal, CrudSlideOver, FormSection, FormFooter, MetaBar, ActivityTimeline, useSortAndPage, Th, TInput, TSelect, TTextarea, TToggle, TCheckGroup } from "@/components/ui/crud-helpers";
 import { toast } from "sonner";
 
 const LEGAL_BASES = ["Art.6(1)(a) Consent","Art.6(1)(b) Contract","Art.6(1)(c) Legal Obligation","Art.6(1)(d) Vital Interest","Art.6(1)(e) Public Task","Art.6(1)(f) Legitimate Interest"];
@@ -235,7 +235,7 @@ export default function RoPA() {
       </CrudModal>
 
       {/* Detail View */}
-      <CrudModal open={modal === "view"} onClose={() => { setModal(null); setViewItem(null); }} title={viewItem?.name || ""} size="lg">
+      <CrudSlideOver open={modal === "view"} onClose={() => { setModal(null); setViewItem(null); }} title={viewItem?.name || ""}>
         {viewItem && <>
           <MetaBar items={[
             { label:"Ref", value: viewItem.id },
@@ -284,7 +284,7 @@ export default function RoPA() {
             <Button onClick={() => { setModal(null); setDeleteTarget(viewItem); }} variant="destructive" size="sm"><Trash size={14} className="mr-1" />Delete</Button>
           </div>
         </>}
-      </CrudModal>
+      </CrudSlideOver>
 
       <ConfirmDialog open={!!deleteTarget} onCancel={() => setDeleteTarget(null)} onConfirm={doDelete} title="Delete Processing Activity" description={`Permanently delete "${deleteTarget?.name}"? This cannot be undone.`} confirmLabel="Delete" destructive />
     </div>

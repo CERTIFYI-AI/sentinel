@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import { StatusBadge, BulkActionToolbar, PaginationBar, CrudModal, FormSection, FormFooter, MetaBar, ActivityTimeline, useSortAndPage, Th, TInput, TSelect, TTextarea } from "@/components/ui/crud-helpers";
+import { StatusBadge, BulkActionToolbar, PaginationBar, CrudModal, CrudSlideOver, FormSection, FormFooter, MetaBar, ActivityTimeline, useSortAndPage, Th, TInput, TSelect, TTextarea } from "@/components/ui/crud-helpers";
 import { toast } from "sonner";
 
 const FILING_TYPES = ["GDPR Breach (Art.33)","GDPR Data Subject (Art.34)","EU AI Act Serious Incident","Voluntary Disclosure","Annual Report","Registration","Other"];
@@ -243,7 +243,7 @@ export default function RegulatorFilings() {
         <FormFooter saving={saving} onDraft={() => save(true)} onSubmit={() => save(false)} submitLabel="Submit for DPO Approval" onCancel={() => { setModal(null); setForm(EMPTY); setEditId(null); }} />
       </CrudModal>
 
-      <CrudModal open={modal === "view"} onClose={() => { setModal(null); setViewItem(null); }} title={viewItem?.title || ""} size="lg">
+      <CrudSlideOver open={modal === "view"} onClose={() => { setModal(null); setViewItem(null); }} title={viewItem?.title || ""}>
         {viewItem && <>
           <MetaBar items={[
             { label:"Ref", value: viewItem.id },
@@ -301,7 +301,7 @@ export default function RegulatorFilings() {
             <Button onClick={() => { setModal(null); setDeleteTarget(viewItem); }} variant="destructive" size="sm"><Trash size={14} className="mr-1" />Delete</Button>
           </div>
         </>}
-      </CrudModal>
+      </CrudSlideOver>
 
       <ConfirmDialog open={!!deleteTarget} onCancel={() => setDeleteTarget(null)} onConfirm={doDelete} title="Delete Filing" description={`Delete "${deleteTarget?.title}"? This cannot be undone.`} confirmLabel="Delete" destructive />
     </div>

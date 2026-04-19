@@ -1,6 +1,7 @@
 // @ts-nocheck
 import React, { useState } from "react";
 import { Trash, Export, ArrowUp, ArrowDown, X, CheckSquare } from "@phosphor-icons/react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 // ── StatusBadge ─────────────────────────────────────────────────────────────
 
@@ -312,21 +313,40 @@ export function MetaBar({ record, items }: { record?: any; items?: { label: stri
 }
 
 // ── ActivityTimeline ──────────────────────────────────────────────────────────
+// Accepts both:
+//   items={[{ date, actor, action }]}  — new API
+//   events={[{ date, label, user }]}   — legacy API used by 7 V1 modules
 
-export function ActivityTimeline({ items }: { items: { date: string; actor: string; action: string }[] }) {
+type TimelineEntry = { date?: string; actor?: string; action?: string; label?: string; user?: string };
+
+export function ActivityTimeline({
+  items,
+  events,
+}: {
+  items?: TimelineEntry[];
+  events?: TimelineEntry[];
+}) {
+  const entries = items ?? events ?? [];
   return (
     <div className="mt-6">
       <p className="text-xs font-semibold uppercase tracking-wider text-[hsl(var(--text-4))] mb-3">Audit Trail</p>
       <div className="space-y-3">
-        {items.map((item, i) => (
-          <div key={i} className="flex items-start gap-3">
-            <div className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--brand))] mt-1.5 flex-shrink-0" />
-            <div>
-              <p className="text-xs text-[hsl(var(--text-2))]"><span className="font-medium">{item.actor}</span> {item.action}</p>
-              <p className="text-xs text-[hsl(var(--text-4))]">{item.date}</p>
+        {entries.filter(e => e.date).map((entry, i) => {
+          const who = entry.actor ?? entry.user ?? "";
+          const what = entry.action ?? entry.label ?? "";
+          return (
+            <div key={i} className="flex items-start gap-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--brand))] mt-1.5 flex-shrink-0" />
+              <div>
+                <p className="text-xs text-[hsl(var(--text-2))]">
+                  {who && <span className="font-medium">{who} — </span>}
+                  {what}
+                </p>
+                <p className="text-xs text-[hsl(var(--text-4))]">{entry.date}</p>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -417,6 +437,32 @@ export function CrudModal({
         <div className="overflow-y-auto flex-1 px-5 py-4">{children}</div>
       </div>
     </div>
+  );
+}
+
+// ── CrudSlideOver ─────────────────────────────────────────────────────────────
+// Right-side slide-over panel for row-click detail views.
+// Drop-in replacement for the "view" CrudModal in the 7 V1 module pages.
+
+export function CrudSlideOver({
+  open, onClose, title, subtitle, children,
+}: {
+  open: boolean; onClose: () => void; title: string; subtitle?: string; children: React.ReactNode;
+}) {
+  return (
+    <Sheet open={open} onOpenChange={o => { if (!o) onClose(); }}>
+      <SheetContent
+        side="right"
+        className="w-[540px] sm:max-w-[540px] overflow-y-auto p-0 flex flex-col"
+        style={{ borderRadius: 0, borderLeft: "1px solid hsl(var(--border))" }}
+      >
+        <SheetHeader className="px-5 py-4 border-b border-[hsl(var(--border))] flex-shrink-0">
+          <SheetTitle className="text-base font-semibold text-[hsl(var(--text-1))]">{title}</SheetTitle>
+          {subtitle && <p className="text-xs text-[hsl(var(--text-3))] mt-0.5">{subtitle}</p>}
+        </SheetHeader>
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">{children}</div>
+      </SheetContent>
+    </Sheet>
   );
 }
 
