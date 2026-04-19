@@ -54,6 +54,21 @@ BiasAudits, ComplianceControls, ComplianceFrameworks, AgentDiscovery, Datasets, 
 | Identity Governance | `/iga` | ORGANIZATION | Identities + Review Campaigns tabs, entitlement certify/revoke, risk flags, orphaned account detection |
 | Business Impact | `/bia` | ORGANIZATION | RTO/RPO/MTPD, 5×5 impact matrix heat map, AI system dependencies, financial impact |
 
+### April 2026 — AIBOM Registry & Guardrails (previously completed)
+- AibomRegistry: 4-step Generate AIBOM wizard, CycloneDX JSON download, Sign Attestation, Export CSV
+- Guardrails: 9 seed rules, enable/disable toggle, detail panel with trigger rate bar, CRUD modal, ConfirmDialog delete
+
+### April 2026 — crud-helpers API mismatch fix (7 V1 pages now rendering)
+Root cause: 7 pages (AssetManagement, IGA, RoPA, TIA, TabletopExercises, RegulatorFilings, BIA) were crashing silently
+because they consumed a different `crud-helpers` API than what was implemented. Fixed by updating crud-helpers.tsx:
+- `useSortAndPage` now returns `page` as the **items array** (V1 pages use `sp.page.map(...)`); `currentPage` is the number
+- `Th` now accepts `sp` prop (extracts sortCol/sortDir/handleSort from it)
+- `PaginationBar` now accepts `sp` prop (or individual props — both work)
+- `MetaBar` now accepts `items` array of `{label,value}` pairs (or `record` object — both work)
+- `BulkActionToolbar` now accepts `actions` array `[{label,onClick,variant?}]` (or individual callbacks — both work)
+- `FormFooter` now accepts `saving` (alias for `loading`) and `onDraft` (alias for `onSaveDraft`)
+- `ConfirmDialog` now accepts `onCancel` (alias for `onClose`) and `destructive` (alias for `isDestructive`)
+
 ## Package Managers
 - Frontend: `npm` (package-lock.json in `dashboard/`)
 - Backend: `pip` (pyproject.toml at root, installed as editable package)

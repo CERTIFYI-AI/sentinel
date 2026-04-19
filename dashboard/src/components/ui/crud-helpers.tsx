@@ -11,27 +11,41 @@ const STATUS_STYLES: Record<string, { bg: string; color: string; border: string 
   conformant:  { bg: "hsl(142 71% 45% / 0.12)", color: "hsl(142 71% 35%)", border: "hsl(142 71% 45% / 0.3)" },
   complete:    { bg: "hsl(142 71% 45% / 0.12)", color: "hsl(142 71% 35%)", border: "hsl(142 71% 45% / 0.3)" },
   completed:   { bg: "hsl(142 71% 45% / 0.12)", color: "hsl(142 71% 35%)", border: "hsl(142 71% 45% / 0.3)" },
+  acknowledged:{ bg: "hsl(142 71% 45% / 0.12)", color: "hsl(142 71% 35%)", border: "hsl(142 71% 45% / 0.3)" },
+  current:     { bg: "hsl(142 71% 45% / 0.12)", color: "hsl(142 71% 35%)", border: "hsl(142 71% 45% / 0.3)" },
   pass:        { bg: "hsl(142 71% 45% / 0.12)", color: "hsl(142 71% 35%)", border: "hsl(142 71% 45% / 0.3)" },
   low:         { bg: "hsl(142 71% 45% / 0.12)", color: "hsl(142 71% 35%)", border: "hsl(142 71% 45% / 0.3)" },
+  filed:       { bg: "hsl(142 71% 45% / 0.12)", color: "hsl(142 71% 35%)", border: "hsl(142 71% 45% / 0.3)" },
   draft:       { bg: "hsl(45 93% 47% / 0.12)", color: "hsl(35 80% 35%)", border: "hsl(45 93% 47% / 0.3)" },
   pending:     { bg: "hsl(220 90% 56% / 0.12)", color: "hsl(220 80% 45%)", border: "hsl(220 90% 56% / 0.3)" },
   in_review:   { bg: "hsl(220 90% 56% / 0.12)", color: "hsl(220 80% 45%)", border: "hsl(220 90% 56% / 0.3)" },
   "in progress": { bg: "hsl(220 90% 56% / 0.12)", color: "hsl(220 80% 45%)", border: "hsl(220 90% 56% / 0.3)" },
+  "under review": { bg: "hsl(220 90% 56% / 0.12)", color: "hsl(220 80% 45%)", border: "hsl(220 90% 56% / 0.3)" },
+  "ready to file": { bg: "hsl(220 90% 56% / 0.12)", color: "hsl(220 80% 45%)", border: "hsl(220 90% 56% / 0.3)" },
+  "not started": { bg: "hsl(220 90% 56% / 0.12)", color: "hsl(220 80% 45%)", border: "hsl(220 90% 56% / 0.3)" },
   scheduled:   { bg: "hsl(220 90% 56% / 0.12)", color: "hsl(220 80% 45%)", border: "hsl(220 90% 56% / 0.3)" },
   investigating: { bg: "hsl(220 90% 56% / 0.12)", color: "hsl(220 80% 45%)", border: "hsl(220 90% 56% / 0.3)" },
   monitoring:  { bg: "hsl(220 90% 56% / 0.12)", color: "hsl(220 80% 45%)", border: "hsl(220 90% 56% / 0.3)" },
   piloting:    { bg: "hsl(220 90% 56% / 0.12)", color: "hsl(220 80% 45%)", border: "hsl(220 90% 56% / 0.3)" },
   planned:     { bg: "hsl(220 90% 56% / 0.12)", color: "hsl(220 80% 45%)", border: "hsl(220 90% 56% / 0.3)" },
+  due:         { bg: "hsl(38 92% 50% / 0.12)", color: "hsl(28 80% 35%)", border: "hsl(38 92% 50% / 0.3)" },
+  overdue:     { bg: "hsl(0 72% 51% / 0.12)", color: "hsl(0 72% 40%)", border: "hsl(0 72% 51% / 0.3)" },
   critical:    { bg: "hsl(0 72% 51% / 0.12)", color: "hsl(0 72% 40%)", border: "hsl(0 72% 51% / 0.3)" },
   failed:      { bg: "hsl(0 72% 51% / 0.12)", color: "hsl(0 72% 40%)", border: "hsl(0 72% 51% / 0.3)" },
   fail:        { bg: "hsl(0 72% 51% / 0.12)", color: "hsl(0 72% 40%)", border: "hsl(0 72% 51% / 0.3)" },
   high:        { bg: "hsl(0 72% 51% / 0.12)", color: "hsl(0 72% 40%)", border: "hsl(0 72% 51% / 0.3)" },
   error:       { bg: "hsl(0 72% 51% / 0.12)", color: "hsl(0 72% 40%)", border: "hsl(0 72% 51% / 0.3)" },
   "non-conformant": { bg: "hsl(0 72% 51% / 0.12)", color: "hsl(0 72% 40%)", border: "hsl(0 72% 51% / 0.3)" },
+  "requires supplementary measures": { bg: "hsl(0 72% 51% / 0.12)", color: "hsl(0 72% 40%)", border: "hsl(0 72% 51% / 0.3)" },
   inactive:    { bg: "hsl(var(--bg-raised))", color: "hsl(var(--text-4))", border: "hsl(var(--border))" },
   disabled:    { bg: "hsl(var(--bg-raised))", color: "hsl(var(--text-4))", border: "hsl(var(--border))" },
   archived:    { bg: "hsl(var(--bg-raised))", color: "hsl(var(--text-4))", border: "hsl(var(--border))" },
   deprecated:  { bg: "hsl(var(--bg-raised))", color: "hsl(var(--text-4))", border: "hsl(var(--border))" },
+  suspended:   { bg: "hsl(var(--bg-raised))", color: "hsl(var(--text-4))", border: "hsl(var(--border))" },
+  revoked:     { bg: "hsl(var(--bg-raised))", color: "hsl(var(--text-4))", border: "hsl(var(--border))" },
+  cancelled:   { bg: "hsl(var(--bg-raised))", color: "hsl(var(--text-4))", border: "hsl(var(--border))" },
+  closed:      { bg: "hsl(var(--bg-raised))", color: "hsl(var(--text-4))", border: "hsl(var(--border))" },
+  decommissioning: { bg: "hsl(var(--bg-raised))", color: "hsl(var(--text-4))", border: "hsl(var(--border))" },
   medium:      { bg: "hsl(38 92% 50% / 0.12)", color: "hsl(28 80% 35%)", border: "hsl(38 92% 50% / 0.3)" },
   warning:     { bg: "hsl(38 92% 50% / 0.12)", color: "hsl(28 80% 35%)", border: "hsl(38 92% 50% / 0.3)" },
   running:     { bg: "hsl(142 71% 45% / 0.12)", color: "hsl(142 71% 35%)", border: "hsl(142 71% 45% / 0.3)" },
@@ -40,7 +54,7 @@ const STATUS_STYLES: Record<string, { bg: string; color: string; border: string 
   down:        { bg: "hsl(0 72% 51% / 0.12)", color: "hsl(0 72% 40%)", border: "hsl(0 72% 51% / 0.3)" },
   open:        { bg: "hsl(0 72% 51% / 0.12)", color: "hsl(0 72% 40%)", border: "hsl(0 72% 51% / 0.3)" },
   resolved:    { bg: "hsl(142 71% 45% / 0.12)", color: "hsl(142 71% 35%)", border: "hsl(142 71% 45% / 0.3)" },
-  closed:      { bg: "hsl(var(--bg-raised))", color: "hsl(var(--text-4))", border: "hsl(var(--border))" },
+  maintenance: { bg: "hsl(38 92% 50% / 0.12)", color: "hsl(28 80% 35%)", border: "hsl(38 92% 50% / 0.3)" },
 };
 
 export function StatusBadge({ status, className = "" }: { status: string; className?: string }) {
@@ -57,6 +71,7 @@ export function StatusBadge({ status, className = "" }: { status: string; classN
 }
 
 // ── BulkActionToolbar ────────────────────────────────────────────────────────
+// Accepts either individual callbacks (onDelete, onExport) OR an `actions` array
 
 export function BulkActionToolbar({
   count,
@@ -64,12 +79,14 @@ export function BulkActionToolbar({
   onDelete,
   onExport,
   onStatusChange,
+  actions,
 }: {
   count: number;
   onClear: () => void;
   onDelete?: () => void;
   onExport?: () => void;
   onStatusChange?: () => void;
+  actions?: { label: string; onClick: () => void; variant?: string }[];
 }) {
   if (count === 0) return null;
   return (
@@ -77,17 +94,32 @@ export function BulkActionToolbar({
       <CheckSquare size={16} className="text-[hsl(var(--brand))]" />
       <span className="text-sm font-medium text-[hsl(var(--text-1))]">{count} selected</span>
       <div className="ml-auto flex items-center gap-2">
-        {onExport && (
+        {/* actions array API */}
+        {actions?.map(a => (
+          <button
+            key={a.label}
+            onClick={a.onClick}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs border ${
+              a.variant === "destructive"
+                ? "border-[hsl(0_72%_51%/0.4)] text-[hsl(0_72%_51%)] hover:bg-[hsl(0_72%_51%/0.08)]"
+                : "border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]"
+            }`}
+          >
+            {a.label}
+          </button>
+        ))}
+        {/* individual callbacks API */}
+        {!actions && onExport && (
           <button onClick={onExport} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
             <Export size={12} /> Export
           </button>
         )}
-        {onStatusChange && (
+        {!actions && onStatusChange && (
           <button onClick={onStatusChange} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
             Bulk Status
           </button>
         )}
-        {onDelete && (
+        {!actions && onDelete && (
           <button onClick={onDelete} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-[hsl(0_72%_51%/0.4)] text-[hsl(0_72%_51%)] hover:bg-[hsl(0_72%_51%/0.08)]">
             <Trash size={12} /> Delete
           </button>
@@ -101,6 +133,7 @@ export function BulkActionToolbar({
 }
 
 // ── PaginationBar ────────────────────────────────────────────────────────────
+// Accepts either individual props OR a `sp` object from useSortAndPage
 
 export function PaginationBar({
   total,
@@ -108,33 +141,42 @@ export function PaginationBar({
   perPage,
   onPage,
   onPerPage,
+  sp,
 }: {
-  total: number;
-  page: number;
-  perPage: number;
-  onPage: (p: number) => void;
-  onPerPage: (n: number) => void;
+  total?: number;
+  page?: number;
+  perPage?: number;
+  onPage?: (p: number) => void;
+  onPerPage?: (n: number) => void;
+  sp?: any;
 }) {
-  const totalPages = Math.max(1, Math.ceil(total / perPage));
-  const start = (page - 1) * perPage + 1;
-  const end = Math.min(page * perPage, total);
+  // Resolve props — prefer sp if provided
+  const _total   = sp ? sp.total    : (total ?? 0);
+  const _page    = sp ? sp.currentPage : (page ?? 1);
+  const _perPage = sp ? sp.perPage  : (perPage ?? 10);
+  const _onPage  = sp ? sp.setPage  : onPage;
+  const _onPerPage = sp ? sp.setPerPage : onPerPage;
+
+  const totalPages = Math.max(1, Math.ceil(_total / _perPage));
+  const start = (_page - 1) * _perPage + 1;
+  const end = Math.min(_page * _perPage, _total);
   return (
     <div className="flex items-center justify-between mt-4 px-1">
       <div className="flex items-center gap-2 text-xs text-[hsl(var(--text-3))]">
         <span>Show</span>
         <select
-          value={perPage}
-          onChange={e => { onPerPage(Number(e.target.value)); onPage(1); }}
+          value={_perPage}
+          onChange={e => { _onPerPage?.(Number(e.target.value)); _onPage?.(1); }}
           className="border border-[hsl(var(--border))] bg-transparent text-[hsl(var(--text-2))] px-1 py-0.5 text-xs"
         >
           {[10, 25, 50].map(n => <option key={n} value={n}>{n}</option>)}
         </select>
-        <span>· {total === 0 ? "0" : `${start}–${end} of ${total}`}</span>
+        <span>· {_total === 0 ? "0" : `${start}–${end} of ${_total}`}</span>
       </div>
       <div className="flex items-center gap-1">
         <button
-          disabled={page === 1}
-          onClick={() => onPage(page - 1)}
+          disabled={_page === 1}
+          onClick={() => _onPage?.(_page - 1)}
           className="px-2 py-1 text-xs border border-[hsl(var(--border))] disabled:opacity-40 hover:bg-[hsl(var(--bg-raised))]"
         >
           ‹ Prev
@@ -144,16 +186,16 @@ export function PaginationBar({
           return (
             <button
               key={p}
-              onClick={() => onPage(p)}
-              className={`px-2 py-1 text-xs border ${page === p ? "bg-[hsl(var(--brand))] text-white border-[hsl(var(--brand))]" : "border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))]"}`}
+              onClick={() => _onPage?.(p)}
+              className={`px-2 py-1 text-xs border ${_page === p ? "bg-[hsl(var(--brand))] text-white border-[hsl(var(--brand))]" : "border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))]"}`}
             >
               {p}
             </button>
           );
         })}
         <button
-          disabled={page === totalPages}
-          onClick={() => onPage(page + 1)}
+          disabled={_page === totalPages}
+          onClick={() => _onPage?.(_page + 1)}
           className="px-2 py-1 text-xs border border-[hsl(var(--border))] disabled:opacity-40 hover:bg-[hsl(var(--bg-raised))]"
         >
           Next ›
@@ -203,29 +245,57 @@ export function SortIcon({ col, sortCol, sortDir }: { col: string; sortCol: stri
 }
 
 // ── Th (sortable header) ──────────────────────────────────────────────────────
+// Accepts either individual (sortCol, sortDir, onSort) OR sp object from useSortAndPage
 
 export function Th({
-  col, label, sortCol, sortDir, onSort, width,
+  col, label, sortCol, sortDir, onSort, width, sp,
 }: {
-  col: string; label: string; sortCol: string; sortDir: "asc" | "desc"; onSort: (c: string) => void; width?: string;
+  col: string;
+  label: string;
+  sortCol?: string;
+  sortDir?: "asc" | "desc";
+  onSort?: (c: string) => void;
+  width?: string;
+  sp?: any;
 }) {
+  // Resolve props — prefer sp if provided
+  const _sortCol = sp ? sp.sortCol : (sortCol ?? "");
+  const _sortDir = sp ? sp.sortDir : (sortDir ?? "asc");
+  const _onSort  = sp ? sp.handleSort : (onSort ?? (() => {}));
+
   return (
     <th
       className="text-left px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-[hsl(var(--text-4))] cursor-pointer select-none hover:text-[hsl(var(--text-2))] whitespace-nowrap"
       style={width ? { width } : {}}
-      onClick={() => onSort(col)}
+      onClick={() => _onSort(col)}
     >
       {label}
-      <SortIcon col={col} sortCol={sortCol} sortDir={sortDir} />
+      <SortIcon col={col} sortCol={_sortCol} sortDir={_sortDir} />
     </th>
   );
 }
 
 // ── MetaBar ───────────────────────────────────────────────────────────────────
+// Accepts either a `record` object (old API) or an `items` array of {label, value} pairs
 
-export function MetaBar({ record }: { record: any }) {
+export function MetaBar({ record, items }: { record?: any; items?: { label: string; value: any }[] }) {
+  // If items array provided, use that
+  if (items) {
+    return (
+      <div className="grid grid-cols-2 gap-3 p-4 bg-[hsl(var(--bg-raised))] border-b border-[hsl(var(--border))] text-xs mb-4">
+        {items.map(({ label, value }) => (
+          <div key={label}>
+            <p className="text-[hsl(var(--text-4))] uppercase tracking-wider mb-0.5">{label}</p>
+            <p className="text-[hsl(var(--text-2))] font-mono">{value ?? "—"}</p>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  // Fallback: record object (old API)
+  if (!record) return null;
   return (
-    <div className="grid grid-cols-2 gap-3 p-4 bg-[hsl(var(--bg-raised))] border-b border-[hsl(var(--border))] text-xs">
+    <div className="grid grid-cols-2 gap-3 p-4 bg-[hsl(var(--bg-raised))] border-b border-[hsl(var(--border))] text-xs mb-4">
       {[
         ["Record ID", record.id],
         ["Created At", record.createdAt ?? record.created_at ?? "—"],
@@ -262,19 +332,21 @@ export function ActivityTimeline({ items }: { items: { date: string; actor: stri
   );
 }
 
-// ── useSort hook ──────────────────────────────────────────────────────────────
+// ── useSortAndPage ──────────────────────────────────────────────────────────
+// Returns `page` as the ARRAY of paged items (what the 7 V1 pages expect)
+// Also returns `currentPage` as the number, `paged` as alias for `page`
 
 export function useSortAndPage<T>(items: T[], defaultSortCol: keyof T) {
   const [sortCol, setSortCol] = useState<keyof T>(defaultSortCol);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
-  const [page, setPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const handleSort = (col: string) => {
     if (col === sortCol) setSortDir(d => d === "asc" ? "desc" : "asc");
     else { setSortCol(col as keyof T); setSortDir("asc"); }
-    setPage(1);
+    setCurrentPage(1);
   };
 
   const sorted = [...items].sort((a, b) => {
@@ -283,7 +355,8 @@ export function useSortAndPage<T>(items: T[], defaultSortCol: keyof T) {
     return sortDir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
   });
 
-  const paged = sorted.slice((page - 1) * perPage, page * perPage);
+  // `page` = the current page's items array (what the V1 pages use via sp.page)
+  const page = sorted.slice((currentPage - 1) * perPage, currentPage * perPage);
 
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => {
@@ -295,17 +368,30 @@ export function useSortAndPage<T>(items: T[], defaultSortCol: keyof T) {
   };
 
   const toggleAll = () => {
-    if (selectedIds.size === paged.length) setSelectedIds(new Set());
-    else setSelectedIds(new Set(paged.map((i: any) => i.id)));
+    if (selectedIds.size === page.length) setSelectedIds(new Set());
+    else setSelectedIds(new Set(page.map((i: any) => i.id)));
   };
 
   const clearSelected = () => setSelectedIds(new Set());
+  const setPage = (p: number) => setCurrentPage(p);
 
   return {
-    sortCol: sortCol as string, sortDir, handleSort,
-    page, perPage, setPage, setPerPage,
-    sorted, paged, total: items.length,
-    selectedIds, toggleSelect, toggleAll, clearSelected,
+    sortCol: sortCol as string,
+    sortDir,
+    handleSort,
+    currentPage,
+    page,          // <— array of items for current page (V1 pages use sp.page)
+    paged: page,   // alias
+    perPage,
+    setPage,
+    setCurrentPage,
+    setPerPage,
+    sorted,
+    total: items.length,
+    selectedIds,
+    toggleSelect,
+    toggleAll,
+    clearSelected,
   };
 }
 
@@ -328,36 +414,53 @@ export function CrudModal({
             <X size={16} />
           </button>
         </div>
-        <div className="overflow-y-auto flex-1">{children}</div>
+        <div className="overflow-y-auto flex-1 px-5 py-4">{children}</div>
       </div>
     </div>
   );
 }
 
 // ── FormFooter ────────────────────────────────────────────────────────────────
+// Accepts both old API (onCancel, onSaveDraft, onSubmit, loading, submitLabel)
+// and V1 pages API (saving, onDraft, onSubmit, onCancel, submitLabel)
 
 export function FormFooter({
-  onCancel, onSaveDraft, onSubmit, loading, submitLabel = "Save & Submit",
+  onCancel,
+  onSaveDraft,
+  onDraft,       // alias for onSaveDraft used by V1 pages
+  onSubmit,
+  loading,
+  saving,        // alias for loading used by V1 pages
+  submitLabel = "Save & Submit",
 }: {
-  onCancel: () => void; onSaveDraft?: () => void; onSubmit: () => void; loading?: boolean; submitLabel?: string;
+  onCancel: () => void;
+  onSaveDraft?: () => void;
+  onDraft?: () => void;
+  onSubmit: () => void;
+  loading?: boolean;
+  saving?: boolean;
+  submitLabel?: string;
 }) {
+  const _loading = loading || saving || false;
+  const _onDraft = onSaveDraft || onDraft;
+
   return (
     <div className="flex items-center justify-between gap-3 px-5 py-4 border-t border-[hsl(var(--border))] flex-shrink-0 bg-[hsl(var(--card))]">
       <button onClick={onCancel} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
         Cancel
       </button>
       <div className="flex items-center gap-2">
-        {onSaveDraft && (
-          <button onClick={onSaveDraft} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+        {_onDraft && (
+          <button onClick={_onDraft} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
             Save as Draft
           </button>
         )}
         <button
           onClick={onSubmit}
-          disabled={loading}
+          disabled={_loading}
           className="px-5 py-2 text-sm font-medium bg-[hsl(var(--brand))] text-white hover:opacity-90 disabled:opacity-50 flex items-center gap-2"
         >
-          {loading && <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+          {_loading && <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
           {submitLabel}
         </button>
       </div>

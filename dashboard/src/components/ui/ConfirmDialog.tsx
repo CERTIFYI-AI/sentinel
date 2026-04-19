@@ -4,6 +4,7 @@ import { Warning, Trash, Info } from "@phosphor-icons/react";
 interface ConfirmDialogProps {
   open: boolean;
   onClose?: () => void;
+  onCancel?: () => void;        // alias for onClose (V1 pages)
   onOpenChange?: (open: boolean) => void;
   onConfirm: () => void;
   type?: "danger" | "warning" | "info";
@@ -15,16 +16,17 @@ interface ConfirmDialogProps {
   requiresTyping?: string;
   checklist?: string[];
   isDestructive?: boolean;
+  destructive?: boolean;        // alias for isDestructive (V1 pages)
   impactList?: string[];
 }
 
 export function ConfirmDialog({
-  open, onClose, onOpenChange, onConfirm,
+  open, onClose, onCancel, onOpenChange, onConfirm,
   type = "info", title, message, description,
   confirmLabel = "Confirm", cancelLabel = "Cancel",
-  requiresTyping, checklist, isDestructive, impactList,
+  requiresTyping, checklist, isDestructive, destructive, impactList,
 }: ConfirmDialogProps) {
-  const handleClose = () => { onClose?.(); onOpenChange?.(false); };
+  const handleClose = () => { (onClose ?? onCancel)?.(); onOpenChange?.(false); };
   const [typed, setTyped] = useState("");
   const [checked, setChecked] = useState<Record<number, boolean>>({});
 
@@ -34,7 +36,7 @@ export function ConfirmDialog({
   const checklistValid = !checklist || checklist.every((_, i) => checked[i]);
   const canConfirm = typingValid && checklistValid;
 
-  const resolvedType = isDestructive ? "danger" : type;
+  const resolvedType = (isDestructive || destructive) ? "danger" : type;
 
   const btnColors: Record<string, string> = {
     danger:  "bg-[hsl(var(--destructive))] text-white hover:opacity-90",
