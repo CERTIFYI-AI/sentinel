@@ -62,3 +62,6 @@ replit.nix
 attached_assets/
 scripts/*.pyc
 scripts/__pycache__/
+*.py
+__pycache__/
+*.pyc
