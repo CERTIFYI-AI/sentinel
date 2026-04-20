@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { Plus, MagnifyingGlass, PencilSimple, Trash, X, Download, Funnel } from "@phosphor-icons/react";
+import { RBACGate } from '@/components/shared';
+import { useRBAC } from '@/hooks/useRBAC';
 
 interface Item {
   id: string;
@@ -61,6 +63,8 @@ export default function RiskPage() {
   const [items, setItems] = useState<Item[]>(SEED);
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
+  // RBAC gating applied via <RBACGate> wrapper on destructive actions
+  useRBAC();
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<Omit<Item,"id">>({"name": "", "category": "", "severity": "", "owner": "", "status": ""});
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -178,9 +182,9 @@ export default function RiskPage() {
                       <button onClick={() => handleEdit(item)} className="p-1 rounded hover:bg-zinc-700 text-zinc-400 hover:text-blue-400">
                         <PencilSimple size={16} />
                       </button>
-                      <button onClick={() => setDeleteId(item.id)} className="p-1 rounded hover:bg-zinc-700 text-zinc-400 hover:text-red-400">
+                      <RBACGate action="delete"><button onClick={() => setDeleteId(item.id)} className="p-1 rounded hover:bg-zinc-700 text-zinc-400 hover:text-red-400">
                         <Trash size={16} />
-                      </button>
+                      </button></RBACGate>
                     </div>
                   </td>
                 </tr>
