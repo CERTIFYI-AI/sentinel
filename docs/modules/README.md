@@ -2,26 +2,65 @@
 
 Per-module reference for the Sentinel AI GRC platform. Each page covers purpose, standards mapping, data model, workflow, and evidence outputs.
 
-## V1 Modules
+## AI Governance
+- [Model Inventory & Lifecycle](model-inventory.md)
+- [AI Risk Tiering](ai-risk-tiering.md)
+- [AI Impact Assessments (DPIA/FRIA)](dpia.md)
+- [AIBOM Registry](aibom.md)
+- [Agent Platform (Registry, Discovery, IAM, Choreography)](agent-platform.md)
+- [Prompt Registry](prompt-registry.md)
+- [Explainability & Transparency](explainability.md)
+- [AI Advisor & Narrative Engine](ai-advisor-narrative.md)
+- [Kill-Switch & Emergency Controls](kill-switch.md)
+- [Bias & Fairness Audits](bias-fairness.md)
+- [Red Team & Evaluations](red-team-evals.md)
+- [Benchmarking & Examination Manager](benchmarking-maturity.md)
+- [Trust Engine](trust-engine.md)
+- [Policy Firewall & Guardrails](policy-firewall.md)
 
-| Module | Doc | Route |
-|---|---|---|
-| Asset Management | [asset-management.md](asset-management.md) | `/asset-management` |
-| Identity Governance (IGA) | [identity-governance.md](identity-governance.md) | `/iga` |
-| Records of Processing Activities | [ropa.md](ropa.md) | `/ropa` |
-| Transfer Impact Assessment | [transfer-impact-assessment.md](transfer-impact-assessment.md) | `/tia` |
-| Tabletop Exercises | [tabletop-exercises.md](tabletop-exercises.md) | `/tabletop` |
-| Regulator Filing Workspace | [regulator-filings.md](regulator-filings.md) | `/regulator-filings` |
-| Business Impact Analysis | [business-impact-analysis.md](business-impact-analysis.md) | `/bia` |
-| Vendor / Third-Party Risk | [vendor-risk.md](vendor-risk.md) | `/vendors` |
-| Human-in-the-Loop Review | [hitl-review.md](hitl-review.md) | `/hitl` |
-| Policy Firewall & Guardrails | [policy-firewall.md](policy-firewall.md) | `/guardrails` |
-| Red Team & Evaluations | [red-team-evals.md](red-team-evals.md) | `/evals` |
-| Model Inventory & Lifecycle | [model-inventory.md](model-inventory.md) | `/models` |
-| Trust Engine | [trust-engine.md](trust-engine.md) | `/trust-engine` |
-| Incident Management | [incident-management.md](incident-management.md) | `/exceptions` |
-| DSR & Consent | [dsr-consent.md](dsr-consent.md) | `/consent-management` |
-| Bias & Fairness Audits | [bias-fairness.md](bias-fairness.md) | `/bias` |
+## Compliance & Policy
+- [Compliance Programs (Frameworks, Autopilot, Maturity, Gap Analysis)](compliance-programs.md)
+- [Policy Management & Templates](policy-management.md)
+- [Controls & Control Testing](controls-control-testing.md)
+- [Approval Workflows](approval-workflows.md)
+- [Regulatory Intelligence (Radar, Velocity)](regulatory-intelligence.md)
+- [Regulator Filing Workspace](regulator-filings.md)
+- [Evidence Management (Vault, Chain, Sync, Export)](evidence-management.md)
+- [Audit Log & Trail](audit-log-trail.md)
+
+## Risk & Response
+- [Risk Register & Matrix](risk-register.md)
+- [Incident Management](incident-management.md)
+- [Forensics & Incident Log](forensics-log.md)
+- [Remediation & Tasks](remediation-tasks.md)
+- [Tabletop Exercises](tabletop-exercises.md)
+- [Business Impact Analysis (BIA)](business-impact-analysis.md)
+
+## Data, Privacy & Vendors
+- [Data Governance (Datasets, Quality, Lineage)](data-governance.md)
+- [Records of Processing Activities (RoPA)](ropa.md)
+- [Transfer Impact Assessment (TIA)](transfer-impact-assessment.md)
+- [DSR & Consent Management](dsr-consent.md)
+- [Vendor / Third-Party Risk (TPRM)](vendor-risk.md)
+- [Asset Management](asset-management.md)
+- [Identity Governance (IGA)](identity-governance.md)
+
+## Human Oversight & Ethics
+- [Human-in-the-Loop (HITL) Review](hitl-review.md)
+- [Ethics Reporting & Whistleblowing](ethics-reporting.md)
+- [Training & Awareness](training-awareness.md)
+
+## Security
+- [Security Intelligence](security-intelligence.md) (see also `../SECURITY_MODULE.md`)
+
+## Sustainability & Finance
+- [ESG & Sustainability (Carbon, Energy, Financial)](esg-sustainability.md)
+
+## Enterprise & Platform
+- [Executive Intelligence (Executive Center, ROI, CISO, Peer Intel)](executive-intelligence.md)
+- [Knowledge Graph, Marketplace, Use Cases](knowledge-and-marketplace.md)
+- [Integrations Platform](integrations-platform.md)
+- [RBAC, Admin, Departments, Committees, Settings](rbac-organization.md)
 
 ## See Also
 - Framework mappings: `../compliance/`
@@ -29,3 +68,4 @@ Per-module reference for the Sentinel AI GRC platform. Each page covers purpose,
 - Reference and glossary: `../reference/`
 - Architecture: `../ARCHITECTURE.md`
 - API reference: `../api-reference.md`
+- Top-level index: `../README.md`
