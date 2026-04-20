@@ -12,6 +12,7 @@
 ## How Sentinel Works
 - [How it works](how-it-works.md) — request lifecycle, policy pipeline
 - [Architecture](ARCHITECTURE.md) · [High-level architecture](architecture.md)
+- [Architecture deep-dives (Interlinks, Supabase, Activation)](architecture/README.md)
 - [Backend](BACKEND.md) — Supabase schema, RLS, evidence chain
 - [API reference](API.md) · [Extended API reference](api-reference.md)
 - [SDK guide](sdk-guide.md)
