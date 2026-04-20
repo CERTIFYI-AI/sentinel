@@ -1,3 +1,17 @@
+<p align="center">
+  <img src="https://img.shields.io/badge/Sentinel-AI%20GRC-6C3BF5?style=for-the-badge&logoColor=white" alt="Sentinel AI GRC" />
+</p>
+
+<h1 align="center">Sentinel AI GRC</h1>
+<p align="center"><strong>The trust layer for production AI</strong></p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-green.svg" alt="License: Apache 2.0" /></a>
+  <a href="https://github.com/CERTIFYI-AI/sentinel/actions/workflows/ci.yml"><img src="https://github.com/CERTIFYI-AI/sentinel/actions/workflows/ci.yml/badge.svg" alt="Build Status" /></a>
+  <a href="https://github.com/CERTIFYI-AI/sentinel/pulls"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome" /></a>
+  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white" alt="TypeScript" /></a>
+</p>
+
 # Sentinel AI GRC
 
 **Governance, Risk & Compliance for production AI systems.**
