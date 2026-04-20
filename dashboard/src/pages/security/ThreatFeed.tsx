@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/ta
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '../../components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { THREATS, Threat, severityColor, statusColor, formatDate } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
@@ -112,6 +113,11 @@ export default function ThreatFeed() {
   const [resolveTarget, setResolveTarget] = useState<ExtThreat | null>(null);
   const [resolveNote, setResolveNote] = useState('');
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importUrl, setImportUrl] = useState('');
+  const [importFormat, setImportFormat] = useState('STIX 2.1');
+  const [addOpen, setAddOpen] = useState(false);
+  const [addForm, setAddForm] = useState({ name: '', category: 'Adversarial ML', severity: 'high' as 'critical'|'high'|'medium'|'low', description: '', source: '' });
 
   const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
     const id = Date.now();
@@ -172,10 +178,10 @@ export default function ThreatFeed() {
           <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} — Active threats, attack vectors, and MITRE ATT&CK mappings</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" style={{ borderRadius: 0 }}>
+          <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setImportOpen(true)}>
             <Upload size={14} className="mr-2" />Import Threat Feed
           </Button>
-          <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+          <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }} onClick={() => setAddOpen(true)}>
             <Plus size={14} className="mr-2" />Add Threat
           </Button>
         </div>
@@ -457,6 +463,110 @@ export default function ThreatFeed() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Import Threat Feed Dialog */}
+      <Dialog open={importOpen} onOpenChange={setImportOpen}>
+        <DialogContent style={{ borderRadius: 0, maxWidth: 520 }}>
+          <DialogHeader>
+            <DialogTitle>Import Threat Feed</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-xs font-semibold mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Feed URL</label>
+              <Input value={importUrl} onChange={e => setImportUrl(e.target.value)} placeholder="https://feeds.example.com/threats.json" style={{ borderRadius: 0 }} />
+            </div>
+            <div>
+              <label className="text-xs font-semibold mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Format</label>
+              <Select value={importFormat} onValueChange={setImportFormat}>
+                <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  {['STIX 2.1', 'MISP', 'OpenIOC', 'CSV', 'JSON'].map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="p-3 text-xs space-y-1" style={{ background: 'hsl(var(--s-in-bg))', border: '1px solid hsl(var(--s-in-br))' }}>
+              <p className="font-semibold" style={{ color: 'hsl(var(--s-in-tx))' }}>Supported sources</p>
+              <p style={{ color: 'hsl(var(--text-3))' }}>MITRE ATT&CK, TAXII 2.1 servers, FS-ISAC, CISA AIS, commercial threat intel APIs.</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setImportOpen(false)}>Cancel</Button>
+            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }} onClick={() => {
+              if (!importUrl.trim()) { toast('Enter a valid feed URL', 'error'); return; }
+              toast(`Importing ${importFormat} feed from ${importUrl.slice(0, 40)}…`, 'info');
+              setImportOpen(false); setImportUrl('');
+            }}>
+              <Upload size={14} className="mr-2" />Start Import
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Threat Dialog */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent style={{ borderRadius: 0, maxWidth: 520 }}>
+          <DialogHeader>
+            <DialogTitle>Add Threat</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div>
+              <label className="text-xs font-semibold mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Threat Name *</label>
+              <Input value={addForm.name} onChange={e => setAddForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Prompt Injection via API Gateway" style={{ borderRadius: 0 }} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-semibold mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Category</label>
+                <Select value={addForm.category} onValueChange={v => setAddForm(f => ({ ...f, category: v }))}>
+                  <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {['Adversarial ML','Data Poisoning','Model Theft','Privacy','Supply Chain','Prompt Injection','Evasion'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-xs font-semibold mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Severity</label>
+                <Select value={addForm.severity} onValueChange={v => setAddForm(f => ({ ...f, severity: v as any }))}>
+                  <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {['critical','high','medium','low'].map(s => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-semibold mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Description</label>
+              <textarea value={addForm.description} onChange={e => setAddForm(f => ({ ...f, description: e.target.value }))} placeholder="Describe the threat vector and potential impact..." rows={3} className="w-full rounded-none border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none" style={{ borderRadius: 0 }} />
+            </div>
+            <div>
+              <label className="text-xs font-semibold mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Source / Intel Feed</label>
+              <Input value={addForm.source} onChange={e => setAddForm(f => ({ ...f, source: e.target.value }))} placeholder="e.g. MITRE ATT&CK, Internal SOC, Vendor Report" style={{ borderRadius: 0 }} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setAddOpen(false)}>Cancel</Button>
+            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }} onClick={() => {
+              if (!addForm.name.trim()) { toast('Threat name is required', 'error'); return; }
+              const newThreat: ExtThreat = {
+                id: `THR-${String(threats.length + 1).padStart(3, '0')}`,
+                name: addForm.name,
+                category: addForm.category,
+                severity: addForm.severity,
+                status: 'active',
+                description: addForm.description || `${addForm.category} threat identified.`,
+                source: addForm.source || 'Manual Entry',
+                affectedModels: [],
+                detected: new Date().toISOString().split('T')[0],
+              };
+              setThreats(prev => [newThreat, ...prev]);
+              toast(`Threat ${newThreat.id} added successfully`, 'success');
+              setAddOpen(false);
+              setAddForm({ name: '', category: 'Adversarial ML', severity: 'high', description: '', source: '' });
+            }}>
+              <Plus size={14} className="mr-2" />Add Threat
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

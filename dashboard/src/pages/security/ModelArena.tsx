@@ -101,7 +101,7 @@ export default function ModelArena() {
   const ct = useChartTheme();
 
   const { data: supabaseModels = [] } = useRedTeamCampaigns()
-  const [models, setModels] = useState<ModelBenchmark[]>([]);
+  const [models, setModels] = useState<ModelBenchmark[]>(MOCK_MODELS);
   useEffect(() => { if (supabaseModels.length > 0) setModels(supabaseModels as any) }, [supabaseModels]);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');

@@ -289,7 +289,7 @@ export default function PostMarket() {
 
       {/* Detail Sheet */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent style={{ width: 580, borderRadius: 0 }}>
+        <SheetContent className="overflow-y-auto" style={{ width: 580, borderRadius: 0 }}>
           {selected && (
             <>
               <SheetHeader className="pb-4 border-b" style={{ borderColor: 'hsl(var(--border))' }}>

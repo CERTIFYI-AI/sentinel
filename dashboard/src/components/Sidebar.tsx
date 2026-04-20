@@ -183,7 +183,7 @@ const NAV: NavSection[] = [
       { label: 'Transparency Reports', to: '/transparency-reports',    icon: Broadcast },
       { label: 'Framework Mapping',    to: '/framework-mapping',       icon: ArrowsLeftRight },
       { label: 'Gov. Framework',       to: '/governance-framework',    icon: Compass },
-      { label: 'Exam Manager',         to: '/examination-manager',     icon: Buildings },
+      // { label: 'Exam Manager',         to: '/examination-manager',     icon: Buildings },
       { label: 'Control Testing',      to: '/control-testing',         icon: Play },
       { label: 'RoPA', icon: ClipboardText,             to: '/ropa' },
       { label: 'Transfer Impact', icon: Globe,   to: '/tia' },

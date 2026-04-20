@@ -1,6 +1,8 @@
 // @ts-nocheck
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog'
+import { Button } from '../components/ui/button'
 
 // WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
@@ -48,6 +50,7 @@ export default function PolicyTemplates() {
   const [filterStatus, setFilterStatus] = useState('All')
   const [filterCategory, setFilterCategory] = useState('All')
   const [selected, setSelected] = useState<number | null>(null)
+  const [useTarget, setUseTarget] = useState<typeof TEMPLATES[0] | null>(null)
 
   const frameworks = ['All', 'EU AI Act', 'NIST AI RMF', 'ISO 42001', 'SOC 2', 'GDPR']
   const statuses = ['All', 'Published', 'Draft', 'Review']
@@ -62,11 +65,11 @@ export default function PolicyTemplates() {
   })
 
   const handleUse = (t: typeof TEMPLATES[0]) => {
-    toast({ title: 'Template applied', description: `"${t.name}" has been applied to your policy library.` })
+    setUseTarget(t)
   }
 
   const handleExport = (t: typeof TEMPLATES[0]) => {
-    toast({ title: 'Template exported', description: `Exporting "${t.name}" as PDF...` })
+    toast(`Exporting "${t.name}" as PDF...`)
   }
 
   const riskColor = (r: string) => r === 'Critical' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : r === 'High' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' : r === 'Medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
@@ -125,6 +128,44 @@ export default function PolicyTemplates() {
           </div>
         ))}
       </div>
+
+      {/* Use Template Dialog */}
+      <Dialog open={!!useTarget} onOpenChange={open => { if (!open) setUseTarget(null) }}>
+        <DialogContent style={{ borderRadius: 0, maxWidth: 560 }}>
+          <DialogHeader>
+            <DialogTitle>Use Template: {useTarget?.name}</DialogTitle>
+          </DialogHeader>
+          {useTarget && (
+            <div className="space-y-4 py-2">
+              <div className="flex gap-2 flex-wrap">
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">{useTarget.framework}</span>
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-600 dark:bg-gray-900/30">{useTarget.article}</span>
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-600 dark:bg-gray-900/30">{useTarget.category}</span>
+              </div>
+              <p className="text-sm text-muted-foreground">{useTarget.description}</p>
+              <div className="rounded border border-border bg-muted/40 p-3 space-y-1">
+                <p className="text-xs font-semibold text-foreground mb-2">Policy Template Content</p>
+                <p className="text-xs text-muted-foreground">1. Purpose &amp; Scope</p>
+                <p className="text-xs text-muted-foreground pl-3">This policy establishes requirements for {useTarget.name.toLowerCase()} in compliance with {useTarget.framework} {useTarget.article}.</p>
+                <p className="text-xs text-muted-foreground mt-1">2. Policy Statement</p>
+                <p className="text-xs text-muted-foreground pl-3">The organization shall implement, maintain, and continuously improve the governance controls specified in this document.</p>
+                <p className="text-xs text-muted-foreground mt-1">3. Responsibilities</p>
+                <p className="text-xs text-muted-foreground pl-3">The Chief AI Officer and Compliance team are responsible for implementation and annual review of this policy.</p>
+                <p className="text-xs text-muted-foreground mt-1">4. Review Cycle</p>
+                <p className="text-xs text-muted-foreground pl-3">This policy shall be reviewed annually or upon significant regulatory or organizational change.</p>
+              </div>
+              <p className="text-xs text-muted-foreground">This template will be added to your Policy Library under <strong>{useTarget.category}</strong> as a Draft for editing and approval.</p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setUseTarget(null)}>Cancel</Button>
+            <Button style={{ borderRadius: 0 }} onClick={() => {
+              toast.success(`"${useTarget?.name}" added to your Policy Library as Draft`)
+              setUseTarget(null)
+            }}>Add to Policy Library</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

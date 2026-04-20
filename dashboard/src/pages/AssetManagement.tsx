@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useState, useMemo } from "react";
-import { Database, Plus, MagnifyingGlass, Eye, PencilSimple, Trash, Export, X, Link } from "@phosphor-icons/react";
+import { Database, Plus, MagnifyingGlass, Eye, PencilSimple, Trash, Export, X, Link, Upload } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -56,6 +56,8 @@ export default function AssetManagement() {
   const [saving, setSaving] = useState(false);
   const [bulk, setBulk] = useState<string[]>([]);
   const [controlInput, setControlInput] = useState("");
+  const [importOpen, setImportOpen] = useState(false);
+  const [importFile, setImportFile] = useState("");
 
   const filtered = useMemo(() => items.filter(i => {
     const q = search.toLowerCase();
@@ -105,9 +107,14 @@ export default function AssetManagement() {
           </h1>
           <p className="text-sm text-[hsl(var(--text-3))] mt-0.5">ISO 27001 Annex A.5.9 — inventory of AI systems, datasets, infrastructure and endpoints</p>
         </div>
-        <Button onClick={() => { setForm(EMPTY); setEditId(null); setModal("create"); }} className="gap-2">
-          <Plus weight="bold" size={16} /> Register Asset
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setImportOpen(true)} className="gap-2">
+            <Upload size={16} /> Import Assets
+          </Button>
+          <Button onClick={() => { setForm(EMPTY); setEditId(null); setModal("create"); }} className="gap-2">
+            <Plus weight="bold" size={16} /> Register Asset
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -291,6 +298,32 @@ export default function AssetManagement() {
       </CrudSlideOver>
 
       <ConfirmDialog open={!!deleteTarget} onCancel={() => setDeleteTarget(null)} onConfirm={doDelete} title="Delete Asset" description={`Delete "${deleteTarget?.name}"? This cannot be undone.`} confirmLabel="Delete" destructive />
+
+      {/* Import Assets Dialog */}
+      <CrudModal open={importOpen} onClose={() => { setImportOpen(false); setImportFile(""); }} title="Import Assets" size="md">
+        <div className="space-y-4">
+          <div className="p-4 border-2 border-dashed border-[hsl(var(--border))] rounded-lg text-center">
+            <Upload size={24} className="mx-auto mb-2 text-[hsl(var(--text-3))]" />
+            <p className="text-sm font-medium text-[hsl(var(--text-1))]">Upload asset inventory file</p>
+            <p className="text-xs text-[hsl(var(--text-3))] mt-1">Supports CSV, JSON, Excel (XLSX) formats</p>
+            <input type="text" value={importFile} onChange={e => setImportFile(e.target.value)} placeholder="Or paste file path / URL..." className="mt-3 w-full h-9 rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg))] px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+          </div>
+          <div className="text-xs text-[hsl(var(--text-3))] space-y-1">
+            <p className="font-semibold text-[hsl(var(--text-2))]">Expected columns:</p>
+            <p>name, type, classification, owner, department, location, riskLevel, status, description</p>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <Button variant="outline" className="flex-1" onClick={() => { setImportOpen(false); setImportFile(""); }}>Cancel</Button>
+            <Button className="flex-1 gap-2" onClick={() => {
+              if (!importFile.trim()) { toast.error("Please specify a file path or URL"); return; }
+              toast.success(`Importing assets from "${importFile.slice(0, 40)}…" — validation in progress`);
+              setImportOpen(false); setImportFile("");
+            }}>
+              <Upload size={14} /> Start Import
+            </Button>
+          </div>
+        </div>
+      </CrudModal>
     </div>
   );
 }

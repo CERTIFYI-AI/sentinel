@@ -80,7 +80,7 @@ export default function KeysVault() {
   const ct = useChartTheme();
 
   const { data: supabaseKeys = [] } = useApiKeys()
-  const [keys, setKeys] = useState<ApiKey[]>([]);
+  const [keys, setKeys] = useState<ApiKey[]>(MOCK_KEYS);
   useEffect(() => { if (supabaseKeys.length > 0) setKeys(supabaseKeys as any) }, [supabaseKeys]);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');

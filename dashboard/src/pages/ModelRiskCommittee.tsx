@@ -169,6 +169,12 @@ export default function ModelRiskCommittee() {
   const [vote, setVote] = useState<'approve' | 'reject' | 'abstain'>('approve');
   const [rationale, setRationale] = useState('');
   const [condition, setCondition] = useState('');
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [mtgDate, setMtgDate] = useState('');
+  const [mtgTime, setMtgTime] = useState('10:00');
+  const [mtgType, setMtgType] = useState('Quarterly Review');
+  const [mtgAttendees, setMtgAttendees] = useState(MRC_MEMBERS.filter(m => m.quorum).map(m => m.name).join(', '));
+  const [mtgAgenda, setMtgAgenda] = useState('');
 
   const pendingItems = AGENDA_ITEMS.filter(a => a.status === 'pending');
   const quorumMet = MRC_MEMBERS.filter(m => m.quorum).length >= Math.ceil(MRC_MEMBERS.length * 0.6);
@@ -197,7 +203,7 @@ export default function ModelRiskCommittee() {
             </p>
           </div>
           <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
-            onClick={() => toast.success('Q2 MRC agenda package generating — will notify committee members')}>
+            onClick={() => setScheduleOpen(true)}>
             <Calendar size={13} className="mr-1.5" />Schedule MRC Meeting
           </Button>
         </div>
@@ -520,6 +526,57 @@ export default function ModelRiskCommittee() {
             <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setVoteDialog(null)}>Cancel</Button>
             <Button style={{ borderRadius: 0, background: vote === 'approve' ? 'hsl(var(--s-ok-tx))' : vote === 'reject' ? 'hsl(var(--destructive))' : '#d97706', color: '#fff' }} onClick={castVote}>
               <Gavel size={12} className="mr-1.5" />Submit Vote
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Schedule MRC Meeting Dialog */}
+      <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
+        <DialogContent style={{ borderRadius: 0, maxWidth: 520 }}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Calendar size={16} />Schedule MRC Meeting
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-semibold mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Date *</label>
+                <input type="date" value={mtgDate} onChange={e => setMtgDate(e.target.value)} className="w-full h-9 rounded-none border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary" style={{ borderRadius: 0 }} />
+              </div>
+              <div>
+                <label className="text-xs font-semibold mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Time</label>
+                <input type="time" value={mtgTime} onChange={e => setMtgTime(e.target.value)} className="w-full h-9 rounded-none border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary" style={{ borderRadius: 0 }} />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-semibold mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Meeting Type</label>
+              <select value={mtgType} onChange={e => setMtgType(e.target.value)} className="w-full h-9 border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary" style={{ borderRadius: 0 }}>
+                {['Quarterly Review', 'Emergency Session', 'Model Approval', 'Annual Review', 'Ad Hoc'].map(t => <option key={t}>{t}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-semibold mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Attendees</label>
+              <Textarea value={mtgAttendees} onChange={e => setMtgAttendees(e.target.value)} className="text-xs" style={{ borderRadius: 0, minHeight: 60 }} />
+            </div>
+            <div>
+              <label className="text-xs font-semibold mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Agenda Items</label>
+              <Textarea value={mtgAgenda} onChange={e => setMtgAgenda(e.target.value)} placeholder={`e.g.\n1. Review ${AGENDA_ITEMS.filter(a => a.status === 'pending').length} pending model approvals\n2. Q2 risk posture update\n3. SR 11-7 compliance review`} className="text-xs" style={{ borderRadius: 0, minHeight: 80 }} />
+            </div>
+            <div className="p-3 text-xs" style={{ background: 'hsl(var(--s-in-bg))', border: '1px solid hsl(var(--s-in-br))' }}>
+              <p className="font-semibold mb-1" style={{ color: 'hsl(var(--s-in-tx))' }}>Quorum requirement</p>
+              <p style={{ color: 'hsl(var(--text-3))' }}>A minimum of {Math.ceil(MRC_MEMBERS.length * 0.6)} of {MRC_MEMBERS.length} members must attend for binding votes per SR 11-7 §IV.C.</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setScheduleOpen(false)}>Cancel</Button>
+            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }} onClick={() => {
+              if (!mtgDate) { toast.error('Meeting date is required'); return; }
+              toast.success(`MRC ${mtgType} scheduled for ${mtgDate} at ${mtgTime} — calendar invites sending to ${MRC_MEMBERS.filter(m => m.quorum).length} quorum members`);
+              setScheduleOpen(false);
+            }}>
+              <Calendar size={13} className="mr-1.5" />Schedule Meeting
             </Button>
           </DialogFooter>
         </DialogContent>

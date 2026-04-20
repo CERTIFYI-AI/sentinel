@@ -288,7 +288,7 @@ export default function DPIAPage() {
 
       {/* Detail Sheet */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent style={{ width: 560, borderRadius: 0 }}>
+        <SheetContent className="overflow-y-auto" style={{ width: 560, borderRadius: 0 }}>
           {selected && (
             <>
               <SheetHeader className="pb-4 border-b" style={{ borderColor: 'hsl(var(--border))' }}>
