@@ -196,27 +196,27 @@ export default function IncidentsPage() {
             <div className="space-y-3">
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1">Incident</label>
-              <input type="text" value={{form.title}} onChange={{e => setForm({{...form, title: e.target.value}})}} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+              <input type="text" value={form.title} onChange={e => setForm({...form, title: e.target.value})} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
             </div>
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1">Severity</label>
-              <select value={{form.severity}} onChange={{e => setForm({{...form, severity: e.target.value}})}} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"><option value="P1-Critical">P1-Critical</option><option value="P2-High">P2-High</option><option value="P3-Medium">P3-Medium</option><option value="P4-Low">P4-Low</option></select>
+              <select value={form.severity} onChange={e => setForm({...form, severity: e.target.value})} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"><option value="P1-Critical">P1-Critical</option><option value="P2-High">P2-High</option><option value="P3-Medium">P3-Medium</option><option value="P4-Low">P4-Low</option></select>
             </div>
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1">Affected Model</label>
-              <input type="text" value={{form.affected_model}} onChange={{e => setForm({{...form, affected_model: e.target.value}})}} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+              <input type="text" value={form.affected_model} onChange={e => setForm({...form, affected_model: e.target.value})} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
             </div>
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1">Reported By</label>
-              <input type="text" value={{form.reported_by}} onChange={{e => setForm({{...form, reported_by: e.target.value}})}} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+              <input type="text" value={form.reported_by} onChange={e => setForm({...form, reported_by: e.target.value})} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
             </div>
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1">Date</label>
-              <input type="text" value={{form.date}} onChange={{e => setForm({{...form, date: e.target.value}})}} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+              <input type="text" value={form.date} onChange={e => setForm({...form, date: e.target.value})} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
             </div>
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1">Status</label>
-              <select value={{form.status}} onChange={{e => setForm({{...form, status: e.target.value}})}} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"><option value="Active">Active</option><option value="Investigating">Investigating</option><option value="Resolved">Resolved</option><option value="Closed">Closed</option></select>
+              <select value={form.status} onChange={e => setForm({...form, status: e.target.value})} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"><option value="Active">Active</option><option value="Investigating">Investigating</option><option value="Resolved">Resolved</option><option value="Closed">Closed</option></select>
             </div>
             </div>
             <div className="flex justify-end gap-3 mt-6">

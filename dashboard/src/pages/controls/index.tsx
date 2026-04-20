@@ -214,27 +214,27 @@ export default function ControlsPage() {
             <div className="space-y-3">
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1">Control ID</label>
-              <input type="text" value={{form.control_id}} onChange={{e => setForm({{...form, control_id: e.target.value}})}} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+              <input type="text" value={form.control_id} onChange={e => setForm({...form, control_id: e.target.value})} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
             </div>
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1">Control Name</label>
-              <input type="text" value={{form.name}} onChange={{e => setForm({{...form, name: e.target.value}})}} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+              <input type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
             </div>
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1">Framework</label>
-              <select value={{form.framework}} onChange={{e => setForm({{...form, framework: e.target.value}})}} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"><option value="ISO 27001">ISO 27001</option><option value="SOC-2">SOC-2</option><option value="NIST AI RMF">NIST AI RMF</option><option value="EU AI Act">EU AI Act</option><option value="ISO 42001">ISO 42001</option></select>
+              <select value={form.framework} onChange={e => setForm({...form, framework: e.target.value})} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"><option value="ISO 27001">ISO 27001</option><option value="SOC-2">SOC-2</option><option value="NIST AI RMF">NIST AI RMF</option><option value="EU AI Act">EU AI Act</option><option value="ISO 42001">ISO 42001</option></select>
             </div>
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1">Category</label>
-              <select value={{form.category}} onChange={{e => setForm({{...form, category: e.target.value}})}} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"><option value="Technical">Technical</option><option value="Administrative">Administrative</option><option value="Physical">Physical</option></select>
+              <select value={form.category} onChange={e => setForm({...form, category: e.target.value})} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"><option value="Technical">Technical</option><option value="Administrative">Administrative</option><option value="Physical">Physical</option></select>
             </div>
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1">Status</label>
-              <select value={{form.status}} onChange={{e => setForm({{...form, status: e.target.value}})}} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"><option value="Implemented">Implemented</option><option value="Partial">Partial</option><option value="Planned">Planned</option><option value="Not Applicable">Not Applicable</option></select>
+              <select value={form.status} onChange={e => setForm({...form, status: e.target.value})} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"><option value="Implemented">Implemented</option><option value="Partial">Partial</option><option value="Planned">Planned</option><option value="Not Applicable">Not Applicable</option></select>
             </div>
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1">Owner</label>
-              <input type="text" value={{form.owner}} onChange={{e => setForm({{...form, owner: e.target.value}})}} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+              <input type="text" value={form.owner} onChange={e => setForm({...form, owner: e.target.value})} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
             </div>
             </div>
             <div className="flex justify-end gap-3 mt-6">

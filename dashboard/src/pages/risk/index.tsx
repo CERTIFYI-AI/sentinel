@@ -210,23 +210,23 @@ export default function RiskPage() {
             <div className="space-y-3">
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1">Risk Name</label>
-              <input type="text" value={{form.name}} onChange={{e => setForm({{...form, name: e.target.value}})}} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+              <input type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
             </div>
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1">Category</label>
-              <select value={{form.category}} onChange={{e => setForm({{...form, category: e.target.value}})}} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"><option value="Model Risk">Model Risk</option><option value="Data Risk">Data Risk</option><option value="Operational">Operational</option><option value="Compliance">Compliance</option><option value="Security">Security</option></select>
+              <select value={form.category} onChange={e => setForm({...form, category: e.target.value})} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"><option value="Model Risk">Model Risk</option><option value="Data Risk">Data Risk</option><option value="Operational">Operational</option><option value="Compliance">Compliance</option><option value="Security">Security</option></select>
             </div>
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1">Severity</label>
-              <select value={{form.severity}} onChange={{e => setForm({{...form, severity: e.target.value}})}} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"><option value="Critical">Critical</option><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select>
+              <select value={form.severity} onChange={e => setForm({...form, severity: e.target.value})} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"><option value="Critical">Critical</option><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select>
             </div>
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1">Owner</label>
-              <input type="text" value={{form.owner}} onChange={{e => setForm({{...form, owner: e.target.value}})}} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+              <input type="text" value={form.owner} onChange={e => setForm({...form, owner: e.target.value})} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
             </div>
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1">Status</label>
-              <select value={{form.status}} onChange={{e => setForm({{...form, status: e.target.value}})}} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"><option value="Open">Open</option><option value="Mitigating">Mitigating</option><option value="Accepted">Accepted</option><option value="Closed">Closed</option></select>
+              <select value={form.status} onChange={e => setForm({...form, status: e.target.value})} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"><option value="Open">Open</option><option value="Mitigating">Mitigating</option><option value="Accepted">Accepted</option><option value="Closed">Closed</option></select>
             </div>
             </div>
             <div className="flex justify-end gap-3 mt-6">
