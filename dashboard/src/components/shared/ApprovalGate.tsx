@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useApprovals } from '@/hooks/useApprovals';
 import { useRBAC } from '@/hooks/useRBAC';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Shield, Check, X, Clock } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
@@ -42,7 +42,7 @@ export function ApprovalGate({ entityType, entityId, requiredAction, onApproved,
               <Button size="sm" onClick={() => { decide(pending.id, 'approved', reason); onApproved?.(); }}>
                 <Check className="h-3 w-3 mr-1" /> Approve
               </Button>
-              <Button size="sm" variant="destructive" onClick={() => decide(pending.id, 'rejected', reason)}>
+              <Button size="sm" variant={"destructive" as any} onClick={() => decide(pending.id, 'rejected', reason)}>
                 <X className="h-3 w-3 mr-1" /> Reject
               </Button>
             </div>

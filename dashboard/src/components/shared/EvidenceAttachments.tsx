@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Paperclip, Upload, Trash2, Download, FileText, Image, File } from 'lucide-react';
 import { RBACGate } from './RBACGate';
@@ -107,8 +107,8 @@ export function EvidenceAttachments({ entityType, entityId }: Props) {
         </h4>
         <RBACGate action="update">
           <label className="cursor-pointer">
-            <Button variant="outline" size="sm" disabled={uploading} asChild>
-              <span><Upload className="h-3 w-3 mr-1" />{uploading ? 'Uploading...' : 'Upload'}</span>
+            <Button variant="outline" size="sm" disabled={uploading}>
+              <><Upload className="h-3 w-3 mr-1" />{uploading ? 'Uploading...' : 'Upload'}</>
             </Button>
             <input type="file" multiple className="hidden" onChange={handleUpload} accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.csv,.txt,.md" />
           </label>

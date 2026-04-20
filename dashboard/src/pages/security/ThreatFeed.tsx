@@ -555,6 +555,7 @@ export default function ThreatFeed() {
                 description: addForm.description || `${addForm.category} threat identified.`,
                 source: addForm.source || 'Manual Entry',
                 affectedModels: [],
+            remediation: [],
                 detected: new Date().toISOString().split('T')[0],
               };
               setThreats(prev => [newThreat, ...prev]);
