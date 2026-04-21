@@ -1,5 +1,18 @@
+@font-face {
+  font-family: 'Outfit Variable';
+  font-style: normal;
+  font-display: swap;
+  size-adjust: 100%;
+  ascent-override: 95%;
+  descent-override: 25%;
+  line-gap-override: 0%;
+}
 
 :root {
+  /* ── Typography — ADR-0007: Outfit Variable, self-hosted, no CDN fallback ─── */
+  --font-sans: 'Outfit Variable', 'Outfit';
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
   --bg-page:     240 5% 96%;
   --bg-surface:  0 0% 100%;
   --bg-raised:   240 5% 98%;
@@ -108,8 +121,12 @@ html {
   scroll-behavior: smooth;
 }
 
+html, body {
+  font-family: var(--font-sans);
+}
+
 body {
-  font-family: "Outfit";
+  font-family: var(--font-sans);
   background: hsl(var(--bg-page));
   color: hsl(var(--text-1));
   -webkit-font-smoothing: antialiased;

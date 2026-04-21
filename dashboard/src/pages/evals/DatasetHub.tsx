@@ -34,7 +34,7 @@ function DatasetDetailModal({ dataset, onClose }: { dataset: Dataset; onClose: (
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ position: 'absolute', inset: 0, background: 'hsl(var(--bg-page)/70%)', backdropFilter: 'blur(4px)' }} onClick={onClose} />
-      <div style={{ position: 'relative', width: 560, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', maxHeight: '85vh', overflowY: 'auto', fontFamily: 'Outfit, sans-serif' }}>
+      <div style={{ position: 'relative', width: 560, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', maxHeight: '85vh', overflowY: 'auto', }}>
         {/* Header */}
         <div style={{ padding: '16px 20px', borderBottom: '1px solid hsl(var(--border))', display: 'flex', alignItems: 'center', gap: 10 }}>
           <Database size={16} style={{ color: '#06b6d4' }} />
@@ -110,7 +110,7 @@ export default function DatasetHub() {
   ];
 
   return (
-    <div className="space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div className="space-y-6">
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>

@@ -370,8 +370,7 @@ function showToast(message: string, type: 'success' | 'error' | 'info' = 'succes
   Object.assign(el.style, {
     position: 'fixed', bottom: '24px', right: '24px', zIndex: '9999',
     background: c.bg, color: c.text, border: `1px solid ${c.border}`,
-    padding: '10px 20px', fontSize: '13px', fontFamily: 'Outfit, sans-serif',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+    padding: '10px 20px', fontSize: '13px',     boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
   });
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 3000);
@@ -679,7 +678,7 @@ export default function ExceptionManagement() {
   const canDecide = (exc: Exception) => exc.status === 'Pending' || exc.status === 'Under Review';
 
   return (
-    <div className="space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div className="space-y-6">
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -1078,7 +1077,7 @@ export default function ExceptionManagement() {
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" style={{ borderRadius: 0 }}>
           <DialogHeader>
-            <DialogTitle style={{ fontFamily: 'Outfit, sans-serif' }}>Request Policy Exception</DialogTitle>
+            <DialogTitle>Request Policy Exception</DialogTitle>
             <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
               Complete all required fields. Submission triggers the approval chain.
             </p>
@@ -1283,7 +1282,7 @@ export default function ExceptionManagement() {
       <Dialog open={decisionOpen} onOpenChange={setDecisionOpen}>
         <DialogContent style={{ borderRadius: 0 }}>
           <DialogHeader>
-            <DialogTitle style={{ fontFamily: 'Outfit, sans-serif' }}>
+            <DialogTitle>
               {decision === 'Approved' ? '✓ Approve Exception' : '✕ Deny Exception'}
             </DialogTitle>
             {decisionTarget && (
@@ -1334,7 +1333,7 @@ export default function ExceptionManagement() {
       <Dialog open={renewalOpen} onOpenChange={setRenewalOpen}>
         <DialogContent style={{ borderRadius: 0 }}>
           <DialogHeader>
-            <DialogTitle style={{ fontFamily: 'Outfit, sans-serif' }}>Request Renewal</DialogTitle>
+            <DialogTitle>Request Renewal</DialogTitle>
             {selected && <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{selected.id} — {selected.policy}</p>}
           </DialogHeader>
           <div className="space-y-4 py-2">

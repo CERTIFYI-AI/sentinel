@@ -150,8 +150,7 @@ export default function GapAnalysisModal({ gap: propGap, gapId, onClose, onCreat
         border: '1px solid hsl(var(--border))',
         boxShadow: 'var(--shadow-lg)',
         overflowY: 'auto',
-        fontFamily: 'Outfit, sans-serif',
-      }}>
+              }}>
         {/* Header */}
         <div style={{
           padding: '16px 20px',

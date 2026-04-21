@@ -133,8 +133,7 @@ export default function TaskDrawer({ task, onClose, onSave }: TaskDrawerProps) {
         flexDirection: 'column',
         maxHeight: '100vh',
         overflowY: 'auto',
-        fontFamily: 'Outfit, sans-serif',
-      }}>
+              }}>
         {/* Sticky header */}
         <div style={{
           position: 'sticky', top: 0, zIndex: 10,

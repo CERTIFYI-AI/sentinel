@@ -33,8 +33,7 @@ export default function OverdueAlertBanner({ tasks = TASKS, onViewOverdue }: Ove
         display: 'flex',
         alignItems: 'center',
         gap: 12,
-        fontFamily: 'Outfit, sans-serif',
-      }}
+              }}
     >
       {/* Icon */}
       <div style={{

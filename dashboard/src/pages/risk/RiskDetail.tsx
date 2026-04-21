@@ -149,7 +149,7 @@ export default function RiskDetail() {
 
   if (!risk) {
     return (
-      <div style={{ padding: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, fontFamily: 'Outfit, sans-serif' }}>
+      <div style={{ padding: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, }}>
         <Warning size={48} style={{ color: '#f97316' }} />
         <p style={{ marginTop: 16, fontSize: 16, fontWeight: 600, color: 'hsl(var(--text-1))' }}>Risk not found</p>
         <p style={{ fontSize: 13, color: 'hsl(var(--text-3))', marginTop: 4 }}>Risk ID "{id}" does not exist in the register.</p>
@@ -195,7 +195,7 @@ export default function RiskDetail() {
   }
 
   return (
-    <div style={{ fontFamily: 'Outfit, sans-serif', paddingBottom: 40 }}>
+    <div style={{ paddingBottom: 40 }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 24 }}>
         <Button variant="ghost" size="sm" onClick={() => navigate('/risk')} style={{ borderRadius: 0, marginTop: 2 }}>

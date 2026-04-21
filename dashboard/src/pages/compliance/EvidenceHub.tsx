@@ -178,7 +178,7 @@ export default function EvidenceHub() {
   return (
     <div
       className="space-y-6"
-      style={{ fontFamily: 'Outfit, sans-serif', position: 'relative' }}
+      style={{ position: 'relative' }}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}

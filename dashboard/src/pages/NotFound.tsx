@@ -7,7 +7,7 @@ export default function NotFound() {
   return (
     <div
       className="flex flex-col items-center justify-center min-h-screen"
-      style={{ fontFamily: 'Outfit, sans-serif', background: 'hsl(var(--bg-page))' }}
+      style={{ background: 'hsl(var(--bg-page))' }}
     >
       <div className="flex flex-col items-center text-center max-w-sm px-4">
         <WarningCircle size={64} style={{ color: 'hsl(var(--text-4))' }} weight="thin" />

@@ -253,7 +253,7 @@ function showToast(msg: string, type: 'success' | 'error' | 'info' = 'success') 
     background: type === 'success' ? 'hsl(142 71% 45% / 0.15)' : type === 'error' ? 'hsl(0 72% 51% / 0.15)' : 'hsl(var(--bg-surface))',
     color: type === 'success' ? 'hsl(142 71% 35%)' : type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--text-1))',
     border: `1px solid ${type === 'success' ? 'hsl(142 71% 45% / 0.3)' : type === 'error' ? 'hsl(var(--destructive)/0.3)' : 'hsl(var(--border))'}`,
-    padding: '10px 20px', fontSize: '13px', fontFamily: 'Outfit, sans-serif', boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+    padding: '10px 20px', fontSize: '13px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
   })
   document.body.appendChild(el)
   setTimeout(() => el.remove(), 3000)
@@ -565,7 +565,7 @@ export default function AutomationStudio() {
   const totalRuns = workflows.reduce((s, w) => s + w.runCount, 0)
 
   return (
-    <div className="space-y-5" style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div className="space-y-5">
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -958,7 +958,7 @@ export default function AutomationStudio() {
       <Dialog open={newOpen} onOpenChange={setNewOpen}>
         <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto" style={{ borderRadius: 0 }}>
           <DialogHeader>
-            <DialogTitle style={{ fontFamily: 'Outfit, sans-serif' }}>Create New Workflow</DialogTitle>
+            <DialogTitle>Create New Workflow</DialogTitle>
             <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
               Configure the trigger and select actions. You can edit individual step configs in the Flow Builder after creation.
             </p>
@@ -1051,7 +1051,7 @@ export default function AutomationStudio() {
       <Dialog open={yamlOpen} onOpenChange={setYamlOpen}>
         <DialogContent className="max-w-xl" style={{ borderRadius: 0 }}>
           <DialogHeader>
-            <DialogTitle style={{ fontFamily: 'Outfit, sans-serif' }}>Import Workflow from YAML</DialogTitle>
+            <DialogTitle>Import Workflow from YAML</DialogTitle>
             <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
               Paste your workflow YAML definition below. The workflow will be imported as a Draft for review before activation.
             </p>

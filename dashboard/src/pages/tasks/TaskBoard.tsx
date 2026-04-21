@@ -44,7 +44,7 @@ export default function TaskBoard({ onSelectTask }: { onSelectTask?: (task: Task
   };
 
   return (
-    <div style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
         <Kanban size={18} style={{ color: 'hsl(var(--brand))' }} />

@@ -111,7 +111,7 @@ export default function RegRadar() {
   };
 
   return (
-    <div className="space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div className="space-y-6">
       {/* Breadcrumb */}
       <div className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>
         <Link to="/governance" style={{ color: 'hsl(var(--text-3))', textDecoration: 'none' }}>Governance</Link>
