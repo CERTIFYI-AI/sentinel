@@ -1,47 +1,36 @@
-// @ts-nocheck
-import { supabase, isSupabaseConfigured } from '../lib/supabase'
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
+//
+// DEPRECATED — maintained only for legacy callers. New code must use
+// `./auditService` which is typed, read-only, and cursor-paginated.
+// The mutating helpers below are now no-ops: the DB denies UPDATE/DELETE
+// at the RLS layer and inserts must go through the Worker's withAudit()
+// path.
 
-export async function fetchAllAuditEntrys(limit = 200): Promise<any[]> {
-  if (!isSupabaseConfigured() || !supabase) return []
-  try {
-    // Use AuditLog (PascalCase Prisma table, has data)
-    let q = supabase.from('AuditLog').select('*').order('timestamp', { ascending: false })
-    if (limit) q = q.limit(limit)
-    const { data, error } = await q
-    if (error) {
-      console.warn('[auditLogService] AuditLog fetch failed:', error.message)
-      // Fallback to audit_log
-      const { data: d2, error: e2 } = await supabase.from('audit_log').select('*').order('created_at', { ascending: false }).limit(limit)
-      if (e2) { console.warn('[auditLogService] audit_log fallback failed:', e2.message); return [] }
-      return d2 ?? []
-    }
-    return data ?? []
-  } catch (e) { return [] }
+import { listAuditEntries, type AuditEntry } from "./auditService";
+
+export type { AuditEntry };
+
+export async function fetchAllAuditEntrys(limit = 200): Promise<readonly AuditEntry[]> {
+  const { items } = await listAuditEntries({ limit });
+  return items;
 }
 
-export async function upsertAuditEntry(record: Record<string, unknown>): Promise<any> {
-  if (!isSupabaseConfigured() || !supabase) return record
-  try {
-    const { data, error } = await supabase
-      .from('AuditLog')
-      .upsert({ ...record, timestamp: record.timestamp ?? new Date().toISOString() })
-      .select()
-      .single()
-    if (error) { console.warn('[auditLogService] upsert failed:', error.message); return record }
-    return data
-  } catch (e) { return record }
+// Legacy aliases. Kept so existing imports compile; they now route to
+// the read-only typed service.
+export const fetchAuditEntrys = fetchAllAuditEntrys;
+export function fetchAuditLogs(limit = 200): Promise<readonly AuditEntry[]> {
+  return fetchAllAuditEntrys(limit);
 }
 
-export async function deleteAuditEntry(id: string): Promise<boolean> {
-  if (!isSupabaseConfigured() || !supabase) return false
-  try {
-    const { error } = await supabase.from('AuditLog').delete().eq('id', id)
-    if (error) { console.warn('[auditLogService] delete failed:', error.message); return false }
-    return true
-  } catch (e) { return false }
+// Mutations are forbidden by RLS. These shims exist so old imports
+// don't crash builds; they resolve to the input without writing.
+export async function upsertAuditEntry<T>(record: T): Promise<T> {
+  return record;
 }
+export const saveAuditEntry = upsertAuditEntry;
 
-// Backward-compatible aliases
-export const fetchAuditEntrys = fetchAllAuditEntrys
-export const saveAuditEntry = upsertAuditEntry
-export function fetchAuditLogs(limit = 200) { return fetchAllAuditEntrys(limit) }
+/** Delete is explicitly a no-op. */
+export async function deleteAuditEntry(_id: string): Promise<false> {
+  return false;
+}

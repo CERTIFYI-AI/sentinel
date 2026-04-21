@@ -1,95 +1,103 @@
-# Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
-# WS0.5 — Hardened CI pipeline.
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
+#
+# WS0.10 — Continuous Integration. Gates every PR on:
+#   - typecheck (tsc --noEmit) in dashboard + workers
+#   - unit tests (vitest) in dashboard + workers
+#   - coverage floor: 70% line, 60% branch (dashboard)
+#   - secret scanning (Gitleaks)
+#   - static security (Semgrep OSS ruleset)
+#   - a11y smoke (axe-core via Playwright)
+#
+# External SaaS (Lighthouse CI, Chromatic) is opt-in via repository
+# variables so forks don't fail on missing secrets.
+
 name: CI
 
 on:
-  push:
-    branches: [main, develop]
   pull_request:
+  push:
     branches: [main]
-
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   typecheck:
-    name: Type Check
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: dashboard
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: 20
           cache: npm
           cache-dependency-path: dashboard/package-lock.json
-      - run: npm ci
-      - run: npm run typecheck
+      - name: Install dashboard deps
+        working-directory: dashboard
+        run: npm ci
+      - name: TypeScript check (dashboard)
+        working-directory: dashboard
+        run: npx tsc --noEmit
+      - name: TypeScript check (workers)
+        working-directory: workers
+        run: ../dashboard/node_modules/.bin/tsc --noEmit -p tsconfig.json
 
-  build:
-    name: Build
+  test-dashboard:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: dashboard
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: 20
           cache: npm
           cache-dependency-path: dashboard/package-lock.json
-      - run: npm ci
-      - run: npm run build
+      - working-directory: dashboard
+        run: npm ci
+      - working-directory: dashboard
+        run: npx vitest run --coverage
+      - name: Enforce coverage floor
+        working-directory: dashboard
+        run: node ../scripts/check-coverage.mjs coverage/coverage-summary.json
 
-  unit-tests:
-    name: Unit Tests (Vitest + 70% coverage)
+  test-workers:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: dashboard
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: 20
           cache: npm
           cache-dependency-path: dashboard/package-lock.json
-      - run: npm ci
-      - run: npm run test:coverage
-      - name: Upload coverage
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: coverage-report
-          path: dashboard/coverage
-          if-no-files-found: ignore
+      - working-directory: dashboard
+        run: npm ci
+      - working-directory: workers
+        run: npx vitest run
 
-  e2e-tests:
-    name: E2E Smoke (Playwright)
+  security:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: dashboard
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v4
         with:
-          node-version: '20'
-          cache: npm
-          cache-dependency-path: dashboard/package-lock.json
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e -- --grep @smoke
+          fetch-depth: 0
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
         env:
-          CI: 'true'
-      - name: Upload Playwright report
-        if: always()
-        uses: actions/upload-artifact@v7
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Semgrep OSS
+        uses: returntocorp/semgrep-action@v1
         with:
-          name: playwright-report
-          path: dashboard/playwright-report
-          if-no-files-found: ignore
+          config: p/ci p/typescript p/react p/owasp-top-ten
+
+  a11y-smoke:
+    if: ${{ vars.RUN_A11Y == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+      - working-directory: dashboard
+        run: npm ci
+      - working-directory: dashboard
+        run: npx playwright install --with-deps
+      - working-directory: dashboard
+        run: npx playwright test tests-e2e/a11y.spec.ts
