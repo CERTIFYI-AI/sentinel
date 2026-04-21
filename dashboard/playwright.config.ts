@@ -5,6 +5,8 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests-e2e",
+  // F.2: also pick up tests in the e2e/ directory
+  testMatch: ["**/tests-e2e/**/*.spec.ts", "**/e2e/**/*.spec.ts"],
   timeout: 30_000,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
