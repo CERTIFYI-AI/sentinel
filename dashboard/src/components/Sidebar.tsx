@@ -550,6 +550,7 @@ export default function Sidebar() {
                         ) : (
                           <NavLink
                             to={item.to}
+                            aria-current={({ isActive }) => isActive ? "page" : undefined}
                             className={({ isActive: _isActive }) => cn(
                               'flex items-center gap-2.5 px-2 py-1.5 text-[13px] transition-colors group',
                               isHighlighted
@@ -591,6 +592,7 @@ export default function Sidebar() {
                                 <NavLink
                                   key={child.to}
                                   to={child.to}
+                                  aria-current={childIsActive ? "page" : undefined}
                                   className={cn(
                                     'flex items-center px-2 py-1 text-[12px] transition-colors',
                                     childIsActive
