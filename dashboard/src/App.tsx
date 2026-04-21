@@ -160,6 +160,33 @@ const GovernanceFramework = lazy(() => import('./pages/GovernanceFramework'));
 const EvidenceChain = lazy(() => import('./pages/EvidenceChain'));
 const AutomationStudio = lazy(() => import('./pages/AutomationStudio'));
 
+// --- WS2 Scaffolded GA-Critical Modules ---
+const BoardReports = lazy(() => import('./pages/scaffold/BoardReports'));
+const CommitteeCalendar = lazy(() => import('./pages/scaffold/CommitteeCalendar'));
+const PolicyLibrary = lazy(() => import('./pages/scaffold/PolicyLibrary'));
+const PolicyAttestation = lazy(() => import('./pages/scaffold/PolicyAttestation'));
+const RegulatoryHorizon = lazy(() => import('./pages/scaffold/RegulatoryHorizon'));
+const ThirdPartyInventory = lazy(() => import('./pages/scaffold/ThirdPartyInventory'));
+const VendorAssessments = lazy(() => import('./pages/scaffold/VendorAssessments'));
+const VendorContractReview = lazy(() => import('./pages/scaffold/VendorContractReview'));
+const IncidentResponsePlaybooks = lazy(() => import('./pages/scaffold/IncidentResponsePlaybooks'));
+const PostIncidentReviews = lazy(() => import('./pages/scaffold/PostIncidentReviews'));
+const ThreatIntelFeed = lazy(() => import('./pages/scaffold/ThreatIntelFeed'));
+const VulnerabilityProgram = lazy(() => import('./pages/scaffold/VulnerabilityProgram'));
+const PrivacyDpiaBuilder = lazy(() => import('./pages/scaffold/PrivacyDpiaBuilder'));
+const PrivacyRopa = lazy(() => import('./pages/scaffold/PrivacyRopa'));
+const PrivacyTransferLog = lazy(() => import('./pages/scaffold/PrivacyTransferLog'));
+const DataMap = lazy(() => import('./pages/scaffold/DataMap'));
+const DataLineage = lazy(() => import('./pages/scaffold/DataLineage'));
+const DataQualityMetrics = lazy(() => import('./pages/scaffold/DataQualityMetrics'));
+const AiRedTeam = lazy(() => import('./pages/scaffold/AiRedTeam'));
+const AiModelRegistry = lazy(() => import('./pages/scaffold/AiModelRegistry'));
+const AiPromptLibrary = lazy(() => import('./pages/scaffold/AiPromptLibrary'));
+const TrainingPrograms = lazy(() => import('./pages/scaffold/TrainingPrograms'));
+const AwarenessCampaigns = lazy(() => import('./pages/scaffold/AwarenessCampaigns'));
+const SoxItGc = lazy(() => import('./pages/scaffold/SoxItGc'));
+const InsuranceCoverage = lazy(() => import('./pages/scaffold/InsuranceCoverage'));
+
 // --- V1 Missing Modules ---
 const AssetManagement = lazy(() => import("@/pages/AssetManagement"));
 const IGA = lazy(() => import("@/pages/IGA"));
@@ -478,6 +505,32 @@ export default function App() {
             <Route path="/tabletop" element={<Suspense fallback={<Loading />}><TabletopExercises /></Suspense>} />
             <Route path="/regulator-filings" element={<Suspense fallback={<Loading />}><RegulatorFilings /></Suspense>} />
             <Route path="/bia" element={<Suspense fallback={<Loading />}><BIA /></Suspense>} />
+            {/* WS2 Scaffolded GA-Critical Modules */}
+            <Route path="/board/reports" element={<Suspense fallback={<Loading />}><BoardReports /></Suspense>} />
+            <Route path="/board/committee-calendar" element={<Suspense fallback={<Loading />}><CommitteeCalendar /></Suspense>} />
+            <Route path="/governance/policies" element={<Suspense fallback={<Loading />}><PolicyLibrary /></Suspense>} />
+            <Route path="/governance/attestation" element={<Suspense fallback={<Loading />}><PolicyAttestation /></Suspense>} />
+            <Route path="/governance/regulatory-horizon" element={<Suspense fallback={<Loading />}><RegulatoryHorizon /></Suspense>} />
+            <Route path="/vendors/inventory" element={<Suspense fallback={<Loading />}><ThirdPartyInventory /></Suspense>} />
+            <Route path="/vendors/assessments" element={<Suspense fallback={<Loading />}><VendorAssessments /></Suspense>} />
+            <Route path="/vendors/contracts" element={<Suspense fallback={<Loading />}><VendorContractReview /></Suspense>} />
+            <Route path="/incidents/playbooks" element={<Suspense fallback={<Loading />}><IncidentResponsePlaybooks /></Suspense>} />
+            <Route path="/incidents/post-mortems" element={<Suspense fallback={<Loading />}><PostIncidentReviews /></Suspense>} />
+            <Route path="/threat/intel-feed" element={<Suspense fallback={<Loading />}><ThreatIntelFeed /></Suspense>} />
+            <Route path="/threat/vulnerability-program" element={<Suspense fallback={<Loading />}><VulnerabilityProgram /></Suspense>} />
+            <Route path="/privacy/dpia" element={<Suspense fallback={<Loading />}><PrivacyDpiaBuilder /></Suspense>} />
+            <Route path="/privacy/ropa" element={<Suspense fallback={<Loading />}><PrivacyRopa /></Suspense>} />
+            <Route path="/privacy/transfers" element={<Suspense fallback={<Loading />}><PrivacyTransferLog /></Suspense>} />
+            <Route path="/data/data-map" element={<Suspense fallback={<Loading />}><DataMap /></Suspense>} />
+            <Route path="/data/lineage" element={<Suspense fallback={<Loading />}><DataLineage /></Suspense>} />
+            <Route path="/data/quality-metrics" element={<Suspense fallback={<Loading />}><DataQualityMetrics /></Suspense>} />
+            <Route path="/ai/red-team" element={<Suspense fallback={<Loading />}><AiRedTeam /></Suspense>} />
+            <Route path="/ai/model-registry" element={<Suspense fallback={<Loading />}><AiModelRegistry /></Suspense>} />
+            <Route path="/ai/prompt-library" element={<Suspense fallback={<Loading />}><AiPromptLibrary /></Suspense>} />
+            <Route path="/training/programs" element={<Suspense fallback={<Loading />}><TrainingPrograms /></Suspense>} />
+            <Route path="/training/awareness" element={<Suspense fallback={<Loading />}><AwarenessCampaigns /></Suspense>} />
+            <Route path="/assurance/sox-itgc" element={<Suspense fallback={<Loading />}><SoxItGc /></Suspense>} />
+            <Route path="/assurance/insurance" element={<Suspense fallback={<Loading />}><InsuranceCoverage /></Suspense>} />
           <Route path="*" element={<Suspense fallback={<Loading />}><NotFound /></Suspense>} />
         </Route>
       </Routes>
