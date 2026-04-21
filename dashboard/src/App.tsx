@@ -341,6 +341,7 @@ export default function App() {
           <Route path="/risk/matrix" element={<RiskMatrix />} />
           <Route path="/risk/vendors" element={<Vendors />} />
           <Route path="/risk/incidents" element={<IncidentLog />} />
+          <Route path="/incidents" element={<Navigate to="/risk/incidents" replace />} />
           <Route path="/risk/remediation" element={<Remediation />} />
           <Route path="/models" element={<ModelInventory />} />
           <Route path="/models/inventory" element={<ModelInventoryPage />} />
