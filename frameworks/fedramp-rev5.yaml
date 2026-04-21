@@ -1,0 +1,15 @@
+# Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
+# Source: https://www.fedramp.gov/rev5/
+id: fedramp-rev5
+name: "FedRAMP"
+version: "Rev 5 (aligned to NIST 800-53 Rev 5)"
+authority: "GSA / JAB"
+url: "https://www.fedramp.gov/rev5/"
+domain: federal
+controls:
+  - id: "AC-2"
+    title: "Account management"
+  - id: "CA-2"
+    title: "Control assessments"
+  - id: "RA-5"
+    title: "Vulnerability scanning"

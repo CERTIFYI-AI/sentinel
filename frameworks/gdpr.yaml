@@ -1,0 +1,21 @@
+# Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
+# Source: https://eur-lex.europa.eu/eli/reg/2016/679/oj
+id: gdpr
+name: "General Data Protection Regulation"
+version: "Regulation (EU) 2016/679"
+authority: "European Parliament"
+url: "https://eur-lex.europa.eu/eli/reg/2016/679/oj"
+domain: privacy
+controls:
+  - id: "Art.5"
+    title: "Principles relating to processing"
+  - id: "Art.17"
+    title: "Right to erasure"
+  - id: "Art.25"
+    title: "Data protection by design and by default"
+  - id: "Art.30"
+    title: "Records of processing activities"
+  - id: "Art.32"
+    title: "Security of processing"
+  - id: "Art.33"
+    title: "Breach notification"

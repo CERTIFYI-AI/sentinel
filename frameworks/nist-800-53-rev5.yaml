@@ -1,0 +1,17 @@
+# Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
+# Source: https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final
+id: nist-800-53-rev5
+name: "NIST SP 800-53 Rev 5"
+version: "Rev 5"
+authority: "NIST"
+url: "https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final"
+domain: federal
+controls:
+  - id: "AC-2"
+    title: "Account management"
+  - id: "AU-6"
+    title: "Audit record review"
+  - id: "CM-8"
+    title: "System component inventory"
+  - id: "IR-4"
+    title: "Incident handling"

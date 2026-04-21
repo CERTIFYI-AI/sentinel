@@ -1,0 +1,17 @@
+# Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
+# Source: https://pcaobus.org/oversight/standards/auditing-standards/details/AS2201
+id: sox-itgc
+name: "Sarbanes-Oxley IT General Controls"
+version: "SOX 404"
+authority: "SEC / PCAOB"
+url: "https://pcaobus.org/oversight/standards/auditing-standards/details/AS2201"
+domain: financial
+controls:
+  - id: "ITGC-01"
+    title: "Change management"
+  - id: "ITGC-02"
+    title: "Logical access"
+  - id: "ITGC-03"
+    title: "Computer operations"
+  - id: "ITGC-04"
+    title: "Program development"

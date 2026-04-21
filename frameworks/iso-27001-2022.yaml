@@ -1,0 +1,19 @@
+# Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
+# Source: https://www.iso.org/standard/27001
+id: iso-27001-2022
+name: "ISO/IEC 27001:2022"
+version: "2022"
+authority: "ISO/IEC"
+url: "https://www.iso.org/standard/27001"
+domain: infosec
+controls:
+  - id: "A.5.1"
+    title: "Policies for information security"
+  - id: "A.6.1"
+    title: "Screening"
+  - id: "A.8.1"
+    title: "User endpoint devices"
+  - id: "A.8.15"
+    title: "Logging"
+  - id: "A.8.23"
+    title: "Web filtering"

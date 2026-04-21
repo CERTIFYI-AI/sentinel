@@ -1,0 +1,15 @@
+# Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
+# Source: https://www.iso.org/standard/81230.html
+id: iso-42001-2023
+name: "ISO/IEC 42001:2023 (AI Management System)"
+version: "2023"
+authority: "ISO/IEC"
+url: "https://www.iso.org/standard/81230.html"
+domain: ai-governance
+controls:
+  - id: "A.5.2"
+    title: "AI policy"
+  - id: "A.6.2.4"
+    title: "Reporting concerns about the AI system"
+  - id: "A.8.4"
+    title: "AI system verification and validation"

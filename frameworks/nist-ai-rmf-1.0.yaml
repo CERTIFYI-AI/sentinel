@@ -1,0 +1,17 @@
+# Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
+# Source: https://www.nist.gov/itl/ai-risk-management-framework
+id: nist-ai-rmf-1.0
+name: "NIST AI Risk Management Framework"
+version: "1.0"
+authority: "NIST"
+url: "https://www.nist.gov/itl/ai-risk-management-framework"
+domain: ai-governance
+controls:
+  - id: "GOVERN-1.1"
+    title: "Legal and regulatory requirements"
+  - id: "MAP-2.3"
+    title: "Scientific integrity"
+  - id: "MEASURE-2.7"
+    title: "Validity and reliability"
+  - id: "MANAGE-4.2"
+    title: "Impact mitigation strategies"
