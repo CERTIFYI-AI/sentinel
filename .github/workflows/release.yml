@@ -86,7 +86,7 @@ jobs:
           done
 
       - name: Attest build provenance (SLSA v1)
-        uses: actions/attest-build-provenance@v1
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: |
             artifacts/*.tar.gz
