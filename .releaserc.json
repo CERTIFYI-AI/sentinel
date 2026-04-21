@@ -1,0 +1,52 @@
+{
+  "branches": ["main"],
+  "tagFormat": "v${version}",
+  "plugins": [
+    [
+      "@semantic-release/commit-analyzer",
+      {
+        "preset": "conventionalcommits"
+      }
+    ],
+    [
+      "@semantic-release/release-notes-generator",
+      {
+        "preset": "conventionalcommits",
+        "presetConfig": {
+          "types": [
+            { "type": "feat", "section": "Features" },
+            { "type": "fix", "section": "Bug Fixes" },
+            { "type": "perf", "section": "Performance" },
+            { "type": "refactor", "section": "Refactors" },
+            { "type": "docs", "section": "Documentation", "hidden": false },
+            { "type": "test", "section": "Tests", "hidden": false },
+            { "type": "chore", "section": "Chores", "hidden": true }
+          ]
+        }
+      }
+    ],
+    [
+      "@semantic-release/changelog",
+      {
+        "changelogFile": "CHANGELOG.md"
+      }
+    ],
+    [
+      "@semantic-release/git",
+      {
+        "assets": ["CHANGELOG.md", "dashboard/package.json"],
+        "message": "chore(release): v${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+      }
+    ],
+    [
+      "@semantic-release/github",
+      {
+        "assets": [
+          { "path": "sbom/sbom-*.cdx.json", "label": "CycloneDX SBOM" },
+          { "path": "sbom/sbom-*.spdx.json", "label": "SPDX SBOM" },
+          { "path": "artifacts/dashboard-*.tar.gz", "label": "Dashboard build" }
+        ]
+      }
+    ]
+  ]
+}

@@ -1,0 +1,32 @@
+# Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
+# WS0.6 — Dependabot schedule.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /dashboard
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: UTC
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - automated
+    commit-message:
+      prefix: "chore(deps)"
+      include: scope
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: UTC
+    labels:
+      - dependencies
+      - ci
+    commit-message:
+      prefix: "chore(actions)"
+      include: scope
