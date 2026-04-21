@@ -50,6 +50,7 @@ const PolicyEditor = lazy(() => import('./pages/PolicyEditor'));
 const Remediation = lazy(() => import('./pages/Remediation'));
 const RemediationTracker = lazy(() => import('./pages/RemediationTracker'));
 const Settings = lazy(() => import('./pages/Settings'));
+const SsoProviders = lazy(() => import('./pages/settings/SsoProviders'));
 const Vendors = lazy(() => import('./pages/Vendors'));
 const Login = lazy(() => import('./pages/Login'));
 const Signup = lazy(() => import('./pages/Signup'));
@@ -315,6 +316,7 @@ export default function App() {
           <Route path="/policy-editor" element={<PolicyEditor />} />
           <Route path="/remediation-tracker" element={<RemediationTracker />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/settings/sso" element={<Suspense fallback={<Loading />}><SsoProviders /></Suspense>} />
 
           {/* Governance */}
           <Route path="/controls" element={<Navigate to="/compliance/controls" replace />} />
