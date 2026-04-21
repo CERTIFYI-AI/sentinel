@@ -175,7 +175,7 @@ const PolicyLibrary = lazy(() => import('./pages/scaffold/PolicyLibrary'));
 const PolicyAttestation = lazy(() => import('./pages/scaffold/PolicyAttestation'));
 const RegulatoryHorizon = lazy(() => import('./pages/scaffold/RegulatoryHorizon'));
 const ThirdPartyInventory = lazy(() => import('./pages/scaffold/ThirdPartyInventory'));
-const VendorAssessments = lazy(() => import('./pages/scaffold/VendorAssessments'));
+const ScaffoldVendorAssessments = lazy(() => import('./pages/scaffold/VendorAssessments'));
 const VendorContractReview = lazy(() => import('./pages/scaffold/VendorContractReview'));
 const IncidentResponsePlaybooks = lazy(() => import('./pages/scaffold/IncidentResponsePlaybooks'));
 const PostIncidentReviews = lazy(() => import('./pages/scaffold/PostIncidentReviews'));
@@ -185,7 +185,7 @@ const PrivacyDpiaBuilder = lazy(() => import('./pages/scaffold/PrivacyDpiaBuilde
 const PrivacyRopa = lazy(() => import('./pages/scaffold/PrivacyRopa'));
 const PrivacyTransferLog = lazy(() => import('./pages/scaffold/PrivacyTransferLog'));
 const DataMap = lazy(() => import('./pages/scaffold/DataMap'));
-const DataLineage = lazy(() => import('./pages/scaffold/DataLineage'));
+const ScaffoldDataLineage = lazy(() => import('./pages/scaffold/DataLineage'));
 const DataQualityMetrics = lazy(() => import('./pages/scaffold/DataQualityMetrics'));
 const AiRedTeam = lazy(() => import('./pages/scaffold/AiRedTeam'));
 const AiModelRegistry = lazy(() => import('./pages/scaffold/AiModelRegistry'));

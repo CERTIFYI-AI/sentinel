@@ -8,7 +8,7 @@
 // exposes only list/get/verify/export.
 
 import { supabase } from "../lib/supabase";
-import { ServiceError } from "../lib/serviceFactory";
+import type { AppError } from "../types/errors";
 
 export interface AuditEntry {
   readonly id: string;
@@ -71,7 +71,7 @@ export async function listAuditEntries(
 
   const { data, error } = await q;
   if (error) {
-    throw new ServiceError("audit_list_failed", error.message, error);
+    throw new Error(error.message);
   }
   const rows = (data ?? []) as unknown as AuditEntry[];
   const hasMore = rows.length > limit;
@@ -97,7 +97,7 @@ export async function verifyChain(
     p_from_seq: fromSeq ?? null,
     p_to_seq: toSeq ?? null,
   });
-  if (error) throw new ServiceError("audit_verify_failed", error.message, error);
+  if (error) throw new Error(error.message);
   const row = (Array.isArray(data) ? data[0] : data) as
     | { ok: boolean; failed_at_sequence: number | null; failed_reason: string | null }
     | null;
