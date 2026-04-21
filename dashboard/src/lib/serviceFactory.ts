@@ -5,10 +5,23 @@ import type { ZodSchema } from 'zod'
 import { supabase } from './supabase'
 import { ok, err, type Result } from '../types/errors'
 
+/** Thrown when input validation fails (used by simplified API overloads). */
+export class ServiceError extends Error {
+  constructor(
+    public readonly code: string,
+    message: string,
+  ) {
+    super(message)
+    this.name = 'ServiceError'
+  }
+}
+
 export interface ServiceConfig<_TSchema extends ZodSchema, T> {
   table: string
   schema: _TSchema
-  orgField: string      // column name for org/tenant scoping
+  /** Optional input-only schema; stricter than the full row schema. */
+  inputSchema?: ZodSchema
+  orgField?: string     // column name for org/tenant scoping (default: 'org_id')
   softDelete?: boolean  // use deleted_at instead of hard DELETE
   defaultOrder?: { column: string; ascending: boolean }
 }
@@ -25,7 +38,7 @@ export interface ListOptions {
 export function createService<TSchema extends ZodSchema, T extends Record<string, unknown>>(
   config: ServiceConfig<TSchema, T>
 ) {
-  const { table, schema, orgField, softDelete = false } = config
+  const { table, schema, orgField = 'org_id', softDelete = false } = config
 
   async function list(opts: ListOptions): Promise<Result<T[]>> {
     let q = supabase
@@ -81,7 +94,8 @@ export function createService<TSchema extends ZodSchema, T extends Record<string
   }
 
   async function update(id: string, orgId: string, input: Partial<T>): Promise<Result<T>> {
-    const partial = schema.partial().safeParse(input)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const partial = (schema as any).partial().safeParse(input)
     if (!partial.success) {
       return err('VALIDATION_ERROR', 'Validation failed', partial.error.message)
     }

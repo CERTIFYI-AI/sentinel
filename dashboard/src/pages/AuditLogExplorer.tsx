@@ -131,7 +131,11 @@ export default function AuditLogExplorer() {
       setErr('Session expired. Please re-authenticate.')
       return
     }
-    const url = `${supabase.functions.url}/audit-export?org_id=${encodeURIComponent(
+    // supabase.functions.url is protected; derive base URL from env instead
+    const fnBase = import.meta.env.VITE_SUPABASE_URL
+      ? `${import.meta.env.VITE_SUPABASE_URL as string}/functions/v1`
+      : `https://${location.hostname}/functions/v1`
+    const url = `${fnBase}/audit-export?org_id=${encodeURIComponent(
       orgId,
     )}&format=${format}&limit=10000`
     const resp = await fetch(url, {

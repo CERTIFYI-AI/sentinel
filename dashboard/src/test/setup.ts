@@ -62,3 +62,23 @@ if (typeof window !== "undefined") {
     }).IntersectionObserver = IntersectionObserverStub;
   }
 }
+
+// ── Blob.text() polyfill — jsdom Blob doesn't implement .text() ─────────────
+if (typeof Blob !== 'undefined' && !Blob.prototype.text) {
+  Blob.prototype.text = function (): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = () => reject(reader.error)
+      reader.readAsText(this)
+    })
+  }
+}
+
+// ── URL.createObjectURL / revokeObjectURL stubs ───────────────────────────────
+if (typeof URL.createObjectURL === 'undefined') {
+  URL.createObjectURL = () => 'blob:mock'
+}
+if (typeof URL.revokeObjectURL === 'undefined') {
+  URL.revokeObjectURL = () => {}
+}

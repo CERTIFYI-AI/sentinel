@@ -38,12 +38,15 @@ beforeEach(() => {
   vi.spyOn(document, "createElement").mockImplementation((tag: string) => {
     const el = document.createElementNS("http://www.w3.org/1999/xhtml", tag) as HTMLElement;
     if (tag === "a") {
-      el.click = anchorClickSpy;
+      // vi.fn() is broader than () => void; cast to satisfy HTMLElement.click signature
+      el.click = anchorClickSpy as unknown as () => void;
     }
     return el;
   });
 
-  vi.useFakeTimers();
+  // Only fake setTimeout/setInterval — leave Promises/microtasks unblocked
+  // so that Blob.text() (a Promise) resolves correctly during async tests.
+  vi.useFakeTimers({ toFake: ['setTimeout', 'setInterval', 'clearTimeout', 'clearInterval'] });
 });
 
 afterEach(() => {

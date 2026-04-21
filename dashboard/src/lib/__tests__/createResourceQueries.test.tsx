@@ -4,7 +4,8 @@
 import { describe, it, expect } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { ReactNode } from "react";
+import React from "react";
+import type { ReactNode, ReactElement } from "react";
 import { createResourceQueries } from "../query/createResourceQueries";
 import { appError, err, ok, type Result } from "../result";
 import type { Service, CursorPage } from "../service/createService";
@@ -43,7 +44,7 @@ function makeService(rows: Row[]): Service<Row, { title: string }> {
   };
 }
 
-function wrapper(): (opts: { children: ReactNode }) => JSX.Element {
+function wrapper(): (opts: { children: ReactNode }) => ReactElement {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0, staleTime: 0 } },
   });
