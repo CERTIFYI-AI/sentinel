@@ -8,6 +8,7 @@ import { NotificationDrawer } from './ui/NotificationDrawer'
 import { useTheme } from '../providers/theme'
 import { getStoredAccent, setAccent, type Accent } from '../store/accentStore'
 import { useAuthStore } from '../store/authStore'
+import { OrgSwitcher } from './tenancy/OrgSwitcher'
 
 const UNREAD_COUNT = 5
 
@@ -232,6 +233,11 @@ export default function TopHeader() {
 
         {/* Right side controls */}
         <div className='flex items-center gap-1'>
+
+          {/* Org switcher — active tenant context */}
+          <div className='mr-1'>
+            <OrgSwitcher />
+          </div>
 
           {/* Search trigger */}
           <button
