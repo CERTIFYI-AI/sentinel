@@ -22,6 +22,9 @@ on:
 jobs:
   typecheck:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NODE_OPTIONS: --max-old-space-size=4096
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v6
@@ -31,7 +34,7 @@ jobs:
           cache-dependency-path: dashboard/package-lock.json
       - name: Install dashboard deps
         working-directory: dashboard
-        run: npm ci
+        run: npm ci --legacy-peer-deps
       - name: TypeScript check (dashboard)
         working-directory: dashboard
         run: npx tsc --noEmit
@@ -41,6 +44,7 @@ jobs:
 
   test-dashboard:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v6
@@ -49,7 +53,7 @@ jobs:
           cache: npm
           cache-dependency-path: dashboard/package-lock.json
       - working-directory: dashboard
-        run: npm ci
+        run: npm ci --legacy-peer-deps
       - working-directory: dashboard
         run: npm run test:coverage
       - name: Enforce coverage floor
@@ -58,6 +62,7 @@ jobs:
 
   test-workers:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v6
@@ -66,7 +71,7 @@ jobs:
           cache: npm
           cache-dependency-path: dashboard/package-lock.json
       - working-directory: dashboard
-        run: npm ci
+        run: npm ci --legacy-peer-deps
       - working-directory: workers
         run: npx vitest run
 
@@ -81,13 +86,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Semgrep OSS
-        uses: returntocorp/semgrep-action@v1
+        uses: returntocorp/semgrep-action@v2
         with:
           config: p/ci p/typescript p/react p/owasp-top-ten
 
   a11y-smoke:
     if: ${{ vars.RUN_A11Y == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v6
@@ -96,7 +102,7 @@ jobs:
           cache: npm
           cache-dependency-path: dashboard/package-lock.json
       - working-directory: dashboard
-        run: npm ci
+        run: npm ci --legacy-peer-deps
       - working-directory: dashboard
         run: npx playwright install --with-deps
       - working-directory: dashboard
