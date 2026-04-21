@@ -1,184 +1,82 @@
-# Sentinel Backend Integration — Shared Agent Context
+# Sentinel AI GRC — Engineering Context
 
-## Repo path
-/home/user/workspace/sentinel
+## Repository
 
-## Design System (STRICT — never violate)
-- Font: Outfit only — `* { font-family: 'Outfit', sans-serif; }`
-- Border radius: 0 everywhere — `--radius: 0rem`
-- Primary brand: #368F4D (--brand, --primary)
-- Icons: Phosphor duotone default, fill on active/selected ONLY
-- Component lib: shadcn/ui
-- Colors: Zinc base, Emerald accent
-- NO mock/seed data on any page — all data from Supabase
+**GitHub:** https://github.com/CERTIFYI-AI/sentinel  
+**Stack:** React 18 · TypeScript 5 · Vite · Zustand · TanStack Query · Supabase · shadcn/ui · Tailwind CSS · Recharts · Phosphor Icons
+
+## Design System
+
+| Token | Value |
+|-------|-------|
+| Font | Outfit (Google Fonts) |
+| Border radius | 0rem everywhere |
+| Primary brand | `#368F4D` (Emerald) |
+| Base color | Zinc |
+| Icons | Phosphor — `duotone` default, `fill` on active/selected states only |
+| Component library | shadcn/ui |
+| Theme | Light mode primary |
 
 ## Supabase Project
-- Project ID: vhparvughsygyknblkzt
-- URL pattern: https://vhparvughsygyknblkzt.supabase.co
 
-## Critical Table Name Mapping (Supabase actual → service must use)
-| Domain | Correct Table | Wrong/Old Table |
-|--------|--------------|-----------------|
-| Models | `ai_models` | `model_inventory`, `models`, `Model` |
-| Risks | `risk_register` OR `RiskEntry` (has data) | `risks` (empty) |
-| Frameworks | `frameworks` (snake_case, has data 8192) | `Framework` (PascalCase Prisma) |
-| Controls | `controls` (has data 81920) | `Control` |
-| Policies | `policies` OR `Policy` | — |
-| Vendors | `vendors` (empty) OR `Vendor` (PascalCase, has data) | — |
-| Incidents | `incidents` (empty) — needs seed | — |
-| Evidence | `evidence` (empty) OR `Evidence` | — |
-| Agents | `agents` (empty) OR `Agent` (has data) | — |
-| HitlItems | `HitlItem` (has data) | `hitl_queue`, `hitl_items` |
-| Bias Audits | `bias_audits` (empty) OR `BiasAudit` | — |
-| Regulations | `Regulation` (PascalCase) | `regulations` |
-| Guardrails | `GuardrailRule` OR `guardrail_rules` | `guardrails` |
-| Trust Traces | `TrustTrace` | `trust_traces` |
-| Audit Log | `AuditLog` (has data) OR `audit_log` | — |
-| Carbon | `carbon_records` (has data 8192) | — |
-| ESG Reports | No table yet — use `esg_reports` | — |
-| Energy | No table yet — use `energy_metrics` | — |
-| Model Efficiency | No table yet — use `model_efficiency` | — |
+- **Project ID:** `vhparvughsygyknblkzt`  
+- **Region:** ap-southeast-1  
+- **Status:** ACTIVE_HEALTHY
 
-## Tables with confirmed data (size > 0)
-ai_models, assets, attack_surface_assets, bcp_plans, bia_processes, carbon_records,
-committees, consent_records, controls, custom_roles, departments, ethics_reports,
-frameworks, identities, keys_vault, model_arena_runs, organizations, policy_firewall_rules,
-policy_templates, red_team_findings, remediation_plans, risk_register, roles, 
-sod_rules, supply_chain_attestations, tenants, training_courses, transparency_reports,
-trust_traces, user_profiles, TrustTrace, AuditLog, BiasAudit, Agent, Vendor, 
-HitlItem, RiskEntry, Control, Policy, Framework, Model, Dataset, Evidence, User, Tenant
+## Multi-Tenancy
 
-## Standard Service Pattern (follow EXACTLY)
-```typescript
-// @ts-nocheck
-import { supabase, isSupabaseConfigured } from '../lib/supabase'
+| Entity | Value |
+|--------|-------|
+| Default org ID | `00000000-0000-0000-0000-000000000001` |
+| Default org name | Sentinel AI GRC |
+| Default tenant ID | `TNT-001` |
+| Default tenant name | Acme Financial Corp |
 
-export type XxxRecord = {
-  id: string
-  org_id?: string
-  // ... fields
-  created_at: string
-  updated_at: string
-}
+## Table Reference
 
-export async function fetchAllXxx(filters: Record<string,any> = {}): Promise<XxxRecord[]> {
-  if (!isSupabaseConfigured() || !supabase) return []
-  try {
-    let q = supabase.from('xxx_table').select('*').order('created_at', { ascending: false })
-    // apply filters
-    if (filters.status) q = q.eq('status', filters.status)
-    const { data, error } = await q
-    if (error) { console.warn('[xxxService] fetch:', error.message); return [] }
-    return (data ?? []) as XxxRecord[]
-  } catch { return [] }
-}
+### FK-Constrained Tables (use `tenant_id = 'TNT-001'`)
 
-export async function upsertXxx(record: Partial<XxxRecord>): Promise<XxxRecord | null> {
-  if (!isSupabaseConfigured() || !supabase) return null
-  try {
-    const { data, error } = await supabase
-      .from('xxx_table')
-      .upsert(record)
-      .select()
-      .single()
-    if (error) { console.warn('[xxxService] upsert:', error.message); return null }
-    return data as XxxRecord
-  } catch { return null }
-}
+`maturity_assessments`, `security_threats`, `security_scans`, `security_vulnerabilities`, `red_team_campaigns`, `conformity_assessments`, `exceptions`
 
-export async function deleteXxx(id: string): Promise<boolean> {
-  if (!isSupabaseConfigured() || !supabase) return false
-  try {
-    const { error } = await supabase.from('xxx_table').delete().eq('id', id)
-    if (error) { console.warn('[xxxService] delete:', error.message); return false }
-    return true
-  } catch { return false }
-}
+### UUID-org Tables (use `org_id = '00000000-0000-0000-0000-000000000001'`)
 
-export const fetchXxx = fetchAllXxx // backward compat alias
-export const saveXxx = upsertXxx
-```
+`esg_reports`, `energy_metrics`, `model_efficiency`, `dsar_requests`
 
-## Standard Hook Pattern
-```typescript
-// @ts-nocheck
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { fetchAllXxx, upsertXxx, deleteXxx } from '@/services/xxxService'
-import { toast } from 'sonner'
+### Text tenant_id Tables (any string accepted)
 
-export function useXxxData(filters = {}) {
-  const qc = useQueryClient()
-  
-  const query = useQuery({
-    queryKey: ['xxx', filters],
-    queryFn: () => fetchAllXxx(filters),
-    staleTime: 30_000,
-  })
+`risks`, `incidents`, `vendors`, `bias_audits`, `evidence`, `tasks`, `remediation_plans`, `consent_records`
 
-  const saveMutation = useMutation({
-    mutationFn: (record: any) => upsertXxx(record),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['xxx'] }); toast.success('Saved') },
-    onError: () => toast.error('Failed to save'),
-  })
+## Framework ID Reference
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => deleteXxx(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['xxx'] }); toast.success('Deleted') },
-    onError: () => toast.error('Failed to delete'),
-  })
+| ID | Framework |
+|----|-----------|
+| `FW-001` | EU AI Act |
+| `FW-002` | GDPR |
+| `FW-003` | NIST AI RMF |
+| `FW-004` | ISO 42001 |
+| `FW-005` | Singapore Model AI Governance Framework |
+| `FW-006` | OWASP LLM Top 10 |
+| `FW-007` | OECD AI Principles |
+| `FW-008` | UNESCO Ethics of AI |
+| `FW-009` | Google SAIF |
+| `FW-010` | MITRE ATLAS |
 
-  return {
-    items: query.data ?? [],
-    isLoading: query.isLoading,
-    error: query.error,
-    save: saveMutation.mutateAsync,
-    remove: deleteMutation.mutateAsync,
-    isSaving: saveMutation.isPending,
-    isDeleting: deleteMutation.isPending,
-  }
-}
-```
+## Code Conventions
 
-## Page Pattern Requirements
-Every page MUST:
-1. Import and use its `useXxxData` hook — NO local useState for data
-2. Show skeleton loader while loading: `if (isLoading) return <PageSkeleton />`
-3. Use `useChartTheme()` for all charts
-4. Use `ConfirmDialog` for all deletes (never window.confirm)
-5. Use `toast.success/error` on all mutations
-6. Have Export CSV button
-7. Have real Recharts charts pulling from live aggregates
-8. No SEED/mock arrays — remove them all
-9. Every entity ID shown via text, not EntityChip (EntityChip is optional enhancement)
+- `// @ts-nocheck` at top of all page components (existing convention — do not remove)
+- Optimistic UI pattern: `localItems` + `deletedIds` + Supabase save in parallel
+- All services use `mapRow()` / `mapToRow()` helpers for column name translation
+- Soft-delete via `is_deleted = true` where supported
+- Real-time invalidation via `useRealtimeInvalidation.ts` mounted globally in `App.tsx`
+- Zero hardcoded data — all content from Supabase; no fallback mock/seed arrays in hooks
 
-## Audit log entry pattern (after every mutation)
-```typescript
-import { supabase } from '@/lib/supabase'
-async function logAudit(action: string, entity: string, entityId: string) {
-  try {
-    await supabase.from('AuditLog').insert({
-      action, entity, entityId, tenantId: 'default',
-      timestamp: new Date().toISOString(),
-    })
-  } catch {}
-}
-```
+## Development Rules
 
-## Export CSV utility
-```typescript
-function exportCsv(rows: any[], filename: string) {
-  if (!rows.length) return
-  const keys = Object.keys(rows[0])
-  const csv = [keys.join(','), ...rows.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n')
-  const a = document.createElement('a')
-  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
-  a.download = filename
-  a.click()
-}
-```
-
-## Git workflow
-- Work in /home/user/workspace/sentinel
-- Stage all changes with git add -A
-- Do NOT commit (parent will commit after all agents done)
-- Write a summary of all files changed to /home/user/workspace/AGENT_REPORT_<N>.md
+1. **TypeScript strict** — no `any`, all types explicit
+2. **No mock data** — every list, table, chart, KPI card wired to Supabase
+3. **Exports** — CSV and PDF export on every list view
+4. **Skeleton loaders** — all async data states covered
+5. **ConfirmDialog** — all destructive actions gated
+6. **Toast notifications** — all mutations have success/error toasts
+7. **Audit trail** — all mutations write to `AuditLog`
+8. **Realtime** — all relevant tables subscribed via `useRealtimeInvalidation`

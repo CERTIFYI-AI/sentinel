@@ -6,7 +6,7 @@
 **Audit Date:** April 5, 2026  
 **Auditor Role:** Senior AI/ML & GRC Engineer (15+ Years Experience)  
 **Audit Scope:** Trust Engine — All 7 Sub-Modules (Trust Dashboard, Guardrails, Live Traces, Cost & Tokens, Fallback Log, Tool Monitor, Configuration)  
-**Classification:** CONFIDENTIAL — Internal Use Only  
+**Classification:** Internal Engineering Reference  
 
 ---
 
