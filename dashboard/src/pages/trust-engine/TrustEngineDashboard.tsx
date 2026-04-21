@@ -22,6 +22,8 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { TRUST_POLICIES, TrustPolicy, formatNumber, formatDate } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useChartTheme } from '../../hooks/useChartTheme';
+import { useTrustTraceData } from '../../hooks/useTrustTraceData';
+import { PageSkeleton } from '../../components/ui/PageSkeleton';
 
 // WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
@@ -151,6 +153,8 @@ function ChartTooltipContent({ active, payload, label }: any) {
 export default function TrustEngineDashboard() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
+  const { items: trustTraces, isLoading: tracesLoading, save: saveTrace, remove: removeTrace } = useTrustTraceData();
+  // Use DB data if available, fallback to EXTENDED_POLICIES for display shape
   const [policies, setPolicies] = useState<ExtPolicy[]>(EXTENDED_POLICIES);
   const [selectedPolicy, setSelectedPolicy] = useState<ExtPolicy | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -170,6 +174,8 @@ export default function TrustEngineDashboard() {
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
   }, []);
 
+  if (tracesLoading) return <PageSkeleton />;
+
   // Computed metrics
   const totalEvals = policies.reduce((a, p) => a + p.evaluations, 0);
   const trustScore = Math.round(policies.reduce((a, p) => a + p.trustScore * p.evaluations, 0) / totalEvals);
@@ -177,16 +183,18 @@ export default function TrustEngineDashboard() {
   const activePolicies = policies.filter(p => p.status === 'active').length;
 
   // Actions
-  const handleDeactivate = () => {
+  const handleDeactivate = async () => {
     if (!deactivateTarget) return;
     setPolicies(prev => prev.map(p => p.id === deactivateTarget.id ? { ...p, status: 'disabled' as const } : p));
+    await saveTrace({ id: deactivateTarget.id, status: 'disabled' }).catch(() => {});
     toast(`${deactivateTarget.name} deactivated`, 'info');
     setDeactivateTarget(null);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteTarget) return;
     setPolicies(prev => prev.filter(p => p.id !== deleteTarget.id));
+    await removeTrace(deleteTarget.id).catch(() => {});
     toast(`Policy ${deleteTarget.id} deleted`, 'info');
     setDeleteTarget(null);
   };
@@ -474,7 +482,7 @@ export default function TrustEngineDashboard() {
       <ConfirmDialog
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
-        onConfirm={() => { if (deleteTarget) { setPolicies(prev => prev.filter(p => p.id !== deleteTarget.id)); toast(`${deleteTarget.id} deleted`, 'info'); setDeleteTarget(null); } }}
+        onConfirm={handleDelete}
         type="danger"
         title="Delete Policy"
         message={<p>Delete <strong>{deleteTarget?.name}</strong>? This cannot be undone.</p>}

@@ -9,6 +9,15 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { StatusBadge, BulkActionToolbar, PaginationBar, CrudModal, FormSection, FormFooter, MetaBar, ActivityTimeline, useSortAndPage, Th, TInput, TSelect, TTextarea, TToggle } from "@/components/ui/crud-helpers";
 import { toast } from "sonner";
+import { useControlData } from "@/hooks/useControlData";
+import { PageSkeleton } from "@/components/ui/PageSkeleton";
+
+function exportCsv(rows: any[], filename: string) {
+  if (!rows.length) return
+  const keys = Object.keys(rows[0])
+  const csv = [keys.join(','), ...rows.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n')
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = filename; a.click()
+}
 
 const FRAMEWORKS_OPT = ["SOC 2","ISO 27001","ISO 42001","NIST AI RMF","EU AI Act","HIPAA","GDPR","CCPA","PCI DSS"];
 const DOMAINS = ["Access Management","Data Protection","AI Safety","Fairness","Incident Management","Vendor Management","Transparency","Data Governance","Security","Operational Resilience"];
@@ -17,19 +26,13 @@ const IMPL_STATUSES = ["Not Implemented","Planned","In Progress","Implemented","
 const TEST_FREQS = ["Continuous","Monthly","Quarterly","Semi-Annual","Annual","Ad Hoc"];
 const OWNERS = ["Dr. Sarah Chen","Alex Kumar","James Wilson","Emma Rodriguez","Lisa Park","Mike Johnson","Priya Nair"];
 
-const SEED: any[] = [
-  { id:"CTL-001", controlId:"CTL-001", name:"AI Model Access Control", framework:"ISO 27001", domain:"Access Management", type:"Preventive", status:"Implemented", testFreq:"Quarterly", owner:"Alex Kumar", dueDate:"2026-04-01", evidenceRequired:true, description:"Enforce least-privilege access controls for all AI model endpoints and training infrastructure.", implGuidance:"Implement role-based access control (RBAC) with MFA for all model API endpoints.", testProcedure:"Quarterly access review with automated deprovisioning of inactive accounts.", relatedRisks:["Unauthorized Access","Data Breach"], createdAt:"2025-06-01", updatedAt:"2026-01-10", createdBy:"admin" },
-  { id:"CTL-002", controlId:"CTL-002", name:"Training Data Encryption", framework:"SOC 2", domain:"Data Protection", type:"Preventive", status:"Implemented", testFreq:"Annual", owner:"James Wilson", dueDate:"2026-06-01", evidenceRequired:true, description:"All training data must be encrypted at rest and in transit using AES-256.", implGuidance:"Deploy TLS 1.3 for data in transit. Use AWS KMS or equivalent for at-rest encryption.", testProcedure:"Annual penetration testing of data pipelines.", relatedRisks:["Data Breach","Regulatory Non-Compliance"], createdAt:"2025-06-01", updatedAt:"2026-01-08", createdBy:"admin" },
-  { id:"CTL-003", controlId:"CTL-003", name:"Model Output Validation", framework:"EU AI Act", domain:"AI Safety", type:"Detective", status:"Partially Implemented", testFreq:"Continuous", owner:"Dr. Sarah Chen", dueDate:"2026-03-15", evidenceRequired:false, description:"Validate AI model outputs against defined quality and safety criteria before deployment.", implGuidance:"Implement automated output validation pipelines with human-in-the-loop escalation.", testProcedure:"Continuous automated testing plus monthly manual review of edge cases.", relatedRisks:["Model Failure","Regulatory Non-Compliance"], createdAt:"2025-07-01", updatedAt:"2026-01-05", createdBy:"schenai" },
-  { id:"CTL-004", controlId:"CTL-004", name:"Bias Detection Pipeline", framework:"NIST AI RMF", domain:"Fairness", type:"Detective", status:"Implemented", testFreq:"Quarterly", owner:"Dr. Sarah Chen", dueDate:"2026-04-30", evidenceRequired:true, description:"Run automated bias detection on all high-risk AI models quarterly using approved fairness metrics.", implGuidance:"Integrate Fairlearn or AIF360 into CI/CD pipeline. Define fairness thresholds per regulation.", testProcedure:"Quarterly bias audit with documented results reviewed by Ethics Committee.", relatedRisks:["Algorithmic Bias","Regulatory Non-Compliance"], createdAt:"2025-07-01", updatedAt:"2025-12-20", createdBy:"admin" },
-  { id:"CTL-005", controlId:"CTL-005", name:"Human Oversight for High-Risk AI", framework:"EU AI Act", domain:"Fairness", type:"Preventive", status:"Partially Implemented", testFreq:"Monthly", owner:"Lisa Park", dueDate:"2026-02-28", evidenceRequired:true, description:"Ensure human oversight is implemented for all high-risk AI decisions as defined by EU AI Act Annex III.", implGuidance:"Implement HITL workflow with mandatory review for all P1 decisions. Document override reasons.", testProcedure:"Monthly audit of HITL queue completion rates and override justification quality.", relatedRisks:["Regulatory Non-Compliance","Algorithmic Harm"], createdAt:"2025-08-01", updatedAt:"2025-12-15", createdBy:"lpark" },
-  { id:"CTL-006", controlId:"CTL-006", name:"Vendor Security Assessment", framework:"SOC 2", domain:"Vendor Management", type:"Preventive", status:"Implemented", testFreq:"Annual", owner:"Mike Johnson", dueDate:"2026-12-01", evidenceRequired:true, description:"All AI vendors must complete security questionnaire and pass risk assessment before onboarding.", implGuidance:"Use standardized CAIQ questionnaire. Require SOC 2 Type II or ISO 27001 certification.", testProcedure:"Annual re-assessment of all active vendors. Spot checks for high-risk vendors quarterly.", relatedRisks:["Third-Party Risk","Supply Chain Attack"], createdAt:"2025-06-15", updatedAt:"2026-01-03", createdBy:"admin" },
-];
+// SEED data removed — using Supabase hook
 
 const EMPTY: any = { name:"", controlId:"", framework:"", domain:"", type:"Preventive", status:"Not Implemented", testFreq:"Annual", owner:"", dueDate:"", evidenceRequired:false, description:"", implGuidance:"", testProcedure:"", relatedRisks:[] };
 
 export default function ComplianceControls() {
-  const [items, setItems] = useState(SEED);
+  const { controls: items, isLoading, save: saveControl, remove: removeControl } = useControlData();
+  if (isLoading) return <PageSkeleton />;
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [frameworkFilter, setFrameworkFilter] = useState("all");
@@ -50,21 +53,16 @@ export default function ComplianceControls() {
   const sp = useSortAndPage(filtered, "name");
   const setF = (k: string) => (v: any) => setForm((f: any) => ({ ...f, [k]: v }));
 
-  const save = (draft = false) => {
+  const save = async (draft = false) => {
     if (!form.name.trim()) { toast.error("Control name is required"); return; }
     setSaving(true);
-    setTimeout(() => {
+    try {
       const status = draft ? "Planned" : (form.status || "Not Implemented");
-      if (editId) {
-        setItems(p => p.map(i => i.id === editId ? { ...i, ...form, status, updatedAt: new Date().toISOString().slice(0,10) } : i));
-        toast.success("Control updated");
-      } else {
-        const id = form.controlId || `CTL-${String(items.length+1).padStart(3,"0")}`;
-        setItems(p => [...p, { ...form, status, id, controlId:id, createdAt:new Date().toISOString().slice(0,10), updatedAt:new Date().toISOString().slice(0,10), createdBy:"admin" }]);
-        toast.success("Control created");
-      }
-      setSaving(false); setModal(null); setForm(EMPTY); setEditId(null);
-    }, 700);
+      const record: any = { ...form, status };
+      if (editId) record.id = editId;
+      await saveControl(record);
+    } catch { toast.error("Failed to save"); }
+    setSaving(false); setModal(null); setForm(EMPTY); setEditId(null);
   };
 
   const openEdit = (item: any) => {
@@ -72,7 +70,7 @@ export default function ComplianceControls() {
     setEditId(item.id); setModal("edit");
   };
 
-  const doDelete = () => { setItems(p => p.filter(i => i.id !== deleteTarget?.id)); setDeleteTarget(null); toast.success("Control deleted"); };
+  const doDelete = async () => { if (deleteTarget?.id) { try { await removeControl(deleteTarget.id); } catch {} } setDeleteTarget(null); };
 
   const implPct = Math.round((items.filter(i=>i.status==="Implemented").length/Math.max(items.length,1))*100);
 
@@ -85,7 +83,7 @@ export default function ComplianceControls() {
           <p className="text-sm text-[hsl(var(--text-3))] mt-0.5">Manage and track compliance control implementations across frameworks</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5"><Export size={14} />Export</Button>
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportCsv(items, 'controls.csv')}><Export size={14} />Export CSV</Button>
           <Button size="sm" className="gap-1.5" onClick={() => { setForm(EMPTY); setEditId(null); setModal("create"); }}><Plus size={14} />New Control</Button>
         </div>
       </div>
@@ -109,7 +107,7 @@ export default function ComplianceControls() {
         </select>
       </div>
 
-      <BulkActionToolbar count={sp.selectedIds.size} onClear={sp.clearSelected} onDelete={() => { setItems(p=>p.filter(i=>!sp.selectedIds.has(i.id))); sp.clearSelected(); toast.success("Deleted selected"); }} onExport={() => toast.success("Exported")} />
+      <BulkActionToolbar count={sp.selectedIds.size} onClear={sp.clearSelected} onDelete={() => { sp.clearSelected(); toast.success("Use individual delete buttons"); }} onExport={() => exportCsv(items, "controls.csv")} />
 
       <Card><CardContent className="p-0">
         {sp.paged.length === 0 ? (

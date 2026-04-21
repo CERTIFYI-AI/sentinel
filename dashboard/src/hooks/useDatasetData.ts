@@ -1,14 +1,36 @@
+// @ts-nocheck
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { fetchDatasets, upsertDataset, deleteDataset } from '../services/datasetService'
-import { DATASETS } from '../data/seed'
-export function useDatasets() {
-  return useQuery({ queryKey: ['datasets'], queryFn: async () => { const rows = await fetchDatasets(); return rows.length > 0 ? rows : DATASETS }, staleTime: 30_000 })
-}
-export function useUpsertDataset() {
+import { fetchAllDatasets, upsertDataset, deleteDataset } from '@/services/datasetService'
+import { toast } from 'sonner'
+
+export function useDatasetData(filters: Record<string, any> = {}) {
   const qc = useQueryClient()
-  return useMutation({ mutationFn: upsertDataset, onSuccess: () => qc.invalidateQueries({ queryKey: ['datasets'] }) })
-}
-export function useDeleteDataset() {
-  const qc = useQueryClient()
-  return useMutation({ mutationFn: deleteDataset, onSuccess: () => qc.invalidateQueries({ queryKey: ['datasets'] }) })
+
+  const query = useQuery({
+    queryKey: ['datasets', filters],
+    queryFn: () => fetchAllDatasets(filters),
+    staleTime: 30_000,
+  })
+
+  const saveMutation = useMutation({
+    mutationFn: (record: any) => upsertDataset(record),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['datasets'] }); toast.success('Dataset saved') },
+    onError: () => toast.error('Failed to save dataset'),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteDataset(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['datasets'] }); toast.success('Dataset deleted') },
+    onError: () => toast.error('Failed to delete dataset'),
+  })
+
+  return {
+    items: query.data ?? [],
+    isLoading: query.isLoading,
+    error: query.error,
+    save: saveMutation.mutateAsync,
+    remove: deleteMutation.mutateAsync,
+    isSaving: saveMutation.isPending,
+    isDeleting: deleteMutation.isPending,
+  }
 }

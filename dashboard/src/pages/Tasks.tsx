@@ -1,5 +1,7 @@
 // @ts-nocheck
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { useTaskData } from '../hooks/useTaskData';
+import { PageSkeleton } from '../components/ui/PageSkeleton';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -375,7 +377,12 @@ const emptyForm = {
 // ── main component ─────────────────────────────────────────────────────────
 
 export default function Tasks() {
+  const { tasks: liveTasks, isLoading, save, remove } = useTaskData();
   const [tasks, setTasks] = useState<Task[]>(TASKS);
+
+  useEffect(() => {
+    if (liveTasks.length > 0) setTasks(liveTasks as any[])
+  }, [liveTasks]);
   const [view, setView] = useState<'table' | 'kanban'>('table');
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -389,6 +396,8 @@ export default function Tasks() {
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+
+  if (isLoading) return <PageSkeleton title="Tasks" />;
 
   const overdue = tasks.filter(t => t.status === 'overdue').length;
   const inProgress = tasks.filter(t => t.status === 'in_progress').length;

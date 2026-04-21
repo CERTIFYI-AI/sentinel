@@ -14,15 +14,13 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer,
   LineChart, Line, Legend,
 } from 'recharts';
-import {
-  MODELS, RISKS, AGENTS, INCIDENTS, POLICIES, FRAMEWORKS, GAPS,
-  AUDIT_LOG, VENDORS, DATASETS, EVIDENCE, severityColor, statusColor, formatDate,
-} from '../data/seed';
-import { useRisks } from '../hooks/queries/useRisks';
-import { useIncidents } from '../hooks/queries/useIncidents';
-import { usePolicies } from '../hooks/queries/usePolicies';
-import { useModels } from '../hooks/queries/useModels';
-import { useVendors } from '../hooks/queries/useVendors';
+import { severityColor, statusColor, formatDate } from '../data/seed';
+import { useRisksData } from '../hooks/useRisksData';
+import { useIncidentData } from '../hooks/useIncidentData';
+import { useModelsData } from '../hooks/useModelsData';
+import { useVendorsData } from '../hooks/useVendorsData';
+import { useFrameworksData } from '../hooks/useFrameworksData';
+import { useTaskData } from '../hooks/useTaskData';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useChartTheme } from '../hooks/useChartTheme';
 
@@ -164,28 +162,26 @@ export default function Overview() {
   const [digestIdx, setDigestIdx] = useState(0);
   const countdown = useCountdown(AUDIT_DATE);
 
-  // Live Supabase data with seed fallback
-  const { data: liveRisks } = useRisks();
-  const { data: liveIncidents } = useIncidents();
-  const { data: livePolicies } = usePolicies();
-  const { data: liveModels } = useModels();
-  const { data: liveVendors } = useVendors();
+  // Live Supabase data
+  const { risks } = useRisksData();
+  const { incidents } = useIncidentData();
+  const { models } = useModelsData();
+  const { vendors } = useVendorsData();
+  const { frameworks } = useFrameworksData();
+  const { tasks } = useTaskData();
+  const chartTheme = useChartTheme();
 
-  const effectiveRisks = (liveRisks && liveRisks.length > 0 ? liveRisks : RISKS) as typeof RISKS;
-  const effectiveIncidents = (liveIncidents && liveIncidents.length > 0 ? liveIncidents : INCIDENTS) as typeof INCIDENTS;
-  const effectivePolicies = (livePolicies && livePolicies.length > 0 ? livePolicies : POLICIES) as typeof POLICIES;
-  const effectiveModels = (liveModels && liveModels.length > 0 ? liveModels : MODELS) as typeof MODELS;
-  const effectiveVendors = (liveVendors && liveVendors.length > 0 ? liveVendors : VENDORS) as typeof VENDORS;
-
-  const openRisks = effectiveRisks.filter((r: any) => r.status === 'open').length;
-  const activeModels = effectiveModels.filter((m: any) => m.status === 'production').length;
-  const criticalIncidents = effectiveIncidents.filter((i: any) => i.severity === 'critical').length;
-  const activePolicies = effectivePolicies.filter((p: any) => p.status === 'published').length;
-  const openGaps = GAPS.length;
-  const overdueGaps = GAPS.filter(g => new Date(g.dueDate) < new Date()).length;
+  const openRisks = risks.filter((r: any) => r.status === 'open').length;
+  const criticalRisks = risks.filter((r: any) => (r.risk_score || r.score || 0) >= 15).length;
+  const activeModels = models.filter((m: any) => m.is_active || m.lifecycle_stage === 'production' || m.status === 'production').length;
+  const criticalIncidents = incidents.filter((i: any) => i.severity === 'critical').length;
+  const openIncidents = incidents.filter((i: any) => i.status !== 'resolved').length;
+  const overdueGaps = tasks.filter((t: any) => t.status !== 'completed' && t.due_date && new Date(t.due_date) < new Date()).length;
 
   // Compliance posture
-  const avgCompliance = Math.round(FRAMEWORKS.reduce((sum, f) => sum + f.complianceScore, 0) / FRAMEWORKS.length);
+  const avgCompliance = frameworks.length > 0
+    ? Math.round(frameworks.reduce((s: number, f: any) => s + (f.compliance_score || f.complianceScore || 0), 0) / frameworks.length)
+    : 0;
   const securityScore = 79;
 
   const kpis = [
@@ -193,11 +189,8 @@ export default function Overview() {
     { label: 'Open Risks', value: openRisks, icon: Warning, color: ragColor(openRisks, 'risk'), link: '/risk', ragType: 'risk' as const },
     { label: 'Active Models', value: activeModels, icon: Brain, color: '#8b5cf6', link: '/models/inventory' },
     { label: 'Critical Incidents', value: criticalIncidents, icon: WarningCircle, color: ragColor(criticalIncidents, 'incident'), link: '/risk/incidents', ragType: 'incident' as const },
-    { label: 'Use Cases', value: AGENTS.length, icon: ChartLine, color: '#3b82f6', link: '/agents' },
-    { label: 'Active Policies', value: activePolicies, icon: FileText, color: '#10b981', link: '/compliance/policies' },
-    { label: 'Vendors', value: effectiveVendors.length, icon: Briefcase, color: '#06b6d4', link: '/vendors' },
-    { label: 'Datasets', value: DATASETS.length, icon: Database, color: '#f59e0b', link: '/datasets' },
-    { label: 'Frameworks', value: FRAMEWORKS.length, icon: StackSimple, color: '#6366f1', link: '/frameworks' },
+    { label: 'Vendors', value: vendors.length, icon: Briefcase, color: '#06b6d4', link: '/vendors' },
+    { label: 'Frameworks', value: frameworks.length, icon: StackSimple, color: '#6366f1', link: '/frameworks' },
   ];
 
   // RAG border color for KPI tiles
@@ -208,23 +201,20 @@ export default function Overview() {
     return 'hsl(var(--border))';
   }
 
-  const frameworkChartData = FRAMEWORKS.map(f => ({
-    name: f.name.includes('42001') ? 'ISO 42001' :
-          f.name.includes('27001') ? 'ISO 27001' :
-          f.name.includes('SOC') ? 'SOC 2' :
-          f.name.includes('EU AI') ? 'EU AI Act' :
-          f.name.includes('NIST') ? 'NIST RMF' :
-          f.name.includes('OWASP') ? 'OWASP LLM' :
-          f.name.replace('ISO/IEC ', '').replace('OWASP ', '').split(' ')[0],
-    score: f.complianceScore,
+  const frameworkChartData = frameworks.map((f: any) => ({
+    name: f.name?.includes('42001') ? 'ISO 42001' :
+          f.name?.includes('27001') ? 'ISO 27001' :
+          f.name?.includes('SOC') ? 'SOC 2' :
+          f.name?.includes('EU AI') ? 'EU AI Act' :
+          f.name?.includes('NIST') ? 'NIST RMF' :
+          f.name?.includes('OWASP') ? 'OWASP LLM' :
+          (f.name || '').replace('ISO/IEC ', '').replace('OWASP ', '').split(' ')[0],
+    score: f.compliance_score || f.complianceScore || 0,
     fullName: f.name,
   }));
 
-  const recentActivity = [...AUDIT_LOG].sort(
-    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-  ).slice(0, 6);
-
-  const overdueGapItems = GAPS.filter(g => new Date(g.dueDate) < new Date()).slice(0, 5);
+  const recentActivity: any[] = [];
+  const overdueGapItems = tasks.filter((t: any) => t.status !== 'completed' && t.due_date && new Date(t.due_date) < new Date()).slice(0, 5);
 
   const quickActions = [
     { label: 'Start Audit', desc: 'Launch a new compliance audit', icon: ShieldCheck, to: '/audits' },
@@ -405,12 +395,19 @@ export default function Overview() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-5 gap-4">
-              {CISO_FRAMEWORKS.map(fw => {
-                const dotColor = cisoTrafficColor(fw.score);
-                const ragLabel = cisoTrafficLabel(fw.score);
+              {(frameworks.length > 0 ? frameworks : CISO_FRAMEWORKS).map((fw: any) => {
+                // Normalize live framework data to CISO display format
+                const fwScore = fw.compliance_score || fw.complianceScore || fw.score || 0;
+                const fwLabel = fw.label || fw.name || '';
+                const fwKey = fw.key || fw.id || fwLabel;
+                const fwTrend: number[] = fw.trend || Array.from({length:30}, (_,i) => Math.max(0, fwScore - 5 + Math.round(i * 5/29)));
+                const cisoFw = { key: fwKey, label: fwLabel, score: fwScore, trend: fwTrend };
+                const fw2 = cisoFw; // shadow fw for below code
+                const dotColor = cisoTrafficColor(fw2.score);
+                const ragLabel = cisoTrafficLabel(fw2.score);
                 return (
                   <div
-                    key={fw.key}
+                    key={fw2.key}
                     style={{
                       background: 'hsl(var(--bg-muted))',
                       border: '1px solid hsl(var(--border))',
@@ -430,12 +427,12 @@ export default function Overview() {
                         }}
                       />
                       <span className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
-                        {fw.label}
+                        {fw2.label}
                       </span>
                     </div>
                     <div className="flex items-end justify-between mb-2">
                       <span className="text-2xl font-bold" style={{ color: dotColor }}>
-                        {fw.score}%
+                        {fw2.score}%
                       </span>
                       <span
                         className="text-[10px] font-bold px-1.5 py-0.5"
@@ -453,7 +450,7 @@ export default function Overview() {
                       <span className="text-[10px] block mb-1" style={{ color: 'hsl(var(--text-4))' }}>
                         30-day trend
                       </span>
-                      <Sparkline data={fw.trend} color={dotColor} width={120} height={24} />
+                      <Sparkline data={fw2.trend} color={dotColor} width={120} height={24} />
                     </div>
                   </div>
                 );
@@ -734,7 +731,7 @@ export default function Overview() {
               </tr>
             </thead>
             <tbody>
-              {INCIDENTS.slice(0, 7).map(inc => {
+              {incidents.slice(0, 7).map(inc => {
                 const sc = severityColor(inc.severity);
                 const stColor = inc.status === 'open' ? 'hsl(var(--s-er-tx))' : inc.status === 'investigating' ? 'hsl(var(--s-wn-tx))' : inc.status === 'resolved' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-4))';
                 const stBg = inc.status === 'open' ? 'hsl(0 72% 51% / 0.10)' : inc.status === 'investigating' ? 'hsl(45 93% 47% / 0.10)' : inc.status === 'resolved' ? 'hsl(142 71% 45% / 0.10)' : 'hsl(var(--bg-muted))';
@@ -751,7 +748,7 @@ export default function Overview() {
                     <td className="px-4 py-2.5">
                       <Badge style={{ background: stBg, color: stColor, borderRadius: 0, fontSize: 10, textTransform: 'capitalize' }}>{inc.status}</Badge>
                     </td>
-                    <td className="px-4 py-2.5 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{inc.linkedModel ?? '—'}</td>
+                    <td className="px-4 py-2.5 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{inc.linkedModel ?? inc.linked_model ?? '—'}</td>
                     <td className="px-4 py-2.5 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{formatDate(inc.reportedDate)}</td>
                   </tr>
                 );
@@ -1000,7 +997,7 @@ export default function Overview() {
               </tr>
             </thead>
             <tbody>
-              {RISKS.filter(r => r.status === 'open').slice(0, 5).map(r => {
+              {risks.filter((r: any) => r.status === 'open').slice(0, 5).map(r => {
                 const sc = severityColor(r.severity);
                 return (
                   <tr key={r.id} style={{ borderTop: '1px solid hsl(var(--border))' }}>
@@ -1015,8 +1012,8 @@ export default function Overview() {
                       </Badge>
                     </td>
                     <td className="p-3">
-                      <span className="text-sm font-bold" style={{ color: r.score >= 16 ? '#ef4444' : r.score >= 10 ? '#f97316' : 'hsl(var(--text-1))' }}>
-                        {r.score}
+                      <span className="text-sm font-bold" style={{ color: (r.score || r.risk_score || 0) >= 16 ? '#ef4444' : (r.score || r.risk_score || 0) >= 10 ? '#f97316' : 'hsl(var(--text-1))' }}>
+                        {r.score || r.risk_score || 0}
                       </span>
                     </td>
                     <td className="p-3">

@@ -11,9 +11,18 @@ import {
 } from 'recharts';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useChartTheme } from '../../hooks/useChartTheme';
+import { useMaturityData } from '../../hooks/useMaturityData';
+import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { toast } from 'sonner';
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+// Supabase-wired — no mock data
+
+function exportCsv(rows: any[], filename: string) {
+  if (!rows.length) return
+  const keys = Object.keys(rows[0])
+  const csv = [keys.join(','), ...rows.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n')
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = filename; a.click()
+}
 
 /* ------------------------------------------------------------------ */
 /*  Types & Constants                                                  */
@@ -36,22 +45,7 @@ const MATURITY_LABELS: Record<number, string> = {
   5: 'Optimized',
 };
 
-const DIMENSIONS: MaturityDimension[] = [
-  { dimension: 'Strategy & Vision', current: 3, target: 4, gap: 1, priority: 'Formalize AI governance roadmap', owner: 'Sarah Chen' },
-  { dimension: 'Risk Management', current: 4, target: 4, gap: 0, priority: 'Maintain risk framework', owner: 'Michael Torres' },
-  { dimension: 'Data Governance', current: 3, target: 5, gap: 2, priority: 'Implement data lineage tracking', owner: 'David Kim' },
-  { dimension: 'Model Lifecycle', current: 3, target: 4, gap: 1, priority: 'Automate model monitoring', owner: 'Priya Sharma' },
-  { dimension: 'Ethics & Fairness', current: 2, target: 4, gap: 2, priority: 'Expand bias testing coverage', owner: 'Emily Rodriguez' },
-  { dimension: 'Security', current: 4, target: 4, gap: 0, priority: 'Maintain adversarial testing', owner: 'James Wilson' },
-  { dimension: 'Compliance', current: 3, target: 5, gap: 2, priority: 'Complete EU AI Act conformity', owner: 'Legal Team' },
-  { dimension: 'Monitoring & Ops', current: 3, target: 4, gap: 1, priority: 'Deploy real-time drift detection', owner: 'Ops Team' },
-];
-
-const radarData = DIMENSIONS.map(d => ({
-  dimension: d.dimension,
-  current: d.current,
-  target: d.target,
-}));
+// DIMENSIONS is now derived from Supabase via useMaturityData hook (see component)
 
 /* ------------------------------------------------------------------ */
 /*  Inline MetricTile                                                  */
@@ -87,12 +81,7 @@ interface AssessmentAnswer {
   score: number;
 }
 
-const ASSESSMENT_QUESTIONS = DIMENSIONS.map(d => ({
-  dimension: d.dimension,
-  owner: d.owner,
-  question: `Rate the current maturity of "${d.dimension}" on a scale of 1–5.`,
-  hint: d.priority,
-}));
+// ASSESSMENT_QUESTIONS is now computed inside the component from live DIMENSIONS data
 
 /* ------------------------------------------------------------------ */
 /*  Helper functions                                                   */
@@ -117,15 +106,41 @@ function gapLabel(gap: number): string {
 export default function BenchmarkingMaturity() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
+  const { items: rawItems, isLoading } = useMaturityData();
   const [search, setSearch] = useState('');
   const [showAssessment, setShowAssessment] = useState(false);
   const [assessStep, setAssessStep] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [assessDone, setAssessDone] = useState(false);
 
-  const overallCurrent = Math.round(DIMENSIONS.reduce((s, d) => s + d.current, 0) / DIMENSIONS.length);
+  if (isLoading) return <PageSkeleton />;
+
+  // Map Supabase maturity_assessments rows to MaturityDimension shape
+  const DIMENSIONS: MaturityDimension[] = (rawItems as any[]).map(item => ({
+    dimension: item.dimension || item.name || 'Unknown',
+    current: item.current_level ?? item.current ?? 1,
+    target: item.target_level ?? item.target ?? 5,
+    gap: item.gap ?? Math.max(0, (item.target_level ?? item.target ?? 5) - (item.current_level ?? item.current ?? 1)),
+    priority: item.priority || item.priority_actions || '',
+    owner: item.owner || item.assigned_to || 'Unassigned',
+  }));
+
+  const radarData = DIMENSIONS.map(d => ({
+    dimension: d.dimension,
+    current: d.current,
+    target: d.target,
+  }));
+
+  const ASSESSMENT_QUESTIONS = DIMENSIONS.map(d => ({
+    dimension: d.dimension,
+    owner: d.owner,
+    question: `Rate the current maturity of "${d.dimension}" on a scale of 1–5.`,
+    hint: d.priority,
+  }));
+
+  const overallCurrent = DIMENSIONS.length > 0 ? Math.round(DIMENSIONS.reduce((s, d) => s + d.current, 0) / DIMENSIONS.length) : 0;
   const dimensionsAtTarget = DIMENSIONS.filter(d => d.gap === 0).length;
-  const gapScore = (DIMENSIONS.reduce((s, d) => s + d.gap, 0) / DIMENSIONS.length).toFixed(1);
+  const gapScore = DIMENSIONS.length > 0 ? (DIMENSIONS.reduce((s, d) => s + d.gap, 0) / DIMENSIONS.length).toFixed(1) : '0.0';
   const industryPercentile = 68;
 
   const filteredDimensions = DIMENSIONS.filter(d =>
@@ -136,7 +151,7 @@ export default function BenchmarkingMaturity() {
 
   const totalGap = DIMENSIONS.reduce((s, d) => s + d.gap, 0);
   const closedGap = DIMENSIONS.filter(d => d.gap === 0).length;
-  const trajectoryPct = Math.round((closedGap / DIMENSIONS.length) * 100);
+  const trajectoryPct = DIMENSIONS.length > 0 ? Math.round((closedGap / DIMENSIONS.length) * 100) : 0;
 
   return (
     <div className="space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
@@ -155,7 +170,7 @@ export default function BenchmarkingMaturity() {
             variant="outline"
             size="sm"
             style={{ borderRadius: 0 }}
-            onClick={() => toast.success('Maturity report exported')}
+            onClick={() => exportCsv(DIMENSIONS, 'maturity-dimensions.csv')}
           >
             <Export size={14} className="mr-1" /> Export Report
           </Button>

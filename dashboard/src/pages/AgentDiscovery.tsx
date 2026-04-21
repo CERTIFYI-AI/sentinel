@@ -9,6 +9,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { StatusBadge, BulkActionToolbar, PaginationBar, CrudModal, FormSection, FormFooter, MetaBar, ActivityTimeline, useSortAndPage, Th, TInput, TSelect, TTextarea, TToggle } from "@/components/ui/crud-helpers";
 import { toast } from "sonner";
+import { useAgentsData } from "@/hooks/useAgentsData";
 
 const AGENT_TYPES = ["LLM","Rule-Based","Hybrid","Multi-Agent","Classical ML","Robotic Process Automation"];
 const AUTH_METHODS = ["API Key","OAuth 2.0","mTLS","Bearer Token","Basic Auth","SAML"];
@@ -29,7 +30,10 @@ const SEED: any[] = [
 const EMPTY: any = { name:"", type:"LLM", endpoint:"", authMethod:"API Key", status:"Discovered", riskScore:"Medium", discoveryMethod:"Manual Registration", ownerTeam:"", scanFreq:"Daily", enabled:true, description:"", tags:[] };
 
 export default function AgentDiscovery() {
-  const [items, setItems] = useState(SEED);
+  const { items: sbItems, isLoading, saveAgents, removeAgents } = useAgentsData()
+  const [localItems, setLocalItems] = useState<any[]>([])
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set())
+  const items = [...localItems, ...sbItems.filter((i:any) => !localItems.find((l:any) => l.id === i.id))].filter((i:any) => !deletedIds.has(i.id))
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [modal, setModal] = useState<"create"|"edit"|"view"|null>(null);
@@ -51,23 +55,27 @@ export default function AgentDiscovery() {
   const save = (draft = false) => {
     if (!form.name.trim()) { toast.error("Agent name is required"); return; }
     if (!form.endpoint.trim()) { toast.error("Endpoint URL is required"); return; }
-    setSaving(true);
-    setTimeout(() => {
-      const status = draft ? "Discovered" : (form.status || "Discovered");
-      if (editId) {
-        setItems(p => p.map(i => i.id === editId ? { ...i, ...form, status, updatedAt:new Date().toISOString().slice(0,10) } : i));
-        toast.success("Agent updated");
+    try {
+      const result = await saveAgents({ ...form, status, updatedAt: new Date().toISOString().slice(0,10) })
+      if (modal === "edit" && editId) {
+        setLocalItems(p => p.map(i => i.id === editId ? { ...i, ...form, status, updatedAt: new Date().toISOString().slice(0,10) } : i))
       } else {
-        const id = `AGT-${String(items.length+1).padStart(3,"0")}`;
-        setItems(p => [...p, { ...form, status, id, lastSeen:new Date().toISOString(), createdAt:new Date().toISOString().slice(0,10), updatedAt:new Date().toISOString().slice(0,10), createdBy:"admin" }]);
-        toast.success("Agent registered");
+        setLocalItems(p => [{ ...form, status, id: result?.id || `AGT-${Date.now()}`, lastSeen: new Date().toISOString(), createdAt: new Date().toISOString().slice(0,10), updatedAt: new Date().toISOString().slice(0,10), createdBy: 'admin' }, ...p])
       }
-      setSaving(false); setModal(null); setForm(EMPTY); setEditId(null);
+    } catch {}
+    setModal(null); setForm(EMPTY); setEditId(null);
     }, 700);
   };
 
   const openEdit = (item: any) => { setForm({ ...item }); setEditId(item.id); setModal("edit"); };
-  const doDelete = () => { setItems(p => p.filter(i => i.id !== deleteTarget?.id)); setDeleteTarget(null); toast.success("Agent removed"); };
+  const doDelete = async () => {
+    if (deleteTarget) {
+      setDeletedIds(p => new Set([...p, deleteTarget.id]))
+      try { await removeAgents(deleteTarget.id) } catch {}
+      setDeleteTarget(null)
+      toast.success("Agent removed")
+    }
+  };
 
   function HealthDot({ status }: { status: string }) {
     const color = status === "Confirmed" || status === "Monitored" ? "#22c55e" : status === "Under Review" || status === "Discovered" ? "#f59e0b" : "#ef4444";

@@ -1,57 +1,52 @@
+// @ts-nocheck
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
-const TENANT_ID = 'default'
-
-export async function fetchAllIncidents(): Promise<any[]> {
-  if (!isSupabaseConfigured() || !supabase) return []
-  try {
-    const { data, error } = await supabase
-      .from('incidents')
-      .select('*')
-      .eq('tenant_id', TENANT_ID)
-      .order('created_at', { ascending: false })
-    if (error) {
-      if (error.message.includes('tenant_id')) {
-        const { data: d2 } = await supabase.from('incidents').select('*').order('created_at', { ascending: false })
-        return d2 ?? []
-      }
-      console.warn('[incidentService] fetch failed:', error.message); return []
-    }
-    return data ?? []
-  } catch (e) { return [] }
+export type IncidentRecord = {
+  id: string
+  org_id?: string
+  title: string
+  description?: string
+  severity?: string
+  status?: string
+  type?: string
+  affected_system?: string
+  detected_at?: string
+  resolved_at?: string
+  assignee_id?: string
+  metadata?: Record<string,any>
+  created_at: string
+  updated_at: string
 }
 
-export async function upsertIncident(record: Record<string, unknown>): Promise<any> {
-  if (!isSupabaseConfigured() || !supabase) return record
+export async function fetchAllIncidents(filters: Record<string,any> = {}): Promise<IncidentRecord[]> {
+  if (!isSupabaseConfigured() || !supabase) return []
   try {
-    const { data, error } = await supabase
-      .from('incidents')
-      .upsert({ ...record, tenant_id: TENANT_ID })
-      .select()
-      .single()
-    if (error) {
-      if (error.message.includes('tenant_id')) {
-        const { data: d2 } = await supabase.from('incidents').upsert(record).select().single()
-        return d2 ?? record
-      }
-      console.warn('[incidentService] upsert failed:', error.message); return record
-    }
-    return data
-  } catch (e) { return record }
+    let q = supabase.from('incidents').select('*').order('created_at', { ascending: false })
+    if (filters.severity) q = q.eq('severity', filters.severity)
+    if (filters.status) q = q.eq('status', filters.status)
+    const { data, error } = await q
+    if (error) { console.warn('[incidentService] fetch:', error.message); return [] }
+    return (data ?? []) as IncidentRecord[]
+  } catch { return [] }
+}
+
+export async function upsertIncident(record: Partial<IncidentRecord>): Promise<IncidentRecord | null> {
+  if (!isSupabaseConfigured() || !supabase) return null
+  try {
+    const { data, error } = await supabase.from('incidents').upsert(record).select().single()
+    if (error) { console.warn('[incidentService] upsert:', error.message); return null }
+    return data as IncidentRecord
+  } catch { return null }
 }
 
 export async function deleteIncident(id: string): Promise<boolean> {
   if (!isSupabaseConfigured() || !supabase) return false
   try {
-    const { error } = await supabase
-      .from('incidents')
-      .delete()
-      .eq('id', id)
-    if (error) { console.warn('[incidentService] delete failed:', error.message); return false }
+    const { error } = await supabase.from('incidents').delete().eq('id', id)
+    if (error) { console.warn('[incidentService] delete:', error.message); return false }
     return true
-  } catch (e) { return false }
+  } catch { return false }
 }
 
-// Backward-compatible aliases
 export const fetchIncidents = fetchAllIncidents
 export const saveIncident = upsertIncident

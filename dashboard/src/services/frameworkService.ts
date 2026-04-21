@@ -1,27 +1,48 @@
-import { supabase, isSupabaseConfigured } from '@/lib/supabase'
+// @ts-nocheck
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
-const TENANT_ID = 'TNT-001'
-
-export interface FrameworkRecord {
+export type FrameworkRecord = {
   id: string
+  org_id?: string
   name: string
-  version: string
-  status: string
-  description: string
-  tenantId: string
-  createdAt: string
-  updatedAt: string
+  version?: string
+  description?: string
+  category?: string
+  status?: string
+  compliance_score?: number
+  controls_count?: number
+  metadata?: Record<string,any>
+  created_at: string
+  updated_at: string
 }
 
-export async function fetchFrameworks(): Promise<FrameworkRecord[]> {
+export async function fetchAllFrameworks(filters: Record<string,any> = {}): Promise<FrameworkRecord[]> {
   if (!isSupabaseConfigured() || !supabase) return []
   try {
-    const { data, error } = await supabase
-      .from('Framework')
-      .select('*')
-      .eq('tenantId', TENANT_ID)
-      .order('name', { ascending: true })
-    if (error) { console.warn('[frameworkService] fetch failed:', error.message); return [] }
-    return (data || []) as FrameworkRecord[]
-  } catch (e) { return [] }
+    let q = supabase.from('frameworks').select('*').order('name', { ascending: true })
+    if (filters.status) q = q.eq('status', filters.status)
+    const { data, error } = await q
+    if (error) { console.warn('[frameworkService] fetch:', error.message); return [] }
+    return (data ?? []) as FrameworkRecord[]
+  } catch { return [] }
 }
+
+export async function upsertFramework(record: Partial<FrameworkRecord>): Promise<FrameworkRecord | null> {
+  if (!isSupabaseConfigured() || !supabase) return null
+  try {
+    const { data, error } = await supabase.from('frameworks').upsert(record).select().single()
+    if (error) { console.warn('[frameworkService] upsert:', error.message); return null }
+    return data as FrameworkRecord
+  } catch { return null }
+}
+
+export async function deleteFramework(id: string): Promise<boolean> {
+  if (!isSupabaseConfigured() || !supabase) return false
+  try {
+    const { error } = await supabase.from('frameworks').delete().eq('id', id)
+    if (error) { console.warn('[frameworkService] delete:', error.message); return false }
+    return true
+  } catch { return false }
+}
+
+export const fetchFrameworks = fetchAllFrameworks

@@ -20,8 +20,9 @@ import {
 } from '../../components/ui/select';
 import { Progress } from '../../components/ui/progress';
 import {
-  VENDORS, Vendor, MODELS, severityColor, statusColor, formatDate,
+  Vendor, MODELS, severityColor, statusColor, formatDate,
 } from '../../data/seed';
+import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { useSettingsStore } from '../../stores/settingsStore';
 
 // WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
@@ -91,9 +92,9 @@ function vsqStatusStyle(status: VSQStatus): { bg: string; color: string } {
 export default function VendorRegistry() {
   const { orgName } = useSettingsStore();
   const navigate = useNavigate();
-  const [vendors, setVendors] = useState<Vendor[]>(VENDORS);
-  const { vendors: supabaseVendors } = useVendorsData();
-  useEffect(() => { if (supabaseVendors.length > 0) setVendors(supabaseVendors as any); }, [supabaseVendors]);
+  const { vendors: supabaseVendors, isLoading: vendorsLoading } = useVendorsData();
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  useEffect(() => { setVendors(supabaseVendors as any); }, [supabaseVendors]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
@@ -108,6 +109,8 @@ export default function VendorRegistry() {
     setToasts(prev => [...prev, { id, text, type }]);
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
   }, []);
+
+  if (vendorsLoading) return <PageSkeleton />;
 
   // Metrics
   const totalVendors = vendors.length;

@@ -2,15 +2,17 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
 const TENANT_ID = 'default'
 
-export async function fetchAllTasks(): Promise<any[]> {
+export async function fetchAllTasks(filters: Record<string,any> = {}): Promise<any[]> {
   if (!isSupabaseConfigured() || !supabase) return []
   try {
     const { data, error } = await supabase
       .from('tasks')
       .select('*')
-      .eq('tenant_id', TENANT_ID)
       .order('created_at', { ascending: false })
-    if (error) { console.warn('[taskService] fetch failed:', error.message); return [] }
+    if (error) {
+      console.warn('[taskService] fetch failed:', error.message)
+      return []
+    }
     return data ?? []
   } catch (e) { return [] }
 }

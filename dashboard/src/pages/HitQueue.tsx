@@ -9,6 +9,15 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { StatusBadge, BulkActionToolbar, PaginationBar, CrudModal, FormSection, FormFooter, MetaBar, ActivityTimeline, useSortAndPage, Th, TInput, TSelect, TTextarea } from "@/components/ui/crud-helpers";
 import { toast } from "sonner";
+import { useHitlItemData } from '@/hooks/useHitlItemData'
+import { PageSkeleton } from '@/components/ui/PageSkeleton'
+
+function exportCsv(rows: any[], filename: string) {
+  if (!rows.length) return
+  const keys = Object.keys(rows[0])
+  const csv = [keys.join(','), ...rows.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n')
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = filename; a.click()
+}
 
 const QUEUES = ["Bias Review Queue","Risk Assessment Queue","Vendor Approval Queue","Incident Triage Queue","Policy Exception Queue"];
 const PRIORITIES = ["Urgent","High","Normal","Low"];
@@ -17,18 +26,10 @@ const AI_SYSTEMS = ["GPT-4o Risk Scorer v2","Fraud Detection v3","Credit Scoring
 const ASSIGNEES = ["Dr. Sarah Chen","Alex Kumar","James Wilson","Emma Rodriguez","Lisa Park","Mike Johnson","Priya Nair","Unassigned"];
 const STATUSES = ["Queued","Assigned","In Review","Pending Info","Resolved","Escalated","Archived"];
 
-const SEED: any[] = [
-  { id:"HQ-001", title:"Loan Application LN-89234 — AI Risk Score Override Request", queue:"Risk Assessment Queue", itemType:"Risk Alert", priority:"Urgent", aiSystem:"Credit Scoring Engine", assignee:"Dr. Sarah Chen", dueDate:"2026-04-19", slaHours:24, elapsedHours:18, status:"In Review", description:"AI scored application LOW risk but underwriter flagged several red flags not captured by model features. Requires manual override decision.", requester:"James T. (Underwriting)", createdAt:"2026-04-18", updatedAt:"2026-04-18", createdBy:"jtaylor" },
-  { id:"HQ-002", title:"HR Screening — Candidate Pool Fairness Check Q1", queue:"Bias Review Queue", itemType:"Bias Finding", priority:"High", aiSystem:"HR Screening Model", assignee:"Emma Rodriguez", dueDate:"2026-04-25", slaHours:72, elapsedHours:12, status:"Assigned", description:"Quarterly bias check on candidate shortlisting pool shows 78% male candidates advanced through automated screening. Manual fairness review required.", requester:"HR Compliance Team", createdAt:"2026-04-16", updatedAt:"2026-04-18", createdBy:"hr_compliance" },
-  { id:"HQ-003", title:"Vendor DeepLearning Inc — AI Risk Assessment", queue:"Vendor Approval Queue", itemType:"Vendor Request", priority:"Normal", aiSystem:"GPT-4o Risk Scorer v2", assignee:"Mike Johnson", dueDate:"2026-05-01", slaHours:120, elapsedHours:36, status:"Queued", description:"New AI vendor assessment for DeepLearning Inc's image classification API. Risk engine rated HIGH risk due to missing DPA and limited audit logs.", requester:"Procurement (Sarah P.)", createdAt:"2026-04-15", updatedAt:"2026-04-15", createdBy:"sproctor" },
-  { id:"HQ-004", title:"Incident INC-003 — Hallucination Triage", queue:"Incident Triage Queue", itemType:"Incident", priority:"High", aiSystem:"GPT-4o Risk Scorer v2", assignee:"Lisa Park", dueDate:"2026-04-20", slaHours:48, elapsedHours:47, status:"Pending Info", description:"Hallucinated regulatory citation submitted to board. Triage item: classify severity, assign owner, determine regulatory notification obligation.", requester:"CISO Office", createdAt:"2026-03-01", updatedAt:"2026-04-18", createdBy:"ciso_office" },
-  { id:"HQ-005", title:"Training Data Exception — Legacy 2020 Loan Dataset", queue:"Policy Exception Queue", itemType:"Policy Exception", priority:"Low", aiSystem:"Credit Scoring Engine", assignee:"Unassigned", dueDate:"2026-05-15", slaHours:240, elapsedHours:2, status:"Queued", description:"Team requests exception to data quality policy to use legacy loan dataset for retraining. Dataset has known quality score of 62/100, below 75/100 threshold.", requester:"Data Science (J. Wilson)", createdAt:"2026-04-18", updatedAt:"2026-04-18", createdBy:"jwilson" },
-];
-
 const EMPTY: any = { title:"", queue:"Risk Assessment Queue", itemType:"Risk Alert", priority:"Normal", aiSystem:"", assignee:"Unassigned", dueDate:"", slaHours:72, description:"", requester:"", status:"Queued" };
 
 export default function HitQueue() {
-  const [items, setItems] = useState(SEED);
+  const { items, isLoading, save: saveItem, remove: removeItem } = useHitlItemData()
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
@@ -47,27 +48,30 @@ export default function HitQueue() {
   }), [items, search, statusFilter, priorityFilter]);
 
   const sp = useSortAndPage(filtered, "title");
+
+  if (isLoading) return <PageSkeleton />
   const setF = (k: string) => (v: any) => setForm((f: any) => ({ ...f, [k]: v }));
 
-  const save = (draft = false) => {
+  const save = async (draft = false) => {
     if (!form.title.trim()) { toast.error("Title is required"); return; }
     setSaving(true);
-    setTimeout(() => {
+    try {
       const status = draft ? "Queued" : (form.status || "Queued");
-      if (editId) {
-        setItems(p => p.map(i => i.id === editId ? { ...i, ...form, status, updatedAt:new Date().toISOString().slice(0,10) } : i));
-        toast.success("Queue item updated");
-      } else {
-        const id = `HQ-${String(items.length+1).padStart(3,"0")}`;
-        setItems(p => [...p, { ...form, status, id, elapsedHours:0, createdAt:new Date().toISOString().slice(0,10), updatedAt:new Date().toISOString().slice(0,10), createdBy:"admin" }]);
-        toast.success("Queue item created");
-      }
-      setSaving(false); setModal(null); setForm(EMPTY); setEditId(null);
-    }, 700);
+      const payload = editId
+        ? { ...form, status, id: editId }
+        : { ...form, status };
+      await saveItem(payload);
+      setModal(null); setForm(EMPTY); setEditId(null);
+    } catch { /* toast handled by hook */ }
+    setSaving(false);
   };
 
   const openEdit = (item: any) => { setForm({ ...item }); setEditId(item.id); setModal("edit"); };
-  const doDelete = () => { setItems(p => p.filter(i => i.id !== deleteTarget?.id)); setDeleteTarget(null); toast.success("Item removed"); };
+  const doDelete = async () => {
+    if (!deleteTarget) return;
+    await removeItem(deleteTarget.id);
+    setDeleteTarget(null);
+  };
 
   const priColors: Record<string, string> = { Urgent:"#ef4444", High:"#f97316", Normal:"#3b82f6", Low:"#22c55e" };
 
@@ -91,7 +95,7 @@ export default function HitQueue() {
           <p className="text-sm text-[hsl(var(--text-3))] mt-0.5">Manage human review queue for AI decisions requiring manual intervention</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5"><Export size={14} />Export</Button>
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportCsv(items, 'hitl-queue.csv')}><Export size={14} />Export</Button>
           <Button size="sm" className="gap-1.5" onClick={() => { setForm(EMPTY); setEditId(null); setModal("create"); }}><Plus size={14} />Add to Queue</Button>
         </div>
       </div>
@@ -115,7 +119,7 @@ export default function HitQueue() {
         </select>
       </div>
 
-      <BulkActionToolbar count={sp.selectedIds.size} onClear={sp.clearSelected} onDelete={() => { setItems(p=>p.filter(i=>!sp.selectedIds.has(i.id))); sp.clearSelected(); toast.success("Removed selected"); }} onExport={() => toast.success("Exported")} />
+      <BulkActionToolbar count={sp.selectedIds.size} onClear={sp.clearSelected} onDelete={async () => { for (const id of sp.selectedIds) { await removeItem(id); } sp.clearSelected(); }} onExport={() => exportCsv(sp.paged.filter((i:any)=>sp.selectedIds.has(i.id)), 'hitl-queue-selected.csv')} />
 
       <Card><CardContent className="p-0">
         {sp.paged.length === 0 ? (

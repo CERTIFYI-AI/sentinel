@@ -18,12 +18,12 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '../../components/ui/select';
 import {
-  AGENTS, Agent, USERS, VENDORS,
+  Agent, USERS, VENDORS,
   severityColor, statusColor, formatDate, formatNumber, timeAgo,
 } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
-
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+import { useAgentsData } from '../../hooks/useAgentsData';
+import { PageSkeleton } from '../../components/ui/PageSkeleton';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -43,7 +43,7 @@ function trendIndicator(calls: number) {
 
 export default function AgentDiscovery() {
   const { orgName } = useSettingsStore();
-  const [agents, setAgents] = useState<Agent[]>(AGENTS);
+  const { items: agentList, isLoading, saveAgents, removeAgents } = useAgentsData();
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
@@ -53,7 +53,6 @@ export default function AgentDiscovery() {
   const [registerOpen, setRegisterOpen] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
-  const [isLoading] = useState(false);
 
   const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
     const id = Date.now();
@@ -61,14 +60,16 @@ export default function AgentDiscovery() {
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
   }, []);
 
+  if (isLoading) return <PageSkeleton />;
+
   // Metrics
-  const totalAgents = agents.length;
-  const confirmedAgents = agents.filter(a => a.status === 'confirmed').length;
-  const shadowAgents = agents.filter(a => a.status === 'shadow').length;
-  const highRiskAgents = agents.filter(a => a.risk === 'high' || a.risk === 'critical').length;
+  const totalAgents = agentList.length;
+  const confirmedAgents = agentList.filter(a => a.status === 'confirmed').length;
+  const shadowAgents = agentList.filter(a => a.status === 'shadow').length;
+  const highRiskAgents = agentList.filter(a => a.risk === 'high' || a.risk === 'critical').length;
 
   // Filters
-  const filtered = agents.filter(a => {
+  const filtered = agentList.filter(a => {
     const matchSearch = a.id.toLowerCase().includes(search.toLowerCase()) ||
       a.name.toLowerCase().includes(search.toLowerCase()) ||
       a.owner.toLowerCase().includes(search.toLowerCase());
@@ -86,9 +87,9 @@ export default function AgentDiscovery() {
     }, 2000);
   };
 
-  const handleQuarantine = () => {
+  const handleQuarantine = async () => {
     if (!quarantineTarget) return;
-    setAgents(prev => prev.map(a => a.id === quarantineTarget.id ? { ...a, status: 'quarantined' as Agent['status'] } : a));
+    await saveAgents({ ...quarantineTarget, status: 'quarantined' });
     toast(`${quarantineTarget.name} quarantined — all API calls blocked`, 'error');
     setQuarantineTarget(null);
   };
@@ -101,14 +102,14 @@ export default function AgentDiscovery() {
     toast(`Ownership request sent for ${agent.name}`, 'info');
   };
 
-  const handleWhitelist = (agent: Agent) => {
-    setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, status: 'confirmed' as Agent['status'] } : a));
+  const handleWhitelist = async (agent: Agent) => {
+    await saveAgents({ ...agent, status: 'confirmed' });
     toast(`${agent.name} whitelisted — moved to confirmed`, 'success');
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteTarget) return;
-    setAgents(prev => prev.filter(a => a.id !== deleteTarget.id));
+    await removeAgents(deleteTarget.id);
     toast(`${deleteTarget.id} removed`, 'error');
     setDeleteTarget(null);
   };
@@ -484,12 +485,12 @@ export default function AgentDiscovery() {
             <DialogTitle>Register Agent</DialogTitle>
           </DialogHeader>
           <RegisterAgentForm
-            onSubmit={(newAgent) => {
-              setAgents(prev => [...prev, newAgent]);
-              toast(`${newAgent.id} ${newAgent.name} registered`);
+            onSubmit={async (newAgent) => {
+              await saveAgents(newAgent);
+              toast(`${newAgent.name} registered`, 'success');
               setRegisterOpen(false);
             }}
-            nextId={`AGT-${String(agents.length + 1).padStart(3, '0')}`}
+            nextId={`AGT-${String(agentList.length + 1).padStart(3, '0')}`}
           />
         </DialogContent>
       </Dialog>

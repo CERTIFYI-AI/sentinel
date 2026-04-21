@@ -1,27 +1,24 @@
+// @ts-nocheck
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { BIAS_AUDITS } from '../../data/seed'
-import type { BiasAudit } from '../../data/seed'
 import { fetchAllBiasAudits, upsertBiasAudit, deleteBiasAudit } from '../../services/biasAuditService'
+import { toast } from 'sonner'
 
 const QUERY_KEY = ['bias_audits']
 
 export function useBiasAudits() {
-  return useQuery<BiasAudit[]>({
+  return useQuery({
     queryKey: QUERY_KEY,
-    queryFn: async () => {
-      const result = await fetchAllBiasAudits()
-      return result && result.length > 0 ? result : BIAS_AUDITS
-    },
+    queryFn: () => fetchAllBiasAudits(),
     staleTime: 30_000,
-    placeholderData: BIAS_AUDITS,
   })
 }
 
 export function useUpsertBiasAudit() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (record: Partial<BiasAudit>) => upsertBiasAudit(record as any),
-    onSuccess: () => qc.invalidateQueries({ queryKey: QUERY_KEY }),
+    mutationFn: (record: any) => upsertBiasAudit(record),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: QUERY_KEY }); toast.success('Bias audit saved') },
+    onError: () => toast.error('Failed to save'),
   })
 }
 
@@ -29,6 +26,7 @@ export function useDeleteBiasAudit() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => deleteBiasAudit(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: QUERY_KEY }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: QUERY_KEY }); toast.success('Deleted') },
+    onError: () => toast.error('Failed to delete'),
   })
 }

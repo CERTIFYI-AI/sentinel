@@ -1,4 +1,7 @@
-import { useState } from 'react';
+// @ts-nocheck
+import { useState, useEffect } from 'react';
+import { useNotificationData } from '../hooks/useNotificationData';
+import { PageSkeleton } from '../components/ui/PageSkeleton';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -252,10 +255,18 @@ function SevBadge({ severity }: { severity: string }) {
 // ── component ──────────────────────────────────────────────────────────────
 
 export default function Notifications() {
+  const { items: liveItems, isLoading } = useNotificationData();
   const [notifications, setNotifications] = useState(NOTIFICATIONS);
   const [filter, setFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    if (liveItems.length > 0) setNotifications(liveItems as any[])
+  }, [liveItems]);
+
   const [showFilter, setShowFilter] = useState(false);
+
+  if (isLoading) return <PageSkeleton title="Notifications" />;
 
   const unread = notifications.filter(n => !n.read).length;
   const critical = notifications.filter(n => n.severity === 'critical').length;

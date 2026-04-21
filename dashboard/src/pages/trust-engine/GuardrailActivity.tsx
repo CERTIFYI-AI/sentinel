@@ -19,6 +19,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../
 import { GUARDRAIL_EVENTS, GuardrailEvent, USERS, severityColor } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useChartTheme } from '../../hooks/useChartTheme';
+import { usePolicyFirewallData } from '../../hooks/usePolicyFirewallData';
+import { PageSkeleton } from '../../components/ui/PageSkeleton';
 
 // WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
@@ -122,6 +124,7 @@ function MetricTile({ label, value, variant, icon, sub }: {
 
 export default function GuardrailActivity() {
   const { orgName } = useSettingsStore();
+  const { items: firewallRules, isLoading: firewallLoading, savePolicyFirewall, removePolicyFirewall } = usePolicyFirewallData();
   const [events, setEvents] = useState<ExtGuardrailEvent[]>(EXTENDED_EVENTS);
   const [search, setSearch] = useState('');
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
@@ -270,6 +273,8 @@ export default function GuardrailActivity() {
       }
     });
   }, [autoEscalation, events, escalatedMap, generateIncidentId, toast]);
+
+  if (firewallLoading) return <PageSkeleton />;
 
   return (
     <TooltipProvider>

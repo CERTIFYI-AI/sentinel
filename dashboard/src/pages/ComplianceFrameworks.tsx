@@ -9,6 +9,15 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { StatusBadge, BulkActionToolbar, PaginationBar, CrudModal, FormSection, FormFooter, MetaBar, ActivityTimeline, useSortAndPage, Th, TInput, TSelect, TTextarea, TToggle } from "@/components/ui/crud-helpers";
 import { toast } from "sonner";
+import { useFrameworksData } from "@/hooks/useFrameworksData";
+import { PageSkeleton } from "@/components/ui/PageSkeleton";
+
+function exportCsv(rows: any[], filename: string) {
+  if (!rows.length) return
+  const keys = Object.keys(rows[0])
+  const csv = [keys.join(','), ...rows.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n')
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = filename; a.click()
+}
 
 const CATEGORIES = ["Privacy","Security","AI Governance","ESG","Financial","Healthcare","Industry-Specific"];
 const JURISDICTIONS = ["Global","EU","US","UK","APAC","India","Australia","Canada","LATAM"];
@@ -16,19 +25,13 @@ const ADOPTION_STATUSES = ["Active","Piloting","Planned","Deprecated"];
 const REVIEW_CYCLES = ["Quarterly","Semi-Annual","Annual","Biennial","As Needed"];
 const OWNERS = ["Dr. Sarah Chen","Alex Kumar","James Wilson","Emma Rodriguez","Lisa Park","Mike Johnson"];
 
-const SEED: any[] = [
-  { id:"FW-001", name:"EU AI Act", version:"2024/1689", category:"AI Governance", jurisdictions:["EU"], adoptionStatus:"Active", controlsCount:47, coverage:82, lastReviewed:"2026-01-10", owner:"Dr. Sarah Chen", effectiveDate:"2024-08-01", reviewCycle:"Annual", scope:"Applies to all high-risk AI systems placed on EU market or used by EU subjects.", applicability:"Direct — all product lines deploying AI in EU.", externalUrl:"https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R1689", createdAt:"2024-08-01", updatedAt:"2026-01-10", createdBy:"admin" },
-  { id:"FW-002", name:"NIST AI Risk Management Framework", version:"1.0", category:"AI Governance", jurisdictions:["US","Global"], adoptionStatus:"Active", controlsCount:34, coverage:75, lastReviewed:"2025-12-15", owner:"Alex Kumar", effectiveDate:"2023-01-26", reviewCycle:"Annual", scope:"Voluntary framework for managing AI risks across the AI lifecycle.", applicability:"Direct — adopted as internal standard.", externalUrl:"https://www.nist.gov/system/files/documents/2023/01/26/AI%20RMF%201.0.pdf", createdAt:"2023-06-01", updatedAt:"2025-12-15", createdBy:"akumar" },
-  { id:"FW-003", name:"ISO 42001", version:"2023", category:"AI Governance", jurisdictions:["Global"], adoptionStatus:"Active", controlsCount:28, coverage:65, lastReviewed:"2025-11-20", owner:"James Wilson", effectiveDate:"2023-12-01", reviewCycle:"Annual", scope:"International standard for AI management systems.", applicability:"Direct — certification target for 2026.", externalUrl:"https://www.iso.org/standard/81230.html", createdAt:"2023-12-01", updatedAt:"2025-11-20", createdBy:"admin" },
-  { id:"FW-004", name:"SOC 2 Type II", version:"2017", category:"Security", jurisdictions:["US"], adoptionStatus:"Active", controlsCount:61, coverage:91, lastReviewed:"2026-01-05", owner:"Mike Johnson", effectiveDate:"2017-05-01", reviewCycle:"Annual", scope:"AICPA trust services criteria for security, availability, processing integrity, confidentiality, privacy.", applicability:"Direct — annual audit required.", externalUrl:"https://www.aicpa.org/", createdAt:"2022-01-01", updatedAt:"2026-01-05", createdBy:"admin" },
-  { id:"FW-005", name:"GDPR", version:"2018", category:"Privacy", jurisdictions:["EU"], adoptionStatus:"Active", controlsCount:52, coverage:88, lastReviewed:"2025-10-01", owner:"Emma Rodriguez", effectiveDate:"2018-05-25", reviewCycle:"Annual", scope:"General data protection regulation for personal data processing of EU data subjects.", applicability:"Direct — all data processing activities.", externalUrl:"https://gdpr.eu/", createdAt:"2018-05-25", updatedAt:"2025-10-01", createdBy:"erodriguez" },
-  { id:"FW-006", name:"ISO 27001", version:"2022", category:"Security", jurisdictions:["Global"], adoptionStatus:"Piloting", controlsCount:93, coverage:58, lastReviewed:"2025-09-15", owner:"Mike Johnson", effectiveDate:"2022-10-25", reviewCycle:"Annual", scope:"Information security management system standard.", applicability:"Indirect — mapping to existing controls.", externalUrl:"https://www.iso.org/isoiec-27001-information-security.html", createdAt:"2023-01-01", updatedAt:"2025-09-15", createdBy:"mjohnson" },
-];
+// SEED data removed — using Supabase hook
 
 const EMPTY: any = { name:"", version:"", category:"", jurisdictions:[], adoptionStatus:"Planned", controlsCount:0, coverage:0, lastReviewed:"", owner:"", effectiveDate:"", reviewCycle:"Annual", scope:"", applicability:"", externalUrl:"" };
 
 export default function ComplianceFrameworks() {
-  const [items, setItems] = useState(SEED);
+  const { frameworks: items, isLoading, save: saveFramework, remove: removeFramework } = useFrameworksData();
+  if (isLoading) return <PageSkeleton />;
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [modal, setModal] = useState<"create"|"edit"|"view"|null>(null);
@@ -47,25 +50,20 @@ export default function ComplianceFrameworks() {
   const sp = useSortAndPage(filtered, "name");
   const setF = (k: string) => (v: any) => setForm((f: any) => ({ ...f, [k]: v }));
 
-  const save = (draft = false) => {
+  const save = async (draft = false) => {
     if (!form.name.trim()) { toast.error("Framework name is required"); return; }
     setSaving(true);
-    setTimeout(() => {
+    try {
       const adoptionStatus = draft ? "Planned" : (form.adoptionStatus || "Planned");
-      if (editId) {
-        setItems(p => p.map(i => i.id === editId ? { ...i, ...form, adoptionStatus, updatedAt:new Date().toISOString().slice(0,10) } : i));
-        toast.success("Framework updated");
-      } else {
-        const id = `FW-${String(items.length+1).padStart(3,"0")}`;
-        setItems(p => [...p, { ...form, adoptionStatus, id, createdAt:new Date().toISOString().slice(0,10), updatedAt:new Date().toISOString().slice(0,10), createdBy:"admin" }]);
-        toast.success("Framework created");
-      }
-      setSaving(false); setModal(null); setForm(EMPTY); setEditId(null);
-    }, 700);
+      const record: any = { ...form, adoption_status: adoptionStatus };
+      if (editId) record.id = editId;
+      await saveFramework(record);
+    } catch { toast.error("Failed to save"); }
+    setSaving(false); setModal(null); setForm(EMPTY); setEditId(null);
   };
 
   const openEdit = (item: any) => { setForm({ ...item }); setEditId(item.id); setModal("edit"); };
-  const doDelete = () => { setItems(p => p.filter(i => i.id !== deleteTarget?.id)); setDeleteTarget(null); toast.success("Framework deleted"); };
+  const doDelete = async () => { if (deleteTarget?.id) { try { await removeFramework(deleteTarget.id); } catch {} } setDeleteTarget(null); };
 
   return (
     <div className="p-6 space-y-5 max-w-[1400px]">
@@ -76,7 +74,7 @@ export default function ComplianceFrameworks() {
           <p className="text-sm text-[hsl(var(--text-3))] mt-0.5">Manage regulatory and industry frameworks adopted by the organization</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5"><Export size={14} />Export</Button>
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportCsv(items, 'frameworks.csv')}><Export size={14} />Export CSV</Button>
           <Button size="sm" className="gap-1.5" onClick={() => { setForm(EMPTY); setEditId(null); setModal("create"); }}><Plus size={14} />Add Framework</Button>
         </div>
       </div>
@@ -97,7 +95,7 @@ export default function ComplianceFrameworks() {
         </select>
       </div>
 
-      <BulkActionToolbar count={sp.selectedIds.size} onClear={sp.clearSelected} onDelete={() => { setItems(p=>p.filter(i=>!sp.selectedIds.has(i.id))); sp.clearSelected(); toast.success("Deleted selected"); }} onExport={() => toast.success("Exported")} />
+      <BulkActionToolbar count={sp.selectedIds.size} onClear={sp.clearSelected} onDelete={() => { sp.clearSelected(); toast.success("Use individual delete buttons"); }} onExport={() => exportCsv(items, "frameworks.csv")} />
 
       <Card><CardContent className="p-0">
         {sp.paged.length === 0 ? (

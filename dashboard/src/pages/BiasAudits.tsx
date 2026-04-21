@@ -9,6 +9,15 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { StatusBadge, BulkActionToolbar, PaginationBar, CrudModal, FormSection, FormFooter, MetaBar, ActivityTimeline, useSortAndPage, Th, TInput, TSelect, TTextarea, TToggle, TCheckGroup } from "@/components/ui/crud-helpers";
 import { toast } from "sonner";
+import { useBiasAuditsData } from '@/hooks/useBiasAuditsData'
+import { PageSkeleton } from '@/components/ui/PageSkeleton'
+
+function exportCsv(rows: any[], filename: string) {
+  if (!rows.length) return
+  const keys = Object.keys(rows[0])
+  const csv = [keys.join(','), ...rows.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n')
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = filename; a.click()
+}
 
 const ATTRIBUTES = ["Gender","Race / Ethnicity","Age","Disability","Religion","National Origin","Socioeconomic Status","Geography"];
 const METHODOLOGIES = ["Disparate Impact","Equal Opportunity","Demographic Parity","Calibration","Counterfactual Fairness","Custom"];
@@ -16,14 +25,6 @@ const FRAMEWORKS = ["EU AI Act","NIST AI RMF","ISO 42001","GDPR","US Executive O
 const SEVERITIES = ["Critical","High","Medium","Low","Informational"];
 const STATUSES = ["Draft","In Progress","Completed","Failed","Archived"];
 const MODELS = ["GPT-4o Risk Scorer v2","Fraud Detection v3","Credit Scoring Engine","HR Screening Model","NLP Classifier","Loan Approval AI"];
-
-const SEED: any[] = [
-  { id:"BA-001", name:"Q1 Bias Audit — HR Screening", model:"HR Screening Model", date:"2026-01-15", attributes:["Gender","Race / Ethnicity"], methodology:"Disparate Impact", dataset:"HR Dataset 2025", score:0.79, status:"Completed", severity:"High", auditor:"Dr. Sarah Chen", org:"Internal Audit", remediationRequired:true, framework:"EU AI Act", findings:"Disparate impact ratio of 0.79 detected on gender dimension. Hiring outcomes show 21% gap between protected and non-protected groups.", createdAt:"2026-01-02", updatedAt:"2026-01-15", createdBy:"admin" },
-  { id:"BA-002", name:"Credit Bias Check — Q4 2025", model:"Credit Scoring Engine", date:"2025-12-20", attributes:["Race / Ethnicity","Age"], methodology:"Equal Opportunity", dataset:"Credit Dataset v4", score:0.92, status:"Completed", severity:"Medium", auditor:"Alex Kumar", org:"Deloitte", remediationRequired:false, framework:"NIST AI RMF", findings:"Model passes equal opportunity metric with score of 0.92. Minor age-related disparity noted but within acceptable threshold.", createdAt:"2025-12-01", updatedAt:"2025-12-20", createdBy:"akumar" },
-  { id:"BA-003", name:"Fraud Detection Fairness Eval", model:"Fraud Detection v3", date:"2026-02-01", attributes:["Geography","Socioeconomic Status"], methodology:"Demographic Parity", dataset:"Transactions 2025", score:0.85, status:"In Progress", severity:"Medium", auditor:"Priya Nair", org:"EY", remediationRequired:false, framework:"ISO 42001", findings:"", createdAt:"2026-01-20", updatedAt:"2026-01-28", createdBy:"pnair" },
-  { id:"BA-004", name:"Loan Approval Equity Audit", model:"Loan Approval AI", date:"2026-03-10", attributes:["Gender","Age","Disability"], methodology:"Counterfactual Fairness", dataset:"Loan Applications 2025", score:null, status:"Draft", severity:"High", auditor:"James Wilson", org:"Internal", remediationRequired:true, framework:"EU AI Act", findings:"", createdAt:"2026-02-15", updatedAt:"2026-02-15", createdBy:"jwilson" },
-  { id:"BA-005", name:"NLP Classification Bias", model:"NLP Classifier", date:"2025-11-30", attributes:["Gender","National Origin"], methodology:"Calibration", dataset:"Text Corpus v2", score:0.61, status:"Failed", severity:"Critical", auditor:"Emma Rodriguez", org:"Internal Audit", remediationRequired:true, framework:"GDPR", findings:"Calibration error exceeds threshold. Gender and national origin show significant miscalibration. Immediate remediation required.", createdAt:"2025-11-01", updatedAt:"2025-12-01", createdBy:"erodriguez" },
-];
 
 const EMPTY: any = { name:"", model:"", date:"", attributes:[], methodology:"", dataset:"", periodFrom:"", periodTo:"", auditor:"", org:"", findings:"", severity:"Medium", remediationRequired:false, framework:"", status:"Draft" };
 
@@ -42,7 +43,7 @@ function ScoreBar({ score }: { score: number | null }) {
 }
 
 export default function BiasAudits() {
-  const [items, setItems] = useState(SEED);
+  const { items, isLoading, saveBiasAudits, removeBiasAudits } = useBiasAuditsData()
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [modal, setModal] = useState<"create"|"edit"|"view"|null>(null);
@@ -58,31 +59,34 @@ export default function BiasAudits() {
   }), [items, search, statusFilter]);
 
   const sp = useSortAndPage(filtered, "name");
+
+  if (isLoading) return <PageSkeleton />
   const setF = (k: string) => (v: any) => setForm((f: any) => ({ ...f, [k]: v }));
 
-  const save = (draft = false) => {
+  const save = async (draft = false) => {
     if (!draft && !form.name.trim()) { toast.error("Audit name is required"); return; }
     setSaving(true);
-    setTimeout(() => {
+    try {
       const status = draft ? "Draft" : (form.status || "Completed");
-      if (editId) {
-        setItems(p => p.map(i => i.id === editId ? { ...i, ...form, status, updatedAt: new Date().toISOString().slice(0,10) } : i));
-        toast.success("Updated");
-      } else {
-        const id = `BA-${String(items.length+1).padStart(3,"0")}`;
-        setItems(p => [...p, { ...form, status, id, score:null, createdAt:new Date().toISOString().slice(0,10), updatedAt:new Date().toISOString().slice(0,10), createdBy:"admin" }]);
-        toast.success("Created");
-      }
-      setSaving(false); setModal(null); setForm(EMPTY); setEditId(null);
-    }, 700);
+      const payload = editId
+        ? { ...form, status, id: editId }
+        : { ...form, status };
+      await saveBiasAudits(payload);
+      setModal(null); setForm(EMPTY); setEditId(null);
+    } catch { /* toast handled by hook */ }
+    setSaving(false);
   };
 
   const openEdit = (item: any) => {
-    setForm({ name:item.name, model:item.model, date:item.date, attributes:item.attributes, methodology:item.methodology, dataset:item.dataset, periodFrom:"", periodTo:"", auditor:item.auditor, org:item.org, findings:item.findings, severity:item.severity, remediationRequired:item.remediationRequired, framework:item.framework, status:item.status });
+    setForm({ name:item.name, model:item.model, date:item.date, attributes:item.attributes||[], methodology:item.methodology, dataset:item.dataset, periodFrom:"", periodTo:"", auditor:item.auditor, org:item.org, findings:item.findings, severity:item.severity, remediationRequired:item.remediationRequired, framework:item.framework, status:item.status });
     setEditId(item.id); setModal("edit");
   };
 
-  const doDelete = () => { setItems(p => p.filter(i => i.id !== deleteTarget?.id)); setDeleteTarget(null); toast.success("Deleted"); };
+  const doDelete = async () => {
+    if (!deleteTarget) return;
+    await removeBiasAudits(deleteTarget.id);
+    setDeleteTarget(null);
+  };
 
   return (
     <div className="p-6 space-y-5 max-w-[1400px]">
@@ -93,7 +97,7 @@ export default function BiasAudits() {
           <p className="text-sm text-[hsl(var(--text-3))] mt-0.5">Automated fairness auditing & bias detection for AI systems</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5"><Export size={14} />Export</Button>
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportCsv(items, 'bias-audits.csv')}><Export size={14} />Export</Button>
           <Button size="sm" className="gap-1.5" onClick={() => { setForm(EMPTY); setEditId(null); setModal("create"); }}><Plus size={14} />New Audit</Button>
         </div>
       </div>
@@ -114,7 +118,7 @@ export default function BiasAudits() {
         </select>
       </div>
 
-      <BulkActionToolbar count={sp.selectedIds.size} onClear={sp.clearSelected} onDelete={() => { setItems(p=>p.filter(i=>!sp.selectedIds.has(i.id))); sp.clearSelected(); toast.success("Deleted selected"); }} onExport={() => toast.success("Exported")} />
+      <BulkActionToolbar count={sp.selectedIds.size} onClear={sp.clearSelected} onDelete={async () => { for (const id of sp.selectedIds) { await removeBiasAudits(id); } sp.clearSelected(); }} onExport={() => exportCsv(sp.paged.filter((i:any)=>sp.selectedIds.has(i.id)), 'bias-audits-selected.csv')} />
 
       <Card><CardContent className="p-0">
         {sp.paged.length === 0 ? (

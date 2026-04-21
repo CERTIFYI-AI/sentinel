@@ -1,6 +1,15 @@
 import { useState } from 'react'
 import { CheckSquare, MagnifyingGlass, Plus, Eye, X, Export, Users, Warning, Pencil, Trash } from '@phosphor-icons/react'
 import { toast } from 'sonner'
+import { useConsentRecordsData } from '@/hooks/useConsentRecordsData'
+import { PageSkeleton } from '@/components/ui/PageSkeleton'
+
+function exportCsv(rows: any[], filename: string) {
+  if (!rows.length) return
+  const keys = Object.keys(rows[0])
+  const csv = [keys.join(','), ...rows.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n')
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = filename; a.click()
+}
 
 // WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
@@ -25,20 +34,7 @@ interface ConsentRecord {
   withdrawalReason?: string
 }
 
-const SEED: ConsentRecord[] = [
-  { id: 'CST-001', subject: 'Emma Wilson', email: 'e.wilson@acmefinancial.com', consentDate: '2026-01-15', expiryDate: '2027-01-15', status: 'Active', purposes: ['AI Credit Scoring', 'Fraud Detection', 'Marketing Personalization'], legalBasis: 'Consent', aiSystems: ['Credit Scoring Model v2.1', 'Fraud Detection Engine v4.2'], dataCategories: ['Financial History', 'Transaction Data', 'Behavioral Data'], version: '2.3', ipAddress: '192.168.1.100', channel: 'Web Portal' },
-  { id: 'CST-002', subject: 'Marcus Lee', email: 'm.lee@customer.com', consentDate: '2025-06-20', expiryDate: '2026-06-20', status: 'Active', purposes: ['AI Loan Assessment', 'Churn Prediction'], legalBasis: 'Consent', aiSystems: ['Loan Approval Model v3.0', 'Customer Churn Predictor v2.3'], dataCategories: ['Income Data', 'Credit History', 'Employment Data'], version: '2.1', ipAddress: '10.0.0.55', channel: 'Mobile App' },
-  { id: 'CST-003', subject: 'Grace Park', email: 'g.park@customer.com', consentDate: '2024-11-30', expiryDate: '2025-11-30', status: 'Expired', purposes: ['AI Credit Scoring'], legalBasis: 'Consent', aiSystems: ['Credit Scoring Model v2.1'], dataCategories: ['Financial History'], version: '1.8', ipAddress: '172.16.0.22', channel: 'Branch' },
-  { id: 'CST-004', subject: 'Raj Patel', email: 'r.patel@customer.com', consentDate: '2026-03-01', expiryDate: '2027-03-01', status: 'Withdrawn', purposes: ['AI Credit Scoring', 'Fraud Detection', 'Marketing Personalization', 'Churn Prediction'], legalBasis: 'Consent', aiSystems: ['Credit Scoring Model v2.1', 'Fraud Detection Engine v4.2', 'Customer Churn Predictor v2.3'], dataCategories: ['Financial History', 'Transaction Data', 'Behavioral Data', 'Communication Preferences'], version: '2.3', ipAddress: '192.168.2.88', channel: 'Web Portal', withdrawalDate: '2026-04-05', withdrawalReason: 'Subject objects to AI-based profiling for marketing purposes.' },
-  { id: 'CST-005', subject: 'Fatima Al-Hassan', email: 'f.alhassan@customer.com', consentDate: '2026-04-01', expiryDate: '2027-04-01', status: 'Pending', purposes: ['AI Loan Assessment'], legalBasis: 'Consent', aiSystems: ['Loan Approval Model v3.0'], dataCategories: ['Income Data', 'Employment Data'], version: '2.3', ipAddress: '10.10.5.201', channel: 'Mobile App' },
-  { id: 'CST-006', subject: 'Thomas Mueller', email: 't.mueller@acmefinancial.com', consentDate: '2025-09-12', expiryDate: '2027-09-12', status: 'Active', purposes: ['Fraud Detection', 'Risk Assessment'], legalBasis: 'Legitimate Interest', aiSystems: ['Fraud Detection Engine v4.2'], dataCategories: ['Transaction Data', 'Device Fingerprint'], version: '2.2', ipAddress: '172.31.0.15', channel: 'API' },
-  { id: 'CST-007', subject: 'Aisha Ogundimu', email: 'a.ogundimu@customer.com', consentDate: '2026-02-14', expiryDate: '2027-02-14', status: 'Active', purposes: ['AI Credit Scoring', 'Fraud Detection'], legalBasis: 'Contract', aiSystems: ['Credit Scoring Model v2.1', 'Fraud Detection Engine v4.2'], dataCategories: ['Financial History', 'Transaction Data', 'Credit History'], version: '2.3', ipAddress: '10.20.1.45', channel: 'Web Portal' },
-  { id: 'CST-008', subject: 'Hiroshi Tanaka', email: 'h.tanaka@customer.com', consentDate: '2025-12-01', expiryDate: '2026-12-01', status: 'Active', purposes: ['AI Credit Scoring', 'Churn Prediction', 'AI Loan Assessment'], legalBasis: 'Consent', aiSystems: ['Credit Scoring Model v2.1', 'Customer Churn Predictor v2.3', 'Loan Approval Model v3.0'], dataCategories: ['Financial History', 'Behavioral Data', 'Income Data'], version: '2.2', ipAddress: '10.15.0.88', channel: 'Web Portal' },
-  { id: 'CST-009', subject: 'Sofia Rossi', email: 's.rossi@customer.com', consentDate: '2025-08-10', expiryDate: '2026-08-10', status: 'Expired', purposes: ['Fraud Detection', 'Marketing Personalization'], legalBasis: 'Consent', aiSystems: ['Fraud Detection Engine v4.2'], dataCategories: ['Transaction Data', 'Communication Preferences'], version: '2.0', ipAddress: '10.30.2.19', channel: 'Mobile App' },
-  { id: 'CST-010', subject: 'Kwame Asante', email: 'k.asante@customer.com', consentDate: '2026-04-09', expiryDate: '2027-04-09', status: 'Active', purposes: ['AI Credit Scoring', 'Fraud Detection', 'Risk Assessment'], legalBasis: 'Consent', aiSystems: ['Credit Scoring Model v2.1', 'Fraud Detection Engine v4.2'], dataCategories: ['Financial History', 'Transaction Data', 'Credit History'], version: '2.3', ipAddress: '192.168.5.120', channel: 'Branch' },
-  { id: 'CST-011', subject: 'Ana Rodriguez', email: 'a.rodriguez@customer.com', consentDate: '2026-03-15', expiryDate: '2027-03-15', status: 'Active', purposes: ['AI Loan Assessment', 'AI Credit Scoring'], legalBasis: 'Consent', aiSystems: ['Loan Approval Model v3.0', 'Credit Scoring Model v2.1'], dataCategories: ['Income Data', 'Employment Data', 'Financial History'], version: '2.3', ipAddress: '10.0.3.77', channel: 'Web Portal' },
-  { id: 'CST-012', subject: 'Erik Johansson', email: 'e.johansson@customer.com', consentDate: '2026-01-20', expiryDate: '2027-01-20', status: 'Withdrawn', purposes: ['Churn Prediction', 'Marketing Personalization'], legalBasis: 'Consent', aiSystems: ['Customer Churn Predictor v2.3'], dataCategories: ['Behavioral Data', 'Communication Preferences'], version: '2.2', ipAddress: '172.20.0.55', channel: 'Mobile App', withdrawalDate: '2026-03-28', withdrawalReason: 'GDPR Art. 7(3) — subject withdrew consent without stating reason.' },
-]
+
 
 const STATUS_STYLE: Record<ConsentStatus, { bg: string; color: string }> = {
   Active: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
@@ -54,7 +50,7 @@ const BLANK: Omit<ConsentRecord, 'id'> = {
 }
 
 export default function ConsentManagement() {
-  const [records, setRecords] = useState<ConsentRecord[]>(SEED)
+  const { items: records, isLoading, saveConsentRecords, removeConsentRecords } = useConsentRecordsData()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
   const [selected, setSelected] = useState<ConsentRecord | null>(null)
@@ -63,6 +59,7 @@ export default function ConsentManagement() {
   const [editMode, setEditMode] = useState(false)
   const [form, setForm] = useState<Omit<ConsentRecord, 'id'>>(BLANK)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
+  if (isLoading) return <PageSkeleton />
 
   const filtered = records.filter(r => {
     const ms = r.subject.toLowerCase().includes(search.toLowerCase()) || r.id.toLowerCase().includes(search.toLowerCase()) || r.email.toLowerCase().includes(search.toLowerCase())
@@ -76,32 +73,29 @@ export default function ConsentManagement() {
     pending: records.filter(r => r.status === 'Pending').length,
   }
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!form.subject || !form.email) { toast.error('Subject name and email are required'); return }
-    const id = `CST-${String(records.length + 1).padStart(3, '0')}`
-    setRecords(p => [{ ...form, id }, ...p])
+    await saveConsentRecords({ ...form })
     setShowCreate(false)
     setForm(BLANK)
-    toast.success(`Consent record ${id} created`)
   }
 
-  const handleEdit = () => {
+  const handleEdit = async () => {
     if (!selected) return
-    setRecords(p => p.map(r => r.id === selected.id ? { ...r, ...form } : r))
+    await saveConsentRecords({ ...selected, ...form })
     setSelected(prev => prev ? { ...prev, ...form } : null)
     setEditMode(false)
     toast.success('Consent record updated')
   }
 
-  const handleDelete = (id: string) => {
-    setRecords(p => p.filter(r => r.id !== id))
+  const handleDelete = async (id: string) => {
+    await removeConsentRecords(id)
     setDeleteTarget(null)
     if (selected?.id === id) setSelected(null)
-    toast.success('Consent record deleted')
   }
 
-  const handleWithdraw = (id: string) => {
-    setRecords(p => p.map(r => r.id === id ? { ...r, status: 'Withdrawn', withdrawalDate: '2026-04-10' } : r))
+  const handleWithdraw = async (id: string) => {
+    await saveConsentRecords({ id, status: 'Withdrawn', withdrawalDate: new Date().toISOString().slice(0,10) })
     setSelected(prev => prev?.id === id ? { ...prev, status: 'Withdrawn', withdrawalDate: '2026-04-10' } : prev)
     toast.success('Consent withdrawn and AI systems notified')
   }
@@ -117,7 +111,7 @@ export default function ConsentManagement() {
           <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">GDPR-compliant consent lifecycle management — purpose tracking, AI system mapping, withdrawal, and audit trail</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => toast.success('Consent report exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]"><Export size={14} /> Export</button>
+          <button onClick={() => exportCsv(records as any[], 'consent-records.csv')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]"><Export size={14} /> Export CSV</button>
           <button onClick={() => { setForm(BLANK); setShowCreate(true) }} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90"><Plus size={14} weight="bold" /> New Record</button>
         </div>
       </div>

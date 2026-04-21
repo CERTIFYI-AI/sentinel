@@ -1,8 +1,17 @@
 import { useState } from 'react'
 import { UserList, MagnifyingGlass, Plus, Eye, X, Export, Funnel, Pencil, Trash, Clock, CheckCircle, Warning } from '@phosphor-icons/react'
 import { toast } from 'sonner'
+import { useDsrRequestsData } from '@/hooks/useDsrRequestsData'
+import { PageSkeleton } from '@/components/ui/PageSkeleton'
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+// Supabase-wired — no mock data
+
+function exportCsv(rows: any[], filename: string) {
+  if (!rows.length) return
+  const keys = Object.keys(rows[0])
+  const csv = [keys.join(','), ...rows.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n')
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = filename; a.click()
+}
 
 type DSRType = 'Access' | 'Erasure' | 'Rectification' | 'Portability' | 'Objection' | 'Restriction'
 type DSRStatus = 'Pending' | 'In Review' | 'Completed' | 'Rejected' | 'Overdue'
@@ -23,20 +32,6 @@ interface DSRRequest {
   daysRemaining: number
 }
 
-const SEED: DSRRequest[] = [
-  { id: 'DSR-2026-001', type: 'Erasure', subject: 'James Carter', email: 'j.carter@email.com', submittedDate: '2026-04-01', dueDate: '2026-05-01', status: 'In Review', regulation: 'GDPR Art. 17', aiSystemsAffected: ['Credit Scoring Model v2.1', 'Customer Churn Predictor v2.3'], assignee: 'Maria Santos', notes: 'Subject requests deletion of all financial data used in AI profiling. Legal hold check required.', priority: 'High', daysRemaining: 21 },
-  { id: 'DSR-2026-002', type: 'Access', subject: 'Priya Sharma', email: 'p.sharma@email.com', submittedDate: '2026-03-28', dueDate: '2026-04-27', status: 'Overdue', regulation: 'GDPR Art. 15', aiSystemsAffected: ['Loan Approval Model v3.0'], assignee: 'Marcus Johnson', notes: 'Subject requests full report of data used for loan decision. 30-day deadline breached.', priority: 'High', daysRemaining: -3 },
-  { id: 'DSR-2026-003', type: 'Portability', subject: 'Ahmed Osman', email: 'a.osman@email.com', submittedDate: '2026-04-05', dueDate: '2026-05-05', status: 'Pending', regulation: 'GDPR Art. 20', aiSystemsAffected: ['Customer Churn Predictor v2.3'], assignee: 'Unassigned', notes: 'Data export request in machine-readable format (JSON/CSV).', priority: 'Medium', daysRemaining: 25 },
-  { id: 'DSR-2026-004', type: 'Rectification', subject: 'Sophie Laurent', email: 's.laurent@email.com', submittedDate: '2026-03-15', dueDate: '2026-04-14', status: 'Completed', regulation: 'GDPR Art. 16', aiSystemsAffected: ['Fraud Detection Engine v4.2'], assignee: 'Maria Santos', notes: 'Income data corrected from $45K to $92K. Model prediction updated accordingly.', priority: 'Medium', daysRemaining: 0 },
-  { id: 'DSR-2026-005', type: 'Objection', subject: 'Lars Eriksson', email: 'l.eriksson@email.com', submittedDate: '2026-04-08', dueDate: '2026-05-08', status: 'In Review', regulation: 'GDPR Art. 21', aiSystemsAffected: ['Credit Scoring Model v2.1'], assignee: 'Sarah Chen', notes: 'Subject objects to automated credit scoring decision. DPIA review triggered.', priority: 'High', daysRemaining: 28 },
-  { id: 'DSR-2026-006', type: 'Restriction', subject: 'Chen Wei', email: 'c.wei@email.com', submittedDate: '2026-03-20', dueDate: '2026-04-19', status: 'Rejected', regulation: 'GDPR Art. 18', aiSystemsAffected: ['Loan Approval Model v3.0'], assignee: 'Marcus Johnson', notes: 'Request rejected — insufficient grounds under Art. 18(1). Rejection notice sent with appeal rights.', priority: 'Low', daysRemaining: 0 },
-  { id: 'DSR-2026-007', type: 'Access', subject: 'Isabel Fernandez', email: 'i.fernandez@email.com', submittedDate: '2026-04-09', dueDate: '2026-05-09', status: 'Pending', regulation: 'CCPA § 1798.110', aiSystemsAffected: ['Customer Churn Predictor v2.3', 'Fraud Detection Engine v4.2'], assignee: 'Unassigned', notes: 'CCPA access request for personal information categories and purposes.', priority: 'Medium', daysRemaining: 29 },
-  { id: 'DSR-2026-008', type: 'Erasure', subject: 'David Okafor', email: 'd.okafor@email.com', submittedDate: '2026-04-02', dueDate: '2026-05-02', status: 'Completed', regulation: 'GDPR Art. 17', aiSystemsAffected: ['Credit Scoring Model v2.1'], assignee: 'Maria Santos', notes: 'All training data points removed. Model retrained without subject data. Verified by DPO.', priority: 'High', daysRemaining: 0 },
-  { id: 'DSR-2026-009', type: 'Portability', subject: 'Mei Nakamura', email: 'm.nakamura@email.com', submittedDate: '2026-04-10', dueDate: '2026-05-10', status: 'Pending', regulation: 'GDPR Art. 20', aiSystemsAffected: ['Fraud Detection Engine v4.2', 'Loan Approval Model v3.0'], assignee: 'Unassigned', notes: 'Request to transfer data to competitor fintech. Format: FAPI-compliant JSON.', priority: 'Medium', daysRemaining: 30 },
-  { id: 'DSR-2026-010', type: 'Access', subject: 'Olumide Adeyemi', email: 'o.adeyemi@email.com', submittedDate: '2026-03-25', dueDate: '2026-04-24', status: 'In Review', regulation: 'GDPR Art. 15', aiSystemsAffected: ['Credit Scoring Model v2.1', 'Loan Approval Model v3.0', 'Customer Churn Predictor v2.3'], assignee: 'Sarah Chen', notes: 'Subject received adverse AI decision on mortgage application. Requests full data profile and model explanation.', priority: 'High', daysRemaining: 14 },
-  { id: 'DSR-2026-011', type: 'Objection', subject: 'Fatima Al-Rashid', email: 'f.alrashid@email.com', submittedDate: '2026-04-07', dueDate: '2026-05-07', status: 'Pending', regulation: 'EU AI Act Art. 14', aiSystemsAffected: ['Credit Scoring Model v2.1'], assignee: 'Unassigned', notes: 'Subject invokes right to human review of automated decision under EU AI Act. Escalated to underwriting team.', priority: 'High', daysRemaining: 27 },
-  { id: 'DSR-2026-012', type: 'Erasure', subject: 'Carlos Mendez', email: 'c.mendez@email.com', submittedDate: '2026-03-10', dueDate: '2026-04-09', status: 'Overdue', regulation: 'CCPA § 1798.105', aiSystemsAffected: ['Fraud Detection Engine v4.2', 'Customer Churn Predictor v2.3'], assignee: 'Marcus Johnson', notes: 'California deletion request. Backup systems check pending. Legal counsel reviewing third-party data sharing agreements.', priority: 'High', daysRemaining: -1 },
-]
 
 const BLANK: Omit<DSRRequest, 'id'> = {
   type: 'Access', subject: '', email: '', submittedDate: '', dueDate: '',
@@ -62,7 +57,7 @@ const PRIORITY_STYLE: Record<string, { bg: string; color: string }> = {
 }
 
 export default function DsrManagement() {
-  const [records, setRecords] = useState<DSRRequest[]>(SEED)
+  const { items: records, isLoading, saveDsrRequests, removeDsrRequests } = useDsrRequestsData()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
   const [typeFilter, setTypeFilter] = useState('All')
@@ -72,6 +67,8 @@ export default function DsrManagement() {
   const [editMode, setEditMode] = useState(false)
   const [form, setForm] = useState<Omit<DSRRequest, 'id'>>(BLANK)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
+
+  if (isLoading) return <PageSkeleton />
 
   const filtered = records.filter(r => {
     const ms = r.subject.toLowerCase().includes(search.toLowerCase()) ||
@@ -91,25 +88,22 @@ export default function DsrManagement() {
 
   const nextId = () => `DSR-2026-${String(records.length + 1).padStart(3, '0')}`
 
-  const handleCreate = () => {
-    if (!form.subject || !form.email) { toast.error('Subject name and email are required'); return }
-    const newRec = { ...form, id: nextId() }
-    setRecords(p => [newRec, ...p])
-    setShowCreate(false)
-    setForm(BLANK)
-    toast.success(`DSR ${newRec.id} created`, { description: `${form.type} request for ${form.subject}` })
+  const handleCreate = async () => {
+    if (!form.subject || !form.email || !form.type) { toast.error('Fill required fields'); return }
+    await saveDsrRequests({ ...form })
+    setShowCreate(false); setForm(BLANK)
   }
 
-  const handleEdit = () => {
+  const handleEdit = async () => {
     if (!selected) return
-    setRecords(p => p.map(r => r.id === selected.id ? { ...r, ...form } : r))
+    await saveDsrRequests({ ...selected, ...form })
     setSelected(prev => prev ? { ...prev, ...form } : null)
     setEditMode(false)
     toast.success('DSR request updated')
   }
 
-  const handleDelete = (id: string) => {
-    setRecords(p => p.filter(r => r.id !== id))
+  const handleDelete = async (id: string) => {
+    await removeDsrRequests(id)
     setDeleteTarget(null)
     if (selected?.id === id) setSelected(null)
     toast.success('DSR request deleted')
@@ -135,7 +129,7 @@ export default function DsrManagement() {
           <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">Data Subject Request tracking — GDPR, CCPA, EU AI Act Art. 14 rights management with AI system impact mapping</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => toast.success('DSR report exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+          <button onClick={() => exportCsv(records, 'dsr-requests.csv')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
             <Export size={14} /> Export
           </button>
           <button onClick={() => { setForm(BLANK); setShowCreate(true) }} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90">
@@ -353,8 +347,8 @@ export default function DsrManagement() {
                       <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide">Available Actions</p>
                       <div className="space-y-2">
                         {selected.status !== 'Completed' && (
-                          <button onClick={() => {
-                            setRecords(p => p.map(r => r.id === selected.id ? { ...r, status: 'Completed' } : r))
+                          <button onClick={async () => {
+                            await saveDsrRequests({ ...selected, status: 'Completed' })
                             setSelected(prev => prev ? { ...prev, status: 'Completed' } : null)
                             toast.success('DSR marked as completed')
                           }} className="w-full flex items-center gap-2 p-3 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90">
@@ -362,8 +356,8 @@ export default function DsrManagement() {
                           </button>
                         )}
                         {selected.status === 'Pending' && (
-                          <button onClick={() => {
-                            setRecords(p => p.map(r => r.id === selected.id ? { ...r, status: 'In Review' } : r))
+                          <button onClick={async () => {
+                            await saveDsrRequests({ ...selected, status: 'In Review' })
                             setSelected(prev => prev ? { ...prev, status: 'In Review' } : null)
                             toast.success('DSR moved to In Review')
                           }} className="w-full flex items-center gap-2 p-3 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">

@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Database, Plus, MagnifyingGlass, Eye, PencilSimple, Trash, Export } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,8 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { StatusBadge, BulkActionToolbar, PaginationBar, CrudModal, FormSection, FormFooter, MetaBar, ActivityTimeline, useSortAndPage, Th, TInput, TSelect, TTextarea, TToggle, TCheckGroup } from "@/components/ui/crud-helpers";
 import { toast } from "sonner";
+import { useDatasetData } from '@/hooks/useDatasetData';
+import { PageSkeleton } from '@/components/ui/PageSkeleton';
 
 const DATA_TYPES = ["Training","Validation","Test","Production","Synthetic","Reference"];
 const SOURCES = ["Internal Data Warehouse","External Vendor","Public Dataset","Synthetic Generator","API Feed","Manual Upload","Third-Party License"];
@@ -21,18 +23,13 @@ const PII_TYPES = ["Name","Email","Phone","SSN","Date of Birth","Address","IP Ad
 const STATUSES = ["Active","Archived","Deprecated","Under Review","Pending Approval"];
 const QUALITY_NOTES = ["High Quality","Validated","Unvalidated","Partially Validated","Quality Unknown"];
 
-const SEED: any[] = [
-  { id:"DS-001", name:"HR Candidate Dataset 2025", version:"2.1", dataType:"Training", source:"Internal Data Warehouse", format:"CSV", sensitivity:"Confidential", size:"4.2 GB", piiPresence:true, piiTypes:["Name","Email","Date of Birth"], retention:"3 years", owner:"Dr. Sarah Chen", steward:"Emma Rodriguez", jurisdiction:"EU", qualityScore:78, lineageStatus:"Documented", status:"Active", description:"Candidate profiles and assessment data for HR screening model training.", usageTerms:"Internal use only. GDPR compliant. DPA signed.", createdAt:"2025-01-15", updatedAt:"2025-12-01", createdBy:"schenai" },
-  { id:"DS-002", name:"Transaction Records 2024", version:"4.0", dataType:"Production", source:"API Feed", format:"Parquet", sensitivity:"Restricted", size:"180 GB", piiPresence:true, piiTypes:["Name","Credit Card","SSN"], retention:"7 years", owner:"Alex Kumar", steward:"James Wilson", jurisdiction:"US", qualityScore:94, lineageStatus:"Documented", status:"Active", description:"Real-time and batch transaction records feeding the fraud detection model.", usageTerms:"PCI-DSS controlled. Encryption required at all times.", createdAt:"2024-01-01", updatedAt:"2026-01-10", createdBy:"akumar" },
-  { id:"DS-003", name:"Synthetic Credit Profiles v2", version:"2.0", dataType:"Synthetic", source:"Synthetic Generator", format:"JSON", sensitivity:"Internal", size:"12 GB", piiPresence:false, piiTypes:[], retention:"1 year", owner:"James Wilson", steward:"James Wilson", jurisdiction:"Global", qualityScore:88, lineageStatus:"Auto-Generated", status:"Active", description:"Synthetic credit profiles generated for bias testing. No real PII.", usageTerms:"Open internal use. No export to external parties.", createdAt:"2025-06-01", updatedAt:"2025-11-15", createdBy:"jwilson" },
-  { id:"DS-004", name:"EU Regulatory Text Corpus", version:"1.3", dataType:"Reference", source:"Public Dataset", format:"XML", sensitivity:"Public", size:"850 MB", piiPresence:false, piiTypes:[], retention:"Indefinite", owner:"Lisa Park", steward:"Lisa Park", jurisdiction:"EU", qualityScore:96, lineageStatus:"Documented", status:"Active", description:"EU regulatory text corpus for NLP compliance classification model training.", usageTerms:"EU Open Data License. Attribution required.", createdAt:"2024-08-01", updatedAt:"2025-10-01", createdBy:"lpark" },
-  { id:"DS-005", name:"Legacy Loan Applications 2020", version:"1.0", dataType:"Training", source:"Internal Data Warehouse", format:"SQL", sensitivity:"Confidential", size:"22 GB", piiPresence:true, piiTypes:["Name","Email","SSN","Address"], retention:"7 years", owner:"Emma Rodriguez", steward:"Emma Rodriguez", jurisdiction:"US", qualityScore:62, lineageStatus:"Undocumented", status:"Under Review", description:"Historical loan application data. Quality issues identified in 2025 audit. Under review for retraining use.", usageTerms:"Internal use only. Pending re-validation.", createdAt:"2021-01-01", updatedAt:"2025-08-01", createdBy:"erodriguez" },
-];
+
 
 const EMPTY: any = { name:"", version:"1.0", dataType:"Training", source:"", format:"CSV", sensitivity:"Internal", size:"", piiPresence:false, piiTypes:[], retention:"1 year", owner:"", steward:"", jurisdiction:"Global", qualityScore:80, lineageStatus:"Undocumented", status:"Active", description:"", usageTerms:"" };
 
 export default function Datasets() {
-  const [items, setItems] = useState(SEED);
+  const { items: liveItems, isLoading, save: saveItem, remove: removeItem } = useDatasetData();
+  const [items, setItems] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [sensitFilter, setSensitFilter] = useState("all");
   const [modal, setModal] = useState<"create"|"edit"|"view"|null>(null);
@@ -41,6 +38,8 @@ export default function Datasets() {
   const [viewItem, setViewItem] = useState<any>(null);
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [saving, setSaving] = useState(false);
+  useEffect(() => { if (liveItems.length > 0) setItems(liveItems); }, [liveItems]);
+  if (isLoading) return <PageSkeleton />;
 
   const filtered = useMemo(() => items.filter(i => {
     const q = search.toLowerCase();
@@ -51,25 +50,34 @@ export default function Datasets() {
   const sp = useSortAndPage(filtered, "name");
   const setF = (k: string) => (v: any) => setForm((f: any) => ({ ...f, [k]: v }));
 
-  const save = (draft = false) => {
+  const save = async (draft = false) => {
     if (!form.name.trim()) { toast.error("Dataset name is required"); return; }
     setSaving(true);
-    setTimeout(() => {
-      const status = draft ? "Pending Approval" : (form.status || "Active");
+    const status = draft ? "Pending Approval" : (form.status || "Active");
+    try {
       if (editId) {
-        setItems(p => p.map(i => i.id === editId ? { ...i, ...form, status, updatedAt:new Date().toISOString().slice(0,10) } : i));
+        const updated = { ...form, status, updatedAt: new Date().toISOString().slice(0,10) };
+        setItems(p => p.map(i => i.id === editId ? { ...i, ...updated } : i));
+        await saveItem({ ...updated, id: editId });
         toast.success("Dataset updated");
       } else {
         const id = `DS-${String(items.length+1).padStart(3,"0")}`;
-        setItems(p => [...p, { ...form, status, id, createdAt:new Date().toISOString().slice(0,10), updatedAt:new Date().toISOString().slice(0,10), createdBy:"admin" }]);
+        const newItem = { ...form, status, id, createdAt:new Date().toISOString().slice(0,10), updatedAt:new Date().toISOString().slice(0,10), createdBy:"admin" };
+        setItems(p => [...p, newItem]);
+        await saveItem(newItem);
         toast.success("Dataset registered");
       }
-      setSaving(false); setModal(null); setForm(EMPTY); setEditId(null);
-    }, 700);
+    } catch { toast.error("Failed to save dataset"); }
+    setSaving(false); setModal(null); setForm(EMPTY); setEditId(null);
   };
 
   const openEdit = (item: any) => { setForm({ ...item }); setEditId(item.id); setModal("edit"); };
-  const doDelete = () => { setItems(p => p.filter(i => i.id !== deleteTarget?.id)); setDeleteTarget(null); toast.success("Dataset removed"); };
+  const doDelete = async () => {
+    setItems(p => p.filter(i => i.id !== deleteTarget?.id));
+    setDeleteTarget(null);
+    toast.success("Dataset removed");
+    try { if (deleteTarget?.id) await removeItem(deleteTarget.id); } catch {}
+  };
 
   const sensColors: Record<string, string> = { Public:"#22c55e", Internal:"#3b82f6", Confidential:"#f59e0b", Restricted:"#ef4444", "Top Secret":"#7c3aed" };
 

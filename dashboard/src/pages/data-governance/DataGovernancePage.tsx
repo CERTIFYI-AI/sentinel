@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import {
   Eye, PencilSimple, Trash, Plus, MagnifyingGlass, Database,
   Warning, CheckCircle, Info, ArrowRight, ShieldCheck,
-  FileText, Clock, Envelope, Globe, Lock, UserCircle,
+  FileText, Clock, Envelope, Globe, Lock, UserCircle, Export,
 } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
@@ -17,11 +17,20 @@ import {
 import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
-import { DATA_GOVERNANCE, DATASETS, formatDate } from '../../data/seed';
+import { formatDate } from '../../data/seed';
 import { useEffect } from 'react'
 import { useDsarRequests } from '../../hooks/queries/useDataGovernance'
+import { useDatasetData } from '../../hooks/useDatasetData'
+import { PageSkeleton } from '@/components/ui/PageSkeleton'
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+// Supabase-wired — no mock data
+
+function exportCsv(rows: any[], filename: string) {
+  if (!rows.length) return
+  const keys = Object.keys(rows[0])
+  const csv = [keys.join(','), ...rows.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n')
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = filename; a.click()
+}
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -33,30 +42,12 @@ interface DG {
   consentStatus: string; dsarCount: number; lineage: string[]; lawfulBasis: string; lastReview: string;
 }
 
-// ── DSAR Mock Data ───────────────────────────────────────────────────────────
+// ── DSAR Type ──────────────────────────────────────────────
 
 interface DSAR {
   id: string; requester: string; dataset: string; datasetId: string; type: 'Access' | 'Delete' | 'Portability';
   received: string; slaDeadline: string; status: string; description: string;
 }
-
-const MOCK_DSARS: DSAR[] = [
-  { id: 'DSAR-001', requester: 'john.doe@example.com', dataset: 'Consumer Credit History v4', datasetId: 'DG-001', type: 'Access', received: '2026-03-01', slaDeadline: '2026-03-31', status: 'In Progress', description: 'Subject requesting full data export under GDPR Art. 15' },
-  { id: 'DSAR-002', requester: 'jane.smith@example.com', dataset: 'Consumer Credit History v4', datasetId: 'DG-001', type: 'Delete', received: '2026-03-05', slaDeadline: '2026-04-04', status: 'Pending', description: 'Right to erasure request under GDPR Art. 17' },
-  { id: 'DSAR-003', requester: 'alex.johnson@example.com', dataset: 'Consumer Credit History v4', datasetId: 'DG-001', type: 'Portability', received: '2026-03-10', slaDeadline: '2026-04-09', status: 'Complete', description: 'Data portability request under GDPR Art. 20' },
-  { id: 'DSAR-004', requester: 'maria.garcia@example.com', dataset: 'Employee HR Records 2023', datasetId: 'DG-003', type: 'Access', received: '2026-02-15', slaDeadline: '2026-03-17', status: 'Overdue', description: 'Employee requesting personal data access' },
-  { id: 'DSAR-005', requester: 'chen.wei@example.com', dataset: 'Employee HR Records 2023', datasetId: 'DG-003', type: 'Delete', received: '2026-02-20', slaDeadline: '2026-03-22', status: 'Overdue', description: 'Former employee right to erasure' },
-  { id: 'DSAR-006', requester: 'emma.wilson@example.com', dataset: 'Employee HR Records 2023', datasetId: 'DG-003', type: 'Access', received: '2026-03-01', slaDeadline: '2026-03-31', status: 'In Progress', description: 'HR data subject access request' },
-  { id: 'DSAR-007', requester: 'lucas.brown@example.com', dataset: 'Employee HR Records 2023', datasetId: 'DG-003', type: 'Portability', received: '2026-03-05', slaDeadline: '2026-04-04', status: 'In Progress', description: 'Data portability for former employee' },
-  { id: 'DSAR-008', requester: 'sophia.lee@example.com', dataset: 'Employee HR Records 2023', datasetId: 'DG-003', type: 'Delete', received: '2026-03-08', slaDeadline: '2026-04-07', status: 'Pending', description: 'Right to erasure request' },
-  { id: 'DSAR-009', requester: 'oliver.jones@example.com', dataset: 'Employee HR Records 2023', datasetId: 'DG-003', type: 'Access', received: '2026-03-10', slaDeadline: '2026-04-09', status: 'Pending', description: 'Subject access request for performance data' },
-  { id: 'DSAR-010', requester: 'mia.davis@example.com', dataset: 'Employee HR Records 2023', datasetId: 'DG-003', type: 'Access', received: '2026-03-12', slaDeadline: '2026-04-11', status: 'In Progress', description: 'Request for compensation data access' },
-  { id: 'DSAR-011', requester: 'noah.miller@example.com', dataset: 'Employee HR Records 2023', datasetId: 'DG-003', type: 'Delete', received: '2026-03-14', slaDeadline: '2026-04-13', status: 'Pending', description: 'Former contractor right to erasure' },
-  { id: 'DSAR-012', requester: 'ava.moore@example.com', dataset: 'Employee HR Records 2023', datasetId: 'DG-003', type: 'Access', received: '2026-03-15', slaDeadline: '2026-04-14', status: 'In Progress', description: 'Data access request under GDPR' },
-  { id: 'DSAR-013', requester: 'liam.taylor@example.com', dataset: 'Employee HR Records 2023', datasetId: 'DG-003', type: 'Portability', received: '2026-03-16', slaDeadline: '2026-04-15', status: 'Pending', description: 'Data portability request' },
-  { id: 'DSAR-014', requester: 'isabella.anderson@example.com', dataset: 'Employee HR Records 2023', datasetId: 'DG-003', type: 'Delete', received: '2026-03-18', slaDeadline: '2026-04-17', status: 'Pending', description: 'Right to erasure for terminated employee' },
-  { id: 'DSAR-015', requester: 'james.thomas@example.com', dataset: 'AML Transaction History', datasetId: 'DG-004', type: 'Access', received: '2026-03-20', slaDeadline: '2026-04-19', status: 'In Progress', description: 'Transaction data access request' },
-];
 
 // ── MetricTile ───────────────────────────────────────────────────────────────
 
@@ -139,7 +130,7 @@ function LineageFlow({ lineage }: { lineage: string[] }) {
 // ── Main Component ───────────────────────────────────────────────────────────
 
 export default function DataGovernancePage() {
-  const [dataAssets] = useState<DG[]>(DATA_GOVERNANCE as DG[]);
+  const { items: datasetItems, isLoading: datasetsLoading } = useDatasetData()
   const { data: supabaseDsars = [] } = useDsarRequests()
   const [dsars, setDsars] = useState<DSAR[]>([]);
   useEffect(() => { if (supabaseDsars.length > 0) setDsars(supabaseDsars as any) }, [supabaseDsars]);
@@ -159,6 +150,27 @@ export default function DataGovernancePage() {
     setToasts(prev => [...prev, { id, text, type }]);
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
   }, []);
+
+  if (datasetsLoading) return <PageSkeleton />;
+
+  // Map dataset items to DG shape — use live data from Supabase
+  const dataAssets = (datasetItems as any[]).map(d => ({
+    id: d.id || d.datasetId || '',
+    name: d.name || d.datasetName || '',
+    datasetId: d.datasetId || d.id || '',
+    type: d.type || d.dataType || 'Unknown',
+    classification: d.classification || d.sensitivity || 'Internal',
+    retention: d.retentionPolicy || d.retention || 'Unknown',
+    owner: d.owner || 'Unknown',
+    pii: d.pii ?? (d.sensitivity === 'PII'),
+    crossBorder: d.crossBorder ?? false,
+    countries: d.countries || [],
+    consentStatus: d.consentStatus || 'Not Required',
+    dsarCount: d.dsarCount ?? 0,
+    lineage: d.lineage || [],
+    lawfulBasis: d.lawfulBasis || 'Legitimate Interest',
+    lastReview: d.lastAudit || d.lastReview || '',
+  })) as DG[];
 
   // Metrics
   const tracked = dataAssets.length;
@@ -212,6 +224,9 @@ export default function DataGovernancePage() {
           <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>Governance, consent, lineage, and DSAR management for AI data assets</p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => exportCsv(dataAssets, 'data-governance.csv')} style={{ borderRadius: 0 }}>
+            <Export size={14} className="mr-2" />Export CSV
+          </Button>
           <Button variant="outline" onClick={() => setDsarFormOpen(true)} style={{ borderRadius: 0 }}>
             <UserCircle size={14} className="mr-2" />New DSAR
           </Button>

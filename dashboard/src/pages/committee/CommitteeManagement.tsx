@@ -1,5 +1,7 @@
 // @ts-nocheck
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useCommitteesData } from '../../hooks/useCommitteesData';
+import { PageSkeleton } from '../../components/ui/PageSkeleton';
 import { toast } from 'sonner';
 import {
   Users, Plus, Eye, Trash, PencilSimple, CalendarBlank, CheckCircle,
@@ -151,13 +153,28 @@ const VOTE_COLORS: Record<string, { bg: string; color: string }> = {
 };
 
 export default function CommitteeManagement() {
+  const { items: liveCommittees, isLoading, save, remove } = useCommitteesData();
   const [search, setSearch] = useState('');
   const [committees, setCommittees] = useState<Committee[]>(SEED_COMMITTEES);
+
+  // Sync Supabase data; keep SEED as fallback for nested fields
+  useEffect(() => {
+    if (liveCommittees.length > 0) {
+      // Merge live data with seed's nested structures for display
+      setCommittees(liveCommittees.map((live: any) => {
+        const seed = SEED_COMMITTEES.find(s => s.id === live.id)
+        return seed ? { ...seed, ...live } : { ...live, members: live.members ?? [], meetings: live.meetings ?? [], votingRecords: live.votingRecords ?? [], attestations: live.attestations ?? [] }
+      }))
+    }
+  }, [liveCommittees]);
+
   const [selected, setSelected] = useState<Committee | null>(null);
   const [tab, setTab] = useState('members');
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState({ name: '', type: '', chair: '', cadence: 'Monthly', charter: '' });
   const [deleteTarget, setDeleteTarget] = useState<Committee | null>(null);
+
+  if (isLoading) return <PageSkeleton title="Committees" />;
 
   const filtered = committees.filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -169,31 +186,42 @@ export default function CommitteeManagement() {
   const overdueActions = committees.flatMap(c => c.meetings.flatMap(m => m.actionItems)).filter(a => a.status === 'Overdue').length;
   const upcomingMeetings = committees.filter(c => new Date(c.nextMeeting) >= new Date()).length;
 
-  const handleCreateCommittee = () => {
+  const handleCreateCommittee = async () => {
     if (!createForm.name || !createForm.type || !createForm.chair) {
       toast.error('Please fill in all required fields');
       return;
     }
-    const newCommittee: Committee = {
-      id: `COM-${String(committees.length + 1).padStart(3, '0')}`,
+    const newCommittee = {
       name: createForm.name, type: createForm.type, chair: createForm.chair,
       cadence: createForm.cadence, charter: createForm.charter,
-      status: 'Active', nextMeeting: '2026-05-01',
-      members: [], meetings: [], votingRecords: [], attestations: [],
+      status: 'Active', next_meeting: '2026-05-01',
     };
-    setCommittees(prev => [newCommittee, ...prev]);
-    setCreateOpen(false);
-    setCreateForm({ name: '', type: '', chair: '', cadence: 'Monthly', charter: '' });
-    toast.success(`Committee "${newCommittee.name}" created successfully`);
+    try {
+      await save(newCommittee);
+      setCreateOpen(false);
+      setCreateForm({ name: '', type: '', chair: '', cadence: 'Monthly', charter: '' });
+    } catch {}
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteTarget) return;
-    setCommittees(prev => prev.filter(c => c.id !== deleteTarget.id));
+    try {
+      await remove(deleteTarget.id);
+    } catch {}
     if (selected?.id === deleteTarget.id) setSelected(null);
-    toast.success(`Committee "${deleteTarget.name}" deleted`);
     setDeleteTarget(null);
   };
+
+  function exportCsv() {
+    if (!filtered.length) return;
+    const rows = filtered.map((c: any) => ({ id: c.id, name: c.name, type: c.type, chair: c.chair, status: c.status, cadence: c.cadence }))
+    const keys = Object.keys(rows[0])
+    const csv = [keys.join(','), ...rows.map(r => keys.map(k => JSON.stringify((r as any)[k] ?? '')).join(','))].join('\n')
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
+    a.download = 'committees.csv'
+    a.click()
+  }
 
   return (
     <div className="space-y-5">
@@ -207,8 +235,8 @@ export default function CommitteeManagement() {
           <p className="text-sm text-[hsl(var(--text-3))] mt-0.5">AI Ethics Boards, Model Risk Committees, and governance bodies</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5 rounded-none" onClick={() => toast.success('Committee registry exported')}>
-            <Export size={14} /> Export
+          <Button variant="outline" size="sm" className="gap-1.5 rounded-none" onClick={exportCsv}>
+            <Export size={14} /> Export CSV
           </Button>
           <Button size="sm" className="gap-1.5 rounded-none" onClick={() => setCreateOpen(true)}>
             <Plus size={14} /> New Committee
@@ -219,7 +247,7 @@ export default function CommitteeManagement() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: 'Committees', value: SEED_COMMITTEES.length, color: 'hsl(var(--brand))' },
+          { label: 'Committees', value: committees.length, color: 'hsl(var(--brand))' },
           { label: 'Total Members', value: totalMembers, color: '#3b82f6' },
           { label: 'Open Action Items', value: totalOpenActions, color: '#f59e0b' },
           { label: 'Overdue Actions', value: overdueActions, color: overdueActions > 0 ? '#ef4444' : '#10b981' },

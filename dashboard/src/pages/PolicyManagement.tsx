@@ -9,6 +9,15 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { StatusBadge, BulkActionToolbar, PaginationBar, CrudModal, FormSection, FormFooter, MetaBar, ActivityTimeline, useSortAndPage, Th, TInput, TSelect, TTextarea, TToggle } from "@/components/ui/crud-helpers";
 import { toast } from "sonner";
+import { PageSkeleton } from "@/components/ui/PageSkeleton";
+
+function exportCsv(rows: any[], filename: string) {
+  if (!rows.length) return
+  const keys = Object.keys(rows[0])
+  const csv = [keys.join(','), ...rows.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n')
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = filename; a.click()
+}
+import { usePolicyData } from "@/hooks/usePolicyData";
 
 const POLICY_TYPES = ["AI Governance","Data Privacy","Information Security","Acceptable Use","Ethics","Risk Management","Incident Response","Vendor Management","Human Oversight","Transparency"];
 const FRAMEWORKS_OPT = ["EU AI Act","NIST AI RMF","ISO 42001","GDPR","SOC 2","ISO 27001","OECD AI Principles"];
@@ -19,18 +28,16 @@ const OWNERS = ["Dr. Sarah Chen","Alex Kumar","James Wilson","Emma Rodriguez","L
 const CLASSIFICATIONS = ["Public","Internal","Confidential","Restricted"];
 const IMPACT_AUDIENCES = ["All Staff","Data Scientists","Engineers","Risk Team","Executives","Vendors","Customers"];
 
-const SEED: any[] = [
-  { id:"POL-001", title:"AI Governance & Ethics Policy", version:"2.1", type:"AI Governance", framework:"EU AI Act", status:"Active", owner:"Dr. Sarah Chen", approver:"Board", approvalLevel:"Board", effectiveDate:"2025-09-01", nextReviewDate:"2026-09-01", reviewCycle:"Annual", classification:"Internal", applicableTo:["All Staff","Data Scientists","Engineers"], summary:"Establishes the organization's principles, responsibilities and controls for the development, deployment and use of AI systems.", purpose:"Define AI governance principles and accountability structures.", scope:"Applies to all AI systems developed, deployed or procured by the organization.", exceptions:"Systems used exclusively for R&D with no production deployment may apply for exemption.", createdAt:"2025-08-01", updatedAt:"2025-09-01", createdBy:"admin" },
-  { id:"POL-002", title:"Human-in-the-Loop Review Policy", version:"1.3", type:"Human Oversight", framework:"EU AI Act", status:"Active", owner:"Lisa Park", approver:"CISO", approvalLevel:"CISO", effectiveDate:"2025-10-15", nextReviewDate:"2026-04-15", reviewCycle:"Semi-Annual", classification:"Internal", applicableTo:["Data Scientists","Risk Team","Engineers"], summary:"Mandates human review for all AI decisions classified as high-risk under EU AI Act Annex III.", purpose:"Ensure meaningful human oversight of high-stakes AI decisions.", scope:"All high-risk AI system outputs that affect natural persons.", exceptions:"Emergency safety systems where human delay would cause greater harm may bypass with post-hoc review.", createdAt:"2025-09-15", updatedAt:"2025-10-15", createdBy:"lpark" },
-  { id:"POL-003", title:"AI Data Privacy & Processing Policy", version:"3.0", type:"Data Privacy", framework:"GDPR", status:"Active", owner:"Emma Rodriguez", approver:"DPO", approvalLevel:"DPO", effectiveDate:"2024-05-25", nextReviewDate:"2026-05-25", reviewCycle:"Annual", classification:"Internal", applicableTo:["All Staff","Data Scientists"], summary:"Governs the collection, processing and storage of personal data used in AI training and inference.", purpose:"Ensure GDPR compliance for all AI-related data processing activities.", scope:"All processing of personal data for AI training, validation and production inference.", exceptions:"Anonymized and synthetic datasets are exempt from most provisions.", createdAt:"2024-04-01", updatedAt:"2024-05-25", createdBy:"erodriguez" },
-  { id:"POL-004", title:"AI Model Risk Management Framework", version:"1.1", type:"Risk Management", framework:"NIST AI RMF", status:"In Review", owner:"Alex Kumar", approver:"CTO", approvalLevel:"CTO", effectiveDate:null, nextReviewDate:"2026-05-01", reviewCycle:"Annual", classification:"Confidential", applicableTo:["Risk Team","Data Scientists","Executives"], summary:"Defines risk categorization, assessment, monitoring and escalation procedures for all AI models.", purpose:"Implement NIST AI RMF GOVERN/MAP/MEASURE/MANAGE functions.", scope:"All AI models in production or planned for production deployment.", exceptions:"Proof-of-concept models with no external data may use simplified risk assessment.", createdAt:"2026-01-01", updatedAt:"2026-03-15", createdBy:"akumar" },
-  { id:"POL-005", title:"AI Vendor & Third-Party Risk Policy", version:"1.0", type:"Vendor Management", framework:"SOC 2", status:"Active", owner:"Mike Johnson", approver:"CISO", approvalLevel:"CISO", effectiveDate:"2025-06-01", nextReviewDate:"2026-06-01", reviewCycle:"Annual", classification:"Internal", applicableTo:["Risk Team","Legal & Compliance","Executives"], summary:"Requirements for security, privacy and AI governance assessment of all AI vendors and third-party AI services.", purpose:"Manage third-party AI risk through standardized assessment and contractual safeguards.", scope:"All third-party AI providers and services integrated into the organization's AI stack.", exceptions:"Open-source libraries used by internal teams are subject to a lighter-weight review.", createdAt:"2025-05-01", updatedAt:"2025-06-01", createdBy:"mjohnson" },
-];
+// SEED data removed — using Supabase hook
 
 const EMPTY: any = { title:"", version:"1.0", type:"AI Governance", framework:"EU AI Act", status:"Draft", owner:"", approver:"", approvalLevel:"Department Head", effectiveDate:"", nextReviewDate:"", reviewCycle:"Annual", classification:"Internal", applicableTo:[], summary:"", purpose:"", scope:"", exceptions:"" };
 
 export default function PolicyManagement() {
-  const [items, setItems] = useState(SEED);
+  const { policies: sbItems, isLoading, save: savePolicy, remove: removePolicy } = usePolicyData()
+  if (isLoading) return <PageSkeleton />;
+  const [localItems, setLocalItems] = useState<any[]>([])
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set())
+  const items = [...localItems, ...sbItems.filter((i:any) => !localItems.find((l:any) => l.id === i.id))].filter((i:any) => !deletedIds.has(i.id))
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -51,25 +58,31 @@ export default function PolicyManagement() {
   const sp = useSortAndPage(filtered, "title");
   const setF = (k: string) => (v: any) => setForm((f: any) => ({ ...f, [k]: v }));
 
-  const save = (draft = false) => {
+  const save = async (draft = false) => {
     if (!form.title.trim()) { toast.error("Policy title is required"); return; }
-    setSaving(true);
-    setTimeout(() => {
-      const status = draft ? "Draft" : (form.status || "Draft");
+    const status = draft ? "Draft" : (form.status || "Draft");
+    try {
       if (editId) {
-        setItems(p => p.map(i => i.id === editId ? { ...i, ...form, status, updatedAt:new Date().toISOString().slice(0,10) } : i));
-        toast.success("Policy updated");
+        const updated = { ...form, status, id: editId, updatedAt: new Date().toISOString().slice(0,10) }
+        await savePolicy(updated)
+        setLocalItems(p => p.map(i => i.id === editId ? { ...i, ...form, status } : i))
       } else {
-        const id = `POL-${String(items.length+1).padStart(3,"0")}`;
-        setItems(p => [...p, { ...form, status, id, createdAt:new Date().toISOString().slice(0,10), updatedAt:new Date().toISOString().slice(0,10), createdBy:"admin" }]);
-        toast.success("Policy created");
+        const result = await savePolicy({ ...form, status, createdAt: new Date().toISOString().slice(0,10), updatedAt: new Date().toISOString().slice(0,10), createdBy: "admin" })
+        if (result) setLocalItems(p => [result, ...p])
       }
-      setSaving(false); setModal(null); setForm(EMPTY); setEditId(null);
-    }, 700);
+    } catch {}
+    setModal(null); setForm(EMPTY); setEditId(null);
   };
 
   const openEdit = (item: any) => { setForm({ ...item }); setEditId(item.id); setModal("edit"); };
-  const doDelete = () => { setItems(p => p.filter(i => i.id !== deleteTarget?.id)); setDeleteTarget(null); toast.success("Policy deleted"); };
+  const doDelete = async () => {
+    if (deleteTarget) {
+      setDeletedIds(p => new Set([...p, deleteTarget.id]))
+      try { await removePolicy(deleteTarget.id) } catch {}
+      setDeleteTarget(null)
+      toast.success("Policy deleted")
+    }
+  };
 
   const uniqueTypes = [...new Set(items.map(i=>i.type))];
 
@@ -82,7 +95,7 @@ export default function PolicyManagement() {
           <p className="text-sm text-[hsl(var(--text-3))] mt-0.5">Create, manage and track all AI governance and compliance policies</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5"><Export size={14} />Export</Button>
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportCsv(items, 'policies.csv')}><Export size={14} />Export CSV</Button>
           <Button size="sm" className="gap-1.5" onClick={() => { setForm(EMPTY); setEditId(null); setModal("create"); }}><Plus size={14} />New Policy</Button>
         </div>
       </div>
@@ -106,7 +119,7 @@ export default function PolicyManagement() {
         </select>
       </div>
 
-      <BulkActionToolbar count={sp.selectedIds.size} onClear={sp.clearSelected} onDelete={() => { setItems(p=>p.filter(i=>!sp.selectedIds.has(i.id))); sp.clearSelected(); toast.success("Deleted"); }} onExport={() => toast.success("Exported")} />
+      <BulkActionToolbar count={sp.selectedIds.size} onClear={sp.clearSelected} onDelete={async () => { for (const id of sp.selectedIds) { setDeletedIds(p => new Set([...p, id])); try { await removePolicy(id) } catch {} }; sp.clearSelected(); toast.success("Deleted"); }} onExport={() => exportCsv(items, "policies.csv")} />
 
       <Card><CardContent className="p-0">
         {sp.paged.length === 0 ? (

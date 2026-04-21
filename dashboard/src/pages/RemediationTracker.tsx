@@ -20,16 +20,7 @@ interface TrackerItem {
   linkedRisk: string;
 }
 
-const TRACKER_ITEMS: TrackerItem[] = [
-  { id: 'REM-001', title: 'Retrain Credit Scorer — geographic proxy', assignee: 'Maria Santos', priority: 'critical', status: 'in_progress', progress: 35, startDate: '2026-03-15', dueDate: '2026-04-30', linkedRisk: 'RSK-001' },
-  { id: 'REM-002', title: 'Implement RAG pipeline for Loan Assistant', assignee: 'Raj Gupta', priority: 'high', status: 'in_progress', progress: 20, startDate: '2026-03-20', dueDate: '2026-05-15', linkedRisk: 'RSK-002' },
-  { id: 'REM-003', title: 'Obtain GDPR consent for AI processing', assignee: 'James Patel', priority: 'critical', status: 'in_progress', progress: 10, startDate: '2026-03-25', dueDate: '2026-04-15', linkedRisk: 'RSK-003' },
-  { id: 'REM-004', title: 'Negotiate amended DPA with OpenAI', assignee: 'James Patel', priority: 'critical', status: 'overdue', progress: 5, startDate: '2026-03-01', dueDate: '2026-04-10', linkedRisk: 'RSK-004' },
-  { id: 'REM-005', title: 'Quarantine and audit shadow AI agents', assignee: 'Sarah Chen', priority: 'high', status: 'overdue', progress: 65, startDate: '2026-03-10', dueDate: '2026-04-05', linkedRisk: 'RSK-006' },
-  { id: 'REM-006', title: 'Complete EU AI Act Art. 11 documentation', assignee: 'Emma Wilson', priority: 'high', status: 'in_progress', progress: 40, startDate: '2026-03-12', dueDate: '2026-05-30', linkedRisk: 'RSK-007' },
-  { id: 'REM-007', title: 'Implement SHAP explainability for credit', assignee: 'Raj Gupta', priority: 'high', status: 'in_progress', progress: 55, startDate: '2026-03-08', dueDate: '2026-04-20', linkedRisk: 'RSK-012' },
-  { id: 'REM-008', title: 'Suspend and remediate HR screening bias', assignee: 'Raj Gupta', priority: 'critical', status: 'completed', progress: 80, startDate: '2026-02-03', dueDate: '2026-04-01', linkedRisk: 'RSK-008' },
-];
+// TRACKER_ITEMS now sourced from Supabase via useRemediationData
 
 // Timeline bounds: earliest start to latest due
 const TIMELINE_START = new Date('2026-02-01');
@@ -57,10 +48,24 @@ function statusBarColor(status: string) {
 const MONTH_LABELS = ['Feb', 'Mar', 'Apr', 'May', 'Jun'];
 const MONTH_DATES = ['2026-02-01', '2026-03-01', '2026-04-01', '2026-05-01', '2026-06-01'];
 
-const ASSIGNEES = Array.from(new Set(TRACKER_ITEMS.map(i => i.assignee)));
+
 
 export default function RemediationTracker() {
   const { orgName } = useSettingsStore();
+  const { items: remediationItems, isLoading } = useRemediationData();
+  if (isLoading) return <PageSkeleton />;
+  // Map live data to TrackerItem shape
+  const TRACKER_ITEMS: TrackerItem[] = remediationItems.map((r: any) => ({
+    id: r.id || r.plan_id || '',
+    title: r.title || r.name || '',
+    assignee: r.assignee || r.owner || 'Unassigned',
+    priority: r.priority || r.severity || 'medium',
+    status: r.status || 'in_progress',
+    progress: r.progress || 0,
+    startDate: r.start_date || r.startDate || new Date().toISOString().split('T')[0],
+    dueDate: r.due_date || r.dueDate || new Date().toISOString().split('T')[0],
+    linkedRisk: r.risk_id || r.linkedRisk || '',
+  }));
   const [view, setView] = useState<'gantt' | 'list'>('gantt');
   const [filterAssignee, setFilterAssignee] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
@@ -71,6 +76,7 @@ export default function RemediationTracker() {
     return matchAssignee && matchPriority;
   });
 
+  const ASSIGNEES = Array.from(new Set(TRACKER_ITEMS.map(i => i.assignee)));
   const todayPercent = dateToPercent(new Date().toISOString().split('T')[0]);
 
   return (

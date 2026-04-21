@@ -19,6 +19,8 @@ import { toast } from 'sonner';
 import { THREATS, VULNERABILITIES, severityColor, statusColor, formatDate } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useChartTheme } from '../../hooks/useChartTheme';
+import { useSecurityScansData } from '../../hooks/useSecurityScansData';
+import { useAttackSurfaceData } from '../../hooks/useAttackSurfaceData';
 
 // ── SBOM Data ─────────────────────────────────────────────────────────────────
 
@@ -227,6 +229,8 @@ function ChartTooltipContent({ active, payload, label }: any) {
 export default function SecurityHome() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
+  const { items: scans } = useSecurityScansData();
+  const { items: attackSurface } = useAttackSurfaceData();
   const recentEvents = getRecentEvents();
   const [sbomFilter, setSbomFilter] = useState<string>('all');
   const totalCVEs = SBOM_ENTRIES.reduce((a, e) => a + e.cveCount, 0);

@@ -63,6 +63,14 @@ const REALTIME_TABLES = [
   { table: 'committees',    queryKey: ['committees'] },
   { table: 'identities',    queryKey: ['access-reviews'] },
   { table: 'roles',         queryKey: ['roles'] },
+  // ESG / Energy / Efficiency (added 2026-04-21)
+  { table: 'risk_register', queryKey: ['risk-register'] },
+  { table: 'esg_reports', queryKey: ['esg-reports'] },
+  { table: 'energy_metrics', queryKey: ['energy-metrics'] },
+  { table: 'model_efficiency', queryKey: ['model-efficiency'] },
+  // Deduplication-safe aliases for already-listed tables
+  // vendors, incidents, maturity_assessments already present above
+  { table: 'transparency_reports', queryKey: ['transparency-reports'] },
 ] as const;
 
 export function useRealtimeInvalidation(): void {

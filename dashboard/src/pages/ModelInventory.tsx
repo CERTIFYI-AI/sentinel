@@ -9,6 +9,9 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { StatusBadge, BulkActionToolbar, PaginationBar, CrudModal, FormSection, FormFooter, MetaBar, ActivityTimeline, useSortAndPage, Th, TInput, TSelect, TTextarea, TToggle, TCheckGroup } from "@/components/ui/crud-helpers";
 import { toast } from "sonner";
+import { useModelsData } from '@/hooks/useModelsData'
+import { PageSkeleton } from '@/components/ui/PageSkeleton'
+import { useChartTheme } from '@/hooks/useChartTheme'
 
 const MODEL_TYPES = ["Large Language Model","Classical ML","Deep Learning","Rule-Based","Ensemble","Generative AI","Recommendation","Computer Vision","NLP","Time Series"];
 const RISK_CLASSES = ["Unacceptable Risk","High Risk","Limited Risk","Minimal Risk"];
@@ -19,15 +22,14 @@ const STATUSES = ["Active","Deprecated","Retired","Under Review","Suspended","Dr
 const OWNERS = ["Dr. Sarah Chen","Alex Kumar","James Wilson","Emma Rodriguez","Lisa Park","Mike Johnson","Data Science Team"];
 const REVIEW_CYCLES = ["Monthly","Quarterly","Semi-Annual","Annual","Event-Driven"];
 
-const SEED: any[] = [
-  { id:"MDL-001", name:"GPT-4o Risk Scorer", version:"v2.1.0", type:"Large Language Model", domain:"Financial Services", riskClass:"High Risk", status:"Active", environment:"Production", owner:"Dr. Sarah Chen", framework:["OpenAI API"], trainingDataset:"EU Regulatory Text Corpus + Internal Loan Data", deployedDate:"2025-09-01", lastEvalDate:"2026-01-10", nextReviewDate:"2026-07-10", reviewCycle:"Semi-Annual", biasAuditPassed:true, explainabilityScore:78, robustnessScore:85, driftMonitored:true, humanOversight:true, description:"Primary risk scoring LLM for loan and investment product applications. Generates structured risk assessments from applicant documents.", intendedUse:"Credit risk assessment and regulatory compliance scoring.", limitations:"May not generalize to novel financial instruments not in training data.", createdAt:"2025-08-15", updatedAt:"2026-01-10", createdBy:"admin" },
-  { id:"MDL-002", name:"Fraud Detection", version:"v3.0.8", type:"Classical ML", domain:"Financial Services", riskClass:"High Risk", status:"Active", environment:"Production", owner:"Alex Kumar", framework:["XGBoost","scikit-learn"], trainingDataset:"Transaction Records 2024", deployedDate:"2024-03-01", lastEvalDate:"2026-02-15", nextReviewDate:"2026-05-15", reviewCycle:"Quarterly", biasAuditPassed:true, explainabilityScore:92, robustnessScore:96, driftMonitored:true, humanOversight:false, description:"Real-time transaction fraud detection using gradient-boosted trees. Processes 50K+ TPS.", intendedUse:"Detecting fraudulent transactions in real-time payment processing.", limitations:"Requires periodic retraining due to adversarial distribution shift.", createdAt:"2024-01-15", updatedAt:"2026-02-15", createdBy:"akumar" },
-  { id:"MDL-003", name:"HR Screening Model", version:"v2.0.0", type:"Classical ML", domain:"Human Resources", riskClass:"High Risk", status:"Suspended", environment:"Production", owner:"Emma Rodriguez", framework:["scikit-learn"], trainingDataset:"HR Candidate Dataset 2025", deployedDate:"2025-01-01", lastEvalDate:"2026-01-10", nextReviewDate:"2026-01-31", reviewCycle:"Quarterly", biasAuditPassed:false, explainabilityScore:61, robustnessScore:72, driftMonitored:false, humanOversight:false, description:"Automated candidate screening using logistic regression on structured features. SUSPENDED pending bias remediation.", intendedUse:"Initial resume screening for technical roles.", limitations:"Fails fairness thresholds. Gender and race/ethnicity disparities detected.", createdAt:"2024-10-01", updatedAt:"2026-01-10", createdBy:"erodriguez" },
-  { id:"MDL-004", name:"NLP Compliance Classifier", version:"v1.4.2", type:"NLP", domain:"Compliance", riskClass:"Limited Risk", status:"Active", environment:"Production", owner:"Lisa Park", framework:["Hugging Face","PyTorch"], trainingDataset:"EU Regulatory Text Corpus", deployedDate:"2025-04-01", lastEvalDate:"2025-11-20", nextReviewDate:"2026-05-20", reviewCycle:"Semi-Annual", biasAuditPassed:true, explainabilityScore:65, robustnessScore:70, driftMonitored:true, humanOversight:true, description:"BERT-based classifier for regulatory document categorization and compliance requirement extraction.", intendedUse:"Automated classification of regulatory documents and requirement mapping.", limitations:"Performance degrades on non-English regulatory texts. Concept drift alert active.", createdAt:"2025-03-01", updatedAt:"2025-11-20", createdBy:"lpark" },
-  { id:"MDL-005", name:"Customer Support Orchestrator", version:"v1.2.0", type:"Large Language Model", domain:"Customer Service", riskClass:"Minimal Risk", status:"Active", environment:"Production", owner:"Mike Johnson", framework:["OpenAI API"], trainingDataset:"Customer Interaction Logs 2024-2025", deployedDate:"2025-07-01", lastEvalDate:"2026-01-05", nextReviewDate:"2026-07-05", reviewCycle:"Annual", biasAuditPassed:true, explainabilityScore:55, robustnessScore:80, driftMonitored:false, humanOversight:true, description:"Multi-agent orchestrator routing customer queries to specialized sub-agents (billing, technical, escalation).", intendedUse:"Customer support automation for non-safety-critical interactions.", limitations:"Not suitable for medical, legal or financial advice. Escalation required.", createdAt:"2025-06-01", updatedAt:"2026-01-05", createdBy:"mjohnson" },
-];
-
 const EMPTY: any = { name:"", version:"1.0.0", type:"Classical ML", domain:"Financial Services", riskClass:"Minimal Risk", status:"Draft", environment:"Development", owner:"", framework:[], trainingDataset:"", deployedDate:"", lastEvalDate:"", nextReviewDate:"", reviewCycle:"Annual", biasAuditPassed:false, explainabilityScore:0, robustnessScore:0, driftMonitored:false, humanOversight:false, description:"", intendedUse:"", limitations:"" };
+
+function exportCsv(rows: any[], filename: string) {
+  if (!rows.length) return
+  const keys = Object.keys(rows[0])
+  const csv = [keys.join(','), ...rows.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n')
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = filename; a.click()
+}
 
 function ScoreChip({ label, score }: { label: string; score: number }) {
   const color = score >= 80 ? "#22c55e" : score >= 65 ? "#f59e0b" : "#ef4444";
@@ -35,7 +37,8 @@ function ScoreChip({ label, score }: { label: string; score: number }) {
 }
 
 export default function ModelInventory() {
-  const [items, setItems] = useState(SEED);
+  const { models: items, isLoading, saveModel, deleteModel: removeModel } = useModelsData()
+  const chartTheme = useChartTheme()
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [riskFilter, setRiskFilter] = useState("all");
@@ -54,27 +57,30 @@ export default function ModelInventory() {
   }), [items, search, statusFilter, riskFilter]);
 
   const sp = useSortAndPage(filtered, "name");
+
+  if (isLoading) return <PageSkeleton />
   const setF = (k: string) => (v: any) => setForm((f: any) => ({ ...f, [k]: v }));
 
-  const save = (draft = false) => {
+  const save = async (draft = false) => {
     if (!form.name.trim()) { toast.error("Model name is required"); return; }
     setSaving(true);
-    setTimeout(() => {
+    try {
       const status = draft ? "Draft" : (form.status || "Draft");
-      if (editId) {
-        setItems(p => p.map(i => i.id === editId ? { ...i, ...form, status, updatedAt:new Date().toISOString().slice(0,10) } : i));
-        toast.success("Model updated");
-      } else {
-        const id = `MDL-${String(items.length+1).padStart(3,"0")}`;
-        setItems(p => [...p, { ...form, status, id, createdAt:new Date().toISOString().slice(0,10), updatedAt:new Date().toISOString().slice(0,10), createdBy:"admin" }]);
-        toast.success("Model registered");
-      }
-      setSaving(false); setModal(null); setForm(EMPTY); setEditId(null);
-    }, 700);
+      const payload = editId
+        ? { ...form, status, id: editId }
+        : { ...form, status };
+      await saveModel(payload);
+      setModal(null); setForm(EMPTY); setEditId(null);
+    } catch { /* toast handled by hook */ }
+    setSaving(false);
   };
 
   const openEdit = (item: any) => { setForm({ ...item }); setEditId(item.id); setModal("edit"); };
-  const doDelete = () => { setItems(p => p.filter(i => i.id !== deleteTarget?.id)); setDeleteTarget(null); toast.success("Model removed"); };
+  const doDelete = async () => {
+    if (!deleteTarget) return;
+    await removeModel(deleteTarget.id);
+    setDeleteTarget(null);
+  };
 
   return (
     <div className="p-6 space-y-5 max-w-[1400px]">
@@ -85,7 +91,7 @@ export default function ModelInventory() {
           <p className="text-sm text-[hsl(var(--text-3))] mt-0.5">Comprehensive registry of all AI models across the organization</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5"><Export size={14} />Export</Button>
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportCsv(items, 'model-inventory.csv')}><Export size={14} />Export</Button>
           <Button size="sm" className="gap-1.5" onClick={() => { setForm(EMPTY); setEditId(null); setModal("create"); }}><Plus size={14} />Register Model</Button>
         </div>
       </div>
@@ -109,7 +115,7 @@ export default function ModelInventory() {
         </select>
       </div>
 
-      <BulkActionToolbar count={sp.selectedIds.size} onClear={sp.clearSelected} onDelete={() => { setItems(p=>p.filter(i=>!sp.selectedIds.has(i.id))); sp.clearSelected(); toast.success("Removed"); }} onExport={() => toast.success("Exported")} />
+      <BulkActionToolbar count={sp.selectedIds.size} onClear={sp.clearSelected} onDelete={async () => { for (const id of sp.selectedIds) { await removeModel(id); } sp.clearSelected(); }} onExport={() => exportCsv(sp.paged.filter((i:any)=>sp.selectedIds.has(i.id)), 'models-selected.csv')} />
 
       <Card><CardContent className="p-0">
         {sp.paged.length === 0 ? (

@@ -1,6 +1,8 @@
 // @ts-nocheck
 import { useRisksData } from "@/hooks/useRisksData";
-import { useState, useMemo, useEffect } from 'react';
+import { useChartTheme } from '@/hooks/useChartTheme';
+import { PageSkeleton } from '@/components/ui/PageSkeleton';
+import { useState, useMemo } from 'react';
 import {
   Eye, PencilSimple, Trash, Plus, ArrowUp, ArrowRight, ArrowDown,
   Warning, ShieldCheck, GridFour, ListBullets, Funnel, Info,
@@ -29,12 +31,27 @@ import {
 } from '../components/ui/dialog';
 import { Textarea } from '../components/ui/textarea';
 import { Label } from '../components/ui/label';
-import {
-  RISKS, Risk, severityColor, statusColor, formatDate, CONTROLS, USERS,
-} from '../data/seed';
+import { severityColor, statusColor, formatDate } from '../data/seed';
+type Risk = any;
 import { useSettingsStore } from '../stores/settingsStore';
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+// Local fallback constants (no longer imported from seed)
+const USERS: any[] = [
+  { id: 'u1', name: 'Dr. Sarah Chen', role: 'CISO' },
+  { id: 'u2', name: 'Alex Kumar', role: 'AI Risk Lead' },
+  { id: 'u3', name: 'James Wilson', role: 'Compliance Officer' },
+  { id: 'u4', name: 'Emma Rodriguez', role: 'DPO' },
+  { id: 'u5', name: 'Lisa Park', role: 'Risk Analyst' },
+  { id: 'u6', name: 'Mike Johnson', role: 'Security Engineer' },
+];
+const CONTROLS: any[] = [];
+
+function exportCsv(rows: any[], filename: string) {
+  if (!rows.length) return
+  const keys = Object.keys(rows[0])
+  const csv = [keys.join(','), ...rows.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n')
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = filename; a.click()
+}
 
 // ── Risk Score Color ──────────────────────────────────────────────────────────
 function riskScoreStyle(score: number): { bg: string; text: string; bold: boolean } {
@@ -306,9 +323,8 @@ function RiskHeatmap({
 // ═════════════════════════════════════════════════════════════════════════════
 export default function RiskRegister() {
   const { orgName } = useSettingsStore();
-  const [risks, setRisks] = useState<Risk[]>(RISKS);
-  const { risks: supabaseRisks } = useRisksData();
-  useEffect(() => { if (supabaseRisks.length > 0) setRisks(supabaseRisks as any); }, [supabaseRisks]);
+  const { risks, isLoading, saveRisk, removeRisk } = useRisksData();
+  if (isLoading) return <PageSkeleton />;
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -371,7 +387,7 @@ export default function RiskRegister() {
   const criticalCount = risks.filter(r => r.severity === 'critical').length;
   const openCount = risks.filter(r => r.status === 'open').length;
   const mitigatedCount = risks.filter(r => r.status === 'mitigated').length;
-  const avgScore = Math.round(risks.reduce((a, r) => a + r.score, 0) / risks.length);
+  const avgScore = risks.length > 0 ? Math.round(risks.reduce((a, r) => a + (r.score || r.risk_score || 0), 0) / risks.length) : 0;
 
   // ── Open detail sheet ─────────────────────────────────────────────────────
   const openDetail = (risk: Risk) => {
@@ -380,32 +396,29 @@ export default function RiskRegister() {
   };
 
   // ── Delete risk ───────────────────────────────────────────────────────────
-  const deleteRisk = (id: string) => {
-    setRisks(prev => prev.filter(r => r.id !== id));
+  const handleDeleteRisk = async (id: string) => {
+    try { await removeRisk(id); } catch { }
   };
 
   // ── Add risk ──────────────────────────────────────────────────────────────
-  const handleAddRisk = () => {
+  const handleAddRisk = async () => {
     const score = newLikelihood * newImpact;
     const sev = score >= 17 ? 'critical' : score >= 10 ? 'high' : score >= 5 ? 'medium' : 'low';
-    const newRisk: Risk = {
-      id: `RSK-${String(risks.length + 1).padStart(3, '0')}`,
+    const newRisk: any = {
       title: newTitle,
       description: newDescription,
       category: newCategory,
-      severity: sev as Risk['severity'],
+      severity: sev,
       status: 'open',
       likelihood: newLikelihood,
       impact: newImpact,
+      risk_score: score,
       score,
       owner: newOwner,
-      linkedModel: '',
       mitigations: newMitigation ? [newMitigation] : [],
-      createdDate: new Date().toISOString().split('T')[0],
-      lastUpdated: new Date().toISOString().split('T')[0],
       trending: 'stable',
     };
-    setRisks(prev => [...prev, newRisk]);
+    try { await saveRisk(newRisk); } catch { }
     setAddOpen(false);
     resetForm();
   };
@@ -534,6 +547,9 @@ export default function RiskRegister() {
                 <GridFour size={14} className="mr-1" />Matrix
               </Button>
             </div>
+            <Button variant="outline" onClick={() => exportCsv(risks, 'risks.csv')} style={{ borderRadius: 0 }}>
+              Export CSV
+            </Button>
             <Button onClick={() => setAddOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
               <Plus size={14} className="mr-1" />Add Risk
             </Button>
@@ -764,7 +780,7 @@ export default function RiskRegister() {
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
                                     <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => deleteRisk(risk.id)} style={{ borderRadius: 0, background: 'hsl(var(--destructive))' }}>
+                                    <AlertDialogAction onClick={() => handleDeleteRisk(risk.id)} style={{ borderRadius: 0, background: 'hsl(var(--destructive))' }}>
                                       Delete
                                     </AlertDialogAction>
                                   </AlertDialogFooter>
@@ -1212,8 +1228,8 @@ export default function RiskRegister() {
                 Cancel
               </Button>
               <Button
-                onClick={editRisk ? () => {
-                  setRisks(prev => prev.map(r => r.id === editRisk.id ? { ...editRisk, lastUpdated: new Date().toISOString().split('T')[0] } : r));
+                onClick={editRisk ? async () => {
+                  try { await saveRisk({ ...editRisk, updated_at: new Date().toISOString() }); } catch {}
                   setAddOpen(false);
                   setEditRisk(null);
                 } : handleAddRisk}
