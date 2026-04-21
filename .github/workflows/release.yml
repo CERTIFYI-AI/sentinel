@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.repository == 'CERTIFYI-AI/sentinel'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           persist-credentials: false
