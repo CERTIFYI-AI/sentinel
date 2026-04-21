@@ -36,6 +36,7 @@ const Overview = lazy(() => import('./pages/Overview'));
 const Policies = lazy(() => import('./pages/Policies'));
 const RiskRegister = lazy(() => import('./pages/RiskRegister'));
 const AuditLog = lazy(() => import('./pages/AuditLog'));
+const AuditLogExplorer = lazy(() => import('./pages/AuditLogExplorer'));
 const Benchmark = lazy(() => import('./pages/Benchmark'));
 const Datasets = lazy(() => import('./pages/Datasets'));
 const EvidenceVault = lazy(() => import('./pages/EvidenceVault'));
@@ -312,6 +313,7 @@ export default function App() {
           <Route path="/models/inventory/:id" element={<ModelDetail />} />
           <Route path="/models/lifecycle" element={<ModelLifecycle />} />
           <Route path="/audit-log" element={<AuditLog />} />
+          <Route path="/audit-log/chain" element={<Suspense fallback={<Loading />}><AuditLogExplorer /></Suspense>} />
           <Route path="/evidence-vault" element={<EvidenceVault />} />
           <Route path="/export" element={<ExportCenter />} />
           <Route path="/hitl-queue" element={<Navigate to="/hitl" replace />} />
