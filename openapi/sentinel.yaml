@@ -1,0 +1,522 @@
+openapi: 3.1.0
+info:
+  title: Sentinel Platform API
+  description: |
+    Sentinel is a Fortune 500 Governance, Risk, and Compliance platform.
+    This specification describes the REST API exposed by the Cloudflare Workers
+    edge gateway to authenticated tenant users and integrations.
+
+    ## Authentication
+    All endpoints require a valid OAuth 2.1 bearer token OR a tenant-scoped API
+    key. Tokens are issued by the Sentinel IdP or an upstream OIDC/SAML
+    provider (see `/auth/sso`).
+
+    ## Tenancy
+    Every request is evaluated under the caller's `org_id` via Row-Level
+    Security. Cross-tenant access is impossible via this API.
+
+    ## Rate limits
+    See the `X-RateLimit-*` response headers. Bucket defaults:
+    - list:     30/min burst · 10 tps sustained
+    - mutation: 10/min burst ·  2 tps sustained
+    - export:    3/min burst ·  0.1 tps sustained
+
+    ## License
+    Apache-2.0.
+  version: "1.0.0"
+  license:
+    name: Apache-2.0
+    identifier: Apache-2.0
+  contact:
+    name: Sentinel Platform Team
+    email: platform@certifyi.ai
+servers:
+  - url: https://api.sentinel.certifyi.ai/v1
+    description: Production
+  - url: https://api.staging.sentinel.certifyi.ai/v1
+    description: Staging
+
+tags:
+  - name: Frameworks
+    description: Compliance framework catalog (SOC 2, ISO, NIST, etc.)
+  - name: Controls
+    description: Control objectives & implementation status
+  - name: Evidence
+    description: Evidence artifacts with chain-of-custody
+  - name: Incidents
+    description: Incident management & response
+  - name: Risks
+    description: Enterprise risk register
+  - name: Vendors
+    description: Third-party / vendor risk management
+  - name: Audit
+    description: Append-only audit log access
+  - name: Webhooks
+    description: Outbound webhook subscriptions & events
+
+security:
+  - bearerAuth: []
+  - apiKey: []
+
+paths:
+  /frameworks:
+    get:
+      tags: [Frameworks]
+      summary: List compliance frameworks
+      operationId: listFrameworks
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Page of frameworks
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FrameworkPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  /frameworks/{id}:
+    parameters:
+      - $ref: "#/components/parameters/FrameworkId"
+    get:
+      tags: [Frameworks]
+      summary: Get a framework
+      operationId: getFramework
+      responses:
+        "200":
+          description: Framework
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Framework" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /controls:
+    get:
+      tags: [Controls]
+      summary: List controls
+      operationId: listControls
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - in: query
+          name: framework_id
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Page of controls
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ControlPage" }
+    post:
+      tags: [Controls]
+      summary: Create control
+      operationId: createControl
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ControlInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Control" }
+
+  /evidence:
+    get:
+      tags: [Evidence]
+      summary: List evidence artifacts
+      operationId: listEvidence
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Page of evidence
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EvidencePage" }
+    post:
+      tags: [Evidence]
+      summary: Upload evidence (metadata + pre-signed URL)
+      operationId: createEvidence
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EvidenceInput" }
+      responses:
+        "201":
+          description: Created with pre-signed upload URL
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EvidenceUploadTicket" }
+
+  /incidents:
+    get:
+      tags: [Incidents]
+      summary: List incidents
+      operationId: listIncidents
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Page of incidents
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IncidentPage" }
+    post:
+      tags: [Incidents]
+      summary: Create incident
+      operationId: createIncident
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/IncidentInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Incident" }
+
+  /risks:
+    get:
+      tags: [Risks]
+      summary: List risks
+      operationId: listRisks
+      responses:
+        "200":
+          description: Page of risks
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RiskPage" }
+
+  /vendors:
+    get:
+      tags: [Vendors]
+      summary: List vendors
+      operationId: listVendors
+      responses:
+        "200":
+          description: Page of vendors
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VendorPage" }
+
+  /audit/events:
+    get:
+      tags: [Audit]
+      summary: Query append-only audit events
+      operationId: listAuditEvents
+      parameters:
+        - in: query
+          name: since
+          schema: { type: string, format: date-time }
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Page of audit events
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuditEventPage" }
+
+  /webhooks/subscriptions:
+    get:
+      tags: [Webhooks]
+      summary: List webhook subscriptions
+      operationId: listWebhookSubscriptions
+      responses:
+        "200":
+          description: Subscriptions
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/WebhookSubscription" }
+    post:
+      tags: [Webhooks]
+      summary: Create webhook subscription
+      operationId: createWebhookSubscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/WebhookSubscriptionInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WebhookSubscription" }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    apiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  parameters:
+    Cursor:
+      name: cursor
+      in: query
+      schema: { type: string }
+      description: Opaque pagination cursor returned from the previous response.
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 25 }
+    FrameworkId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid authentication
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Resource not found (may also indicate out-of-tenant)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    RateLimited:
+      description: Rate limit exceeded
+      headers:
+        Retry-After:
+          schema: { type: integer }
+        X-RateLimit-Limit:
+          schema: { type: integer }
+        X-RateLimit-Remaining:
+          schema: { type: integer }
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        request_id: { type: string }
+        details:
+          type: object
+          additionalProperties: true
+
+    PageMeta:
+      type: object
+      properties:
+        next_cursor: { type: string, nullable: true }
+        total: { type: integer, nullable: true }
+
+    Framework:
+      type: object
+      required: [id, slug, name, version]
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string }
+        name: { type: string }
+        version: { type: string }
+        publisher: { type: string }
+        control_count: { type: integer }
+    FrameworkPage:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/Framework" }
+        meta: { $ref: "#/components/schemas/PageMeta" }
+
+    Control:
+      type: object
+      required: [id, framework_id, code, title]
+      properties:
+        id: { type: string, format: uuid }
+        framework_id: { type: string, format: uuid }
+        code: { type: string }
+        title: { type: string }
+        description: { type: string }
+        owner_id: { type: string, format: uuid, nullable: true }
+        status:
+          type: string
+          enum: [not_implemented, partial, implemented, verified]
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    ControlInput:
+      type: object
+      required: [framework_id, code, title]
+      properties:
+        framework_id: { type: string, format: uuid }
+        code: { type: string }
+        title: { type: string }
+        description: { type: string }
+        owner_id: { type: string, format: uuid, nullable: true }
+    ControlPage:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/Control" }
+        meta: { $ref: "#/components/schemas/PageMeta" }
+
+    Evidence:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        filename: { type: string }
+        sha256: { type: string }
+        size_bytes: { type: integer }
+        content_type: { type: string }
+        created_at: { type: string, format: date-time }
+    EvidenceInput:
+      type: object
+      required: [filename, content_type, size_bytes]
+      properties:
+        filename: { type: string }
+        content_type: { type: string }
+        size_bytes: { type: integer, minimum: 1 }
+        control_ids:
+          type: array
+          items: { type: string, format: uuid }
+    EvidenceUploadTicket:
+      type: object
+      properties:
+        evidence: { $ref: "#/components/schemas/Evidence" }
+        upload_url: { type: string, format: uri }
+        expires_at: { type: string, format: date-time }
+    EvidencePage:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/Evidence" }
+        meta: { $ref: "#/components/schemas/PageMeta" }
+
+    Incident:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        severity:
+          type: string
+          enum: [sev1, sev2, sev3, sev4]
+        status:
+          type: string
+          enum: [open, contained, resolved, post_mortem]
+        opened_at: { type: string, format: date-time }
+    IncidentInput:
+      type: object
+      required: [title, severity]
+      properties:
+        title: { type: string }
+        severity:
+          type: string
+          enum: [sev1, sev2, sev3, sev4]
+        description: { type: string }
+    IncidentPage:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/Incident" }
+        meta: { $ref: "#/components/schemas/PageMeta" }
+
+    Risk:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        likelihood: { type: integer, minimum: 1, maximum: 5 }
+        impact: { type: integer, minimum: 1, maximum: 5 }
+        status: { type: string }
+    RiskPage:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/Risk" }
+        meta: { $ref: "#/components/schemas/PageMeta" }
+
+    Vendor:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        tier:
+          type: string
+          enum: [critical, high, medium, low]
+        due_diligence_status: { type: string }
+    VendorPage:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/Vendor" }
+        meta: { $ref: "#/components/schemas/PageMeta" }
+
+    AuditEvent:
+      type: object
+      required: [id, event_type, actor_id, occurred_at, hash, previous_hash]
+      properties:
+        id: { type: string, format: uuid }
+        event_type: { type: string }
+        actor_id: { type: string, format: uuid }
+        target_type: { type: string, nullable: true }
+        target_id: { type: string, nullable: true }
+        occurred_at: { type: string, format: date-time }
+        hash: { type: string }
+        previous_hash: { type: string, nullable: true }
+        payload:
+          type: object
+          additionalProperties: true
+    AuditEventPage:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/AuditEvent" }
+        meta: { $ref: "#/components/schemas/PageMeta" }
+
+    WebhookSubscription:
+      type: object
+      required: [id, url, events]
+      properties:
+        id: { type: string, format: uuid }
+        url: { type: string, format: uri }
+        events:
+          type: array
+          items: { type: string, enum: [
+            evidence.created, evidence.verified,
+            control.updated, incident.opened, incident.resolved,
+            risk.updated, vendor.updated, audit.event
+          ]}
+        secret_last_four: { type: string }
+        active: { type: boolean }
+        created_at: { type: string, format: date-time }
+    WebhookSubscriptionInput:
+      type: object
+      required: [url, events]
+      properties:
+        url: { type: string, format: uri }
+        events:
+          type: array
+          items: { type: string }
+        secret: { type: string, description: "HMAC shared secret (write-only)" }
