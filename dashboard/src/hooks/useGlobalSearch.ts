@@ -31,7 +31,7 @@ export function useGlobalSearch() {
     queryFn: async () => {
       if (!debouncedQuery.trim() || debouncedQuery.length < 2) return []
       const { data, error } = await supabase.rpc('global_search', {
-        p_org_id: orgId,
+        p_tenant_id: orgId,
         p_query: debouncedQuery,
         p_limit: 20,
       })
