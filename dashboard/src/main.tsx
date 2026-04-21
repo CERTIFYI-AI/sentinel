@@ -8,6 +8,9 @@ import { Toaster } from "sonner";
 import "./index.css";
 import "./styles/globals.css";
 import "./store/accentStore";
+// Auto-register all 27 governance agents on app bootstrap.
+// Side-effect import — each agent file calls governanceBus.registerAgent.
+import "./agents";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

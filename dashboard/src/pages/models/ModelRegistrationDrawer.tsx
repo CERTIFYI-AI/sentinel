@@ -4,6 +4,7 @@ import {
   X, Robot, CheckCircle, Warning, Plus, User,
 } from '@phosphor-icons/react';
 import { USERS } from '../../data/seed';
+import { governanceBus } from '../../lib/governance/eventBus';
 
 // WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
@@ -120,10 +121,36 @@ export default function ModelRegistrationDrawer({ onClose, onRegister }: ModelRe
     if (step === 1 && validateStep1()) setStep(2);
   }
 
-  function handleRegister() {
+  async function handleRegister() {
     if (!validateStep2()) return;
     setRegistered(true);
     onRegister?.(form);
+
+    // Emit MODEL_REGISTERED event — triggers the 12-agent governance cascade
+    // (risk assessment, compliance mapping, fairness, explainability, etc.).
+    // Non-blocking: UI proceeds regardless of cascade outcome.
+    try {
+      const payload: Record<string, unknown> = {
+        resource_id: `model-${Date.now()}`,
+        resource_type: 'ai_system',
+        model: {
+          name: form.name,
+          version: form.version,
+          type: form.type,
+          owner: form.owner,
+          department: form.department,
+          description: form.description,
+          risk_tier: form.riskTier,
+          purpose: form.description,
+          frameworks: [form.framework],
+        },
+      };
+      await governanceBus.emit('MODEL_REGISTERED', 'ai-inventory', payload);
+    } catch (err) {
+      // Log but don't block UI — cascade failures are self-healing via DLQ.
+      // eslint-disable-next-line no-console
+      console.error('[ModelRegistration] Cascade emit failed', err);
+    }
   }
 
   function fieldStyle(hasError?: boolean): React.CSSProperties {
