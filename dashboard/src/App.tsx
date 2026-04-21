@@ -162,6 +162,7 @@ const Licensing = lazy(() => import('./pages/admin/Licensing'));
 const GovernanceFramework = lazy(() => import('./pages/GovernanceFramework'));
 const GovernanceMesh = lazy(() => import('./pages/GovernanceMesh'));
 const EvidenceChain = lazy(() => import('./pages/EvidenceChain'));
+const EvidenceCustodyExplorer = lazy(() => import('./pages/EvidenceCustodyExplorer'));
 const AutomationStudio = lazy(() => import('./pages/AutomationStudio'));
 
 // --- V1 Missing Modules ---
@@ -476,6 +477,7 @@ export default function App() {
           <Route path="/governance-framework" element={<Suspense fallback={<Loading />}><GovernanceFramework /></Suspense>} />
           <Route path="/governance-mesh" element={<Suspense fallback={<Loading />}><GovernanceMesh /></Suspense>} />
           <Route path="/evidence-chain" element={<Suspense fallback={<Loading />}><EvidenceChain /></Suspense>} />
+          <Route path="/evidence/custody/:artifactId" element={<Suspense fallback={<Loading />}><EvidenceCustodyExplorer /></Suspense>} />
           <Route path="/automation-studio" element={<Suspense fallback={<Loading />}><AutomationStudio /></Suspense>} />
 
             {/* V1 Missing Modules */}
