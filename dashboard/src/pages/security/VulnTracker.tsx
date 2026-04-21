@@ -1,4 +1,5 @@
-// @ts-nocheck
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
 import { useState, useCallback } from 'react';
 import {
   Bug, Eye, PencilSimple, Trash, MagnifyingGlass, Plus,
@@ -19,6 +20,10 @@ import { VULNERABILITIES, Vulnerability, severityColor, statusColor, formatDate 
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useAttackSurfaceData } from '../../hooks/useAttackSurfaceData';
 import { PageSkeleton } from '../../components/ui/PageSkeleton';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { StatCardRow } from '../../components/ui/StatCardRow';
+import { FilterBar } from '../../components/ui/FilterBar';
+import type { StatCardRowItem } from '../../components/ui/StatCardRow';
 
 // WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
@@ -128,6 +133,38 @@ export default function VulnTracker() {
 
   const openDetail = (v: Vulnerability) => { setSelectedVuln(v); setSheetOpen(true); };
 
+  const vulnKpiCards: StatCardRowItem[] = [
+    {
+      label: 'Total CVEs',
+      value: String(vulns.length),
+      icon: <Bug size={18} weight="fill" style={{ color: 'hsl(var(--s-in-tx))' }} />,
+    },
+    {
+      label: 'Critical (CVSS 9+)',
+      value: String(criticalCount),
+      icon: <Fire size={18} weight="fill" style={{ color: 'hsl(var(--destructive))' }} />,
+      delta: 'Immediate patching required',
+      deltaDir: 'up' as const,
+      isPositiveUp: false,
+    },
+    {
+      label: 'High Severity',
+      value: String(highCount),
+      icon: <Warning size={18} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />,
+      delta: 'Patch within 7 days',
+      deltaDir: 'up' as const,
+      isPositiveUp: false,
+    },
+    {
+      label: 'Patched',
+      value: String(patchedCount),
+      icon: <CheckCircle size={18} weight="fill" style={{ color: 'hsl(var(--s-ok-tx))' }} />,
+      delta: 'Remediated',
+      deltaDir: 'up' as const,
+      isPositiveUp: true,
+    },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Toast */}
@@ -140,55 +177,54 @@ export default function VulnTracker() {
         ))}
       </div>
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <Bug size={22} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />
-            <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Vulnerability Tracker</h1>
-          </div>
-          <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} — CVE tracking, CVSS scoring, and patch management</p>
-        </div>
-        <Button variant="outline" style={{ borderRadius: 0 }}>
-          <Upload size={14} className="mr-2" />Import Scan Results
-        </Button>
-      </div>
+      {/* Page Header */}
+      <PageHeader
+        title="Vulnerability Tracker"
+        subtitle="CVE tracking and remediation pipeline"
+        breadcrumbs={[{ label: 'Dashboard', href: '/' }, { label: 'Security', href: '/security' }, { label: 'Vulnerabilities' }]}
+        actions={
+          <Button variant="outline" style={{ borderRadius: 0 }}>
+            <Upload size={14} className="mr-2" />Import Scan Results
+          </Button>
+        }
+      />
 
-      {/* Metrics */}
-      <div className="grid grid-cols-4 gap-4">
-        <MetricTile label="Total Vulnerabilities" value={String(vulns.length)} variant="info" icon={<Bug size={16} weight="fill" className="text-blue-600 dark:text-blue-400" />} />
-        <MetricTile label="Critical (CVSS 9+)" value={String(criticalCount)} variant="error" icon={<Fire size={16} weight="fill" className="text-destructive" />} sub="Immediate patching" />
-        <MetricTile label="High Severity" value={String(highCount)} variant="warn" icon={<Warning size={16} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />} />
-        <MetricTile label="Patched" value={String(patchedCount)} variant="ok" icon={<CheckCircle size={16} weight="fill" className="text-green-600 dark:text-green-400" />} />
-      </div>
+      {/* CVE KPI Row */}
+      <StatCardRow cards={vulnKpiCards} />
 
-      {/* Filters */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-xs">
-          <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--text-4))' }} />
-          <Input placeholder="Search CVEs, titles..." value={search} onChange={e => setSearch(e.target.value)}
-            className="pl-9 h-8 text-xs" style={{ borderRadius: 0 }} />
-        </div>
-        <Select value={filterSeverity} onValueChange={setFilterSeverity}>
-          <SelectTrigger className="h-8 w-32 text-xs" style={{ borderRadius: 0 }}><SelectValue placeholder="Severity" /></SelectTrigger>
-          <SelectContent style={{ borderRadius: 0 }}>
-            <SelectItem value="all">All Severity</SelectItem>
-            <SelectItem value="critical">Critical</SelectItem>
-            <SelectItem value="high">High</SelectItem>
-            <SelectItem value="medium">Medium</SelectItem>
-            <SelectItem value="low">Low</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="h-8 w-36 text-xs" style={{ borderRadius: 0 }}><SelectValue placeholder="Status" /></SelectTrigger>
-          <SelectContent style={{ borderRadius: 0 }}>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="open">Open</SelectItem>
-            <SelectItem value="in_progress">In Progress</SelectItem>
-            <SelectItem value="patched">Patched</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      {/* FilterBar */}
+      <FilterBar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search CVEs, titles, IDs..."
+        filters={[
+          {
+            key: 'severity',
+            label: 'Severity',
+            value: filterSeverity === 'all' ? '' : filterSeverity,
+            onChange: v => setFilterSeverity(v || 'all'),
+            options: [
+              { label: 'Critical', value: 'critical' },
+              { label: 'High', value: 'high' },
+              { label: 'Medium', value: 'medium' },
+              { label: 'Low', value: 'low' },
+            ],
+          },
+          {
+            key: 'status',
+            label: 'Status',
+            value: filterStatus === 'all' ? '' : filterStatus,
+            onChange: v => setFilterStatus(v || 'all'),
+            options: [
+              { label: 'Open', value: 'open' },
+              { label: 'In Progress', value: 'in_progress' },
+              { label: 'Patched', value: 'patched' },
+            ],
+          },
+        ]}
+        activeFilterCount={[filterSeverity, filterStatus].filter(v => v !== 'all').length}
+        onClearAll={() => { setSearch(''); setFilterSeverity('all'); setFilterStatus('all'); }}
+      />
 
       {/* Table */}
       <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>

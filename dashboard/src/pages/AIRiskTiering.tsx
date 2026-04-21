@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
 import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import {
@@ -16,11 +18,14 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '../components/ui/dialog';
 import {
-
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger,
 } from '../components/ui/alert-dialog';
+import { PageHeader } from '../components/ui/PageHeader';
+import { StatCardRow } from '../components/ui/StatCardRow';
+import { FilterBar } from '../components/ui/FilterBar';
+import type { StatCardRowItem } from '../components/ui/StatCardRow';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -182,26 +187,57 @@ export default function AIRiskTiering() {
 
   const tc = tierColor(derived);
 
+  const tierKpiCards: StatCardRowItem[] = [
+    {
+      label: 'Unacceptable Risk',
+      value: String(unacceptable),
+      icon: <Warning size={18} weight="fill" style={{ color: 'hsl(var(--s-er-tx))' }} />,
+      delta: 'Prohibited — cannot deploy',
+      deltaDir: 'up' as const,
+      isPositiveUp: false,
+    },
+    {
+      label: 'High Risk',
+      value: String(highRisk),
+      icon: <Warning size={18} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />,
+      delta: 'Annex III — full compliance',
+      deltaDir: 'up' as const,
+      isPositiveUp: false,
+    },
+    {
+      label: 'Limited Risk',
+      value: String(limited),
+      icon: <Info size={18} style={{ color: 'hsl(var(--brand))' }} />,
+      delta: 'Transparency obligations',
+      deltaDir: 'up' as const,
+      isPositiveUp: true,
+    },
+    {
+      label: 'Minimal Risk',
+      value: String(minimal),
+      icon: <CheckCircle size={18} weight="fill" style={{ color: 'hsl(var(--s-ok-tx))' }} />,
+      delta: 'No specific obligations',
+      deltaDir: 'up' as const,
+      isPositiveUp: true,
+    },
+  ];
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>AI Risk Classification</h1>
-          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>Classify AI systems per EU AI Act Annex III risk tiers</p>
-        </div>
-        <Button onClick={() => { resetWizard(); setWizardOpen(true); }} style={{ borderRadius: 0 }}>
-          <Plus size={15} className="mr-1.5" /> Classify System
-        </Button>
-      </div>
+      {/* Page Header */}
+      <PageHeader
+        title="AI Risk Tiering"
+        subtitle="EU AI Act risk classification for AI systems"
+        breadcrumbs={[{ label: 'Dashboard', href: '/' }, { label: 'AI Risk Tiering' }]}
+        actions={
+          <Button onClick={() => { resetWizard(); setWizardOpen(true); }} style={{ borderRadius: 0 }}>
+            <Plus size={15} className="mr-1.5" /> Classify System
+          </Button>
+        }
+      />
 
-      {/* Metric tiles */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricTile label="Unacceptable Risk" value={`${unacceptable}`} variant="error" />
-        <MetricTile label="High Risk" value={`${highRisk}`} variant="warn" />
-        <MetricTile label="Limited Risk" value={`${limited}`} variant="info" />
-        <MetricTile label="Minimal Risk" value={`${minimal}`} variant="ok" />
-      </div>
+      {/* Tier Distribution KPI Row */}
+      <StatCardRow cards={tierKpiCards} />
 
       {/* Tier overview cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -230,19 +266,17 @@ export default function AIRiskTiering() {
         })}
       </div>
 
+      {/* FilterBar */}
+      <FilterBar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search by system name or ID..."
+        onClearAll={() => setSearch('')}
+      />
+
       {/* Table */}
       <Card style={{ borderRadius: 0 }}>
         <CardContent className="p-0">
-          <div className="p-4 border-b flex items-center gap-3" style={{ borderColor: 'hsl(var(--border))' }}>
-            <MagnifyingGlass size={15} style={{ color: 'hsl(var(--text-4))' }} />
-            <Input
-              placeholder="Search classifications..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="h-8 border-0 p-0 focus-visible:ring-0 bg-transparent"
-              style={{ color: 'hsl(var(--text-1))' }}
-            />
-          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>

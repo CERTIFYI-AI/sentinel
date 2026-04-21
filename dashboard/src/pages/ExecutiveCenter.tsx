@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../components/ui/card';
@@ -20,6 +22,9 @@ import {
 import { useSettingsStore } from '../stores/settingsStore';
 import { useChartTheme } from '../hooks/useChartTheme';
 import { MODELS, RISKS, FRAMEWORKS, INCIDENTS } from '../data/seed';
+import { PageHeader } from '../components/ui/PageHeader';
+import { StatCardRow } from '../components/ui/StatCardRow';
+import type { StatCardRowItem } from '../components/ui/StatCardRow';
 
 // ── Derived Metrics ────────────────────────────────────────────────────────────
 const prodModels = MODELS.filter(m => m.status === 'production').length;
@@ -182,58 +187,73 @@ export default function ExecutiveCenter() {
 
   const fineExposure = 35 + 20 + 2.4; // EU AI Act + GDPR + ECOA risk floor
 
+  const execKpiCards: StatCardRowItem[] = [
+    {
+      label: 'AI Risk Score',
+      value: `${aiRiskScore}/100`,
+      icon: <Gauge size={18} style={{ color: 'hsl(var(--brand))' }} />,
+      delta: `+${aiRiskScore - 58} vs 6 months ago`,
+      deltaDir: 'up' as const,
+      isPositiveUp: true,
+    },
+    {
+      label: 'Fine Exposure',
+      value: `$${fineExposure}M+`,
+      icon: <Warning size={18} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />,
+      delta: 'Active regulatory risk',
+      deltaDir: 'up' as const,
+      isPositiveUp: false,
+    },
+    {
+      label: 'Framework Compliance',
+      value: `${avgCompliance}%`,
+      icon: <ShieldCheck size={18} weight="fill" style={{ color: 'hsl(var(--s-ok-tx))' }} />,
+      delta: `${FRAMEWORKS.length} frameworks`,
+      deltaDir: 'up' as const,
+      isPositiveUp: true,
+    },
+    {
+      label: 'Critical Risks Open',
+      value: String(criticalRisks),
+      icon: <Siren size={18} weight="fill" style={{ color: 'hsl(var(--destructive))' }} />,
+      delta: `${RISKS.length} total tracked`,
+      deltaDir: 'up' as const,
+      isPositiveUp: false,
+    },
+  ];
+
   return (
     <TooltipProvider>
       <div className="space-y-5">
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Executive AI Command Center</h1>
-              <Badge style={{ borderRadius: 0, fontSize: 9, background: 'hsl(var(--brand) / 0.12)', color: 'hsl(var(--brand))', border: '1px solid hsl(var(--brand) / 0.3)' }}>
-                BOARD · CXO VIEW
-              </Badge>
+        {/* Page Header */}
+        <PageHeader
+          title="Executive Center"
+          subtitle="Board-level risk and compliance posture"
+          breadcrumbs={[{ label: 'Dashboard', href: '/' }, { label: 'Executive Center' }]}
+          badge={
+            <Badge style={{ borderRadius: 0, fontSize: 9, background: 'hsl(var(--brand) / 0.12)', color: 'hsl(var(--brand))', border: '1px solid hsl(var(--brand) / 0.3)' }}>
+              BOARD · CXO VIEW
+            </Badge>
+          }
+          actions={
+            <div className="flex gap-2">
+              <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => toast.success('Board pack PDF generating…')}>
+                <FileText size={13} className="mr-1.5" />Export Board Pack
+              </Button>
+              <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }} onClick={() => navigate('/reporting')}>
+                <PresentationChart size={13} className="mr-1.5" />Full Report
+              </Button>
             </div>
-            <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>
-              {orgName} · {today} · Consolidated AI governance posture for executive leadership and board reporting
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => toast.success('Board pack PDF generating…')}>
-              <FileText size={13} className="mr-1.5" />Export Board Pack
-            </Button>
-            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }} onClick={() => navigate('/reporting')}>
-              <PresentationChart size={13} className="mr-1.5" />Full Report
-            </Button>
-          </div>
-        </div>
+          }
+        />
+
+        {/* Executive KPI Row */}
+        <StatCardRow cards={execKpiCards} />
 
         {/* Live Pulse Ticker */}
         <PulseTicker fineExposure={fineExposure} score={aiRiskScore} />
 
-        {/* Top KPI Strip */}
-        <div className="grid grid-cols-6 gap-2">
-          {[
-            { label: 'AI Risk Score', value: `${aiRiskScore}/100`, sub: 'vs. 58 six months ago', up: true, link: null },
-            { label: 'Fine Exposure', value: `$${fineExposure}M+`, sub: 'Active regulatory risk', alert: true, link: '/reg-velocity' },
-            { label: 'Framework Compliance', value: `${avgCompliance}%`, sub: `${FRAMEWORKS.length} frameworks tracked`, link: '/compliance-dashboard' },
-            { label: 'Production Models', value: prodModels, sub: `${highRiskModels} high-risk`, link: '/models/inventory' },
-            { label: 'Critical Risks Open', value: criticalRisks, sub: `${RISKS.length} total tracked`, alert: criticalRisks > 0, link: '/risk-register' },
-            { label: 'Active Incidents', value: openIncidents, sub: `${INCIDENTS.length} total this quarter`, alert: openIncidents > 0, link: '/incidents' },
-          ].map((kpi, i) => (
-            <div key={i}
-              className="p-3 cursor-pointer hover:opacity-80 transition-opacity"
-              style={{ border: `1px solid ${kpi.alert ? 'hsl(var(--s-wn-br))' : 'hsl(var(--border))'}`, background: kpi.alert ? 'hsl(var(--s-wn-bg) / 0.4)' : 'hsl(var(--bg-surface))' }}
-              onClick={() => kpi.link && navigate(kpi.link)}>
-              <p className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{kpi.label}</p>
-              <p className="text-xl font-bold mt-0.5" style={{ color: kpi.alert ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-1))' }}>{kpi.value}</p>
-              <div className="flex items-center gap-1 mt-0.5">
-                {kpi.up && <TrendUp size={10} style={{ color: 'hsl(var(--s-ok-tx))' }} />}
-                <p className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>{kpi.sub}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* KPI strip replaced by StatCardRow above */}
 
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList style={{ borderRadius: 0 }}>

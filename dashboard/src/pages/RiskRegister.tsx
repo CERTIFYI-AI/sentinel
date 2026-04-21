@@ -1,13 +1,15 @@
-// @ts-nocheck
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
 import { useRisksData } from "@/hooks/useRisksData";
-import { useChartTheme } from '@/hooks/useChartTheme';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
-import { useState, useMemo } from 'react';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { StatCardRow } from '@/components/ui/StatCardRow';
+import { FilterBar } from '@/components/ui/FilterBar';
+import React, { useState, useMemo } from 'react';
 import {
   Eye, PencilSimple, Trash, Plus, ArrowUp, ArrowRight, ArrowDown,
-  Warning, ShieldCheck, GridFour, ListBullets, Funnel, Info,
+  Warning, ShieldCheck, GridFour, ListBullets, Info,
   X, CaretRight, CaretDown, CaretUp, Link as LinkIcon, Clock, User, Flag,
-  MagnifyingGlass, ArrowsClockwise,
 } from '@phosphor-icons/react';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -479,13 +481,13 @@ export default function RiskRegister() {
                           </span>
                         ))}
                         {overflow > 0 && (
-                          <Badge
+                          <span
                             className="text-[9px] px-1 py-0 cursor-pointer"
-                            style={{ background: 'hsl(var(--bg-surface))', color: 'hsl(var(--text-1))', borderRadius: 0, border: '1px solid hsl(var(--border))' }}
-                            onClick={(e) => { e.stopPropagation(); }}
+                            style={{ background: 'hsl(var(--bg-surface))', color: 'hsl(var(--text-1))', borderRadius: 0, border: '1px solid hsl(var(--border))', display: 'inline-block' }}
+                            onClick={(e: React.MouseEvent) => { e.stopPropagation(); }}
                           >
                             +{overflow} more
-                          </Badge>
+                          </span>
                         )}
                       </div>
                     );
@@ -520,49 +522,50 @@ export default function RiskRegister() {
     <TooltipProvider>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Risk Register</h1>
-            <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>
-              {orgName} · ISO 31000 risk management — {totalRisks} risks tracked
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            {/* View toggle */}
-            <div className="flex items-center border" style={{ borderColor: 'hsl(var(--border))', borderRadius: 0 }}>
-              <Button
-                variant={viewMode === 'list' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => toggleView('list')}
-                style={{ borderRadius: 0, height: 32 }}
-              >
-                <ListBullets size={14} className="mr-1" />List
+        <PageHeader
+          title="Risk Register"
+          subtitle={`${orgName} · ISO 31000 risk management — ${totalRisks} risks tracked`}
+          breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Risk Register' }]}
+          actions={
+            <div className="flex items-center gap-2">
+              {/* View toggle */}
+              <div className="flex items-center border" style={{ borderColor: 'hsl(var(--border))', borderRadius: 0 }}>
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => toggleView('list')}
+                  style={{ borderRadius: 0, height: 32 }}
+                >
+                  <ListBullets size={14} className="mr-1" />List
+                </Button>
+                <Button
+                  variant={viewMode === 'matrix' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => toggleView('matrix')}
+                  style={{ borderRadius: 0, height: 32 }}
+                >
+                  <GridFour size={14} className="mr-1" />Matrix
+                </Button>
+              </div>
+              <Button variant="outline" onClick={() => exportCsv(risks, 'risks.csv')} style={{ borderRadius: 0 }}>
+                Export CSV
               </Button>
-              <Button
-                variant={viewMode === 'matrix' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => toggleView('matrix')}
-                style={{ borderRadius: 0, height: 32 }}
-              >
-                <GridFour size={14} className="mr-1" />Matrix
+              <Button onClick={() => setAddOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+                <Plus size={14} className="mr-1" />Add Risk
               </Button>
             </div>
-            <Button variant="outline" onClick={() => exportCsv(risks, 'risks.csv')} style={{ borderRadius: 0 }}>
-              Export CSV
-            </Button>
-            <Button onClick={() => setAddOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
-              <Plus size={14} className="mr-1" />Add Risk
-            </Button>
-          </div>
-        </div>
+          }
+        />
 
-        {/* Metrics */}
-        <div className="grid grid-cols-4 gap-4">
-          <MetricTile label="Total Risks" value={totalRisks} variant="default" />
-          <MetricTile label="Critical" value={criticalCount} variant="error" />
-          <MetricTile label="Open" value={openCount} variant="warn" />
-          <MetricTile label="Mitigated" value={mitigatedCount} variant="ok" />
-        </div>
+        {/* KPI StatCardRow */}
+        <StatCardRow
+          cards={[
+            { label: 'Total Risks', value: totalRisks, icon: <Warning size={16} /> },
+            { label: 'Critical', value: criticalCount, icon: <ShieldCheck size={16} />, isPositiveUp: false },
+            { label: 'Open', value: openCount, icon: <ArrowUp size={16} />, isPositiveUp: false },
+            { label: 'Mitigated', value: mitigatedCount, icon: <ArrowDown size={16} />, isPositiveUp: true },
+          ]}
+        />
 
         {/* Avg Score Banner */}
         <Tooltip>
@@ -595,12 +598,15 @@ export default function RiskRegister() {
                 </span>
                 <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Likelihood × Impact — click a cell to filter the table</span>
                 {heatmapFilter.l !== null && (
-                  <Badge
-                    style={{ background: 'hsl(var(--brand) / 0.12)', color: 'hsl(var(--brand))', borderRadius: 0, fontSize: 10, cursor: 'pointer' }}
-                    onClick={e => { e.stopPropagation(); setHeatmapFilter({ l: null, i: null }); }}
+                  <span
+                    style={{ background: 'hsl(var(--brand) / 0.12)', color: 'hsl(var(--brand))', borderRadius: 0, fontSize: 10, cursor: 'pointer', display: 'inline-block', padding: '2px 6px' }}
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e: React.MouseEvent) => { e.stopPropagation(); setHeatmapFilter({ l: null, i: null }); }}
+                    onKeyDown={(e: React.KeyboardEvent) => { if (e.key === 'Enter') setHeatmapFilter({ l: null, i: null }); }}
                   >
                     L{heatmapFilter.l}×I{heatmapFilter.i} · ×
-                  </Badge>
+                  </span>
                 )}
               </div>
               {heatmapExpanded ? <CaretUp size={14} style={{ color: 'hsl(var(--text-4))' }} /> : <CaretDown size={14} style={{ color: 'hsl(var(--text-4))' }} />}
@@ -619,39 +625,34 @@ export default function RiskRegister() {
         )}
 
         {/* Filters */}
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1 max-w-sm">
-            <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--text-4))' }} />
-            <Input
-              placeholder="Search risks..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 h-8 text-sm"
-              style={{ borderRadius: 0 }}
-            />
-          </div>
-          <Select value={filterCategory} onValueChange={setFilterCategory}>
-            <SelectTrigger className="w-40 h-8 text-xs" style={{ borderRadius: 0 }}>
-              <Funnel size={12} className="mr-1" /><SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent style={{ borderRadius: 0 }}>
-              <SelectItem value="all">All Categories</SelectItem>
-              {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-36 h-8 text-xs" style={{ borderRadius: 0 }}>
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent style={{ borderRadius: 0 }}>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="open">Open</SelectItem>
-              <SelectItem value="mitigated">Mitigated</SelectItem>
-              <SelectItem value="accepted">Accepted</SelectItem>
-              <SelectItem value="closed">Closed</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <FilterBar
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Search risks…"
+          activeFilterCount={(filterCategory !== 'all' ? 1 : 0) + (filterStatus !== 'all' ? 1 : 0)}
+          onClearAll={() => { setSearch(''); setFilterCategory('all'); setFilterStatus('all'); }}
+          filters={[
+            {
+              key: 'category',
+              label: 'Category',
+              value: filterCategory === 'all' ? '' : filterCategory,
+              onChange: v => setFilterCategory(v || 'all'),
+              options: categories.map((c: string) => ({ label: c, value: c })),
+            },
+            {
+              key: 'status',
+              label: 'Status',
+              value: filterStatus === 'all' ? '' : filterStatus,
+              onChange: v => setFilterStatus(v || 'all'),
+              options: [
+                { label: 'Open', value: 'open' },
+                { label: 'Mitigated', value: 'mitigated' },
+                { label: 'Accepted', value: 'accepted' },
+                { label: 'Closed', value: 'closed' },
+              ],
+            },
+          ]}
+        />
 
         {/* View content */}
         {viewMode === 'matrix' ? renderMatrix() : (
@@ -702,8 +703,10 @@ export default function RiskRegister() {
                   </thead>
                   <tbody>
                     {filtered.map(risk => {
-                      const scoreStyle = riskScoreStyle(risk.score);
-                      const sevColor = severityColor(risk.severity);
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      const scoreStyle = riskScoreStyle((risk.score ?? 0) as number);
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      const sevColor = severityColor((risk.severity ?? '') as any);
                       const statColor = statusColor(risk.status);
                       const controls = RISK_CONTROL_MAP[risk.id] || [];
                       return (
@@ -967,7 +970,7 @@ export default function RiskRegister() {
                     </div>
                     <div className="space-y-2">
                       <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Mitigation Actions</p>
-                      {selectedRisk.mitigations.map((m, i) => (
+                      {selectedRisk.mitigations.map((m: string, i: number) => (
                         <div key={i} className="flex items-start gap-2 p-2" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                           <CaretRight size={12} style={{ color: 'hsl(var(--brand))', marginTop: 2 }} />
                           <span className="text-sm" style={{ color: 'hsl(var(--text-1))' }}>{m}</span>

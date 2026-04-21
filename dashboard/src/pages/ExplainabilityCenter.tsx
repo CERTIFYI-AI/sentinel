@@ -1,12 +1,17 @@
-// @ts-nocheck
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
+//
+// ExplainabilityCenter — model transparency and decision audit trails.
+
 import { useState, useMemo } from "react";
-import { Brain, Plus, MagnifyingGlass, Eye, PencilSimple, Trash, Export } from "@phosphor-icons/react";
+import { Brain, Plus, Eye, PencilSimple, Trash, Export } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import Breadcrumbs from "@/components/Breadcrumbs";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { StatCardRow } from "@/components/ui/StatCardRow";
+import { FilterBar } from "@/components/ui/FilterBar";
 import { StatusBadge, BulkActionToolbar, PaginationBar, CrudModal, FormSection, FormFooter, MetaBar, ActivityTimeline, useSortAndPage, Th, TInput, TSelect, TTextarea } from "@/components/ui/crud-helpers";
 import { toast } from "sonner";
 
@@ -18,7 +23,7 @@ const AUDIENCES = ["Technical","Non-Technical","Regulatory","Customer","Internal
 const STATUSES = ["Queued","Running","Completed","Failed","Review Required","Archived"];
 const OWNERS = ["Dr. Sarah Chen","Alex Kumar","James Wilson","Emma Rodriguez","Lisa Park","Mike Johnson"];
 
-const SEED: any[] = [
+const SEED: any[] = [ // any: seed items with mixed field types
   { id:"EXP-001", runName:"Q1 2026 — Credit Scoring Global Explanation", model:"Credit Scoring Engine", version:"v3.2.1", method:"SHAP", scope:"Global", type:"Feature Importance", fidelityScore:0.92, stabilityScore:0.88, runDate:"2026-01-14", status:"Completed", owner:"Dr. Sarah Chen", audience:"Regulatory", topFeatures:["income_to_debt_ratio","payment_history_12m","employment_years","credit_utilization","recent_hard_inquiries"], findings:"Income-to-debt ratio (23.1%) and payment history (21.4%) are dominant features. Age was not in top-10 features confirming fairness.", actionItems:"Share with DPO for GDPR Right to Explanation documentation. Include in annual model card.", createdAt:"2026-01-14", updatedAt:"2026-01-14", createdBy:"schenai" },
   { id:"EXP-002", runName:"HR Bias Root-Cause — Local Explanations", model:"HR Screening Model", version:"v2.0.0", method:"LIME", scope:"Local", type:"Counterfactual", fidelityScore:0.78, stabilityScore:0.61, runDate:"2026-01-11", status:"Completed", owner:"Emma Rodriguez", audience:"Internal Audit", topFeatures:["gender_feature_proxy","years_experience","education_level","profile_completeness","referral_source"], findings:"LIME identified 'profile_completeness' as a proxy for gender bias. Candidates with LinkedIn profiles advanced 34% more than those without.", actionItems:"Feature 'profile_completeness' flagged for removal. Retraining required without proxy features.", createdAt:"2026-01-11", updatedAt:"2026-01-12", createdBy:"erodriguez" },
   { id:"EXP-003", runName:"Fraud Model — Attention Map Analysis", model:"Fraud Detection v3", version:"v3.0.8", method:"Integrated Gradients", scope:"Global", type:"Sensitivity Analysis", fidelityScore:0.96, stabilityScore:0.94, runDate:"2026-02-10", status:"Completed", owner:"Alex Kumar", audience:"Technical", topFeatures:["transaction_velocity_1h","merchant_category","geo_mismatch_score","device_fingerprint","ip_reputation"], findings:"Model predominantly uses transaction velocity and geo-mismatch. High stability across test batches confirms robustness.", actionItems:"Document in model card. Present at Q1 Model Review Committee.", createdAt:"2026-02-10", updatedAt:"2026-02-10", createdBy:"akumar" },
@@ -26,7 +31,7 @@ const SEED: any[] = [
   { id:"EXP-005", runName:"NLP Classifier — SHAP Feature Importance", model:"NLP Classifier", version:"v1.4.2", method:"SHAP", scope:"Both", type:"Feature Importance", fidelityScore:null, stabilityScore:null, runDate:null, status:"Queued", owner:"James Wilson", audience:"Mixed", topFeatures:[], findings:"", actionItems:"", createdAt:"2026-04-15", updatedAt:"2026-04-15", createdBy:"jwilson" },
 ];
 
-const EMPTY: any = { runName:"", model:"", version:"", method:"SHAP", scope:"Global", type:"Feature Importance", fidelityScore:"", stabilityScore:"", runDate:"", status:"Queued", owner:"", audience:"Technical", topFeatures:[], findings:"", actionItems:"" };
+const EMPTY: any = { runName:"", model:"", version:"", method:"SHAP", scope:"Global", type:"Feature Importance", fidelityScore:"", stabilityScore:"", runDate:"", status:"Queued", owner:"", audience:"Technical", topFeatures:[], findings:"", actionItems:"" }; // any: form state with mixed field types
 
 export default function ExplainabilityCenter() {
   const [items, setItems] = useState(SEED);
@@ -34,14 +39,14 @@ export default function ExplainabilityCenter() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [methodFilter, setMethodFilter] = useState("all");
   const [modal, setModal] = useState<"create"|"edit"|"view"|null>(null);
-  const [form, setForm] = useState<any>(EMPTY);
+  const [form, setForm] = useState<any>(EMPTY); // any: form state with mixed field types
   const [editId, setEditId] = useState<string|null>(null);
-  const [viewItem, setViewItem] = useState<any>(null);
-  const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const [viewItem, setViewItem] = useState<any>(null); // any: item shape from SEED
+  const [deleteTarget, setDeleteTarget] = useState<any>(null); // any: target for confirm dialog
   const [saving, setSaving] = useState(false);
   const [topFeaturesInput, setTopFeaturesInput] = useState("");
 
-  const filtered = useMemo(() => items.filter(i => {
+  const filtered = useMemo(() => items.filter((i: any) => {
     const q = search.toLowerCase();
     return (i.runName.toLowerCase().includes(q) || i.model.toLowerCase().includes(q) || i.method.toLowerCase().includes(q))
       && (statusFilter === "all" || i.status === statusFilter)
@@ -49,79 +54,128 @@ export default function ExplainabilityCenter() {
   }), [items, search, statusFilter, methodFilter]);
 
   const sp = useSortAndPage(filtered, "runName");
-  const setF = (k: string) => (v: any) => setForm((f: any) => ({ ...f, [k]: v }));
+  const setF = (k: string) => (v: any) => setForm((f: any) => ({ ...f, [k]: v })); // any: dynamic field update
 
   const save = (draft = false) => {
     if (!form.runName.trim()) { toast.error("Run name is required"); return; }
     setSaving(true);
-    const features = topFeaturesInput ? topFeaturesInput.split(",").map(s=>s.trim()).filter(Boolean) : form.topFeatures;
+    const features = topFeaturesInput ? topFeaturesInput.split(",").map((s: string)=>s.trim()).filter(Boolean) : form.topFeatures;
     setTimeout(() => {
       const status = draft ? "Queued" : (form.status || "Queued");
       if (editId) {
-        setItems(p => p.map(i => i.id === editId ? { ...i, ...form, status, topFeatures:features, updatedAt:new Date().toISOString().slice(0,10) } : i));
+        setItems((p: any[]) => p.map(i => i.id === editId ? { ...i, ...form, status, topFeatures:features, updatedAt:new Date().toISOString().slice(0,10) } : i));
         toast.success("Run updated");
       } else {
         const id = `EXP-${String(items.length+1).padStart(3,"0")}`;
-        setItems(p => [...p, { ...form, status, id, topFeatures:features, createdAt:new Date().toISOString().slice(0,10), updatedAt:new Date().toISOString().slice(0,10), createdBy:"admin" }]);
+        setItems((p: any[]) => [...p, { ...form, status, id, topFeatures:features, createdAt:new Date().toISOString().slice(0,10), updatedAt:new Date().toISOString().slice(0,10), createdBy:"admin" }]);
         toast.success("Explanation run created");
       }
       setSaving(false); setModal(null); setForm(EMPTY); setTopFeaturesInput(""); setEditId(null);
     }, 700);
   };
 
-  const openEdit = (item: any) => {
+  const openEdit = (item: any) => { // any: item from SEED
     setForm({ ...item, fidelityScore: item.fidelityScore ?? "", stabilityScore: item.stabilityScore ?? "" });
     setTopFeaturesInput(item.topFeatures?.join(", ") || "");
     setEditId(item.id); setModal("edit");
   };
-  const doDelete = () => { setItems(p => p.filter(i => i.id !== deleteTarget?.id)); setDeleteTarget(null); toast.success("Run deleted"); };
+  const doDelete = () => { setItems((p: any[]) => p.filter(i => i.id !== deleteTarget?.id)); setDeleteTarget(null); toast.success("Run deleted"); };
 
-  function FidelityBar({ score }: { score: number | null }) {
+  function FidelityBar({ score }: { score: number | null | string }) {
     if (score === null || score === "") return <span className="text-xs text-[hsl(var(--text-4))]">—</span>;
-    const pct = Math.round(score * 100);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const numScore = typeof score === 'string' ? parseFloat(score) : (score as number);
+    const pct = Math.round(numScore * 100);
     const color = pct >= 85 ? "#22c55e" : pct >= 70 ? "#f59e0b" : "#ef4444";
     return (
       <div className="flex items-center gap-2">
         <div className="w-12 h-1.5 bg-[hsl(var(--border))]"><div style={{ width:`${pct}%`, background:color, height:"100%" }} /></div>
-        <span className="text-xs font-mono" style={{ color }}>{score}</span>
+        <span className="text-xs font-mono" style={{ color }}>{numScore}</span>
       </div>
     );
   }
 
+  const completedCount = items.filter((i: any) => i.status === "Completed").length;
+  const reviewRequired = items.filter((i: any) => i.status === "Review Required").length;
+  const avgFidelity = (() => {
+    const scored = items.filter((i: any) => i.fidelityScore);
+    if (!scored.length) return "—";
+    return (scored.reduce((a: number, i: any) => a + i.fidelityScore, 0) / scored.length).toFixed(2);
+  })();
+
+  const activeFilterCount = (statusFilter !== "all" ? 1 : 0) + (methodFilter !== "all" ? 1 : 0);
+
   return (
     <div className="p-6 space-y-5 max-w-[1400px]">
-      <Breadcrumbs />
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[hsl(var(--text-1))] flex items-center gap-2"><Brain size={24} weight="duotone" className="text-[hsl(var(--brand))]" />Explainability Center</h1>
-          <p className="text-sm text-[hsl(var(--text-3))] mt-0.5">Model decision transparency, interpretability and explanation auditing</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5"><Export size={14} />Export</Button>
-          <Button size="sm" className="gap-1.5" onClick={() => { setForm(EMPTY); setTopFeaturesInput(""); setEditId(null); setModal("create"); }}><Plus size={14} />New Explanation Run</Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Explainability Center"
+        subtitle="Model transparency and decision audit trails — interpretability and explanation auditing"
+        breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Explainability Center' }]}
+        actions={
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => toast.success("Exported")}>
+              <Export size={14} />Export
+            </Button>
+            <Button size="sm" className="gap-1.5" onClick={() => { setForm(EMPTY); setTopFeaturesInput(""); setEditId(null); setModal("create"); }}>
+              <Plus size={14} />New Explanation Run
+            </Button>
+          </div>
+        }
+      />
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {[["Total Runs",items.length],["Completed",items.filter(i=>i.status==="Completed").length],["Review Required",items.filter(i=>i.status==="Review Required").length],["Avg Fidelity",`${((items.filter(i=>i.fidelityScore).reduce((a,i)=>a+i.fidelityScore,0)/Math.max(items.filter(i=>i.fidelityScore).length,1))).toFixed(2)}`]].map(([l,v])=>(
-          <Card key={l as string}><CardContent className="p-4"><p className="text-2xl font-bold text-[hsl(var(--text-1))]">{v}</p><p className="text-xs text-[hsl(var(--text-3))] mt-0.5">{l}</p></CardContent></Card>
-        ))}
-      </div>
+      <StatCardRow
+        cards={[
+          {
+            label: 'Total Runs',
+            value: items.length,
+            description: `Total explanation runs: ${items.length}`,
+          },
+          {
+            label: 'Completed',
+            value: completedCount,
+            description: `Completed explanation runs: ${completedCount}`,
+          },
+          {
+            label: 'Review Required',
+            value: reviewRequired,
+            description: `Runs requiring review: ${reviewRequired}`,
+          },
+          {
+            label: 'Avg Fidelity',
+            value: avgFidelity,
+            description: `Average fidelity score across completed runs: ${avgFidelity}`,
+          },
+        ]}
+      />
 
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 max-w-sm">
-          <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
-          <Input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search runs…" className="pl-8 h-8 text-sm" />
-        </div>
-        <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-sm px-2 py-1.5 text-[hsl(var(--text-1))]">
-          <option value="all">All Statuses</option>{STATUSES.map(s=><option key={s}>{s}</option>)}
-        </select>
-        <select value={methodFilter} onChange={e=>setMethodFilter(e.target.value)} className="border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-sm px-2 py-1.5 text-[hsl(var(--text-1))]">
-          <option value="all">All Methods</option>{METHODS.map(s=><option key={s}>{s}</option>)}
-        </select>
-      </div>
+      <FilterBar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search runs by name, model, method…"
+        filters={[
+          {
+            key: 'status',
+            label: 'Status',
+            value: statusFilter === "all" ? "" : statusFilter,
+            onChange: v => setStatusFilter(v || "all"),
+            options: STATUSES.map(s => ({ label: s, value: s })),
+          },
+          {
+            key: 'method',
+            label: 'Method',
+            value: methodFilter === "all" ? "" : methodFilter,
+            onChange: v => setMethodFilter(v || "all"),
+            options: METHODS.map(s => ({ label: s, value: s })),
+          },
+        ]}
+        activeFilterCount={activeFilterCount}
+        onClearAll={() => { setSearch(""); setStatusFilter("all"); setMethodFilter("all"); }}
+        trailing={
+          <span className="text-xs text-[hsl(var(--text-4))]">{filtered.length} run{filtered.length !== 1 ? 's' : ''}</span>
+        }
+      />
 
-      <BulkActionToolbar count={sp.selectedIds.size} onClear={sp.clearSelected} onDelete={() => { setItems(p=>p.filter(i=>!sp.selectedIds.has(i.id))); sp.clearSelected(); toast.success("Deleted"); }} onExport={() => toast.success("Exported")} />
+      <BulkActionToolbar count={sp.selectedIds.size} onClear={sp.clearSelected} onDelete={() => { setItems((p: any[])=>p.filter(i=>!sp.selectedIds.has(i.id))); sp.clearSelected(); toast.success("Deleted"); }} onExport={() => toast.success("Exported")} />
 
       <Card><CardContent className="p-0">
         {sp.paged.length === 0 ? (
@@ -144,7 +198,7 @@ export default function ExplainabilityCenter() {
                 </tr>
               </thead>
               <tbody>
-                {sp.paged.map((item: any) => (
+                {sp.paged.map((item: any) => ( // any: item from SEED
                   <tr key={item.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))] cursor-pointer" onClick={() => { setViewItem(item); setModal("view"); }}>
                     <td className="px-3 py-2.5" onClick={e=>e.stopPropagation()}><input type="checkbox" checked={sp.selectedIds.has(item.id)} onChange={() => sp.toggleSelect(item.id)} /></td>
                     <td className="px-3 py-2.5 max-w-[200px]">
@@ -173,7 +227,7 @@ export default function ExplainabilityCenter() {
         )}
       </CardContent></Card>
 
-      <PaginationBar total={sp.total} page={sp.page} perPage={sp.perPage} onPage={sp.setPage} onPerPage={sp.setPerPage} />
+      <PaginationBar total={sp.total} page={sp.currentPage} perPage={sp.perPage} onPage={sp.setPage} onPerPage={sp.setPerPage} />
 
       <CrudModal open={modal==="create"||modal==="edit"} onClose={() => setModal(null)} title={editId?"Edit Explanation Run":"New Explanation Run"} size="xl">
         <div className="p-5 space-y-2">

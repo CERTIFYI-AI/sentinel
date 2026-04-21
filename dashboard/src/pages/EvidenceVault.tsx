@@ -1,4 +1,5 @@
-// @ts-nocheck
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
 import { useState, useCallback } from 'react';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -30,6 +31,10 @@ function exportCsv(rows: any[], filename: string) {
 }
 import { useSettingsStore } from '../stores/settingsStore';
 import { toast } from 'sonner';
+import { PageHeader } from '../components/ui/PageHeader';
+import { StatCardRow } from '../components/ui/StatCardRow';
+import { FilterBar } from '../components/ui/FilterBar';
+import type { StatCardRowItem } from '../components/ui/StatCardRow';
 
 // ── Simulated cryptographic chain data ──────────────────────────────────────
 
@@ -179,31 +184,67 @@ export default function EvidenceVault() {
     color: 'hsl(var(--text-1))', padding: '6px 10px', fontSize: 13, borderRadius: 0,
   };
 
+  const evidenceKpiCards: StatCardRowItem[] = [
+    {
+      label: 'Chain Length',
+      value: String(totalChain),
+      icon: <LinkIcon size={18} style={{ color: '#6366f1' }} />,
+      delta: 'Append-only entries',
+      deltaDir: 'up' as const,
+      isPositiveUp: true,
+    },
+    {
+      label: 'Files in Vault',
+      value: String(evidence.length),
+      icon: <Vault size={18} style={{ color: 'hsl(var(--brand))' }} />,
+      delta: `${synced} synced`,
+      deltaDir: 'up' as const,
+      isPositiveUp: true,
+    },
+    {
+      label: 'Days Active',
+      value: '847',
+      icon: <Clock size={18} style={{ color: '#3b82f6' }} />,
+      delta: '3 audit cycles',
+      deltaDir: 'up' as const,
+      isPositiveUp: true,
+    },
+    {
+      label: 'Chain Integrity',
+      value: '100%',
+      icon: <SealCheck size={18} style={{ color: '#10b981' }} />,
+      delta: 'SHA-256 verified',
+      deltaDir: 'up' as const,
+      isPositiveUp: true,
+    },
+  ];
+
   return (
     <div className="space-y-6">
-      {/* ── Header ── */}
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Vault size={22} style={{ color: 'hsl(var(--brand))' }} />
-            <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Evidence Vault</h1>
-            <span className="px-2 py-0.5 text-xs font-bold ml-1" style={{ background: '#10b98120', color: '#10b981', border: '1px solid #10b98140' }}>
-              ENTERPRISE
-            </span>
+      {/* Page Header */}
+      <PageHeader
+        title="Evidence Vault"
+        subtitle="Immutable audit evidence collection and custody"
+        breadcrumbs={[{ label: 'Dashboard', href: '/' }, { label: 'Evidence Vault' }]}
+        badge={
+          <span className="px-2 py-0.5 text-xs font-bold" style={{ background: '#10b98120', color: '#10b981', border: '1px solid #10b98140' }}>
+            ENTERPRISE
+          </span>
+        }
+        actions={
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={handleExportPackage} style={{ borderRadius: 0 }}>
+              <Export size={14} className="mr-1" /> Export Package
+            </Button>
+            <Button size="sm" onClick={() => { setFormData(EMPTY_EVIDENCE); setUploadOpen(true); }} style={{ borderRadius: 0 }}>
+              <UploadSimple size={14} className="mr-1" /> Upload Evidence
+            </Button>
           </div>
-          <p className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>
-            {orgName} · Cryptographic tamper-evident audit chain — SHA-256 chained ledger
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={handleExportPackage} style={{ borderRadius: 0 }}>
-            <Export size={14} className="mr-1" /> Export Package
-          </Button>
-          <Button size="sm" onClick={() => { setFormData(EMPTY_EVIDENCE); setUploadOpen(true); }} style={{ borderRadius: 0 }}>
-            <UploadSimple size={14} className="mr-1" /> Upload Evidence
-          </Button>
-        </div>
-      </div>
+        }
+      />
+
+      {/* Evidence KPI Row */}
+      <StatCardRow cards={evidenceKpiCards} />
 
       {/* ── Compliance Continuity Hero ── */}
       <div style={{ background: 'hsl(var(--brand) / 0.06)', border: '2px solid hsl(var(--brand) / 0.3)', padding: '20px 24px' }}>
@@ -276,19 +317,7 @@ export default function EvidenceVault() {
         </div>
       </div>
 
-      {/* ── Metric Tiles ── */}
-      <div className="grid grid-cols-4 gap-4">
-        {stats.map(s => (
-          <div key={s.label} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', padding: '16px' }}>
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{s.label}</p>
-              <s.icon size={16} style={{ color: s.color }} />
-            </div>
-            <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
-            <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>{s.sub}</p>
-          </div>
-        ))}
-      </div>
+      {/* Metric tiles replaced by StatCardRow above */}
 
       {/* ── Tabs: Vault Files / Chain Explorer ── */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -303,17 +332,25 @@ export default function EvidenceVault() {
 
         {/* ── Files Tab ── */}
         <TabsContent value="vault" className="mt-4 space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1 max-w-xs">
-              <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--text-3))' }} />
-              <Input placeholder="Search vault…" value={search} onChange={e => setSearch(e.target.value)} className="pl-8" style={{ borderRadius: 0 }} />
-            </div>
-            <select value={filterType} onChange={e => setFilterType(e.target.value)} style={sxSel}>
-              <option value="all">All Types</option>
-              {types.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
-            <span className="text-xs ml-auto" style={{ color: 'hsl(var(--text-3))' }}>{filtered.length} of {evidence.length} files</span>
-          </div>
+          <FilterBar
+            search={search}
+            onSearchChange={setSearch}
+            searchPlaceholder="Search vault by title, source, framework..."
+            filters={[
+              {
+                key: 'type',
+                label: 'Type',
+                value: filterType === 'all' ? '' : filterType,
+                onChange: v => setFilterType(v || 'all'),
+                options: types.map(t => ({ label: t, value: t })),
+              },
+            ]}
+            activeFilterCount={filterType !== 'all' ? 1 : 0}
+            onClearAll={() => { setSearch(''); setFilterType('all'); }}
+            trailing={
+              <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{filtered.length} of {evidence.length} files</span>
+            }
+          />
           <div className="grid grid-cols-3 gap-4">
             {filtered.map(e => {
               const sc = statusColor(e.status);

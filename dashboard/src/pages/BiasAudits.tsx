@@ -1,18 +1,23 @@
-// @ts-nocheck
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
+//
+// BiasAudits — fairness and disparate impact assessment for AI systems.
+
 import { useState, useMemo } from "react";
-import { Scales, Plus, MagnifyingGlass, Eye, PencilSimple, Trash, Export, FlaskConical } from "@phosphor-icons/react";
+import { Scales, Plus, Eye, PencilSimple, Trash, Export, Flask } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import Breadcrumbs from "@/components/Breadcrumbs";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { StatCardRow } from "@/components/ui/StatCardRow";
+import { FilterBar } from "@/components/ui/FilterBar";
 import { StatusBadge, BulkActionToolbar, PaginationBar, CrudModal, FormSection, FormFooter, MetaBar, ActivityTimeline, useSortAndPage, Th, TInput, TSelect, TTextarea, TToggle, TCheckGroup } from "@/components/ui/crud-helpers";
 import { toast } from "sonner";
 import { useBiasAuditsData } from '@/hooks/useBiasAuditsData'
 import { PageSkeleton } from '@/components/ui/PageSkeleton'
 
-function exportCsv(rows: any[], filename: string) {
+function exportCsv(rows: any[], filename: string) { // any: generic CSV export utility
   if (!rows.length) return
   const keys = Object.keys(rows[0])
   const csv = [keys.join(','), ...rows.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n')
@@ -26,7 +31,7 @@ const SEVERITIES = ["Critical","High","Medium","Low","Informational"];
 const STATUSES = ["Draft","In Progress","Completed","Failed","Archived"];
 const MODELS = ["GPT-4o Risk Scorer v2","Fraud Detection v3","Credit Scoring Engine","HR Screening Model","NLP Classifier","Loan Approval AI"];
 
-const EMPTY: any = { name:"", model:"", date:"", attributes:[], methodology:"", dataset:"", periodFrom:"", periodTo:"", auditor:"", org:"", findings:"", severity:"Medium", remediationRequired:false, framework:"", status:"Draft" };
+const EMPTY: any = { name:"", model:"", date:"", attributes:[], methodology:"", dataset:"", periodFrom:"", periodTo:"", auditor:"", org:"", findings:"", severity:"Medium", remediationRequired:false, framework:"", status:"Draft" }; // any: form state with mixed field types
 
 function ScoreBar({ score }: { score: number | null }) {
   if (score === null) return <span className="text-xs text-[hsl(var(--text-4))]">—</span>;
@@ -47,10 +52,10 @@ export default function BiasAudits() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [modal, setModal] = useState<"create"|"edit"|"view"|null>(null);
-  const [form, setForm] = useState<any>(EMPTY);
+  const [form, setForm] = useState<any>(EMPTY); // any: form state with mixed field types
   const [editId, setEditId] = useState<string|null>(null);
-  const [viewItem, setViewItem] = useState<any>(null);
-  const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const [viewItem, setViewItem] = useState<any>(null); // any: audit item shape varies
+  const [deleteTarget, setDeleteTarget] = useState<any>(null); // any: target shape for confirm dialog
   const [saving, setSaving] = useState(false);
 
   const filtered = useMemo(() => items.filter(i => {
@@ -61,7 +66,7 @@ export default function BiasAudits() {
   const sp = useSortAndPage(filtered, "name");
 
   if (isLoading) return <PageSkeleton />
-  const setF = (k: string) => (v: any) => setForm((f: any) => ({ ...f, [k]: v }));
+  const setF = (k: string) => (v: any) => setForm((f: any) => ({ ...f, [k]: v })); // any: dynamic field update
 
   const save = async (draft = false) => {
     if (!draft && !form.name.trim()) { toast.error("Audit name is required"); return; }
@@ -77,7 +82,7 @@ export default function BiasAudits() {
     setSaving(false);
   };
 
-  const openEdit = (item: any) => {
+  const openEdit = (item: any) => { // any: audit item shape from hook
     setForm({ name:item.name, model:item.model, date:item.date, attributes:item.attributes||[], methodology:item.methodology, dataset:item.dataset, periodFrom:"", periodTo:"", auditor:item.auditor, org:item.org, findings:item.findings, severity:item.severity, remediationRequired:item.remediationRequired, framework:item.framework, status:item.status });
     setEditId(item.id); setModal("edit");
   };
@@ -88,41 +93,82 @@ export default function BiasAudits() {
     setDeleteTarget(null);
   };
 
+  const activeFilterCount = statusFilter !== "all" ? 1 : 0;
+
+  // Compute KPI values
+  const totalAudits = items.length;
+  const passedAudits = items.filter(i => i.status === "Completed" && !i.remediationRequired).length;
+  const failedAudits = items.filter(i => i.status === "Failed" || (i.status === "Completed" && i.remediationRequired)).length;
+  const pendingAudits = items.filter(i => i.status === "In Progress" || i.status === "Draft").length;
+
   return (
     <div className="p-6 space-y-5 max-w-[1400px]">
-      <Breadcrumbs />
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[hsl(var(--text-1))] flex items-center gap-2"><Scales size={24} weight="duotone" className="text-[hsl(var(--brand))]" />Bias Audits</h1>
-          <p className="text-sm text-[hsl(var(--text-3))] mt-0.5">Automated fairness auditing & bias detection for AI systems</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportCsv(items, 'bias-audits.csv')}><Export size={14} />Export</Button>
-          <Button size="sm" className="gap-1.5" onClick={() => { setForm(EMPTY); setEditId(null); setModal("create"); }}><Plus size={14} />New Audit</Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Bias Audits"
+        subtitle="Fairness and disparate impact assessment for AI systems"
+        breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Bias Audits' }]}
+        actions={
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportCsv(items, 'bias-audits.csv')}>
+              <Export size={14} />Export
+            </Button>
+            <Button size="sm" className="gap-1.5" onClick={() => { setForm(EMPTY); setEditId(null); setModal("create"); }}>
+              <Plus size={14} />New Audit
+            </Button>
+          </div>
+        }
+      />
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {[["Total Audits", items.length],["Completed", items.filter(i=>i.status==="Completed").length],["Critical / High", items.filter(i=>["Critical","High"].includes(i.severity)).length],["Needs Remediation", items.filter(i=>i.remediationRequired).length]].map(([l,v])=>(
-          <Card key={l as string}><CardContent className="p-4"><p className="text-2xl font-bold text-[hsl(var(--text-1))]">{v}</p><p className="text-xs text-[hsl(var(--text-3))] mt-0.5">{l}</p></CardContent></Card>
-        ))}
-      </div>
+      <StatCardRow
+        cards={[
+          {
+            label: 'Total Audits',
+            value: totalAudits,
+            description: `Total Audits: ${totalAudits}`,
+          },
+          {
+            label: 'Passed',
+            value: passedAudits,
+            description: `Passed Audits: ${passedAudits} — completed without remediation`,
+          },
+          {
+            label: 'Failed / Remediation',
+            value: failedAudits,
+            description: `Failed or Remediation Required: ${failedAudits}`,
+          },
+          {
+            label: 'In Progress / Draft',
+            value: pendingAudits,
+            description: `Pending Audits: ${pendingAudits} — in progress or draft`,
+          },
+        ]}
+      />
 
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
-          <Input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search audits…" className="pl-8 h-8 text-sm" />
-        </div>
-        <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-sm px-2 py-1.5 text-[hsl(var(--text-1))]">
-          <option value="all">All Statuses</option>{STATUSES.map(s=><option key={s}>{s}</option>)}
-        </select>
-      </div>
+      <FilterBar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search audits by name, model, auditor…"
+        filters={[
+          {
+            key: 'status',
+            label: 'Status',
+            value: statusFilter === "all" ? "" : statusFilter,
+            onChange: v => setStatusFilter(v || "all"),
+            options: STATUSES.map(s => ({ label: s, value: s })),
+          },
+        ]}
+        activeFilterCount={activeFilterCount}
+        onClearAll={() => { setSearch(""); setStatusFilter("all"); }}
+        trailing={
+          <span className="text-xs text-[hsl(var(--text-4))]">{filtered.length} audit{filtered.length !== 1 ? 's' : ''}</span>
+        }
+      />
 
       <BulkActionToolbar count={sp.selectedIds.size} onClear={sp.clearSelected} onDelete={async () => { for (const id of sp.selectedIds) { await removeBiasAudits(id); } sp.clearSelected(); }} onExport={() => exportCsv(sp.paged.filter((i:any)=>sp.selectedIds.has(i.id)), 'bias-audits-selected.csv')} />
 
       <Card><CardContent className="p-0">
         {sp.paged.length === 0 ? (
-          <EmptyState icon={<FlaskConical size={32} className="text-[hsl(var(--brand))]" />} title="No bias audits found" description="Create your first audit to track fairness metrics." action={<Button size="sm" onClick={() => { setForm(EMPTY); setModal("create"); }}><Plus size={14} className="mr-1" />New Audit</Button>} />
+          <EmptyState icon={<Flask size={32} className="text-[hsl(var(--brand))]" />} title="No bias audits found" description="Create your first audit to track fairness metrics." action={<Button size="sm" onClick={() => { setForm(EMPTY); setModal("create"); }}><Plus size={14} className="mr-1" />New Audit</Button>} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -141,7 +187,7 @@ export default function BiasAudits() {
                 </tr>
               </thead>
               <tbody>
-                {sp.paged.map((item: any) => (
+                {sp.paged.map((item: any) => ( // any: audit item shape from hook
                   <tr key={item.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))] cursor-pointer" onClick={() => { setViewItem(item); setModal("view"); }}>
                     <td className="px-3 py-2.5" onClick={e=>e.stopPropagation()}><input type="checkbox" checked={sp.selectedIds.has(item.id)} onChange={() => sp.toggleSelect(item.id)} /></td>
                     <td className="px-3 py-2.5"><p className="font-medium text-[hsl(var(--text-1))]">{item.name}</p><p className="text-xs text-[hsl(var(--text-4))] font-mono">{item.id}</p></td>
@@ -172,7 +218,7 @@ export default function BiasAudits() {
         )}
       </CardContent></Card>
 
-      <PaginationBar total={sp.total} page={sp.page} perPage={sp.perPage} onPage={sp.setPage} onPerPage={sp.setPerPage} />
+      <PaginationBar total={sp.total} page={sp.currentPage} perPage={sp.perPage} onPage={sp.setPage} onPerPage={sp.setPerPage} />
 
       {/* Create / Edit */}
       <CrudModal open={modal==="create"||modal==="edit"} onClose={() => setModal(null)} title={editId?"Edit Bias Audit":"New Bias Audit"} size="xl">

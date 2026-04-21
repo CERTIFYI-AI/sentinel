@@ -1,20 +1,22 @@
-/*
- * Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
- * See LICENSE for details.
- *
- * AuditLogExplorer — read-only browser for the append-only audit_log.
- * Mounted at /audit-log. Provides filter, pagination, chain-verify
- * button, and one-click export in CEF / LEEF / Syslog / Splunk / NDJSON.
- *
- * UX notes:
- *   - Every interactive element is keyboard-reachable and has an aria-label.
- *   - Empty, loading, and error states are explicit (never silent).
- *   - Hash-chain column is monospaced and truncated with a title tooltip
- *     so operators can compare visually without blowing up the layout.
- */
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
+//
+// AuditLogExplorer — advanced audit event search and export.
+// Mounted at /audit-log. Provides filter, pagination, chain-verify
+// button, and one-click export in CEF / LEEF / Syslog / Splunk / NDJSON.
+//
+// UX notes:
+//   - Every interactive element is keyboard-reachable and has an aria-label.
+//   - Empty, loading, and error states are explicit (never silent).
+//   - Hash-chain column is monospaced and truncated with a title tooltip
+//     so operators can compare visually without blowing up the layout.
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useRequiredOrgId, useTenant } from '../hooks/useTenant'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { StatCardRow } from '@/components/ui/StatCardRow'
+import { FilterBar } from '@/components/ui/FilterBar'
 
 interface AuditRow {
   id: string
@@ -167,83 +169,101 @@ export default function AuditLogExplorer() {
     return <div className="p-6 text-sm">Please sign in.</div>
   }
 
+  // KPI counts derived from loaded rows
+  const successCount = rows.filter(r => r.outcome === 'success').length
+  const failureCount = rows.filter(r => r.outcome === 'failure').length
+  const deniedCount = rows.filter(r => r.outcome === 'denied').length
+  const criticalCount = rows.filter(r => r.severity === 'critical' || r.severity === 'error').length
+
+  const activeFilterCount = (actionFilter ? 1 : 0) + (outcomeFilter ? 1 : 0)
+
   return (
-    <div className="p-6 max-w-[1400px]">
-      <header className="mb-4">
-        <h1 className="text-xl font-semibold">Audit Log</h1>
-        <p className="text-sm text-[hsl(var(--text-4))]">
-          Append-only, hash-chained record of every governance event in
-          your organization. Rows are immutable by database policy.
-        </p>
-      </header>
+    <div className="p-6 max-w-[1400px] space-y-5">
+      <PageHeader
+        title="Audit Log Explorer"
+        subtitle="Advanced audit event search and export — append-only, hash-chained record of every governance event"
+        breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Audit Log Explorer' }]}
+        actions={
+          <div className="flex items-center gap-2" role="group" aria-label="Export formats">
+            {(['cef', 'leef', 'syslog', 'splunk', 'ndjson'] as const).map(f => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => void runExport(f)}
+                className="text-xs border border-[hsl(var(--border))] px-2 py-1.5 hover:bg-[hsl(var(--bg-raised))]"
+                aria-label={`Export as ${f.toUpperCase()}`}
+              >
+                {f.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        }
+      />
 
-      <div
-        role="toolbar"
-        aria-label="Audit log controls"
-        className="flex flex-wrap items-end gap-2 mb-3"
-      >
-        <label className="text-xs flex flex-col">
-          <span className="text-[hsl(var(--text-4))]">Action contains</span>
-          <input
-            value={actionFilter}
-            onChange={e => {
-              setActionFilter(e.target.value)
-              setPage(0)
-            }}
-            placeholder="model.approved"
-            className="mt-1 border border-[hsl(var(--border))] px-2 py-1 text-xs bg-[hsl(var(--bg-raised))] w-48"
-            aria-label="Filter by action substring"
-          />
-        </label>
-        <label className="text-xs flex flex-col">
-          <span className="text-[hsl(var(--text-4))]">Outcome</span>
-          <select
-            value={outcomeFilter}
-            onChange={e => {
-              setOutcomeFilter(e.target.value as typeof outcomeFilter)
-              setPage(0)
-            }}
-            className="mt-1 border border-[hsl(var(--border))] px-2 py-1 text-xs bg-[hsl(var(--bg-raised))]"
-            aria-label="Filter by outcome"
+      {/* KPI row — only rendered when rows are loaded */}
+      {rows.length > 0 && (
+        <StatCardRow
+          cards={[
+            {
+              label: 'Events (Page)',
+              value: rows.length,
+              description: `Events on current page: ${rows.length} of up to ${pageSize}`,
+            },
+            {
+              label: 'Success',
+              value: successCount,
+              description: `Successful events: ${successCount}`,
+            },
+            {
+              label: 'Denied / Failed',
+              value: failureCount + deniedCount,
+              description: `Denied (${deniedCount}) + Failed (${failureCount}) events`,
+            },
+            {
+              label: 'Critical / Error',
+              value: criticalCount,
+              description: `Critical or error severity events: ${criticalCount}`,
+            },
+          ]}
+        />
+      )}
+
+      <FilterBar
+        search={actionFilter}
+        onSearchChange={v => { setActionFilter(v); setPage(0); }}
+        searchPlaceholder="Filter by action (e.g. model.approved)…"
+        filters={[
+          {
+            key: 'outcome',
+            label: 'Outcome',
+            value: outcomeFilter,
+            onChange: v => { setOutcomeFilter(v as typeof outcomeFilter); setPage(0); },
+            options: [
+              { label: 'Success', value: 'success' },
+              { label: 'Failure', value: 'failure' },
+              { label: 'Denied', value: 'denied' },
+            ],
+          },
+        ]}
+        activeFilterCount={activeFilterCount}
+        onClearAll={() => { setActionFilter(''); setOutcomeFilter(''); setPage(0); }}
+        trailing={
+          <button
+            type="button"
+            onClick={() => void runVerify()}
+            className="text-xs border border-[hsl(var(--border))] px-3 py-1.5 hover:bg-[hsl(var(--bg-raised))]"
+            aria-label="Verify hash chain integrity"
+            disabled={verifyState.kind === 'running'}
           >
-            <option value="">All</option>
-            <option value="success">success</option>
-            <option value="failure">failure</option>
-            <option value="denied">denied</option>
-          </select>
-        </label>
-
-        <div className="flex-1" />
-
-        <button
-          type="button"
-          onClick={() => void runVerify()}
-          className="text-xs border border-[hsl(var(--border))] px-3 py-1.5 hover:bg-[hsl(var(--bg-raised))]"
-          aria-label="Verify hash chain integrity"
-          disabled={verifyState.kind === 'running'}
-        >
-          {verifyState.kind === 'running' ? 'Verifying…' : 'Verify chain'}
-        </button>
-
-        <div className="flex items-center gap-1" role="group" aria-label="Export">
-          {(['cef', 'leef', 'syslog', 'splunk', 'ndjson'] as const).map(f => (
-            <button
-              key={f}
-              type="button"
-              onClick={() => void runExport(f)}
-              className="text-xs border border-[hsl(var(--border))] px-2 py-1.5 hover:bg-[hsl(var(--bg-raised))]"
-              aria-label={`Export as ${f.toUpperCase()}`}
-            >
-              {f.toUpperCase()}
-            </button>
-          ))}
-        </div>
-      </div>
+            {verifyState.kind === 'running' ? 'Verifying…' : 'Verify chain'}
+          </button>
+        }
+      />
 
       {verifyState.kind === 'ok' && (
         <div
           role="status"
-          className="mb-3 text-xs px-3 py-2 border border-[hsl(var(--brand))] text-[hsl(var(--brand))]"
+          className="text-xs px-3 py-2 border border-[hsl(var(--brand))] text-[hsl(var(--brand))]"
         >
           Chain verified: every row's hash matches and links to its predecessor.
         </div>
@@ -251,10 +271,19 @@ export default function AuditLogExplorer() {
       {verifyState.kind === 'fail' && (
         <div
           role="alert"
-          className="mb-3 text-xs px-3 py-2 border border-[hsl(var(--s-er-tx))] text-[hsl(var(--s-er-tx))]"
+          className="text-xs px-3 py-2 border border-[hsl(var(--s-er-tx))] text-[hsl(var(--s-er-tx))]"
         >
           Chain verification failed at sequence #{verifyState.seq}: {verifyState.reason}.
           Escalate to security immediately.
+        </div>
+      )}
+
+      {err && (
+        <div
+          role="alert"
+          className="text-xs px-3 py-2 border border-[hsl(var(--s-er-tx))] text-[hsl(var(--s-er-tx))]"
+        >
+          {err}
         </div>
       )}
 
@@ -277,12 +306,6 @@ export default function AuditLogExplorer() {
               <tr>
                 <td colSpan={8} className="px-3 py-6 text-xs text-[hsl(var(--text-4))] text-center">
                   Loading…
-                </td>
-              </tr>
-            ) : err ? (
-              <tr>
-                <td colSpan={8} className="px-3 py-6 text-xs text-[hsl(var(--s-er-tx))] text-center">
-                  {err}
                 </td>
               </tr>
             ) : rows.length === 0 ? (
@@ -337,7 +360,7 @@ export default function AuditLogExplorer() {
         </table>
       </div>
 
-      <nav className="flex items-center justify-between mt-3 text-xs" aria-label="Pagination">
+      <nav className="flex items-center justify-between text-xs" aria-label="Pagination">
         <span className="text-[hsl(var(--text-4))]">
           Page {page + 1} · showing up to {pageSize}
         </span>

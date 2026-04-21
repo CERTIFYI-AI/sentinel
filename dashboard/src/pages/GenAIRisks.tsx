@@ -1,7 +1,12 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
+//
+// GenAIRisks — Generative AI-specific risk catalogue (NIST AI 600-1).
+
 import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import {
-  Plus, Eye, Trash, MagnifyingGlass, Robot, ShieldWarning,
+  Plus, Eye, Trash, Robot, ShieldWarning,
 } from '@phosphor-icons/react';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -15,11 +20,13 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '../components/ui/dialog';
 import {
-
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger,
 } from '../components/ui/alert-dialog';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { StatCardRow } from '@/components/ui/StatCardRow';
+import { FilterBar } from '@/components/ui/FilterBar';
 
 type Severity = 'Critical' | 'High' | 'Medium' | 'Low';
 type MitigationStatus = 'Implemented' | 'Partial' | 'Under Review' | 'Not Addressed';
@@ -82,27 +89,10 @@ function mitigationColor(s: MitigationStatus) {
   }
 }
 
-function MetricTile({ label, value, variant }: { label: string; value: string | number; variant: 'default' | 'error' | 'warn' | 'ok' }) {
-  const colors = {
-    default: { bg: 'hsl(var(--bg-surface))', text: 'hsl(var(--text-1))', border: 'hsl(var(--border))' },
-    error: { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))' },
-    warn: { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))', border: 'hsl(var(--s-wn-br))' },
-    ok: { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))' },
-  };
-  const c = colors[variant];
-  return (
-    <Card style={{ borderRadius: 0, background: c.bg, border: `1px solid ${c.border}` }}>
-      <CardContent className="px-4 py-3">
-        <p className="text-xs font-medium mb-1" style={{ color: 'hsl(var(--text-4))' }}>{label}</p>
-        <p className="text-2xl font-bold" style={{ color: c.text }}>{value}</p>
-      </CardContent>
-    </Card>
-  );
-}
-
 export default function GenAIRisks() {
   const [profiles, setProfiles] = useState<GenAIRiskProfile[]>(SEED);
   const [search, setSearch] = useState('');
+  const [filterSeverity, setFilterSeverity] = useState('');
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
   const [selected, setSelected] = useState<GenAIRiskProfile | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -118,12 +108,16 @@ export default function GenAIRisks() {
   const filtered = useMemo(() => profiles.filter(p => {
     const matchSearch = !search || p.model.toLowerCase().includes(search.toLowerCase()) || p.id.toLowerCase().includes(search.toLowerCase()) || p.riskCategory.toLowerCase().includes(search.toLowerCase());
     const matchCat = !filterCategory || p.riskCategory === filterCategory;
-    return matchSearch && matchCat;
-  }), [profiles, search, filterCategory]);
+    const matchSeverity = !filterSeverity || p.severity === filterSeverity;
+    return matchSearch && matchCat && matchSeverity;
+  }), [profiles, search, filterCategory, filterSeverity]);
 
   const critical = profiles.filter(p => p.severity === 'Critical').length;
   const notAddressed = profiles.filter(p => p.mitigationStatus === 'Not Addressed').length;
   const implemented = profiles.filter(p => p.mitigationStatus === 'Implemented').length;
+  const highRisk = profiles.filter(p => p.severity === 'High').length;
+
+  const activeFilterCount = (filterSeverity ? 1 : 0) + (filterCategory ? 1 : 0);
 
   function submitCreate() {
     const risk = NIST_600_1_RISKS.find(r => r.name === wCategory);
@@ -155,22 +149,41 @@ export default function GenAIRisks() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Generative AI Risk Profiles</h1>
-          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>NIST AI 600-1 — manage risks specific to generative and large language models</p>
-        </div>
-        <Button onClick={() => setCreateOpen(true)} style={{ borderRadius: 0 }}>
-          <Plus size={15} className="mr-1.5" /> Create Risk Profile
-        </Button>
-      </div>
+      <PageHeader
+        title="GenAI Risks"
+        subtitle="Generative AI-specific risk catalogue — NIST AI 600-1 risk management"
+        breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'GenAI Risks' }]}
+        actions={
+          <Button onClick={() => setCreateOpen(true)} style={{ borderRadius: 0 }}>
+            <Plus size={15} className="mr-1.5" /> Create Risk Profile
+          </Button>
+        }
+      />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricTile label="Total Profiles" value={profiles.length} variant="default" />
-        <MetricTile label="Critical Risks" value={critical} variant="error" />
-        <MetricTile label="Not Addressed" value={notAddressed} variant="warn" />
-        <MetricTile label="Implemented" value={implemented} variant="ok" />
-      </div>
+      <StatCardRow
+        cards={[
+          {
+            label: 'Total Profiles',
+            value: profiles.length,
+            description: `Total GenAI Risk Profiles: ${profiles.length}`,
+          },
+          {
+            label: 'Critical Risks',
+            value: critical,
+            description: `Critical severity risks: ${critical}`,
+          },
+          {
+            label: 'High Risk',
+            value: highRisk,
+            description: `High severity risks: ${highRisk}`,
+          },
+          {
+            label: 'Not Addressed',
+            value: notAddressed,
+            description: `Risks with no mitigation in place: ${notAddressed}`,
+          },
+        ]}
+      />
 
       {/* NIST 600-1 risk category grid */}
       <div className="grid grid-cols-3 lg:grid-cols-4 gap-2">
@@ -196,21 +209,37 @@ export default function GenAIRisks() {
           );
         })}
       </div>
-      {filterCategory && (
-        <div className="flex items-center gap-2 text-xs" style={{ color: 'hsl(var(--brand))' }}>
-          <span>Filtered by: <strong>{filterCategory}</strong></span>
-          <button onClick={() => setFilterCategory(null)} className="underline">Clear filter</button>
-        </div>
-      )}
+
+      <FilterBar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search profiles by model, category, ID…"
+        filters={[
+          {
+            key: 'severity',
+            label: 'Severity',
+            value: filterSeverity,
+            onChange: v => setFilterSeverity(v),
+            options: ['Critical', 'High', 'Medium', 'Low'].map(s => ({ label: s, value: s })),
+          },
+        ]}
+        activeFilterCount={activeFilterCount}
+        onClearAll={() => { setSearch(''); setFilterSeverity(''); setFilterCategory(null); }}
+        trailing={
+          <span className="text-xs text-[hsl(var(--text-4))]">
+            {filtered.length} profile{filtered.length !== 1 ? 's' : ''}
+            {filterCategory && (
+              <> · Filtered: <strong>{filterCategory}</strong>
+                <button onClick={() => setFilterCategory(null)} className="ml-1 underline text-[hsl(var(--brand))]">×</button>
+              </>
+            )}
+          </span>
+        }
+      />
 
       {/* Table */}
       <Card style={{ borderRadius: 0 }}>
         <CardContent className="p-0">
-          <div className="p-4 border-b flex items-center gap-3" style={{ borderColor: 'hsl(var(--border))' }}>
-            <MagnifyingGlass size={15} style={{ color: 'hsl(var(--text-4))' }} />
-            <Input placeholder="Search profiles..." value={search} onChange={e => setSearch(e.target.value)}
-              className="h-8 border-0 p-0 focus-visible:ring-0 bg-transparent" style={{ color: 'hsl(var(--text-1))' }} />
-          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -272,6 +301,11 @@ export default function GenAIRisks() {
                 })}
               </tbody>
             </table>
+            {filtered.length === 0 && (
+              <div className="py-12 text-center text-sm text-[hsl(var(--text-4))]">
+                No risk profiles match the current filters.
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -296,7 +330,6 @@ export default function GenAIRisks() {
                 </TabsList>
 
                 <TabsContent value="overview" className="mt-4 space-y-3">
-                  {/* Risk Score Bar */}
                   {(() => {
                     const score = selected.severity === 'Critical' ? 92 : selected.severity === 'High' ? 74 : selected.severity === 'Medium' ? 48 : 22;
                     const sc = severityColor(selected.severity);
@@ -316,7 +349,6 @@ export default function GenAIRisks() {
                       </div>
                     );
                   })()}
-                  {/* Key-value grid */}
                   <div className="grid grid-cols-2 gap-2">
                     {[
                       { label: 'Model', value: selected.model },
@@ -330,7 +362,6 @@ export default function GenAIRisks() {
                       </div>
                     ))}
                   </div>
-                  {/* Status badges */}
                   <div className="grid grid-cols-3 gap-2">
                     {[
                       { label: 'Severity', badge: selected.severity, color: severityColor(selected.severity) },
@@ -343,7 +374,6 @@ export default function GenAIRisks() {
                       </div>
                     ))}
                   </div>
-                  {/* Risk category description */}
                   {selectedRiskInfo && (
                     <div className="p-3" style={{ background: 'hsl(var(--brand-subtle))', borderLeft: '3px solid hsl(var(--brand))', borderRadius: 0 }}>
                       <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--brand))' }}>NIST AI 600-1 — {selectedRiskInfo.name}</p>
@@ -407,7 +437,6 @@ export default function GenAIRisks() {
                       <Button size="sm" className="mt-3" style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: '#fff' }}>Assign Guardrail</Button>
                     </div>
                   )}
-                  {/* Coverage breakdown */}
                   <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                     <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-2))' }}>Coverage Dimensions</p>
                     {[

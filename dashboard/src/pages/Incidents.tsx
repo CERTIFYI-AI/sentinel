@@ -1,12 +1,14 @@
-// @ts-nocheck
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
 import { useState, useMemo } from "react";
-import { Warning, Plus, MagnifyingGlass, Eye, PencilSimple, Trash, Export, SirenDuotone } from "@phosphor-icons/react";
+import { Warning, Plus, Eye, PencilSimple, Trash, Export, Siren, Clock, ChartLine } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import Breadcrumbs from "@/components/Breadcrumbs";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { StatCardRow } from "@/components/ui/StatCardRow";
+import { FilterBar } from "@/components/ui/FilterBar";
 import { StatusBadge, BulkActionToolbar, PaginationBar, CrudModal, FormSection, FormFooter, MetaBar, ActivityTimeline, useSortAndPage, Th, TInput, TSelect, TTextarea, TToggle } from "@/components/ui/crud-helpers";
 import { toast } from "sonner";
 
@@ -51,6 +53,24 @@ export default function Incidents() {
   const sp = useSortAndPage(filtered, "title");
   const setF = (k: string) => (v: any) => setForm((f: any) => ({ ...f, [k]: v }));
 
+  // KPI computations
+  const totalCount = items.length;
+  const openActiveCount = items.filter(i => i.status === 'Open' || i.status === 'Investigating').length;
+  const p1CriticalCount = items.filter(i => i.severity === 'P1 Critical').length;
+  // Avg MTTR: parse hours from resolved items with numeric mttr strings
+  const resolvedWithMttr = items.filter(i => i.status === 'Resolved' && i.mttr);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const avgMttr = resolvedWithMttr.length > 0
+    ? (() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const parsed = resolvedWithMttr.map((i: any) => {
+          const match = String(i.mttr).match(/([\d.]+)\s*(hour|hr|h)/i);
+          return match ? parseFloat(match[1]) : null;
+        }).filter((v): v is number => v !== null);
+        return parsed.length > 0 ? `${(parsed.reduce((a, b) => a + b, 0) / parsed.length).toFixed(0)}h` : '—';
+      })()
+    : '—';
+
   const save = (draft = false) => {
     if (!form.title.trim()) { toast.error("Incident title is required"); return; }
     setSaving(true);
@@ -71,38 +91,54 @@ export default function Incidents() {
   const openEdit = (item: any) => { setForm({ ...item }); setEditId(item.id); setModal("edit"); };
   const doDelete = () => { setItems(p => p.filter(i => i.id !== deleteTarget?.id)); setDeleteTarget(null); toast.success("Incident deleted"); };
 
+  const activeFilterCount = (statusFilter !== 'all' ? 1 : 0) + (sevFilter !== 'all' ? 1 : 0);
+
   return (
     <div className="p-6 space-y-5 max-w-[1400px]">
-      <Breadcrumbs />
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[hsl(var(--text-1))] flex items-center gap-2"><Warning size={24} weight="duotone" className="text-[hsl(var(--brand))]" />Incidents</h1>
-          <p className="text-sm text-[hsl(var(--text-3))] mt-0.5">Track, investigate and resolve AI-related incidents and security events</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5"><Export size={14} />Export</Button>
-          <Button size="sm" className="gap-1.5" onClick={() => { setForm(EMPTY); setEditId(null); setModal("create"); }}><Plus size={14} />Report Incident</Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Incident Log"
+        subtitle="Track, investigate and resolve AI incidents"
+        breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Incidents' }]}
+        actions={
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="gap-1.5"><Export size={14} />Export</Button>
+            <Button size="sm" className="gap-1.5" onClick={() => { setForm(EMPTY); setEditId(null); setModal("create"); }}><Plus size={14} />New Incident</Button>
+          </div>
+        }
+      />
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {[["Total Incidents",items.length],["Open / Active",items.filter(i=>["Open","Investigating","Contained"].includes(i.status)).length],["P1 Critical",items.filter(i=>i.severity==="P1 Critical").length],["Data Breaches",items.filter(i=>i.dataBreachInvolved).length]].map(([l,v])=>(
-          <Card key={l as string}><CardContent className="p-4"><p className="text-2xl font-bold text-[hsl(var(--text-1))]">{v}</p><p className="text-xs text-[hsl(var(--text-3))] mt-0.5">{l}</p></CardContent></Card>
-        ))}
-      </div>
+      <StatCardRow
+        cards={[
+          { label: 'Total Incidents', value: totalCount, icon: <Siren size={16} /> },
+          { label: 'Open / Active', value: openActiveCount, icon: <Warning size={16} />, isPositiveUp: false },
+          { label: 'P1 Critical', value: p1CriticalCount, icon: <ChartLine size={16} />, isPositiveUp: false },
+          { label: 'Avg MTTR', value: avgMttr, icon: <Clock size={16} />, isPositiveUp: true },
+        ]}
+      />
 
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 max-w-sm">
-          <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
-          <Input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search incidents…" className="pl-8 h-8 text-sm" />
-        </div>
-        <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-sm px-2 py-1.5 text-[hsl(var(--text-1))]">
-          <option value="all">All Statuses</option>{STATUSES.map(s=><option key={s}>{s}</option>)}
-        </select>
-        <select value={sevFilter} onChange={e=>setSevFilter(e.target.value)} className="border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-sm px-2 py-1.5 text-[hsl(var(--text-1))]">
-          <option value="all">All Severities</option>{SEVERITIES.map(s=><option key={s}>{s}</option>)}
-        </select>
-      </div>
+      <FilterBar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search incidents…"
+        activeFilterCount={activeFilterCount}
+        onClearAll={() => { setSearch(''); setStatusFilter('all'); setSevFilter('all'); }}
+        filters={[
+          {
+            key: 'status',
+            label: 'Status',
+            value: statusFilter === 'all' ? '' : statusFilter,
+            onChange: v => setStatusFilter(v || 'all'),
+            options: STATUSES.map(s => ({ label: s, value: s })),
+          },
+          {
+            key: 'severity',
+            label: 'Severity',
+            value: sevFilter === 'all' ? '' : sevFilter,
+            onChange: v => setSevFilter(v || 'all'),
+            options: SEVERITIES.map(s => ({ label: s, value: s })),
+          },
+        ]}
+      />
 
       <BulkActionToolbar count={sp.selectedIds.size} onClear={sp.clearSelected} onDelete={() => { setItems(p=>p.filter(i=>!sp.selectedIds.has(i.id))); sp.clearSelected(); toast.success("Deleted"); }} onExport={() => toast.success("Exported")} />
 
@@ -158,7 +194,8 @@ export default function Incidents() {
         )}
       </CardContent></Card>
 
-      <PaginationBar total={sp.total} page={sp.page} perPage={sp.perPage} onPage={sp.setPage} onPerPage={sp.setPerPage} />
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+      <PaginationBar total={sp.total} page={sp.currentPage} perPage={sp.perPage} onPage={sp.setPage} onPerPage={sp.setPerPage} />
 
       <CrudModal open={modal==="create"||modal==="edit"} onClose={() => setModal(null)} title={editId?"Edit Incident":"Report New Incident"} size="xl">
         <div className="p-5 space-y-2">

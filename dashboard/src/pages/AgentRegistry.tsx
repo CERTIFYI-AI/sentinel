@@ -1,6 +1,15 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
+//
+// AgentRegistry — central registry for all agentic AI systems.
+// Provides lifecycle tracking, permissions, trust scoring, and kill-switch controls.
+
 import { useState } from 'react'
-import { Cpu, MagnifyingGlass, Plus, Eye, X, Export, Warning, CheckCircle, Power, Pencil, Trash, Shield } from '@phosphor-icons/react'
+import { Cpu, Plus, Eye, X, Export, Warning, CheckCircle, Power, Pencil, Trash, Shield } from '@phosphor-icons/react'
 import { toast } from 'sonner'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { StatCardRow } from '@/components/ui/StatCardRow'
+import { FilterBar } from '@/components/ui/FilterBar'
 
 // WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
@@ -91,6 +100,8 @@ export default function AgentRegistry() {
     avgTrust: Math.round(agents.filter(a => a.trustScore > 0).reduce((s, a) => s + a.trustScore, 0) / agents.filter(a => a.trustScore > 0).length),
   }
 
+  const activeFilterCount = (statusFilter !== 'All' ? 1 : 0) + (tierFilter !== 'All' ? 1 : 0)
+
   const handleCreate = () => {
     if (!form.name) { toast.error('Agent name is required'); return }
     const id = `AGT-${String(agents.length + 1).padStart(3, '0')}`
@@ -120,51 +131,84 @@ export default function AgentRegistry() {
     toast.success('Kill switch toggled')
   }
 
+  // RegisterAgentButton rendered inline as an actions node
+  const RegisterAgentButton = (
+    <div className="flex gap-2">
+      <button
+        onClick={() => toast.success('Agent registry exported')}
+        className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]"
+      >
+        <Export size={14} /> Export
+      </button>
+      <button
+        onClick={() => { setForm(BLANK); setShowCreate(true) }}
+        className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90"
+      >
+        <Plus size={14} weight="bold" /> Register Agent
+      </button>
+    </div>
+  )
+
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-[hsl(var(--text-1))] flex items-center gap-2">
-            <Cpu size={20} weight="fill" className="text-[hsl(var(--brand))]" />
-            Agent Registry
-          </h1>
-          <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">Central registry of all agentic AI systems — lifecycle tracking, permissions, trust scoring, and kill-switch controls</p>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={() => toast.success('Agent registry exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]"><Export size={14} /> Export</button>
-          <button onClick={() => { setForm(BLANK); setShowCreate(true) }} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90"><Plus size={14} weight="bold" /> Register Agent</button>
-        </div>
-      </div>
+      <PageHeader
+        title="Agent Registry"
+        subtitle="Register and govern autonomous AI agents — lifecycle tracking, permissions, trust scoring, and kill-switch controls"
+        breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Agents' }]}
+        actions={RegisterAgentButton}
+      />
 
-      <div className="grid grid-cols-4 gap-4">
-        {[
-          { label: 'Active Agents', value: stats.active, sub: 'Currently operational', color: 'hsl(var(--s-ok-tx))' },
-          { label: 'Critical Risk Tier', value: stats.critical, sub: 'Require enhanced oversight', color: 'hsl(var(--destructive))' },
-          { label: 'Pending Approval', value: stats.pending, sub: 'Awaiting review', color: 'hsl(var(--s-in-tx))' },
-          { label: 'Avg Trust Score', value: stats.avgTrust + '%', sub: 'Active agents only', color: stats.avgTrust >= 80 ? 'hsl(var(--s-ok-tx))' : 'hsl(45 85% 40%)' },
-        ].map(s => (
-          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
-            <p className="text-xs text-[hsl(var(--text-4))]">{s.label}</p>
-            <p className="text-2xl font-bold mt-1" style={{ color: s.color }}>{s.value}</p>
-            <p className="text-xs text-[hsl(var(--text-4))] mt-0.5">{s.sub}</p>
-          </div>
-        ))}
-      </div>
+      <StatCardRow
+        cards={[
+          {
+            label: 'Total Agents',
+            value: agents.length,
+            description: `Total Agents: ${agents.length}`,
+          },
+          {
+            label: 'Active',
+            value: stats.active,
+            description: `Active Agents: ${stats.active}`,
+          },
+          {
+            label: 'Critical Risk Tier',
+            value: stats.critical,
+            description: `Critical Risk Tier Agents: ${stats.critical} — require enhanced oversight`,
+          },
+          {
+            label: 'Avg Trust Score',
+            value: `${stats.avgTrust}%`,
+            description: `Average Trust Score: ${stats.avgTrust}% across active agents`,
+          },
+        ]}
+      />
 
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-48">
-          <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search agents, teams…"
-            className="w-full pl-8 pr-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none focus:border-[hsl(var(--brand))]" />
-        </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none">
-          {['All', 'Active', 'Suspended', 'Quarantined', 'Pending Approval', 'Decommissioned'].map(s => <option key={s}>{s}</option>)}
-        </select>
-        <select value={tierFilter} onChange={e => setTierFilter(e.target.value)} className="px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none">
-          {['All', 'Critical', 'High', 'Medium', 'Low'].map(t => <option key={t}>{t}</option>)}
-        </select>
-        <span className="text-xs text-[hsl(var(--text-4))]">{filtered.length} agent{filtered.length !== 1 ? 's' : ''}</span>
-      </div>
+      <FilterBar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search agents, teams…"
+        filters={[
+          {
+            key: 'status',
+            label: 'Status',
+            value: statusFilter === 'All' ? '' : statusFilter,
+            onChange: v => setStatusFilter(v || 'All'),
+            options: ['Active', 'Suspended', 'Quarantined', 'Pending Approval', 'Decommissioned'].map(s => ({ label: s, value: s })),
+          },
+          {
+            key: 'tier',
+            label: 'Risk Tier',
+            value: tierFilter === 'All' ? '' : tierFilter,
+            onChange: v => setTierFilter(v || 'All'),
+            options: ['Critical', 'High', 'Medium', 'Low'].map(t => ({ label: t, value: t })),
+          },
+        ]}
+        activeFilterCount={activeFilterCount}
+        onClearAll={() => { setSearch(''); setStatusFilter('All'); setTierFilter('All') }}
+        trailing={
+          <span className="text-xs text-[hsl(var(--text-4))]">{filtered.length} agent{filtered.length !== 1 ? 's' : ''}</span>
+        }
+      />
 
       <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] overflow-hidden">
         <table className="w-full text-sm">
@@ -319,7 +363,7 @@ export default function AgentRegistry() {
                   ].map(f => (
                     <div key={f.key}>
                       <label className="text-xs text-[hsl(var(--text-4))]">{f.label}</label>
-                      <input value={(form as any)[f.key]} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
+                      <input value={(form as any)[f.key]} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))} // any: dynamic key access
                         className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none focus:border-[hsl(var(--brand))]" />
                     </div>
                   ))}
@@ -431,13 +475,14 @@ export default function AgentRegistry() {
         </div>
       )}
 
+      {/* ConfirmDialog for destructive delete action */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" />
           <div className="relative bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] rounded w-full max-w-sm p-6 text-center shadow-xl">
             <Warning size={32} className="mx-auto text-[hsl(var(--destructive))] mb-3" />
             <h3 className="font-semibold text-[hsl(var(--text-1))] mb-1">Deregister Agent?</h3>
-            <p className="text-sm text-[hsl(var(--text-3))] mb-4">This will permanently remove the agent from the registry.</p>
+            <p className="text-sm text-[hsl(var(--text-3))] mb-4">This will permanently remove the agent from the registry. This action cannot be undone.</p>
             <div className="flex gap-2">
               <button onClick={() => handleDelete(deleteTarget)} className="flex-1 py-2 bg-[hsl(var(--destructive))] text-white text-sm">Deregister</button>
               <button onClick={() => setDeleteTarget(null)} className="flex-1 py-2 border border-[hsl(var(--border))] text-sm">Cancel</button>

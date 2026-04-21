@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
 import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   ShieldCheck, Eye, PencilSimple, Trash, Plus, Copy, Play, Pause,
@@ -24,6 +26,9 @@ import { useSettingsStore } from '../../stores/settingsStore';
 import { useChartTheme } from '../../hooks/useChartTheme';
 import { useTrustTraceData } from '../../hooks/useTrustTraceData';
 import { PageSkeleton } from '../../components/ui/PageSkeleton';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { StatCardRow } from '../../components/ui/StatCardRow';
+import type { StatCardRowItem } from '../../components/ui/StatCardRow';
 
 // WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
@@ -238,6 +243,41 @@ export default function TrustEngineDashboard() {
     toast(`Policy "${newPolicy.name}" created in testing mode`, 'success');
   };
 
+  const trustKpiCards: StatCardRowItem[] = [
+    {
+      label: 'Avg Trust Score',
+      value: `${trustScore}%`,
+      icon: <ShieldCheck size={18} weight="fill" style={{ color: 'hsl(var(--s-ok-tx))' }} />,
+      delta: 'Click for breakdown',
+      deltaDir: 'up' as const,
+      isPositiveUp: true,
+    },
+    {
+      label: 'Guardrail Hits (7d)',
+      value: String(violations7d),
+      icon: <Warning size={18} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />,
+      delta: '3 critical',
+      deltaDir: 'up' as const,
+      isPositiveUp: false,
+    },
+    {
+      label: 'Active Policies',
+      value: String(activePolicies),
+      icon: <CheckCircle size={18} weight="fill" style={{ color: 'hsl(var(--s-ok-tx))' }} />,
+      delta: `${policies.length} total`,
+      deltaDir: 'up' as const,
+      isPositiveUp: true,
+    },
+    {
+      label: 'Evaluations (Week)',
+      value: formatNumber(totalEvals),
+      icon: <Lightning size={18} weight="fill" style={{ color: 'hsl(var(--s-in-tx))' }} />,
+      delta: 'Last 7 days',
+      deltaDir: 'up' as const,
+      isPositiveUp: true,
+    },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Toast */}
@@ -250,24 +290,22 @@ export default function TrustEngineDashboard() {
         ))}
       </div>
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <ShieldCheck size={22} weight="fill" style={{ color: 'hsl(var(--brand))' }} />
-            <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Trust Engine Dashboard</h1>
+      {/* Page Header */}
+      <PageHeader
+        title="Trust Engine"
+        subtitle="AI model trust scoring and guardrail monitoring"
+        breadcrumbs={[{ label: 'Dashboard', href: '/' }, { label: 'Trust Engine' }]}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setAlertConfigOpen(true)} style={{ borderRadius: 0 }}>
+              <Bell size={14} className="mr-2" />Alert Config
+            </Button>
+            <Button onClick={() => setCreateOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+              <Plus size={14} className="mr-2" />Create Rule
+            </Button>
           </div>
-          <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} — Real-time policy governance, trust scoring, and guardrail monitoring</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => setAlertConfigOpen(true)} style={{ borderRadius: 0 }}>
-            <Bell size={14} className="mr-2" />Alert Config
-          </Button>
-          <Button onClick={() => setCreateOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
-            <Plus size={14} className="mr-2" />Create Rule
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Live Alert Ticker */}
       <div className="overflow-hidden relative" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0, height: 28 }}>
@@ -302,20 +340,9 @@ export default function TrustEngineDashboard() {
         <style>{`@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }`}</style>
       </div>
 
-      {/* Metrics */}
-      <div className="grid grid-cols-4 gap-4">
-        <div className="cursor-pointer" onClick={() => setBreakdownOpen(true)}>
-          <MetricTile
-            label="Trust Score"
-            value={`${trustScore}%`}
-            variant="ok"
-            icon={<ShieldCheck size={16} weight="fill" className="text-green-600 dark:text-green-400" />}
-            sub="Click for breakdown"
-          />
-        </div>
-        <MetricTile label="Active Policies" value={String(activePolicies)} variant="ok" icon={<CheckCircle size={16} weight="fill" className="text-green-600 dark:text-green-400" />} />
-        <MetricTile label="Violations (7d)" value={String(violations7d)} variant="warn" icon={<Warning size={16} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />} sub="3 critical" />
-        <MetricTile label="Evaluations (Week)" value={formatNumber(totalEvals)} variant="info" icon={<Lightning size={16} weight="fill" className="text-blue-600 dark:text-blue-400" />} />
+      {/* Trust KPI Row */}
+      <div className="cursor-pointer" onClick={() => setBreakdownOpen(true)}>
+        <StatCardRow cards={trustKpiCards} />
       </div>
 
       {/* Chart */}

@@ -1,9 +1,14 @@
-// @ts-nocheck
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
+//
+// VendorRegistry — third-party AI vendor governance and risk management.
+// Displays vendor KPIs, concentration risk, DPA warnings, and a full vendor table.
+
 import { useVendorsData } from "@/hooks/useVendorsData";
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Eye, PencilSimple, Trash, Plus, Buildings, MagnifyingGlass, Funnel,
+  Eye, PencilSimple, Trash, Plus, Buildings, Funnel,
   Warning, CheckCircle, ShieldWarning, Export, Handshake, Globe,
   CloudArrowUp, Siren, ChartPie, ClipboardText,
 } from '@phosphor-icons/react';
@@ -19,6 +24,10 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '../../components/ui/select';
 import { Progress } from '../../components/ui/progress';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { StatCardRow } from '../../components/ui/StatCardRow';
+import { FilterBar } from '../../components/ui/FilterBar';
+import type { StatCardRowItem } from '../../components/ui/StatCardRow';
 import {
   Vendor, MODELS, severityColor, statusColor, formatDate,
 } from '../../data/seed';
@@ -95,8 +104,9 @@ export default function VendorRegistry() {
   const { vendors: supabaseVendors, isLoading: vendorsLoading } = useVendorsData();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   useEffect(() => { setVendors(supabaseVendors as any); }, [supabaseVendors]);
+
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('');
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [detailTab, setDetailTab] = useState('overview');
   const [editVendor, setEditVendor] = useState<Vendor | null>(null);
@@ -112,23 +122,31 @@ export default function VendorRegistry() {
 
   if (vendorsLoading) return <PageSkeleton />;
 
-  // Metrics
+  // ── Metrics ──────────────────────────────────────────────────────────────────
   const totalVendors = vendors.length;
-  const approved = vendors.filter(v => v.status === 'approved').length;
-  const inReview = vendors.filter(v => v.status === 'in_review').length;
-  const highRiskDpa = vendors.filter(v => v.status === 'high_risk' || v.dpaStatus === 'not_signed').length;
+  const criticalRiskVendors = vendors.filter(v => v.risk === 'critical' || v.risk === 'high').length;
+  const dpaSigned = vendors.filter(v => v.dpaStatus === 'signed').length;
+  const dpaPct = Math.round((dpaSigned / Math.max(totalVendors, 1)) * 100);
+  const avgScore = Math.round(vendors.reduce((s, v) => s + v.score, 0) / Math.max(totalVendors, 1));
 
   // DPA warning vendors
   const dpaWarningVendors = vendors.filter(v => v.dpaStatus === 'not_signed');
 
-  // Filters
+  // ── Filters ───────────────────────────────────────────────────────────────────
   const filtered = vendors.filter(v => {
     const matchSearch = v.id.toLowerCase().includes(search.toLowerCase()) ||
       v.name.toLowerCase().includes(search.toLowerCase()) ||
       v.category.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = statusFilter === 'all' || v.status === statusFilter;
+    const matchStatus = !statusFilter || v.status === statusFilter;
     return matchSearch && matchStatus;
   });
+
+  const activeFilterCount = statusFilter ? 1 : 0;
+
+  const clearAll = () => {
+    setSearch('');
+    setStatusFilter('');
+  };
 
   const handleDelete = () => {
     if (!deleteTarget) return;
@@ -149,6 +167,43 @@ export default function VendorRegistry() {
     toast('Vendor registry exported as CSV');
   };
 
+  // ── KPI stat cards ──────────────────────────────────────────────────────────
+  const kpiCards: StatCardRowItem[] = [
+    {
+      label: 'Total Vendors',
+      value: totalVendors,
+      icon: <Buildings size={18} />,
+      description: `${totalVendors} third-party AI vendors registered`,
+    },
+    {
+      label: 'Critical Risk',
+      value: criticalRiskVendors,
+      icon: <ShieldWarning size={18} />,
+      delta: criticalRiskVendors > 0 ? String(criticalRiskVendors) : undefined,
+      deltaDir: 'up',
+      isPositiveUp: false,
+      description: `${criticalRiskVendors} vendors rated high or critical risk`,
+    },
+    {
+      label: 'DPA Signed',
+      value: `${dpaPct}%`,
+      icon: <CheckCircle size={18} />,
+      delta: `${dpaSigned}/${totalVendors}`,
+      deltaDir: dpaPct >= 80 ? 'up' : 'down',
+      isPositiveUp: true,
+      description: `${dpaSigned} of ${totalVendors} vendors have signed DPAs (${dpaPct}%)`,
+    },
+    {
+      label: 'Avg Score',
+      value: avgScore,
+      icon: <ChartPie size={18} />,
+      delta: avgScore >= 70 ? '+' : undefined,
+      deltaDir: avgScore >= 70 ? 'up' : 'down',
+      isPositiveUp: true,
+      description: `Average vendor risk score: ${avgScore}/100`,
+    },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Toast layer */}
@@ -156,48 +211,38 @@ export default function VendorRegistry() {
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
             background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
-            color: '#fff', borderRadius: 0, minWidth: 300
+            color: '#fff', borderRadius: 0, minWidth: 300,
           }}>{t.text}</div>
         ))}
       </div>
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Vendor Registry</h1>
-          <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} · Third-party AI vendor management & risk assessment</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleExport} style={{ borderRadius: 0 }}>
-            <Export className="h-4 w-4 mr-2" />Export CSV
-          </Button>
-          <Button onClick={() => setAddOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
-            <Plus className="h-4 w-4 mr-2" />Add Vendor
-          </Button>
-        </div>
-      </div>
+      {/* Enterprise Page Header */}
+      <PageHeader
+        title="Vendor Registry"
+        subtitle="Third-party AI vendor governance and risk"
+        breadcrumbs={[
+          { label: 'Home', href: '/' },
+          { label: 'Vendors' },
+        ]}
+        actions={
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleExport} style={{ borderRadius: 0 }}>
+              <Export className="h-4 w-4 mr-2" />Export CSV
+            </Button>
+            <Button
+              onClick={() => setAddOpen(true)}
+              style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+            >
+              <Plus className="h-4 w-4 mr-2" />Add Vendor
+            </Button>
+          </div>
+        }
+      />
 
-      {/* Metric Tiles */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: 'Total Vendors', value: totalVendors, color: 'hsl(var(--text-1))', icon: Buildings },
-          { label: 'Approved', value: approved, color: 'hsl(var(--s-ok-tx))', icon: CheckCircle },
-          { label: 'In Review', value: inReview, color: 'hsl(var(--s-wn-tx))', icon: Warning },
-          { label: 'High Risk / DPA Gap', value: highRiskDpa, color: 'hsl(var(--destructive))', icon: ShieldWarning },
-        ].map(stat => (
-          <Card key={stat.label} style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-            <CardContent className="pt-4 pb-4">
-              <div className="flex items-center justify-between mb-2">
-                <stat.icon size={20} style={{ color: stat.color }} />
-              </div>
-              <p className="text-2xl font-bold" style={{ color: stat.color }}>{stat.value}</p>
-              <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>{stat.label}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {/* KPI Row */}
+      <StatCardRow cards={kpiCards} />
 
-      {/* DPA Warning */}
+      {/* DPA Warning Banner */}
       {dpaWarningVendors.length > 0 && (
         <div className="p-4 flex items-start gap-3" style={{ background: 'hsl(0 72% 51% / 0.08)', border: '1px solid hsl(0 72% 51% / 0.3)' }}>
           <Siren size={20} style={{ color: 'hsl(var(--destructive))', flexShrink: 0, marginTop: 1 }} />
@@ -246,24 +291,33 @@ export default function VendorRegistry() {
         </CardContent>
       </Card>
 
-      {/* Filters */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative min-w-52 max-w-xs">
-          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: 'hsl(var(--text-4))' }} />
-          <Input placeholder="Search vendors..." value={search} onChange={e => setSearch(e.target.value)}
-            className="pl-9 h-9" style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }} />
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-36 h-9" style={{ borderRadius: 0 }}>
-            <Funnel className="h-3 w-3 mr-1" /><SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent style={{ borderRadius: 0 }}>
-            <SelectItem value="all">All Statuses</SelectItem>
-            {['approved', 'in_review', 'high_risk', 'blocked'].map(s => <SelectItem key={s} value={s}>{s.replace('_', ' ')}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{filtered.length} vendors</span>
-      </div>
+      {/* FilterBar — replaces the manual Input + Select controls */}
+      <FilterBar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search vendors..."
+        filters={[
+          {
+            key: 'status',
+            label: 'Status',
+            value: statusFilter,
+            onChange: setStatusFilter,
+            options: [
+              { label: 'Approved', value: 'approved' },
+              { label: 'In Review', value: 'in_review' },
+              { label: 'High Risk', value: 'high_risk' },
+              { label: 'Blocked', value: 'blocked' },
+            ],
+          },
+        ]}
+        activeFilterCount={activeFilterCount}
+        onClearAll={clearAll}
+        trailing={
+          <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+            {filtered.length} vendors
+          </span>
+        }
+      />
 
       {/* Table */}
       <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
@@ -288,9 +342,12 @@ export default function VendorRegistry() {
                     const tc = tierColor(v.risk);
                     const stc = statusColor(v.status);
                     return (
-                      <tr key={v.id} className="hover:bg-muted/30 transition-colors cursor-pointer"
+                      <tr
+                        key={v.id}
+                        className="hover:bg-muted/30 transition-colors cursor-pointer"
                         style={{ borderBottom: '1px solid hsl(var(--border))' }}
-                        onClick={() => navigate(`/vendors/${v.id}`)}>
+                        onClick={() => navigate(`/vendors/${v.id}`)}
+                      >
                         <td className="px-4 py-3">
                           <div>
                             <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{v.name}</p>
@@ -364,14 +421,14 @@ export default function VendorRegistry() {
         </CardContent>
       </Card>
 
-      {/* Delete Confirm */}
+      {/* Destructive delete — ConfirmDialog per rules */}
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={() => setDeleteTarget(null)}
         title={`Delete ${deleteTarget?.name}?`}
         description={`This will remove ${deleteTarget?.id} from the vendor registry. This action cannot be undone.`}
         confirmLabel="Delete Vendor"
-        variant="destructive"
+        type="danger"
         onConfirm={handleDelete}
       />
 
@@ -380,7 +437,10 @@ export default function VendorRegistry() {
         <SheetContent style={{ borderRadius: 0, width: 640, maxWidth: '100vw' }}>
           <SheetHeader>
             <SheetTitle style={{ color: 'hsl(var(--text-1))' }}>
-              {selectedVendor?.name} <span className="text-xs font-mono font-normal" style={{ color: 'hsl(var(--text-4))' }}>{selectedVendor?.id}</span>
+              {selectedVendor?.name}{' '}
+              <span className="text-xs font-mono font-normal" style={{ color: 'hsl(var(--text-4))' }}>
+                {selectedVendor?.id}
+              </span>
             </SheetTitle>
           </SheetHeader>
           {selectedVendor && (
@@ -599,8 +659,10 @@ function EditVendorForm({ vendor, onSave }: { vendor: Vendor; onSave: (v: Vendor
         </Select>
       </div>
       <div className="flex justify-end gap-2 pt-2">
-        <Button onClick={() => onSave({ ...vendor, name, category, status, contact })}
-          style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+        <Button
+          onClick={() => onSave({ ...vendor, name, category, status, contact })}
+          style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+        >
           Save Changes
         </Button>
       </div>
@@ -625,11 +687,12 @@ function AddVendorForm({ onSubmit, nextId }: { onSubmit: (v: Vendor) => void; ne
   const handleSubmit = () => {
     if (!canSubmit) return;
     const now = new Date().toISOString().split('T')[0];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onSubmit({
       id: nextId, name, category, risk: riskTier, score: 50, status: 'in_review',
       lastReview: now, contact, website, dpaStatus, description: whatProvides,
       linkedModels: [], scoreBreakdown: { security: 50, compliance: 50, reliability: 50, dataPrivacy: 50 },
-    });
+    } as any);
   };
 
   return (
@@ -667,10 +730,13 @@ function AddVendorForm({ onSubmit, nextId }: { onSubmit: (v: Vendor) => void; ne
       </div>
       <div>
         <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>What does this vendor provide? *</label>
-        <textarea value={whatProvides} onChange={e => setWhatProvides(e.target.value)}
+        <textarea
+          value={whatProvides}
+          onChange={e => setWhatProvides(e.target.value)}
           className="mt-1 w-full h-16 text-xs p-2 resize-none"
           style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))' }}
-          placeholder="Describe what this vendor provides..." />
+          placeholder="Describe what this vendor provides..."
+        />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
@@ -693,8 +759,11 @@ function AddVendorForm({ onSubmit, nextId }: { onSubmit: (v: Vendor) => void; ne
         </div>
       </div>
       <div className="flex justify-end gap-2 pt-2">
-        <Button disabled={!canSubmit} onClick={handleSubmit}
-          style={{ borderRadius: 0, background: canSubmit ? 'hsl(var(--brand))' : undefined, color: canSubmit ? '#fff' : undefined }}>
+        <Button
+          disabled={!canSubmit}
+          onClick={handleSubmit}
+          style={{ borderRadius: 0, background: canSubmit ? 'hsl(var(--brand))' : undefined, color: canSubmit ? '#fff' : undefined }}
+        >
           <Plus size={14} className="mr-1" />Add Vendor
         </Button>
       </div>

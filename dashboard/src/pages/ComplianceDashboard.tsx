@@ -1,3 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
+//
+// ComplianceDashboard — enterprise compliance posture overview.
+// Displays framework scores, control coverage, gap analytics, and the
+// cross-framework control mapping matrix.
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -12,6 +19,9 @@ import {
 import { FRAMEWORKS, GAPS, CONTROLS, EVIDENCE, statusColor, formatDate } from '../data/seed';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useChartTheme } from '../hooks/useChartTheme';
+import { PageHeader } from '../components/ui/PageHeader';
+import { StatCardRow } from '../components/ui/StatCardRow';
+import type { StatCardRowItem } from '../components/ui/StatCardRow';
 
 const SCORE_TREND = [
   { month: 'Oct', score: 71 },
@@ -88,12 +98,40 @@ export default function ComplianceDashboard() {
   const ct = useChartTheme();
   const [matrixHover, setMatrixHover] = useState<{ ctrl: string; fw: string } | null>(null);
 
-  const stats = [
-    { label: 'Frameworks', value: FRAMEWORKS.length, icon: StackSimple, color: '#6366f1' },
-    { label: 'Open Gaps', value: openGaps, icon: Warning, color: '#f97316' },
-    { label: 'Critical Gaps', value: criticalGaps, icon: XCircle, color: '#ef4444' },
-    { label: 'Evidence Items', value: evidenceTotal, icon: ClipboardText, color: '#3b82f6' },
-    { label: 'Control Coverage', value: controlCoverage + '%', icon: ShieldCheck, color: '#10b981' },
+  const kpiCards: StatCardRowItem[] = [
+    {
+      label: 'Overall Score',
+      value: `${overallScore}%`,
+      icon: <ShieldCheck size={18} />,
+      delta: '+2%',
+      deltaDir: 'up',
+      isPositiveUp: true,
+      description: `Overall compliance score: ${overallScore}% across ${FRAMEWORKS.length} frameworks`,
+    },
+    {
+      label: 'Total Controls',
+      value: totalControls,
+      icon: <ClipboardText size={18} />,
+      description: `${totalControls} controls tracked`,
+    },
+    {
+      label: 'Implemented',
+      value: `${controlCoverage}%`,
+      icon: <CheckCircle size={18} />,
+      delta: `${implementedControls}/${totalControls}`,
+      deltaDir: 'up',
+      isPositiveUp: true,
+      description: `${implementedControls} of ${totalControls} controls implemented`,
+    },
+    {
+      label: 'Critical Gaps',
+      value: criticalGaps,
+      icon: <XCircle size={18} />,
+      delta: criticalGaps > 0 ? String(criticalGaps) : undefined,
+      deltaDir: 'up',
+      isPositiveUp: false,
+      description: `${criticalGaps} critical compliance gaps require immediate attention`,
+    },
   ];
 
   const matrixTotals = FW_KEYS.map(fw => {
@@ -109,30 +147,28 @@ export default function ComplianceDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>
-          Compliance Dashboard
-        </h1>
-        <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>
-          {orgName} · Overall compliance posture across {FRAMEWORKS.length} frameworks
-        </p>
-      </div>
+      {/* Enterprise Page Header */}
+      <PageHeader
+        title="Compliance Dashboard"
+        subtitle="Framework posture, gap tracking and control coverage"
+        breadcrumbs={[
+          { label: 'Home', href: '/' },
+          { label: 'Compliance' },
+        ]}
+        badge={
+          (() => {
+            const b = complianceBadge(overallScore);
+            return (
+              <Badge style={{ background: b.bg, color: b.text, border: `1px solid ${b.border}`, borderRadius: 0, fontSize: 11 }}>
+                {b.label}
+              </Badge>
+            );
+          })()
+        }
+      />
 
-      {/* Stats */}
-      <div className="grid grid-cols-5 gap-4">
-        {stats.map(s => (
-          <Card key={s.label} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-            <CardContent className="p-4 flex items-center justify-between">
-              <div>
-                <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{s.label}</p>
-                <p className="text-2xl font-bold mt-1" style={{ color: 'hsl(var(--text-1))' }}>{s.value}</p>
-              </div>
-              <s.icon size={26} style={{ color: s.color }} />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {/* KPI StatCardRow */}
+      <StatCardRow cards={kpiCards} />
 
       {/* Tabs */}
       <Tabs defaultValue="overview">
@@ -289,7 +325,7 @@ export default function ComplianceDashboard() {
                     <YAxis type="category" dataKey="name" width={72} tick={{ fontSize: 10, fill: ct.axis }} />
                     <Tooltip
                       contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.tooltipText, borderRadius: 0 }}
-                      formatter={(v: number, _: string, p: any) => [v + ' gaps', p.payload.fullName]}
+                      formatter={(v: number, _: string, p: any /* recharts payload */) => [v + ' gaps', p.payload.fullName]}
                     />
                     <Bar dataKey="gaps" name="Gaps" fill="#f97316" radius={0} />
                   </BarChart>

@@ -1,8 +1,12 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
 import { useState, useMemo, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { StatCardRow } from '@/components/ui/StatCardRow';
 import {
   Clock, Warning, Brain, WarningCircle, Briefcase, FileText,
   Users, Database, StackSimple, ArrowRight, ChartLine, CheckCircle,
@@ -261,16 +265,12 @@ export default function Overview() {
       </a>
 
       {/* Header */}
-      <div className="flex items-start justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>
-            GRC Executive Dashboard
-          </h1>
-          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>
-            {orgName} · AI Governance, Risk & Compliance Overview
-          </p>
-        </div>
-        <div className="flex items-center gap-3 flex-wrap">
+      <PageHeader
+        title="Overview"
+        subtitle="Your AI governance posture at a glance"
+        breadcrumbs={[{ label: 'Home' }]}
+        actions={
+          <div className="flex items-center gap-3 flex-wrap">
           {/* Date range pills */}
           <div style={{ display: 'flex', gap: 2 }}>
             {(['7D', '30D', '90D', 'QoQ'] as DateRange[]).map(r => (
@@ -316,7 +316,8 @@ export default function Overview() {
             Last updated: {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
           </span>
         </div>
-      </div>
+        }
+      />
 
       {/* Alert Ribbon */}
       <div
@@ -341,7 +342,7 @@ export default function Overview() {
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginLeft: 'auto', background: 'hsl(var(--s-er-tx)/0.12)', padding: '3px 10px' }}>
           <Timer size={13} style={{ color: 'hsl(var(--s-er-tx))' }} />
-          <span style={{ fontSize: 12, fontWeight: 700, color: 'hsl(var(--s-er-tx))', fontFamily: 'monospace' }}>{countdown}</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'hsl(var(--s-er-tx))', fontVariantNumeric: 'tabular-nums' }}>{countdown}</span>
         </div>
         <ArrowRight size={14} style={{ color: 'hsl(var(--s-er-tx))', flexShrink: 0 }} />
       </div>
@@ -355,7 +356,7 @@ export default function Overview() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Siren size={16} style={{ color: 'hsl(var(--s-er-tx))' }} />
                 <span style={{ fontWeight: 700, color: 'hsl(var(--text-1))', fontSize: 14 }}>Critical Items</span>
-                <span style={{ fontSize: 11, fontFamily: 'monospace', color: 'hsl(var(--s-er-tx))' }}>Audit in {countdown}</span>
+                <span style={{ fontSize: 11, fontVariantNumeric: 'tabular-nums', color: 'hsl(var(--s-er-tx))' }}>Audit in {countdown}</span>
               </div>
               <button onClick={() => setAlertPanelOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'hsl(var(--text-3))' }} aria-label="Close">
                 <X size={18} />
@@ -528,6 +529,44 @@ export default function Overview() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Top 4 KPI StatCardRow */}
+      <StatCardRow
+        cards={[
+          {
+            label: 'Open Risks',
+            value: openRisks,
+            icon: <Warning size={16} />,
+            delta: KPI_TRENDS['Open Risks']?.dir !== 'stable' ? `${KPI_TRENDS['Open Risks']?.delta}%` : undefined,
+            deltaDir: KPI_TRENDS['Open Risks']?.dir === 'stable' ? undefined : KPI_TRENDS['Open Risks']?.dir as 'up' | 'down',
+            isPositiveUp: false,
+            href: '/risk',
+          },
+          {
+            label: 'Critical Risks',
+            value: criticalRisks,
+            icon: <ShieldCheck size={16} />,
+            isPositiveUp: false,
+            href: '/risk',
+          },
+          {
+            label: 'Compliance Score',
+            value: `${avgCompliance}%`,
+            icon: <CheckCircle size={16} />,
+            isPositiveUp: true,
+            href: '/frameworks',
+          },
+          {
+            label: 'Open Incidents',
+            value: openIncidents,
+            icon: <WarningCircle size={16} />,
+            delta: KPI_TRENDS['Critical Incidents']?.dir !== 'stable' ? `${KPI_TRENDS['Critical Incidents']?.delta}%` : undefined,
+            deltaDir: KPI_TRENDS['Critical Incidents']?.dir === 'stable' ? undefined : KPI_TRENDS['Critical Incidents']?.dir as 'up' | 'down',
+            isPositiveUp: false,
+            href: '/risk/incidents',
+          },
+        ]}
+      />
 
       {/* KPI Tiles — responsive grid: 3 cols → 5 cols → 9 cols */}
       <div id="main-content" className="grid grid-cols-1 gap-3 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-9">

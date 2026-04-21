@@ -1,4 +1,9 @@
-// @ts-nocheck
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
+//
+// GapAnalysis — identify and remediate compliance gaps derived from controls.
+// Provides charts, KPI row, search/filter via FilterBar, and CRUD dialogs.
+
 import { useState, useMemo } from 'react';
 import { useControlData } from '../hooks/useControlData';
 import { useFrameworksData } from '../hooks/useFrameworksData';
@@ -22,17 +27,24 @@ import {
   PieChart, Pie,
 } from 'recharts';
 import { severityColor, formatDate } from '../data/seed';
-type Gap = any;
-
-function exportCsv(rows: any[], filename: string) {
-  if (!rows.length) return
-  const keys = Object.keys(rows[0])
-  const csv = [keys.join(','), ...rows.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n')
-  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = filename; a.click()
-}
+import { PageHeader } from '../components/ui/PageHeader';
+import { StatCardRow } from '../components/ui/StatCardRow';
+import { FilterBar } from '../components/ui/FilterBar';
+import type { StatCardRowItem } from '../components/ui/StatCardRow';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useChartTheme } from '../hooks/useChartTheme';
 
+type Gap = any; // intentional — shape resolved at runtime from controls hook
+
+function exportCsv(rows: any[], filename: string) {
+  if (!rows.length) return;
+  const keys = Object.keys(rows[0]);
+  const csv = [keys.join(','), ...rows.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = filename;
+  a.click();
+}
 
 const EMPTY_GAP: Omit<Gap, 'id'> = {
   title: '', framework: 'EU AI Act', controlRef: '', severity: 'medium',
@@ -53,7 +65,7 @@ export default function GapAnalysis() {
   const { frameworks: fwList, isLoading: fwLoading } = useFrameworksData();
   const isLoading = ctrlLoading || fwLoading;
   if (isLoading) return <PageSkeleton />;
-  
+
   // Derive gaps from controls that are not fully implemented
   const derivedGaps: Gap[] = controls
     .filter((c: any) => c.status && !['Implemented', 'implemented'].includes(c.status))
@@ -68,34 +80,84 @@ export default function GapAnalysis() {
       owner: c.owner || '',
       description: c.description || '',
     }));
+
   const [_gaps, setLocalGaps] = useState<Gap[]>([]);
   const gaps = derivedGaps.length > 0 ? derivedGaps : _gaps;
-  const [search, setSearch] = useState('');
-  const [filterSeverity, setFilterSeverity] = useState('all');
-  const [filterFramework, setFilterFramework] = useState('all');
 
+  const [search, setSearch] = useState('');
+  const [filterSeverity, setFilterSeverity] = useState('');
+  const [filterFramework, setFilterFramework] = useState('');
   const [viewItem, setViewItem] = useState<Gap | null>(null);
   const [editItem, setEditItem] = useState<Gap | null>(null);
   const [deleteItem, setDeleteItem] = useState<Gap | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [formData, setFormData] = useState<Omit<Gap, 'id'>>(EMPTY_GAP);
 
-  const filtered = gaps.filter(g => {
+  const frameworks = useMemo(() => Array.from(new Set(gaps.map((g: Gap) => g.framework))), [gaps]);
+
+  const filtered = useMemo(() => gaps.filter((g: Gap) => {
     const q = search.toLowerCase();
     const matchSearch = !q || g.title.toLowerCase().includes(q) || g.framework.toLowerCase().includes(q) || g.owner.toLowerCase().includes(q);
-    const matchSev = filterSeverity === 'all' || g.severity === filterSeverity;
-    const matchFW = filterFramework === 'all' || g.framework === filterFramework;
+    const matchSev = !filterSeverity || g.severity === filterSeverity;
+    const matchFW = !filterFramework || g.framework === filterFramework;
     return matchSearch && matchSev && matchFW;
-  });
+  }), [gaps, search, filterSeverity, filterFramework]);
 
+  // ── KPI stats ────────────────────────────────────────────────────────────────
   const totalGaps = gaps.length;
-  const criticalGaps = gaps.filter(g => g.severity === 'critical').length;
-  const highGaps = gaps.filter(g => g.severity === 'high').length;
-  const avgProgress = gaps.length > 0 ? Math.round(gaps.reduce((s: number, g: any) => s + (g.progress || 0), 0) / gaps.length) : 0;
+  const criticalGaps = gaps.filter((g: Gap) => g.severity === 'critical').length;
+  const highGaps = gaps.filter((g: Gap) => g.severity === 'high').length;
+  const avgProgress = gaps.length > 0
+    ? Math.round(gaps.reduce((s: number, g: any) => s + (g.progress || 0), 0) / gaps.length)
+    : 0;
 
+  const kpiCards: StatCardRowItem[] = [
+    {
+      label: 'Total Gaps',
+      value: totalGaps,
+      icon: <Warning size={18} />,
+      description: `${totalGaps} compliance gaps across ${frameworks.length} frameworks`,
+    },
+    {
+      label: 'Critical',
+      value: criticalGaps,
+      icon: <XCircle size={18} />,
+      delta: criticalGaps > 0 ? String(criticalGaps) : undefined,
+      deltaDir: 'up',
+      isPositiveUp: false,
+      description: `${criticalGaps} critical severity gaps`,
+    },
+    {
+      label: 'High',
+      value: highGaps,
+      icon: <Warning size={18} />,
+      delta: highGaps > 0 ? String(highGaps) : undefined,
+      deltaDir: 'up',
+      isPositiveUp: false,
+      description: `${highGaps} high severity gaps`,
+    },
+    {
+      label: 'Avg Progress',
+      value: `${avgProgress}%`,
+      icon: <TrendUp size={18} />,
+      deltaDir: avgProgress >= 50 ? 'up' : 'down',
+      isPositiveUp: true,
+      description: `Average remediation progress: ${avgProgress}%`,
+    },
+  ];
+
+  const activeFilterCount = (filterSeverity ? 1 : 0) + (filterFramework ? 1 : 0);
+
+  const clearAll = () => {
+    setSearch('');
+    setFilterSeverity('');
+    setFilterFramework('');
+  };
+
+  // Chart data
   const severityData = ['critical', 'high', 'medium', 'low'].map(sev => ({
     name: sev,
-    count: gaps.filter(g => g.severity === sev).length,
+    count: gaps.filter((g: Gap) => g.severity === sev).length,
   }));
 
   const frameworkData = fwList.map((fw: any) => ({
@@ -103,15 +165,6 @@ export default function GapAnalysis() {
     gaps: gaps.filter((g: any) => g.framework === fw.name).length,
     fullName: fw.name,
   })).filter((d: any) => d.gaps > 0);
-
-  const stats = [
-    { label: 'Total Gaps', value: totalGaps, icon: Warning, color: '#6366f1' },
-    { label: 'Critical', value: criticalGaps, icon: XCircle, color: '#ef4444' },
-    { label: 'High', value: highGaps, icon: Warning, color: '#f97316' },
-    { label: 'Avg Progress', value: avgProgress + '%', icon: TrendUp, color: '#10b981' },
-  ];
-
-  const frameworks = Array.from(new Set(gaps.map(g => g.framework)));
 
   function handleCreate() {
     // Gaps are derived from controls — create a control in the controls page
@@ -129,41 +182,31 @@ export default function GapAnalysis() {
     setDeleteItem(null);
   }
 
-  const selectStyle = {
-    background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))',
-    color: 'hsl(var(--text-1))', padding: '6px 10px', fontSize: 13, borderRadius: 0,
-  };
-
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Gap Analysis</h1>
-          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>
-            {orgName} · {totalGaps} compliance gaps across {frameworks.length} frameworks
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={() => exportCsv(gaps, 'gap-analysis.csv')}>Export CSV</Button>
-        <Button size="sm" onClick={() => { setFormData(EMPTY_GAP); setCreateOpen(true); }}>
-          <Plus size={14} className="mr-1" /> Create Gap
-        </Button>
-      </div>
+      {/* Enterprise Page Header */}
+      <PageHeader
+        title="Gap Analysis"
+        subtitle="Identify and remediate compliance gaps across frameworks"
+        breadcrumbs={[
+          { label: 'Home', href: '/' },
+          { label: 'Compliance', href: '/compliance' },
+          { label: 'Gap Analysis' },
+        ]}
+        actions={
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => exportCsv(gaps, 'gap-analysis.csv')}>
+              Export CSV
+            </Button>
+            <Button size="sm" onClick={() => { setFormData(EMPTY_GAP); setCreateOpen(true); }}>
+              <Plus size={14} className="mr-1" /> Create Gap
+            </Button>
+          </div>
+        }
+      />
 
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
-        {stats.map(s => (
-          <Card key={s.label} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-            <CardContent className="p-4 flex items-center justify-between">
-              <div>
-                <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{s.label}</p>
-                <p className="text-3xl font-bold mt-1" style={{ color: 'hsl(var(--text-1))' }}>{s.value}</p>
-              </div>
-              <s.icon size={28} style={{ color: s.color }} />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {/* KPI Row */}
+      <StatCardRow cards={kpiCards} />
 
       {/* Charts */}
       <div className="grid grid-cols-2 gap-4">
@@ -198,7 +241,7 @@ export default function GapAnalysis() {
                 <YAxis tick={{ fill: ct.axis, fontSize: 11 }} label={{ value: 'Count', angle: -90, position: 'insideLeft', style: { fill: ct.axis } }} />
                 <Tooltip
                   contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.tooltipText, borderRadius: 0 }}
-                  formatter={(v: number, _: string, p: any) => [v, p.payload.fullName]}
+                  formatter={(v: number, _: string, p: any /* recharts payload */) => [v, p.payload.fullName]}
                 />
                 <Bar dataKey="gaps" fill="hsl(var(--brand))" radius={0} name="Gaps" />
               </BarChart>
@@ -207,25 +250,37 @@ export default function GapAnalysis() {
         </Card>
       </div>
 
-      {/* Filters */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 max-w-xs">
-          <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--text-3))' }} />
-          <Input placeholder="Search gaps..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8" style={{ borderRadius: 0 }} />
-        </div>
-        <FunnelSimple size={14} style={{ color: 'hsl(var(--text-3))' }} />
-        <select value={filterSeverity} onChange={e => setFilterSeverity(e.target.value)} style={selectStyle}>
-          <option value="all">All Severities</option>
-          {['critical', 'high', 'medium', 'low'].map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
-        <select value={filterFramework} onChange={e => setFilterFramework(e.target.value)} style={selectStyle}>
-          <option value="all">All Frameworks</option>
-          {frameworks.map(fw => <option key={fw} value={fw}>{fw}</option>)}
-        </select>
-        <span className="text-xs ml-auto" style={{ color: 'hsl(var(--text-3))' }}>{filtered.length} of {gaps.length}</span>
-      </div>
+      {/* FilterBar — replaces manual search inputs */}
+      <FilterBar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search gaps..."
+        filters={[
+          {
+            key: 'severity',
+            label: 'Severity',
+            value: filterSeverity,
+            onChange: setFilterSeverity,
+            options: ['critical', 'high', 'medium', 'low'].map(s => ({ label: s, value: s })),
+          },
+          {
+            key: 'framework',
+            label: 'Framework',
+            value: filterFramework,
+            onChange: setFilterFramework,
+            options: frameworks.map((fw: string) => ({ label: fw, value: fw })),
+          },
+        ]}
+        activeFilterCount={activeFilterCount}
+        onClearAll={clearAll}
+        trailing={
+          <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>
+            {filtered.length} of {gaps.length}
+          </span>
+        }
+      />
 
-      {/* Table */}
+      {/* Gap Table */}
       <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
         <CardContent className="p-0">
           {filtered.length === 0 ? (
@@ -243,7 +298,7 @@ export default function GapAnalysis() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(g => {
+                {filtered.map((g: Gap) => {
                   const sc = severityColor(g.severity);
                   const isOverdue = new Date(g.dueDate) < new Date();
                   return (
@@ -311,11 +366,14 @@ export default function GapAnalysis() {
               <SheetHeader className="pb-4">
                 <SheetTitle style={{ color: 'hsl(var(--text-1))' }}>Gap Detail</SheetTitle>
                 <div className="flex gap-2 flex-wrap">
-                  {(() => { const sc = severityColor(viewItem.severity); return (
-                    <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0 }}>
-                      {viewItem.severity}
-                    </Badge>
-                  ); })()}
+                  {(() => {
+                    const sc = severityColor(viewItem.severity);
+                    return (
+                      <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0 }}>
+                        {viewItem.severity}
+                      </Badge>
+                    );
+                  })()}
                   <Badge variant="outline" style={{ borderRadius: 0 }}>{viewItem.framework}</Badge>
                 </div>
               </SheetHeader>
@@ -378,22 +436,32 @@ export default function GapAnalysis() {
               ].map(f => (
                 <div key={f.key}>
                   <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>{f.label}</label>
-                  <Input type={f.type || 'text'} value={(editItem as any)[f.key] || ''} onChange={e => setEditItem(prev => prev ? { ...prev, [f.key]: e.target.value } : null)} style={{ borderRadius: 0 }} />
+                  <Input
+                    type={f.type || 'text'}
+                    value={(editItem as any)[f.key] || ''}
+                    onChange={e => setEditItem((prev: any) => prev ? { ...prev, [f.key]: e.target.value } : null)}
+                    style={{ borderRadius: 0 }}
+                  />
                 </div>
               ))}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Severity</label>
-                  <select value={editItem.severity} onChange={e => setEditItem(prev => prev ? { ...prev, severity: e.target.value as Severity } : null)}
-                    style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
+                  <select
+                    value={editItem.severity}
+                    onChange={e => setEditItem((prev: any) => prev ? { ...prev, severity: e.target.value } : null)}
+                    style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}
+                  >
                     {['critical', 'high', 'medium', 'low'].map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Progress (%)</label>
-                  <Input type="number" min={0} max={100} value={editItem.progress}
-                    onChange={e => setEditItem(prev => prev ? { ...prev, progress: Number(e.target.value) } : null)}
-                    style={{ borderRadius: 0 }} />
+                  <Input
+                    type="number" min={0} max={100} value={editItem.progress}
+                    onChange={e => setEditItem((prev: any) => prev ? { ...prev, progress: Number(e.target.value) } : null)}
+                    style={{ borderRadius: 0 }}
+                  />
                 </div>
               </div>
             </div>
@@ -421,21 +489,32 @@ export default function GapAnalysis() {
             ].map(f => (
               <div key={f.key}>
                 <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>{f.label}</label>
-                <Input type={f.type || 'text'} value={(formData as any)[f.key] || ''} onChange={e => setFormData(prev => ({ ...prev, [f.key]: e.target.value }))} style={{ borderRadius: 0 }} />
+                <Input
+                  type={f.type || 'text'}
+                  value={(formData as any)[f.key] || ''}
+                  onChange={e => setFormData(prev => ({ ...prev, [f.key]: e.target.value }))}
+                  style={{ borderRadius: 0 }}
+                />
               </div>
             ))}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Framework</label>
-                <select value={formData.framework} onChange={e => setFormData(prev => ({ ...prev, framework: e.target.value }))}
-                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
+                <select
+                  value={formData.framework}
+                  onChange={e => setFormData(prev => ({ ...prev, framework: e.target.value }))}
+                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}
+                >
                   {fwList.map((fw: any) => <option key={fw.id} value={fw.name}>{fw.name}</option>)}
                 </select>
               </div>
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Severity</label>
-                <select value={formData.severity} onChange={e => setFormData(prev => ({ ...prev, severity: e.target.value as Severity }))}
-                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
+                <select
+                  value={formData.severity}
+                  onChange={e => setFormData(prev => ({ ...prev, severity: e.target.value }))}
+                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}
+                >
                   {['critical', 'high', 'medium', 'low'].map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
@@ -448,7 +527,7 @@ export default function GapAnalysis() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Dialog */}
+      {/* Destructive delete — AlertDialog for gap removal */}
       <AlertDialog open={!!deleteItem} onOpenChange={o => !o && setDeleteItem(null)}>
         <AlertDialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0 }}>
           <AlertDialogHeader>

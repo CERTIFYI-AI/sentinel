@@ -1,4 +1,5 @@
-// @ts-nocheck
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -16,6 +17,9 @@ import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { toast } from 'sonner';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { StatCardRow } from '../../components/ui/StatCardRow';
+import type { StatCardRowItem } from '../../components/ui/StatCardRow';
 import { THREATS, VULNERABILITIES, severityColor, statusColor, formatDate } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useChartTheme } from '../../hooks/useChartTheme';
@@ -291,24 +295,58 @@ export default function SecurityHome() {
     },
   ];
 
+  const securityKpiCards: StatCardRowItem[] = [
+    {
+      label: 'Open Vulnerabilities',
+      value: String(VULNERABILITIES.filter(v => v.status !== 'patched').length),
+      icon: <Bug size={18} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />,
+      delta: '1 critical CVSS 9+',
+      deltaDir: 'up' as const,
+      isPositiveUp: false,
+    },
+    {
+      label: 'Active Threats',
+      value: String(THREATS.filter(t => t.status === 'active' || t.status === 'investigating').length),
+      icon: <Fire size={18} weight="fill" style={{ color: 'hsl(var(--destructive))' }} />,
+      delta: '2 critical',
+      deltaDir: 'up' as const,
+      isPositiveUp: false,
+    },
+    {
+      label: 'Scans Today',
+      value: '24',
+      icon: <Scan size={18} style={{ color: 'hsl(var(--s-ok-tx))' }} />,
+      delta: 'All passed',
+      deltaDir: 'up' as const,
+      isPositiveUp: true,
+    },
+    {
+      label: 'Security Posture',
+      value: '79%',
+      icon: <ShieldWarning size={18} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />,
+      delta: 'Target: 85%',
+      deltaDir: 'down' as const,
+      isPositiveUp: false,
+    },
+  ];
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <ShieldCheck size={22} weight="fill" style={{ color: 'hsl(var(--brand))' }} />
-            <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Security Hub</h1>
+      {/* Page Header */}
+      <PageHeader
+        title="Security"
+        subtitle="Threat monitoring, vulnerability management and access control"
+        breadcrumbs={[{ label: 'Dashboard', href: '/' }, { label: 'Security' }]}
+        actions={
+          <div className="flex items-center gap-2 text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+            <Clock size={13} />
+            <span>Last scan: {formatDate('2026-04-05')} at 23:45 UTC</span>
           </div>
-          <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>
-            {orgName} — Unified security posture, threat intelligence, and vulnerability management
-          </p>
-        </div>
-        <div className="flex items-center gap-2 text-xs" style={{ color: 'hsl(var(--text-4))' }}>
-          <Clock size={13} />
-          <span>Last scan: {formatDate('2026-04-05')} at 23:45 UTC</span>
-        </div>
-      </div>
+        }
+      />
+
+      {/* Security KPI Row */}
+      <StatCardRow cards={securityKpiCards} />
 
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
@@ -326,38 +364,6 @@ export default function SecurityHome() {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
-
-      {/* Metric Tiles */}
-      <div className="grid grid-cols-4 gap-4">
-        <MetricTile
-          label="Overall Security Score"
-          value="79%"
-          variant="warn"
-          icon={<ShieldWarning size={16} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />}
-          sub="Target: 85%"
-        />
-        <MetricTile
-          label="Active Threats"
-          value="3"
-          variant="error"
-          icon={<Fire size={16} weight="fill" className="text-destructive" />}
-          sub="2 critical, 1 high"
-        />
-        <MetricTile
-          label="Open Vulnerabilities"
-          value="5"
-          variant="warn"
-          icon={<Bug size={16} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />}
-          sub="1 critical CVSS 9.1"
-        />
-        <MetricTile
-          label="Scans Today"
-          value="24"
-          variant="ok"
-          icon={<Scan size={16} className="text-green-600 dark:text-green-400" />}
-          sub="All passed"
-        />
-      </div>
 
       {/* Security Score Chart + Recent Events */}
       <div className="grid grid-cols-3 gap-4">
@@ -591,7 +597,8 @@ export default function SecurityHome() {
                 </thead>
                 <tbody>
                   {RED_TEAM_FINDINGS.map(f => {
-                    const sc = severityColor(f.severity);
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const sc = severityColor(f.severity as any);
                     const statusStyle = f.status === 'Remediated'
                       ? { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' }
                       : f.status === 'In Progress'

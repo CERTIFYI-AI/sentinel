@@ -1,4 +1,5 @@
-// @ts-nocheck
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
 import { useState, useCallback } from 'react';
 import {
   Lightning, Eye, PencilSimple, Trash, MagnifyingGlass, Funnel,
@@ -25,6 +26,10 @@ import { useSettingsStore } from '../../stores/settingsStore';
 import { useChartTheme } from '../../hooks/useChartTheme';
 import { useRedTeamData } from '../../hooks/useRedTeamData';
 import { PageSkeleton } from '../../components/ui/PageSkeleton';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { StatCardRow } from '../../components/ui/StatCardRow';
+import { FilterBar } from '../../components/ui/FilterBar';
+import type { StatCardRowItem } from '../../components/ui/StatCardRow';
 
 // WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
@@ -166,6 +171,38 @@ export default function ThreatFeed() {
     setSheetOpen(true);
   };
 
+  const threatKpiCards: StatCardRowItem[] = [
+    {
+      label: 'Total Threats',
+      value: String(threats.length),
+      icon: <ShieldWarning size={18} weight="fill" style={{ color: 'hsl(var(--s-in-tx))' }} />,
+    },
+    {
+      label: 'Critical',
+      value: String(criticalCount),
+      icon: <Fire size={18} weight="fill" style={{ color: 'hsl(var(--destructive))' }} />,
+      delta: 'Immediate action',
+      deltaDir: 'up' as const,
+      isPositiveUp: false,
+    },
+    {
+      label: 'Open / Investigating',
+      value: String(openCount),
+      icon: <Warning size={18} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />,
+      delta: 'Active threats',
+      deltaDir: 'up' as const,
+      isPositiveUp: false,
+    },
+    {
+      label: 'Resolved',
+      value: String(resolvedCount),
+      icon: <CheckCircle size={18} weight="fill" style={{ color: 'hsl(var(--s-ok-tx))' }} />,
+      delta: 'Closed',
+      deltaDir: 'up' as const,
+      isPositiveUp: true,
+    },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Toast layer */}
@@ -178,32 +215,25 @@ export default function ThreatFeed() {
         ))}
       </div>
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <Lightning size={22} weight="fill" className="text-destructive" />
-            <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Threat Intelligence</h1>
+      {/* Page Header */}
+      <PageHeader
+        title="Threat Intelligence Feed"
+        subtitle="Real-time threat indicators and IOCs"
+        breadcrumbs={[{ label: 'Dashboard', href: '/' }, { label: 'Security', href: '/security' }, { label: 'Threats' }]}
+        actions={
+          <div className="flex items-center gap-3">
+            <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setImportOpen(true)}>
+              <Upload size={14} className="mr-2" />Import Threat Feed
+            </Button>
+            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }} onClick={() => setAddOpen(true)}>
+              <Plus size={14} className="mr-2" />Add Threat
+            </Button>
           </div>
-          <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} — Active threats, attack vectors, and MITRE ATT&CK mappings</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setImportOpen(true)}>
-            <Upload size={14} className="mr-2" />Import Threat Feed
-          </Button>
-          <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }} onClick={() => setAddOpen(true)}>
-            <Plus size={14} className="mr-2" />Add Threat
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
-      {/* Metrics */}
-      <div className="grid grid-cols-4 gap-4">
-        <MetricTile label="Total Threats" value={String(threats.length)} variant="info" icon={<ShieldWarning size={16} weight="fill" className="text-blue-600 dark:text-blue-400" />} />
-        <MetricTile label="Critical" value={String(criticalCount)} variant="error" icon={<Fire size={16} weight="fill" className="text-destructive" />} sub="Immediate action" />
-        <MetricTile label="Open / Investigating" value={String(openCount)} variant="warn" icon={<Warning size={16} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />} />
-        <MetricTile label="Resolved" value={String(resolvedCount)} variant="ok" icon={<CheckCircle size={16} weight="fill" className="text-green-600 dark:text-green-400" />} />
-      </div>
+      {/* Threat Count KPI Row */}
+      <StatCardRow cards={threatKpiCards} />
 
       {/* Chart */}
       <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
@@ -223,34 +253,40 @@ export default function ThreatFeed() {
         </CardContent>
       </Card>
 
-      {/* Filters */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-xs">
-          <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--text-4))' }} />
-          <Input placeholder="Search threats..." value={search} onChange={e => setSearch(e.target.value)}
-            className="pl-9 h-8 text-xs" style={{ borderRadius: 0 }} />
-        </div>
-        <Select value={filterSeverity} onValueChange={setFilterSeverity}>
-          <SelectTrigger className="h-8 w-32 text-xs" style={{ borderRadius: 0 }}><SelectValue placeholder="Severity" /></SelectTrigger>
-          <SelectContent style={{ borderRadius: 0 }}>
-            <SelectItem value="all">All Severity</SelectItem>
-            <SelectItem value="critical">Critical</SelectItem>
-            <SelectItem value="high">High</SelectItem>
-            <SelectItem value="medium">Medium</SelectItem>
-            <SelectItem value="low">Low</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="h-8 w-36 text-xs" style={{ borderRadius: 0 }}><SelectValue placeholder="Status" /></SelectTrigger>
-          <SelectContent style={{ borderRadius: 0 }}>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="investigating">Investigating</SelectItem>
-            <SelectItem value="mitigated">Mitigated</SelectItem>
-            <SelectItem value="resolved">Resolved</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      {/* FilterBar */}
+      <FilterBar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search threats, IDs..."
+        filters={[
+          {
+            key: 'severity',
+            label: 'Severity',
+            value: filterSeverity === 'all' ? '' : filterSeverity,
+            onChange: v => setFilterSeverity(v || 'all'),
+            options: [
+              { label: 'Critical', value: 'critical' },
+              { label: 'High', value: 'high' },
+              { label: 'Medium', value: 'medium' },
+              { label: 'Low', value: 'low' },
+            ],
+          },
+          {
+            key: 'status',
+            label: 'Status',
+            value: filterStatus === 'all' ? '' : filterStatus,
+            onChange: v => setFilterStatus(v || 'all'),
+            options: [
+              { label: 'Active', value: 'active' },
+              { label: 'Investigating', value: 'investigating' },
+              { label: 'Mitigated', value: 'mitigated' },
+              { label: 'Resolved', value: 'resolved' },
+            ],
+          },
+        ]}
+        activeFilterCount={[filterSeverity, filterStatus].filter(v => v !== 'all').length}
+        onClearAll={() => { setSearch(''); setFilterSeverity('all'); setFilterStatus('all'); }}
+      />
 
       {/* Table */}
       <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>

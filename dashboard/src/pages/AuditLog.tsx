@@ -1,16 +1,20 @@
-// @ts-nocheck
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
+//
+// AuditLog — immutable record of all system actions.
+
 import { useAuditLogData } from "@/hooks/useAuditLogData";
 import { useState } from 'react';
-import { ClockCounterClockwise, MagnifyingGlass, Export, Funnel, Eye } from '@phosphor-icons/react';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { ClockCounterClockwise, Export, Eye } from '@phosphor-icons/react';
+import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/sheet';
 import { AUDIT_LOG, AuditEntry, formatDate } from '../data/seed';
 import { useSettingsStore } from '../stores/settingsStore';
 import { PageSkeleton } from '../components/ui/PageSkeleton';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { FilterBar } from '@/components/ui/FilterBar';
 
 // WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
@@ -57,16 +61,18 @@ function filterByDateRange(entries: AuditEntry[], range: string): AuditEntry[] {
 export default function AuditLog() {
   const { logs: supabaseLogs, isLoading } = useAuditLogData();
   // Use Supabase data when available, fall back to mock AUDIT_LOG
-  const effectiveAuditLog = supabaseLogs.length > 0 ? supabaseLogs as any : AUDIT_LOG;
+  const effectiveAuditLog = supabaseLogs.length > 0 ? supabaseLogs as any : AUDIT_LOG; // any: union of Supabase and seed types
   const { orgName } = useSettingsStore();
   const [search, setSearch] = useState('');
   const [dateRange, setDateRange] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [actorFilter, setActorFilter] = useState('all');
   const [viewItem, setViewItem] = useState<AuditEntry | null>(null);
 
   if (isLoading) return <PageSkeleton />;
 
   const categories = Array.from(new Set(effectiveAuditLog.map((e: any) => e.category ?? e.action ?? 'unknown')));
+  const actors = Array.from(new Set(effectiveAuditLog.map((e: any) => e.actor ?? e.userId ?? '').filter(Boolean)));
 
   const filtered = filterByDateRange(effectiveAuditLog, dateRange).filter((e: any) => {
     const matchSearch = e.action.toLowerCase().includes(search.toLowerCase()) ||
@@ -74,7 +80,8 @@ export default function AuditLog() {
       (e.actor ?? '').toLowerCase().includes(search.toLowerCase()) ||
       (e.category ?? '').toLowerCase().includes(search.toLowerCase());
     const matchCat = categoryFilter === 'all' || e.category === categoryFilter;
-    return matchSearch && matchCat;
+    const matchActor = actorFilter === 'all' || (e.actor ?? '') === actorFilter;
+    return matchSearch && matchCat && matchActor;
   });
 
   const handleExport = () => {
@@ -87,18 +94,20 @@ export default function AuditLog() {
     a.click();
   };
 
+  const activeFilterCount = (dateRange !== 'all' ? 1 : 0) + (categoryFilter !== 'all' ? 1 : 0) + (actorFilter !== 'all' ? 1 : 0);
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Audit Log</h1>
-          <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} · Complete activity trail</p>
-        </div>
-        <Button variant="outline" onClick={handleExport} style={{ borderRadius: 0 }}>
-          <Export className="h-4 w-4 mr-2" />Export
-        </Button>
-      </div>
+      <PageHeader
+        title="Audit Log"
+        subtitle={`${orgName} · Immutable record of all system actions`}
+        breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Audit Log' }]}
+        actions={
+          <Button variant="outline" onClick={handleExport} style={{ borderRadius: 0 }}>
+            <Export className="h-4 w-4 mr-2" />Export
+          </Button>
+        }
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -117,35 +126,42 @@ export default function AuditLog() {
         ))}
       </div>
 
-      {/* Filters */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[200px] max-w-xs">
-          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: 'hsl(var(--text-4))' }} />
-          <Input placeholder="Search events..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9" style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }} />
-        </div>
-        <Select value={dateRange} onValueChange={setDateRange}>
-          <SelectTrigger className="w-36 h-9" style={{ borderRadius: 0 }}>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent style={{ borderRadius: 0 }}>
-            <SelectItem value="30d">Last 30 days</SelectItem>
-            <SelectItem value="90d">Last 90 days</SelectItem>
-            <SelectItem value="all">All Time</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-40 h-9" style={{ borderRadius: 0 }}>
-            <Funnel className="h-3.5 w-3.5 mr-2" />
-            <SelectValue placeholder="All Categories" />
-          </SelectTrigger>
-          <SelectContent style={{ borderRadius: 0 }}>
-            <SelectItem value="all">All Categories</SelectItem>
-            {categories.map(cat => (
-              <SelectItem key={cat} value={cat}>{cat.replace('_', ' ')}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <FilterBar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search events, entities, actors…"
+        filters={[
+          {
+            key: 'dateRange',
+            label: 'Date Range',
+            value: dateRange === 'all' ? '' : dateRange,
+            onChange: v => setDateRange(v || 'all'),
+            options: [
+              { label: 'Last 30 days', value: '30d' },
+              { label: 'Last 90 days', value: '90d' },
+            ],
+          },
+          {
+            key: 'category',
+            label: 'Category',
+            value: categoryFilter === 'all' ? '' : categoryFilter,
+            onChange: v => setCategoryFilter(v || 'all'),
+            options: (categories as string[]).map(c => ({ label: c.replace('_', ' '), value: c })),
+          },
+          {
+            key: 'actor',
+            label: 'Actor',
+            value: actorFilter === 'all' ? '' : actorFilter,
+            onChange: v => setActorFilter(v || 'all'),
+            options: (actors as string[]).map(a => ({ label: a, value: a })),
+          },
+        ]}
+        activeFilterCount={activeFilterCount}
+        onClearAll={() => { setSearch(''); setDateRange('all'); setCategoryFilter('all'); setActorFilter('all'); }}
+        trailing={
+          <span className="text-xs text-[hsl(var(--text-4))]">{filtered.length} event{filtered.length !== 1 ? 's' : ''}</span>
+        }
+      />
 
       {/* Event Log */}
       <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
@@ -157,7 +173,7 @@ export default function AuditLog() {
             </div>
           ) : (
             <div className="space-y-0">
-              {filtered.map((e, i) => (
+              {filtered.map((e: any, i: number) => (
                 <div
                   key={e.id}
                   className="flex items-start gap-4 px-6 py-4 hover:bg-muted/30 transition-colors"
