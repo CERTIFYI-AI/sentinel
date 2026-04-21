@@ -193,12 +193,12 @@ export default function DsrManagement() {
                   <p className="text-xs text-[hsl(var(--text-4))]">{r.email}</p>
                 </td>
                 <td className="px-3 py-2.5">
-                  <span className="px-2 py-0.5 rounded text-xs font-semibold text-white" style={{ background: TYPE_COLOR[r.type] }}>{r.type}</span>
+                  <span className="px-2 py-0.5 rounded text-xs font-semibold text-white" style={{ background: TYPE_COLOR[r.type as DSRType] }}>{r.type}</span>
                 </td>
                 <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))]">{r.regulation}</td>
                 <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))]">{r.aiSystemsAffected.length} system{r.aiSystemsAffected.length !== 1 ? 's' : ''}</td>
                 <td className="px-3 py-2.5">
-                  <span className="px-2 py-0.5 rounded text-xs font-medium" style={STATUS_STYLE[r.status]}>{r.status}</span>
+                  <span className="px-2 py-0.5 rounded text-xs font-medium" style={STATUS_STYLE[r.status as DSRStatus]}>{r.status}</span>
                 </td>
                 <td className="px-3 py-2.5">
                   <p className={`text-xs font-medium ${r.daysRemaining < 0 ? 'text-[hsl(var(--destructive))]' : r.daysRemaining <= 7 ? 'text-[hsl(45_85%_40%)]' : 'text-[hsl(var(--text-2))]'}`}>

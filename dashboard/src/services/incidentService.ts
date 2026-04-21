@@ -16,6 +16,13 @@ export type IncidentRecord = {
   metadata?: Record<string,any>
   created_at: string
   updated_at: string
+  // Legacy/aliased fields retained for backward-compatibility with existing UI
+  // code paths that read them. Server mapping is additive; see WS3 audit for
+  // the migration plan to deprecate these in favour of snake_case canonicals.
+  category?: string
+  linkedModel?: string
+  linked_model?: string
+  reportedDate?: string
 }
 
 export async function fetchAllIncidents(filters: Record<string,any> = {}): Promise<IncidentRecord[]> {

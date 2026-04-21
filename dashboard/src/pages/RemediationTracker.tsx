@@ -7,6 +7,8 @@ import {
 } from '@phosphor-icons/react';
 import { severityColor, statusColor } from '../data/seed';
 import { useSettingsStore } from '../stores/settingsStore';
+import { useRemediationData } from '../hooks/useRemediationData';
+import PageSkeleton from '../components/ui/PageSkeleton';
 
 interface TrackerItem {
   id: string;

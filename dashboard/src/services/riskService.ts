@@ -17,6 +17,11 @@ export type RiskRecord = {
   metadata?: Record<string,any>
   created_at: string
   updated_at: string
+  // Legacy/aliased fields retained for backward-compatibility with existing
+  // UI code paths; to be deprecated in WS3 canonical-schema pass.
+  severity?: string
+  score?: number
+  trending?: 'up' | 'down' | 'flat' | string
 }
 
 // Internal: maps 'risks' table row → RiskRecord UI shape
