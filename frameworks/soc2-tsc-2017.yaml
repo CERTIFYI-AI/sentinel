@@ -1,0 +1,19 @@
+# Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
+# Source: https://www.aicpa-cima.com/resources/download/2017-trust-services-criteria
+id: soc2-tsc-2017
+name: "SOC 2 Trust Services Criteria"
+version: "2017 (incl. 2022 revisions)"
+authority: "AICPA"
+url: "https://www.aicpa-cima.com/resources/download/2017-trust-services-criteria"
+domain: attestation
+controls:
+  - id: "CC1.1"
+    title: "Integrity and ethical values"
+  - id: "CC2.1"
+    title: "Internal communications"
+  - id: "CC6.1"
+    title: "Logical access controls"
+  - id: "CC7.2"
+    title: "Detection of anomalies"
+  - id: "CC8.1"
+    title: "Change management"

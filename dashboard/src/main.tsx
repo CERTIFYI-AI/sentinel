@@ -11,6 +11,9 @@ import "./styles/a11y.css";
 import "./store/accentStore";
 import { LiveRegionProvider } from "./lib/a11y/LiveRegion";
 import { getLocale } from "./i18n";
+// Auto-register all 27 governance agents on app bootstrap.
+// Side-effect import — each agent file calls governanceBus.registerAgent.
+import "./agents";
 
 // Set <html lang> early so screen readers pick up the right pronunciation.
 document.documentElement.setAttribute("lang", getLocale());

@@ -1,0 +1,205 @@
+{
+  "generated_at": "2026-04-21T11:44:18.904Z",
+  "framework_count": 22,
+  "control_count": 84,
+  "frameworks": [
+    {
+      "id": "soc2-tsc-2017",
+      "name": "SOC 2 Trust Services Criteria",
+      "version": "2017 (incl. 2022 revisions)",
+      "authority": "AICPA",
+      "url": "https://www.aicpa-cima.com/resources/download/2017-trust-services-criteria",
+      "domain": "attestation",
+      "control_count": 5
+    },
+    {
+      "id": "iso-27001-2022",
+      "name": "ISO/IEC 27001:2022",
+      "version": "2022",
+      "authority": "ISO/IEC",
+      "url": "https://www.iso.org/standard/27001",
+      "domain": "infosec",
+      "control_count": 5
+    },
+    {
+      "id": "iso-27701-2019",
+      "name": "ISO/IEC 27701:2019 (PIMS)",
+      "version": "2019",
+      "authority": "ISO/IEC",
+      "url": "https://www.iso.org/standard/71670.html",
+      "domain": "privacy",
+      "control_count": 3
+    },
+    {
+      "id": "nist-csf-2.0",
+      "name": "NIST Cybersecurity Framework 2.0",
+      "version": "2.0",
+      "authority": "NIST",
+      "url": "https://www.nist.gov/cyberframework",
+      "domain": "cybersecurity",
+      "control_count": 6
+    },
+    {
+      "id": "nist-800-53-rev5",
+      "name": "NIST SP 800-53 Rev 5",
+      "version": "Rev 5",
+      "authority": "NIST",
+      "url": "https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final",
+      "domain": "federal",
+      "control_count": 4
+    },
+    {
+      "id": "nist-800-171-rev3",
+      "name": "NIST SP 800-171 Rev 3",
+      "version": "Rev 3",
+      "authority": "NIST",
+      "url": "https://csrc.nist.gov/pubs/sp/800/171/r3/final",
+      "domain": "federal",
+      "control_count": 3
+    },
+    {
+      "id": "pci-dss-4.0",
+      "name": "PCI DSS",
+      "version": "4.0",
+      "authority": "PCI SSC",
+      "url": "https://www.pcisecuritystandards.org/document_library/",
+      "domain": "payments",
+      "control_count": 4
+    },
+    {
+      "id": "hipaa-security-rule",
+      "name": "HIPAA Security Rule",
+      "version": "45 CFR Part 164 Subpart C",
+      "authority": "HHS OCR",
+      "url": "https://www.hhs.gov/hipaa/for-professionals/security/index.html",
+      "domain": "healthcare",
+      "control_count": 3
+    },
+    {
+      "id": "hitrust-csf-v11",
+      "name": "HITRUST CSF",
+      "version": "v11.2",
+      "authority": "HITRUST Alliance",
+      "url": "https://hitrustalliance.net/hitrust-csf",
+      "domain": "healthcare",
+      "control_count": 3
+    },
+    {
+      "id": "gdpr",
+      "name": "General Data Protection Regulation",
+      "version": "Regulation (EU) 2016/679",
+      "authority": "European Parliament",
+      "url": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+      "domain": "privacy",
+      "control_count": 6
+    },
+    {
+      "id": "ccpa-cpra",
+      "name": "California Consumer Privacy Act (as amended by CPRA)",
+      "version": "Cal. Civ. Code § 1798.100 et seq.",
+      "authority": "California AG / CPPA",
+      "url": "https://cppa.ca.gov/regulations/",
+      "domain": "privacy",
+      "control_count": 4
+    },
+    {
+      "id": "pipeda",
+      "name": "Personal Information Protection and Electronic Documents Act",
+      "version": "S.C. 2000, c. 5",
+      "authority": "Office of the Privacy Commissioner of Canada",
+      "url": "https://laws-lois.justice.gc.ca/ENG/ACTS/P-8.6/index.html",
+      "domain": "privacy",
+      "control_count": 3
+    },
+    {
+      "id": "lgpd",
+      "name": "Lei Geral de Proteção de Dados (Brazil)",
+      "version": "Lei Nº 13.709/2018",
+      "authority": "ANPD",
+      "url": "https://www.gov.br/anpd/pt-br",
+      "domain": "privacy",
+      "control_count": 3
+    },
+    {
+      "id": "eu-ai-act",
+      "name": "EU AI Act",
+      "version": "Regulation (EU) 2024/1689",
+      "authority": "European Parliament",
+      "url": "https://eur-lex.europa.eu/eli/reg/2024/1689/oj",
+      "domain": "ai-governance",
+      "control_count": 5
+    },
+    {
+      "id": "nist-ai-rmf-1.0",
+      "name": "NIST AI Risk Management Framework",
+      "version": "1.0",
+      "authority": "NIST",
+      "url": "https://www.nist.gov/itl/ai-risk-management-framework",
+      "domain": "ai-governance",
+      "control_count": 4
+    },
+    {
+      "id": "iso-42001-2023",
+      "name": "ISO/IEC 42001:2023 (AI Management System)",
+      "version": "2023",
+      "authority": "ISO/IEC",
+      "url": "https://www.iso.org/standard/81230.html",
+      "domain": "ai-governance",
+      "control_count": 3
+    },
+    {
+      "id": "cis-controls-v8",
+      "name": "CIS Controls",
+      "version": "v8.1",
+      "authority": "Center for Internet Security",
+      "url": "https://www.cisecurity.org/controls/v8",
+      "domain": "cybersecurity",
+      "control_count": 4
+    },
+    {
+      "id": "sox-itgc",
+      "name": "Sarbanes-Oxley IT General Controls",
+      "version": "SOX 404",
+      "authority": "SEC / PCAOB",
+      "url": "https://pcaobus.org/oversight/standards/auditing-standards/details/AS2201",
+      "domain": "financial",
+      "control_count": 4
+    },
+    {
+      "id": "cmmc-2.0",
+      "name": "Cybersecurity Maturity Model Certification",
+      "version": "2.0",
+      "authority": "US Department of Defense",
+      "url": "https://dodcio.defense.gov/CMMC/",
+      "domain": "federal",
+      "control_count": 3
+    },
+    {
+      "id": "fedramp-rev5",
+      "name": "FedRAMP",
+      "version": "Rev 5 (aligned to NIST 800-53 Rev 5)",
+      "authority": "GSA / JAB",
+      "url": "https://www.fedramp.gov/rev5/",
+      "domain": "federal",
+      "control_count": 3
+    },
+    {
+      "id": "dora",
+      "name": "Digital Operational Resilience Act",
+      "version": "Regulation (EU) 2022/2554",
+      "authority": "European Parliament",
+      "url": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+      "domain": "financial",
+      "control_count": 3
+    },
+    {
+      "id": "ffiec-cat",
+      "name": "FFIEC Cybersecurity Assessment Tool",
+      "version": "May 2017",
+      "authority": "FFIEC",
+      "url": "https://www.ffiec.gov/cyberassessmenttool.htm",
+      "domain": "financial",
+      "control_count": 3
+    }
+  ]
+}

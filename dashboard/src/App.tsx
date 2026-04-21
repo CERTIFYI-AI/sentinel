@@ -2,6 +2,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 const queryClient = new QueryClient()
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { TenantProvider } from './context/TenantContext';
 import React from 'react';
 import { lazy, Suspense, useEffect } from 'react';
 import { PageSkeleton } from './components/ui/PageSkeleton';
@@ -24,9 +25,12 @@ const PolicyFirewall = lazy(() => import('./pages/security/PolicyFirewall'));
 const KeysVault = lazy(() => import('./pages/security/KeysVault'));
 const ModelArena = lazy(() => import('./pages/security/ModelArena'));
 const ReportGenerator = lazy(() => import('./pages/security/ReportGenerator'));
+const JitElevation = lazy(() => import('./pages/security/JitElevation'));
+const MfaEnrollment = lazy(() => import('./pages/security/MfaEnrollment'));
 const QualityMetrics = lazy(() => import('./pages/evals/QualityMetrics'));
 const EvalTechniques = lazy(() => import('./pages/evals/EvalTechniques'));
 const ComplianceControls = lazy(() => import('./pages/compliance/ComplianceControls'));
+const FrameworkCatalog = lazy(() => import('./pages/compliance/FrameworkCatalog'));
 const EvidenceHub = lazy(() => import('./pages/compliance/EvidenceHub'));
 const ComplianceDashboard = lazy(() => import('./pages/ComplianceDashboard'));
 const PolicyManagement = lazy(() => import('./pages/PolicyManagement'));
@@ -35,6 +39,7 @@ const Overview = lazy(() => import('./pages/Overview'));
 const Policies = lazy(() => import('./pages/Policies'));
 const RiskRegister = lazy(() => import('./pages/RiskRegister'));
 const AuditLog = lazy(() => import('./pages/AuditLog'));
+const AuditLogExplorer = lazy(() => import('./pages/AuditLogExplorer'));
 const Benchmark = lazy(() => import('./pages/Benchmark'));
 const Datasets = lazy(() => import('./pages/Datasets'));
 const EvidenceVault = lazy(() => import('./pages/EvidenceVault'));
@@ -50,6 +55,7 @@ const PolicyEditor = lazy(() => import('./pages/PolicyEditor'));
 const Remediation = lazy(() => import('./pages/Remediation'));
 const RemediationTracker = lazy(() => import('./pages/RemediationTracker'));
 const Settings = lazy(() => import('./pages/Settings'));
+const SsoProviders = lazy(() => import('./pages/settings/SsoProviders'));
 const Vendors = lazy(() => import('./pages/Vendors'));
 const Login = lazy(() => import('./pages/Login'));
 const Signup = lazy(() => import('./pages/Signup'));
@@ -157,7 +163,9 @@ const Marketplace = lazy(() => import('./pages/Marketplace'));
 const SupplyChainGraph = lazy(() => import('./pages/SupplyChainGraph'));
 const Licensing = lazy(() => import('./pages/admin/Licensing'));
 const GovernanceFramework = lazy(() => import('./pages/GovernanceFramework'));
+const GovernanceMesh = lazy(() => import('./pages/GovernanceMesh'));
 const EvidenceChain = lazy(() => import('./pages/EvidenceChain'));
+const EvidenceCustodyExplorer = lazy(() => import('./pages/EvidenceCustodyExplorer'));
 const AutomationStudio = lazy(() => import('./pages/AutomationStudio'));
 
 // --- WS2 Scaffolded GA-Critical Modules ---
@@ -281,6 +289,7 @@ function ProtectedLayout() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      <TenantProvider>
 <BrowserRouter>
       <Routes>
         {/* Public routes — no sidebar/header layout */}
@@ -309,6 +318,8 @@ export default function App() {
           <Route path="/security/keys" element={<KeysVault />} />
           <Route path="/security/model-arena" element={<ModelArena />} />
           <Route path="/security/reports" element={<ReportGenerator />} />
+          <Route path="/security/jit" element={<Suspense fallback={<Loading />}><JitElevation /></Suspense>} />
+          <Route path="/security/mfa" element={<Suspense fallback={<Loading />}><MfaEnrollment /></Suspense>} />
           <Route path="/security/model-auditor" element={<SecurityOverview />} />
           <Route path="/security/campaigns" element={<ThreatFeed />} />
           <Route path="/security/frameworks" element={<SecurityHome />} />
@@ -321,6 +332,7 @@ export default function App() {
           <Route path="/evals/datasets" element={<Datasets />} />
           <Route path="/compliance" element={<ComplianceDashboard />} />
           <Route path="/compliance/controls" element={<ComplianceControls />} />
+          <Route path="/compliance/frameworks" element={<Suspense fallback={<Loading />}><FrameworkCatalog /></Suspense>} />
           <Route path="/compliance/evidence" element={<EvidenceHub />} />
           <Route path="/compliance/gap-analysis" element={<GapAnalysis />} />
           <Route path="/compliance/policies" element={<Policies />} />
@@ -335,6 +347,7 @@ export default function App() {
           <Route path="/models/inventory/:id" element={<ModelDetail />} />
           <Route path="/models/lifecycle" element={<ModelLifecycle />} />
           <Route path="/audit-log" element={<AuditLog />} />
+          <Route path="/audit-log/chain" element={<Suspense fallback={<Loading />}><AuditLogExplorer /></Suspense>} />
           <Route path="/evidence-vault" element={<EvidenceVault />} />
           <Route path="/export" element={<ExportCenter />} />
           <Route path="/hitl-queue" element={<Navigate to="/hitl" replace />} />
@@ -342,6 +355,7 @@ export default function App() {
           <Route path="/policy-editor" element={<PolicyEditor />} />
           <Route path="/remediation-tracker" element={<RemediationTracker />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/settings/sso" element={<Suspense fallback={<Loading />}><SsoProviders /></Suspense>} />
 
           {/* Governance */}
           <Route path="/controls" element={<Navigate to="/compliance/controls" replace />} />
@@ -494,7 +508,9 @@ export default function App() {
           <Route path="/supply-chain/graph" element={<Suspense fallback={<Loading />}><SupplyChainGraph /></Suspense>} />
           <Route path="/admin/licensing" element={<Suspense fallback={<Loading />}><Licensing /></Suspense>} />
           <Route path="/governance-framework" element={<Suspense fallback={<Loading />}><GovernanceFramework /></Suspense>} />
+          <Route path="/governance-mesh" element={<Suspense fallback={<Loading />}><GovernanceMesh /></Suspense>} />
           <Route path="/evidence-chain" element={<Suspense fallback={<Loading />}><EvidenceChain /></Suspense>} />
+          <Route path="/evidence/custody/:artifactId" element={<Suspense fallback={<Loading />}><EvidenceCustodyExplorer /></Suspense>} />
           <Route path="/automation-studio" element={<Suspense fallback={<Loading />}><AutomationStudio /></Suspense>} />
 
             {/* V1 Missing Modules */}
@@ -535,6 +551,7 @@ export default function App() {
         </Route>
       </Routes>
     </BrowserRouter>
+      </TenantProvider>
 </QueryClientProvider>
   );
 }

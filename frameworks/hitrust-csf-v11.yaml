@@ -1,0 +1,15 @@
+# Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
+# Source: https://hitrustalliance.net/hitrust-csf
+id: hitrust-csf-v11
+name: "HITRUST CSF"
+version: "v11.2"
+authority: "HITRUST Alliance"
+url: "https://hitrustalliance.net/hitrust-csf"
+domain: healthcare
+controls:
+  - id: "01.a"
+    title: "Access control policy"
+  - id: "06.c"
+    title: "Data protection and privacy"
+  - id: "10.m"
+    title: "Control of technical vulnerabilities"
