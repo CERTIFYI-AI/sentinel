@@ -74,6 +74,7 @@ const AccessControlOverview = lazy(() => import('./pages/rbac/AccessControlOverv
 const RolesPage = lazy(() => import('./pages/rbac/RolesPage'));
 const UsersPage = lazy(() => import('./pages/rbac/UsersPage'));
 const DepartmentsPage = lazy(() => import('./pages/rbac/DepartmentsPage'));
+const PermissionMatrix = lazy(() => import('./pages/rbac/PermissionMatrix'));
 const AgentDiscovery = lazy(() => import('./pages/agents/AgentDiscovery'));
 const ShadowAI = lazy(() => import('./pages/agents/ShadowAI'));
 const AgentDetail = lazy(() => import('./pages/agents/AgentDetail'));
@@ -398,6 +399,7 @@ export default function App() {
           <Route path="/access-control/roles" element={<RolesPage />} />
           <Route path="/access-control/users" element={<UsersPage />} />
           <Route path="/access-control/departments" element={<DepartmentsPage />} />
+          <Route path="/access-control/permissions" element={<PermissionMatrix />} />
           <Route path="/ai-advisor" element={<Suspense fallback={null}><AiAdvisor /></Suspense>} />
           <Route path="/compliance/policy-templates" element={<Suspense fallback={null}><PolicyTemplates /></Suspense>} />
           <Route path="/compliance/controls/:id" element={<ControlDetail />} />

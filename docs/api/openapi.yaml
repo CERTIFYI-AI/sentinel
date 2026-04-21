@@ -1,0 +1,212 @@
+openapi: "3.1.0"
+info:
+  title: Sentinel AI GRC Platform API
+  version: "1.0.0"
+  description: |
+    Enterprise AI Governance, Risk & Compliance platform API.
+    All endpoints require Bearer JWT authentication (Supabase anon/service key).
+    Rate limits: 30 req/min (list), 10 req/min (mutation), 3 req/min (export).
+  contact:
+    name: Sentinel Engineering
+    url: https://github.com/CERTIFYI-AI/sentinel
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+
+servers:
+  - url: https://vhparvughsygyknblkzt.supabase.co/rest/v1
+    description: Production (Supabase PostgREST)
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: risks
+    description: Risk Register
+  - name: models
+    description: AI Model Inventory
+  - name: incidents
+    description: AI Incidents
+  - name: vendors
+    description: Vendor Registry
+  - name: evidence
+    description: Evidence Vault
+  - name: compliance
+    description: Compliance Frameworks & Controls
+  - name: governance_events
+    description: Autonomous Governance Event Bus
+  - name: webhooks
+    description: Outbound Webhook Management
+
+paths:
+  /risks:
+    get:
+      tags: [risks]
+      summary: List risk register entries
+      parameters:
+        - name: org_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: severity
+          in: query
+          schema: { type: string, enum: [CRITICAL, HIGH, MEDIUM, LOW] }
+        - name: status
+          in: query
+          schema: { type: string, enum: [OPEN, IN_PROGRESS, MITIGATED, ACCEPTED, CLOSED] }
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+      responses:
+        '200':
+          description: Risk entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/RiskEntry' }
+    post:
+      tags: [risks]
+      summary: Create risk entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RiskEntryInput' }
+      responses:
+        '201':
+          description: Created
+
+  /risks/{id}:
+    get:
+      tags: [risks]
+      summary: Get risk entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Risk entry
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RiskEntry' }
+    patch:
+      tags: [risks]
+      summary: Update risk entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RiskEntryInput' }
+      responses:
+        '200':
+          description: Updated
+
+  /governance_events:
+    get:
+      tags: [governance_events]
+      summary: List governance events (event bus log)
+      parameters:
+        - name: event_type
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { type: string, enum: [pending, processing, completed, failed, dead_letter] }
+        - $ref: '#/components/parameters/limit'
+      responses:
+        '200':
+          description: Governance events
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/GovernanceEvent' }
+
+  /webhook_endpoints:
+    get:
+      tags: [webhooks]
+      summary: List webhook endpoints
+      responses:
+        '200':
+          description: Webhook endpoints
+    post:
+      tags: [webhooks]
+      summary: Register webhook endpoint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/WebhookEndpointInput' }
+      responses:
+        '201':
+          description: Created
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    limit:
+      name: limit
+      in: query
+      schema: { type: integer, default: 20, maximum: 100 }
+    offset:
+      name: offset
+      in: query
+      schema: { type: integer, default: 0 }
+
+  schemas:
+    RiskEntry:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        org_id: { type: string, format: uuid }
+        title: { type: string }
+        severity: { type: string, enum: [CRITICAL, HIGH, MEDIUM, LOW] }
+        status: { type: string }
+        category: { type: string }
+        likelihood: { type: integer, minimum: 1, maximum: 5 }
+        impact: { type: integer, minimum: 1, maximum: 5 }
+        created_at: { type: string, format: date-time }
+
+    RiskEntryInput:
+      type: object
+      required: [title, severity, category]
+      properties:
+        title: { type: string }
+        severity: { type: string, enum: [CRITICAL, HIGH, MEDIUM, LOW] }
+        category: { type: string }
+        description: { type: string }
+        likelihood: { type: integer, minimum: 1, maximum: 5 }
+        impact: { type: integer, minimum: 1, maximum: 5 }
+
+    GovernanceEvent:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        org_id: { type: string, format: uuid }
+        event_type: { type: string }
+        source_module: { type: string }
+        payload: { type: object }
+        status: { type: string, enum: [pending, processing, completed, failed, dead_letter] }
+        cascade_depth: { type: integer }
+        created_at: { type: string, format: date-time }
+
+    WebhookEndpointInput:
+      type: object
+      required: [url, secret_hash, secret_prefix]
+      properties:
+        url: { type: string, format: uri }
+        description: { type: string }
+        event_types: { type: array, items: { type: string } }
+        secret_hash: { type: string }
+        secret_prefix: { type: string }
+        max_retries: { type: integer, default: 3 }
