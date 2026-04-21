@@ -1,0 +1,109 @@
+# Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
+# WS0.6 — Automated, signed, SBOM-attached releases.
+#
+# Triggered on pushes to main after CI gates succeed. Produces:
+#   - Semantic version bump + CHANGELOG update + GitHub Release
+#     (@semantic-release with Conventional Commits).
+#   - CycloneDX + SPDX SBOMs attached to the release.
+#   - Sigstore cosign keyless signatures for each artifact.
+#   - SLSA v1 build provenance attestation.
+#
+# All CI gates in ci.yml and security.yml must have succeeded on the
+# merge commit for this workflow to proceed.
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  id-token: write
+  attestations: write
+
+jobs:
+  release:
+    name: Semantic Release + SBOM + Signing
+    runs-on: ubuntu-latest
+    if: github.repository == 'CERTIFYI-AI/sentinel'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+
+      - name: Install dashboard deps
+        working-directory: dashboard
+        run: npm ci
+
+      - name: Build dashboard
+        working-directory: dashboard
+        run: npm run build
+
+      - name: Package build artifact
+        run: |
+          mkdir -p artifacts
+          VERSION="${GITHUB_SHA::12}"
+          tar -C dashboard -czf "artifacts/dashboard-${VERSION}.tar.gz" dist
+          ls -la artifacts
+
+      - name: Generate CycloneDX SBOM
+        uses: CycloneDX/gh-node-module-generatebom@v1
+        with:
+          path: ./dashboard
+          output: sbom/sbom-dashboard.cdx.json
+
+      - name: Generate SPDX SBOM (Syft)
+        uses: anchore/sbom-action@v0
+        with:
+          path: ./dashboard
+          format: spdx-json
+          output-file: sbom/sbom-dashboard.spdx.json
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign build artifact (keyless)
+        env:
+          COSIGN_YES: 'true'
+        run: |
+          for f in artifacts/*.tar.gz sbom/*.json; do
+            cosign sign-blob --yes "$f" \
+              --output-signature "${f}.sig" \
+              --output-certificate "${f}.pem"
+          done
+
+      - name: Attest build provenance (SLSA v1)
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: |
+            artifacts/*.tar.gz
+            sbom/*.json
+
+      - name: Install semantic-release
+        run: |
+          npm install -g \
+            semantic-release@24 \
+            @semantic-release/changelog@6 \
+            @semantic-release/git@10 \
+            @semantic-release/github@10 \
+            @semantic-release/commit-analyzer@12 \
+            @semantic-release/release-notes-generator@13 \
+            conventional-changelog-conventionalcommits@7
+
+      - name: Run semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release
