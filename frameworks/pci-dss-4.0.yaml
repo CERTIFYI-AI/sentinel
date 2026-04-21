@@ -1,0 +1,17 @@
+# Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
+# Source: https://www.pcisecuritystandards.org/document_library/
+id: pci-dss-4.0
+name: "PCI DSS"
+version: "4.0"
+authority: "PCI SSC"
+url: "https://www.pcisecuritystandards.org/document_library/"
+domain: payments
+controls:
+  - id: "1.2"
+    title: "Network security controls"
+  - id: "3.5"
+    title: "PAN rendered unreadable"
+  - id: "8.3"
+    title: "Strong authentication"
+  - id: "10.2"
+    title: "Audit logs"

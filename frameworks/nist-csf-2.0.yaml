@@ -1,0 +1,21 @@
+# Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
+# Source: https://www.nist.gov/cyberframework
+id: nist-csf-2.0
+name: "NIST Cybersecurity Framework 2.0"
+version: "2.0"
+authority: "NIST"
+url: "https://www.nist.gov/cyberframework"
+domain: cybersecurity
+controls:
+  - id: "GV.OC-01"
+    title: "Organizational mission and stakeholders"
+  - id: "ID.AM-01"
+    title: "Physical device inventory"
+  - id: "PR.AC-01"
+    title: "Identity and credentials issued"
+  - id: "DE.CM-01"
+    title: "Network monitored"
+  - id: "RS.AN-01"
+    title: "Notifications from detection systems"
+  - id: "RC.RP-01"
+    title: "Recovery plan executed"

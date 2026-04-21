@@ -1,0 +1,15 @@
+# Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
+# Source: https://eur-lex.europa.eu/eli/reg/2022/2554/oj
+id: dora
+name: "Digital Operational Resilience Act"
+version: "Regulation (EU) 2022/2554"
+authority: "European Parliament"
+url: "https://eur-lex.europa.eu/eli/reg/2022/2554/oj"
+domain: financial
+controls:
+  - id: "Art.6"
+    title: "ICT risk management framework"
+  - id: "Art.17"
+    title: "Major ICT-related incident reporting"
+  - id: "Art.28"
+    title: "ICT third-party risk management"

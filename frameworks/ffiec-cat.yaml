@@ -1,0 +1,15 @@
+# Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
+# Source: https://www.ffiec.gov/cyberassessmenttool.htm
+id: ffiec-cat
+name: "FFIEC Cybersecurity Assessment Tool"
+version: "May 2017"
+authority: "FFIEC"
+url: "https://www.ffiec.gov/cyberassessmenttool.htm"
+domain: financial
+controls:
+  - id: "D1"
+    title: "Cyber risk management and oversight"
+  - id: "D2"
+    title: "Threat intelligence and collaboration"
+  - id: "D3"
+    title: "Cybersecurity controls"

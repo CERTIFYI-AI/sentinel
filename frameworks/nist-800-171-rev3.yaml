@@ -1,0 +1,15 @@
+# Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
+# Source: https://csrc.nist.gov/pubs/sp/800/171/r3/final
+id: nist-800-171-rev3
+name: "NIST SP 800-171 Rev 3"
+version: "Rev 3"
+authority: "NIST"
+url: "https://csrc.nist.gov/pubs/sp/800/171/r3/final"
+domain: federal
+controls:
+  - id: "3.1.1"
+    title: "Limit system access"
+  - id: "3.3.1"
+    title: "Create and retain audit logs"
+  - id: "3.13.1"
+    title: "Monitor and protect communications"

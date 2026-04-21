@@ -1,0 +1,15 @@
+# Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
+# Source: https://www.hhs.gov/hipaa/for-professionals/security/index.html
+id: hipaa-security-rule
+name: "HIPAA Security Rule"
+version: "45 CFR Part 164 Subpart C"
+authority: "HHS OCR"
+url: "https://www.hhs.gov/hipaa/for-professionals/security/index.html"
+domain: healthcare
+controls:
+  - id: "164.308(a)(1)"
+    title: "Security management process"
+  - id: "164.308(a)(5)"
+    title: "Security awareness training"
+  - id: "164.312(a)(1)"
+    title: "Access control"

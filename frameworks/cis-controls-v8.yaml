@@ -1,0 +1,17 @@
+# Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
+# Source: https://www.cisecurity.org/controls/v8
+id: cis-controls-v8
+name: "CIS Controls"
+version: "v8.1"
+authority: "Center for Internet Security"
+url: "https://www.cisecurity.org/controls/v8"
+domain: cybersecurity
+controls:
+  - id: "1"
+    title: "Inventory and control of enterprise assets"
+  - id: "3"
+    title: "Data protection"
+  - id: "8"
+    title: "Audit log management"
+  - id: "16"
+    title: "Application software security"

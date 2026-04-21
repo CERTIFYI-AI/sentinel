@@ -28,6 +28,7 @@ const ReportGenerator = lazy(() => import('./pages/security/ReportGenerator'));
 const QualityMetrics = lazy(() => import('./pages/evals/QualityMetrics'));
 const EvalTechniques = lazy(() => import('./pages/evals/EvalTechniques'));
 const ComplianceControls = lazy(() => import('./pages/compliance/ComplianceControls'));
+const FrameworkCatalog = lazy(() => import('./pages/compliance/FrameworkCatalog'));
 const EvidenceHub = lazy(() => import('./pages/compliance/EvidenceHub'));
 const ComplianceDashboard = lazy(() => import('./pages/ComplianceDashboard'));
 const PolicyManagement = lazy(() => import('./pages/PolicyManagement'));
@@ -327,6 +328,7 @@ export default function App() {
           <Route path="/evals/datasets" element={<Datasets />} />
           <Route path="/compliance" element={<ComplianceDashboard />} />
           <Route path="/compliance/controls" element={<ComplianceControls />} />
+          <Route path="/compliance/frameworks" element={<Suspense fallback={<Loading />}><FrameworkCatalog /></Suspense>} />
           <Route path="/compliance/evidence" element={<EvidenceHub />} />
           <Route path="/compliance/gap-analysis" element={<GapAnalysis />} />
           <Route path="/compliance/policies" element={<Policies />} />
