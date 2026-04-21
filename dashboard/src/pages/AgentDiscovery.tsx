@@ -52,19 +52,27 @@ export default function AgentDiscovery() {
   const sp = useSortAndPage(filtered, "name");
   const setF = (k: string) => (v: any) => setForm((f: any) => ({ ...f, [k]: v }));
 
-  const save = (draft = false) => {
+  const save = async (draft = false) => {
     if (!form.name.trim()) { toast.error("Agent name is required"); return; }
     if (!form.endpoint.trim()) { toast.error("Endpoint URL is required"); return; }
+    setSaving(true);
+    const status = draft ? "Draft" : (form.status || "Discovered");
+    const nowIso = new Date().toISOString();
+    const today = nowIso.slice(0, 10);
     try {
-      const result = await saveAgents({ ...form, status, updatedAt: new Date().toISOString().slice(0,10) })
+      const result = await saveAgents({ ...form, status, updatedAt: today });
       if (modal === "edit" && editId) {
-        setLocalItems(p => p.map(i => i.id === editId ? { ...i, ...form, status, updatedAt: new Date().toISOString().slice(0,10) } : i))
+        setLocalItems(p => p.map(i => i.id === editId ? { ...i, ...form, status, updatedAt: today } : i));
       } else {
-        setLocalItems(p => [{ ...form, status, id: result?.id || `AGT-${Date.now()}`, lastSeen: new Date().toISOString(), createdAt: new Date().toISOString().slice(0,10), updatedAt: new Date().toISOString().slice(0,10), createdBy: 'admin' }, ...p])
+        setLocalItems(p => [{ ...form, status, id: result?.id || `AGT-${Date.now()}`, lastSeen: nowIso, createdAt: today, updatedAt: today, createdBy: 'admin' }, ...p]);
       }
-    } catch {}
-    setModal(null); setForm(EMPTY); setEditId(null);
-    }, 700);
+      toast.success(draft ? "Draft saved" : "Agent saved");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save agent");
+    } finally {
+      setSaving(false);
+      setModal(null); setForm(EMPTY); setEditId(null);
+    }
   };
 
   const openEdit = (item: any) => { setForm({ ...item }); setEditId(item.id); setModal("edit"); };

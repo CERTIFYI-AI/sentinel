@@ -732,7 +732,7 @@ export default function Overview() {
             </thead>
             <tbody>
               {incidents.slice(0, 7).map(inc => {
-                const sc = severityColor(inc.severity);
+                const sc = severityColor((inc.severity ?? 'medium') as Parameters<typeof severityColor>[0]);
                 const stColor = inc.status === 'open' ? 'hsl(var(--s-er-tx))' : inc.status === 'investigating' ? 'hsl(var(--s-wn-tx))' : inc.status === 'resolved' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-4))';
                 const stBg = inc.status === 'open' ? 'hsl(0 72% 51% / 0.10)' : inc.status === 'investigating' ? 'hsl(45 93% 47% / 0.10)' : inc.status === 'resolved' ? 'hsl(142 71% 45% / 0.10)' : 'hsl(var(--bg-muted))';
                 return (
@@ -749,7 +749,7 @@ export default function Overview() {
                       <Badge style={{ background: stBg, color: stColor, borderRadius: 0, fontSize: 10, textTransform: 'capitalize' }}>{inc.status}</Badge>
                     </td>
                     <td className="px-4 py-2.5 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{inc.linkedModel ?? inc.linked_model ?? '—'}</td>
-                    <td className="px-4 py-2.5 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{formatDate(inc.reportedDate)}</td>
+                    <td className="px-4 py-2.5 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{formatDate(inc.reportedDate ?? inc.detected_at ?? inc.created_at ?? '')}</td>
                   </tr>
                 );
               })}
@@ -998,7 +998,7 @@ export default function Overview() {
             </thead>
             <tbody>
               {risks.filter((r: any) => r.status === 'open').slice(0, 5).map(r => {
-                const sc = severityColor(r.severity);
+                const sc = severityColor((r.severity ?? 'medium') as Parameters<typeof severityColor>[0]);
                 return (
                   <tr key={r.id} style={{ borderTop: '1px solid hsl(var(--border))' }}>
                     <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{r.id}</td>
@@ -1017,7 +1017,7 @@ export default function Overview() {
                       </span>
                     </td>
                     <td className="p-3">
-                      <TrendIcon trend={r.trending} />
+                      <TrendIcon trend={(r.trending ?? 'stable') as 'stable' | 'up' | 'down'} />
                     </td>
                     <td className="p-3 text-sm" style={{ color: 'hsl(var(--text-2))' }}>{r.owner}</td>
                   </tr>

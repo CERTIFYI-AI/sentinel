@@ -569,7 +569,7 @@ export default function Settings() {
           </Card>
         </TabsContent>
 
-        {/* ── APPEARANCE ─────────────────────────────── */
+        {/* ── APPEARANCE ─────────────────────────────── */}
         <TabsContent value="appearance" className="mt-4 space-y-6">
           {/* Theme Selection */}
           <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
