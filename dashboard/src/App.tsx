@@ -24,6 +24,8 @@ const PolicyFirewall = lazy(() => import('./pages/security/PolicyFirewall'));
 const KeysVault = lazy(() => import('./pages/security/KeysVault'));
 const ModelArena = lazy(() => import('./pages/security/ModelArena'));
 const ReportGenerator = lazy(() => import('./pages/security/ReportGenerator'));
+const JitElevation = lazy(() => import('./pages/security/JitElevation'));
+const MfaEnrollment = lazy(() => import('./pages/security/MfaEnrollment'));
 const QualityMetrics = lazy(() => import('./pages/evals/QualityMetrics'));
 const EvalTechniques = lazy(() => import('./pages/evals/EvalTechniques'));
 const ComplianceControls = lazy(() => import('./pages/compliance/ComplianceControls'));
@@ -309,6 +311,8 @@ export default function App() {
           <Route path="/security/keys" element={<KeysVault />} />
           <Route path="/security/model-arena" element={<ModelArena />} />
           <Route path="/security/reports" element={<ReportGenerator />} />
+          <Route path="/security/jit" element={<Suspense fallback={<Loading />}><JitElevation /></Suspense>} />
+          <Route path="/security/mfa" element={<Suspense fallback={<Loading />}><MfaEnrollment /></Suspense>} />
           <Route path="/security/model-auditor" element={<SecurityOverview />} />
           <Route path="/security/campaigns" element={<ThreatFeed />} />
           <Route path="/security/frameworks" element={<SecurityHome />} />
