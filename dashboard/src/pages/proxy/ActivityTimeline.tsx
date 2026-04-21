@@ -213,7 +213,7 @@ export default function ActivityTimeline() {
   ];
 
   return (
-    <div style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div>
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
         {stats.map(s => (

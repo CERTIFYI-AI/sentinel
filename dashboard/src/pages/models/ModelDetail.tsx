@@ -176,7 +176,7 @@ export default function ModelDetail() {
   };
 
   return (
-    <div style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div>
       <Breadcrumbs />
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>

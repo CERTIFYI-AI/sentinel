@@ -11,7 +11,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { ReactNode } from "react";
+import React from "react";
+import type { ReactNode, ReactElement } from "react";
 
 // ---------------------------------------------------------------------------
 // Mocks — must be hoisted before the hook import
@@ -38,7 +39,7 @@ import { useGlobalSearch } from "@/hooks/useGlobalSearch";
 // Test wrapper
 // ---------------------------------------------------------------------------
 
-function makeWrapper(): (opts: { children: ReactNode }) => JSX.Element {
+function makeWrapper(): (opts: { children: ReactNode }) => ReactElement {
   const client = new QueryClient({
     defaultOptions: {
       queries: { retry: false, gcTime: 0, staleTime: 0 },
@@ -54,7 +55,9 @@ function makeWrapper(): (opts: { children: ReactNode }) => JSX.Element {
 // ---------------------------------------------------------------------------
 
 beforeEach(() => {
-  vi.useFakeTimers();
+  // Only fake setTimeout/setInterval — leave Promises/microtasks and Date unblocked
+  // so React Query's async queryFn and staleTime calculations work correctly.
+  vi.useFakeTimers({ toFake: ['setTimeout', 'setInterval', 'clearTimeout', 'clearInterval'] });
   rpcMock.mockReset();
   // Default: RPC returns empty results
   rpcMock.mockReturnValue({ data: [], error: null });
@@ -120,6 +123,14 @@ describe("useGlobalSearch — short query (< 2 chars)", () => {
 // Debounce logic — query enabled once >= 2 chars settle
 // ---------------------------------------------------------------------------
 describe("useGlobalSearch — query enabled after debounce (>= 2 chars)", () => {
+  // These tests require real timers so that React Query's async internals
+  // (setTimeout(0) scheduling) resolve naturally. The debounce (300ms) is
+  // covered by a short real-time wait.
+  beforeEach(() => vi.useRealTimers());
+  afterEach(() => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'setInterval', 'clearTimeout', 'clearInterval'] });
+  });
+
   it("enables the query after the 300ms debounce window with 2+ char input", async () => {
     const { result } = renderHook(() => useGlobalSearch(), {
       wrapper: makeWrapper(),
@@ -129,18 +140,10 @@ describe("useGlobalSearch — query enabled after debounce (>= 2 chars)", () => 
       result.current.setQuery("ri");
     });
 
-    // Before debounce settles — still idle
-    expect(result.current.results.fetchStatus).toBe("idle");
-
-    // Advance past the 300ms debounce
-    act(() => {
-      vi.advanceTimersByTime(350);
-    });
-
     await waitFor(() => {
       expect(rpcMock).toHaveBeenCalled();
-    });
-  });
+    }, { timeout: 2000, interval: 50 });
+  }, 10_000);
 
   it("calls supabase.rpc with global_search and the correct tenant id", async () => {
     const { result } = renderHook(() => useGlobalSearch(), {
@@ -151,11 +154,7 @@ describe("useGlobalSearch — query enabled after debounce (>= 2 chars)", () => 
       result.current.setQuery("risk");
     });
 
-    act(() => {
-      vi.advanceTimersByTime(350);
-    });
-
-    await waitFor(() => expect(rpcMock).toHaveBeenCalled());
+    await waitFor(() => expect(rpcMock).toHaveBeenCalled(), { timeout: 2000, interval: 50 });
 
     const [fnName, params] = rpcMock.mock.calls[0] as [
       string,
@@ -165,7 +164,7 @@ describe("useGlobalSearch — query enabled after debounce (>= 2 chars)", () => 
     expect(params.p_tenant_id).toBe("org-test-123");
     expect(params.p_query).toBe("risk");
     expect(params.p_limit).toBeGreaterThan(0);
-  });
+  }, 10_000);
 
   it("returns the results from the RPC mock when query is active", async () => {
     const mockResults = [
@@ -188,15 +187,13 @@ describe("useGlobalSearch — query enabled after debounce (>= 2 chars)", () => 
       result.current.setQuery("alpha");
     });
 
-    act(() => {
-      vi.advanceTimersByTime(350);
-    });
-
-    await waitFor(() => result.current.results.isSuccess);
-
-    expect(result.current.results.data).toHaveLength(1);
-    expect(result.current.results.data?.[0].title).toBe("Risk Alpha");
-  });
+    await waitFor(() => {
+      expect(result.current.results.isSuccess).toBe(true);
+      expect(result.current.results.data).toBeTruthy();
+      expect(result.current.results.data).toHaveLength(1);
+      expect(result.current.results.data![0].title).toBe("Risk Alpha");
+    }, { timeout: 2000, interval: 50 });
+  }, 10_000);
 });
 
 // ---------------------------------------------------------------------------

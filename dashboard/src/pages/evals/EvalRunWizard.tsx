@@ -111,8 +111,7 @@ export default function EvalRunWizard({ onClose, onRun }: EvalRunWizardProps) {
         boxShadow: 'var(--shadow-lg)',
         display: 'flex',
         flexDirection: 'column',
-        fontFamily: 'Outfit, sans-serif',
-      }}>
+              }}>
         {/* Header */}
         <div style={{ padding: '16px 20px', borderBottom: '1px solid hsl(var(--border))', display: 'flex', alignItems: 'center', gap: 10 }}>
           <Flask size={16} style={{ color: 'hsl(var(--brand))' }} />

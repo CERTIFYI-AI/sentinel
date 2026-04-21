@@ -173,7 +173,7 @@ export default function DependencyGraph() {
   const selectedDep = selectedModelId ? DEPENDENCIES.find(d => d.modelId === selectedModelId) : null;
 
   return (
-    <div style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>

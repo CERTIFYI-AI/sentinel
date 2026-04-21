@@ -165,11 +165,10 @@ export default function Marketplace() {
     color: activeTab === tab ? 'white' : 'hsl(var(--text-3))',
     border: 'none',
     cursor: 'pointer',
-    fontFamily: 'Outfit, sans-serif',
-  });
+      });
 
   return (
-    <div className="space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div className="space-y-6">
       {/* ── Hero ── */}
       <div style={{ background: 'hsl(var(--brand) / 0.05)', border: '1px solid hsl(var(--brand) / 0.2)', padding: '20px 24px' }}>
         <div className="flex items-start justify-between">

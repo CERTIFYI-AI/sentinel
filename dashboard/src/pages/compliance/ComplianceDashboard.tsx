@@ -16,8 +16,8 @@ function ComplianceGauge({ value }: { value: number }) {
       <circle cx="80" cy="80" r={r} fill="none" stroke="hsl(var(--border))" strokeWidth="14" />
       <circle cx="80" cy="80" r={r} fill="none" stroke={gaugeColor(value)} strokeWidth="14"
         strokeDasharray={`${pct} ${c - pct}`} strokeDashoffset={c / 4} strokeLinecap="butt" />
-      <text x="80" y="75" textAnchor="middle" style={{ fill: 'hsl(var(--text-1))', fontSize: 22, fontWeight: 700, fontFamily: 'Outfit, sans-serif' }}>{value}%</text>
-      <text x="80" y="95" textAnchor="middle" style={{ fill: 'hsl(var(--text-4))', fontSize: 11, fontFamily: 'Outfit, sans-serif' }}>Compliance</text>
+      <text x="80" y="75" textAnchor="middle" style={{ fill: 'hsl(var(--text-1))', fontSize: 22, fontWeight: 700, }}>{value}%</text>
+      <text x="80" y="95" textAnchor="middle" style={{ fill: 'hsl(var(--text-4))', fontSize: 11, }}>Compliance</text>
     </svg>
   );
 }

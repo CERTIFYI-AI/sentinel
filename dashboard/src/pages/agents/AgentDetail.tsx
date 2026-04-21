@@ -247,7 +247,7 @@ export default function AgentDetail() {
   });
 
   return (
-    <div style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div>
       {/* Header */}
       <div style={{ marginBottom: 20 }}>
         <button onClick={() => navigate('/agents')} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: '1px solid hsl(var(--border))', cursor: 'pointer', padding: '6px 10px', color: 'hsl(var(--text-2))', fontSize: 13, marginBottom: 16 }}>

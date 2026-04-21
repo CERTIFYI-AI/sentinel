@@ -135,7 +135,7 @@ export default function GapAnalysis() {
   };
 
   return (
-    <div className="space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>

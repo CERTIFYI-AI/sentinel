@@ -121,7 +121,7 @@ export default function HITLDetail() {
 
   if (!review) {
     return (
-      <div className="p-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+      <div className="p-6">
         <Link to="/hitl">
           <Button variant="outline" size="sm" style={{ borderRadius: 0 }}>
             <ArrowLeft size={14} className="mr-1" /> Back to HITL Reviews
@@ -142,7 +142,7 @@ export default function HITLDetail() {
   const isCompleted = review.status === 'approved' || actionState !== 'idle';
 
   return (
-    <div className="space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div className="space-y-6">
       {/* Back */}
       <Link to="/hitl">
         <Button variant="outline" size="sm" style={{ borderRadius: 0 }}>

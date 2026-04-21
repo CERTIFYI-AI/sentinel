@@ -99,7 +99,7 @@ export default function RegDetail() {
   }
 
   return (
-    <div className="space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div className="space-y-6">
       <Button variant="ghost" size="sm" onClick={() => navigate('/reg-radar')} style={{ padding: '4px 8px' }}>
         <ArrowLeft size={14} className="mr-1" /> Back to Reg Radar
       </Button>

@@ -284,8 +284,8 @@ function MetricTile({ label, value, icon, variant }: {
       <CardContent className="px-4 py-3">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs font-medium mb-1" style={{ color: 'hsl(var(--text-4))', fontFamily: 'Outfit, sans-serif' }}>{label}</p>
-            <p className="text-2xl font-bold" style={{ color: c.text, fontFamily: 'Outfit, sans-serif' }}>{value}</p>
+            <p className="text-xs font-medium mb-1" style={{ color: 'hsl(var(--text-4))', }}>{label}</p>
+            <p className="text-2xl font-bold" style={{ color: c.text, }}>{value}</p>
           </div>
           <div style={{ color: c.text, opacity: 0.6 }}>{icon}</div>
         </div>
@@ -430,7 +430,7 @@ export default function TrainingAwareness() {
   };
 
   return (
-    <div className="space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -485,7 +485,7 @@ export default function TrainingAwareness() {
       <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm" style={{ fontFamily: 'Outfit, sans-serif' }}>
+            <table className="w-full text-sm">
               <thead>
                 <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
                   {['Course ID', 'Title', 'Category', 'Format', 'Duration', 'Assigned To', 'Completion %', 'Due Date', 'Status', ''].map(h => (

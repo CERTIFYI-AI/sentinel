@@ -133,8 +133,7 @@ export default function EvidenceUploadDrawer({ onClose, onUpload }: EvidenceUplo
         flexDirection: 'column',
         maxHeight: '100vh',
         overflowY: 'auto',
-        fontFamily: 'Outfit, sans-serif',
-      }}>
+              }}>
         {/* Header */}
         <div style={{
           position: 'sticky', top: 0, zIndex: 10,

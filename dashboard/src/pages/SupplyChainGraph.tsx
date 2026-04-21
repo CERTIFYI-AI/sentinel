@@ -185,7 +185,7 @@ export default function SupplyChainGraph() {
   const riskScore = Math.round(nodes.reduce((s, n) => s + (n.riskLevel === 'critical' ? 4 : n.riskLevel === 'high' ? 3 : n.riskLevel === 'medium' ? 2 : 1), 0) / nodes.length * 25);
 
   return (
-    <div className="space-y-4" style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div className="space-y-4">
       {/* ── Header ── */}
       <div className="flex items-start justify-between">
         <div>

@@ -18,7 +18,7 @@
     scroll-behavior: smooth;
   }
   body {
-    font-family: "Outfit", sans-serif;
+    font-family: var(--font-sans);
     background-color: hsl(var(--bg-page));
     color: hsl(var(--text-1));
     transition: background-color 150ms ease, color 150ms ease;

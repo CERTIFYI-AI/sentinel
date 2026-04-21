@@ -1,18 +1,18 @@
 import { supabase } from './supabase';
-import { riskAgent } from '@/agents/riskAgent';
+import { riskAssessmentAgent } from '@/agents/riskAssessmentAgent';
 import { hitlAgent } from '@/agents/hitlAgent';
-import { complianceAgent } from '@/agents/complianceAgent';
-import { vendorAgent } from '@/agents/vendorAgent';
+import { complianceImpactAgent } from '@/agents/complianceImpactAgent';
+import { vendorRiskAgent } from '@/agents/vendorRiskAgent';
 import { carbonAgent } from '@/agents/carbonAgent';
 
 type AgentFn = (...args: any[]) => Promise<any>;
 
 const AGENT_MAP: Record<string, AgentFn[]> = {
-  MODEL_REGISTERED: [riskAgent, complianceAgent, hitlAgent, vendorAgent, carbonAgent],
-  RISK_DETECTED: [complianceAgent, hitlAgent],
-  INCIDENT_CREATED: [complianceAgent],
-  BIAS_AUDIT_FAILED: [hitlAgent, complianceAgent],
-  VENDOR_RISK_HIGH: [complianceAgent],
+  MODEL_REGISTERED: [riskAssessmentAgent, complianceImpactAgent, hitlAgent, vendorRiskAgent, carbonAgent],
+  RISK_DETECTED: [complianceImpactAgent, hitlAgent],
+  INCIDENT_CREATED: [complianceImpactAgent],
+  BIAS_AUDIT_FAILED: [hitlAgent, complianceImpactAgent],
+  VENDOR_RISK_HIGH: [complianceImpactAgent],
 };
 
 export const eventBus = {

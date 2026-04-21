@@ -189,8 +189,7 @@ export default function ModelRegistrationDrawer({ onClose, onRegister }: ModelRe
         borderLeft: '1px solid hsl(var(--border))',
         display: 'flex', flexDirection: 'column',
         maxHeight: '100vh', overflowY: 'auto',
-        fontFamily: 'Outfit, sans-serif',
-      }}>
+              }}>
         {/* Header */}
         <div style={{
           position: 'sticky', top: 0, zIndex: 10,

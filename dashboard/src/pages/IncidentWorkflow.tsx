@@ -290,7 +290,7 @@ export default function IncidentWorkflow() {
   const escalatedCount = incidents.filter(i => i.status2 === 'escalated').length;
 
   return (
-    <div style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div>
       <Breadcrumbs />
 
       {/* Header */}

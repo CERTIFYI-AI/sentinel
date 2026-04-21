@@ -221,7 +221,7 @@ export default function ModelLifecycle() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, fontFamily: 'Outfit, sans-serif' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>

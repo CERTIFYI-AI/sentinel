@@ -154,7 +154,7 @@ export default function BenchmarkingMaturity() {
   const trajectoryPct = DIMENSIONS.length > 0 ? Math.round((closedGap / DIMENSIONS.length) * 100) : 0;
 
   return (
-    <div className="space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
@@ -399,8 +399,7 @@ export default function BenchmarkingMaturity() {
                     fontSize: 12,
                     color: 'hsl(var(--text-1))',
                     width: 160,
-                    fontFamily: 'Outfit, sans-serif',
-                  }}
+                                      }}
                 />
               </div>
             </div>

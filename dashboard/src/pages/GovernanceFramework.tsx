@@ -98,7 +98,7 @@ export default function GovernanceFramework() {
   const inProgressCount = Object.values(maturity).filter(l => l === 'In Progress').length;
 
   return (
-    <div className="space-y-10" style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div className="space-y-10">
       {/* ── Hero ── */}
       <div style={{ background: 'hsl(var(--brand) / 0.05)', border: '1px solid hsl(var(--brand) / 0.15)', padding: '40px 32px', textAlign: 'center' }}>
         <div className="flex justify-center mb-4">

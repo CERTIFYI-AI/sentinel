@@ -1,3 +1,5 @@
+// Self-hosted Outfit variable font — no CDN dependency (ADR-0007)
+import '@fontsource-variable/outfit';
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -32,7 +34,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             toastOptions={{
               style: {
                 borderRadius: '0px',
-                fontFamily: 'Outfit, sans-serif',
+                fontFamily: 'var(--font-sans)',
                 fontSize: '13px',
               },
             }}

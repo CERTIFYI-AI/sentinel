@@ -212,7 +212,7 @@ export default function VendorDetail() {
   const missingDocs     = documents.filter(d => d.status === 'missing' || d.status === 'expired');
 
   return (
-    <div className="space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div className="space-y-6">
 
       {/* Back + Alert Banners */}
       <div>

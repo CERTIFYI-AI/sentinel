@@ -398,7 +398,7 @@ export default function ComplianceCalendar() {
   // ── Render ───────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -563,8 +563,7 @@ export default function ComplianceCalendar() {
               color: 'hsl(var(--text-1))',
               fontSize: 13,
               outline: 'none',
-              fontFamily: 'Outfit, sans-serif',
-            }}
+                          }}
           />
         </div>
         <select
@@ -1172,7 +1171,7 @@ export default function ComplianceCalendar() {
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', maxWidth: 480 }}>
           <DialogHeader>
-            <DialogTitle style={{ color: 'hsl(var(--text-1))', fontFamily: 'Outfit, sans-serif' }}>Schedule Compliance Event</DialogTitle>
+            <DialogTitle style={{ color: 'hsl(var(--text-1))', }}>Schedule Compliance Event</DialogTitle>
           </DialogHeader>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: '4px 0' }}>
             <div>
@@ -1181,7 +1180,7 @@ export default function ComplianceCalendar() {
                 placeholder="e.g. SOC 2 Annual Audit"
                 value={createForm.title}
                 onChange={e => setCreateForm(f => ({ ...f, title: e.target.value }))}
-                style={{ width: '100%', marginTop: 4, padding: '8px 10px', background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0, color: 'hsl(var(--text-1))', fontSize: 13, fontFamily: 'Outfit, sans-serif' }}
+                style={{ width: '100%', marginTop: 4, padding: '8px 10px', background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0, color: 'hsl(var(--text-1))', fontSize: 13, }}
               />
             </div>
             <div>
@@ -1190,7 +1189,7 @@ export default function ComplianceCalendar() {
                 type="date"
                 value={createForm.date}
                 onChange={e => setCreateForm(f => ({ ...f, date: e.target.value }))}
-                style={{ width: '100%', marginTop: 4, padding: '8px 10px', background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0, color: 'hsl(var(--text-1))', fontSize: 13, fontFamily: 'Outfit, sans-serif' }}
+                style={{ width: '100%', marginTop: 4, padding: '8px 10px', background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0, color: 'hsl(var(--text-1))', fontSize: 13, }}
               />
             </div>
             <div>
@@ -1213,7 +1212,7 @@ export default function ComplianceCalendar() {
                 placeholder="e.g. ISO 42001, EU AI Act, SOC 2"
                 value={createForm.framework}
                 onChange={e => setCreateForm(f => ({ ...f, framework: e.target.value }))}
-                style={{ width: '100%', marginTop: 4, padding: '8px 10px', background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0, color: 'hsl(var(--text-1))', fontSize: 13, fontFamily: 'Outfit, sans-serif' }}
+                style={{ width: '100%', marginTop: 4, padding: '8px 10px', background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0, color: 'hsl(var(--text-1))', fontSize: 13, }}
               />
             </div>
             <div>
@@ -1222,7 +1221,7 @@ export default function ComplianceCalendar() {
                 placeholder="e.g. Sarah Chen"
                 value={createForm.owner}
                 onChange={e => setCreateForm(f => ({ ...f, owner: e.target.value }))}
-                style={{ width: '100%', marginTop: 4, padding: '8px 10px', background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0, color: 'hsl(var(--text-1))', fontSize: 13, fontFamily: 'Outfit, sans-serif' }}
+                style={{ width: '100%', marginTop: 4, padding: '8px 10px', background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0, color: 'hsl(var(--text-1))', fontSize: 13, }}
               />
             </div>
             <div>
