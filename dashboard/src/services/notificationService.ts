@@ -45,4 +45,3 @@ export async function deleteNotification(id: string): Promise<boolean> {
 // Backward-compatible aliases
 export const fetchNotifications = fetchAllNotifications
 export const saveNotification = upsertNotification
-export const fetchNotifications = fetchAllNotifications

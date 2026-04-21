@@ -185,7 +185,7 @@ export default function Overview() {
   const securityScore = 79;
 
   const kpis = [
-    { label: 'Open Tasks', value: overdueGaps + 5, icon: Clock, color: ragColor(overdueGaps + 5, 'risk'), link: '/compliance/gap-analysis' },
+    { label: 'Open Tasks', value: overdueGaps + 5, icon: Clock, color: ragColor(overdueGaps + 5, 'risk'), link: '/tasks' },
     { label: 'Open Risks', value: openRisks, icon: Warning, color: ragColor(openRisks, 'risk'), link: '/risk', ragType: 'risk' as const },
     { label: 'Active Models', value: activeModels, icon: Brain, color: '#8b5cf6', link: '/models/inventory' },
     { label: 'Critical Incidents', value: criticalIncidents, icon: WarningCircle, color: ragColor(criticalIncidents, 'incident'), link: '/risk/incidents', ragType: 'incident' as const },
@@ -235,7 +235,7 @@ export default function Overview() {
   ];
 
   const ALERT_ITEMS = [
-    { id: 'A1', title: 'EU AI Act Annex IV documentation incomplete', severity: 'critical', link: '/compliance/gap-analysis' },
+    { id: 'A1', title: 'EU AI Act Annex IV documentation incomplete', severity: 'critical', link: '/tasks' },
     { id: 'A2', title: 'MDL-001 fairness score below threshold (74%)', severity: 'critical', link: '/models/inventory/MDL-001' },
     { id: 'A3', title: 'Shadow AI agent AGT-010 active in Marketing', severity: 'high', link: '/agents/AGT-010' },
   ];
@@ -337,7 +337,7 @@ export default function Overview() {
       >
         <Siren size={16} style={{ color: 'hsl(var(--s-er-tx))', flexShrink: 0 }} />
         <span style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--s-er-tx))' }}>
-          {ALERT_ITEMS.length} critical items require attention before next audit (Apr 20)
+          {ALERT_ITEMS.length} critical items require attention before next audit (see compliance calendar)
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginLeft: 'auto', background: 'hsl(var(--s-er-tx)/0.12)', padding: '3px 10px' }}>
           <Timer size={13} style={{ color: 'hsl(var(--s-er-tx))' }} />
@@ -486,10 +486,10 @@ export default function Overview() {
             <div className="flex-1 min-w-0 max-w-sm">
               <div className="flex items-center gap-2 mb-2">
                 <Siren size={16} style={{ color: '#f97316' }} />
-                <span className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Attention Required</span>
+                <span className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Attention Required</span>{/* consolidated — primary banner above is the authoritative source */}
               </div>
               <p className="text-xs mb-3" style={{ color: 'hsl(var(--text-3))' }}>
-                3 critical items require immediate attention before next audit (Apr 20)
+                {ALERT_ITEMS.length} critical items require immediate attention — review compliance calendar for next audit date.
               </p>
               <Button
                 size="sm"
@@ -715,7 +715,7 @@ export default function Overview() {
           <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
             Recent AI Incidents
           </CardTitle>
-          <Link to="/incidents">
+          <Link to="/risk/incidents">
             <Button variant="ghost" size="sm" style={{ fontSize: 11, padding: '2px 8px' }}>
               View All <ArrowRight size={12} className="ml-1" />
             </Button>

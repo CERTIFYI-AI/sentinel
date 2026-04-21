@@ -23,3 +23,11 @@ Referrer-Policy = "strict-origin-when-cross-origin"
 Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
 Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
 Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; font-src 'self' data:; frame-ancestors 'none';"
+
+[env.staging]
+name = "sentinel-staging"
+vars = {}
+# Staging secrets: wrangler secret put SUPABASE_URL --env staging
+# wrangler secret put SUPABASE_SERVICE_ROLE_KEY --env staging
+# wrangler secret put NEXT_PUBLIC_SUPABASE_URL --env staging
+# wrangler secret put NEXT_PUBLIC_SUPABASE_ANON_KEY --env staging
