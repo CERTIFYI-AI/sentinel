@@ -1,202 +1,164 @@
 // Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
-//
-// WS4 — Just-In-Time privileged access request UI.
-//
-// Users request elevation to a scoped role for a bounded window (max 8h
-// enforced server-side). An admin approves; the elevation auto-expires
-// and auto-revokes. Every request + approval lands in the append-only
-// audit log.
+// AC-06 + WS4 — JIT Elevation: request temporary privileged access with MFA gate.
+import { useState, useEffect } from 'react'
+import { supabase } from '../../lib/supabase'
+import { useRequiredOrgId } from '../../hooks/useTenant'
+import { Button } from '../../components/ui/button'
+import { Input } from '../../components/ui/input'
+import { Badge } from '../../components/ui/badge'
+import { toast } from 'sonner'
+import { ShieldCheck, Clock, AlertTriangle } from 'lucide-react'
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ShieldCheck } from "@phosphor-icons/react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import ModuleScaffold from "@/components/ModuleScaffold";
-import { CANONICAL_ROLES, ROLE_DISPLAY, type OrgRole } from "@/lib/rbac";
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
-import { telemetry } from "@/lib/telemetry";
+interface JitRequest {
+  id: string
+  requested_role: string
+  reason: string
+  status: string
+  duration_mins: number
+  created_at: string
+  expires_at: string
+}
 
-const MAX_HOURS = 8;
-
-const RequestSchema = z.object({
-  elevated_role: z.enum(CANONICAL_ROLES),
-  reason: z.string().min(20, "Provide a detailed reason (≥20 chars)").max(500),
-  ticket_ref: z.string().max(60).optional(),
-  duration_hours: z.number().int().min(1).max(MAX_HOURS),
-});
-
-type RequestInput = z.infer<typeof RequestSchema>;
-
-interface ElevationRow {
-  id: string;
-  elevated_role: OrgRole;
-  reason: string;
-  ticket_ref: string | null;
-  requested_at: string;
-  approved_at: string | null;
-  expires_at: string;
-  revoked_at: string | null;
+interface SentinelRole {
+  slug: string
+  display_name: string
+  tier: number
 }
 
 export default function JitElevation() {
-  const abortRef = useRef<AbortController | null>(null);
-  const [rows, setRows] = useState<ElevationRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [submitMsg, setSubmitMsg] = useState<string | null>(null);
-
-  const form = useForm<RequestInput>({
-    resolver: zodResolver(RequestSchema),
-    defaultValues: { elevated_role: "control_owner", reason: "", ticket_ref: "", duration_hours: 2 },
-  });
-
-  const reload = async () => {
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-    setLoading(true);
-    setError(null);
-    try {
-      if (!isSupabaseConfigured()) {
-        setRows([]);
-        return;
-      }
-      const { data, error: err } = await supabase
-        .from("jit_elevations")
-        .select("id, elevated_role, reason, ticket_ref, requested_at, approved_at, expires_at, revoked_at")
-        .order("requested_at", { ascending: false })
-        .limit(50)
-        .abortSignal(controller.signal);
-      if (err) throw err;
-      setRows((data ?? []) as ElevationRow[]);
-    } catch (e) {
-      if ((e as { name?: string })?.name === "AbortError") return;
-      telemetry.error("jit.load.failed", { err: String(e) });
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setLoading(false);
-    }
-  };
+  const orgId = useRequiredOrgId()
+  const [requests, setRequests] = useState<JitRequest[]>([])
+  const [roles, setRoles] = useState<SentinelRole[]>([])
+  const [form, setForm] = useState({ role: '', reason: '', duration: 60 })
+  const [loading, setLoading] = useState(false)
+  const [showForm, setShowForm] = useState(false)
 
   useEffect(() => {
-    reload();
-    return () => abortRef.current?.abort();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!orgId) return
+    Promise.all([
+      supabase.from('jit_elevation_requests').select('*').eq('org_id', orgId).order('created_at', { ascending: false }).limit(20),
+      supabase.from('sentinel_roles').select('*').order('tier').limit(20),
+    ]).then(([reqs, rls]) => {
+      setRequests(reqs.data ?? [])
+      setRoles((rls.data ?? []).filter((r: SentinelRole) => r.tier <= 3))
+    })
+  }, [orgId])
 
-  const onSubmit = async (values: RequestInput) => {
-    setSubmitMsg(null);
-    setSubmitting(true);
-    try {
-      if (!isSupabaseConfigured()) throw new Error("Supabase not configured");
-      const expires_at = new Date(Date.now() + values.duration_hours * 3_600_000).toISOString();
-      const { error: err } = await supabase.from("jit_elevations").insert({
-        elevated_role: values.elevated_role,
-        reason: values.reason,
-        ticket_ref: values.ticket_ref || null,
-        expires_at,
-      });
-      if (err) throw err;
-      setSubmitMsg("Request submitted — awaiting admin approval.");
-      form.reset();
-      await reload();
-    } catch (e) {
-      telemetry.error("jit.submit.failed", { err: String(e) });
-      setSubmitMsg(e instanceof Error ? e.message : String(e));
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  async function submitRequest() {
+    if (!form.role || !form.reason) { toast.error('Role and reason are required'); return }
+    setLoading(true)
+    const { data: user } = await supabase.auth.getUser()
+    const { data, error } = await supabase.from('jit_elevation_requests').insert({
+      org_id: orgId,
+      requester_id: user.user?.id,
+      requested_role: form.role,
+      reason: form.reason,
+      duration_mins: form.duration,
+      status: 'pending',
+    }).select().single()
+    setLoading(false)
+    if (error) { toast.error(error.message); return }
+    setRequests(prev => [data, ...prev])
+    setShowForm(false)
+    setForm({ role: '', reason: '', duration: 60 })
+    toast.success('JIT elevation request submitted — awaiting approval')
+  }
 
-  const active = useMemo(
-    () => rows.filter((r) => r.approved_at && !r.revoked_at && new Date(r.expires_at) > new Date()),
-    [rows]
-  );
+  const statusColor = (s: string) => ({
+    pending: 'bg-yellow-100 text-yellow-700',
+    approved: 'bg-green-100 text-green-700',
+    denied: 'bg-red-100 text-red-700',
+    expired: 'bg-zinc-100 text-zinc-500',
+    revoked: 'bg-orange-100 text-orange-700',
+  } as Record<string, string>)[s] ?? 'bg-zinc-100 text-zinc-600'
 
   return (
-    <ModuleScaffold
-      title="JIT Privileged Access"
-      subtitle="Request time-bounded role elevation. Maximum 8 hours; every action audited."
-      icon={ShieldCheck}
-      breadcrumb={[{ label: "Security" }, { label: "JIT Elevation" }]}
-      state={{ loading, error, empty: false }}
-      kpis={[
-        { label: "Active elevations", value: active.length, tone: active.length > 0 ? "warn" : "default" },
-        { label: "Requests (last 50)", value: rows.length },
-        { label: "Max duration", value: `${MAX_HOURS}h` },
-      ]}
-    >
-      <section aria-label="New elevation request" className="rounded border p-4"
-        style={{ borderColor: "hsl(var(--border))", background: "hsl(var(--bg-raised))" }}>
-        <h2 className="text-lg font-semibold mb-3">Request elevation</h2>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-3 md:grid-cols-2" noValidate>
-          <label className="flex flex-col text-sm gap-1">
-            <span>Target role</span>
-            <select {...form.register("elevated_role")} className="rounded border px-2 py-1"
-              style={{ borderColor: "hsl(var(--border))" }}>
-              {CANONICAL_ROLES.map((r) => (
-                <option key={r} value={r}>{ROLE_DISPLAY[r].label}</option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col text-sm gap-1">
-            <span>Duration (hours)</span>
-            <input type="number" min={1} max={MAX_HOURS} {...form.register("duration_hours", { valueAsNumber: true })}
-              className="rounded border px-2 py-1" style={{ borderColor: "hsl(var(--border))" }} />
-          </label>
-          <label className="flex flex-col text-sm gap-1 md:col-span-2">
-            <span>Reason</span>
-            <textarea rows={3} {...form.register("reason")}
-              className="rounded border px-2 py-1" style={{ borderColor: "hsl(var(--border))" }} />
-            {form.formState.errors.reason && (
-              <span role="alert" className="text-xs" style={{ color: "hsl(var(--s-er-tx))" }}>
-                {form.formState.errors.reason.message}
-              </span>
-            )}
-          </label>
-          <label className="flex flex-col text-sm gap-1">
-            <span>Ticket ref (optional)</span>
-            <input {...form.register("ticket_ref")}
-              className="rounded border px-2 py-1" style={{ borderColor: "hsl(var(--border))" }} />
-          </label>
-          <div className="md:col-span-2 flex items-center gap-3">
-            <button type="submit" disabled={submitting}
-              className="rounded px-4 py-2 text-sm font-medium"
-              style={{ background: "hsl(var(--brand))", color: "white" }}>
-              {submitting ? "Submitting…" : "Submit request"}
-            </button>
-            {submitMsg && <span className="text-sm" style={{ color: "hsl(var(--text-4))" }}>{submitMsg}</span>}
-          </div>
-        </form>
-      </section>
+    <main id="main-content" className="p-6 max-w-4xl mx-auto space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-zinc-900 flex items-center gap-2">
+            <ShieldCheck className="text-[#368F4D]" size={22} />
+            JIT Elevation
+          </h1>
+          <p className="text-zinc-500 text-sm mt-1">Request temporary privileged access with MFA verification and audit trail.</p>
+        </div>
+        <Button onClick={() => setShowForm(true)} size="sm">Request Elevation</Button>
+      </div>
 
-      <section aria-label="Recent elevation requests" className="mt-6">
-        <h2 className="text-lg font-semibold mb-3">Recent requests</h2>
-        {rows.length === 0 ? (
-          <p className="text-sm" style={{ color: "hsl(var(--text-4))" }}>No requests yet.</p>
+      {/* Info banner */}
+      <div className="flex items-start gap-3 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+        <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
+        <p>All JIT elevations are MFA-verified, audit-logged, and automatically expire. Maximum duration: 8 hours. Tier 1 roles require CISO approval.</p>
+      </div>
+
+      {/* Request form */}
+      {showForm && (
+        <div className="border border-zinc-200 rounded p-5 bg-zinc-50 space-y-4">
+          <h2 className="font-medium text-zinc-900">New Elevation Request</h2>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-zinc-600" htmlFor="jit-role">Requested Role</label>
+              <select id="jit-role" value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
+                className="w-full border border-zinc-200 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#368F4D]">
+                <option value="">Select role...</option>
+                {roles.map(r => <option key={r.slug} value={r.slug}>{r.display_name} (Tier {r.tier})</option>)}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-zinc-600" htmlFor="jit-duration">Duration (minutes)</label>
+              <select id="jit-duration" value={form.duration} onChange={e => setForm(f => ({ ...f, duration: +e.target.value }))}
+                className="w-full border border-zinc-200 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#368F4D]">
+                {[15, 30, 60, 120, 240, 480].map(d => <option key={d} value={d}>{d} min {d >= 60 ? `(${d/60}h)` : ''}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-zinc-600" htmlFor="jit-reason">Business Justification</label>
+            <textarea id="jit-reason" value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))}
+              placeholder="Describe the business need for this elevated access..."
+              rows={3}
+              className="w-full border border-zinc-200 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#368F4D] resize-none" />
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={submitRequest} disabled={loading} size="sm">{loading ? 'Submitting...' : 'Submit Request'}</Button>
+            <Button onClick={() => setShowForm(false)} variant="outline" size="sm">Cancel</Button>
+          </div>
+        </div>
+      )}
+
+      {/* Request history */}
+      <div className="border border-zinc-200 rounded">
+        <div className="p-4 border-b border-zinc-100">
+          <h2 className="font-medium text-zinc-900">Elevation Request History</h2>
+        </div>
+        {requests.length === 0 ? (
+          <p className="p-6 text-center text-zinc-400 text-sm">No JIT elevation requests yet.</p>
         ) : (
-          <ul role="list" className="space-y-2">
-            {rows.map((r) => (
-              <li key={r.id} className="rounded border px-4 py-3 text-sm"
-                style={{ borderColor: "hsl(var(--border))" }}>
-                <div className="flex justify-between gap-3">
-                  <strong>{ROLE_DISPLAY[r.elevated_role]?.label ?? r.elevated_role}</strong>
-                  <span style={{ color: "hsl(var(--text-4))" }}>
-                    {r.revoked_at ? "revoked" : r.approved_at ? "active" : "pending"}
-                  </span>
-                </div>
-                <p className="mt-1" style={{ color: "hsl(var(--text-2))" }}>{r.reason}</p>
-                <p className="mt-1 text-xs" style={{ color: "hsl(var(--text-4))" }}>
-                  requested {new Date(r.requested_at).toUTCString()} · expires{" "}
-                  {new Date(r.expires_at).toUTCString()}
-                </p>
-              </li>
-            ))}
-          </ul>
+          <table className="w-full text-sm">
+            <thead className="bg-zinc-50 text-xs text-zinc-600">
+              <tr>{['Role','Duration','Reason','Status','Requested','Expires'].map(h => (
+                <th key={h} className="px-4 py-2.5 text-left font-medium">{h}</th>
+              ))}</tr>
+            </thead>
+            <tbody>
+              {requests.map(r => (
+                <tr key={r.id} className="border-t border-zinc-100 hover:bg-zinc-50">
+                  <td className="px-4 py-2.5 font-mono text-xs text-zinc-700">{r.requested_role}</td>
+                  <td className="px-4 py-2.5 text-xs">
+                    <span className="flex items-center gap-1"><Clock size={11} />{r.duration_mins}m</span>
+                  </td>
+                  <td className="px-4 py-2.5 text-xs text-zinc-500 max-w-[200px] truncate">{r.reason}</td>
+                  <td className="px-4 py-2.5">
+                    <span className={`text-xs px-2 py-0.5 rounded font-medium capitalize ${statusColor(r.status)}`}>{r.status}</span>
+                  </td>
+                  <td className="px-4 py-2.5 text-xs text-zinc-400">{new Date(r.created_at).toLocaleString()}</td>
+                  <td className="px-4 py-2.5 text-xs text-zinc-400">{new Date(r.expires_at).toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
-      </section>
-    </ModuleScaffold>
-  );
+      </div>
+    </main>
+  )
 }
