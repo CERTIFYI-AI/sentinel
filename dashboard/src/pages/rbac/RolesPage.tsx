@@ -476,6 +476,11 @@ export default function RolesPage() {
               </div>
             </div>
             <div className="p-4 flex gap-2" style={{ borderTop: '1px solid hsl(var(--border))' }}>
+              {selected.isSystem && (
+                <button onClick={() => { setSelected(null); openDuplicate(selected) }} className="flex items-center justify-center gap-1.5 px-4 py-2 text-sm border hover:opacity-80" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}>
+                  <Copy size={14} /> Clone as Custom
+                </button>
+              )}
               <button onClick={() => { setSelected(null); openEdit(selected) }} className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm border hover:opacity-80" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}>
                 <PencilSimple size={14} /> Edit
               </button>

@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useState } from 'react';
-import { Building, Globe, Shield, Key, Bell, Database, Plug, FloppyDisk, Plus, Copy, Eye, EyeSlash, ArrowCounterClockwise, Trash, CheckCircle, XCircle, Warning, Lock, User, ClockCounterClockwise, Moon, Sun, Desktop, PaintBrush } from '@phosphor-icons/react';
+import { Building, Globe, Shield, Key, Bell, Database, FloppyDisk, Plus, Copy, Eye, EyeSlash, ArrowCounterClockwise, Trash, CheckCircle, XCircle, Warning, Lock, User, ClockCounterClockwise, Moon, Sun, Desktop, PaintBrush } from '@phosphor-icons/react';
 import { useTheme } from '../providers/theme';
 import { getStoredAccent, setAccent, type Accent } from '../store/accentStore';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -15,6 +15,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { useSettingsStore } from '../stores/settingsStore';
 import { useEffect } from 'react';
 import { useSettingsData } from "../hooks/useSettingsData";
+import { 
+  saveOrgSettings, saveSsoConfig, saveRetentionPolicies, 
+  saveNotificationPrefs, saveAppearanceConfig, saveAuditTrailConfig,
+  fetchApiKeys, createApiKey, revokeApiKey, deleteApiKey
+} from '../services/settingsService'
 
 // WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
@@ -141,6 +146,10 @@ export default function Settings() {
   const [ssoProvider, setSsoProvider] = useState('Okta');
   const [sessionTimeout, setSessionTimeout] = useState('8 hours');
 
+  const saveAuthSettings = async () => {
+    await saveSsoConfig({ mfa_required: mfaRequired, sso_enabled: ssoEnabled, sso_provider: ssoProvider, session_timeout_minutes: parseInt(sessionTimeout) || 480, ip_whitelist: [] })
+  }
+
   // API Keys
   const [apiKeys, setApiKeys] = useState<ApiKey[]>(INITIAL_KEYS);
   const [showKey, setShowKey] = useState<Record<string, boolean>>({});
@@ -170,12 +179,18 @@ export default function Settings() {
   const toggleNotif = (event: string, channel: 'email' | 'slack' | 'sms') => {
     setNotifs(prev => prev.map(n => n.event === event ? { ...n, [channel]: !n[channel] } : n));
   };
+  const saveNotifSettings = async (updatedNotifs: NotifPref[]) => {
+    await saveNotificationPrefs(updatedNotifs.flatMap(n => ['email','slack','sms'].map(ch => ({ channel: ch, event_type: n.event, is_enabled: (n as any)[ch], config: {} }))))
+  }
 
   // Data Retention
   const [retention, setRetention] = useState<RetentionPolicy[]>(INITIAL_RETENTION);
   const updateRetention = (dataType: string, value: string) => {
     setRetention(prev => prev.map(r => r.dataType === dataType ? { ...r, retention: value } : r));
   };
+  const saveRetentionSettings = async (updatedRetention: RetentionPolicy[]) => {
+    await saveRetentionPolicies(updatedRetention.map(r => ({ category: r.dataType, retention_period: r.retention, auto_archive: false, auto_delete: false })))
+  }
 
   // Integrations
   const [integrations, setIntegrations] = useState<Integration[]>(INITIAL_INTEGRATIONS);
@@ -229,16 +244,15 @@ export default function Settings() {
   
   // ── Persist to Supabase ──────────────────────────────────────────────
   const persistToSupabase = async () => {
-    await saveSettings({
-      patch: {
-        org: { name: orgName, domain, industry, companySize, primaryContact, timezone, fiscalYearStart: fiscalYear },
-        auth: { mfa: mfaEnabled, sso: ssoEnabled, ssoProvider, sessionTimeout, ipWhitelist: [] },
-        apiKeys: apiKeys as any,
-        notifications: notifs as any,
-        retention: retention as any,
-        integrations: integrations as any,
-      },
-    });
+    await saveOrgSettings({
+      name: orgForm.orgName,
+      domain: orgForm.domain,
+      industry: orgForm.industry,
+      company_size: orgForm.companySize,
+      primary_contact: orgForm.primaryContact,
+      timezone: orgForm.timezone,
+      fiscal_year_start: orgForm.fiscalYearStart,
+    })
   };
   // ── End Persist ──────────────────────────────────────────────────────
 
@@ -279,7 +293,6 @@ export default function Settings() {
             { value: 'api-keys', label: 'API Keys' },
             { value: 'notifications', label: 'Notifications' },
             { value: 'data-retention', label: 'Data Retention' },
-            { value: 'integrations', label: 'Integrations' },
             { value: 'appearance', label: 'Appearance' },
             { value: 'audit-trail', label: 'Audit Trail' },
             { value: 'sso', label: 'SSO / SAML' },
@@ -556,45 +569,7 @@ export default function Settings() {
           </Card>
         </TabsContent>
 
-        {/* ── INTEGRATIONS ─────────────────────────────── */}
-        <TabsContent value="integrations" className="mt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {integrations.map(intg => (
-              <Card key={intg.id} style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-                <CardContent className="pt-5">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 flex items-center justify-center text-base font-bold" style={{ background: 'hsl(var(--brand) / 0.1)', color: 'hsl(var(--brand))', borderRadius: 0 }}>
-                        {intg.logo}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-sm" style={{ color: 'hsl(var(--text-1))' }}>{intg.name}</p>
-                        <Badge style={{
-                          background: intg.connected ? 'hsl(142 71% 45% / 0.15)' : 'hsl(var(--border) / 0.5)',
-                          color: intg.connected ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-4))',
-                          borderRadius: 0, fontSize: 10, marginTop: 2
-                        }}>
-                          {intg.connected ? 'Connected' : 'Disconnected'}
-                        </Badge>
-                      </div>
-                    </div>
-                    <Button
-                      variant={intg.connected ? 'outline' : 'default'}
-                      size="sm"
-                      onClick={() => toggleIntegration(intg.id)}
-                      style={{ borderRadius: 0, height: 30, background: intg.connected ? undefined : 'hsl(var(--brand))', color: intg.connected ? undefined : '#fff' }}
-                    >
-                      {intg.connected ? 'Disconnect' : 'Connect'}
-                    </Button>
-                  </div>
-                  <p className="text-xs mt-3" style={{ color: 'hsl(var(--text-4))' }}>{intg.description}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        {/* ── APPEARANCE ─────────────────────────────── */}
+        {/* ── APPEARANCE ─────────────────────────────── */
         <TabsContent value="appearance" className="mt-4 space-y-6">
           {/* Theme Selection */}
           <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>

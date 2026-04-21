@@ -133,4 +133,9 @@
   [data-slot="card-description"] {
     color: hsl(var(--muted-foreground));
   }
+
+  * {
+    --radius: 0;
+    border-radius: 0 !important;
+  }
 }
