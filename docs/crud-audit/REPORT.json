@@ -1,0 +1,1606 @@
+{
+  "summary": {
+    "total": 53,
+    "crudComplete": 53,
+    "withAnyType": 43,
+    "withConsole": 50,
+    "withoutAbort": 53,
+    "withLegacyTenant": 33,
+    "withZod": 0,
+    "swallowingErrors": 35,
+    "orgIdAware": 12
+  },
+  "services": [
+    {
+      "service": "agentService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": false,
+        "orgIdAware": false
+      },
+      "lines": 58,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "legacy-tenant",
+        "no-zod"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "agentsService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": false,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": false
+      },
+      "lines": 52,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "aiImpactService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": false
+      },
+      "lines": 44,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "legacy-tenant",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "attackSurfaceService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": false
+      },
+      "lines": 44,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "legacy-tenant",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "attestationsService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": false
+      },
+      "lines": 44,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "legacy-tenant",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "auditLogService",
+      "appendOnly": true,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": false,
+        "zodValidation": false,
+        "swallowsErrors": false,
+        "orgIdAware": false
+      },
+      "lines": 48,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "no-zod"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "bcpPlansService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": false
+      },
+      "lines": 44,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "legacy-tenant",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "biasAuditService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": false,
+        "orgIdAware": false
+      },
+      "lines": 47,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "legacy-tenant",
+        "no-zod"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "biasAuditsService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": false
+      },
+      "lines": 44,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "legacy-tenant",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "carbonRecordsService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": false
+      },
+      "lines": 44,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "legacy-tenant",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "complianceCalendarService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": false
+      },
+      "lines": 44,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "legacy-tenant",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "complianceEventService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": false,
+        "orgIdAware": false
+      },
+      "lines": 24,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "legacy-tenant",
+        "no-zod"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "conformityService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": false
+      },
+      "lines": 44,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "legacy-tenant",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "consentRecordsService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": false
+      },
+      "lines": 44,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "legacy-tenant",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "controlService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": false,
+        "orgIdAware": false
+      },
+      "lines": 58,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "legacy-tenant",
+        "no-zod"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "dataGovernanceService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": false,
+        "abortSignal": false,
+        "legacyTenant": false,
+        "zodValidation": false,
+        "swallowsErrors": false,
+        "orgIdAware": false
+      },
+      "lines": 31,
+      "gaps": [],
+      "risks": [
+        "any",
+        "no-abort",
+        "no-zod"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "datasetService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": false,
+        "zodValidation": false,
+        "swallowsErrors": false,
+        "orgIdAware": false
+      },
+      "lines": 57,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "no-zod"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "departmentsService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": false
+      },
+      "lines": 44,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "legacy-tenant",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "documentsService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": false
+      },
+      "lines": 44,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "legacy-tenant",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "dsrRequestsService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": false
+      },
+      "lines": 44,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "legacy-tenant",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "energyMetricsService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": false,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": false,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": true
+      },
+      "lines": 58,
+      "gaps": [],
+      "risks": [
+        "console",
+        "no-abort",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "energyService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": false,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": false,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": true
+      },
+      "lines": 54,
+      "gaps": [],
+      "risks": [
+        "console",
+        "no-abort",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "esgReportsService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": false,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": true
+      },
+      "lines": 59,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "esgService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": false,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": false,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": true
+      },
+      "lines": 54,
+      "gaps": [],
+      "risks": [
+        "console",
+        "no-abort",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "ethicsReportsService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": false
+      },
+      "lines": 44,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "legacy-tenant",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "evidenceService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": false,
+        "orgIdAware": false
+      },
+      "lines": 47,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "legacy-tenant",
+        "no-zod"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "exceptionsService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": false
+      },
+      "lines": 44,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "legacy-tenant",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "explainabilityService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": false,
+        "abortSignal": false,
+        "legacyTenant": false,
+        "zodValidation": false,
+        "swallowsErrors": false,
+        "orgIdAware": false
+      },
+      "lines": 30,
+      "gaps": [],
+      "risks": [
+        "any",
+        "no-abort",
+        "no-zod"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "frameworkService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": false,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": false,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": true
+      },
+      "lines": 49,
+      "gaps": [],
+      "risks": [
+        "console",
+        "no-abort",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "gapService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": false,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": false,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": true
+      },
+      "lines": 53,
+      "gaps": [],
+      "risks": [
+        "console",
+        "no-abort",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "hitlService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": false,
+        "zodValidation": false,
+        "swallowsErrors": false,
+        "orgIdAware": false
+      },
+      "lines": 41,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "no-zod"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "incidentService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": false,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": false,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": true
+      },
+      "lines": 53,
+      "gaps": [],
+      "risks": [
+        "console",
+        "no-abort",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "keysVaultService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": false
+      },
+      "lines": 44,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "legacy-tenant",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "maturityService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": false
+      },
+      "lines": 44,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "legacy-tenant",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "modelArenaService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": false
+      },
+      "lines": 44,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "legacy-tenant",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "modelEfficiencyService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": false,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": false,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": true
+      },
+      "lines": 58,
+      "gaps": [],
+      "risks": [
+        "console",
+        "no-abort",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "modelService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": false,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": false,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": true
+      },
+      "lines": 64,
+      "gaps": [],
+      "risks": [
+        "console",
+        "no-abort",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "notificationService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": false,
+        "orgIdAware": false
+      },
+      "lines": 49,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "legacy-tenant",
+        "no-zod"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "policyFirewallService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": false
+      },
+      "lines": 44,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "legacy-tenant",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "policyService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": false,
+        "zodValidation": false,
+        "swallowsErrors": false,
+        "orgIdAware": false
+      },
+      "lines": 46,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "no-zod"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "promptService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": false,
+        "orgIdAware": false
+      },
+      "lines": 24,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "legacy-tenant",
+        "no-zod"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "redTeamFindingsService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": false
+      },
+      "lines": 44,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "legacy-tenant",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "redTeamService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": false
+      },
+      "lines": 44,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "legacy-tenant",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "regulationService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": false,
+        "orgIdAware": false
+      },
+      "lines": 47,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "legacy-tenant",
+        "no-zod"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "remediationService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": false
+      },
+      "lines": 44,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "legacy-tenant",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "riskService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": true
+      },
+      "lines": 101,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "securityScansService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": false
+      },
+      "lines": 44,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "legacy-tenant",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "securityService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": false,
+        "abortSignal": false,
+        "legacyTenant": false,
+        "zodValidation": false,
+        "swallowsErrors": false,
+        "orgIdAware": false
+      },
+      "lines": 60,
+      "gaps": [],
+      "risks": [
+        "any",
+        "no-abort",
+        "no-zod"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "settingsService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": false,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": false,
+        "zodValidation": false,
+        "swallowsErrors": false,
+        "orgIdAware": true
+      },
+      "lines": 366,
+      "gaps": [],
+      "risks": [
+        "console",
+        "no-abort",
+        "no-zod"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "taskService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": false,
+        "orgIdAware": false
+      },
+      "lines": 49,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "legacy-tenant",
+        "no-zod"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "trainingService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": true,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": false
+      },
+      "lines": 44,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "legacy-tenant",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "trustTraceService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": true,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": false,
+        "zodValidation": false,
+        "swallowsErrors": false,
+        "orgIdAware": false
+      },
+      "lines": 38,
+      "gaps": [],
+      "risks": [
+        "any",
+        "console",
+        "no-abort",
+        "no-zod"
+      ],
+      "crudComplete": true
+    },
+    {
+      "service": "vendorService",
+      "appendOnly": false,
+      "crud": {
+        "create": true,
+        "read": true,
+        "update": true,
+        "delete": true,
+        "soft": false
+      },
+      "quality": {
+        "anyType": false,
+        "consoleUse": true,
+        "abortSignal": false,
+        "legacyTenant": false,
+        "zodValidation": false,
+        "swallowsErrors": true,
+        "orgIdAware": true
+      },
+      "lines": 56,
+      "gaps": [],
+      "risks": [
+        "console",
+        "no-abort",
+        "no-zod",
+        "swallows"
+      ],
+      "crudComplete": true
+    }
+  ]
+}
