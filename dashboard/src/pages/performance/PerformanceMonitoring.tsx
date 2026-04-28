@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { fetchAllModelPerformances } from '../../services/modelPerformanceService';
 import {
   Gauge, Warning, Siren, ArrowUp, ArrowDown, Minus, Plus,
   MagnifyingGlass, Export, Eye, ArrowsClockwise, Check,
@@ -122,12 +123,41 @@ const ALERT_COLORS: Record<AlertSeverity, { bg: string; color: string }> = {
 interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info' }
 
 export default function PerformanceMonitoring() {
+  const [endpoints, setEndpoints] = useState<ModelEndpoint[]>(ENDPOINTS);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<ModelEndpoint | null>(null);
   const [tab, setTab] = useState('overview');
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
   const ct = useChartTheme();
   const [lastUpdated, setLastUpdated] = useState(new Date());
+
+  useEffect(() => {
+    let cancelled = false
+    fetchAllModelPerformances().then(rows => {
+      if (cancelled) return
+      if (Array.isArray(rows) && rows.length > 0) {
+        setEndpoints(rows.map((r: any) => ({
+          id: r.id ?? '',
+          endpoint: r.endpoint ?? r.model_name ?? '',
+          model: r.model ?? '',
+          version: r.version ?? '',
+          status: r.status ?? 'healthy',
+          latencyP50: r.latency_p50 ?? r.latencyP50 ?? 0,
+          latencyP95: r.latency_p95 ?? r.latencyP95 ?? 0,
+          latencyP99: r.latency_p99 ?? r.latencyP99 ?? 0,
+          errorRate: r.error_rate ?? r.errorRate ?? 0,
+          throughput: r.throughput ?? 0,
+          uptime: r.uptime ?? 100,
+          alerts: Array.isArray(r.alerts) ? r.alerts : [],
+          metrics: Array.isArray(r.metrics) ? r.metrics : [],
+          drift: r.drift ?? {},
+          deployedAt: r.deployed_at ?? r.deployedAt ?? '',
+          owner: r.owner ?? '',
+        })))
+      }
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [])
 
   const addToast = (text: string, type: ToastMsg['type'] = 'info') => {
     const id = Date.now();
@@ -140,16 +170,16 @@ export default function PerformanceMonitoring() {
     return () => clearInterval(interval);
   }, []);
 
-  const filtered = ENDPOINTS.filter(e =>
+  const filtered = endpoints.filter(e =>
     e.modelName.toLowerCase().includes(search.toLowerCase()) ||
     e.endpoint.toLowerCase().includes(search.toLowerCase())
   );
 
-  const healthy = ENDPOINTS.filter(e => e.status === 'healthy').length;
-  const degraded = ENDPOINTS.filter(e => e.status === 'degraded').length;
-  const down = ENDPOINTS.filter(e => e.status === 'down').length;
-  const totalAlerts = ENDPOINTS.flatMap(e => e.alerts).length;
-  const criticalAlerts = ENDPOINTS.flatMap(e => e.alerts).filter(a => a.severity === 'critical').length;
+  const healthy = endpoints.filter(e => e.status === 'healthy').length;
+  const degraded = endpoints.filter(e => e.status === 'degraded').length;
+  const down = endpoints.filter(e => e.status === 'down').length;
+  const totalAlerts = endpoints.flatMap(e => e.alerts).length;
+  const criticalAlerts = endpoints.flatMap(e => e.alerts).filter(a => a.severity === 'critical').length;
 
   return (
     <div className="space-y-5">
@@ -210,7 +240,7 @@ export default function PerformanceMonitoring() {
             <Siren size={14} className="text-[hsl(var(--destructive))]" />
             <p className="text-sm font-semibold text-[hsl(var(--destructive))]">{criticalAlerts} Critical Alert{criticalAlerts > 1 ? 's' : ''} — Immediate Attention Required</p>
           </div>
-          {ENDPOINTS.flatMap(e => e.alerts.filter(a => a.severity === 'critical').map(a => ({ ...a, endpoint: e.endpoint }))).map(a => (
+          {endpoints.flatMap(e => e.alerts.filter(a => a.severity === 'critical').map(a => ({ ...a, endpoint: e.endpoint }))).map(a => (
             <div key={a.id} className="flex items-start gap-2 text-xs text-[hsl(var(--destructive))] py-0.5">
               <span className="font-mono">{a.endpoint}</span>
               <span>{a.message}</span>
@@ -300,7 +330,7 @@ export default function PerformanceMonitoring() {
                 </tr>
               </thead>
               <tbody>
-                {ENDPOINTS.map((ep, i) => (
+                {endpoints.map((ep, i) => (
                   <tr key={ep.modelId} className={`border-b border-[hsl(var(--border))] ${i % 2 === 0 ? '' : 'bg-[hsl(var(--bg-surface))]'}`}>
                     <td className="px-3 py-2 font-medium text-[hsl(var(--text-1))]">{ep.modelName.split(' ')[0]} {ep.modelName.split(' ')[1]}</td>
                     <td className="px-3 py-2 font-mono text-[hsl(var(--text-3))]">{ep.endpoint}</td>

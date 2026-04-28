@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { fetchAllModelValidations } from '../../services/modelValidationService';
 import {
   Flask, Play, Plus, Eye, MagnifyingGlass, Export, CheckCircle,
   Warning, Siren, ChartBar, Brain, ShieldCheck, ArrowRight,
@@ -136,12 +137,38 @@ const REC_COLORS: Record<string, { bg: string; color: string }> = {
 
 interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info' }
 
+function rowToValidation(row: any): ValidationReport {
+  return {
+    id: row.id ?? '',
+    modelName: row.model_name ?? row.modelName ?? '',
+    modelId: row.model_id ?? row.modelId ?? '',
+    environment: row.environment ?? 'staging',
+    runDate: row.run_date ?? row.runDate ?? '',
+    status: row.status ?? 'Pending',
+    score: row.score ?? 0,
+    tests: Array.isArray(row.tests) ? row.tests : [],
+    metrics: row.metrics ?? {},
+    validator: row.validator ?? '',
+    notes: row.notes ?? '',
+  }
+}
+
 export default function ModelValidationLab() {
+  const [reports, setReports] = useState<ValidationReport[]>(SEED_REPORTS);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<ValidationReport | null>(null);
   const [tab, setTab] = useState('tests');
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
   const ct = useChartTheme();
+
+  useEffect(() => {
+    let cancelled = false
+    fetchAllModelValidations().then(rows => {
+      if (cancelled) return
+      if (Array.isArray(rows) && rows.length > 0) setReports(rows.map(rowToValidation))
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [])
 
   const addToast = (text: string, type: ToastMsg['type'] = 'success') => {
     const id = Date.now();
@@ -149,14 +176,14 @@ export default function ModelValidationLab() {
     setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3500);
   };
 
-  const filtered = SEED_REPORTS.filter(r =>
+  const filtered = reports.filter(r =>
     r.modelName.toLowerCase().includes(search.toLowerCase()) ||
     r.id.toLowerCase().includes(search.toLowerCase())
   );
 
-  const passed = SEED_REPORTS.filter(r => r.status === 'Passed').length;
-  const failed = SEED_REPORTS.filter(r => r.status === 'Failed').length;
-  const inProgress = SEED_REPORTS.filter(r => r.status === 'In Progress').length;
+  const passed = reports.filter(r => r.status === 'Passed').length;
+  const failed = reports.filter(r => r.status === 'Failed').length;
+  const inProgress = reports.filter(r => r.status === 'In Progress').length;
 
   return (
     <div className="space-y-5">
@@ -192,7 +219,7 @@ export default function ModelValidationLab() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: 'Total Validations', value: SEED_REPORTS.length, color: 'hsl(var(--brand))' },
+          { label: 'Total Validations', value: reports.length, color: 'hsl(var(--brand))' },
           { label: 'Passed', value: passed, color: '#10b981' },
           { label: 'Failed', value: failed, color: '#ef4444' },
           { label: 'In Progress', value: inProgress, color: '#3b82f6' },

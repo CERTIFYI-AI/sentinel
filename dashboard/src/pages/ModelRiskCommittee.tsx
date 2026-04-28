@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { fetchAllMRCVotes, upsertMRCVote } from '../services/mrcVotesService';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -179,12 +180,28 @@ export default function ModelRiskCommittee() {
   const pendingItems = AGENDA_ITEMS.filter(a => a.status === 'pending');
   const quorumMet = MRC_MEMBERS.filter(m => m.quorum).length >= Math.ceil(MRC_MEMBERS.length * 0.6);
 
+  // Pre-load votes from Supabase (read-only — agenda items are seeded but votes persist).
+  useEffect(() => {
+    fetchAllMRCVotes().catch(() => { /* ignore */ });
+  }, []);
+
   function castVote() {
     if (!rationale.trim()) { toast.error('Rationale is required'); return; }
     toast.success(`Vote recorded: ${vote.toUpperCase()} — ${voteDialog?.model}`);
+    const target = voteDialog;
     setVoteDialog(null);
     setRationale('');
     setCondition('');
+    if (target) {
+      upsertMRCVote({
+        agenda_item_id: target.id,
+        model: target.model,
+        vote,
+        rationale,
+        condition: condition || null,
+        voted_at: new Date().toISOString(),
+      }).catch(() => toast.error('Failed to save vote to server'));
+    }
   }
 
   return (

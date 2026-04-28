@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { fetchAllEvalTechniques, upsertEvalTechnique, deleteEvalTechnique } from '../../services/evalTechniquesService';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -122,6 +123,27 @@ const STATUS_ICON: Record<string, React.ElementType> = {
 export default function EvalTechniques() {
   const { orgName } = useSettingsStore();
   const [techniques, setTechniques] = useState<Technique[]>(TECHNIQUES_SEED);
+
+  useEffect(() => {
+    let cancelled = false
+    fetchAllEvalTechniques().then(rows => {
+      if (cancelled) return
+      if (Array.isArray(rows) && rows.length > 0) {
+        setTechniques(rows.map((r: any) => ({
+          id: r.id ?? '',
+          name: r.name ?? '',
+          description: r.description ?? '',
+          applicableTypes: Array.isArray(r.applicable_types) ? r.applicable_types : (r.applicableTypes ?? []),
+          lastRun: r.last_run ?? r.lastRun ?? '',
+          status: r.status ?? 'scheduled',
+          icon: TestTube,
+          cadence: r.cadence ?? 'Monthly',
+        })))
+      }
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
 
@@ -151,6 +173,7 @@ export default function EvalTechniques() {
       cadence: formData.cadence,
     };
     setTechniques(prev => [...prev, newT]);
+    upsertEvalTechnique({ id: newT.id, name: newT.name, description: newT.description, applicable_types: newT.applicableTypes, status: newT.status, cadence: newT.cadence }).catch(() => {})
     setCreateOpen(false);
     setFormData({ name: '', description: '', cadence: 'Monthly', applicableTypes: '' });
   }
@@ -158,12 +181,14 @@ export default function EvalTechniques() {
   function handleEdit() {
     if (!editItem) return;
     setTechniques(prev => prev.map(t => t.id === editItem.id ? editItem : t));
+    upsertEvalTechnique({ id: editItem.id, name: editItem.name, description: editItem.description, applicable_types: editItem.applicableTypes, status: editItem.status, cadence: editItem.cadence }).catch(() => {})
     setEditItem(null);
   }
 
   function handleDelete() {
     if (!deleteItem) return;
     setTechniques(prev => prev.filter(t => t.id !== deleteItem.id));
+    deleteEvalTechnique(deleteItem.id).catch(() => {})
     setDeleteItem(null);
   }
 

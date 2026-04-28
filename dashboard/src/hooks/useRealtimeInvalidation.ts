@@ -71,6 +71,29 @@ const REALTIME_TABLES = [
   // Deduplication-safe aliases for already-listed tables
   // vendors, incidents, maturity_assessments already present above
   { table: 'transparency_reports', queryKey: ['transparency-reports'] },
+  // AI Governance module — full wiring (added 2026-04-28)
+  { table: 'agents', queryKey: ['agents'] },
+  { table: 'ai_models', queryKey: ['ai-models'] },
+  { table: 'shadow_ai_findings', queryKey: ['shadow-ai-findings'] },
+  // (guardrails + model_inventory already listed above)
+  { table: 'guardrail_rules', queryKey: ['guardrail-rules'] },
+  { table: 'use_cases', queryKey: ['use-cases'] },
+  // New AI Governance tables
+  { table: 'model_lifecycle_stages', queryKey: ['model-lifecycle-stages'] },
+  { table: 'model_validations', queryKey: ['model-validations'] },
+  { table: 'model_dna', queryKey: ['model-dna'] },
+  { table: 'model_performance_metrics', queryKey: ['model-performance-metrics'] },
+  { table: 'kill_switch_events', queryKey: ['kill-switch-events'] },
+  { table: 'agent_workflows', queryKey: ['agent-workflows'] },
+  { table: 'ai_risk_tiering', queryKey: ['ai-risk-tiering'] },
+  { table: 'post_market_surveillance', queryKey: ['post-market-surveillance'] },
+  { table: 'genai_risks', queryKey: ['genai-risks'] },
+  { table: 'fallback_logs', queryKey: ['fallback-logs'] },
+  { table: 'tool_call_logs', queryKey: ['tool-call-logs'] },
+  { table: 'eval_runs', queryKey: ['eval-runs'] },
+  { table: 'eval_techniques', queryKey: ['eval-techniques'] },
+  { table: 'cost_token_usage', queryKey: ['cost-token-usage'] },
+  { table: 'mrc_votes', queryKey: ['mrc-votes'] },
 ] as const;
 
 export function useRealtimeInvalidation(): void {

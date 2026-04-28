@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Power, Warning, MagnifyingGlass, Plus, Eye, X, Export, ShieldWarning, CheckCircle, Siren, ClipboardText, ArrowsClockwise } from '@phosphor-icons/react'
+import { fetchAllKillSwitchEvents, upsertKillSwitchEvent } from '../services/killSwitchService'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 
@@ -47,6 +48,31 @@ export default function KillSwitchEvents() {
   const [search, setSearch] = useState('')
   const [events, setEvents] = useState(SEED)
   const [killAllOpen, setKillAllOpen] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    fetchAllKillSwitchEvents().then(rows => {
+      if (cancelled) return
+      if (Array.isArray(rows) && rows.length > 0) setEvents(rows.map((r: any) => ({
+        id: r.id ?? '',
+        agentId: r.agent_id ?? r.agentId ?? '',
+        agentName: r.agent_name ?? r.agentName ?? '',
+        triggeredAt: r.triggered_at ?? r.triggeredAt ?? '',
+        triggeredBy: r.triggered_by ?? r.triggeredBy ?? '',
+        trigger: r.trigger ?? '',
+        status: r.status ?? 'Resolved',
+        reason: r.reason ?? '',
+        impactedSystems: Array.isArray(r.impacted_systems) ? r.impacted_systems : [],
+        impactedUsers: r.impacted_users ?? r.impactedUsers ?? 0,
+        resumedAt: r.resumed_at ?? r.resumedAt,
+        resolutionNotes: r.resolution_notes ?? r.resolutionNotes ?? '',
+        approvedBy: r.approved_by ?? r.approvedBy ?? '',
+        regulatoryNotificationRequired: r.regulatory_notification_required ?? r.regulatoryNotificationRequired ?? false,
+        regulatoryNotificationSent: r.regulatory_notification_sent ?? r.regulatoryNotificationSent,
+      })))
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [])
   const [killAllCode, setKillAllCode] = useState('')
   const [killAllStep, setKillAllStep] = useState<'confirm' | 'mfa' | 'done'>('confirm')
   const [mfaInput, setMfaInput] = useState('')
@@ -296,6 +322,7 @@ export default function KillSwitchEvents() {
                         };
                         setEvents(prev => [newEvent, ...prev]);
                         toast.error('🚨 KILL ALL activated — 4 agents suspended. INC-EMERGENCY created. Regulatory notifications queued.');
+                        upsertKillSwitchEvent({ ...newEvent, agent_id: newEvent.agentId, agent_name: newEvent.agentName, triggered_at: newEvent.triggeredAt, triggered_by: newEvent.triggeredBy, impacted_systems: newEvent.impactedSystems, impacted_users: newEvent.impactedUsers, regulatory_notification_required: newEvent.regulatoryNotificationRequired }).catch(() => {});
                         setTimeout(() => setKillAllOpen(false), 2000);
                       }}
                       className="flex-1 py-2 text-sm font-bold text-white hover:opacity-90 disabled:opacity-40"
@@ -400,8 +427,10 @@ export default function KillSwitchEvents() {
         type="info"
         onConfirm={() => {
           if (!resumeTarget) return
-          setEvents(prev => prev.map(e => e.id === resumeTarget.id ? { ...e, status: 'Resolved' as KSStatus, resumedAt: new Date().toISOString().replace('T', ' ').slice(0, 19), approvedBy: 'Sarah Chen' } : e))
+          const resumedAt = new Date().toISOString().replace('T', ' ').slice(0, 19)
+          setEvents(prev => prev.map(e => e.id === resumeTarget.id ? { ...e, status: 'Resolved' as KSStatus, resumedAt, approvedBy: 'Sarah Chen' } : e))
           toast.success(`${resumeTarget.agentName} approved for resumption — agent restarting`)
+          upsertKillSwitchEvent({ id: resumeTarget.id, status: 'Resolved', resumed_at: resumedAt, approved_by: 'Sarah Chen' }).catch(() => {})
           setResumeTarget(null)
           setSelected(null)
         }}

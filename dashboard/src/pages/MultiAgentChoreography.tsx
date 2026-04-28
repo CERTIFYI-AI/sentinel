@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Swap, Plus, Eye, X, Export, CheckCircle, Warning, Clock, ArrowRight, MagnifyingGlass } from '@phosphor-icons/react'
+import { fetchAllAgentWorkflows, upsertAgentWorkflow } from '../services/agentWorkflowService'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 
@@ -54,6 +55,32 @@ export default function MultiAgentChoreography() {
   const [search, setSearch] = useState('')
   const [workflows, setWorkflows] = useState(SEED)
   const [terminateTarget, setTerminateTarget] = useState<AgentWorkflow | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetchAllAgentWorkflows().then(rows => {
+      if (cancelled) return
+      if (Array.isArray(rows) && rows.length > 0) setWorkflows(rows.map((r: any) => ({
+        id: r.id ?? '',
+        name: r.name ?? '',
+        description: r.description ?? '',
+        status: r.status ?? 'Paused',
+        trigger: r.trigger ?? '',
+        orchestratorAgent: r.orchestrator_agent ?? r.orchestratorAgent ?? '',
+        workerAgents: Array.isArray(r.worker_agents) ? r.worker_agents : [],
+        startedAt: r.started_at ?? r.startedAt ?? '',
+        stepsTotal: r.steps_total ?? r.stepsTotal ?? 0,
+        stepsCompleted: r.steps_completed ?? r.stepsCompleted ?? 0,
+        currentStep: r.current_step ?? r.currentStep ?? '',
+        inputTokens: r.input_tokens ?? r.inputTokens ?? 0,
+        outputTokens: r.output_tokens ?? r.outputTokens ?? 0,
+        cost: r.cost ?? 0,
+        hitlRequired: r.hitl_required ?? r.hitlRequired ?? false,
+        owner: r.owner ?? '',
+      })))
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [])
   const [showCreate, setShowCreate] = useState(false)
   const [newWfName, setNewWfName] = useState('')
   const [newWfTrigger, setNewWfTrigger] = useState('Manual')
@@ -413,6 +440,7 @@ export default function MultiAgentChoreography() {
                 setWorkflows(p => [wf, ...p])
                 setShowCreate(false)
                 toast.success(`Workflow ${id} created`)
+                upsertAgentWorkflow({ ...wf, orchestrator_agent: wf.orchestratorAgent, worker_agents: wf.workerAgents, hitl_required: wf.hitlRequired, steps_total: wf.stepsTotal, steps_completed: wf.stepsCompleted, current_step: wf.currentStep, started_at: wf.startedAt, input_tokens: wf.inputTokens, output_tokens: wf.outputTokens }).catch(() => {})
               }} className="flex-1 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90">Create Workflow</button>
               <button onClick={() => setShowCreate(false)} className="px-4 py-2 border border-[hsl(var(--border))] text-sm">Cancel</button>
             </div>
@@ -430,6 +458,7 @@ export default function MultiAgentChoreography() {
           if (!terminateTarget) return
           setWorkflows(prev => prev.map(w => w.id === terminateTarget.id ? { ...w, status: 'Failed' as WorkflowStatus, currentStep: 'Terminated by operator', lastError: 'Workflow manually terminated by operator.' } : w))
           toast.error(`Workflow ${terminateTarget.id} terminated`)
+          upsertAgentWorkflow({ id: terminateTarget.id, status: 'Failed', current_step: 'Terminated by operator' }).catch(() => {})
           setTerminateTarget(null)
           setSelected(null)
         }}

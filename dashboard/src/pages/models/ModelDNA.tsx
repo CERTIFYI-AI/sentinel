@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { fetchAllModelDNAs } from '../../services/modelDNAService';
 import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -90,6 +91,8 @@ export default function ModelDNA() {
   const { orgName } = useSettingsStore();
   const [selectedModel, setSelectedModel] = useState('MDL-001');
   const [tab, setTab] = useState('fingerprint');
+
+  useEffect(() => { fetchAllModelDNAs().catch(() => {}) }, [])
 
   const model = MODEL_DNA.find(m => m.id === selectedModel) || MODEL_DNA[0];
 

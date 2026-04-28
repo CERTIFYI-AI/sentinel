@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Cpu, MagnifyingGlass, Plus, Eye, X, Export, Warning, CheckCircle, Power, Pencil, Trash, Shield } from '@phosphor-icons/react'
+import { fetchAllAgents, upsertAgents, deleteAgents } from '../services/agentsService'
 import { toast } from 'sonner'
 
 // WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
@@ -68,6 +69,33 @@ const BLANK = {
   trustScore: 0, escalationPolicy: '', killSwitchEnabled: true, totalCallsLifetime: 0, avgLatencyMs: 0,
 }
 
+function rowToAgent(r: any): AgentRegistryItem {
+  return {
+    id: r.id ?? '',
+    name: r.name ?? '',
+    version: r.version ?? '1.0.0',
+    type: r.type ?? 'Autonomous',
+    status: r.status ?? 'Active',
+    riskTier: r.risk_tier ?? r.riskTier ?? 'Medium',
+    owner: r.owner ?? '',
+    team: r.team ?? '',
+    purpose: r.purpose ?? '',
+    tools: Array.isArray(r.tools) ? r.tools : [],
+    permissions: Array.isArray(r.permissions) ? r.permissions : [],
+    model: r.model ?? '',
+    maxBudget: r.max_budget ?? r.maxBudget ?? 0,
+    dailyCallCount: r.daily_call_count ?? r.dailyCallCount ?? 0,
+    lastActivity: r.last_activity ?? r.lastActivity ?? '',
+    registeredDate: r.registered_date ?? r.registeredDate ?? '',
+    approvedBy: r.approved_by ?? r.approvedBy ?? '',
+    trustScore: r.trust_score ?? r.trustScore ?? 0,
+    escalationPolicy: r.escalation_policy ?? r.escalationPolicy ?? '',
+    killSwitchEnabled: r.kill_switch_enabled ?? r.killSwitchEnabled ?? false,
+    totalCallsLifetime: r.total_calls_lifetime ?? r.totalCallsLifetime ?? 0,
+    avgLatencyMs: r.avg_latency_ms ?? r.avgLatencyMs ?? 0,
+  }
+}
+
 export default function AgentRegistry() {
   const [agents, setAgents] = useState<AgentRegistryItem[]>(SEED)
   const [search, setSearch] = useState('')
@@ -78,6 +106,15 @@ export default function AgentRegistry() {
   const [editMode, setEditMode] = useState(false)
   const [form, setForm] = useState(BLANK)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetchAllAgents().then(rows => {
+      if (cancelled) return
+      if (Array.isArray(rows) && rows.length > 0) setAgents(rows.map(rowToAgent))
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [])
 
   const filtered = agents.filter(a => {
     const ms = a.name.toLowerCase().includes(search.toLowerCase()) || a.id.toLowerCase().includes(search.toLowerCase()) || a.team.toLowerCase().includes(search.toLowerCase())
@@ -94,10 +131,12 @@ export default function AgentRegistry() {
   const handleCreate = () => {
     if (!form.name) { toast.error('Agent name is required'); return }
     const id = `AGT-${String(agents.length + 1).padStart(3, '0')}`
-    setAgents(p => [{ ...form, id, registeredDate: '2026-04-10' }, ...p])
+    const newAgent = { ...form, id, registeredDate: '2026-04-10' }
+    setAgents(p => [newAgent, ...p])
     setShowCreate(false)
     setForm(BLANK)
     toast.success(`${form.name} registered as ${id}`)
+    upsertAgents({ ...newAgent, risk_tier: newAgent.riskTier, kill_switch_enabled: newAgent.killSwitchEnabled }).catch(() => {})
   }
 
   const handleEdit = () => {
@@ -106,6 +145,7 @@ export default function AgentRegistry() {
     setSelected(prev => prev ? { ...prev, ...form } : null)
     setEditMode(false)
     toast.success('Agent record updated')
+    upsertAgents({ id: selected.id, ...form, risk_tier: form.riskTier, kill_switch_enabled: form.killSwitchEnabled }).catch(() => {})
   }
 
   const handleDelete = (id: string) => {
@@ -113,6 +153,7 @@ export default function AgentRegistry() {
     setDeleteTarget(null)
     if (selected?.id === id) setSelected(null)
     toast.success('Agent deregistered')
+    deleteAgents(id).catch(() => {})
   }
 
   const toggleKillSwitch = (id: string) => {

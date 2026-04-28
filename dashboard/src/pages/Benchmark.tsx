@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { fetchAllEvalRuns } from '../services/evalRunsService';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -66,6 +67,30 @@ export default function Benchmark() {
   const ct = useChartTheme();
   const [sortBy, setSortBy] = useState<keyof BenchmarkEntry['scores']>('accuracy');
   const [benchmarks, setBenchmarks] = useState<BenchmarkEntry[]>(BENCHMARKS);
+
+  useEffect(() => {
+    let cancelled = false
+    fetchAllEvalRuns({ type: 'benchmark' }).then(rows => {
+      if (cancelled) return
+      if (Array.isArray(rows) && rows.length > 0) {
+        setBenchmarks(rows.map((r: any) => ({
+          id: r.id ?? '',
+          name: r.name ?? r.model ?? '',
+          scores: {
+            accuracy: r.score ?? r.accuracy ?? 0,
+            speed: r.speed ?? 0,
+            fairness: r.fairness ?? 0,
+            robustness: r.robustness ?? 0,
+            cost: r.cost ?? 0,
+          },
+          overall: r.overall ?? r.score ?? 0,
+          rank: r.rank ?? 0,
+        })))
+      }
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+
   const [createOpen, setCreateOpen] = useState(false);
   const [compareIds, setCompareIds] = useState<string[]>(['MDL-002', 'MDL-001', 'MDL-006']);
 

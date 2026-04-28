@@ -1,5 +1,6 @@
 // @ts-nocheck
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { fetchExplainabilityReports, upsertExplainabilityReport, deleteExplainability } from "@/services/explainabilityService";
 import { Brain, Plus, MagnifyingGlass, Eye, PencilSimple, Trash, Export } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,30 @@ const EMPTY: any = { runName:"", model:"", version:"", method:"SHAP", scope:"Glo
 export default function ExplainabilityCenter() {
   const [items, setItems] = useState(SEED);
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    let cancelled = false
+    fetchExplainabilityReports().then(rows => {
+      if (cancelled) return
+      if (Array.isArray(rows) && rows.length > 0) setItems(rows.map((r: any) => ({
+        id: r.id ?? '',
+        system: r.system ?? r.ai_system ?? '',
+        method: r.method ?? '',
+        scope: r.scope ?? 'Global',
+        status: r.status ?? 'Queued',
+        owner: r.owner ?? '',
+        createdAt: r.created_at?.slice(0,10) ?? r.createdAt ?? '',
+        updatedAt: r.updated_at?.slice(0,10) ?? r.updatedAt ?? '',
+        topFeatures: Array.isArray(r.top_features) ? r.top_features : (Array.isArray(r.topFeatures) ? r.topFeatures : []),
+        fidelityScore: r.fidelity_score ?? r.fidelityScore ?? '',
+        stabilityScore: r.stability_score ?? r.stabilityScore ?? '',
+        explanationType: r.explanation_type ?? r.explanationType ?? '',
+        audience: r.audience ?? '',
+        createdBy: r.created_by ?? r.createdBy ?? 'admin',
+      })))
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [])
   const [statusFilter, setStatusFilter] = useState("all");
   const [methodFilter, setMethodFilter] = useState("all");
   const [modal, setModal] = useState<"create"|"edit"|"view"|null>(null);
@@ -58,12 +83,16 @@ export default function ExplainabilityCenter() {
     setTimeout(() => {
       const status = draft ? "Queued" : (form.status || "Queued");
       if (editId) {
-        setItems(p => p.map(i => i.id === editId ? { ...i, ...form, status, topFeatures:features, updatedAt:new Date().toISOString().slice(0,10) } : i));
+        const updated = { ...form, status, topFeatures:features, updatedAt:new Date().toISOString().slice(0,10) }
+        setItems(p => p.map(i => i.id === editId ? { ...i, ...updated } : i));
         toast.success("Run updated");
+        upsertExplainabilityReport({ id: editId, ...updated, top_features: features, explanation_type: form.explanationType, fidelity_score: form.fidelityScore, stability_score: form.stabilityScore, updated_at: updated.updatedAt }).catch(() => {});
       } else {
         const id = `EXP-${String(items.length+1).padStart(3,"0")}`;
-        setItems(p => [...p, { ...form, status, id, topFeatures:features, createdAt:new Date().toISOString().slice(0,10), updatedAt:new Date().toISOString().slice(0,10), createdBy:"admin" }]);
+        const newItem = { ...form, status, id, topFeatures:features, createdAt:new Date().toISOString().slice(0,10), updatedAt:new Date().toISOString().slice(0,10), createdBy:"admin" }
+        setItems(p => [...p, newItem]);
         toast.success("Explanation run created");
+        upsertExplainabilityReport({ ...newItem, top_features: features, explanation_type: form.explanationType, created_by: 'admin', created_at: newItem.createdAt }).catch(() => {});
       }
       setSaving(false); setModal(null); setForm(EMPTY); setTopFeaturesInput(""); setEditId(null);
     }, 700);
@@ -74,7 +103,7 @@ export default function ExplainabilityCenter() {
     setTopFeaturesInput(item.topFeatures?.join(", ") || "");
     setEditId(item.id); setModal("edit");
   };
-  const doDelete = () => { setItems(p => p.filter(i => i.id !== deleteTarget?.id)); setDeleteTarget(null); toast.success("Run deleted"); };
+  const doDelete = () => { setItems(p => p.filter(i => i.id !== deleteTarget?.id)); deleteExplainability(deleteTarget?.id).catch(() => {}); setDeleteTarget(null); toast.success("Run deleted"); };
 
   function FidelityBar({ score }: { score: number | null }) {
     if (score === null || score === "") return <span className="text-xs text-[hsl(var(--text-4))]">—</span>;

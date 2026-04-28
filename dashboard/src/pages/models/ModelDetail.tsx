@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { fetchAllModels } from '../../services/modelService';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -166,6 +167,9 @@ export default function ModelDetail() {
   const ct = useChartTheme();
   const [tab, setTab] = useState<Tab>('Model Card');
   const [showDriftModal, setShowDriftModal] = useState(false);
+
+  // Supabase prefetch — keeps seed as fallback
+  useEffect(() => { fetchAllModels().catch(() => {}) }, [])
 
   const model = MODELS.find(m => m.id === id) || MODELS[0];
   const modelBiasAudits = BIAS_AUDITS?.filter?.(a => a.model === model.name) ?? [];

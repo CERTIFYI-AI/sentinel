@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { fetchAllFallbackLogs, deleteFallbackLog } from '../../services/fallbackLogsService';
 import {
   ArrowsClockwise, Eye, Warning, CheckCircle, Fire, Clock,
   Lightning, Export, MagnifyingGlass, Funnel, Info, Link, UserCircleGear, Archive,
@@ -87,6 +88,30 @@ export default function FallbackLog() {
   const { orgName } = useSettingsStore();
   const [entries, setEntries] = useState<ExtFallback[]>(EXTENDED_ENTRIES);
   const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    let cancelled = false
+    fetchAllFallbackLogs().then(rows => {
+      if (cancelled) return
+      if (Array.isArray(rows) && rows.length > 0) setEntries(rows.map((r: any) => ({
+        id: r.id ?? '',
+        timestamp: r.timestamp ?? r.created_at ?? '',
+        agent: r.agent ?? '',
+        trigger: r.trigger ?? '',
+        primaryModel: r.primary_model ?? r.primaryModel ?? '',
+        fallbackModel: r.fallback_model ?? r.fallbackModel ?? '',
+        status: r.status ?? 'success',
+        latencyDelta: r.latency_delta ?? r.latencyDelta ?? 0,
+        costDelta: r.cost_delta ?? r.costDelta ?? 0,
+        tokens: r.tokens ?? 0,
+        reason: r.reason ?? '',
+        chain: Array.isArray(r.chain) ? r.chain : [],
+        hitlReviewed: r.hitl_reviewed ?? r.hitlReviewed ?? false,
+        metadata: r.metadata ?? {},
+      })))
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [])
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [selectedEntry, setSelectedEntry] = useState<ExtFallback | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -134,6 +159,7 @@ export default function FallbackLog() {
     setEntries(prev => prev.filter(e => e.id !== entryId));
     if (selectedEntry?.id === entryId) { setSheetOpen(false); setSelectedEntry(null); }
     toast(`Fallback event ${entryId} archived`, 'info');
+    deleteFallbackLog(entryId).catch(() => {});
   };
 
   return (

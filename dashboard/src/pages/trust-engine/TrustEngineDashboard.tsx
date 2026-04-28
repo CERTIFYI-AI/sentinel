@@ -1,4 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { fetchAllPolicyFirewall, upsertPolicyFirewall, deletePolicyFirewall } from '../../services/policyFirewallService';
+import { fetchAllCostTokens } from '../../services/costTokenService';
 import {
   ShieldCheck, Eye, PencilSimple, Trash, Plus, Copy, Play, Pause,
   Warning, CheckCircle, ArrowUp, ArrowDown, TrendUp, TrendDown,
@@ -156,6 +158,29 @@ export default function TrustEngineDashboard() {
   const { items: trustTraces, isLoading: tracesLoading, save: saveTrace, remove: removeTrace } = useTrustTraceData();
   // Use DB data if available, fallback to EXTENDED_POLICIES for display shape
   const [policies, setPolicies] = useState<ExtPolicy[]>(EXTENDED_POLICIES);
+
+  useEffect(() => {
+    let cancelled = false
+    fetchAllPolicyFirewall().then(rows => {
+      if (cancelled) return
+      if (Array.isArray(rows) && rows.length > 0) setPolicies(rows.map((r: any) => ({
+        id: r.id ?? '',
+        name: r.name ?? '',
+        type: r.type ?? 'Privacy',
+        target: r.target ?? 'All Agents',
+        status: r.status ?? 'active',
+        threshold: r.threshold ?? '90%',
+        complianceRate: r.compliance_rate ?? r.complianceRate ?? 100,
+        triggeredLast30d: r.triggered_last_30d ?? r.triggeredLast30d ?? 0,
+        action: r.action ?? 'block',
+        justification: r.justification ?? '',
+        lastUpdated: r.last_updated ?? r.lastUpdated ?? '',
+        createdBy: r.created_by ?? r.createdBy ?? '',
+      })))
+    }).catch(() => {})
+    fetchAllCostTokens().catch(() => {})
+    return () => { cancelled = true }
+  }, [])
   const [selectedPolicy, setSelectedPolicy] = useState<ExtPolicy | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [breakdownOpen, setBreakdownOpen] = useState(false);
@@ -187,6 +212,7 @@ export default function TrustEngineDashboard() {
     if (!deactivateTarget) return;
     setPolicies(prev => prev.map(p => p.id === deactivateTarget.id ? { ...p, status: 'disabled' as const } : p));
     await saveTrace({ id: deactivateTarget.id, status: 'disabled' }).catch(() => {});
+    upsertPolicyFirewall({ id: deactivateTarget.id, status: 'disabled' }).catch(() => {});
     toast(`${deactivateTarget.name} deactivated`, 'info');
     setDeactivateTarget(null);
   };
@@ -195,6 +221,7 @@ export default function TrustEngineDashboard() {
     if (!deleteTarget) return;
     setPolicies(prev => prev.filter(p => p.id !== deleteTarget.id));
     await removeTrace(deleteTarget.id).catch(() => {});
+    deletePolicyFirewall(deleteTarget.id).catch(() => {});
     toast(`Policy ${deleteTarget.id} deleted`, 'info');
     setDeleteTarget(null);
   };
@@ -236,6 +263,7 @@ export default function TrustEngineDashboard() {
     setCreateOpen(false);
     setNewRule({ name: '', type: 'Privacy', target: 'All Agents', threshold: '95%' });
     toast(`Policy "${newPolicy.name}" created in testing mode`, 'success');
+    upsertPolicyFirewall({ id: newPolicy.id, name: newPolicy.name, type: newPolicy.type, target: newPolicy.target, status: newPolicy.status, threshold: newRule.threshold }).catch(() => {});
   };
 
   return (

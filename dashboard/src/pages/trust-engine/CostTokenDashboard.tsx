@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { fetchAllCostTokens } from '../../services/costTokenService';
 import {
   CurrencyDollar, Lightning, ChartBar, Export, Warning,
   Bell, Clock, CheckCircle, Info, Gauge,
@@ -129,6 +130,8 @@ export default function CostTokenDashboard() {
   const ct = useChartTheme();
   const [dateRange, setDateRange] = useState('week');
   const [budgetDialogOpen, setBudgetDialogOpen] = useState(false);
+
+  useEffect(() => { fetchAllCostTokens().catch(() => {}) }, [])
   const [budgetThreshold, setBudgetThreshold] = useState('15');
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
 

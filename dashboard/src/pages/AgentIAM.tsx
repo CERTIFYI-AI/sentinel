@@ -1,7 +1,24 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { IdentificationCard, MagnifyingGlass, Plus, Eye, X, Export, Key, ShieldCheck, Warning, Lock, UserCheck, ArrowsClockwise, Siren } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { supabase, isSupabaseConfigured } from '@/lib/supabase'
+
+async function fetchAllIdentities() {
+  if (!isSupabaseConfigured() || !supabase) return []
+  try {
+    const { data, error } = await supabase.from('identities').select('*').order('created_at', { ascending: false })
+    if (error || !data) return []
+    return data
+  } catch { return [] }
+}
+async function upsertIdentity(record: any) {
+  if (!isSupabaseConfigured() || !supabase) return null
+  try {
+    const { data } = await supabase.from('identities').upsert(record).select().single()
+    return data
+  } catch { return null }
+}
 
 // WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
@@ -39,6 +56,26 @@ const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
   'Pending Rotation': { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)' },
 }
 
+function rowToIdentity(r: any): AgentIdentity {
+  return {
+    id: r.id ?? '',
+    agentId: r.agent_id ?? r.agentId ?? '',
+    agentName: r.agent_name ?? r.agentName ?? '',
+    principalType: r.principal_type ?? r.principalType ?? 'Service Account',
+    principalId: r.principal_id ?? r.principalId ?? '',
+    roles: Array.isArray(r.roles) ? r.roles : [],
+    scopes: Array.isArray(r.scopes) ? r.scopes : [],
+    created: r.created ?? r.created_at?.slice(0,10) ?? '',
+    expires: r.expires ?? '',
+    lastUsed: r.last_used ?? r.lastUsed ?? '',
+    status: r.status ?? 'Active',
+    mfaRequired: r.mfa_required ?? r.mfaRequired ?? false,
+    ipAllowlist: Array.isArray(r.ip_allowlist) ? r.ip_allowlist : (Array.isArray(r.ipAllowlist) ? r.ipAllowlist : []),
+    rotationPolicy: r.rotation_policy ?? r.rotationPolicy ?? '',
+    auditRequired: r.audit_required ?? r.auditRequired ?? false,
+  }
+}
+
 export default function AgentIAM() {
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<AgentIdentity | null>(null)
@@ -47,10 +84,20 @@ export default function AgentIAM() {
   const [rotateTarget, setRotateTarget] = useState<AgentIdentity | null>(null)
   const [identities, setIdentities] = useState(SEED)
 
+  useEffect(() => {
+    let cancelled = false
+    fetchAllIdentities().then(rows => {
+      if (cancelled) return
+      if (Array.isArray(rows) && rows.length > 0) setIdentities(rows.map(rowToIdentity))
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+
   function confirmRevoke() {
     if (!revokeTarget) return
     setIdentities(prev => prev.map(i => i.id === revokeTarget.id ? { ...i, status: 'Revoked' as const } : i))
     toast.success(`Credential ${revokeTarget.id} revoked`)
+    upsertIdentity({ id: revokeTarget.id, status: 'Revoked' }).catch(() => {})
     setRevokeTarget(null)
     setSelected(null)
   }
@@ -60,6 +107,7 @@ export default function AgentIAM() {
     const newExpiry = new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10)
     setIdentities(prev => prev.map(i => i.id === rotateTarget.id ? { ...i, status: 'Active' as const, expires: newExpiry, rotationPolicy: `Every 90 days — next: ${newExpiry}` } : i))
     toast.success(`Credential ${rotateTarget.id} rotated successfully — new expiry: ${newExpiry}`)
+    upsertIdentity({ id: rotateTarget.id, status: 'Active', expires: newExpiry, rotation_policy: `Every 90 days — next: ${newExpiry}` }).catch(() => {})
     setRotateTarget(null)
     setSelected(null)
   }

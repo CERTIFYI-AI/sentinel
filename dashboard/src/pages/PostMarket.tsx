@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { toast } from 'sonner';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { fetchAllPostMarkets, upsertPostMarket, deletePostMarket } from '../services/postMarketService';
 import {
   Plus, Eye, Trash, MagnifyingGlass, Warning, Bell, ArrowsClockwise,
 } from '@phosphor-icons/react';
@@ -116,6 +117,30 @@ function eventColor(sev: 'info' | 'warn' | 'error') {
 export default function PostMarket() {
   const ct = useChartTheme();
   const [plans, setPlans] = useState<SurveillancePlan[]>(SEED_PLANS);
+
+  // Load live data from Supabase on mount; fall back to seed if empty/error.
+  useEffect(() => {
+    let cancelled = false;
+    fetchAllPostMarkets().then(rows => {
+      if (cancelled) return;
+      if (Array.isArray(rows) && rows.length > 0) {
+        setPlans(rows.map((r: any) => ({
+          id: r.id ?? '',
+          name: r.name ?? '',
+          model: r.model ?? '',
+          frequency: (r.frequency ?? 'Weekly') as Frequency,
+          driftThreshold: r.drift_threshold ?? r.driftThreshold ?? 'Accuracy <90%',
+          feedbackCollection: !!(r.feedback_collection ?? r.feedbackCollection),
+          lastReview: r.last_review ?? r.lastReview ?? '',
+          nextReview: r.next_review ?? r.nextReview ?? '',
+          status: r.status ?? 'Active',
+          owner: r.owner ?? '',
+        })) as SurveillancePlan[]);
+      }
+    }).catch(() => { /* keep seed */ });
+    return () => { cancelled = true };
+  }, []);
+
   const [events] = useState<SurveillanceEvent[]>(SEED_EVENTS);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<SurveillancePlan | null>(null);
@@ -156,12 +181,19 @@ export default function PostMarket() {
     toast.success(`Surveillance plan "${newPlan.name}" created`);
     setWizardOpen(false);
     setWModel(''); setWName('');
+    upsertPostMarket({
+      id: newPlan.id, name: newPlan.name, model: newPlan.model, frequency: newPlan.frequency,
+      drift_threshold: newPlan.driftThreshold, feedback_collection: newPlan.feedbackCollection,
+      last_review: newPlan.lastReview, next_review: newPlan.nextReview,
+      status: newPlan.status, owner: newPlan.owner,
+    }).catch(() => toast.error('Failed to save to server'));
   }
 
   function deletePlan(id: string) {
     const plan = plans.find(p => p.id === id);
     if (plan) toast.success(`Surveillance plan "${plan.name}" removed`);
     setPlans(prev => prev.filter(p => p.id !== id));
+    deletePostMarket(id).catch(() => toast.error('Failed to delete on server'));
   }
 
   return (

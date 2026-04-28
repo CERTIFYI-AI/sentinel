@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { fetchAllUseCases, upsertUseCase, deleteUseCase } from '../../services/useCasesService';
 import {
   Eye, PencilSimple, Trash, Plus, MagnifyingGlass, Briefcase,
   Warning, CheckCircle, Info, Clock, ArrowsClockwise, Prohibit,
@@ -126,6 +127,34 @@ const REG_TAG_ROWS = [
 
 export default function UseCasePage() {
   const [useCases, setUseCases] = useState<UseCase[]>(USE_CASES as UseCase[]);
+
+  // Load live data from Supabase on mount; fall back to seed if empty/error.
+  useEffect(() => {
+    let cancelled = false;
+    fetchAllUseCases().then(rows => {
+      if (cancelled) return;
+      if (Array.isArray(rows) && rows.length > 0) {
+        setUseCases(rows.map((r: any) => ({
+          id: r.id ?? '',
+          title: r.title ?? '',
+          goal: r.goal ?? '',
+          owner: r.owner ?? '',
+          riskClass: r.risk_class ?? r.riskClass ?? 'High-Risk',
+          geography: r.geography ?? '',
+          industry: r.industry ?? 'Financial Services',
+          status: r.status ?? 'Not Started',
+          frameworks: Array.isArray(r.frameworks) ? r.frameworks : [],
+          linkedModels: Array.isArray(r.linked_models) ? r.linked_models : (Array.isArray(r.linkedModels) ? r.linkedModels : []),
+          createdDate: r.created_date ?? r.createdDate ?? r.created_at?.slice(0, 10) ?? '',
+          lastUpdated: r.last_updated ?? r.lastUpdated ?? r.updated_at?.slice(0, 10) ?? '',
+          description: r.description ?? '',
+          stage: r.stage ?? 'Planning',
+        })));
+      }
+    }).catch(() => { /* keep seed */ });
+    return () => { cancelled = true };
+  }, []);
+
   const [activeTab, setActiveTab] = useState('All');
   const [search, setSearch] = useState('');
   const [riskFilter, setRiskFilter] = useState('all');
@@ -175,9 +204,11 @@ export default function UseCasePage() {
   // Actions
   const handleDelete = () => {
     if (!deleteTarget) return;
-    setUseCases(prev => prev.filter(u => u.id !== deleteTarget.id));
-    toast(`${deleteTarget.id} deleted`, 'info');
+    const target = deleteTarget;
+    setUseCases(prev => prev.filter(u => u.id !== target.id));
+    toast(`${target.id} deleted`, 'info');
     setDeleteTarget(null);
+    deleteUseCase(target.id).catch(() => toast('Failed to delete on server', 'error'));
   };
 
   const handleCreate = () => {
@@ -193,6 +224,13 @@ export default function UseCasePage() {
     setCreateOpen(false);
     setNewUC({ title: '', goal: '', owner: '', riskClass: 'High-Risk', geography: '', industry: '', description: '', frameworks: [], linkedModels: [] });
     toast(`Use case "${uc.title}" created`, 'success');
+    upsertUseCase({
+      id: uc.id, title: uc.title, goal: uc.goal, owner: uc.owner,
+      risk_class: uc.riskClass, geography: uc.geography, industry: uc.industry,
+      status: uc.status, stage: uc.stage, description: uc.description,
+      frameworks: uc.frameworks, linked_models: uc.linkedModels,
+      created_date: uc.createdDate, last_updated: uc.lastUpdated,
+    }).catch(() => toast('Failed to save to server', 'error'));
   };
 
   const openDetail = (uc: UseCase, tab = 'overview') => {

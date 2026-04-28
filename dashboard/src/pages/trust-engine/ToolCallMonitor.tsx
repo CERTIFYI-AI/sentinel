@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { fetchAllToolCallLogs, upsertToolCallLog } from '../../services/toolCallLogsService';
 import {
   Eye, MagnifyingGlass, Export, Funnel, Wrench, Lightning,
   ArrowCounterClockwise, Warning, CheckCircle,
@@ -212,6 +213,28 @@ export default function ToolCallMonitor() {
   useChartTheme();
   const [calls, setCalls] = useState<ToolCall[]>(TOOL_CALLS);
   const [authMatrix, setAuthMatrix] = useState<AuthRule[]>(AUTH_MATRIX);
+
+  useEffect(() => {
+    let cancelled = false
+    fetchAllToolCallLogs().then(rows => {
+      if (cancelled) return
+      if (Array.isArray(rows) && rows.length > 0) setCalls(rows.map((r: any) => ({
+        id: r.id ?? '',
+        timestamp: r.timestamp ?? r.created_at ?? '',
+        agent: r.agent ?? '',
+        tool: r.tool ?? '',
+        args: r.args ?? {},
+        result: r.result ?? 'success',
+        latencyMs: r.latency_ms ?? r.latencyMs ?? 0,
+        tokens: r.tokens ?? 0,
+        cost: r.cost ?? 0,
+        sessionId: r.session_id ?? r.sessionId ?? '',
+        policyCheck: r.policy_check ?? r.policyCheck ?? 'pass',
+        error: r.error ?? '',
+      })))
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [])
   const [search, setSearch] = useState('');
   const [resultFilter, setResultFilter] = useState('all');
   const [agentFilter, setAgentFilter] = useState('all');
@@ -254,6 +277,7 @@ export default function ToolCallMonitor() {
       if (r.agent === agent && r.tool === tool) {
         const next: AuthRule['permission'] = r.permission === 'allowed' ? 'blocked' : r.permission === 'blocked' ? 'conditional' : 'allowed';
         toast(`${agent} → ${tool}: ${r.permission} → ${next}`);
+        upsertToolCallLog({ agent, tool, permission: next, updated_at: new Date().toISOString() }).catch(() => {});
         return { ...r, permission: next };
       }
       return r;

@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { fetchAllPolicyFirewall, upsertPolicyFirewall, deletePolicyFirewall } from '../../services/policyFirewallService';
 import {
   FloppyDisk, ArrowCounterClockwise, Warning, ShieldCheck,
   CurrencyDollar, GitFork, Bell, Plus, Trash, Clock, Info,
@@ -138,6 +139,25 @@ function severityBadge(severity: AlertThreshold['severity']) {
 export default function TrustConfig() {
   const { orgName } = useSettingsStore();
   const [guardrails, setGuardrails] = useState<GuardrailConfig[]>(DEFAULT_GUARDRAILS);
+
+  useEffect(() => {
+    let cancelled = false
+    fetchAllPolicyFirewall().then(rows => {
+      if (cancelled) return
+      if (Array.isArray(rows) && rows.length > 0) {
+        const mapped = rows.map((r: any) => ({
+          id: r.id ?? '',
+          name: r.name ?? '',
+          enabled: r.enabled ?? true,
+          threshold: r.threshold ?? '90%',
+          action: r.action ?? 'warn',
+          justification: r.justification ?? r.description ?? '',
+        }))
+        setGuardrails(mapped)
+      }
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [])
   const [costLimits, setCostLimits] = useState<CostLimit[]>(DEFAULT_COST_LIMITS);
   const [fallbackChains, setFallbackChains] = useState<FallbackChain[]>(DEFAULT_FALLBACK_CHAINS);
   const [alertThresholds, setAlertThresholds] = useState<AlertThreshold[]>(DEFAULT_ALERT_THRESHOLDS);
@@ -185,6 +205,7 @@ export default function TrustConfig() {
     setSavedSnapshot({ guardrails: [...guardrails], costLimits: [...costLimits], fallbackChains: [...fallbackChains], alertThresholds: [...alertThresholds] });
     setDirty(false);
     toast('Configuration saved — audit entry created');
+    guardrails.forEach(g => upsertPolicyFirewall({ id: g.id, name: g.name, enabled: g.enabled, threshold: g.threshold, action: g.action, justification: g.justification }).catch(() => {}));
   };
 
   const handleReset = () => {
@@ -199,7 +220,7 @@ export default function TrustConfig() {
   // CRUD handlers
   const toggleGuardrail = (id: string) => { setGuardrails(prev => prev.map(g => g.id === id ? { ...g, enabled: !g.enabled } : g)); markDirty(); };
   const updateGuardrail = (id: string, field: keyof GuardrailConfig, value: string) => { setGuardrails(prev => prev.map(g => g.id === id ? { ...g, [field]: value } : g)); markDirty(); };
-  const deleteGuardrail = (id: string) => { const g = guardrails.find(g => g.id === id); setGuardrails(prev => prev.filter(g => g.id !== id)); markDirty(); toast(`Guardrail "${g?.name}" removed`); };
+  const deleteGuardrail = (id: string) => { const g = guardrails.find(g => g.id === id); setGuardrails(prev => prev.filter(g => g.id !== id)); markDirty(); toast(`Guardrail "${g?.name}" removed`); deletePolicyFirewall(id).catch(() => {}); };
   const addGuardrail = () => { setGuardrails(prev => [...prev, { id: `g${Date.now()}`, name: 'New Guardrail', enabled: false, threshold: '90%', action: 'warn', justification: '' }]); markDirty(); };
   const updateCostLimit = (id: string, field: keyof CostLimit, value: string) => { setCostLimits(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c)); markDirty(); };
   const deleteCostLimit = (id: string) => { setCostLimits(prev => prev.filter(c => c.id !== id)); markDirty(); };

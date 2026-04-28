@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { fetchAllAIRiskTiers, upsertAIRiskTier, deleteAIRiskTier } from '../services/aiRiskTieringService';
 import { toast } from 'sonner';
 import {
   Plus, Eye, Trash, MagnifyingGlass, Check, ArrowRight, X,
@@ -122,6 +123,31 @@ function deriveTier(answers: { affectsRights: boolean; annexIII: string[]; gpai:
 
 export default function AIRiskTiering() {
   const [items, setItems] = useState<Classification[]>(SEED);
+
+  // Load live data from Supabase on mount; fall back to seed if empty/error.
+  useEffect(() => {
+    let cancelled = false;
+    fetchAllAIRiskTiers().then(rows => {
+      if (cancelled) return;
+      if (Array.isArray(rows) && rows.length > 0) {
+        setItems(rows.map((r: any) => ({
+          id: r.id ?? '',
+          system: r.system ?? '',
+          type: r.type ?? '',
+          tier: r.tier ?? 'Minimal',
+          annexIIICategory: r.annex_iii_category ?? r.annexIIICategory ?? 'N/A',
+          article: r.article ?? 'N/A',
+          gpai: !!r.gpai,
+          transparencyReq: !!(r.transparency_req ?? r.transparencyReq),
+          reviewStatus: r.review_status ?? r.reviewStatus ?? 'Pending',
+          owner: r.owner ?? '',
+          created: r.created ?? r.created_at?.slice(0, 10) ?? '',
+        })) as Classification[]);
+      }
+    }).catch(() => { /* keep seed */ });
+    return () => { cancelled = true };
+  }, []);
+
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Classification | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -172,12 +198,19 @@ export default function AIRiskTiering() {
     toast.success(`"${newItem.system}" classified as ${derived}`);
     setWizardOpen(false);
     resetWizard();
+    upsertAIRiskTier({
+      id: newItem.id, system: newItem.system, type: newItem.type, tier: newItem.tier,
+      annex_iii_category: newItem.annexIIICategory, article: newItem.article,
+      gpai: newItem.gpai, transparency_req: newItem.transparencyReq,
+      review_status: newItem.reviewStatus, owner: newItem.owner, created: newItem.created,
+    }).catch(() => toast.error('Failed to save to server'));
   }
 
   function deleteItem(id: string) {
     const item = items.find(i => i.id === id);
     setItems(prev => prev.filter(i => i.id !== id));
     if (item) toast.success(`Classification "${item.system}" removed`);
+    deleteAIRiskTier(id).catch(() => toast.error('Failed to delete on server'));
   }
 
   const tc = tierColor(derived);

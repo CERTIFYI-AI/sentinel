@@ -1,5 +1,6 @@
 // @ts-nocheck
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { fetchAllAgents, upsertAgents } from '../../services/agentsService';
 import {
   ShieldWarning, Warning, Prohibit, Siren, Detective, Eye,
   Lightning, CheckCircle, MagnifyingGlass, WifiHigh,
@@ -35,6 +36,31 @@ export default function ShadowAI() {
 
   const [agents, setAgents] = useState<Agent[]>(shadowAgentsInit);
   const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    let cancelled = false
+    fetchAllAgents({ status: 'shadow' }).then(rows => {
+      if (cancelled) return
+      if (Array.isArray(rows) && rows.length > 0) {
+        const shadowRows = rows.filter((r: any) => !r.status || r.status === 'shadow' || r.status === 'Shadow')
+        if (shadowRows.length > 0) setAgents(shadowRows.map((r: any) => ({
+          id: r.id ?? '',
+          name: r.name ?? '',
+          status: r.status ?? 'shadow',
+          riskScore: r.risk_score ?? r.riskScore ?? 0,
+          firstSeen: r.first_seen ?? r.firstSeen ?? '',
+          lastActivity: r.last_activity ?? r.lastActivity ?? '',
+          apiCalls7d: r.api_calls_7d ?? r.apiCalls7d ?? 0,
+          anomalyCount: r.anomaly_count ?? r.anomalyCount ?? 0,
+          tools: Array.isArray(r.tools) ? r.tools : [],
+          findings: Array.isArray(r.findings) ? r.findings : [],
+          model: r.model ?? '',
+          owner: r.owner ?? 'Unknown',
+        })))
+      }
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [])
   const [investigateAgent, setInvestigateAgent] = useState<Agent | null>(null);
   const [quarantineTarget, setQuarantineTarget] = useState<Agent | null>(null);
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
@@ -66,6 +92,7 @@ export default function ShadowAI() {
     if (!quarantineTarget) return;
     setAgents(prev => prev.map(a => a.id === quarantineTarget.id ? { ...a, status: 'quarantined' as Agent['status'] } : a));
     toast(`${quarantineTarget.name} quarantined — all API calls blocked`, 'error');
+    upsertAgents({ id: quarantineTarget.id, status: 'quarantined' }).catch(() => {})
     setQuarantineTarget(null);
   };
 
@@ -76,6 +103,7 @@ export default function ShadowAI() {
   const handleWhitelist = (agent: Agent) => {
     setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, status: 'confirmed' as Agent['status'] } : a));
     toast(`${agent.name} whitelisted — moved to confirmed agents`, 'success');
+    upsertAgents({ id: agent.id, status: 'confirmed' }).catch(() => {})
   };
 
   return (

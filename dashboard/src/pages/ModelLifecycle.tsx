@@ -1,6 +1,7 @@
 // @ts-nocheck
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { fetchAllModelLifecycles, upsertModelLifecycle } from '../services/modelLifecycleService';
 import { Robot, ArrowRight, Clock, ChartBar, CheckCircle, Warning, X, Lock, LockOpen, ArrowsClockwise } from '@phosphor-icons/react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
@@ -181,6 +182,17 @@ export default function ModelLifecycle() {
   const [openGate, setOpenGate] = useState<{ modelId: string; modelName: string; fromPhase: Phase; toPhase: Phase; gateKey: string } | null>(null);
   const [modelPhases, setModelPhases] = useState<Record<string, Phase>>({});
 
+  useEffect(() => {
+    let cancelled = false
+    fetchAllModelLifecycles().then(rows => {
+      if (cancelled || !Array.isArray(rows) || rows.length === 0) return
+      const phases: Record<string, Phase> = {}
+      rows.forEach((r: any) => { if (r.model_id && r.phase) phases[r.model_id] = r.phase as Phase })
+      setModelPhases(phases)
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+
   const avgDaysInPhase = Math.round(MODELS.reduce((a, m) => a + m.daysInPhase, 0) / MODELS.length);
   const pendingTransitions = MODELS.filter(m => m.lifecycleProgress < 80 && m.status !== 'production').length;
 
@@ -218,6 +230,7 @@ export default function ModelLifecycle() {
     }
     setModelPhases(prev => ({ ...prev, [model.id]: toPhase }));
     toast.success(`${model.name} promoted to ${toPhase}`);
+    upsertModelLifecycle({ model_id: model.id, model_name: model.name, phase: toPhase, from_phase: fromPhase }).catch(() => {})
   }
 
   return (

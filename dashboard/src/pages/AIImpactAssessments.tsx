@@ -1,7 +1,63 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { FileMagnifyingGlass, Plus, Eye, X, Trash, PencilSimple, Export, Warning, CheckCircle, Clock, MagnifyingGlass, ArrowRight } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { fetchAllAiImpact, upsertAiImpact, deleteAiImpact } from '../services/aiImpactService'
+
+// Map a Supabase ai_impact_assessments row (snake_case) to the AIIA shape used in the UI.
+function rowToAIIA(row: any): any {
+  return {
+    id: row.id,
+    name: row.name ?? '',
+    system: row.system ?? '',
+    description: row.description ?? '',
+    status: row.status ?? 'Draft',
+    risk: row.risk ?? row.risk_level ?? 'Low',
+    date: row.date ?? row.assessment_date ?? row.created_at?.slice(0, 10) ?? '',
+    dueDate: row.due_date ?? row.dueDate ?? '',
+    owner: row.owner ?? '',
+    framework: row.framework ?? '',
+    department: row.department ?? '',
+    version: row.version ?? 'v1.0.0',
+    purposeOfUse: row.purpose_of_use ?? row.purposeOfUse ?? '',
+    dataCategories: Array.isArray(row.data_categories) ? row.data_categories : (Array.isArray(row.dataCategories) ? row.dataCategories : []),
+    affectedGroups: row.affected_groups ?? row.affectedGroups ?? '',
+    automatedDecision: !!(row.automated_decision ?? row.automatedDecision),
+    humanOversight: row.human_oversight ?? row.humanOversight ?? '',
+    mitigations: Array.isArray(row.mitigations) ? row.mitigations : [],
+    findings: Array.isArray(row.findings) ? row.findings : [],
+    approvers: Array.isArray(row.approvers) ? row.approvers : [],
+    reviewedAt: row.reviewed_at ?? row.reviewedAt ?? undefined,
+    notes: row.notes ?? '',
+  }
+}
+
+function aiiaToRow(rec: any): Record<string, unknown> {
+  return {
+    id: rec.id,
+    name: rec.name,
+    system: rec.system,
+    description: rec.description,
+    status: rec.status,
+    risk: rec.risk,
+    date: rec.date,
+    due_date: rec.dueDate,
+    owner: rec.owner,
+    framework: rec.framework,
+    department: rec.department,
+    version: rec.version,
+    purpose_of_use: rec.purposeOfUse,
+    data_categories: rec.dataCategories,
+    affected_groups: rec.affectedGroups,
+    automated_decision: rec.automatedDecision,
+    human_oversight: rec.humanOversight,
+    mitigations: rec.mitigations,
+    findings: rec.findings,
+    approvers: rec.approvers,
+    reviewed_at: rec.reviewedAt,
+    notes: rec.notes,
+  }
+}
 
 // WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
@@ -167,6 +223,19 @@ const FINDING_SEV: Record<string, { bg: string; color: string }> = {
 
 export default function AIImpactAssessments() {
   const [records, setRecords] = useState<AIIA[]>(SEED)
+
+  // Load live data from Supabase on mount; fall back to seed if empty/error.
+  useEffect(() => {
+    let cancelled = false
+    fetchAllAiImpact().then(rows => {
+      if (cancelled) return
+      if (Array.isArray(rows) && rows.length > 0) {
+        setRecords(rows.map(rowToAIIA))
+      }
+    }).catch(() => { /* keep seed */ })
+    return () => { cancelled = true }
+  }, [])
+
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
   const [riskFilter, setRiskFilter] = useState('All')
@@ -205,34 +274,43 @@ export default function AIImpactAssessments() {
   function saveForm() {
     if (!form.name.trim() || !form.system.trim()) { toast.error('Name and system are required.'); return }
     if (editing) {
-      setRecords(prev => prev.map(r => r.id === editing.id ? { ...editing, ...form } : r))
+      const updated = { ...editing, ...form }
+      setRecords(prev => prev.map(r => r.id === editing.id ? updated : r))
       toast.success('Assessment updated')
+      upsertAiImpact(aiiaToRow(updated)).catch(() => toast.error('Failed to save to server'))
     } else {
       const newR: AIIA = { ...form, id: `AIIA-${String(records.length + 1).padStart(3, '0')}`, findings: [] }
       setRecords(prev => [newR, ...prev])
       toast.success('Assessment created')
+      upsertAiImpact(aiiaToRow(newR)).catch(() => toast.error('Failed to save to server'))
     }
     setFormOpen(false)
   }
 
   function confirmDelete() {
     if (!deleteTarget) return
-    setRecords(prev => prev.filter(r => r.id !== deleteTarget.id))
-    toast.success(`Assessment ${deleteTarget.id} deleted`)
+    const target = deleteTarget
+    setRecords(prev => prev.filter(r => r.id !== target.id))
+    toast.success(`Assessment ${target.id} deleted`)
     setDeleteTarget(null)
-    if (selected?.id === deleteTarget.id) setSelected(null)
+    if (selected?.id === target.id) setSelected(null)
+    deleteAiImpact(target.id).catch(() => toast.error('Failed to delete on server'))
   }
 
   function submitForReview(r: AIIA) {
-    setRecords(prev => prev.map(x => x.id === r.id ? { ...x, status: 'Pending Review' as AIIAStatus } : x))
-    setSelected(prev => prev?.id === r.id ? { ...prev, status: 'Pending Review' } : prev)
+    const updated = { ...r, status: 'Pending Review' as AIIAStatus }
+    setRecords(prev => prev.map(x => x.id === r.id ? updated : x))
+    setSelected(prev => prev?.id === r.id ? updated : prev)
     toast.success(`${r.id} submitted for review`)
+    upsertAiImpact(aiiaToRow(updated)).catch(() => toast.error('Failed to save to server'))
   }
 
   function approveAssessment(r: AIIA) {
-    setRecords(prev => prev.map(x => x.id === r.id ? { ...x, status: 'Approved' as AIIAStatus, reviewedAt: new Date().toISOString().slice(0, 10) } : x))
-    setSelected(prev => prev?.id === r.id ? { ...prev, status: 'Approved', reviewedAt: new Date().toISOString().slice(0, 10) } : prev)
+    const updated = { ...r, status: 'Approved' as AIIAStatus, reviewedAt: new Date().toISOString().slice(0, 10) }
+    setRecords(prev => prev.map(x => x.id === r.id ? updated : x))
+    setSelected(prev => prev?.id === r.id ? updated : prev)
     toast.success(`${r.id} approved`)
+    upsertAiImpact(aiiaToRow(updated)).catch(() => toast.error('Failed to save to server'))
   }
 
   const sf = (k: keyof typeof form, v: any) => setForm(prev => ({ ...prev, [k]: v }))

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { fetchAllEvalRuns } from '../../services/evalRunsService';
 import {
   ChartBar, Export, ArrowRight, CheckCircle, Warning,
   X, MagnifyingGlass, TrendUp, TrendDown, Eye, BugBeetle,
@@ -160,8 +161,35 @@ function deltaChip(delta: number) {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function EvalResultsViewer() {
+  const [evalRuns, setEvalRuns] = useState<EvalRun[]>(EVAL_RUNS);
   const [selectedRun, setSelectedRun] = useState<EvalRun>(EVAL_RUNS[0]);
   const [failureSearch, setFailureSearch] = useState('');
+
+  useEffect(() => {
+    let cancelled = false
+    fetchAllEvalRuns().then(rows => {
+      if (cancelled) return
+      if (Array.isArray(rows) && rows.length > 0) {
+        const mapped = rows.map((r: any) => ({
+          id: r.id ?? '',
+          name: r.name ?? '',
+          model: r.model ?? '',
+          dataset: r.dataset ?? '',
+          date: r.date ?? r.created_at?.slice(0,10) ?? '',
+          status: r.status ?? 'Completed',
+          score: r.score ?? 0,
+          passRate: r.pass_rate ?? r.passRate ?? 0,
+          failures: Array.isArray(r.failures) ? r.failures : [],
+          metrics: r.metrics ?? {},
+          tags: Array.isArray(r.tags) ? r.tags : [],
+          evaluator: r.evaluator ?? '',
+        }))
+        setEvalRuns(mapped)
+        if (mapped.length > 0) setSelectedRun(mapped[0])
+      }
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [])
   const [failureSeverity, setFailureSeverity] = useState('all');
   const [selectedCase, setSelectedCase] = useState<FailureCase | null>(null);
 
@@ -201,7 +229,7 @@ export default function EvalResultsViewer() {
       <div style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-surface))', padding: 12 }}>
         <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-4))' }}>SELECT EVAL RUN</p>
         <div className="flex gap-2 flex-wrap">
-          {EVAL_RUNS.map(run => (
+          {evalRuns.map(run => (
             <button
               key={run.id}
               onClick={() => setSelectedRun(run)}

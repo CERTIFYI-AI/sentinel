@@ -1,5 +1,6 @@
 // @ts-nocheck
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { fetchAllBiasAudits, upsertBiasAudit, deleteBiasAudit } from '../../services/biasAuditService';
 import {
   Eye, Trash, Plus, Warning, ArrowRight, ArrowLeft,
   Play, ShieldCheck, Scales, Brain, Check, CaretRight,
@@ -92,6 +93,33 @@ export default function BiasAuditWizard() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
   const [audits, setAudits] = useState<BiasAudit[]>(BIAS_AUDITS);
+
+  useEffect(() => {
+    let cancelled = false
+    fetchAllBiasAudits().then(rows => {
+      if (cancelled) return
+      if (Array.isArray(rows) && rows.length > 0) {
+        setAudits(rows.map((r: any) => ({
+          id: r.id ?? '',
+          modelId: r.model_id ?? r.modelId ?? '',
+          modelName: r.model_name ?? r.modelName ?? '',
+          dataset: r.dataset ?? '',
+          framework: r.framework ?? '',
+          overallScore: r.overall_score ?? r.overallScore ?? 0,
+          result: r.result ?? 'passed',
+          protectedAttributes: Array.isArray(r.protected_attributes) ? r.protected_attributes : (r.protectedAttributes ?? []),
+          severity: r.severity ?? 'low',
+          date: r.date ?? r.created_at?.slice(0,10) ?? '',
+          auditor: r.auditor ?? '',
+          status: r.status ?? 'compliant',
+          dimensions: Array.isArray(r.dimensions) ? r.dimensions : [],
+          recommendations: Array.isArray(r.recommendations) ? r.recommendations : [],
+        })))
+      }
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+
   const [search, setSearch] = useState('');
   const [cfRunning, setCfRunning] = useState(false);
   const [cfDone, setCfDone] = useState(false);
@@ -140,6 +168,7 @@ export default function BiasAuditWizard() {
   // ── Delete audit ──────────────────────────────────────────────────────────
   const deleteAudit = (id: string) => {
     setAudits(prev => prev.filter(a => a.id !== id));
+    deleteBiasAudit(id).catch(() => {})
   };
 
   // ── Re-run audit ──────────────────────────────────────────────────────────
@@ -147,6 +176,7 @@ export default function BiasAuditWizard() {
     // Simulate re-run
     const updated = { ...audit, date: new Date().toISOString().split('T')[0], status: audit.result === 'failed' ? 'remediation_required' : 'compliant' };
     setAudits(prev => prev.map(a => a.id === audit.id ? updated : a));
+    upsertBiasAudit({ id: updated.id, model_id: updated.modelId, model_name: updated.modelName, dataset: updated.dataset, framework: updated.framework, overall_score: updated.overallScore, result: updated.result, status: updated.status, severity: updated.severity, date: updated.date, auditor: updated.auditor }).catch(() => {})
   };
 
   // ── Wizard run ────────────────────────────────────────────────────────────
@@ -185,6 +215,7 @@ export default function BiasAuditWizard() {
   const finalizeWizard = () => {
     if (wizardResult) {
       setAudits(prev => [...prev, wizardResult]);
+      upsertBiasAudit({ id: wizardResult.id, model_id: wizardResult.modelId, model_name: wizardResult.modelName, dataset: wizardResult.dataset, framework: wizardResult.framework, overall_score: wizardResult.overallScore, result: wizardResult.result, status: wizardResult.status, severity: wizardResult.severity, date: wizardResult.date, auditor: wizardResult.auditor, protected_attributes: wizardResult.protectedAttributes, dimensions: wizardResult.dimensions, recommendations: wizardResult.recommendations }).catch(() => {})
     }
     setWizardOpen(false);
     setWizardStep(1);

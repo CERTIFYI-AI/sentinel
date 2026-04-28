@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { fetchAllGenAIRisks, upsertGenAIRisk, deleteGenAIRisk } from '../services/genaiRisksService';
 import { toast } from 'sonner';
 import {
   Plus, Eye, Trash, MagnifyingGlass, Robot, ShieldWarning,
@@ -102,6 +103,30 @@ function MetricTile({ label, value, variant }: { label: string; value: string | 
 
 export default function GenAIRisks() {
   const [profiles, setProfiles] = useState<GenAIRiskProfile[]>(SEED);
+
+  // Load live data from Supabase on mount; fall back to seed if empty/error.
+  useEffect(() => {
+    let cancelled = false;
+    fetchAllGenAIRisks().then(rows => {
+      if (cancelled) return;
+      if (Array.isArray(rows) && rows.length > 0) {
+        setProfiles(rows.map((r: any) => ({
+          id: r.id ?? '',
+          model: r.model ?? '',
+          riskCategory: r.risk_category ?? r.riskCategory ?? '',
+          riskNumber: r.risk_number ?? r.riskNumber ?? 1,
+          severity: (r.severity ?? 'High') as Severity,
+          guardrails: r.guardrails ?? 'None',
+          guardrailCoverage: (r.guardrail_coverage ?? r.guardrailCoverage ?? 'None') as GuardrailCoverage,
+          mitigationStatus: r.mitigation_status ?? r.mitigationStatus ?? 'Not Addressed',
+          owner: r.owner ?? '',
+          created: r.created ?? r.created_at?.slice(0, 10) ?? '',
+        })) as GenAIRiskProfile[]);
+      }
+    }).catch(() => { /* keep seed */ });
+    return () => { cancelled = true };
+  }, []);
+
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
   const [selected, setSelected] = useState<GenAIRiskProfile | null>(null);
@@ -143,12 +168,21 @@ export default function GenAIRisks() {
     toast.success(`Risk profile "${newProfile.id}" created for ${newProfile.model}`);
     setCreateOpen(false);
     setWModel(''); setWGuardrails(''); setWCoverage('None');
+    upsertGenAIRisk({
+      id: newProfile.id, model: newProfile.model,
+      risk_category: newProfile.riskCategory, risk_number: newProfile.riskNumber,
+      severity: newProfile.severity, guardrails: newProfile.guardrails,
+      guardrail_coverage: newProfile.guardrailCoverage,
+      mitigation_status: newProfile.mitigationStatus,
+      owner: newProfile.owner, created: newProfile.created,
+    }).catch(() => toast.error('Failed to save to server'));
   }
 
   function deleteProfile(id: string) {
     const profile = profiles.find(p => p.id === id);
     if (profile) toast.success(`Risk profile "${profile.id}" removed`);
     setProfiles(prev => prev.filter(p => p.id !== id));
+    deleteGenAIRisk(id).catch(() => toast.error('Failed to delete on server'));
   }
 
   const selectedRiskInfo = selected ? NIST_600_1_RISKS.find(r => r.num === selected.riskNumber) : null;

@@ -1,9 +1,10 @@
-import { useState, useMemo, useCallback, type ReactNode } from 'react';
+import { useState, useMemo, useCallback, useEffect, type ReactNode } from 'react';
 import {
   ChatTeardropText, Plus, MagnifyingGlass, PencilSimple, Trash,
   Eye, ClockCounterClockwise, Tag, Robot, CheckCircle,
   Warning, Clock, Archive, Funnel, ArrowsClockwise,
 } from '@phosphor-icons/react';
+import { fetchPromptRecords, upsertPromptRecord, deletePromptRecord } from '../services/promptService';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -13,9 +14,8 @@ import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '../components/ui/select';
-import {
-
 // WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
+import {
   PROMPT_REGISTRY, type PromptRecord, type PromptStatus, type PromptCategory, formatDate,
 } from '../data/seed';
 
@@ -435,8 +435,65 @@ function EditSheet({ record, open, onClose, onSave }: {
 }
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
+// Map a Supabase prompt_registry row (snake_case) to the in-app PromptRecord shape.
+function rowToRecord(row: any): PromptRecord {
+  return {
+    id: row.id,
+    name: row.name ?? '',
+    category: (row.category ?? 'system') as PromptCategory,
+    status: (row.status ?? 'draft') as PromptStatus,
+    model: row.model ?? 'GPT-4o',
+    owner: row.owner ?? '',
+    currentVersion: row.current_version ?? row.currentVersion ?? '1.0.0',
+    description: row.description ?? '',
+    content: row.content ?? '',
+    tags: Array.isArray(row.tags) ? row.tags : [],
+    usedBy: Array.isArray(row.used_by) ? row.used_by : (Array.isArray(row.usedBy) ? row.usedBy : []),
+    tokenCount: row.token_count ?? row.tokenCount ?? 0,
+    lastModified: row.last_modified ?? row.lastModified ?? row.updated_at ?? new Date().toISOString(),
+    createdDate: row.created_date ?? row.createdDate ?? row.created_at ?? new Date().toISOString(),
+    approvedBy: row.approved_by ?? row.approvedBy ?? null,
+    approvalDate: row.approval_date ?? row.approvalDate ?? null,
+    versions: Array.isArray(row.versions) ? row.versions : [],
+  };
+}
+
+function recordToRow(rec: PromptRecord): Record<string, unknown> {
+  return {
+    id: rec.id,
+    name: rec.name,
+    category: rec.category,
+    status: rec.status,
+    model: rec.model,
+    owner: rec.owner,
+    current_version: rec.currentVersion,
+    description: rec.description,
+    content: rec.content,
+    tags: rec.tags,
+    used_by: rec.usedBy,
+    token_count: rec.tokenCount,
+    versions: rec.versions,
+    approved_by: rec.approvedBy,
+    approval_date: rec.approvalDate,
+    last_modified: rec.lastModified,
+    created_date: rec.createdDate,
+  };
+}
+
 export default function PromptRegistry() {
   const [records, setRecords] = useState<PromptRecord[]>(PROMPT_REGISTRY);
+
+  // Load live data from Supabase on mount; fall back to seed if empty/error.
+  useEffect(() => {
+    let cancelled = false;
+    fetchPromptRecords().then(rows => {
+      if (cancelled) return;
+      if (Array.isArray(rows) && rows.length > 0) {
+        setRecords(rows.map(rowToRecord));
+      }
+    }).catch(() => { /* keep seed */ });
+    return () => { cancelled = true };
+  }, []);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<PromptStatus | 'all'>('all');
   const [filterCategory, setFilterCategory] = useState<PromptCategory | 'all'>('all');
@@ -494,6 +551,8 @@ export default function PromptRegistry() {
       };
       setRecords(p => [rec, ...p]);
       toast(`Created "${rec.name}" (v1.0.0)`);
+      // Persist to Supabase (fire-and-forget; realtime will reconcile)
+      upsertPromptRecord(recordToRow(rec)).catch(() => toast('Failed to save to server', 'error'));
     } else {
       const existing = records.find(r => r.id === (data as PromptRecord).id);
       if (!existing) return;
@@ -516,15 +575,18 @@ export default function PromptRegistry() {
       };
       setRecords(p => p.map(r => r.id === updated.id ? updated : r));
       toast(`Updated "${updated.name}" → v${newVer}`);
+      upsertPromptRecord(recordToRow(updated)).catch(() => toast('Failed to save to server', 'error'));
     }
     setEditOpen(false);
   }, [records, toast]);
 
   const handleDelete = useCallback(() => {
     if (!deleteTarget) return;
-    setRecords(p => p.filter(r => r.id !== deleteTarget.id));
-    toast(`Deleted "${deleteTarget.name}"`, 'info');
+    const target = deleteTarget;
+    setRecords(p => p.filter(r => r.id !== target.id));
+    toast(`Deleted "${target.name}"`, 'info');
     setDeleteTarget(null);
+    deletePromptRecord(target.id).catch(() => toast('Failed to delete on server', 'error'));
   }, [deleteTarget, toast]);
 
   return (

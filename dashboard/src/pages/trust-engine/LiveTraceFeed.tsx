@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { fetchTrustTraces } from '../../services/trustTraceService';
 import {
   Eye, Play, Pause, Warning, Lightning, Clock,
   CheckCircle, ShieldCheck, MagnifyingGlass, Funnel,
@@ -212,6 +213,32 @@ function SpanWaterfall({ trace }: { trace: Trace }) {
 export default function LiveTraceFeed() {
   const { orgName } = useSettingsStore();
   const [traces, setTraces] = useState<Trace[]>([...TRACES]);
+
+  useEffect(() => {
+    let cancelled = false
+    fetchTrustTraces().then(rows => {
+      if (cancelled) return
+      if (Array.isArray(rows) && rows.length > 0) setTraces(rows.map((r: any) => ({
+        id: r.id ?? '',
+        timestamp: r.timestamp ?? r.created_at ?? '',
+        agent: r.agent ?? '',
+        model: r.model ?? '',
+        status: r.status ?? 'allowed',
+        action: r.action ?? '',
+        latencyMs: r.latency_ms ?? r.latencyMs ?? 0,
+        tokens: r.tokens ?? 0,
+        policyEvaluated: r.policy_evaluated ?? r.policyEvaluated ?? '',
+        flagged: r.flagged ?? false,
+        flagReason: r.flag_reason ?? r.flagReason ?? '',
+        cost: r.cost ?? 0,
+        sessionId: r.session_id ?? r.sessionId ?? '',
+        toolCalls: Array.isArray(r.tool_calls) ? r.tool_calls : [],
+        steps: Array.isArray(r.steps) ? r.steps : [],
+        metadata: r.metadata ?? {},
+      })))
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [])
   const [paused, setPaused] = useState(false);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
