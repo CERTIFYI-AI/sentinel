@@ -1,5 +1,6 @@
 @import "./styles/tokens.css";
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+/* Outfit font is loaded from local @fontsource/outfit-variable bundle (see main.tsx).
+   Removed Google Fonts CDN import to comply with strict CSP and avoid FOUC. */
 
 @tailwind base;
 @tailwind components;
