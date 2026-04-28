@@ -12,6 +12,7 @@ import "./styles/globals.css";
 import "./styles/a11y.css";
 import "./store/accentStore";
 import { LiveRegionProvider } from "./lib/a11y/LiveRegion";
+import { SupabaseAuthListener } from "./providers/SupabaseAuthListener";
 import { getLocale } from "./i18n";
 // Auto-register all 27 governance agents on app bootstrap.
 // Side-effect import — each agent file calls governanceBus.registerAgent.
@@ -25,6 +26,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <ThemeProvider>
       <LiveRegionProvider>
         <QueryClientProvider client={queryClient}>
+          <SupabaseAuthListener />
           <App />
           <Toaster
             position="bottom-right"

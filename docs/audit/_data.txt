@@ -1,0 +1,153 @@
+## Legacy CamelCase tables with RLS but no policies (66)
+- public.Agent
+- public.AuditLog
+- public.BiasAudit
+- public.ComplianceEvent
+- public.Control
+- public.Dataset
+- public.Evidence
+- public.Framework
+- public.GuardrailRule
+- public.HitlItem
+- public.Model
+- public.ModelTrustConfig
+- public.Notification
+- public.ObservabilityMetric
+- public.Policy
+- public.PolicyVersion
+- public.RBACRole
+- public.RBACUser
+- public.Regulation
+- public.RiskEntry
+- public.ShadowAIFinding
+- public.Tenant
+- public.TrustTrace
+- public.User
+- public.Vendor
+- public.VendorQuestionnaire
+- public.ai_impact_assessments
+- public.audit_findings
+- public.audits
+- public.compliance_calendar
+- public.compliance_events
+- public.compliance_scores
+- public.conformity_assessments
+- public.dashboard_snapshots
+- public.data_assets
+- public.document_versions
+- public.documents
+- public.dsar_requests
+- public.exceptions
+- public.explainability_reports
+- public.framework_sections
+- public.guardrail_rules
+- public.guardrails
+- public.incident_workflow_steps
+- public.maturity_assessments
+- public.maturity_dimensions
+- public.model_inventory
+- public.observability_metrics
+- public.rbac_roles
+- public.rbac_users
+- public.red_team_campaigns
+- public.regulation_entries
+- public.remediation_items
+- public.report_schedules
+- public.security_scans
+- public.security_threats
+- public.security_vulnerabilities
+- public.shadow_ai_findings
+- public.tenants
+- public.training_assignments
+- public.use_cases
+- public.vendor_questionnaire
+- public.vendor_questionnaires
+- public.workflow_instances
+- public.workflow_step_actions
+- public.workflow_templates
+
+## rls_policy_always_true (multi-tenant breach risk)
+- agents.agents_org (ALL)
+- assets.assets_auth_write (ALL)
+- attack_surface_assets.attack_surface_assets_anon (ALL)
+- attack_surface_assets.attack_surface_assets_auth (ALL)
+- audit_log.audit_insert (INSERT)
+- bcp_plans.bcp_plans_auth_write (ALL)
+- bia_processes.bia_processes_auth_write (ALL)
+- bias_audits.bias_org (ALL)
+- carbon_records.carbon_records_anon (ALL)
+- carbon_records.carbon_records_auth (ALL)
+- committees.committees_auth_write (ALL)
+- consent_records.consent_records_anon (ALL)
+- consent_records.consent_records_auth (ALL)
+- controls.ctrl_org (ALL)
+- datasets.ds_org (ALL)
+- departments.departments_auth_write (ALL)
+- ethics_reports.ethics_reports_anon (ALL)
+- ethics_reports.ethics_reports_auth (ALL)
+- ethics_reports.ethics_reports_auth_write (ALL)
+- evidence.ev_org (ALL)
+- evidence_chain.chain_insert (INSERT)
+- frameworks.fw_org (ALL)
+- guardrail_events.guardrail_org (ALL)
+- hitl_reviews.hitl_org (ALL)
+- identities.identities_auth_write (ALL)
+- incidents.inc_org (ALL)
+- keys_vault.keys_vault_anon (ALL)
+- keys_vault.keys_vault_auth (ALL)
+- live_traces.traces_org (ALL)
+- model_arena_runs.model_arena_runs_anon (ALL)
+- model_arena_runs.model_arena_runs_auth (ALL)
+- models.models_org (ALL)
+- notifications.notif_org (ALL)
+- policies.pol_org (ALL)
+- policy_firewall_rules.policy_firewall_rules_anon (ALL)
+- policy_firewall_rules.policy_firewall_rules_auth (ALL)
+- red_team_findings.red_team_findings_anon (ALL)
+- red_team_findings.red_team_findings_auth (ALL)
+- remediation_plans.remediation_plans_anon (ALL)
+- remediation_plans.remediation_plans_auth (ALL)
+- risks.risks_org (ALL)
+- roles.roles_auth_write (ALL)
+- supply_chain_attestations.supply_chain_attestations_anon (ALL)
+- supply_chain_attestations.supply_chain_attestations_auth (ALL)
+- tasks.tasks_org (ALL)
+- training_courses.training_courses_anon (ALL)
+- training_courses.training_courses_auth (ALL)
+- training_courses.training_courses_auth_write (ALL)
+- transparency_reports.transparency_reports_anon (ALL)
+- transparency_reports.transparency_reports_auth (ALL)
+- trust_policies.trust_org (ALL)
+- vendors.vend_org (ALL)
+
+## SECURITY DEFINER + executable
+- security_definer_view | users_with_details | View \`public.users_with_details\` is defined with the SECURITY DEFINER property
+- anon_security_definer_function_executable | current_user_permissions | Function `public.current_user_permissions()` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/current_user_permis
+- anon_security_definer_function_executable | fn_dispatch_governance_event | Function `public.fn_dispatch_governance_event()` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/fn_dispatch_gov
+- anon_security_definer_function_executable | get_user_org_id | Function `public.get_user_org_id()` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/get_user_org_id`. Revoke `EX
+- anon_security_definer_function_executable | get_user_role | Function `public.get_user_role()` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/get_user_role`. Revoke `EXECUT
+- anon_security_definer_function_executable | global_search | Function `public.global_search(p_tenant_id text, p_query text, p_limit integer)` can be executed by the `anon` role as a `SECURITY DEFINER` function v
+- anon_security_definer_function_executable | handle_new_user | Function `public.handle_new_user()` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/handle_new_user`. Revoke `EX
+- anon_security_definer_function_executable | is_org_admin | Function `public.is_org_admin()` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/is_org_admin`. Revoke `EXECUTE`
+- anon_security_definer_function_executable | rls_auto_enable | Function `public.rls_auto_enable()` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/rls_auto_enable`. Revoke `EX
+- authenticated_security_definer_function_executable | current_user_permissions | Function `public.current_user_permissions()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/current_us
+- authenticated_security_definer_function_executable | fn_dispatch_governance_event | Function `public.fn_dispatch_governance_event()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/fn_dis
+- authenticated_security_definer_function_executable | get_user_org_id | Function `public.get_user_org_id()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/get_user_org_id`. R
+- authenticated_security_definer_function_executable | get_user_role | Function `public.get_user_role()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/get_user_role`. Revok
+- authenticated_security_definer_function_executable | global_search | Function `public.global_search(p_tenant_id text, p_query text, p_limit integer)` can be executed by the `authenticated` role as a `SECURITY DEFINER` f
+- authenticated_security_definer_function_executable | handle_new_user | Function `public.handle_new_user()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/handle_new_user`. R
+- authenticated_security_definer_function_executable | is_org_admin | Function `public.is_org_admin()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/is_org_admin`. Revoke 
+- authenticated_security_definer_function_executable | rls_auto_enable | Function `public.rls_auto_enable()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/rls_auto_enable`. R
+
+## function_search_path_mutable
+- get_org_id
+- set_updated_at
+- handle_updated_at
+- get_user_role
+- is_org_admin
+- handle_new_user
+- update_updated_at
+- get_user_org_id
+
+## auth_leaked_password_protection / other
+- auth_leaked_password_protection | Supabase Auth prevents the use of compromised passwords by checking against HaveIBeenPwned.org. Enable this feature to enhance security.

@@ -9,8 +9,11 @@ import { useTheme } from '../providers/theme'
 import { getStoredAccent, setAccent, type Accent } from '../store/accentStore'
 import { useAuthStore } from '../store/authStore'
 import { OrgSwitcher } from './tenancy/OrgSwitcher'
+import { useNotifications } from '../hooks/useNotifications'
 
-const UNREAD_COUNT = 5
+// UX-P1-011: previously a hardcoded constant.
+// Now driven by the live unread count from the notifications query, which is
+// invalidated on every realtime postgres_changes event for the current org.
 
 const ACCENT_SWATCHES: { key: Accent; label: string; color: string; darkColor: string }[] = [
   { key: 'emerald', label: 'Emerald',  color: 'hsl(142 47% 38%)', darkColor: 'hsl(142 47% 50%)' },
@@ -133,6 +136,11 @@ export default function TopHeader() {
   const breadcrumbs = buildBreadcrumbs(location.pathname)
   const user = useAuthStore(s => s.user)
   const logout = useAuthStore(s => s.logout)
+
+  // UX-P1-011: live notification badge — driven by realtime-invalidated query.
+  // useNotifications subscribes to postgres_changes and returns unreadCount.
+  const { unreadCount: notifUnread } = useNotifications()
+  const unreadCount = notifUnread ?? 0
 
   const initials = user?.name
     ? user.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
@@ -378,15 +386,15 @@ export default function TopHeader() {
             className='h-8 w-8 relative'
             onClick={() => setNotifOpen(v => !v)}
             title='Notifications'
-            aria-label={`Notifications — ${UNREAD_COUNT} unread`}
+            aria-label={`Notifications — ${unreadCount} unread`}
           >
             <Bell size={16} className='text-[hsl(var(--text-3))]' />
-            {UNREAD_COUNT > 0 && (
+            {unreadCount > 0 && (
               <span
                 className='absolute -top-0.5 -right-0.5 flex items-center justify-center w-4 h-4 bg-[hsl(var(--brand))] text-white text-[9px] font-bold leading-none'
                 aria-hidden='true'
               >
-                {UNREAD_COUNT > 9 ? '9+' : UNREAD_COUNT}
+                {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
           </Button>

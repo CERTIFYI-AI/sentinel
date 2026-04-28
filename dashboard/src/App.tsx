@@ -1,7 +1,8 @@
 // @ts-nocheck
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 const queryClient = new QueryClient()
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { TenantProvider } from './context/TenantContext';
 import React from 'react';
 import { lazy, Suspense, useEffect } from 'react';
@@ -255,6 +256,16 @@ function PublicRoute() {
  * ProtectedLayout — wraps all authenticated routes with Sidebar + TopHeader.
  * Mounts real-time hooks (WebSocket + React Query invalidation) once inside.
  */
+/**
+ * RouteErrorBoundary — keyed on pathname so a thrown error on one route
+ * doesn't poison subsequent navigation. When the user navigates away the
+ * boundary remounts with a fresh state.
+ */
+function RouteErrorBoundary({ children }: { children: React.ReactNode }) {
+  const { pathname } = useLocation();
+  return <ErrorBoundary key={pathname}>{children}</ErrorBoundary>;
+}
+
 function ProtectedLayout() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const tenantId = useAuthStore((s) => s.user?.tenantId ?? 'default');
@@ -277,9 +288,11 @@ function ProtectedLayout() {
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <TopHeader />
         <main className="flex-1 overflow-y-auto p-6">
-          <Suspense fallback={<Loading />}>
-            <Outlet />
-          </Suspense>
+          <RouteErrorBoundary>
+            <Suspense fallback={<Loading />}>
+              <Outlet />
+            </Suspense>
+          </RouteErrorBoundary>
         </main>
       </div>
     </div>
