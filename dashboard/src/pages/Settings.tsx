@@ -65,17 +65,9 @@ const INITIAL_RETENTION: RetentionPolicy[] = [
   { dataType: 'Training Data Snapshots', retention: '5 years', description: 'Required for EU AI Act Art. 10 compliance' },
 ];
 
-// ── Integrations ────────────────────────────────────────────────────────────────
-interface Integration {
-  id: string; name: string; description: string; connected: boolean; logo: string;
-}
-
-const INITIAL_INTEGRATIONS: Integration[] = [
-  { id: 'drata', name: 'Drata', description: 'Continuous compliance monitoring and evidence collection', connected: true, logo: 'D' },
-  { id: 'okta', name: 'Okta', description: 'SSO and identity management for user provisioning', connected: true, logo: 'O' },
-  { id: 'aws', name: 'AWS', description: 'AWS SageMaker for model hosting and MLOps pipelines', connected: true, logo: 'A' },
-  { id: 'jira', name: 'Jira', description: 'Issue tracking for remediation and risk management tasks', connected: false, logo: 'J' },
-];
+// ── Integrations tab removed in v1.0 audit remediation; historic audit entries referencing
+// the legacy 'Integrations' section are preserved in INITIAL_AUDIT_ENTRIES below for the
+// immutable audit trail.
 
 // ── Audit Trail ────────────────────────────────────────────────────────────────
 interface AuditEntry {
@@ -192,9 +184,7 @@ export default function Settings() {
     await saveRetentionPolicies(updatedRetention.map(r => ({ category: r.dataType, retention_period: r.retention, auto_archive: false, auto_delete: false })))
   }
 
-  // Integrations
-  const [integrations, setIntegrations] = useState<Integration[]>(INITIAL_INTEGRATIONS);
-  const toggleIntegration = (id: string) => setIntegrations(prev => prev.map(i => i.id === id ? { ...i, connected: !i.connected } : i));
+  // Integrations tab removed — see comment above INITIAL_AUDIT_ENTRIES.
 
   // Audit Trail
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>(INITIAL_AUDIT_ENTRIES);
@@ -224,7 +214,7 @@ export default function Settings() {
     if (s.apiKeys) setApiKeys(s.apiKeys as any);
     if (s.notifications) setNotifs(s.notifications as any);
     if (s.retention) setRetention(s.retention as any);
-    if (s.integrations) setIntegrations(s.integrations as any);
+    // s.integrations intentionally ignored — Integrations tab removed in v1.0 audit remediation.
   }, [backendSettings]);
   // ── End Supabase wiring ──────────────────────────────────────────────
 

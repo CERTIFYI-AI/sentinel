@@ -338,10 +338,15 @@ export default function RolesPage() {
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                    <button onClick={() => openEdit(r)} className="p-1.5 hover:opacity-70" style={{ color: 'hsl(var(--text-4))' }} title="Edit"><PencilSimple size={14} /></button>
-                    <button onClick={() => openDuplicate(r)} className="p-1.5 hover:opacity-70" style={{ color: 'hsl(var(--text-4))' }} title="Duplicate"><Copy size={14} /></button>
-                    {!r.isSystem && (
-                      <button onClick={() => setDeleteTarget(r)} className="p-1.5 hover:opacity-70" style={{ color: 'hsl(var(--destructive))' }} title="Delete"><Trash size={14} /></button>
+                    {/* System roles: clone-only (cannot be edited or deleted). Custom roles: edit + duplicate + delete. */}
+                    {r.isSystem ? (
+                      <button onClick={() => openDuplicate(r)} className="p-1.5 hover:opacity-70" style={{ color: 'hsl(var(--brand))' }} title="Clone as Custom Role"><Copy size={14} /></button>
+                    ) : (
+                      <>
+                        <button onClick={() => openEdit(r)} className="p-1.5 hover:opacity-70" style={{ color: 'hsl(var(--text-4))' }} title="Edit"><PencilSimple size={14} /></button>
+                        <button onClick={() => openDuplicate(r)} className="p-1.5 hover:opacity-70" style={{ color: 'hsl(var(--text-4))' }} title="Duplicate"><Copy size={14} /></button>
+                        <button onClick={() => setDeleteTarget(r)} className="p-1.5 hover:opacity-70" style={{ color: 'hsl(var(--destructive))' }} title="Delete"><Trash size={14} /></button>
+                      </>
                     )}
                   </div>
                 </td>
@@ -476,21 +481,23 @@ export default function RolesPage() {
               </div>
             </div>
             <div className="p-4 flex gap-2" style={{ borderTop: '1px solid hsl(var(--border))' }}>
-              {selected.isSystem && (
-                <button onClick={() => { setSelected(null); openDuplicate(selected) }} className="flex items-center justify-center gap-1.5 px-4 py-2 text-sm border hover:opacity-80" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}>
-                  <Copy size={14} /> Clone as Custom
+              {selected.isSystem ? (
+                /* System role: clone is the primary action; Edit is hidden because system roles cannot be modified. */
+                <button onClick={() => { setSelected(null); openDuplicate(selected) }} className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium text-white hover:opacity-90" style={{ background: 'hsl(var(--brand))' }}>
+                  <Copy size={14} /> Clone as Custom Role
                 </button>
-              )}
-              <button onClick={() => { setSelected(null); openEdit(selected) }} className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm border hover:opacity-80" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}>
-                <PencilSimple size={14} /> Edit
-              </button>
-              <button onClick={() => { setSelected(null); openDuplicate(selected) }} className="flex items-center justify-center gap-1.5 px-4 py-2 text-sm border hover:opacity-80" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}>
-                <Copy size={14} /> Duplicate
-              </button>
-              {!selected.isSystem && (
-                <button onClick={() => { setDeleteTarget(selected); setSelected(null) }} className="px-4 py-2 text-sm border hover:opacity-80" style={{ borderColor: 'hsl(var(--destructive) / 0.3)', color: 'hsl(var(--destructive))' }}>
-                  <Trash size={14} />
-                </button>
+              ) : (
+                <>
+                  <button onClick={() => { setSelected(null); openEdit(selected) }} className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm border hover:opacity-80" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}>
+                    <PencilSimple size={14} /> Edit
+                  </button>
+                  <button onClick={() => { setSelected(null); openDuplicate(selected) }} className="flex items-center justify-center gap-1.5 px-4 py-2 text-sm border hover:opacity-80" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}>
+                    <Copy size={14} /> Duplicate
+                  </button>
+                  <button onClick={() => { setDeleteTarget(selected); setSelected(null) }} className="px-4 py-2 text-sm border hover:opacity-80" style={{ borderColor: 'hsl(var(--destructive) / 0.3)', color: 'hsl(var(--destructive))' }}>
+                    <Trash size={14} />
+                  </button>
+                </>
               )}
             </div>
           </div>

@@ -11,5 +11,13 @@
   },
   "compatibility_flags": [
     "nodejs_compat"
-  ]
+  ],
+  // Public Supabase bindings.
+  // VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are also baked into the static bundle at
+  // build time via dashboard/.env.local; these vars are exposed to any Worker code that may
+  // proxy or augment Supabase calls in the future.
+  "vars": {
+    "SUPABASE_URL": "https://vhparvughsygyknblkzt.supabase.co",
+    "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZocGFydnVnaHN5Z3lrbmJsa3p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNzk4NTgsImV4cCI6MjA4ODk1NTg1OH0.GOQ1X2bkBA9cQNhB8EJ6ggXSTqeIZ2KpGoo19ZpCpJw"
+  }
 }

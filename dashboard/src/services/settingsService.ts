@@ -119,7 +119,18 @@ export async function fetchSsoConfig(): Promise<AuthSettings | null> {
 export async function saveSsoConfig(patch: Partial<AuthSettings>): Promise<boolean> {
   if (!isSupabaseConfigured() || !supabase) return false
   try {
-    const payload = {
+    // Look up the caller's org_id from the joined user_profiles row so RLS WITH CHECK passes.
+    const { data: profile } = await supabase
+      .from('user_profiles').select('org_id').limit(1).maybeSingle()
+    const orgId = profile?.org_id
+    if (!orgId) { console.warn('[settingsService] saveSsoConfig: no org_id for caller'); return false }
+
+    // Find the existing row id (sso_config has no unique on org_id; we update if present, otherwise insert).
+    const { data: existing } = await supabase
+      .from('sso_config').select('id').eq('org_id', orgId).limit(1).maybeSingle()
+
+    const payload: Record<string, unknown> = {
+      org_id: orgId,
       mfa_required: patch.mfa_required,
       is_active: patch.sso_enabled,
       provider: patch.sso_provider,
@@ -127,10 +138,12 @@ export async function saveSsoConfig(patch: Partial<AuthSettings>): Promise<boole
       ip_whitelist: patch.ip_whitelist,
       updated_at: new Date().toISOString(),
     }
-    // Upsert (org_id unique constraint)
-    const { error } = await supabase
-      .from('sso_config')
-      .upsert(payload, { onConflict: 'org_id', ignoreDuplicates: false })
+    // Strip undefined so we don't overwrite existing fields with NULL.
+    Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k])
+
+    const { error } = existing
+      ? await supabase.from('sso_config').update(payload).eq('id', existing.id)
+      : await supabase.from('sso_config').insert({ ...payload })
     if (error) { console.warn('[settingsService] saveSsoConfig:', error.message); return false }
     return true
   } catch (e) { console.error('[settingsService] saveSsoConfig:', e); return false }
@@ -153,15 +166,24 @@ export async function fetchApiKeys(): Promise<ApiKeyRecord[]> {
 export async function createApiKey(name: string, scopes: string[]): Promise<ApiKeyRecord | null> {
   if (!isSupabaseConfigured() || !supabase) return null
   try {
+    const { data: profile } = await supabase
+      .from('user_profiles').select('org_id').limit(1).maybeSingle()
+    const orgId = profile?.org_id
+    if (!orgId) { console.warn('[settingsService] createApiKey: no org_id'); return null }
+    const id = `key-${crypto.randomUUID()}`
     const prefix = `sk-${Math.random().toString(36).slice(2, 10)}`
-    const hash = btoa(`${prefix}:${Date.now()}`) // Not real crypto — backend should hash
+    // Real one-way hash (SHA-256). Server-side rotation/verification should re-hash with the same algorithm.
+    const rawKey = `${prefix}-${crypto.randomUUID().replace(/-/g, '').slice(0, 32)}`
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(rawKey))
+    const hash = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
     const { data, error } = await supabase
       .from('api_keys')
-      .insert({ name, key_prefix: prefix, key_hash: hash, scopes, status: 'Active' })
+      .insert({ id, org_id: orgId, name, key_prefix: prefix, key_hash: hash, scopes, status: 'Active' })
       .select()
       .single()
     if (error) { console.warn('[settingsService] createApiKey:', error.message); return null }
-    return data as ApiKeyRecord
+    // Return raw key once so the UI can show it to the user — never persisted.
+    return { ...(data as ApiKeyRecord), raw_key: rawKey } as ApiKeyRecord & { raw_key: string }
   } catch (e) { return null }
 }
 
@@ -191,9 +213,11 @@ export async function deleteApiKey(id: string): Promise<boolean> {
 export async function fetchNotificationPrefs(): Promise<NotificationPref[]> {
   if (!isSupabaseConfigured() || !supabase) return []
   try {
+    // Prefer org-default prefs (user_id IS NULL). Settings page edits org-wide defaults.
     const { data, error } = await supabase
       .from('notification_prefs')
       .select('*')
+      .is('user_id', null)
       .order('event_type')
     if (error) { console.warn('[settingsService] fetchNotificationPrefs:', error.message); return [] }
     return (data ?? []) as NotificationPref[]
@@ -203,11 +227,26 @@ export async function fetchNotificationPrefs(): Promise<NotificationPref[]> {
 export async function saveNotificationPrefs(prefs: NotificationPref[]): Promise<boolean> {
   if (!isSupabaseConfigured() || !supabase) return false
   try {
-    // Delete all existing prefs for this org and re-insert
-    await supabase.from('notification_prefs').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+    // Resolve caller's org_id once.
+    const { data: profile } = await supabase
+      .from('user_profiles').select('org_id').limit(1).maybeSingle()
+    const orgId = profile?.org_id
+    if (!orgId) { console.warn('[settingsService] saveNotificationPrefs: no org_id for caller'); return false }
+
+    // Delete only org-default rows (user_id IS NULL) for this org, then re-insert. Do NOT touch user-scoped rows.
+    await supabase.from('notification_prefs').delete().eq('org_id', orgId).is('user_id', null)
+
+    if (prefs.length === 0) return true
     const { error } = await supabase
       .from('notification_prefs')
-      .insert(prefs.map(p => ({ channel: p.channel, event_type: p.event_type, is_enabled: p.is_enabled, config: p.config ?? {} })))
+      .insert(prefs.map(p => ({
+        org_id: orgId,
+        user_id: null,
+        channel: p.channel,
+        event_type: p.event_type,
+        is_enabled: p.is_enabled,
+        config: p.config ?? {},
+      })))
     if (error) { console.warn('[settingsService] saveNotificationPrefs:', error.message); return false }
     return true
   } catch (e) { return false }
@@ -230,10 +269,15 @@ export async function fetchRetentionPolicies(): Promise<RetentionPolicy[]> {
 export async function saveRetentionPolicies(policies: RetentionPolicy[]): Promise<boolean> {
   if (!isSupabaseConfigured() || !supabase) return false
   try {
+    const { data: profile } = await supabase
+      .from('user_profiles').select('org_id').limit(1).maybeSingle()
+    const orgId = profile?.org_id
+    if (!orgId) { console.warn('[settingsService] saveRetentionPolicies: no org_id'); return false }
     for (const p of policies) {
       const { error } = await supabase
         .from('data_retention_policies')
         .upsert({
+          org_id: orgId,
           category: p.category,
           retention_period: p.retention_period,
           auto_archive: p.auto_archive,
@@ -264,9 +308,13 @@ export async function fetchAppearanceConfig(): Promise<AppearanceSettings | null
 export async function saveAppearanceConfig(patch: Partial<AppearanceSettings>): Promise<boolean> {
   if (!isSupabaseConfigured() || !supabase) return false
   try {
+    const { data: profile } = await supabase
+      .from('user_profiles').select('org_id').limit(1).maybeSingle()
+    const orgId = profile?.org_id
+    if (!orgId) { console.warn('[settingsService] saveAppearanceConfig: no org_id'); return false }
     const { error } = await supabase
       .from('appearance_config')
-      .upsert({ ...patch, updated_at: new Date().toISOString() }, { onConflict: 'org_id' })
+      .upsert({ org_id: orgId, ...patch, updated_at: new Date().toISOString() }, { onConflict: 'org_id' })
     if (error) { console.warn('[settingsService] saveAppearanceConfig:', error.message); return false }
     return true
   } catch (e) { return false }
@@ -290,9 +338,13 @@ export async function fetchAuditTrailConfig(): Promise<AuditTrailSettings | null
 export async function saveAuditTrailConfig(patch: Partial<AuditTrailSettings>): Promise<boolean> {
   if (!isSupabaseConfigured() || !supabase) return false
   try {
+    const { data: profile } = await supabase
+      .from('user_profiles').select('org_id').limit(1).maybeSingle()
+    const orgId = profile?.org_id
+    if (!orgId) { console.warn('[settingsService] saveAuditTrailConfig: no org_id'); return false }
     const { error } = await supabase
       .from('audit_trail_config')
-      .upsert({ ...patch, updated_at: new Date().toISOString() }, { onConflict: 'org_id' })
+      .upsert({ org_id: orgId, ...patch, updated_at: new Date().toISOString() }, { onConflict: 'org_id' })
     if (error) { console.warn('[settingsService] saveAuditTrailConfig:', error.message); return false }
     return true
   } catch (e) { return false }
