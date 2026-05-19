@@ -379,8 +379,7 @@ function AppRoutes() {
 
           {/* Governance */}
           <Route path="/controls" element={<Navigate to="/compliance/controls" replace />} />
-          <Route path="/frameworks" element={<Frameworks />} />
-          <Route path="/compliance/frameworks" element={<Frameworks />} />
+          <Route path="/frameworks" element={<Navigate to="/compliance/frameworks" replace />} />
           <Route path="/reg-radar" element={<RegRadar />} />
 
           {/* AI Inventory */}

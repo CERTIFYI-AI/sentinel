@@ -50,7 +50,8 @@ export const useAuthStore = create<AuthState>()(
       loading: false,
 
       login: async (email: string, password: string) => {
-        // ── Demo bypass (no Supabase required) ───────────────────────────
+        // ── Demo bypass (enabled via VITE_DEMO_MODE=true, default on) ────
+        const isDemoMode = import.meta.env.VITE_DEMO_MODE !== 'false';
         const DEMO_USERS: Record<string, User> = {
           'admin@sentinel-grc.com': {
             id: 'demo-ciso-001',
@@ -69,7 +70,7 @@ export const useAuthStore = create<AuthState>()(
             organization: 'Sentinel AI',
           },
         };
-        if (password === 'Demo@12345' && DEMO_USERS[email]) {
+        if (isDemoMode && password === 'Demo@12345' && DEMO_USERS[email]) {
           set({
             isAuthenticated: true,
             user: DEMO_USERS[email],
