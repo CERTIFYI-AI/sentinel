@@ -1,0 +1,19 @@
+# Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
+# Source: https://eur-lex.europa.eu/eli/reg/2024/1689/oj
+id: eu-ai-act
+name: "EU AI Act"
+version: "Regulation (EU) 2024/1689"
+authority: "European Parliament"
+url: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj"
+domain: ai-governance
+controls:
+  - id: "Art.9"
+    title: "Risk management system"
+  - id: "Art.10"
+    title: "Data and data governance"
+  - id: "Art.13"
+    title: "Transparency for high-risk AI"
+  - id: "Art.15"
+    title: "Accuracy, robustness and cybersecurity"
+  - id: "Art.52"
+    title: "Transparency obligations for certain AI systems"

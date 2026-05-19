@@ -1,0 +1,15 @@
+# Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
+# Source: https://www.iso.org/standard/71670.html
+id: iso-27701-2019
+name: "ISO/IEC 27701:2019 (PIMS)"
+version: "2019"
+authority: "ISO/IEC"
+url: "https://www.iso.org/standard/71670.html"
+domain: privacy
+controls:
+  - id: "7.2.1"
+    title: "Identify lawful basis"
+  - id: "7.3.2"
+    title: "Determining information for PII principals"
+  - id: "8.2.1"
+    title: "Customer obligations"

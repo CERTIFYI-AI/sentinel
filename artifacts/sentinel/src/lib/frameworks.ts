@@ -7,7 +7,7 @@
 // typed object. Full control bodies are fetched lazily from the Worker
 // that serves static framework assets.
 
-import manifest from "../../../frameworks/manifest.json";
+import manifest from "../../frameworks/manifest.json";
 
 export interface FrameworkSummary {
   id: string;

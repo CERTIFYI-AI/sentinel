@@ -47,7 +47,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       refreshToken: null,
-      loading: true,
+      loading: false,
 
       login: async (email: string, password: string) => {
         // ── Demo bypass (no Supabase required) ───────────────────────────
@@ -169,6 +169,11 @@ export const useAuthStore = create<AuthState>()(
         token: state.token,
         refreshToken: state.refreshToken,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          state.loading = false;
+        }
+      },
     }
   )
 );

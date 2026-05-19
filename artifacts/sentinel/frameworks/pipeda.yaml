@@ -1,0 +1,15 @@
+# Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
+# Source: https://laws-lois.justice.gc.ca/ENG/ACTS/P-8.6/index.html
+id: pipeda
+name: "Personal Information Protection and Electronic Documents Act"
+version: "S.C. 2000, c. 5"
+authority: "Office of the Privacy Commissioner of Canada"
+url: "https://laws-lois.justice.gc.ca/ENG/ACTS/P-8.6/index.html"
+domain: privacy
+controls:
+  - id: "Sch.1-4.1"
+    title: "Accountability"
+  - id: "Sch.1-4.7"
+    title: "Safeguards"
+  - id: "Sch.1-4.9"
+    title: "Individual access"

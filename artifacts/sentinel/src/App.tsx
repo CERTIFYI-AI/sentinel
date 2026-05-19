@@ -1,11 +1,8 @@
 // @ts-nocheck
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-const queryClient = new QueryClient()
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { TenantProvider } from './context/TenantContext';
-import React from 'react';
-import { lazy, Suspense, useEffect } from 'react';
+import React, { lazy, Suspense, useEffect } from 'react';
 import { PageSkeleton } from './components/ui/PageSkeleton';
 import Sidebar from './components/Sidebar';
 import TopHeader from './components/TopHeader';
@@ -14,6 +11,9 @@ import { useRealtimeEvents } from './hooks/useRealtimeEvents';
 import { useRealtimeInvalidation } from './hooks/useRealtimeInvalidation';
 import { useAuthStore } from './store/authStore';
 import { initSessionGuard, destroySessionGuard } from './lib/sessionGuard';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import ForgotPassword from './pages/ForgotPassword';
 
 const SecurityHome = lazy(() => import('./pages/security/SecurityHome'));
 const SecurityOverview = lazy(() => import('./pages/security/SecurityOverview'));
@@ -58,9 +58,6 @@ const RemediationTracker = lazy(() => import('./pages/RemediationTracker'));
 const Settings = lazy(() => import('./pages/Settings'));
 const SsoProviders = lazy(() => import('./pages/settings/SsoProviders'));
 const Vendors = lazy(() => import('./pages/Vendors'));
-const Login = lazy(() => import('./pages/Login'));
-const Signup = lazy(() => import('./pages/Signup'));
-const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 
 const TrustEngineDashboard = lazy(() => import('./pages/trust-engine/TrustEngineDashboard'));
 const LiveTraceFeed = lazy(() => import('./pages/trust-engine/LiveTraceFeed'));
@@ -301,15 +298,24 @@ function ProtectedLayout() {
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TenantProvider>
-<BrowserRouter>
-      <Routes>
+    <TenantProvider>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </TenantProvider>
+  );
+}
+
+function AppRoutes() {
+  const loading = useAuthStore((s) => s.loading);
+  if (loading === true) return <PageSkeleton />;
+  return (
+    <Routes>
         {/* Public routes — no sidebar/header layout */}
         <Route element={<PublicRoute />}>
-          <Route path="/login" element={<Suspense fallback={<Loading />}><Login /></Suspense>} />
-          <Route path="/signup" element={<Suspense fallback={<Loading />}><Signup /></Suspense>} />
-          <Route path="/forgot-password" element={<Suspense fallback={<Loading />}><ForgotPassword /></Suspense>} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
         </Route>
 
         {/* Fully public — no auth required */}
@@ -564,8 +570,5 @@ export default function App() {
           <Route path="*" element={<Suspense fallback={<Loading />}><NotFound /></Suspense>} />
         </Route>
       </Routes>
-    </BrowserRouter>
-      </TenantProvider>
-</QueryClientProvider>
   );
 }

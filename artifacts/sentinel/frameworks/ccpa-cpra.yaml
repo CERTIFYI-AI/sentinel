@@ -1,0 +1,17 @@
+# Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
+# Source: https://cppa.ca.gov/regulations/
+id: ccpa-cpra
+name: "California Consumer Privacy Act (as amended by CPRA)"
+version: "Cal. Civ. Code § 1798.100 et seq."
+authority: "California AG / CPPA"
+url: "https://cppa.ca.gov/regulations/"
+domain: privacy
+controls:
+  - id: "1798.100"
+    title: "Right to know"
+  - id: "1798.105"
+    title: "Right to delete"
+  - id: "1798.120"
+    title: "Right to opt-out of sale"
+  - id: "1798.150"
+    title: "Private right of action"

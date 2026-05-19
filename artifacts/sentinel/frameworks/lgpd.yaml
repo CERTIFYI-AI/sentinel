@@ -1,0 +1,15 @@
+# Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
+# Source: https://www.gov.br/anpd/pt-br
+id: lgpd
+name: "Lei Geral de Proteção de Dados (Brazil)"
+version: "Lei Nº 13.709/2018"
+authority: "ANPD"
+url: "https://www.gov.br/anpd/pt-br"
+domain: privacy
+controls:
+  - id: "Art.6"
+    title: "Principles"
+  - id: "Art.46"
+    title: "Security"
+  - id: "Art.48"
+    title: "Incident communication"
