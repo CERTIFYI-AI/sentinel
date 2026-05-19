@@ -1,0 +1,67 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist/
+build/
+.vite/
+
+# Environment
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# Supabase local dev
+supabase/.branches/
+supabase/.temp/
+
+# Replit (not used)
+.replit
+replit.nix
+.replitignore
+
+# Development artifacts
+attached_assets/
+scripts/*.pyc
+scripts/__pycache__/
+*.py
+__pycache__/
+*.pyc

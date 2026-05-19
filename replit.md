@@ -1,96 +1,45 @@
-# Sentinel AI GRC — Local Development Setup
+# [Project name]
 
-## Overview
+_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
 
-Enterprise AI Governance, Risk, and Compliance (GRC) platform by Certifyi AI.
+## Run & Operate
 
-## Architecture
+- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm run typecheck` — full typecheck across all packages
+- `pnpm run build` — typecheck + build all packages
+- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
+- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
+- Required env: `DATABASE_URL` — Postgres connection string
 
-- **Frontend**: React 18 + Vite dashboard (`dashboard/`) — runs on port 5173 (dev) or 5000 (production preview)
-- **Backend**: Python FastAPI (`sentinel/`) — runs on port 8000
-- **Database**: Supabase (PostgreSQL with RLS) — production; SQLite (`aiosqlite`) available for offline development
+## Stack
 
-The Vite dev server proxies `/api` requests to the FastAPI backend on port 8000.
-The FastAPI backend also reverse-proxies all non-API GET requests to the Vite server.
+- pnpm workspaces, Node.js 24, TypeScript 5.9
+- API: Express 5
+- DB: PostgreSQL + Drizzle ORM
+- Validation: Zod (`zod/v4`), `drizzle-zod`
+- API codegen: Orval (from OpenAPI spec)
+- Build: esbuild (CJS bundle)
 
-## Quick Start
+## Where things live
 
-### 1. Clone and install
+_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
 
-```bash
-git clone https://github.com/CERTIFYI-AI/sentinel.git
-cd sentinel
-```
+## Architecture decisions
 
-### 2. Frontend setup
+_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
 
-```bash
-cd dashboard
-npm install
-cp .env.example .env.local
-# Add your Supabase URL and anon key to .env.local
-npm run dev        # http://localhost:5173
-```
+## Product
 
-### 3. Backend setup (optional — required for proxy/fact-check features)
+_Describe the high-level user-facing capabilities of this app once they exist._
 
-```bash
-python -m venv venv
-source venv/bin/activate     # Windows: venv\Scripts\activate
-pip install -e ".[dev]"
-cp .env.example .env
-uvicorn sentinel.api.main:app --host 0.0.0.0 --port 8000 --reload
-```
+## User preferences
 
-## Workflows
+_Populate as you build — explicit user instructions worth remembering across sessions._
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start Vite dev server (port 5173) |
-| `npm run build` | Production build |
-| `npm run typecheck` | TypeScript strict validation |
-| `npm run test` | Vitest unit tests |
-| `npm run lint` | ESLint |
+## Gotchas
 
-## Key Files
+_Populate as you build — sharp edges, "always run X before Y" rules._
 
-| File | Purpose |
-|------|---------|
-| `sentinel/api/main.py` | FastAPI app entry point, all routers registered |
-| `sentinel/api/db.py` | SQLAlchemy async models + database engine |
-| `sentinel/config.py` | Pydantic settings (env prefix: `SENTINEL_`) |
-| `dashboard/vite.config.ts` | Vite config with `/api` proxy to backend |
-| `dashboard/src/lib/supabaseClient.ts` | Supabase singleton client |
-| `dashboard/package.json` | Frontend dependencies |
-| `pyproject.toml` | Python backend dependencies |
+## Pointers
 
-## Environment Variables
-
-### Frontend (`dashboard/.env.local`)
-
-| Key | Description |
-|-----|-------------|
-| `VITE_SUPABASE_URL` | Supabase project URL |
-| `VITE_SUPABASE_ANON_KEY` | Supabase anonymous/public key |
-
-### Backend (`.env`)
-
-| Key | Description |
-|-----|-------------|
-| `SENTINEL_DATABASE_URL` | PostgreSQL asyncpg connection string (or leave unset for SQLite) |
-| `SENTINEL_SECRET_KEY` | JWT signing secret — minimum 32 characters. Generate: `openssl rand -hex 32` |
-| `OPENAI_API_KEY` | Optional — required for AI advisor and fact-check features |
-
-## Optional Services
-
-| Service | Environment Variable | Purpose |
-|---------|---------------------|---------|
-| Redis | `SENTINEL_REDIS_URL` | Production circuit breaker (falls back to in-memory) |
-| S3-compatible storage | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_BUCKET` | Evidence file uploads |
-
-## Demo Credentials
-
-After running `npm run seed` against a Supabase-connected instance:
-
-- **Email:** admin@sentinel-financial.com
-- **Password:** Sentinel2026!
+- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details

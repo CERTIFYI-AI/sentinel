@@ -1,67 +1,49 @@
-# Dependencies
-node_modules/
-.pnp
-.pnp.js
+# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
 
-# Build output
-dist/
-build/
-.vite/
+# compiled output
+dist
+tmp
+out-tsc
+*.tsbuildinfo
+.expo
+.expo-shared
 
-# Environment
-.env
-.env.local
-.env.*.local
-.env.production
+# dependencies
+node_modules
 
-# Test coverage
-coverage/
-.nyc_output/
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
 
-# Logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Editor
-.vscode/
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
 !.vscode/extensions.json
-.idea/
-*.swp
-*.swo
-*~
 
-# OS
+# misc
+/.sass-cache
+/connect.lock
+/coverage
+/libpeerconnection.log
+npm-debug.log
+yarn-error.log
+testem.log
+/typings
+
+# System Files
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
 Thumbs.db
 
-# TypeScript
-*.tsbuildinfo
+.cursor/rules/nx-rules.mdc
+.github/instructions/nx.instructions.md
 
-# Playwright
-/test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache/
-
-# Supabase local dev
-supabase/.branches/
-supabase/.temp/
-
-# Replit (not used)
-.replit
-replit.nix
-.replitignore
-
-# Development artifacts
-attached_assets/
-scripts/*.pyc
-scripts/__pycache__/
-*.py
-__pycache__/
-*.pyc
+# Replit
+.cache/
+.local/

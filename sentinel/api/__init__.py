@@ -1,1 +1,0 @@
-"""Certifyi Sentinel API package."""
