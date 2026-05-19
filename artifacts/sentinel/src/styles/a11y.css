@@ -1,0 +1,87 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (c) 2026 CERTIFYI-AI. All rights reserved. */
+
+/* WCAG 2.2 AA a11y primitives */
+
+/* Screen-reader-only utility, visible on focus */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+.focus\:not-sr-only:focus {
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  padding: revert !important;
+  margin: revert !important;
+  overflow: visible !important;
+  clip: auto !important;
+  white-space: normal !important;
+}
+
+/* Global focus-visible ring — WCAG 2.2 SC 2.4.11 Focus Not Obscured */
+:focus-visible {
+  outline: 2px solid hsl(var(--ring, 142 47% 38%));
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Reduce-motion honoring, WCAG 2.2 SC 2.3.3 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+html[data-reduce-motion="true"] *,
+html[data-reduce-motion="true"] *::before,
+html[data-reduce-motion="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+/* Minimum target size — WCAG 2.2 SC 2.5.8 (24x24 CSS px) */
+button,
+[role="button"],
+a,
+input[type="checkbox"],
+input[type="radio"] {
+  min-height: 24px;
+  min-width: 24px;
+}
+
+/* High-contrast override honoring forced-colors */
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 3px solid CanvasText;
+  }
+}
+
+/* White-label brand overrides (set by applyTheme) */
+:root {
+  --brand-primary: oklch(0.55 0.12 262);
+  --brand-primary-foreground: oklch(0.98 0.005 262);
+  --brand-accent: oklch(0.70 0.14 262);
+}
+
+/* Density modes */
+html[data-density="compact"] {
+  --ui-row-height: 32px;
+  --ui-padding-y: 0.375rem;
+}
+html[data-density="comfortable"] {
+  --ui-row-height: 40px;
+  --ui-padding-y: 0.5rem;
+}

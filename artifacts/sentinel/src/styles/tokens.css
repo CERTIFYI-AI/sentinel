@@ -1,0 +1,246 @@
+@font-face {
+  font-family: 'Outfit Variable';
+  font-style: normal;
+  font-display: swap;
+  size-adjust: 100%;
+  ascent-override: 95%;
+  descent-override: 25%;
+  line-gap-override: 0%;
+}
+
+:root {
+  /* ── Typography — ADR-0007: Outfit Variable, self-hosted, no CDN fallback ─── */
+  --font-sans: 'Outfit Variable', 'Outfit';
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --bg-page:     240 5% 96%;
+  --bg-surface:  0 0% 100%;
+  --bg-raised:   240 5% 98%;
+  --bg-sunken:   240 5% 93%;
+  --bg-muted:    240 5% 95%;
+  --border:      240 6% 88%;
+  --border-mid:  240 6% 80%;
+  --text-1:      240 10% 4%;
+  --text-2:      240 6% 22%;
+  --text-3:      240 4% 44%;
+  --text-4:      240 4% 62%;
+
+  /* Aliases for globals.css compatibility */
+  --text-primary:    var(--text-1);
+  --text-secondary:  var(--text-2);
+  --text-tertiary:   var(--text-3);
+  --text-muted:      var(--text-4);
+  --bg-surface-raised:  var(--bg-raised);
+  --bg-surface-sunken:  var(--bg-sunken);
+  --border-subtle:   var(--bg-muted);
+  --border-default:  var(--border);
+  --border-strong:   var(--border-mid);
+  --interactive-focus: var(--brand);
+  --brand:       142 47% 38%;
+  --brand-hover: 142 47% 31%;
+  --brand-subtle:142 47% 96%;
+
+  --s-ok-bg: 142 69% 96%; --s-ok-tx: 142 69% 28%; --s-ok-br: 142 69% 82%;
+  --s-wn-bg: 38 92% 96%;  --s-wn-tx: 32 90% 33%;  --s-wn-br: 38 92% 78%;
+  --s-er-bg: 0 86% 97%;   --s-er-tx: 0 72% 35%;   --s-er-br: 0 86% 85%;
+  --s-in-bg: 214 100% 97%;--s-in-tx: 213 60% 33%; --s-in-br: 213 100% 84%;
+  --s-nt-bg: 240 5% 96%;  --s-nt-tx: 240 4% 46%;  --s-nt-br: 240 6% 86%;
+
+  --r-cr-bg: 0 86% 97%;   --r-cr-tx: 0 72% 35%;   --r-cr-br: 0 86% 85%;
+  --r-hi-bg: 24 100% 97%; --r-hi-tx: 21 80% 33%;  --r-hi-br: 24 100% 82%;
+  --r-md-bg: 38 92% 96%;  --r-md-tx: 32 90% 33%;  --r-md-br: 38 92% 78%;
+  --r-lo-bg: 142 69% 96%; --r-lo-tx: 142 69% 28%; --r-lo-br: 142 69% 82%;
+
+  --shadow-sm: 0 1px 3px rgb(0 0 0/8%);
+  --shadow-md: 0 4px 8px rgb(0 0 0/8%);
+  --shadow-lg: 0 10px 20px rgb(0 0 0/8%);
+
+  --destructive: 0 72% 51%;
+}
+
+/* Explicit .light class — mirrors :root so ThemeProvider's .light on <html> resolves correctly */
+.light {
+  --bg-page:     240 5% 96%;
+  --bg-surface:  0 0% 100%;
+  --bg-raised:   240 5% 98%;
+  --bg-sunken:   240 5% 93%;
+  --bg-muted:    240 5% 95%;
+  --border:      240 6% 88%;
+  --border-mid:  240 6% 80%;
+  --text-1:      240 10% 4%;
+  --text-2:      240 6% 22%;
+  --text-3:      240 4% 44%;
+  --text-4:      240 4% 62%;
+  --text-primary:    var(--text-1);
+  --text-secondary:  var(--text-2);
+  --text-tertiary:   var(--text-3);
+  --text-muted:      var(--text-4);
+  --brand:       142 47% 38%;
+  --brand-hover: 142 47% 31%;
+  --brand-subtle:142 47% 96%;
+}
+
+.dark {
+  --bg-page:    224 15% 8%;
+  --bg-surface: 224 15% 11%;
+  --bg-raised:  224 15% 14%;
+  --bg-sunken:  224 15% 6%;
+  --bg-muted:   224 15% 13%;
+  --border:     224 15% 18%;
+  --border-mid: 224 15% 24%;
+  --text-1:     210 40% 96%;
+  --text-2:     215 20% 75%;
+  --text-3:     215 15% 55%;
+  --text-4:     215 12% 38%;
+  --brand:       142 47% 50%;
+  --brand-hover: 142 47% 44%;
+  --brand-subtle:142 20% 14%;
+
+  --s-ok-bg: 142 30% 12%; --s-ok-tx: 142 60% 65%; --s-ok-br: 142 30% 22%;
+  --s-wn-bg: 38 30% 12%;  --s-wn-tx: 38 80% 65%;  --s-wn-br: 38 30% 22%;
+  --s-er-bg: 0 30% 12%;   --s-er-tx: 0 60% 65%;   --s-er-br: 0 30% 22%;
+  --s-in-bg: 214 30% 12%; --s-in-tx: 214 60% 65%; --s-in-br: 214 30% 22%;
+  --s-nt-bg: 224 15% 16%; --s-nt-tx: 215 15% 55%; --s-nt-br: 224 15% 24%;
+
+  --r-cr-bg: 0 30% 12%;   --r-cr-tx: 0 60% 65%;   --r-cr-br: 0 30% 22%;
+  --r-hi-bg: 24 30% 12%;  --r-hi-tx: 24 70% 65%;  --r-hi-br: 24 30% 22%;
+  --r-md-bg: 38 30% 12%;  --r-md-tx: 38 80% 65%;  --r-md-br: 38 30% 22%;
+  --r-lo-bg: 142 30% 12%; --r-lo-tx: 142 60% 65%; --r-lo-br: 142 30% 22%;
+
+  --shadow-sm: 0 1px 3px rgb(0 0 0/40%);
+  --shadow-md: 0 4px 8px rgb(0 0 0/40%);
+  --shadow-lg: 0 10px 20px rgb(0 0 0/40%);
+
+  --destructive: 0 62% 60%;
+}
+
+* { border-radius: 0 !important; }
+[data-avatar] { border-radius: 9999px !important; }
+
+html {
+  scroll-behavior: smooth;
+}
+
+html, body {
+  font-family: var(--font-sans);
+}
+
+body {
+  font-family: var(--font-sans);
+  background: hsl(var(--bg-page));
+  color: hsl(var(--text-1));
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbars — matches the design system */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border-mid));
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--text-4));
+}
+
+/* Focus-visible ring using brand color */
+:focus-visible {
+  outline: 2px solid hsl(var(--brand));
+  outline-offset: 2px;
+}
+
+/* Selection color */
+::selection {
+  background: hsl(var(--brand) / 20%);
+  color: hsl(var(--text-1));
+}
+
+/* Autofill input theming */
+input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 100px hsl(var(--bg-surface)) inset !important;
+  -webkit-text-fill-color: hsl(var(--text-1)) !important;
+}
+
+/* Transition for theme switching */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color;
+  transition-duration: 150ms;
+  transition-timing-function: ease;
+}
+/* Don't animate layout/transform properties */
+button, a, input, textarea, select {
+  transition-property: background-color, border-color, color, opacity, box-shadow;
+}
+
+/* ── Accent Color Schemes ─────────────────────────────── */
+/* Default: Emerald (already defined in :root) */
+
+/* Blue */
+:root.accent-blue {
+  --brand:        217 91% 50%;
+  --brand-hover:  217 91% 43%;
+  --brand-subtle: 217 91% 96%;
+  --r-lo-bg: 217 91% 96%; --r-lo-tx: 217 71% 30%; --r-lo-br: 217 91% 82%;
+}
+.dark.accent-blue {
+  --brand:        217 91% 62%;
+  --brand-hover:  217 91% 55%;
+  --brand-subtle: 217 40% 14%;
+}
+
+/* Purple */
+:root.accent-purple {
+  --brand:        263 70% 50%;
+  --brand-hover:  263 70% 43%;
+  --brand-subtle: 263 70% 96%;
+  --r-lo-bg: 263 70% 96%; --r-lo-tx: 263 55% 32%; --r-lo-br: 263 70% 82%;
+}
+.dark.accent-purple {
+  --brand:        263 70% 65%;
+  --brand-hover:  263 70% 58%;
+  --brand-subtle: 263 30% 14%;
+}
+
+/* Teal */
+:root.accent-teal {
+  --brand:        174 72% 36%;
+  --brand-hover:  174 72% 29%;
+  --brand-subtle: 174 72% 96%;
+  --r-lo-bg: 174 72% 96%; --r-lo-tx: 174 60% 26%; --r-lo-br: 174 72% 80%;
+}
+.dark.accent-teal {
+  --brand:        174 72% 48%;
+  --brand-hover:  174 72% 41%;
+  --brand-subtle: 174 30% 13%;
+}
+
+/* Orange */
+:root.accent-orange {
+  --brand:        25 95% 45%;
+  --brand-hover:  25 95% 38%;
+  --brand-subtle: 25 95% 96%;
+  --r-lo-bg: 25 95% 96%; --r-lo-tx: 25 75% 30%; --r-lo-br: 25 95% 80%;
+}
+.dark.accent-orange {
+  --brand:        25 95% 58%;
+  --brand-hover:  25 95% 51%;
+  --brand-subtle: 25 40% 14%;
+}
+
+/* Rose */
+:root.accent-rose {
+  --brand:        346 77% 45%;
+  --brand-hover:  346 77% 38%;
+  --brand-subtle: 346 77% 96%;
+  --r-lo-bg: 346 77% 96%; --r-lo-tx: 346 60% 30%; --r-lo-br: 346 77% 82%;
+}
+.dark.accent-rose {
+  --brand:        346 77% 58%;
+  --brand-hover:  346 77% 51%;
+  --brand-subtle: 346 30% 14%;
+}
