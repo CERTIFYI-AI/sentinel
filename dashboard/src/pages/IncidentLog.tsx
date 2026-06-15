@@ -33,6 +33,29 @@ import { Label } from '../components/ui/label';
 import { severityColor, statusColor, formatDate } from '../data/seed';
 type Incident = any;
 
+function normalizeIncident(inc: any): any {
+  if (!inc) return inc;
+  return {
+    ...inc,
+    id: inc.id,
+    title: inc.title || '',
+    severity: inc.severity || 'medium',
+    status: inc.status || 'open',
+    category: inc.category || '',
+    description: inc.description || '',
+    reporter: inc.reporter || 'System',
+    assignee: inc.assignee || 'Unassigned',
+    reportedDate: inc.reportedDate ?? inc.reported_date ?? inc.created_at ?? new Date().toISOString().split('T')[0],
+    resolvedDate: inc.resolvedDate ?? inc.resolved_date ?? '',
+    linkedModel: inc.linkedModel ?? inc.linked_model ?? inc.affected_system ?? '',
+    rootCause: inc.rootCause ?? inc.root_cause ?? '',
+    correctiveActions: inc.correctiveActions ?? inc.corrective_actions ?? [],
+    timeline: inc.timeline ?? inc.metadata?.timeline ?? [
+      { date: inc.reported_date ?? inc.reportedDate ?? inc.created_at ?? new Date().toISOString().split('T')[0], action: 'Incident reported', actor: inc.reporter || 'System' }
+    ],
+  };
+}
+
 // Local fallback constants
 const USERS: any[] = [
   { id: 'u1', name: 'Dr. Sarah Chen' },
@@ -228,7 +251,8 @@ function PhaseTimeline({ incident }: { incident: Incident }) {
     mitigation: null,
     resolution: null,
   };
-  for (const entry of incident.timeline) {
+  const timeline = incident.timeline || [];
+  for (const entry of timeline) {
     const lower = entry.action.toLowerCase();
     if (lower.includes('investigat') || lower.includes('escalat') || lower.includes('root cause')) {
       if (!phaseTimestamps.investigation) phaseTimestamps.investigation = entry.date;
@@ -335,6 +359,11 @@ function PhaseTimeline({ incident }: { incident: Incident }) {
 export default function IncidentLog() {
   const { orgName } = useSettingsStore();
   const { incidents, isLoading, save: saveIncident, remove: removeIncidentMutation } = useIncidentData();
+  
+  const normalizedIncidents = useMemo(() => {
+    return (incidents || []).map(normalizeIncident);
+  }, [incidents]);
+
   if (isLoading) return <PageSkeleton />;
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -367,22 +396,22 @@ export default function IncidentLog() {
 
   // ── Filtering ─────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
-    return incidents.filter(inc => {
+    return normalizedIncidents.filter(inc => {
       if (search && !inc.title.toLowerCase().includes(search.toLowerCase()) && !inc.id.toLowerCase().includes(search.toLowerCase())) return false;
       if (filterStatus !== 'all' && inc.status !== filterStatus) return false;
       return true;
     });
-  }, [incidents, search, filterStatus]);
+  }, [normalizedIncidents, search, filterStatus]);
 
   // ── Metrics ───────────────────────────────────────────────────────────────
-  const totalIncidents = incidents.length;
-  const criticalCount = incidents.filter(i => i.severity === 'critical').length;
-  const openInvestigating = incidents.filter(i => i.status === 'open' || i.status === 'investigating' || i.status === 'mitigating').length;
-  const resolvedCount = incidents.filter(i => i.status === 'resolved').length;
+  const totalIncidents = normalizedIncidents.length;
+  const criticalCount = normalizedIncidents.filter(i => i.severity === 'critical').length;
+  const openInvestigating = normalizedIncidents.filter(i => i.status === 'open' || i.status === 'investigating' || i.status === 'mitigating').length;
+  const resolvedCount = normalizedIncidents.filter(i => i.status === 'resolved').length;
 
   // ── Open detail ───────────────────────────────────────────────────────────
   const openDetail = (inc: Incident) => {
-    setSelectedIncident(inc);
+    setSelectedIncident(normalizeIncident(inc));
     setSheetOpen(true);
   };
 
@@ -401,7 +430,7 @@ export default function IncidentLog() {
   // ── Resolve ───────────────────────────────────────────────────────────────
   const handleResolve = async () => {
     if (rootCauseInput.length < 100) return;
-    const inc = incidents.find((i: any) => i.id === resolveId);
+    const inc = normalizedIncidents.find((i: any) => i.id === resolveId);
     if (inc) {
       try { await saveIncident({ ...inc, status: 'resolved', root_cause: rootCauseInput }); } catch {}
     }
@@ -453,7 +482,7 @@ export default function IncidentLog() {
               {orgName} · AI incident tracking & response management
             </p>
           </div>
-          <Button variant="outline" onClick={() => exportCsv(incidents, 'incidents.csv')} style={{ borderRadius: 0 }}>Export CSV</Button>
+          <Button variant="outline" onClick={() => exportCsv(normalizedIncidents, 'incidents.csv')} style={{ borderRadius: 0 }}>Export CSV</Button>
           <Button onClick={() => setAddOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
             <Plus size={14} className="mr-1" />Report Incident
           </Button>
@@ -700,7 +729,7 @@ export default function IncidentLog() {
 
                     <div className="space-y-2 mt-4">
                       <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Activity Log</p>
-                      {selectedIncident.timeline.map((entry, i) => (
+                      {(selectedIncident.timeline || []).map((entry, i) => (
                         <div key={i} className="flex gap-3 p-2" style={{ borderLeft: '2px solid hsl(var(--brand))', borderRadius: 0 }}>
                           <div className="flex items-start gap-2 w-full">
                             <div className="w-5 h-5 flex items-center justify-center shrink-0 mt-0.5"
@@ -711,7 +740,7 @@ export default function IncidentLog() {
                               <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{entry.action}</p>
                               <div className="flex items-center justify-between">
                                 <p className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>{formatDate(entry.date)}</p>
-                                <p className="text-[10px] font-medium" style={{ color: 'hsl(var(--brand))' }}>{entry.actor}</p>
+                                <p className="text-[10px] font-medium" style={{ color: 'brand' }}>{entry.actor}</p>
                               </div>
                             </div>
                           </div>
@@ -798,7 +827,7 @@ export default function IncidentLog() {
                   {/* Corrective Actions */}
                   <TabsContent value="corrective" className="space-y-4 mt-4">
                     <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Corrective Actions</p>
-                    {selectedIncident.correctiveActions.map((action, i) => (
+                    {(selectedIncident.correctiveActions || []).map((action, i) => (
                       <div key={i} className="flex items-start gap-2 p-2" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                         <CaretRight size={12} style={{ color: 'hsl(var(--brand))', marginTop: 2 }} />
                         <span className="text-sm" style={{ color: 'hsl(var(--text-1))' }}>{action}</span>

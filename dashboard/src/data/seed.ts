@@ -607,12 +607,16 @@ export const GAPS: Gap[] = [
 ];
 
 // ── Helpers ────────────────────────────────────
-export const severityColor = (s: Severity) => ({
-  critical: { bg: 'hsl(var(--r-cr-bg))', text: 'hsl(var(--r-cr-tx))', border: 'hsl(var(--r-cr-br))' },
-  high:     { bg: 'hsl(var(--r-hi-bg))', text: 'hsl(var(--r-hi-tx))', border: 'hsl(var(--r-hi-br))' },
-  medium:   { bg: 'hsl(var(--r-md-bg))', text: 'hsl(var(--r-md-tx))', border: 'hsl(var(--r-md-br))' },
-  low:      { bg: 'hsl(var(--r-lo-bg))', text: 'hsl(var(--r-lo-tx))', border: 'hsl(var(--r-lo-br))' },
-}[s]);
+export const severityColor = (s: string | undefined | null) => {
+  const key = (s || 'medium').toLowerCase();
+  const map: Record<string, { bg: string; text: string; border: string }> = {
+    critical: { bg: 'hsl(var(--r-cr-bg))', text: 'hsl(var(--r-cr-tx))', border: 'hsl(var(--r-cr-br))' },
+    high:     { bg: 'hsl(var(--r-hi-bg))', text: 'hsl(var(--r-hi-tx))', border: 'hsl(var(--r-hi-br))' },
+    medium:   { bg: 'hsl(var(--r-md-bg))', text: 'hsl(var(--r-md-tx))', border: 'hsl(var(--r-md-br))' },
+    low:      { bg: 'hsl(var(--r-lo-bg))', text: 'hsl(var(--r-lo-tx))', border: 'hsl(var(--r-lo-br))' },
+  };
+  return map[key] || map.medium;
+};
 
 export const statusColor = (s: string) => {
   const map: Record<string, { bg: string; text: string; border: string }> = {
