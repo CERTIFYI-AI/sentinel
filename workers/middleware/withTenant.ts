@@ -74,7 +74,7 @@ async function verifyHs256(
     enc.encode(secret),
     { name: 'HMAC', hash: 'SHA-256' },
     false,
-    ['verify'],
+    ['verify', 'sign'],
   )
   const signed = enc.encode(`${headerB64}.${payloadB64}`)
   const sigBytes = b64urlDecode(sigB64)

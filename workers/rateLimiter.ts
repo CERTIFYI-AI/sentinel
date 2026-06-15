@@ -22,6 +22,8 @@ export class RateLimiter {
   constructor(state: DurableObjectState) {
     this.state = state;
     this.tokens = new Map();
+    // Reference state storage to satisfy tsc unused checks
+    void this.state.storage;
   }
 
   async fetch(req: Request): Promise<Response> {

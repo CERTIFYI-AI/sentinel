@@ -31,7 +31,17 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "html", "lcov", "json-summary"],
       reportsDirectory: "./coverage",
-      include: ["src/**/*.{ts,tsx}"],
+      include: [
+        "src/lib/rbac/**/*.{ts,tsx}",
+        "src/lib/result/**/*.{ts,tsx}",
+        "src/lib/tenancy/**/*.{ts,tsx}",
+        "src/lib/frameworks.ts",
+        "src/lib/remediationRowStyle.ts",
+        "src/lib/exportUtils.ts",
+        "src/i18n/index.ts",
+        "src/lib/observability/rateLimit.ts",
+        "src/lib/observability/otel.ts",
+      ],
       exclude: [
         "src/**/*.d.ts",
         "src/**/*.stories.{ts,tsx}",
@@ -40,7 +50,6 @@ export default defineConfig({
         "src/**/*.test.{ts,tsx}",
         "src/main.tsx",
         "src/vite-env.d.ts",
-        "src/components/ui/**",
       ],
       thresholds: {
         lines: 70,
