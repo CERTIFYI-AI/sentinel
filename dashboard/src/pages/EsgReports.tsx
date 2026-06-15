@@ -44,7 +44,7 @@ export default function EsgReports() {
   if (isLoading) return <PageSkeleton />
 
   // Normalize items
-  const reports = items.map((r: any) => ({
+  const reports = (items || []).map((r: any) => ({
     id: r.id,
     title: r.title || r.metadata?.title || `ESG Report ${r.id}`,
     period: r.period || r.metadata?.period || '',

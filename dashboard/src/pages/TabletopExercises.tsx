@@ -74,7 +74,7 @@ export default function TabletopExercises() {
   const conducted = items.filter(i => i.status === "Completed").length;
   const avgScore = Math.round(items.filter(i => i.readinessScore > 0).reduce((a, b) => a + b.readinessScore, 0) / (items.filter(i => i.readinessScore > 0).length || 1));
   const nextExercise = items.filter(i => i.status === "Planned" && i.date).sort((a, b) => a.date.localeCompare(b.date))[0]?.date || "—";
-  const totalParticipants = new Set(items.flatMap(i => i.participants)).size;
+  const totalParticipants = new Set(items.flatMap(i => i.participants || [])).size;
 
   return (
     <div className="p-6 space-y-5 max-w-[1400px]">
@@ -160,7 +160,7 @@ export default function TabletopExercises() {
                 <td className="px-4 py-3 text-xs text-[hsl(var(--text-2))]">{item.date}</td>
                 <td className="px-4 py-3 text-xs text-[hsl(var(--text-2))]">{item.duration}</td>
                 <td className="px-4 py-3 text-xs text-[hsl(var(--text-2))]">
-                  <span className="flex items-center gap-1"><Users size={12} />{item.participants.length}</span>
+                  <span className="flex items-center gap-1"><Users size={12} />{(item.participants || []).length}</span>
                 </td>
                 <td className="px-4 py-3">
                   {item.readinessScore > 0 ? (
@@ -262,7 +262,7 @@ export default function TabletopExercises() {
           )}
           <FormSection title="Participants">
             <div className="flex flex-wrap gap-1">
-              {viewItem.participants.map((p: string) => (
+              {(viewItem.participants || []).map((p: string) => (
                 <span key={p} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-[hsl(var(--muted))] text-[hsl(var(--text-2))]"><Users size={10} />{p}</span>
               ))}
             </div>

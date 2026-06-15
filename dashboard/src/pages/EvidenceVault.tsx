@@ -124,15 +124,16 @@ export default function EvidenceVault() {
   const [verifyingRow, setVerifyingRow] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState('vault');
 
-  const types = Array.from(new Set(evidence.map(e => e.type)));
-  const filtered = evidence.filter(e => {
+  const evidenceList = evidence || [];
+  const types = Array.from(new Set(evidenceList.map(e => e.type)));
+  const filtered = evidenceList.filter(e => {
     const q = search.toLowerCase();
     const matchSearch = !q || e.title.toLowerCase().includes(q) || e.source.toLowerCase().includes(q) || e.framework.toLowerCase().includes(q);
     const matchType = filterType === 'all' || e.type === filterType;
     return matchSearch && matchType;
   });
 
-  const synced = evidence.filter(e => e.status === 'synced').length;
+  const synced = evidenceList.filter(e => e.status === 'synced').length;
   const totalChain = chain.length > 0 ? chain[0].seq : 0;
 
   const stats = [

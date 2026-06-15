@@ -94,9 +94,17 @@ export default function GovernanceMesh() {
 
   const statusColor = (s: string) => ({ completed: 'bg-green-100 text-green-700', processing: 'bg-blue-100 text-blue-700', failed: 'bg-red-100 text-red-700', pending: 'bg-yellow-100 text-yellow-700', dead_letter: 'bg-red-200 text-red-800' } as Record<string,string>)[s] ?? 'bg-zinc-100 text-zinc-600'
 
-  const enabledCount = agents.filter(a => a.is_enabled).length
-  const completedToday = events.filter(e => e.status === 'completed' && new Date(e.created_at) > new Date(Date.now() - 86400000)).length
-  const errorRate = executions.length > 0 ? ((executions.filter(e => e.status === 'failed').length / executions.length) * 100).toFixed(1) : '0.0'
+  const agentsList = agents || []
+  const eventsList = events || []
+  const executionsList = executions || []
+
+  const enabledCount = agentsList.filter(a => a.is_enabled).length
+  const completedToday = eventsList.filter(e => {
+    if (!e || !e.created_at) return false;
+    const date = new Date(e.created_at);
+    return e.status === 'completed' && !isNaN(date.getTime()) && date > new Date(Date.now() - 86400000);
+  }).length
+  const errorRate = executionsList.length > 0 ? ((executionsList.filter(e => e.status === 'failed').length / executionsList.length) * 100).toFixed(1) : '0.0'
 
   if (loading) return <div className="p-8 text-zinc-400 animate-pulse">Loading governance mesh...</div>
 
@@ -104,15 +112,15 @@ export default function GovernanceMesh() {
     <main id="main-content" className="p-6 space-y-6 max-w-7xl mx-auto">
       <div>
         <h1 className="text-2xl font-semibold text-zinc-900">Autonomous Governance Mesh</h1>
-        <p className="text-zinc-500 text-sm mt-1">Real-time event bus monitoring — {agents.length} agents across 3 cascade flows.</p>
+        <p className="text-zinc-500 text-sm mt-1">Real-time event bus monitoring — {agentsList.length} agents across 3 cascade flows.</p>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Active Agents', value: enabledCount, sub: `${agents.length} total` },
+          { label: 'Active Agents', value: enabledCount, sub: `${agentsList.length} total` },
           { label: 'Events Today', value: completedToday, sub: 'completed' },
-          { label: 'Total Events', value: events.length, sub: 'in window' },
+          { label: 'Total Events', value: eventsList.length, sub: 'in window' },
           { label: 'Error Rate', value: `${errorRate}%`, sub: 'agent executions' },
         ].map((k) => (
           <div key={k.label} className="border border-zinc-200 rounded p-4">
@@ -131,8 +139,8 @@ export default function GovernanceMesh() {
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" title="Live" />
           </div>
           <div className="divide-y divide-zinc-100 max-h-96 overflow-y-auto">
-            {events.length === 0 && <p className="p-4 text-sm text-zinc-400 text-center">No events yet. Register a model to trigger the cascade.</p>}
-            {events.map((e) => (
+            {eventsList.length === 0 && <p className="p-4 text-sm text-zinc-400 text-center">No events yet. Register a model to trigger the cascade.</p>}
+            {eventsList.map((e) => (
               <button key={e.id} onClick={() => setSelectedEvent(e.id === selectedEvent ? null : e.id)}
                 className={`w-full text-left p-3 hover:bg-zinc-50 transition-colors ${selectedEvent === e.id ? 'bg-zinc-50' : ''}`}>
                 <div className="flex items-center gap-2">
@@ -157,7 +165,7 @@ export default function GovernanceMesh() {
             <h2 className="font-medium text-zinc-900">Agent Registry</h2>
           </div>
           <div className="divide-y divide-zinc-100 max-h-96 overflow-y-auto">
-            {agents.map((a) => (
+            {agentsList.map((a) => (
               <div key={a.id} className="p-3 flex items-start gap-3">
                 <div className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${a.is_enabled ? 'bg-green-500' : 'bg-zinc-300'}`} />
                 <div className="flex-1 min-w-0">

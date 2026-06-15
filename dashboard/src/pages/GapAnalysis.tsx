@@ -67,7 +67,7 @@ export default function GapAnalysis() {
   if (isLoading) return <PageSkeleton />;
 
   // Derive gaps from controls that are not fully implemented
-  const derivedGaps: Gap[] = controls
+  const derivedGaps: Gap[] = (controls || [])
     .filter((c: any) => c.status && !['Implemented', 'implemented'].includes(c.status))
     .map((c: any) => ({
       id: c.id || c.control_id || '',
@@ -160,7 +160,7 @@ export default function GapAnalysis() {
     count: gaps.filter((g: Gap) => g.severity === sev).length,
   }));
 
-  const frameworkData = fwList.map((fw: any) => ({
+  const frameworkData = (fwList || []).map((fw: any) => ({
     name: (fw.name || '').replace('ISO/IEC ', '').replace('OWASP ', '').split(' ')[0],
     gaps: gaps.filter((g: any) => g.framework === fw.name).length,
     fullName: fw.name,
@@ -505,7 +505,7 @@ export default function GapAnalysis() {
                   onChange={e => setFormData(prev => ({ ...prev, framework: e.target.value }))}
                   style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}
                 >
-                  {fwList.map((fw: any) => <option key={fw.id} value={fw.name}>{fw.name}</option>)}
+                  {(fwList || []).map((fw: any) => <option key={fw.id} value={fw.name}>{fw.name}</option>)}
                 </select>
               </div>
               <div>

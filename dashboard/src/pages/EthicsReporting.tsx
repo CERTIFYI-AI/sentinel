@@ -55,7 +55,7 @@ const SEED: EthicsReport[] = [
 ];
 
 function categoryColor(c: ReportCategory) {
-  const map: Record<ReportCategory, { bg: string; text: string }> = {
+  const map: Record<string, { bg: string; text: string }> = {
     'AI Bias/Discrimination': { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))' },
     'Safety Concern': { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))' },
     'Privacy Violation': { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))' },
@@ -64,7 +64,7 @@ function categoryColor(c: ReportCategory) {
     'Ethical Concern': { bg: 'hsl(var(--brand-subtle))', text: 'hsl(var(--brand))' },
     'Other': { bg: 'hsl(var(--bg-raised))', text: 'hsl(var(--text-3))' },
   };
-  return map[c];
+  return map[c] || { bg: 'hsl(var(--bg-raised))', text: 'hsl(var(--text-3))' };
 }
 
 function severityColor(s: ReportSeverity) {
@@ -73,6 +73,7 @@ function severityColor(s: ReportSeverity) {
     case 'High': return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))' };
     case 'Medium': return { bg: 'hsl(var(--brand-subtle))', text: 'hsl(var(--brand))' };
     case 'Low': return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))' };
+    default: return { bg: 'hsl(var(--bg-raised))', text: 'hsl(var(--text-3))' };
   }
 }
 
@@ -82,6 +83,7 @@ function statusColor(s: ReportStatus) {
     case 'Under Investigation': return { bg: 'hsl(var(--brand-subtle))', text: 'hsl(var(--brand))' };
     case 'Resolved': return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))' };
     case 'Closed': return { bg: 'hsl(var(--bg-raised))', text: 'hsl(var(--text-4))' };
+    default: return { bg: 'hsl(var(--bg-raised))', text: 'hsl(var(--text-3))' };
   }
 }
 

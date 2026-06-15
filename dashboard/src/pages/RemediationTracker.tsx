@@ -30,15 +30,19 @@ const TIMELINE_END = new Date('2026-06-30');
 const TIMELINE_DAYS = Math.ceil((TIMELINE_END.getTime() - TIMELINE_START.getTime()) / 86400000);
 
 function dateToPercent(dateStr: string): number {
+  if (!dateStr) return 0;
   const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return 0;
   const days = Math.ceil((d.getTime() - TIMELINE_START.getTime()) / 86400000);
-  return Math.max(0, Math.min(100, (days / TIMELINE_DAYS) * 100));
+  const pct = (days / TIMELINE_DAYS) * 100;
+  return isNaN(pct) ? 0 : Math.max(0, Math.min(100, pct));
 }
 
 function barWidth(start: string, end: string): number {
   const s = dateToPercent(start);
   const e = dateToPercent(end);
-  return Math.max(1, e - s);
+  const diff = e - s;
+  return isNaN(diff) ? 1 : Math.max(1, diff);
 }
 
 function statusBarColor(status: string) {
@@ -57,17 +61,22 @@ export default function RemediationTracker() {
   const { items: remediationItems, isLoading } = useRemediationData();
   if (isLoading) return <PageSkeleton />;
   // Map live data to TrackerItem shape
-  const TRACKER_ITEMS: TrackerItem[] = remediationItems.map((r: any) => ({
-    id: r.id || r.plan_id || '',
-    title: r.title || r.name || '',
-    assignee: r.assignee || r.owner || 'Unassigned',
-    priority: r.priority || r.severity || 'medium',
-    status: r.status || 'in_progress',
-    progress: r.progress || 0,
-    startDate: r.start_date || r.startDate || new Date().toISOString().split('T')[0],
-    dueDate: r.due_date || r.dueDate || new Date().toISOString().split('T')[0],
-    linkedRisk: r.risk_id || r.linkedRisk || '',
-  }));
+  const TRACKER_ITEMS: TrackerItem[] = (remediationItems || []).map((r: any) => {
+    const defaultStart = r.created_at?.split('T')[0] || '2026-02-15';
+    const startDate = r.start_date || r.startDate || defaultStart;
+    const dueDate = r.due_date || r.dueDate || new Date().toISOString().split('T')[0];
+    return {
+      id: r.id || r.plan_id || '',
+      title: r.title || r.name || '',
+      assignee: r.assignee || r.owner || 'Unassigned',
+      priority: r.priority || r.severity || 'medium',
+      status: r.status || 'in_progress',
+      progress: r.progress || 0,
+      startDate,
+      dueDate,
+      linkedRisk: r.risk_id || r.linkedRisk || '',
+    };
+  });
   const [view, setView] = useState<'gantt' | 'list'>('gantt');
   const [filterAssignee, setFilterAssignee] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');

@@ -320,15 +320,117 @@ function stepStatusBadge(status: string) {
   );
 }
 
+function normalizeBcpPlan(plan: any): BCPPlan {
+  if (!plan) return {} as BCPPlan;
+
+  let status = plan.status || 'Draft';
+  if (typeof status === 'string') {
+    const sLower = status.toLowerCase();
+    if (sLower === 'active' || sLower === 'tested') status = 'Active';
+    else if (sLower === 'under review' || sLower === 'under_review') status = 'Under Review';
+    else if (sLower === 'draft') status = 'Draft';
+    else if (sLower === 'archived') status = 'Archived';
+  }
+
+  const rawSteps = plan.recovery_steps || plan.recoverySteps || [];
+  const recoverySteps = rawSteps.map((step: any, idx: number) => {
+    if (typeof step === 'string') {
+      return {
+        step: idx + 1,
+        action: step,
+        responsible: 'DR Team',
+        timeframe: 'N/A',
+        status: 'Pending'
+      };
+    }
+    return {
+      step: step.step || idx + 1,
+      action: step.action || '',
+      responsible: step.responsible || 'DR Team',
+      timeframe: step.timeframe || 'N/A',
+      status: step.status || 'Pending'
+    };
+  });
+
+  const rawDeps = plan.dependencies || [];
+  const dependencies = rawDeps.map((dep: any) => {
+    if (typeof dep === 'string') {
+      return {
+        system: dep,
+        type: 'Dependency',
+        criticality: 'High',
+        failoverAvailable: false
+      };
+    }
+    return {
+      system: dep.system || '',
+      type: dep.type || 'Dependency',
+      criticality: dep.criticality || 'High',
+      failoverAvailable: !!dep.failoverAvailable
+    };
+  });
+
+  const rawContacts = plan.contacts || [];
+  const contacts = rawContacts.map((c: any) => ({
+    name: c.name || '',
+    role: c.role || '',
+    phone: c.phone || '',
+    email: c.email || '',
+    primary: !!c.primary
+  }));
+
+  const rawTestResults = plan.test_results || plan.testResults || [];
+  const testResults = rawTestResults.map((r: any) => ({
+    date: r.date || r.test_date || '',
+    type: r.type || 'Drill',
+    result: r.result || 'Pass',
+    duration: r.duration || 'N/A',
+    findings: r.findings || '',
+    participants: typeof r.participants === 'number' ? r.participants : 0
+  }));
+
+  return {
+    id: plan.id || `BCP-${Math.floor(Math.random() * 1000)}`,
+    name: plan.name || plan.title || 'Unnamed Plan',
+    scope: plan.scope || plan.category || 'General',
+    rto: plan.rto || (plan.rto_hours ? `${plan.rto_hours}h` : 'N/A'),
+    rpo: plan.rpo || (plan.rpo_hours ? `${plan.rpo_hours}h` : 'N/A'),
+    lastTested: plan.lastTested || plan.last_tested || '',
+    testResult: plan.testResult || plan.test_result || (plan.status === 'tested' ? 'Pass' : 'Pass with Issues'),
+    owner: plan.owner || 'System',
+    status: status,
+    nextTest: plan.nextTest || plan.next_test || '',
+    description: plan.description || plan.title || 'No description provided.',
+    recoverySteps,
+    dependencies,
+    testResults,
+    contacts
+  };
+}
+
 function formatDate(dateStr: string): string {
-  const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  if (!dateStr) return 'N/A';
+  try {
+    const d = new Date(dateStr + 'T00:00:00');
+    if (isNaN(d.getTime())) return 'N/A';
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  } catch {
+    return 'N/A';
+  }
 }
 
 function daysUntil(dateStr: string): number {
-  const target = new Date(dateStr + 'T00:00:00').getTime();
-  const now = Date.now();
-  return Math.ceil((target - now) / (1000 * 60 * 60 * 24));
+  if (!dateStr) return 0;
+  try {
+    const d = new Date(dateStr + 'T00:00:00');
+    if (isNaN(d.getTime())) return 0;
+    const target = d.getTime();
+    const now = Date.now();
+    const diff = Math.ceil((target - now) / (1000 * 60 * 60 * 24));
+    return isNaN(diff) ? 0 : diff;
+  } catch {
+    return 0;
+  }
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -341,11 +443,10 @@ export default function BusinessContinuity() {
   const [plans, setPlans] = useState<BCPPlan[]>(BCP_PLANS);
 
   useEffect(() => {
-    if (liveItems.length > 0) {
-      setPlans(liveItems.map((live: any) => {
-        const seed = BCP_PLANS.find(s => s.id === live.id)
-        return seed ? { ...seed, ...live } : { ...live, recoverySteps: live.recoverySteps ?? [], dependencies: live.dependencies ?? [], testResults: live.testResults ?? [], contacts: live.contacts ?? [] }
-      }))
+    if (liveItems && liveItems.length > 0) {
+      setPlans(liveItems.map(normalizeBcpPlan));
+    } else {
+      setPlans(BCP_PLANS);
     }
   }, [liveItems]);
   const [search, setSearch] = useState('');
