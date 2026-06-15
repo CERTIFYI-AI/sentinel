@@ -25,16 +25,18 @@ export type IncidentRecord = {
   reportedDate?: string
 }
 
+import { SEED_INCIDENTS } from '../data/seedData'
+
 export async function fetchAllIncidents(filters: Record<string,any> = {}): Promise<IncidentRecord[]> {
-  if (!isSupabaseConfigured() || !supabase) return []
+  if (!isSupabaseConfigured() || !supabase) return SEED_INCIDENTS as any[]
   try {
     let q = supabase.from('incidents').select('*').order('created_at', { ascending: false })
     if (filters.severity) q = q.eq('severity', filters.severity)
     if (filters.status) q = q.eq('status', filters.status)
     const { data, error } = await q
-    if (error) { console.warn('[incidentService] fetch:', error.message); return [] }
-    return (data ?? []) as IncidentRecord[]
-  } catch { return [] }
+    if (error) { console.warn('[incidentService] fetch:', error.message); return SEED_INCIDENTS as any[] }
+    return (data && data.length > 0 ? data : SEED_INCIDENTS) as IncidentRecord[]
+  } catch { return SEED_INCIDENTS as any[] }
 }
 
 export async function upsertIncident(record: Partial<IncidentRecord>): Promise<IncidentRecord | null> {

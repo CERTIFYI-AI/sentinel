@@ -26,7 +26,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Cell,
   PieChart, Pie,
 } from 'recharts';
-import { severityColor, formatDate } from '../data/seed';
+import { severityColor, formatDate, GAPS } from '../data/seed';
 import { PageHeader } from '../components/ui/PageHeader';
 import { StatCardRow } from '../components/ui/StatCardRow';
 import { FilterBar } from '../components/ui/FilterBar';
@@ -81,7 +81,7 @@ export default function GapAnalysis() {
       description: c.description || '',
     }));
 
-  const [_gaps, setLocalGaps] = useState<Gap[]>([]);
+  const [_gaps, setLocalGaps] = useState<Gap[]>(GAPS);
   const gaps = derivedGaps.length > 0 ? derivedGaps : _gaps;
 
   const [search, setSearch] = useState('');

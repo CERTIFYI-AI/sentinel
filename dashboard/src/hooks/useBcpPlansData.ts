@@ -26,6 +26,8 @@ export function useBcpPlansData(filters: Record<string, any> = {}) {
     items, isLoading, error,
     saveBcpPlans: saveMutation.mutateAsync,
     removeBcpPlans: deleteMutation.mutateAsync,
+    save: saveMutation.mutateAsync,
+    remove: deleteMutation.mutateAsync,
     isSaving: saveMutation.isPending,
     isDeleting: deleteMutation.isPending,
   }

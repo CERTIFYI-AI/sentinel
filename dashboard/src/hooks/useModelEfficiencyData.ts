@@ -22,6 +22,7 @@ export function useModelEfficiencyData(filters = {}) {
   })
   return {
     records: query.data ?? [],
+    items: query.data ?? [],
     isLoading: query.isLoading,
     error: query.error,
     save: saveMutation.mutateAsync,

@@ -2,7 +2,7 @@
 // Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
 // WS2 — Governance Mesh: real-time agent cascade visualizer.
 import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { useRequiredOrgId } from '../hooks/useTenant'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
@@ -38,6 +38,36 @@ export default function GovernanceMesh() {
   useEffect(() => {
     if (!orgId) return
     const load = async () => {
+      if (!isSupabaseConfigured()) {
+        const mockAgents = [
+          { id: 'agt-1', agent_name: 'Policy Compliance Agent', description: 'Audits prompt payloads and model outputs against GRC rulesets.', is_enabled: true, total_executions: 1845, error_rate: 0.002, priority: 1, trigger_events: ['Model Output Gen'] },
+          { id: 'agt-2', agent_name: 'Resource Allocation Agent', description: 'Manages dynamic scaling and GPU load limits based on ESG targets.', is_enabled: true, total_executions: 4522, error_rate: 0.000, priority: 2, trigger_events: ['Compute Limit Alert'] },
+          { id: 'agt-3', agent_name: 'Remediation Router Agent', description: 'Routes detected vulnerabilities to engineering ticket pipelines.', is_enabled: true, total_executions: 982, error_rate: 0.012, priority: 3, trigger_events: ['Scan Center Finding'] },
+          { id: 'agt-4', agent_name: 'Alert Notification Agent', description: 'Sends high-severity alerts to Slack and Security Operation Center.', is_enabled: true, total_executions: 1205, error_rate: 0.000, priority: 4, trigger_events: ['High Risk Event'] },
+          { id: 'agt-5', agent_name: 'IAM Revocation Agent', description: 'Revokes access credentials automatically on threat detection.', is_enabled: false, total_executions: 145, error_rate: 0.021, priority: 5, trigger_events: ['Credentials Leaked'] }
+        ]
+        
+        const mockEvents = [
+          { id: 'evt-1', event_type: 'Model Output Gen', source_module: 'Inference API', status: 'completed', triggered_agents: ['Policy Compliance Agent'], cascade_depth: 1, created_at: new Date(Date.now() - 300000).toISOString(), payload: {} },
+          { id: 'evt-2', event_type: 'Compute Limit Alert', source_module: 'Model Efficiency', status: 'completed', triggered_agents: ['Resource Allocation Agent'], cascade_depth: 1, created_at: new Date(Date.now() - 900000).toISOString(), payload: {} },
+          { id: 'evt-3', event_type: 'Scan Center Finding', source_module: 'Scan Center', status: 'completed', triggered_agents: ['Remediation Router Agent'], cascade_depth: 2, created_at: new Date(Date.now() - 3600000).toISOString(), payload: {} },
+          { id: 'evt-4', event_type: 'High Risk Event', source_module: 'Threat Monitor', status: 'failed', triggered_agents: ['Alert Notification Agent'], cascade_depth: 1, created_at: new Date(Date.now() - 7200000).toISOString(), payload: {} }
+        ]
+
+        const mockExecutions = [
+          { id: 'exec-1', agent_name: 'Policy Compliance Agent', event_type: 'Model Output Gen', status: 'completed', duration_ms: 84, created_at: new Date(Date.now() - 300000).toISOString() },
+          { id: 'exec-2', agent_name: 'Resource Allocation Agent', event_type: 'Compute Limit Alert', status: 'completed', duration_ms: 120, created_at: new Date(Date.now() - 900000).toISOString() },
+          { id: 'exec-3', agent_name: 'Remediation Router Agent', event_type: 'Scan Center Finding', status: 'completed', duration_ms: 320, created_at: new Date(Date.now() - 3600000).toISOString() },
+          { id: 'exec-4', agent_name: 'Alert Notification Agent', event_type: 'High Risk Event', status: 'failed', duration_ms: 15, created_at: new Date(Date.now() - 7200000).toISOString() }
+        ]
+
+        setEvents(mockEvents)
+        setExecutions(mockExecutions)
+        setAgents(mockAgents)
+        setLoading(false)
+        return
+      }
+
       const [evts, execs, agts] = await Promise.all([
         supabase.from('governance_events').select('*').eq('org_id', orgId).order('created_at', { ascending: false }).limit(50),
         supabase.from('agent_executions').select('*').eq('org_id', orgId).order('created_at', { ascending: false }).limit(100),
@@ -49,6 +79,8 @@ export default function GovernanceMesh() {
       setLoading(false)
     }
     load()
+
+    if (!isSupabaseConfigured()) return
 
     // Real-time subscription
     const channel = supabase.channel('governance-mesh')

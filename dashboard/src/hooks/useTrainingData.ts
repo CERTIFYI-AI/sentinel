@@ -26,6 +26,8 @@ export function useTrainingData(filters: Record<string, any> = {}) {
     items, isLoading, error,
     saveTraining: saveMutation.mutateAsync,
     removeTraining: deleteMutation.mutateAsync,
+    save: saveMutation.mutateAsync,
+    remove: deleteMutation.mutateAsync,
     isSaving: saveMutation.isPending,
     isDeleting: deleteMutation.isPending,
   }

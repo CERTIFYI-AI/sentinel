@@ -109,10 +109,12 @@ const INVESTIGATORS = ['David Kim', 'James Patel', 'Emma Wilson', 'Sarah Chen', 
 
 export default function EthicsReporting() {
   const { items: liveItems, isLoading, save, remove } = useEthicsReportsData();
-  const { items: reports, isLoading: _isLoadingAlt, saveEthicsReports, removeEthicsReports } = useEthicsReportsData()
+  const [reports, setReports] = useState<any[]>(SEED);
 
   useEffect(() => {
-    if (liveItems.length > 0) setReports(liveItems as any[])
+    if (liveItems && liveItems.length > 0) {
+      setReports(liveItems as any[]);
+    }
   }, [liveItems]);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<EthicsReport | null>(null);

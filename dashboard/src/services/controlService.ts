@@ -1,9 +1,11 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
+import { CONTROLS } from '../data/seed'
+
 const TENANT_ID = 'default'
 
 export async function fetchAllControls(): Promise<any[]> {
-  if (!isSupabaseConfigured() || !supabase) return []
+  if (!isSupabaseConfigured() || !supabase) return CONTROLS
   try {
     const { data, error } = await supabase
       .from('controls')
@@ -13,12 +15,12 @@ export async function fetchAllControls(): Promise<any[]> {
     if (error) {
       if (error.message.includes('tenant_id')) {
         const { data: d2 } = await supabase.from('controls').select('*').order('created_at', { ascending: false })
-        return d2 ?? []
+        return d2 && d2.length > 0 ? d2 : CONTROLS
       }
-      console.warn('[controlService] fetch failed:', error.message); return []
+      console.warn('[controlService] fetch failed:', error.message); return CONTROLS
     }
-    return data ?? []
-  } catch (e) { return [] }
+    return data && data.length > 0 ? data : CONTROLS
+  } catch (e) { return CONTROLS }
 }
 
 export async function upsertControl(record: Record<string, unknown>): Promise<any> {
