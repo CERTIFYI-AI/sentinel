@@ -46,7 +46,7 @@ export function TrustSafetySettings() {
     <div className="space-y-8 max-w-lg">
       <div><h2 className="text-lg font-semibold">Trust & Safety</h2></div>
       <ThresholdSlider label="Block threshold" description="Responses below this score trigger the intervention cascade." value={threshold} onChange={v => { setThreshold(v); setDirty(true); }} min={0.60} max={0.99} step={0.01} />
-      <div className="flex gap-2">{presets.map(p => <button key={p.label} onClick={() => { setThreshold(p.v); setDirty(true); }} className={`text-xs px-3 py-1 rounded border ${threshold === p.v ? "border-primary bg-[#1A6B5A]/10 text-[#1A6B5A]" : "border-border hover:bg-muted"}`}>{p.label}</button>)}</div>
+      <div className="flex gap-2">{presets.map(p => <button key={p.label} onClick={() => { setThreshold(p.v); setDirty(true); }} className={`text-xs px-3 py-1 rounded border ${threshold === p.v ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-muted"}`}>{p.label}</button>)}</div>
       <ThresholdSlider label="Injection block threshold" description="Prompts scoring above this are blocked as injections." value={injection} onChange={v => { setInjection(v); setDirty(true); }} min={0.50} max={0.99} step={0.01} />
       <div><label className="text-sm font-medium">Semantic drift alert (&sigma;)</label><p className="text-xs text-muted-foreground">Alert when response embedding drifts this far from baseline.</p>
         <input type="number" step={0.1} value={drift} onChange={e => { setDrift(Number(e.target.value)); setDirty(true); }} className="mt-1 w-32 h-10 rounded-none border border-input bg-background px-3 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
@@ -61,7 +61,7 @@ export function TrustSafetySettings() {
         <div><label className="text-sm font-medium">Recovery timeout (s)</label>
           <input type="number" value={cbTimeout} onChange={e => { setCbTimeout(Number(e.target.value)); setDirty(true); }} className="mt-1 w-full h-10 rounded-none border border-input bg-background px-3 font-mono text-sm" /></div>
       </div>
-      <button onClick={save} disabled={!dirty || update.isPending} className="h-10 px-6 rounded-none bg-[#1A6B5A] text-foreground text-sm font-medium hover:bg-[#1A6B5A]/90 disabled:opacity-50 flex items-center gap-2">
+      <button onClick={save} disabled={!dirty || update.isPending} className="h-10 px-6 rounded-none bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2">
         {update.isPending ? <SpinnerGap className="w-4 h-4 animate-spin" /> : null}FloppyDisk Trust Settings
       </button>
     </div>

@@ -84,7 +84,7 @@ export function PiiSettings() {
           <option value="fixed">Replace with fixed: [REDACTED]</option>
         </select>
       </div>
-      <button onClick={save} disabled={update.isPending} className="h-10 px-6 rounded-none bg-[#1A6B5A] text-foreground text-sm">
+      <button onClick={save} disabled={update.isPending} className="h-10 px-6 rounded-none bg-primary text-primary-foreground text-sm">
         {update.isPending ? <SpinnerGap className="w-4 h-4 animate-spin" /> : "FloppyDisk PII Settings"}
       </button>
     </div>

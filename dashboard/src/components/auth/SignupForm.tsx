@@ -12,7 +12,7 @@ function strengthLevel(pw: string): number {
   if (pw.length >= 12 && /[0-9]/.test(pw) && /[^a-zA-Z0-9]/.test(pw)) s = 3;
   return s;
 }
-const strengthColors = ["bg-destructive", "bg-[hsl(var(--trust-medium))]", "bg-[hsl(var(--trust-high))]", "bg-[#1A6B5A]"];
+const strengthColors = ["bg-destructive", "bg-[hsl(var(--trust-medium))]", "bg-[hsl(var(--trust-high))]", "bg-primary"];
 const plans = [
   { id: "free", label: "FREE", price: "$0/month", features: "1,000 requests/mo · 1 tenant · Community support" },
   { id: "pro", label: "MOST POPULAR", price: "$49/month", features: "50,000 requests/mo · 5 tenants · Email support · All frameworks" },
@@ -79,17 +79,17 @@ export function SignupForm({ onSuccess }: { onSuccess: () => void }) {
             {confirm && confirm !== password && <p className="text-xs text-destructive mt-1">Passwords do not match</p>}
           </div>
           <button onClick={() => setStep(2)} disabled={!canStep1}
-            className="w-full h-10 rounded-none bg-[#1A6B5A] text-foreground font-medium text-sm hover:bg-[#1A6B5A]/90 disabled:opacity-50 flex items-center justify-center gap-2">
+            className="w-full h-10 rounded-none bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2">
             Continue <ArrowRight className="w-4 h-4" /></button>
         </div>
       ) : (
         <div className="space-y-4">
           {plans.map(p => (
             <button key={p.id} type="button" onClick={() => setPlan(p.id)}
-              className={`w-full text-left rounded-none border p-4 transition-colors ${plan === p.id ? "border-primary bg-[#1A6B5A]/5" : "border-border hover:border-muted-foreground/30"}`}>
+              className={`w-full text-left rounded-none border p-4 transition-colors ${plan === p.id ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}>
               <div className="flex items-center justify-between">
-                <span className={`text-[10px] uppercase tracking-widest font-medium ${p.id === "pro" ? "text-[#1A6B5A]" : "text-muted-foreground"}`}>{p.label}</span>
-                {plan === p.id && <Check className="w-4 h-4 text-[#1A6B5A]" />}
+                <span className={`text-[10px] uppercase tracking-widest font-medium ${p.id === "pro" ? "text-primary" : "text-muted-foreground"}`}>{p.label}</span>
+                {plan === p.id && <Check className="w-4 h-4 text-primary" />}
               </div>
               <p className="text-xs text-muted-foreground mt-1">{p.features}</p>
               <p className="font-mono text-sm font-semibold mt-2">{p.price}</p>
@@ -100,7 +100,7 @@ export function SignupForm({ onSuccess }: { onSuccess: () => void }) {
             <button onClick={() => setStep(1)} className="h-10 px-4 rounded-none border border-border text-sm hover:bg-muted flex items-center gap-2">
               <ArrowLeft className="w-4 h-4" /> Back</button>
             <button onClick={handleSubmit} disabled={loading}
-              className="flex-1 h-10 rounded-none bg-[#1A6B5A] text-foreground font-medium text-sm hover:bg-[#1A6B5A]/90 disabled:opacity-50 flex items-center justify-center gap-2">
+              className="flex-1 h-10 rounded-none bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2">
               {loading ? <><SpinnerGap className="w-4 h-4 animate-spin" />Creating...</> : "Create account"}</button>
           </div>
         </div>

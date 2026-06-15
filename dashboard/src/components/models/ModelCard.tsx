@@ -5,7 +5,7 @@ import { trustScoreColor } from "../../lib/chart-colors";
 import type { ModelConfig, ModelHealth } from "../../api/types";
 
 const roleBadge: Record<string, string> = {
-  primary: "bg-emerald-50 text-[#1A6B5A] border-primary/30",
+  primary: "bg-emerald-50 text-primary border-primary/30",
   fallback: "bg-primary/20 text-blue-400 border-blue-500/30",
   evaluation: "bg-zinc-500/20 text-muted-foreground border-zinc-500/30",
   disabled: "bg-destructive/20 text-destructive border-destructive/30",
@@ -21,7 +21,7 @@ export function ModelCard({ model, health, selected, onSelect, onSetRole, onTest
     onSetRole: (r: string) => void; onTest: () => void }) {
   const h = health;
   return (
-    <div className={`rounded-none border p-4 space-y-3 transition-colors ${selected ? "border-primary bg-[#1A6B5A]/5" : "border-border"}`}>
+    <div className={`rounded-none border p-4 space-y-3 transition-colors ${selected ? "border-primary bg-primary/5" : "border-border"}`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <input type="checkbox" checked={selected} onChange={onSelect} className="rounded border-border" />

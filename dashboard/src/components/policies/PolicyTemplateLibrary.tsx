@@ -79,7 +79,7 @@ export function PolicyTemplateLibrary({ templates, onInstantiate, loading }: Pro
             <CardHeader className='pb-3'>
               <div className='flex items-start justify-between'>
                 <div className='flex items-center gap-2'>
-                  <span className="h-5 w-5 text-[#1A6B5A]">📄</span>
+                  <span className="h-5 w-5 text-primary">📄</span>
                   <CardTitle className='text-sm font-medium'>{template.name}</CardTitle>
                 </div>
                 {template.is_mandatory && <Badge variant='destructive' className='text-xs'>Required</Badge>}

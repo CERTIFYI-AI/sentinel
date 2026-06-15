@@ -11,9 +11,9 @@ export default function TopBar() {
       </div>
       <div style={{flex:1}} />
       <div style={{display:'flex',alignItems:'center',gap:12}}>
-        <button style={{background:'none',border:'1px solid hsl(var(--border))',borderRadius:6,padding:'5px 12px',fontSize:12,cursor:'pointer',color:'hsl(var(--foreground))',fontFamily:'Outfit'}}>⌕ Search</button>
-        <button style={{background:'none',border:'1px solid hsl(var(--border))',borderRadius:6,padding:'5px 10px',fontSize:13,cursor:'pointer',color:'hsl(var(--foreground))',position:'relative' as const}}>✉<span style={{position:'absolute' as const,top:-4,right:-4,background:'hsl(var(--destructive))',color:'#fff',borderRadius:8,fontSize:9,padding:'0 4px',fontWeight:600}}>2</span></button>
-        <Link to="/settings" style={{background:'hsl(var(--brand))',color:'#fff',border:'none',borderRadius:6,padding:'5px 14px',fontSize:12,cursor:'pointer',fontFamily:'Outfit',textDecoration:'none',fontWeight:500}}>+ Add new</Link>
+        <button aria-label="Search" style={{background:'none',border:'1px solid hsl(var(--border))',borderRadius:6,padding:'5px 12px',fontSize:12,cursor:'pointer',color:'hsl(var(--foreground))'}}>⌕ Search</button>
+        <button aria-label="Notifications (2 unread)" style={{background:'none',border:'1px solid hsl(var(--border))',borderRadius:6,padding:'5px 10px',fontSize:13,cursor:'pointer',color:'hsl(var(--foreground))',position:'relative' as const}}>✉<span style={{position:'absolute' as const,top:-4,right:-4,background:'hsl(var(--destructive))',color:'#fff',borderRadius:8,fontSize:9,padding:'0 4px',fontWeight:600}}>2</span></button>
+        <Link to="/settings" style={{background:'hsl(var(--brand))',color:'#fff',border:'none',borderRadius:6,padding:'5px 14px',fontSize:12,cursor:'pointer',textDecoration:'none',fontWeight:500}}>+ Add new</Link>
       </div>
     </div>
   );

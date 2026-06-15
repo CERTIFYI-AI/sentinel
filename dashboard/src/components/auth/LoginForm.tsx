@@ -39,7 +39,7 @@ export function LoginForm({ onSuccess }: { onSuccess: () => void }) {
         {(["apikey", "email"] as const).map(t => (
           <button key={t} type="button" onClick={() => setTab(t)}
             className={`pb-2 px-4 text-sm font-medium border-b-2 transition-colors ${
-              tab === t ? "border-primary text-[#1A6B5A]" : "border-transparent text-muted-foreground hover:text-foreground"
+              tab === t ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
             }`}>
             {t === "apikey" ? "API Key" : "Email & Password"}
           </button>
@@ -78,7 +78,7 @@ export function LoginForm({ onSuccess }: { onSuccess: () => void }) {
       )}
 
       <button type="submit" disabled={loading}
-        className="w-full h-10 rounded-none bg-[#1A6B5A] text-foreground font-medium text-sm hover:bg-[#1A6B5A]/90 disabled:opacity-50 flex items-center justify-center gap-2">
+        className="w-full h-10 rounded-none bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2">
         {loading ? <><SpinnerGap className="w-4 h-4 animate-spin" />Signing in...</> : tab === "apikey" ? "Continue" : "Sign in"}
       </button>
 

@@ -21,7 +21,7 @@ const colorMap: Record<string, string> = {
   "High-Certain": "bg-destructive text-destructive-foreground",
   "High-Likely": "bg-destructive/80 text-destructive-foreground",
   "Medium-Possible": "bg-warning text-warning-foreground",
-  "Low-Unlikely": "bg-emerald-50 text-[#1A6B5A]",
+  "Low-Unlikely": "bg-emerald-50 text-primary",
   "Minimal-Rare": "bg-muted text-muted-foreground",
 };
 

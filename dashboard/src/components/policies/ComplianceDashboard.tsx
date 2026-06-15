@@ -20,7 +20,7 @@ export function ComplianceDashboard({ scores, loading }: Props) {
         <Card>
           <CardContent className='pt-6'>
             <div className='flex items-center gap-3'>
-              <span className="h-8 w-8 text-[#1A6B5A]">🛡</span>
+              <span className="h-8 w-8 text-primary">🛡</span>
               <div>
                 <p className='text-2xl font-bold'>{overall}%</p>
                 <p className='text-xs text-muted-foreground'>Overall Compliance</p>

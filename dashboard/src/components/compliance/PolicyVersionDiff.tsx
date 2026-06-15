@@ -30,8 +30,8 @@ export function PolicyVersionDiff({ current, previous }: PolicyVersionDiffProps)
                 <p className="text-xs font-semibold text-destructive mb-1">Previous (v{previous.version})</p>
                 <pre className="whitespace-pre-wrap text-xs">{previous.content}</pre>
               </div>
-              <div className="p-3 rounded bg-[#1A6B5A]/10 border text-sm">
-                <p className="text-xs font-semibold text-[#1A6B5A] mb-1">Current (v{current.version})</p>
+              <div className="p-3 rounded bg-primary/10 border text-sm">
+                <p className="text-xs font-semibold text-primary mb-1">Current (v{current.version})</p>
                 <pre className="whitespace-pre-wrap text-xs">{current.content}</pre>
               </div>
             </div>

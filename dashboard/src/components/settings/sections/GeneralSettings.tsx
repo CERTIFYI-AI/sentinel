@@ -31,7 +31,7 @@ export function GeneralSettings() {
           <button onClick={() => navigator.clipboard.writeText(cfg?.id ?? "")} className="h-10 px-3 rounded-none border border-border hover:bg-muted"><Copy className="w-4 h-4" /></button></div>
       </div>
       <div><label className="text-sm font-medium">Plan</label>
-        <span className="ml-2 text-xs uppercase bg-emerald-50 text-[#1A6B5A] px-2 py-0.5 rounded">{cfg?.plan}</span>
+        <span className="ml-2 text-xs uppercase bg-emerald-50 text-primary px-2 py-0.5 rounded">{cfg?.plan}</span>
       </div>
       <div><label className="text-sm font-medium">Timezone</label>
         <select value={form.timezone} onChange={e => change("timezone", e.target.value)} className="mt-1 w-full h-10 rounded-none border border-input bg-background px-3 text-sm">
@@ -39,7 +39,7 @@ export function GeneralSettings() {
         </select>
       </div>
       <button onClick={() => update.mutate(form)} disabled={!dirty || update.isPending}
-        className="h-10 px-6 rounded-none bg-[#1A6B5A] text-foreground text-sm font-medium hover:bg-[#1A6B5A]/90 disabled:opacity-50 flex items-center gap-2">
+        className="h-10 px-6 rounded-none bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2">
         {update.isPending ? <SpinnerGap className="w-4 h-4 animate-spin" /> : null}FloppyDisk Changes
       </button>
     </div>

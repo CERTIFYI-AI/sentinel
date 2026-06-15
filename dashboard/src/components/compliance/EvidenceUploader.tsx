@@ -35,7 +35,7 @@ export function EvidenceUploader({ evidence, onUpload }: EvidenceUploaderProps) 
       </CardHeader>
       <CardContent className="space-y-4">
         <div
-          className={"border-2 border-dashed rounded-none p-8 text-center transition-colors " + (dragOver ? "border-primary bg-[#1A6B5A]/5" : "border-muted-foreground/25")}
+          className={"border-2 border-dashed rounded-none p-8 text-center transition-colors " + (dragOver ? "border-primary bg-primary/5" : "border-muted-foreground/25")}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
           onDrop={(e) => {

@@ -37,13 +37,13 @@ export function PolicyWorkflow({ currentStatus, onTransition, policyName }: Prop
         <div className='flex items-center justify-between mb-6'>
           {WORKFLOW_STEPS.map((step, idx) => (
             <React.Fragment key={step}>
-              <div className={`flex flex-col items-center gap-1 ${idx <= currentIdx ? 'text-[#1A6B5A]' : 'text-muted-foreground'}`}>
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${idx < currentIdx ? 'bg-[#1A6B5A] text-foreground border-primary' : idx === currentIdx ? 'border-primary bg-[#1A6B5A]/10' : 'border-muted'}`}>
+              <div className={`flex flex-col items-center gap-1 ${idx <= currentIdx ? 'text-primary' : 'text-muted-foreground'}`}>
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${idx < currentIdx ? 'bg-primary text-foreground border-primary' : idx === currentIdx ? 'border-primary bg-primary/10' : 'border-muted'}`}>
                   {STATUS_ICONS[step] || <span className='text-xs'>{idx + 1}</span>}
                 </div>
                 <span className='text-xs capitalize'>{step.replace('_', ' ')}</span>
               </div>
-              {idx < WORKFLOW_STEPS.length - 1 && <ArrowRight className={`h-4 w-4 ${idx < currentIdx ? 'text-[#1A6B5A]' : 'text-muted'}`} />}
+              {idx < WORKFLOW_STEPS.length - 1 && <ArrowRight className={`h-4 w-4 ${idx < currentIdx ? 'text-primary' : 'text-muted'}`} />}
             </React.Fragment>
           ))}
         </div>
