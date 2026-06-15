@@ -124,8 +124,7 @@ const NAV: NavSection[] = [
           { label: 'Live Inference Traces',  to: '/trust-engine/traces' },
           { label: 'Trust Costs & Tokens',   to: '/trust-engine/costs' },
           { label: 'Fallback Failovers',     to: '/trust-engine/fallback' },
-          { label: 'Tool Call Monitor',      to: '/trust-engine/tools' },
-          { label: 'Post-Market Surveillance', to: '/post-market' },
+          { label: 'Tool Monitor',           to: '/trust-engine/tools' },
           { label: 'Configuration',          to: '/trust-engine/config' },
         ],
       },
@@ -135,18 +134,28 @@ const NAV: NavSection[] = [
     title: 'SECURITY',
     items: [
       {
-        label: 'Security', to: '/security', icon: ShieldCheck,
+        label: 'Threats & Scans', to: '/security/scans', icon: ShieldCheck,
         children: [
           { label: 'Threat Feed',       to: '/security/threats' },
           { label: 'Scan Center',       to: '/security/scans' },
           { label: 'Attack Surface',    to: '/security/attack-surface' },
           { label: 'Vulnerabilities',   to: '/security/vulnerabilities' },
+        ],
+      },
+      {
+        label: 'Red Teaming', to: '/security/red-team', icon: Flask,
+        children: [
           { label: 'Red Team Lab',      to: '/security/red-team' },
           { label: 'Red Team Findings', to: '/red-team-findings' },
+          { label: 'Model Arena',       to: '/security/model-arena' },
+        ],
+      },
+      {
+        label: 'Defense & Policies', to: '/security/policies', icon: Scroll,
+        children: [
           { label: 'Policy Firewall',   to: '/security/policies' },
           { label: 'Keys Vault',        to: '/security/keys' },
-          { label: 'Model Arena',       to: '/security/model-arena' },
-          { label: 'Reports',           to: '/security/reports' },
+          { label: 'Security Reports',   to: '/security/reports' },
         ],
       },
     ],
@@ -154,93 +163,116 @@ const NAV: NavSection[] = [
   {
     title: 'COMPLIANCE',
     items: [
-      { label: 'Overview',         to: '/compliance',                icon: ChartDonut },
-      { label: 'Frameworks',       to: '/frameworks',                icon: BookOpen },
-      { label: 'Controls',         to: '/compliance/controls',       icon: ListChecks },
-      { label: 'Reg Radar',        to: '/reg-radar',                 icon: Globe },
+      { label: 'Overview', to: '/compliance', icon: ChartDonut },
       {
-        label: 'Policies', to: '/policies', icon: Scroll,
+        label: 'Standards & Controls', to: '/frameworks', icon: BookOpen,
         children: [
-          { label: 'Policy Templates', to: '/compliance/policy-templates' },
-          { label: 'Policy Editor',    to: '/policy-editor' },
+          { label: 'Frameworks Catalog', to: '/frameworks' },
+          { label: 'Controls Registry',   to: '/compliance/controls' },
+          { label: 'Gap Analysis',        to: '/compliance/gap-analysis' },
+          { label: 'Control Testing',     to: '/control-testing' },
         ],
       },
       {
-        label: 'Evidence', to: '/evidence-sync', icon: FolderOpen,
+        label: 'Evidence & Audits', to: '/compliance/evidence', icon: FolderOpen,
         children: [
-          { label: 'Evidence Hub',   to: '/compliance/evidence' },
-          { label: 'Evidence Vault', to: '/evidence-vault' },
-          { label: 'Evidence Chain', to: '/evidence-chain' },
-        ],
-      },
-      {
-        label: 'Audits', to: '/audits', icon: ClipboardText,
-        children: [
+          { label: 'Evidence Hub',        to: '/compliance/evidence' },
+          { label: 'Evidence Vault',      to: '/evidence-vault' },
+          { label: 'Evidence Chain',      to: '/evidence-chain' },
           { label: 'Audit Trail',         to: '/audit-trail' },
           { label: 'System Audit Log',    to: '/system-audit-log' },
           { label: 'Compliance Calendar', to: '/calendar' },
         ],
       },
-      { label: 'Gap Analysis',         to: '/compliance/gap-analysis', icon: Target },
-      { label: 'Document Mgmt',        to: '/documents',               icon: FileText },
-      { label: 'Conformity',           to: '/conformity',              icon: Scan },
-      { label: 'DPIA Workflow',        to: '/dpia',                    icon: Eye },
-      { label: 'Transparency Reports', to: '/transparency-reports',    icon: Broadcast },
-      { label: 'Framework Mapping',    to: '/framework-mapping',       icon: ArrowsLeftRight },
-      { label: 'Gov. Framework',       to: '/governance-framework',    icon: Compass },
-      { label: 'Governance Mesh',      to: '/governance-mesh',         icon: Compass },
-      { label: 'Control Testing',      to: '/control-testing',         icon: Play },
-      { label: 'RoPA',                 to: '/ropa',                    icon: ClipboardText },
-      { label: 'Transfer Impact',      to: '/tia',                     icon: Globe },
+      {
+        label: 'Policies & Docs', to: '/policies', icon: Scroll,
+        children: [
+          { label: 'Policy Templates',  to: '/compliance/policy-templates' },
+          { label: 'Policy Editor',     to: '/policy-editor' },
+          { label: 'Document Management', to: '/documents' },
+        ],
+      },
+      {
+        label: 'Privacy & Frameworks', to: '/reg-radar', icon: Globe,
+        children: [
+          { label: 'Reg Radar',             to: '/reg-radar' },
+          { label: 'Gov. Framework',        to: '/governance-framework' },
+          { label: 'Governance Mesh',       to: '/governance-mesh' },
+          { label: 'DPIA Workflow',         to: '/dpia' },
+          { label: 'Transfer Impact (TIA)', to: '/tia' },
+          { label: 'RoPA Registry',         to: '/ropa' },
+          { label: 'Transparency Reports',  to: '/transparency-reports' },
+          { label: 'Framework Mapping',     to: '/framework-mapping' },
+          { label: 'Conformity',            to: '/conformity' },
+        ],
+      },
     ],
   },
   {
     title: 'RISK & RESPONSE',
     items: [
       {
-        label: 'Risk Register', to: '/risks', icon: Warning,
+        label: 'Risk Management', to: '/risks', icon: Warning,
         children: [
-          { label: 'Risk Matrix', to: '/risk/matrix' },
+          { label: 'Risks Registry',     to: '/risks' },
+          { label: 'Risk Matrix',        to: '/risk/matrix' },
+          { label: 'Risk Intelligence',  to: '/risk-intelligence' },
+          { label: 'Financial Risk',     to: '/financial-risk' },
         ],
       },
-      { label: 'Risk Intelligence', to: '/risk-intelligence', icon: ChartLine },
       {
-        label: 'Incidents', to: '/risk/incidents', icon: ShieldWarning,
+        label: 'Incident Response', to: '/risk/incidents', icon: ShieldWarning,
         children: [
+          { label: 'Incidents Log',      to: '/risk/incidents' },
           { label: 'Incident Workflow',  to: '/incident-workflow' },
           { label: 'Incident Playbooks', to: '/incidents/playbooks' },
+          { label: 'Tabletop Exercises', to: '/tabletop' },
         ],
       },
-      { label: 'Remediation',        to: '/remediation-tracker',  icon: ClockCounterClockwise },
-      { label: 'Exception Mgmt',     to: '/exceptions',            icon: ShieldStar },
-      { label: 'Financial Risk',     to: '/financial-risk',        icon: HandCoins },
-      { label: 'HITL Reviews',       to: '/hitl',                  icon: UserCircleCheck, badge: 3 },
-      { label: 'Approval Flows',     to: '/workflows',             icon: FlowArrow },
-      { label: 'Automation Studio',  to: '/automation-studio',     icon: Lightning },
-      { label: 'Regulator Filings',  to: '/regulator-filings',     icon: FileText },
-      { label: 'Tabletop Exercises', to: '/tabletop',              icon: Target },
+      {
+        label: 'Remediation & Exempts', to: '/remediation-tracker', icon: ClockCounterClockwise,
+        children: [
+          { label: 'Remediation Tracker', to: '/remediation-tracker' },
+          { label: 'Exception Management', to: '/exceptions' },
+        ],
+      },
+      {
+        label: 'Operations & Flows', to: '/hitl', icon: UserCircleCheck, badge: 3,
+        children: [
+          { label: 'HITL Reviews',      to: '/hitl' },
+          { label: 'Approval Workflows', to: '/workflows' },
+          { label: 'Automation Studio',  to: '/automation-studio' },
+          { label: 'Regulator Filings',  to: '/regulator-filings' },
+        ],
+      },
     ],
   },
   {
     title: 'VENDORS & PRIVACY',
     items: [
       {
-        label: 'Vendors', to: '/vendors', icon: BuildingOffice,
+        label: 'Third-Party Risk (TPRM)', to: '/vendors', icon: BuildingOffice,
         children: [
-          { label: 'Assessments',    to: '/vendors/assessments' },
-          { label: 'SLA Monitor',    to: '/vendors/sla' },
-          { label: 'TPRM Workspace', to: '/vendors/tprm' },
+          { label: 'Vendor Registry', to: '/vendors' },
+          { label: 'TPRM Assessments', to: '/vendors/assessments' },
+          { label: 'SLA Monitoring',   to: '/vendors/sla' },
+          { label: 'TPRM Workspace',  to: '/vendors/tprm' },
         ],
       },
-      { label: 'DSR / Rights',   to: '/dsr',                icon: UserList },
-      { label: 'Consent Mgmt',   to: '/consent-management', icon: Signature },
       {
-        label: 'Supply Chain', to: '/aibom', icon: Package,
+        label: 'Privacy & Rights', to: '/dsr', icon: UserList,
         children: [
-          { label: 'Provenance Graph',   to: '/provenance' },
-          { label: 'Supply Chain Graph', to: '/supply-chain/graph' },
-          { label: 'Vendor Upload',      to: '/vendor-upload' },
-          { label: 'Attestations',       to: '/supply-chain' },
+          { label: 'DSR / Rights Management', to: '/dsr' },
+          { label: 'Consent Registry',        to: '/consent-management' },
+        ],
+      },
+      {
+        label: 'AI Supply Chain (AIBOM)', to: '/supply-chain', icon: Package,
+        children: [
+          { label: 'Supply Chain Attestations', to: '/supply-chain' },
+          { label: 'Provenance Graph',          to: '/provenance' },
+          { label: 'Supply Chain Graph',        to: '/supply-chain/graph' },
+          { label: 'Vendor Upload',             to: '/vendor-upload' },
         ],
       },
       { label: 'Marketplace',   to: '/marketplace',   icon: Storefront },
@@ -251,13 +283,23 @@ const NAV: NavSection[] = [
   {
     title: 'DATA & SUSTAINABILITY',
     items: [
-      { label: 'Datasets',          to: '/datasets',          icon: Database },
-      { label: 'Data Governance',   to: '/data-governance',   icon: Table },
-      { label: 'Data Lineage',      to: '/data-lineage',      icon: GitBranch },
-      { label: 'Data Quality',      to: '/data-quality',      icon: CheckCircle },
-      { label: 'Carbon Ledger',     to: '/carbon-ledger',     icon: Leaf },
-      { label: 'Energy Efficiency', to: '/energy-efficiency', icon: BatteryCharging },
-      { label: 'ESG Reports',       to: '/esg-reports',       icon: EsgIcon },
+      {
+        label: 'Data Trust & Gov', to: '/datasets', icon: Database,
+        children: [
+          { label: 'Datasets Registry', to: '/datasets' },
+          { label: 'Data Governance',   to: '/data-governance' },
+          { label: 'Data Lineage',      to: '/data-lineage' },
+          { label: 'Data Quality',      to: '/data-quality' },
+        ],
+      },
+      {
+        label: 'Sustainability & ESG', to: '/esg-reports', icon: Leaf,
+        children: [
+          { label: 'Carbon Ledger',     to: '/carbon-ledger' },
+          { label: 'Energy Efficiency', to: '/energy-efficiency' },
+          { label: 'ESG Reports',       to: '/esg-reports' },
+        ],
+      },
     ],
   },
   {
@@ -274,22 +316,33 @@ const NAV: NavSection[] = [
     title: 'ORGANIZATION',
     items: [
       {
-        label: 'Access Control', to: '/access-control', icon: Lock,
+        label: 'IAM & Roles', to: '/access-control', icon: Lock,
         children: [
-          { label: 'Users',       to: '/access-control/users' },
-          { label: 'Roles',       to: '/access-control/roles' },
-          { label: 'Departments', to: '/access-control/departments' },
+          { label: 'Access Control', to: '/access-control' },
+          { label: 'Users Registry',  to: '/access-control/users' },
+          { label: 'Roles Management', to: '/access-control/roles' },
+          { label: 'Departments',     to: '/access-control/departments' },
+          { label: 'Identity Governance', to: '/iga' },
         ],
       },
-      { label: 'Committee Mgmt',      to: '/committee',        icon: Users },
-      { label: 'Training',            to: '/training',          icon: GraduationCap },
-      { label: 'Maturity',            to: '/maturity',          icon: ChartBar },
-      { label: 'Continuity',          to: '/continuity',        icon: Lifebuoy },
-      { label: 'Ethics Reporting',    to: '/ethics-reporting',  icon: Megaphone },
-      { label: 'Licensing',           to: '/admin/licensing',   icon: Certificate },
-      { label: 'Asset Registry',      to: '/assets',            icon: Database },
-      { label: 'Identity Governance', to: '/iga',               icon: UserList },
-      { label: 'Business Impact',     to: '/bia',               icon: ChartLine },
+      {
+        label: 'Operational Resilience', to: '/continuity', icon: Lifebuoy,
+        children: [
+          { label: 'Business Continuity', to: '/continuity' },
+          { label: 'Business Impact (BIA)', to: '/bia' },
+          { label: 'Asset Registry',      to: '/assets' },
+        ],
+      },
+      {
+        label: 'Ethics & Governance', to: '/ethics-reporting', icon: Megaphone,
+        children: [
+          { label: 'Ethics Reporting',    to: '/ethics-reporting' },
+          { label: 'Training & Awareness', to: '/training' },
+          { label: 'Committee Management', to: '/committee' },
+          { label: 'GRC Maturity',        to: '/maturity' },
+          { label: 'Licensing',           to: '/admin/licensing' },
+        ],
+      },
     ],
   },
 ]
