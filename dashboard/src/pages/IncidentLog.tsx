@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useIncidentData } from '@/hooks/useIncidentData';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { toast } from 'sonner';
