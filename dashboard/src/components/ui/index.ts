@@ -35,3 +35,13 @@ export type { ChartContainerProps } from './ChartContainer';
 
 // ── Feedback ─────────────────────────────────────────────────────────────────
 export { PageSkeleton } from './PageSkeleton';
+
+// ── Antigravity UI/UX ────────────────────────────────────────────────────────
+export { RiskBadge } from './RiskBadge';
+export { StatusPill } from './StatusPill';
+export { InterlinkChip } from './InterlinkChip';
+export { AuditTrail } from './AuditTrail';
+export { ContextualAlert } from './ContextualAlert';
+export { SlideOverPanel } from './SlideOverPanel';
+export { MetricGauge } from './MetricGauge';
+

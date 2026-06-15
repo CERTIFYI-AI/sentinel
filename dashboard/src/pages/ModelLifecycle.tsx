@@ -1,409 +1,566 @@
 // @ts-nocheck
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Robot, ArrowRight, Clock, ChartBar, CheckCircle, Warning, X, Lock, LockOpen, ArrowsClockwise } from '@phosphor-icons/react';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
-} from 'recharts';
-import { Card } from '../components/ui/card';
+import { useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { 
+  Robot, ArrowRight, Clock, ChartBar, CheckCircle, Warning, 
+  ArrowsClockwise, MagnifyingGlass, Filter, Prohibit, Info, 
+  FolderSimple, ShieldCheck, ShieldWarning, ArrowUpRight
+} from '@phosphor-icons/react';
+import { Card, CardContent } from '../components/ui/card';
+import { Input } from '../components/ui/input';
+import { Button } from '../components/ui/button';
+import { 
+  RiskBadge, StatusPill, InterlinkChip, ContextualAlert, SlideOverPanel 
+} from '../components/ui';
 import { MODELS } from '../data/seed';
-import { useSettingsStore } from '../stores/settingsStore';
-import { useChartTheme } from '../hooks/useChartTheme';
+import { useModelsData } from '@/hooks/useModelsData';
+import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { toast } from 'sonner';
 
-const PHASES = ['Development', 'Validation', 'Staging', 'Production', 'Monitoring'] as const;
-type Phase = typeof PHASES[number];
-
-const phaseColor: Record<Phase, string> = {
-  Development: '#6366f1',
-  Validation:  '#f59e0b',
-  Staging:     '#3b82f6',
-  Production:  '#22c55e',
-  Monitoring:  '#8b5cf6',
-};
-
-// Gate requirements between phases
-const GATE_REQUIREMENTS: Record<string, { name: string; required: boolean }[]> = {
-  'Development→Validation': [
-    { name: 'Unit tests passing (≥95%)', required: true },
-    { name: 'Model card complete', required: true },
-    { name: 'Data lineage documented', required: true },
-    { name: 'Security scan clear', required: false },
-  ],
-  'Validation→Staging': [
-    { name: 'Bias audit passed', required: true },
-    { name: 'Performance benchmarks met', required: true },
-    { name: 'Risk assessment complete', required: true },
-    { name: 'EU AI Act conformity check', required: false },
-  ],
-  'Staging→Production': [
-    { name: 'UAT sign-off', required: true },
-    { name: 'Load testing passed', required: true },
-    { name: 'Compliance review approved', required: true },
-    { name: 'CISO approval', required: true },
-    { name: 'Executive sponsor sign-off', required: false },
-  ],
-  'Production→Monitoring': [
-    { name: 'Monitoring dashboards live', required: true },
-    { name: 'Alert thresholds configured', required: true },
-    { name: 'Runbook published', required: false },
-  ],
-};
-
-const phaseIndex = (p: string) => PHASES.indexOf(p as Phase);
-
-type GateStatus = 'pending' | 'approved' | 'rejected';
-
-interface GateState {
-  [key: string]: GateStatus; // key = `modelId:gateKey:reqName`
-}
-
-function StatCard({ icon, value, label }: { icon: React.ReactNode; value: string | number; label: string }) {
-  return (
-    <Card className="p-4 flex items-start gap-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-      <div className="mt-0.5 text-[hsl(var(--brand))]">{icon}</div>
-      <div>
-        <div className="text-2xl font-bold text-[hsl(var(--text-1))]">{value}</div>
-        <div className="text-xs text-[hsl(var(--text-4))] mt-0.5">{label}</div>
-      </div>
-    </Card>
-  );
-}
-
-// ── Gate Approval Modal ──────────────────────────────────────────────────────
-function GateModal({
-  modelId,
-  modelName,
-  fromPhase,
-  toPhase,
-  gateKey,
-  gateStates,
-  onApprove,
-  onReject,
-  onClose,
-}: {
-  modelId: string;
-  modelName: string;
-  fromPhase: Phase;
-  toPhase: Phase;
-  gateKey: string;
-  gateStates: GateState;
-  onApprove: (reqName: string) => void;
-  onReject: (reqName: string) => void;
-  onClose: () => void;
-}) {
-  const requirements = GATE_REQUIREMENTS[gateKey] ?? [];
-
-  const allRequiredApproved = requirements
-    .filter(r => r.required)
-    .every(r => gateStates[`${modelId}:${gateKey}:${r.name}`] === 'approved');
-
-  const anyRejected = requirements.some(r => gateStates[`${modelId}:${gateKey}:${r.name}`] === 'rejected');
-
-  return (
-    <div style={{ position: 'fixed', inset: 0, background: 'hsl(var(--bg-page)/60%)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 70 }}>
-      <div style={{ width: 520, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', boxShadow: 'var(--shadow-lg)' }}>
-        {/* Header */}
-        <div style={{ padding: '14px 18px', borderBottom: '1px solid hsl(var(--border))', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div>
-            <p style={{ fontSize: 11, color: 'hsl(var(--text-4))', fontFamily: 'monospace' }}>{modelId}</p>
-            <p style={{ fontSize: 14, fontWeight: 700, color: 'hsl(var(--text-1))' }}>{modelName}</p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-              <span style={{ fontSize: 11, color: phaseColor[fromPhase], fontWeight: 600 }}>{fromPhase}</span>
-              <ArrowRight size={10} style={{ color: 'hsl(var(--text-4))' }} />
-              <span style={{ fontSize: 11, color: phaseColor[toPhase], fontWeight: 600 }}>{toPhase}</span>
-              <span style={{ fontSize: 10, color: 'hsl(var(--text-4))' }}>Gate Review</span>
-            </div>
-          </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'hsl(var(--text-3))' }}>
-            <X size={16} />
-          </button>
-        </div>
-
-        {/* Requirements */}
-        <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {requirements.map(req => {
-            const stateKey = `${modelId}:${gateKey}:${req.name}`;
-            const status = gateStates[stateKey] ?? 'pending';
-            return (
-              <div key={req.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'hsl(var(--bg-muted))', border: `1px solid ${status === 'approved' ? 'hsl(var(--s-ok-br))' : status === 'rejected' ? 'hsl(var(--s-er-br))' : 'hsl(var(--border))'}` }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {status === 'approved' ? <CheckCircle size={14} style={{ color: 'hsl(var(--s-ok-tx))' }} /> :
-                   status === 'rejected' ? <X size={14} style={{ color: 'hsl(var(--s-er-tx))' }} /> :
-                   <div style={{ width: 14, height: 14, border: '1.5px solid hsl(var(--border))', borderRadius: '50%' }} />}
-                  <span style={{ fontSize: 12, color: 'hsl(var(--text-1))', fontWeight: 500 }}>{req.name}</span>
-                  {req.required && <span style={{ fontSize: 9, color: 'hsl(var(--s-er-tx))', fontWeight: 700, textTransform: 'uppercase' }}>Required</span>}
-                </div>
-                {status === 'pending' && (
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <button onClick={() => onApprove(req.name)}
-                      style={{ padding: '3px 10px', background: 'hsl(var(--s-ok-bg))', border: '1px solid hsl(var(--s-ok-br))', cursor: 'pointer', fontSize: 11, color: 'hsl(var(--s-ok-tx))', fontWeight: 600 }}>
-                      Approve
-                    </button>
-                    <button onClick={() => onReject(req.name)}
-                      style={{ padding: '3px 10px', background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-br))', cursor: 'pointer', fontSize: 11, color: 'hsl(var(--s-er-tx))', fontWeight: 600 }}>
-                      Reject
-                    </button>
-                  </div>
-                )}
-                {status !== 'pending' && (
-                  <span style={{ fontSize: 11, fontWeight: 600, color: status === 'approved' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))' }}>
-                    {status === 'approved' ? 'Approved' : 'Rejected'}
-                  </span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Footer */}
-        <div style={{ padding: '12px 18px', borderTop: '1px solid hsl(var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ fontSize: 11, color: anyRejected ? 'hsl(var(--s-er-tx))' : allRequiredApproved ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-4))' }}>
-            {anyRejected ? '✗ Gate rejected — fix issues before proceeding' :
-             allRequiredApproved ? '✓ All required gates approved — ready to promote' :
-             `${requirements.filter(r => r.required && gateStates[`${modelId}:${gateKey}:${r.name}`] === 'approved').length}/${requirements.filter(r => r.required).length} required gates approved`}
-          </div>
-          <button onClick={onClose}
-            style={{ padding: '7px 16px', background: 'none', border: '1px solid hsl(var(--border))', cursor: 'pointer', fontSize: 12, color: 'hsl(var(--text-2))' }}>
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function ModelLifecycle() {
-  const orgName = useSettingsStore(s => s.orgName);
-  const chart = useChartTheme();
-  const navigate = useNavigate();
-  const [gateStates, setGateStates] = useState<GateState>({});
-  const [openGate, setOpenGate] = useState<{ modelId: string; modelName: string; fromPhase: Phase; toPhase: Phase; gateKey: string } | null>(null);
-  const [modelPhases, setModelPhases] = useState<Record<string, Phase>>({});
+  const { models: items, isLoading, saveModel } = useModelsData();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [search, setSearch] = useState('');
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const avgDaysInPhase = Math.round(MODELS.reduce((a, m) => a + m.daysInPhase, 0) / MODELS.length);
-  const pendingTransitions = MODELS.filter(m => m.lifecycleProgress < 80 && m.status !== 'production').length;
+  // Sorting state
+  const [sortCol, setSortCol] = useState<string>('name');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
-  const phaseDistribution = PHASES.map(p => ({
-    phase: p,
-    count: MODELS.filter(m => (modelPhases[m.id] ?? m.lifecyclePhase) === p).length,
-    color: phaseColor[p],
-  }));
+  // Unified models merging Supabase data and mock seed data
+  const unifiedModels = useMemo(() => {
+    const activeItems = items && items.length > 0 ? items : MODELS;
+    return activeItems.map(m => {
+      // Parse last validated date and calculate if overdue (> 90 days)
+      const lastValDate = m.lastValidated || m.last_validated || '2026-03-15';
+      const lastVal = new Date(lastValDate);
+      const today = new Date('2026-06-15');
+      const diffTime = Math.abs(today.getTime() - lastVal.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const overdueValidation = diffDays > 90;
 
-  function openGateModal(model: typeof MODELS[0], fromPhase: Phase, toPhase: Phase) {
-    const gateKey = `${fromPhase}→${toPhase}`;
-    setOpenGate({ modelId: model.id, modelName: model.name, fromPhase, toPhase, gateKey });
-  }
+      return {
+        id: m.id || m.model_id || 'MDL-UNKNOWN',
+        name: m.name || m.display_name || 'Unnamed Model',
+        version: m.version || 'v1.0.0',
+        owner_team: m.owner_team || m.department || m.technical_owner || 'Lending',
+        business_unit: m.business_unit || 'Financial Services',
+        purpose: m.description || m.purpose || 'No description provided.',
+        framework: m.framework || 'sklearn',
+        risk_tier: (m.risk_tier || m.riskClass || m.riskTier || 'MEDIUM').toUpperCase().replace('_RISK', ''),
+        regulatory_scope: m.regulatory_scope || (m.framework === 'EU AI Act' ? ['EU AI Act'] : ['GDPR']),
+        lifecycle_stage: (m.lifecycle_stage || m.lifecyclePhase || m.status || 'DRAFT').toUpperCase(),
+        last_validated: lastValDate,
+        next_review: m.nextReviewDate || m.next_review || '2026-09-15',
+        aiia_ref: m.aiiaRef || m.aiia_ref || null,
+        mrc_approval_id: m.mrc_approval_id || m.mrcApprovalId || 'MRC-882',
+        validation_status: m.validation_status || (overdueValidation ? 'FAILED' : 'PASSED'),
+        last_eval_score: m.lastEvalScore || 85,
+        explainability_method: m.explainability_method || 'SHAP',
+        active_agents_using: m.activeAgentsCount || 2,
+        deployed_guardrails: m.guardrails?.length || 3,
+        genai_risk_score: m.genai_risk_score || 0.12,
+        deprecation_reason: m.deprecation_reason || '',
+        is_kill_switched: m.is_kill_switched || (m.driftStatus === 'critical') || false,
+        overdueValidation,
+        input_schema: m.input_schema || '{\n  "features": ["income", "age", "loan_amount"]\n}',
+        output_schema: m.output_schema || '{\n  "probability": 0.12,\n  "decision": "APPROVED"\n}'
+      };
+    });
+  }, [items]);
 
-  function approveReq(reqName: string) {
-    if (!openGate) return;
-    const key = `${openGate.modelId}:${openGate.gateKey}:${reqName}`;
-    setGateStates(prev => ({ ...prev, [key]: 'approved' }));
-  }
+  // Read multi-select URL parameters
+  const activeStatuses = useSearchParams()[0].getAll('status');
+  const activeRiskTiers = useSearchParams()[0].getAll('risk_tier');
+  const activeOwnerTeams = useSearchParams()[0].getAll('owner_team');
+  const activeScopes = useSearchParams()[0].getAll('regulatory_scope');
+  const activeFrameworks = useSearchParams()[0].getAll('framework');
 
-  function rejectReq(reqName: string) {
-    if (!openGate) return;
-    const key = `${openGate.modelId}:${openGate.gateKey}:${reqName}`;
-    setGateStates(prev => ({ ...prev, [key]: 'rejected' }));
-  }
+  const toggleFilter = (key: string, value: string) => {
+    const nextParams = new URLSearchParams(searchParams);
+    const currentValues = nextParams.getAll(key);
+    nextParams.delete(key);
+    
+    if (currentValues.includes(value)) {
+      currentValues.filter(v => v !== value).forEach(v => nextParams.append(key, v));
+    } else {
+      [...currentValues, value].forEach(v => nextParams.append(key, v));
+    }
+    setSearchParams(nextParams);
+  };
 
-  function promoteModel(model: typeof MODELS[0], fromPhase: Phase, toPhase: Phase) {
-    const gateKey = `${fromPhase}→${toPhase}`;
-    const reqs = GATE_REQUIREMENTS[gateKey] ?? [];
-    const allRequired = reqs.filter(r => r.required).every(r => gateStates[`${model.id}:${gateKey}:${r.name}`] === 'approved');
-    if (!allRequired) {
-      toast.error('Complete all required gate approvals before promoting');
-      openGateModal(model, fromPhase, toPhase);
+  const handleSort = (col: string) => {
+    if (sortCol === col) {
+      setSortDir(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortCol(col);
+      setSortDir('asc');
+    }
+  };
+
+  // Filtered and sorted list
+  const filteredModels = useMemo(() => {
+    return unifiedModels
+      .filter(m => {
+        const matchesSearch = m.name.toLowerCase().includes(search.toLowerCase()) || m.id.toLowerCase().includes(search.toLowerCase());
+        const matchesStatus = activeStatuses.length === 0 || activeStatuses.includes(m.lifecycle_stage);
+        const matchesRisk = activeRiskTiers.length === 0 || activeRiskTiers.includes(m.risk_tier);
+        const matchesOwner = activeOwnerTeams.length === 0 || activeOwnerTeams.includes(m.owner_team);
+        const matchesScope = activeScopes.length === 0 || m.regulatory_scope.some(s => activeScopes.includes(s));
+        const matchesFramework = activeFrameworks.length === 0 || activeFrameworks.includes(m.framework);
+        
+        return matchesSearch && matchesStatus && matchesRisk && matchesOwner && matchesScope && matchesFramework;
+      })
+      .sort((a, b) => {
+        let valA = a[sortCol as keyof typeof a];
+        let valB = b[sortCol as keyof typeof b];
+        
+        if (typeof valA === 'string') {
+          return sortDir === 'asc' 
+            ? (valA as string).localeCompare(valB as string)
+            : (valB as string).localeCompare(valA as string);
+        }
+        return 0;
+      });
+  }, [unifiedModels, search, activeStatuses, activeRiskTiers, activeOwnerTeams, activeScopes, activeFrameworks, sortCol, sortDir]);
+
+  const selectedModel = useMemo(() => {
+    return unifiedModels.find(m => m.id === selectedId) || null;
+  }, [unifiedModels, selectedId]);
+
+  // Promote workflow gating checks
+  const gates = useMemo(() => {
+    if (!selectedModel) return { meetsAll: false, aiia: false, validation: false, mrc: false };
+    const aiia = !!selectedModel.aiia_ref;
+    const validation = selectedModel.validation_status === 'PASSED';
+    const mrc = !!selectedModel.mrc_approval_id;
+    return {
+      meetsAll: aiia && validation && mrc,
+      aiia,
+      validation,
+      mrc
+    };
+  }, [selectedModel]);
+
+  const handlePromote = async () => {
+    if (!selectedModel) return;
+    if (!gates.meetsAll) {
+      toast.error('Cannot promote model: unmet deployment gates checklist');
       return;
     }
-    setModelPhases(prev => ({ ...prev, [model.id]: toPhase }));
-    toast.success(`${model.name} promoted to ${toPhase}`);
-  }
+
+    let nextStage = 'PRODUCTION';
+    if (selectedModel.lifecycle_stage === 'DRAFT') nextStage = 'IN_REVIEW';
+    else if (selectedModel.lifecycle_stage === 'IN_REVIEW') nextStage = 'APPROVED';
+    else if (selectedModel.lifecycle_stage === 'APPROVED') nextStage = 'DEPLOYED';
+    else if (selectedModel.lifecycle_stage === 'DEPLOYED') nextStage = 'PRODUCTION';
+
+    try {
+      await saveModel({
+        id: selectedModel.id,
+        lifecycle_stage: nextStage
+      });
+      toast.success(`Model successfully promoted to ${nextStage}`);
+    } catch {
+      toast.error('Failed to promote lifecycle stage');
+    }
+  };
+
+  const handleRetire = async () => {
+    if (!selectedModel) return;
+    try {
+      await saveModel({
+        id: selectedModel.id,
+        lifecycle_stage: 'RETIRED'
+      });
+      toast.success('Model successfully retired');
+    } catch {
+      toast.error('Failed to retire model');
+    }
+  };
+
+  const handleFlagMRC = () => {
+    toast.success('Model flagged for MRC agenda review');
+  };
+
+  if (isLoading) return <PageSkeleton />;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, }}>
+    <div className="flex flex-col gap-6 p-6 min-h-screen bg-bg-page font-sans">
+      <ContextualAlert module="lifecycle" />
+      
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+      <div className="flex items-start justify-between">
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'hsl(var(--text-1))', marginBottom: 4 }}>Model Lifecycle</h1>
-          <p style={{ fontSize: 13, color: 'hsl(var(--text-4))' }}>{orgName} — Phase tracking, gate approvals and transition management</p>
+          <h1 className="text-2xl font-bold text-text-primary flex items-center gap-2">
+            <Robot size={24} weight="duotone" className="text-[hsl(var(--brand))]" />
+            Model Inventory & Lifecycle
+          </h1>
+          <p className="text-sm text-text-muted mt-0.5">
+            Operational registry, compliance checks, and phase transition gates
+          </p>
         </div>
       </div>
 
-      {/* Stats */}
+      {/* KPI Stats Block */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <StatCard icon={<Robot size={20} />} value={MODELS.length} label="Total Models" />
-        <StatCard icon={<Clock size={20} />} value={avgDaysInPhase} label="Avg Days in Phase" />
-        <StatCard icon={<ArrowRight size={20} />} value={pendingTransitions} label="Pending Transitions" />
-        <StatCard icon={<ChartBar size={20} />} value={PHASES.length} label="Lifecycle Phases" />
+        <Card className="rounded-none border border-border bg-surface">
+          <CardContent className="p-4 flex items-start gap-3">
+            <div className="mt-0.5 text-[hsl(var(--brand))]">
+              <Robot size={24} weight="duotone" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-text-primary">{unifiedModels.length}</div>
+              <div className="text-xs text-text-muted mt-0.5 uppercase tracking-wide font-semibold">Total Models</div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-none border border-border bg-surface">
+          <CardContent className="p-4 flex items-start gap-3">
+            <div className="mt-0.5 text-emerald-600">
+              <ShieldCheck size={24} weight="duotone" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-text-primary">
+                {unifiedModels.filter(m => m.lifecycle_stage === 'DEPLOYED' || m.lifecycle_stage === 'PRODUCTION').length}
+              </div>
+              <div className="text-xs text-text-muted mt-0.5 uppercase tracking-wide font-semibold">Live Deployments</div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-none border border-border bg-surface">
+          <CardContent className="p-4 flex items-start gap-3">
+            <div className="mt-0.5 text-red-600">
+              <ShieldWarning size={24} weight="duotone" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-text-primary">
+                {unifiedModels.filter(m => m.risk_tier === 'CRITICAL' || m.risk_tier === 'HIGH').length}
+              </div>
+              <div className="text-xs text-text-muted mt-0.5 uppercase tracking-wide font-semibold">High/Critical Risk</div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-none border border-border bg-surface">
+          <CardContent className="p-4 flex items-start gap-3">
+            <div className="mt-0.5 text-amber-600">
+              <Clock size={24} weight="duotone" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-text-primary">
+                {unifiedModels.filter(m => m.lifecycle_stage === 'IN_REVIEW' || m.lifecycle_stage === 'DRAFT').length}
+              </div>
+              <div className="text-xs text-text-muted mt-0.5 uppercase tracking-wide font-semibold">Under Review</div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Phase Distribution Chart */}
-      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', padding: 16 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--text-1))', marginBottom: 14 }}>Models per Lifecycle Phase</div>
-        <ResponsiveContainer width="100%" height={180}>
-          <BarChart data={phaseDistribution} barSize={36}>
-            <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
-            <XAxis dataKey="phase" stroke={chart.axis} tick={{ fontSize: 11 }} />
-            <YAxis stroke={chart.axis} tick={{ fontSize: 11 }} allowDecimals={false} />
-            <Tooltip contentStyle={{ background: chart.tooltipBg, border: `1px solid ${chart.tooltipBorder}`, color: chart.tooltipText, fontSize: 11 }} />
-            <Bar dataKey="count" radius={0}>
-              {phaseDistribution.map((entry, idx) => (
-                <Cell key={idx} fill={entry.color} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </Card>
-
-      {/* Gate Legend */}
-      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', padding: 14 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'hsl(var(--text-4))', marginBottom: 12 }}>Phase Gate Requirements</div>
-        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', flexWrap: 'wrap' }}>
-          {(Object.keys(GATE_REQUIREMENTS) as string[]).map(gateKey => {
-            const reqs = GATE_REQUIREMENTS[gateKey];
-            const [from, to] = gateKey.split('→') as [Phase, Phase];
-            return (
-              <div key={gateKey} style={{ flex: '1 1 200px', minWidth: 180, border: '1px solid hsl(var(--border))', padding: '10px 12px', background: 'hsl(var(--bg-muted))' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                  <span style={{ fontSize: 11, color: phaseColor[from], fontWeight: 600 }}>{from}</span>
-                  <ArrowRight size={9} style={{ color: 'hsl(var(--text-4))' }} />
-                  <span style={{ fontSize: 11, color: phaseColor[to], fontWeight: 600 }}>{to}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                  {reqs.map(r => (
-                    <div key={r.name} style={{ fontSize: 10, color: r.required ? 'hsl(var(--text-2))' : 'hsl(var(--text-4))', display: 'flex', alignItems: 'center', gap: 5 }}>
-                      {r.required ? <Lock size={8} style={{ color: 'hsl(var(--s-er-tx))', flexShrink: 0 }} /> : <LockOpen size={8} style={{ color: 'hsl(var(--text-4))', flexShrink: 0 }} />}
-                      {r.name}
-                    </div>
-                  ))}
-                </div>
+      {/* Main Two-Panel Workspace */}
+      <div className="flex gap-6 items-start">
+        {/* Left Side: Filterable Table */}
+        <div className="flex-1 flex flex-col gap-4 bg-surface border border-border p-4 rounded-none">
+          {/* Top filter inputs */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="relative flex-1 max-w-sm">
+              <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+              <Input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search models..."
+                className="pl-9 h-8 text-sm rounded-none border border-border"
+              />
+            </div>
+            
+            {/* Filter selectors */}
+            <div className="flex gap-2 items-center text-xs">
+              {/* Status filter */}
+              <div className="flex gap-1 items-center border border-border px-2 py-1 bg-bg-sunken">
+                <span className="text-text-muted font-bold">STATUS:</span>
+                {['DRAFT', 'IN_REVIEW', 'APPROVED', 'DEPLOYED', 'DEPRECATED'].map(status => (
+                  <button
+                    key={status}
+                    onClick={() => toggleFilter('status', status)}
+                    className={`px-1.5 py-0.5 text-[10px] font-semibold border ${
+                      activeStatuses.includes(status) 
+                        ? 'bg-brand text-white border-brand' 
+                        : 'bg-white text-text-secondary border-border'
+                    }`}
+                  >
+                    {status}
+                  </button>
+                ))}
               </div>
-            );
-          })}
-        </div>
-      </Card>
 
-      {/* Pipeline View */}
-      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-        {/* Phase Headers */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', borderBottom: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-muted))' }}>
-          {PHASES.map((phase, i) => (
-            <div key={phase} style={{ padding: '10px 14px', textAlign: 'center', borderRight: i < 4 ? '1px solid hsl(var(--border))' : 'none' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: phaseColor[phase] }}>{phase}</div>
-              <div style={{ fontSize: 10, color: 'hsl(var(--text-4))', marginTop: 2 }}>
-                {phaseDistribution[i].count} models
+              {/* Risk Tier Filter */}
+              <div className="flex gap-1 items-center border border-border px-2 py-1 bg-bg-sunken">
+                <span className="text-text-muted font-bold">RISK:</span>
+                {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map(tier => (
+                  <button
+                    key={tier}
+                    onClick={() => toggleFilter('risk_tier', tier)}
+                    className={`px-1.5 py-0.5 text-[10px] font-semibold border ${
+                      activeRiskTiers.includes(tier)
+                        ? 'bg-brand text-white border-brand'
+                        : 'bg-white text-text-secondary border-border'
+                    }`}
+                  >
+                    {tier}
+                  </button>
+                ))}
               </div>
             </div>
-          ))}
-        </div>
+          </div>
 
-        {/* Model Rows */}
-        <div style={{ display: 'flex', flexDirection: 'column', divideColor: 'hsl(var(--border))' }}>
-          {MODELS.map(model => {
-            const currentPhase = (modelPhases[model.id] ?? model.lifecyclePhase) as Phase;
-            const currentPhaseIdx = phaseIndex(currentPhase);
-            const nextPhase = PHASES[currentPhaseIdx + 1] as Phase | undefined;
-            const gateKey = nextPhase ? `${currentPhase}→${nextPhase}` : null;
-            const reqs = gateKey ? GATE_REQUIREMENTS[gateKey] ?? [] : [];
-            const approvedRequired = reqs.filter(r => r.required && gateStates[`${model.id}:${gateKey}:${r.name}`] === 'approved').length;
-            const totalRequired = reqs.filter(r => r.required).length;
-            const gateReady = totalRequired > 0 && approvedRequired === totalRequired;
-
-            return (
-              <div key={model.id} style={{ padding: '14px 16px', borderBottom: '1px solid hsl(var(--border))' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Robot size={14} style={{ color: 'hsl(var(--brand))' }} />
-                    <span style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--text-1))' }}>{model.name}</span>
-                    <span style={{ fontSize: 10, color: 'hsl(var(--text-4))', fontFamily: 'monospace' }}>{model.id}</span>
-                    <span style={{ fontSize: 10, color: phaseColor[currentPhase], fontWeight: 700, padding: '2px 7px', background: `${phaseColor[currentPhase]}20` }}>
-                      {currentPhase}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 11, color: 'hsl(var(--text-4))' }}>
-                      <Clock size={10} style={{ display: 'inline', verticalAlign: 'middle' }} /> {model.daysInPhase}d in phase
-                    </span>
-                    {nextPhase && (
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <button
-                          onClick={() => openGateModal(model, currentPhase, nextPhase)}
-                          style={{ padding: '4px 10px', background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', cursor: 'pointer', fontSize: 11, color: 'hsl(var(--text-2))', display: 'flex', alignItems: 'center', gap: 5 }}
-                        >
-                          <Lock size={9} /> Gate Review {gateKey && `(${approvedRequired}/${totalRequired})`}
-                        </button>
-                        <button
-                          onClick={() => promoteModel(model, currentPhase, nextPhase)}
-                          style={{
-                            padding: '4px 12px',
-                            background: gateReady ? 'hsl(var(--brand))' : 'hsl(var(--bg-muted))',
-                            border: `1px solid ${gateReady ? 'hsl(var(--brand))' : 'hsl(var(--border))'}`,
-                            cursor: gateReady ? 'pointer' : 'not-allowed',
-                            fontSize: 11,
-                            color: gateReady ? '#fff' : 'hsl(var(--text-4))',
-                            fontWeight: 600,
-                            display: 'flex', alignItems: 'center', gap: 5,
-                          }}
-                        >
-                          <ArrowRight size={9} /> Promote to {nextPhase}
-                        </button>
-                      </div>
-                    )}
-                    {!nextPhase && (
-                      <span style={{ fontSize: 11, color: 'hsl(var(--s-ok-tx))', display: 'flex', alignItems: 'center', gap: 5 }}>
-                        <CheckCircle size={12} /> Final phase
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Multi-phase progress bar */}
-                <div>
-                  <div style={{ display: 'flex', gap: 2 }}>
-                    {PHASES.map((phase, idx) => {
-                      const isCompleted = idx < currentPhaseIdx;
-                      const isCurrent = idx === currentPhaseIdx;
-                      const progress = isCurrent ? Math.max(20, model.lifecycleProgress % 100) : 100;
-                      return (
-                        <div key={phase} style={{ flex: 1, height: 6, background: 'hsl(var(--border))', position: 'relative', overflow: 'hidden' }}>
-                          {(isCompleted || isCurrent) && (
-                            <div style={{ position: 'absolute', inset: 0, background: phaseColor[phase], opacity: isCompleted ? 0.8 : 1, width: isCompleted ? '100%' : `${progress}%`, transition: 'width 0.5s ease' }} />
+          {/* Model Registry List Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead className="bg-bg-raised border-b border-border">
+                <tr>
+                  <th 
+                    className="p-3 font-semibold uppercase tracking-wider text-text-muted cursor-pointer hover:text-text-primary"
+                    onClick={() => handleSort('name')}
+                  >
+                    Name
+                  </th>
+                  <th className="p-3 font-semibold uppercase tracking-wider text-text-muted">Version</th>
+                  <th className="p-3 font-semibold uppercase tracking-wider text-text-muted">Owner Team</th>
+                  <th className="p-3 font-semibold uppercase tracking-wider text-text-muted">Risk Tier</th>
+                  <th className="p-3 font-semibold uppercase tracking-wider text-text-muted">Framework</th>
+                  <th className="p-3 font-semibold uppercase tracking-wider text-text-muted">Status</th>
+                  <th className="p-3 font-semibold uppercase tracking-wider text-text-muted">Last Validated</th>
+                  <th className="p-3 font-semibold uppercase tracking-wider text-text-muted">Next Review</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {filteredModels.map(model => (
+                  <tr 
+                    key={model.id}
+                    className={`hover:bg-bg-raised cursor-pointer transition-colors ${selectedId === model.id ? 'bg-bg-sunken' : ''}`}
+                    onClick={() => setSelectedId(model.id)}
+                  >
+                    <td className="p-3">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-semibold text-text-primary flex items-center gap-1.5">
+                          {model.name}
+                          {model.is_kill_switched && (
+                            <span className="bg-red-100 text-red-800 text-[9px] px-1 py-0.5 uppercase tracking-wide font-extrabold animate-pulse">
+                              KILL-SWITCHED
+                            </span>
                           )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div style={{ display: 'flex', gap: 2, marginTop: 3 }}>
-                    {PHASES.map((phase, idx) => (
-                      <div key={phase} style={{ flex: 1, textAlign: 'center' }}>
-                        {idx === currentPhaseIdx && (
-                          <span style={{ fontSize: 8, color: phaseColor[phase] }}>▲</span>
-                        )}
+                        </span>
+                        <span className="text-[10px] text-text-muted font-mono">{model.id}</span>
                       </div>
-                    ))}
-                  </div>
+                    </td>
+                    <td className="p-3 font-mono text-text-secondary">{model.version}</td>
+                    <td className="p-3 text-text-secondary">{model.owner_team}</td>
+                    <td className="p-3">
+                      <RiskBadge level={model.risk_tier} pulse={model.is_kill_switched} />
+                    </td>
+                    <td className="p-3 text-text-secondary font-mono uppercase">{model.framework}</td>
+                    <td className="p-3">
+                      <StatusPill status={model.lifecycle_stage} />
+                    </td>
+                    <td className="p-3 text-text-secondary flex flex-col gap-1">
+                      <span>{model.last_validated}</span>
+                      {model.overdueValidation && (
+                        <span className="text-[10px] text-red-600 font-semibold flex items-center gap-1">
+                          <Warning size={10} weight="fill" /> Overdue &gt;90d
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-3 text-text-secondary">{model.next_review}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Side: Detail Slide-Over Panel */}
+      <SlideOverPanel
+        open={!!selectedId}
+        onOpenChange={(open) => !open && setSelectedId(null)}
+        title="Model GRC Detail panel"
+        entityType="model"
+        entityId={selectedId || ''}
+      >
+        {selectedModel && (
+          <div className="space-y-6 text-xs text-text-secondary">
+            {/* Inline Action Bar */}
+            <div className="flex flex-wrap gap-2 border-b border-border pb-4">
+              <Button 
+                size="sm"
+                onClick={handlePromote}
+                className="bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-hover))] text-white rounded-none text-xs font-semibold px-3 h-8"
+              >
+                Promote Stage
+              </Button>
+              <Button 
+                size="sm"
+                variant="outline"
+                onClick={() => toast.success('Validation request dispatched')}
+                className="border-border text-text-primary rounded-none text-xs px-3 h-8"
+              >
+                Request Validation
+              </Button>
+              <Button 
+                size="sm"
+                variant="outline"
+                onClick={handleFlagMRC}
+                className="border-border text-text-primary rounded-none text-xs px-3 h-8"
+              >
+                Flag for MRC
+              </Button>
+              <Button 
+                size="sm"
+                variant="destructive"
+                onClick={handleRetire}
+                className="rounded-none text-xs px-3 h-8 bg-red-600 hover:bg-red-700 text-white"
+              >
+                Retire
+              </Button>
+            </div>
+
+            {/* Warning Cards (Gates Checks) */}
+            {selectedModel.lifecycle_stage === 'APPROVED' && (
+              <div className="bg-amber-50 border border-amber-200 p-3 flex flex-col gap-2 rounded-none">
+                <p className="font-bold text-amber-800 flex items-center gap-1">
+                  <Info size={14} weight="fill" /> Promotion to DEPLOYED Gated Checklist
+                </p>
+                <ul className="space-y-1 ml-4 list-disc text-amber-700">
+                  <li className="flex items-center gap-1.5 justify-between">
+                    <span>AIIA Reference linked</span>
+                    {gates.aiia ? (
+                      <span className="text-emerald-700 font-semibold uppercase">✓ MET</span>
+                    ) : (
+                      <span className="text-red-700 font-semibold uppercase">✗ MISSING</span>
+                    )}
+                  </li>
+                  <li className="flex items-center gap-1.5 justify-between">
+                    <span>Validation Status = PASSED</span>
+                    {gates.validation ? (
+                      <span className="text-emerald-700 font-semibold uppercase">✓ MET</span>
+                    ) : (
+                      <span className="text-red-700 font-semibold uppercase">✗ FAILED / PENDING</span>
+                    )}
+                  </li>
+                  <li className="flex items-center gap-1.5 justify-between">
+                    <span>MRC Approval ID linked</span>
+                    {gates.mrc ? (
+                      <span className="text-emerald-700 font-semibold uppercase">✓ MET</span>
+                    ) : (
+                      <span className="text-red-700 font-semibold uppercase">✗ MISSING</span>
+                    )}
+                  </li>
+                </ul>
+              </div>
+            )}
+
+            {/* Full Lifecycle Fields */}
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+              <div>
+                <p className="font-bold text-text-primary">Model ID</p>
+                <p className="font-mono text-text-secondary mt-0.5">{selectedModel.id}</p>
+              </div>
+              <div>
+                <p className="font-bold text-text-primary">Display Name</p>
+                <p className="mt-0.5 text-text-secondary">{selectedModel.name}</p>
+              </div>
+              <div>
+                <p className="font-bold text-text-primary">Version</p>
+                <p className="mt-0.5 font-mono text-text-secondary">{selectedModel.version}</p>
+              </div>
+              <div>
+                <p className="font-bold text-text-primary">Owner Team</p>
+                <p className="mt-0.5 text-text-secondary">{selectedModel.owner_team}</p>
+              </div>
+              <div>
+                <p className="font-bold text-text-primary">Business Unit</p>
+                <p className="mt-0.5 text-text-secondary">{selectedModel.business_unit}</p>
+              </div>
+              <div>
+                <p className="font-bold text-text-primary">Risk Tier</p>
+                <div className="mt-1">
+                  <RiskBadge level={selectedModel.risk_tier} />
                 </div>
               </div>
-            );
-          })}
-        </div>
-      </Card>
+              <div>
+                <p className="font-bold text-text-primary">Framework</p>
+                <p className="mt-0.5 font-mono text-text-secondary uppercase">{selectedModel.framework}</p>
+              </div>
+              <div>
+                <p className="font-bold text-text-primary">Lifecycle Stage</p>
+                <div className="mt-1">
+                  <StatusPill status={selectedModel.lifecycle_stage} />
+                </div>
+              </div>
+            </div>
 
-      {/* Gate Modal */}
-      {openGate && (
-        <GateModal
-          modelId={openGate.modelId}
-          modelName={openGate.modelName}
-          fromPhase={openGate.fromPhase}
-          toPhase={openGate.toPhase}
-          gateKey={openGate.gateKey}
-          gateStates={gateStates}
-          onApprove={approveReq}
-          onReject={rejectReq}
-          onClose={() => setOpenGate(null)}
-        />
-      )}
+            <div className="border-t border-border pt-4">
+              <p className="font-bold text-text-primary">Purpose & Description</p>
+              <p className="mt-1 text-text-secondary leading-relaxed bg-bg-muted p-2 border border-border">
+                {selectedModel.purpose}
+              </p>
+            </div>
+
+            {/* Input & Output Schemas */}
+            <div className="space-y-3 border-t border-border pt-4">
+              <p className="font-bold text-text-primary uppercase tracking-wider">Data Schema Definitions</p>
+              <div>
+                <p className="font-semibold text-text-secondary">Input Schema</p>
+                <pre className="mt-1 text-[10px] font-mono bg-bg-sunken p-2 border border-border whitespace-pre-wrap">
+                  {selectedModel.input_schema}
+                </pre>
+              </div>
+              <div>
+                <p className="font-semibold text-text-secondary">Output Schema</p>
+                <pre className="mt-1 text-[10px] font-mono bg-bg-sunken p-2 border border-border whitespace-pre-wrap">
+                  {selectedModel.output_schema}
+                </pre>
+              </div>
+            </div>
+
+            {/* Interlink Chips Map */}
+            <div className="border-t border-border pt-4 space-y-3">
+              <p className="font-bold text-text-primary uppercase tracking-wider">Connected GRC Modules</p>
+              <div className="flex flex-wrap gap-2">
+                <InterlinkChip label="Model DNA Lineage" to="/models/dna" />
+                <InterlinkChip label="Validation Lab" to="/model-validation" />
+                <InterlinkChip label="Explainability Center" to="/explainability" />
+                <InterlinkChip label="Eval Results Viewer" to="/evals/results" />
+                <InterlinkChip label="Agent Registry" to="/agent-registry" />
+                <InterlinkChip label="Guardrail Rules" to="/trust-engine/guardrails" />
+                <InterlinkChip label="Model Risk Committee" to="/mrc" />
+                <InterlinkChip label="GenAI Risks Profile" to="/genai-risks" />
+              </div>
+            </div>
+            
+            {selectedModel.aiia_ref && (
+              <div className="border-t border-border pt-4">
+                <p className="font-bold text-text-primary">AIIA Assessment Ref</p>
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="font-mono text-text-secondary bg-bg-sunken px-1.5 py-0.5 border border-border">
+                    {selectedModel.aiia_ref}
+                  </span>
+                  <InterlinkChip label="View AIIA Dossier" to="/aiia" />
+                </div>
+              </div>
+            )}
+
+            {selectedModel.deprecation_reason && (
+              <div className="border-t border-border pt-4 bg-zinc-50 p-2 border border-zinc-200 text-zinc-800">
+                <p className="font-bold">Deprecation Reason</p>
+                <p className="mt-1 italic">{selectedModel.deprecation_reason}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </SlideOverPanel>
     </div>
   );
 }
