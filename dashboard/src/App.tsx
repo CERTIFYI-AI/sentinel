@@ -217,6 +217,11 @@ const ModelValidationLab = lazy(() => import('./pages/validation/ModelValidation
 const PerformanceMonitoring = lazy(() => import('./pages/performance/PerformanceMonitoring'));
 const IncidentPlaybooks = lazy(() => import('./pages/incidents/IncidentPlaybooks'));
 const EvalResultsViewer = lazy(() => import('./pages/evals/EvalResultsViewer'));
+const MetricStudio = lazy(() => import('./pages/evals/MetricStudio'));
+const DatasetCreateModal = lazy(() => import('./pages/evals/DatasetCreateModal'));
+const DatasetPreviewDrawer = lazy(() => import('./pages/evals/DatasetPreviewDrawer'));
+const MultiTurnEditor = lazy(() => import('./pages/evals/MultiTurnEditor'));
+const ConversationViewer = lazy(() => import('./pages/evals/ConversationViewer'));
 const CisoDashboard = lazy(() => import('./pages/ciso/CisoDashboard'));
 const BoardReport = lazy(() => import('./pages/ciso/BoardReport'));
 
@@ -413,6 +418,13 @@ export default function App() {
           <Route path="/reg-radar/:id" element={<RegDetail />} />
           <Route path="/explainability" element={<ExplainabilityCenterNew />} />
           <Route path="/conformity" element={<ConformityAssessmentNew />} />
+          
+          <Route path="/evals/metric-studio" element={<MetricStudio />} />
+          <Route path="/evals/dataset-create" element={<DatasetCreateModal />} />
+          <Route path="/evals/dataset-preview" element={<DatasetPreviewDrawer />} />
+          <Route path="/evals/multi-turn" element={<MultiTurnEditor />} />
+          <Route path="/evals/conversation" element={<ConversationViewer />} />
+
           <Route path="/use-cases" element={<UseCasePage />} />
           <Route path="/data-governance" element={<DataGovernancePage />} />
           <Route path="/notifications/regulatory" element={<StakeholderNotifications />} />
