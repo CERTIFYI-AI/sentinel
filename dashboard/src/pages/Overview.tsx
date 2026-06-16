@@ -165,6 +165,7 @@ export default function Overview() {
   const [alertPanelOpen, setAlertPanelOpen] = useState(false);
   const [digestIdx, setDigestIdx] = useState(0);
   const countdown = useCountdown(AUDIT_DATE);
+  const [riskThreshold, setRiskThreshold] = useState(15);
 
   // Live Supabase data
   const { risks } = useRisksData();
@@ -176,7 +177,7 @@ export default function Overview() {
   const chartTheme = useChartTheme();
 
   const openRisks = risks.filter((r: any) => r.status === 'open').length;
-  const criticalRisks = risks.filter((r: any) => (r.risk_score || r.score || 0) >= 15).length;
+  const criticalRisks = risks.filter((r: any) => (r.risk_score || r.score || 0) >= riskThreshold).length;
   const activeModels = models.filter((m: any) => m.is_active || m.lifecycle_stage === 'production' || m.status === 'production').length;
   const criticalIncidents = incidents.filter((i: any) => i.severity === 'critical').length;
   const openIncidents = incidents.filter((i: any) => i.status !== 'resolved').length;
@@ -217,7 +218,13 @@ export default function Overview() {
     fullName: f.name,
   }));
 
-  const recentActivity: any[] = [];
+  const recentActivity = [
+    { id: 'act-001', action: 'Bias Audit Triggered', entity: 'Credit Scorer (v3.2.0)', actor: 'System (Policy Gate)', category: 'in_review', timestamp: '2026-06-16T07:15:00Z' },
+    { id: 'act-002', action: 'Kill Switch Activated', entity: 'Marketing Agent (AGT-010)', actor: 'Sarah Chen (CISO)', category: 'escalated', timestamp: '2026-06-16T06:30:00Z' },
+    { id: 'act-003', action: 'Conformity Assessment Signed', entity: 'EU AI Act Compliance Pack', actor: 'David Kim (Head of GRC)', category: 'signed', timestamp: '2026-06-15T18:45:00Z' },
+    { id: 'act-004', action: 'Model Promoted to Production', entity: 'Fraud Detector v2.4', actor: 'Priya Sharma (MLOps)', category: 'production', timestamp: '2026-06-15T14:20:00Z' },
+    { id: 'act-005', action: 'Vendor Risk DPA Rejected', entity: 'OpenAI API Agreement', actor: 'Legal Team', category: 'failed', timestamp: '2026-06-15T11:05:00Z' },
+  ];
   const overdueGapItems = tasks.filter((t: any) => t.status !== 'completed' && t.due_date && new Date(t.due_date) < new Date()).slice(0, 5);
 
   const quickActions = [
@@ -292,6 +299,18 @@ export default function Overview() {
                 {r}
               </button>
             ))}
+          </div>
+          <div className="flex items-center gap-2 border border-[hsl(var(--border))] px-3 py-1 bg-[hsl(var(--bg-surface))] h-8">
+            <span className="text-xs font-semibold" style={{ color: 'hsl(var(--text-3))' }}>Risk Gate: {riskThreshold}</span>
+            <input
+              type="range"
+              min="10"
+              max="20"
+              value={riskThreshold}
+              onChange={e => setRiskThreshold(Number(e.target.value))}
+              style={{ width: 60, height: 4, cursor: 'pointer', accentColor: 'hsl(var(--brand))' }}
+              aria-label="Risk threshold gate"
+            />
           </div>
           <Button
             variant="outline"
@@ -816,8 +835,10 @@ export default function Overview() {
               {recentActivity.map(entry => {
                 const sc = statusColor(entry.category);
                 return (
-                  <div key={entry.id} className="px-4 py-3 flex items-start gap-3">
-                    <div className="w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0" style={{ background: 'hsl(var(--brand))' }} />
+                  <div key={entry.id} className="px-4 py-3 flex items-start gap-3 border-b border-[hsl(var(--border))]/30 last:border-b-0 hover:bg-[hsl(var(--muted)/0.3)] transition-colors">
+                    <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0, fontSize: 10, textTransform: 'capitalize', flexShrink: 0, marginTop: 2 }}>
+                      {entry.category.replace('_', ' ')}
+                    </Badge>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate" style={{ color: 'hsl(var(--text-1))' }}>
                         {entry.action}
@@ -826,7 +847,7 @@ export default function Overview() {
                         {entry.entity} · {entry.actor}
                       </p>
                     </div>
-                    <span className="text-xs flex-shrink-0" style={{ color: 'hsl(var(--text-4))' }}>
+                    <span className="text-xs flex-shrink-0 font-mono" style={{ color: 'hsl(var(--text-4))' }}>
                       {formatDate(entry.timestamp.split('T')[0])}
                     </span>
                   </div>
