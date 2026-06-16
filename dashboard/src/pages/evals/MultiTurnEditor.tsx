@@ -1,128 +1,98 @@
-import { ArrowsLeftRight, ArrowRight, PencilLine, Play, GitDiff } from '@phosphor-icons/react';
+import { useState } from 'react';
+import { ChatCircleText, User, Robot, Gear, Plus, Trash, FloppyDisk, Play } from '@phosphor-icons/react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 
-const FEATURES = [
-  {
-    icon: PencilLine,
-    title: 'Turn-by-Turn Authoring',
-    desc: 'Compose multi-turn conversation test cases with a message editor — add system prompts, user turns, and expected assistant responses.',
-  },
-  {
-    icon: Play,
-    title: 'Live Execution',
-    desc: 'Run your authored conversation against any registered model in real time and capture the full response chain for comparison.',
-  },
-  {
-    icon: GitDiff,
-    title: 'Diff & Annotate',
-    desc: 'Diff model output against expected responses turn by turn and annotate failures directly inside the editor before saving to a dataset.',
-  },
+const INITIAL_TURNS = [
+  { id: '1', role: 'system', content: 'You are a helpful customer support agent for Sentinel. Be concise.' },
+  { id: '2', role: 'user', content: 'I need help resetting my API key.' },
+  { id: '3', role: 'assistant', content: 'I can help with that. Are you currently logged into the dashboard?' },
 ];
 
 export default function MultiTurnEditor() {
-  return (
-    <div style={{ padding: '2rem', maxWidth: 900, margin: '0 auto' }}>
+  const [turns, setTurns] = useState(INITIAL_TURNS);
 
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case 'system': return <Gear size={16} />;
+      case 'user': return <User size={16} />;
+      case 'assistant': return <Robot size={16} />;
+      default: return <ChatCircleText size={16} />;
+    }
+  };
+
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'system': return 'hsl(var(--text-4))';
+      case 'user': return 'hsl(var(--brand))';
+      case 'assistant': return 'hsl(142 71% 45%)';
+      default: return 'hsl(var(--text-3))';
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-[calc(100vh-64px)] w-full overflow-hidden" style={{ background: 'hsl(var(--bg-main))' }}>
+      
       {/* Header */}
-      <div style={{ marginBottom: '2rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-          <div style={{
-            width: 40, height: 40, borderRadius: 0,
-            background: 'hsl(var(--brand) / 0.12)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <ArrowsLeftRight size={22} style={{ color: 'hsl(var(--brand))' }} weight="duotone" />
-          </div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'hsl(var(--text-1))', margin: 0 }}>
-            Multi-Turn Editor
-          </h1>
+      <div className="h-16 flex items-center justify-between px-8 border-b border-[hsl(var(--border))]" style={{ background: 'hsl(var(--bg-surface))' }}>
+        <div>
+          <h1 className="text-lg font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Multi-Turn Scenario Editor</h1>
+          <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Define conversational paths for agent evaluation</p>
         </div>
-        <p style={{ color: 'hsl(var(--text-3))', fontSize: '0.95rem', margin: 0, lineHeight: 1.6 }}>
-          Author, execute, and annotate multi-turn conversation test cases — build rich dialogue datasets
-          and validate model behaviour across complex stateful interactions.
-        </p>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" style={{ borderRadius: 0 }}>
+            <Play size={16} className="mr-2" /> Test Scenario
+          </Button>
+          <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+            <FloppyDisk size={16} className="mr-2" /> Save Scenario
+          </Button>
+        </div>
       </div>
 
-      {/* Coming Soon card */}
-      <div style={{
-        border: '1px solid hsl(var(--border))',
-        borderRadius: 0,
-        background: 'hsl(var(--bg-surface))',
-        overflow: 'hidden',
-        marginBottom: '2rem',
-      }}>
-        {/* Banner */}
-        <div style={{
-          background: 'linear-gradient(135deg, hsl(var(--brand) / 0.08) 0%, hsl(var(--brand) / 0.02) 100%)',
-          borderBottom: '1px solid hsl(var(--border))',
-          padding: '3rem 2rem',
-          textAlign: 'center',
-        }}>
-          <div style={{
-            width: 72, height: 72, borderRadius: 0,
-            background: 'hsl(var(--brand) / 0.12)',
-            border: '1px solid hsl(var(--brand) / 0.25)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 1.25rem',
-          }}>
-            <ArrowsLeftRight size={36} style={{ color: 'hsl(var(--brand))' }} weight="duotone" />
-          </div>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
-            background: 'hsl(var(--s-in-bg))',
-            border: '1px solid hsl(var(--s-in-br))',
-            color: 'hsl(var(--s-in-tx))',
-            fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.06em',
-            padding: '0.25rem 0.75rem',
-            borderRadius: 0,
-            marginBottom: '1rem',
-          }}>
-            COMING SOON
-          </div>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'hsl(var(--text-1))', margin: '0 0 0.5rem' }}>
-            Multi-Turn Editor is in development
-          </h2>
-          <p style={{ color: 'hsl(var(--text-3))', fontSize: '0.9rem', maxWidth: 480, margin: '0 auto', lineHeight: 1.6 }}>
-            We're building an interactive editor for authoring, running, and annotating multi-turn dialogue
-            test cases — closing the loop between eval authoring and dataset creation in a single workflow.
-          </p>
-        </div>
-
-        {/* Feature previews */}
-        <div style={{ padding: '1.5rem 2rem' }}>
-          <p style={{ fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.07em', color: 'hsl(var(--text-3))', marginBottom: '1rem', textTransform: 'uppercase' }}>
-            What's coming
-          </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-            {FEATURES.map(({ icon: Icon, title, desc }) => (
-              <div key={title} style={{
-                padding: '1rem',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: 0,
-                background: 'hsl(var(--bg-raised))',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                  <Icon size={16} style={{ color: 'hsl(var(--brand))' }} weight="duotone" />
-                  <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'hsl(var(--text-1))' }}>{title}</span>
-                </div>
-                <p style={{ fontSize: '0.8rem', color: 'hsl(var(--text-3))', margin: 0, lineHeight: 1.55 }}>{desc}</p>
+      {/* Editor Area */}
+      <div className="flex-1 overflow-y-auto p-8 flex justify-center">
+        <div className="w-full max-w-2xl space-y-4">
+          
+          {turns.map((turn, index) => (
+            <Card key={turn.id} className="relative group border border-[hsl(var(--border))]" style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))' }}>
+              <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold bg-[hsl(var(--bg-muted))] border border-[hsl(var(--border))]" style={{ color: 'hsl(var(--text-3))' }}>
+                {index + 1}
               </div>
-            ))}
-          </div>
-        </div>
+              
+              <CardContent className="p-4 pl-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1 rounded bg-[hsl(var(--bg-muted))]" style={{ color: getRoleColor(turn.role) }}>
+                      {getRoleIcon(turn.role)}
+                    </div>
+                    <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'hsl(var(--text-1))' }}>
+                      {turn.role}
+                    </span>
+                  </div>
+                  <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 h-6 w-6" style={{ color: 'hsl(0 72% 51%)' }}>
+                    <Trash size={14} />
+                  </Button>
+                </div>
+                
+                <textarea 
+                  className="w-full p-3 text-sm bg-[hsl(var(--bg-main))] border border-[hsl(var(--border))] focus:outline-none focus:border-[hsl(var(--brand))] resize-none"
+                  rows={3}
+                  defaultValue={turn.content}
+                  style={{ borderRadius: 0, color: 'hsl(var(--text-1))' }}
+                />
+              </CardContent>
+            </Card>
+          ))}
 
-        {/* CTA row */}
-        <div style={{
-          borderTop: '1px solid hsl(var(--border))',
-          padding: '1rem 2rem',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          background: 'hsl(var(--bg-muted))',
-        }}>
-          <span style={{ fontSize: '0.85rem', color: 'hsl(var(--text-3))' }}>
-            View conversations from completed runs in <strong style={{ color: 'hsl(var(--text-2))' }}>Conversation Viewer</strong> or launch a new run via <strong style={{ color: 'hsl(var(--text-2))' }}>Eval Run Wizard</strong>.
-          </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'hsl(var(--brand))', fontSize: '0.85rem', fontWeight: 600, cursor: 'default', whiteSpace: 'nowrap' }}>
-            Learn more <ArrowRight size={14} />
+          <div className="flex items-center justify-center pt-4 gap-3">
+            <Button variant="outline" size="sm" style={{ borderRadius: 0, borderStyle: 'dashed' }}>
+              <Plus size={14} className="mr-2" /> Add User Turn
+            </Button>
+            <Button variant="outline" size="sm" style={{ borderRadius: 0, borderStyle: 'dashed' }}>
+              <Plus size={14} className="mr-2" /> Add Assistant Turn
+            </Button>
           </div>
+
         </div>
       </div>
     </div>
