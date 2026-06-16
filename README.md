@@ -37,18 +37,15 @@ Sentinel closes that gap.
 
 ## Core Modules
 
-| Module | Purpose |
-|--------|--------|
-| **Model Registry** | EU AI Act compliant inventory with risk classification, fairness tracking, drift monitoring |
-| **Trust Engine** | Real-time guardrail evaluation, live traces, cost attribution, fallback chains |
-| **Compliance** | Multi-framework control mapping across EU AI Act, ISO 42001, NIST AI RMF, GDPR, SOC 2 |
-| **Risk Register** | ISO 31000 risk management with 5x5 matrix, treatment plans, residual scoring |
-| **Bias Audits** | Fairness assessment with protected attribute analysis and remediation workflows |
-| **Agent Governance** | Discovery, IAM, choreography, and kill-switch for AI agent fleets |
-| **Vendor Registry** | Third-party AI risk with DPA tracking, concentration analysis, attestation management |
-| **Evidence Vault** | Cryptographically chained compliance evidence for audit readiness |
-| **HITL Reviews** | Human-in-the-loop oversight queue per EU AI Act Art. 14 |
-| **Incident Response** | AI-specific incident workflows with regulatory notification timers |
+Sentinel features over 100+ governance modules structured into 5 Enterprise GRC Pillars:
+
+| Pillar | Focus Area |
+|--------|------------|
+| **AI Governance** | Model Registry, AI Supply Chain, Bias Audits, Explainability, Red Teaming |
+| **Data & Privacy** | Data Maps, DPIAs, RoPA, Consent Management, Data Lineage |
+| **Risk & Compliance** | 5x5 Risk Register, Multi-framework Controls (EU AI Act, ISO 42001, NIST AI RMF), Evidence Vault |
+| **Security & Ops** | Threat Intel, Vulnerability Management, Incident Response, Kill Switches |
+| **Enterprise Readiness** | RBAC, Audit Logs, Vendor Management, Executive Board Reporting, Policy Library |
 
 ---
 

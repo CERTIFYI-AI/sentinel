@@ -53,10 +53,6 @@ Thumbs.db
 supabase/.branches/
 supabase/.temp/
 
-# Replit (not used)
-.replit
-replit.nix
-.replitignore
 
 # Development artifacts
 attached_assets/

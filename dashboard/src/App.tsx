@@ -290,7 +290,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TenantProvider>
-<BrowserRouter>
+<BrowserRouter basename="/">
       <Routes>
         {/* Public routes — no sidebar/header layout */}
         <Route element={<PublicRoute />}>

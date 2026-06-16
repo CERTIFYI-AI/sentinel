@@ -549,6 +549,72 @@ export default function Overview() {
         </CardContent>
       </Card>
 
+      {/* Agentic Governance & AI Supply Chain Trust */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+          <CardContent className="p-5">
+            <div className="flex items-start justify-between">
+              <div className="space-y-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'hsl(var(--text-4))' }}>AI Supply Chain Provenance</span>
+                <p className="text-2xl font-bold" style={{ color: 'hsl(var(--s-ok-tx))' }}>94.2%</p>
+                <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>48 of 51 production models carry verified cryptographic AIBOM attestations.</p>
+              </div>
+              <div style={{ background: 'hsl(var(--s-ok-bg))', padding: 8, borderRadius: 0 }}>
+                <ShieldCheck size={20} style={{ color: 'hsl(var(--s-ok-tx))' }} />
+              </div>
+            </div>
+            <div className="mt-4 pt-3 border-t border-[hsl(var(--border))] flex items-center justify-between">
+              <Link to="/aibom" className="text-xs font-semibold hover:underline" style={{ color: 'hsl(var(--brand))' }}>
+                View AIBOM Registry
+              </Link>
+              <ArrowRight size={12} style={{ color: 'hsl(var(--text-4))' }} />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+          <CardContent className="p-5">
+            <div className="flex items-start justify-between">
+              <div className="space-y-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'hsl(var(--text-4))' }}>Shadow AI Discovery</span>
+                <p className="text-2xl font-bold" style={{ color: 'hsl(var(--s-wn-tx))' }}>2 Isolated</p>
+                <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Unapproved LLM endpoints detected in marketing pipelines and automatically quarantined.</p>
+              </div>
+              <div style={{ background: 'hsl(var(--s-wn-bg))', padding: 8, borderRadius: 0 }}>
+                <Warning size={20} style={{ color: 'hsl(var(--s-wn-tx))' }} />
+              </div>
+            </div>
+            <div className="mt-4 pt-3 border-t border-[hsl(var(--border))] flex items-center justify-between">
+              <Link to="/agents/shadow-ai" className="text-xs font-semibold hover:underline" style={{ color: 'hsl(var(--brand))' }}>
+                Review Shadow AI Logs
+              </Link>
+              <ArrowRight size={12} style={{ color: 'hsl(var(--text-4))' }} />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+          <CardContent className="p-5">
+            <div className="flex items-start justify-between">
+              <div className="space-y-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'hsl(var(--text-4))' }}>Agent Safety Gates</span>
+                <p className="text-2xl font-bold" style={{ color: 'hsl(var(--brand))' }}>100% Armed</p>
+                <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>All active autonomous agents successfully bound to active emergency kill switches.</p>
+              </div>
+              <div style={{ background: 'hsl(var(--brand-subtle))', padding: 8, borderRadius: 0 }}>
+                <Lightning size={20} style={{ color: 'hsl(var(--brand))' }} />
+              </div>
+            </div>
+            <div className="mt-4 pt-3 border-t border-[hsl(var(--border))] flex items-center justify-between">
+              <Link to="/kill-switch" className="text-xs font-semibold hover:underline" style={{ color: 'hsl(var(--brand))' }}>
+                Manage Kill Switches
+              </Link>
+              <ArrowRight size={12} style={{ color: 'hsl(var(--text-4))' }} />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Top 4 KPI StatCardRow */}
       <StatCardRow
         cards={[
@@ -1083,6 +1149,186 @@ export default function Overview() {
                   </tr>
                 );
               })}
+            </tbody>
+          </table>
+        </CardContent>
+      </Card>
+
+      {/* ── ENTERPRISE GRC FEATURES ───────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Model Risk Heat Map */}
+        <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+              Model Risk Heat Map
+            </CardTitle>
+            <Link to="/models/inventory">
+              <Button variant="ghost" size="sm" style={{ fontSize: 11, padding: '2px 8px' }}>
+                View All <ArrowRight size={12} className="ml-1" />
+              </Button>
+            </Link>
+          </CardHeader>
+          <CardContent className="p-4">
+            <div className="w-full">
+              <table className="w-full text-xs text-center border-collapse">
+                <thead>
+                  <tr>
+                    <th className="p-2 border border-[hsl(var(--border))] text-left font-semibold text-[hsl(var(--text-3))]">Risk / Stage</th>
+                    <th className="p-2 border border-[hsl(var(--border))] font-semibold text-[hsl(var(--text-2))]">Dev</th>
+                    <th className="p-2 border border-[hsl(var(--border))] font-semibold text-[hsl(var(--text-2))]">Val</th>
+                    <th className="p-2 border border-[hsl(var(--border))] font-semibold text-[hsl(var(--text-2))]">Prod</th>
+                    <th className="p-2 border border-[hsl(var(--border))] font-semibold text-[hsl(var(--text-2))]">Ret</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { label: 'Unacceptable', data: [0, 1, 0, 0], color: 'hsl(0 72% 51%)', bg: 'hsl(0 72% 51% / 0.15)' },
+                    { label: 'High', data: [4, 3, 2, 1], color: 'hsl(0 72% 51%)', bg: 'hsl(0 72% 51% / 0.1)' },
+                    { label: 'Limited', data: [8, 5, 12, 3], color: 'hsl(45 93% 47%)', bg: 'hsl(45 93% 47% / 0.1)' },
+                    { label: 'Minimal', data: [15, 8, 34, 12], color: 'hsl(142 71% 45%)', bg: 'hsl(142 71% 45% / 0.1)' },
+                  ].map((row, i) => (
+                    <tr key={i}>
+                      <td className="p-2 border border-[hsl(var(--border))] text-left font-medium" style={{ color: 'hsl(var(--text-2))' }}>{row.label}</td>
+                      {row.data.map((val, j) => (
+                        <td key={j} className="p-2 border border-[hsl(var(--border))] relative group cursor-pointer hover:bg-[hsl(var(--muted)/0.3)] transition-colors">
+                          {val > 0 && (
+                            <div className="absolute inset-1 rounded-sm" style={{ background: row.bg, opacity: val > 5 ? 1 : 0.6 }} />
+                          )}
+                          <span className="relative z-10 font-bold" style={{ color: val > 0 ? row.color : 'hsl(var(--text-4))' }}>{val}</span>
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Real-Time Trust Score */}
+        <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+              Real-Time Trust Score
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="text-5xl font-bold" style={{ color: 'hsl(142 71% 45%)' }}>86</div>
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold px-2 py-0.5" style={{ background: 'hsl(142 71% 45% / 0.15)', color: 'hsl(142 71% 45%)', borderRadius: 0 }}>TRUSTED</span>
+                  <span className="text-[10px] uppercase tracking-wider mt-1" style={{ color: 'hsl(var(--text-4))' }}>Organization Average</span>
+                </div>
+              </div>
+              <div className="space-y-2 w-full pr-8">
+                {[
+                  { label: 'Fairness & Bias', score: 78, color: 'hsl(45 93% 47%)' },
+                  { label: 'Transparency', score: 82, color: 'hsl(142 71% 45%)' },
+                  { label: 'Accountability', score: 91, color: 'hsl(142 71% 45%)' },
+                  { label: 'Safety & Security', score: 89, color: 'hsl(142 71% 45%)' },
+                  { label: 'Privacy', score: 94, color: 'hsl(142 71% 45%)' },
+                ].map(metric => (
+                  <div key={metric.label} className="w-full flex items-center justify-between gap-3 text-xs">
+                    <span className="w-28 truncate" style={{ color: 'hsl(var(--text-2))' }}>{metric.label}</span>
+                    <div className="flex-1 h-1.5 bg-[hsl(var(--bg-raised))]">
+                      <div className="h-full" style={{ width: `${metric.score}%`, background: metric.score >= 80 ? 'hsl(142 71% 45%)' : 'hsl(45 93% 47%)' }} />
+                    </div>
+                    <span className="w-6 text-right font-mono" style={{ color: metric.color }}>{metric.score}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex-shrink-0 w-32 h-32 relative flex items-center justify-center rounded-full border-4 border-[hsl(var(--border))]">
+              <ShieldCheck size={48} style={{ color: 'hsl(142 71% 45%)' }} />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Compliance Calendar Strip */}
+      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+        <CardHeader className="pb-3 flex flex-row items-center justify-between">
+          <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+            Compliance Calendar (90 Days)
+          </CardTitle>
+          <Link to="/compliance/frameworks">
+            <Button variant="ghost" size="sm" style={{ fontSize: 11, padding: '2px 8px' }}>
+              Full Calendar <ArrowRight size={12} className="ml-1" />
+            </Button>
+          </Link>
+        </CardHeader>
+        <CardContent className="p-4 overflow-x-auto">
+          <div className="flex items-center gap-4 min-w-max pb-2">
+            {[
+              { date: 'Today', event: 'GDPR Article 22 Report', type: 'Filing', status: 'overdue', color: 'hsl(0 72% 51%)' },
+              { date: 'In 3 Days', event: 'ISO 42001 Internal Audit', type: 'Audit', status: 'urgent', color: 'hsl(45 93% 47%)' },
+              { date: 'In 12 Days', event: 'AI Ethics Board Review', type: 'Meeting', status: 'upcoming', color: 'hsl(var(--brand))' },
+              { date: 'In 24 Days', event: 'NIST RMF Gap Analysis', type: 'Review', status: 'upcoming', color: 'hsl(var(--text-2))' },
+              { date: 'In 45 Days', event: 'EU AI Act Tier Check', type: 'Filing', status: 'upcoming', color: 'hsl(var(--text-2))' },
+              { date: 'In 60 Days', event: 'Model Retraining Attestation', type: 'Attestation', status: 'upcoming', color: 'hsl(var(--text-2))' },
+            ].map((item, i) => (
+              <div key={i} className="flex-shrink-0 w-48 p-3 border border-[hsl(var(--border))] flex flex-col gap-2 relative overflow-hidden group hover:border-[hsl(var(--brand))] transition-colors cursor-pointer">
+                {item.status === 'overdue' && <div className="absolute top-0 left-0 w-full h-1" style={{ background: item.color }} />}
+                {item.status === 'urgent' && <div className="absolute top-0 left-0 w-full h-1" style={{ background: item.color }} />}
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: item.color }}>{item.date}</span>
+                  <Badge style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))', fontSize: 9, borderRadius: 0 }}>{item.type}</Badge>
+                </div>
+                <p className="text-sm font-medium leading-snug line-clamp-2 mt-1" style={{ color: 'hsl(var(--text-1))' }}>{item.event}</p>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* AI System Coverage Map */}
+      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+        <CardHeader className="pb-3 flex flex-row items-center justify-between">
+          <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+            AI System Governance Coverage
+          </CardTitle>
+          <Link to="/governance">
+            <Button variant="ghost" size="sm" style={{ fontSize: 11, padding: '2px 8px' }}>
+              Manage Mesh <ArrowRight size={12} className="ml-1" />
+            </Button>
+          </Link>
+        </CardHeader>
+        <CardContent className="p-0 overflow-x-auto">
+          <table className="w-full text-left">
+            <thead style={{ background: 'hsl(var(--bg-muted))' }}>
+              <tr>
+                <th className="p-3 text-xs font-semibold text-[hsl(var(--text-2))] border-b border-[hsl(var(--border))]">Production System</th>
+                <th className="p-3 text-xs font-semibold text-center text-[hsl(var(--text-3))] border-b border-[hsl(var(--border))]">Bias Audit</th>
+                <th className="p-3 text-xs font-semibold text-center text-[hsl(var(--text-3))] border-b border-[hsl(var(--border))]">Explainability</th>
+                <th className="p-3 text-xs font-semibold text-center text-[hsl(var(--text-3))] border-b border-[hsl(var(--border))]">DPIA</th>
+                <th className="p-3 text-xs font-semibold text-center text-[hsl(var(--text-3))] border-b border-[hsl(var(--border))]">Red Teamed</th>
+                <th className="p-3 text-xs font-semibold text-center text-[hsl(var(--text-3))] border-b border-[hsl(var(--border))]">Kill Switch</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[hsl(var(--border))]">
+              {[
+                { name: 'Customer Service Orchestrator', type: 'LLM Agent', coverage: [1, 1, 1, 1, 1] },
+                { name: 'Credit Risk Scorer v3', type: 'ML Model', coverage: [1, 1, 1, 0, 0] },
+                { name: 'HR Resume Screener', type: 'NLP Classifier', coverage: [0, 1, 1, 1, 0] },
+                { name: 'Marketing Copy Generator', type: 'GenAI Tool', coverage: [1, 0, 0, 0, 0] },
+              ].map((sys, i) => (
+                <tr key={i} className="hover:bg-[hsl(var(--muted)/0.3)] transition-colors">
+                  <td className="p-3">
+                    <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{sys.name}</p>
+                    <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{sys.type}</p>
+                  </td>
+                  {sys.coverage.map((c, j) => (
+                    <td key={j} className="p-3 text-center">
+                      {c ? (
+                        <CheckCircle size={16} weight="fill" className="mx-auto" style={{ color: 'hsl(142 71% 45%)' }} />
+                      ) : (
+                        <X size={16} weight="bold" className="mx-auto" style={{ color: 'hsl(0 72% 51%)' }} />
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))}
             </tbody>
           </table>
         </CardContent>
