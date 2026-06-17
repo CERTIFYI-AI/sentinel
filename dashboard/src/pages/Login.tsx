@@ -325,11 +325,11 @@ export default function Login() {
           </p>
 
           {/* Legal footer */}
-          <p className="mt-6 text-center text-[11px] leading-relaxed" style={{ color: 'hsl(var(--text-4))' }}>
+          <p className="mt-6 text-center text-[11px] leading-relaxed" style={{ color: 'hsl(var(--text-3))' }}>
             By signing in you agree to our{' '}
-            <a href="#" className="hover:underline" style={{ color: 'hsl(var(--brand))' }}>Terms of Service</a>
+            <a href="#" className="underline hover:text-[hsl(var(--brand-hover))]" style={{ color: 'hsl(var(--brand))' }}>Terms of Service</a>
             {' '}and{' '}
-            <a href="#" className="hover:underline" style={{ color: 'hsl(var(--brand))' }}>Privacy Policy</a>.
+            <a href="#" className="underline hover:text-[hsl(var(--brand-hover))]" style={{ color: 'hsl(var(--brand))' }}>Privacy Policy</a>.
             <br />Protected by AES-256 encryption · SOC 2 Type II certified
           </p>
         </div>

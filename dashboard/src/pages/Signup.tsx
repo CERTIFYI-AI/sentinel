@@ -267,9 +267,9 @@ export default function Signup() {
                 <input type="checkbox" checked={form.agreeTerms} onChange={e => set('agreeTerms', e.target.checked)} className="mt-0.5 w-3.5 h-3.5 accent-[hsl(var(--brand))]" />
                 <span className="text-sm leading-snug" style={{ color: 'hsl(var(--text-3))' }}>
                   I agree to the{' '}
-                  <a href="#" className="hover:underline font-medium" style={{ color: 'hsl(var(--brand))' }}>Terms of Service</a>
+                  <a href="#" className="underline font-medium" style={{ color: 'hsl(var(--brand))' }}>Terms of Service</a>
                   {' '}and{' '}
-                  <a href="#" className="hover:underline font-medium" style={{ color: 'hsl(var(--brand))' }}>Privacy Policy</a>
+                  <a href="#" className="underline font-medium" style={{ color: 'hsl(var(--brand))' }}>Privacy Policy</a>
                 </span>
               </label>
               {errors.agreeTerms && <p className="text-xs" style={{ color: 'hsl(var(--s-er-tx))' }}>{errors.agreeTerms}</p>}

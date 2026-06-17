@@ -653,8 +653,8 @@ export default function Overview() {
         ]}
       />
 
-      {/* KPI Tiles — responsive grid: 3 cols → 3 cols → 6 cols */}
-      <div id="main-content" className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
+      {/* KPI Tiles — responsive grid: 3 cols → 3 cols → 3 cols */}
+      <div id="main-content" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {kpis.map(k => {
           const trend = KPI_TRENDS[k.label];
           const isNegative = k.label === 'Open Risks' || k.label === 'Critical Incidents' || k.label === 'Open Tasks';
