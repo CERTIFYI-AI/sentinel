@@ -248,7 +248,7 @@ export default function EvidenceVault() {
       <StatCardRow cards={evidenceKpiCards} />
 
       {/* ── Compliance Continuity Hero ── */}
-      <div style={{ background: 'hsl(var(--brand) / 0.06)', border: '2px solid hsl(var(--brand) / 0.3)', padding: '20px 24px' }}>
+      <div style={{ background: 'hsl(var(--brand-subtle))', border: '2px solid hsl(var(--brand-subtle))', padding: '20px 24px' }}>
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">

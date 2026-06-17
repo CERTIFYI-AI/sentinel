@@ -204,7 +204,7 @@ function IncidentTimeline({ status }: { status: string }) {
                 {isPast && <Check size={14} weight="bold" style={{ color: '#fff' }} />}
                 {isCurrent && (
                   <>
-                    <div className="w-2.5 h-2.5 bg-white" style={{ borderRadius: '50%' }} />
+                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'hsl(var(--bg-page))' }} />
                     <div className="absolute inset-0 animate-ping opacity-30" style={{ background: 'hsl(var(--brand))', borderRadius: '50%' }} />
                   </>
                 )}
@@ -299,7 +299,7 @@ function PhaseTimeline({ incident }: { incident: Incident }) {
                   {isPast && <Check size={14} weight="bold" style={{ color: '#fff' }} />}
                   {isCurrent && (
                     <>
-                      <div className="w-2.5 h-2.5 bg-white" style={{ borderRadius: '50%' }} />
+                      <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'hsl(var(--bg-page))' }} />
                       <div className="absolute inset-0 animate-ping opacity-20" style={{ background: 'hsl(var(--brand))', borderRadius: '50%' }} />
                     </>
                   )}

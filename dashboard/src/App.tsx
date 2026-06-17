@@ -15,7 +15,6 @@ import { useAuthStore } from './store/authStore';
 import { initSessionGuard, destroySessionGuard } from './lib/sessionGuard';
 
 const SecurityHome = lazy(() => import('./pages/security/SecurityHome'));
-const SecurityOverview = lazy(() => import('./pages/security/SecurityOverview'));
 const ThreatFeed = lazy(() => import('./pages/security/ThreatFeed'));
 const ScanCenter = lazy(() => import('./pages/security/ScanCenter'));
 const AttackSurface = lazy(() => import('./pages/security/AttackSurface'));
@@ -45,7 +44,6 @@ const Datasets = lazy(() => import('./pages/Datasets'));
 const EvidenceVault = lazy(() => import('./pages/EvidenceVault'));
 const ExportCenter = lazy(() => import('./pages/ExportCenter'));
 const GapAnalysis = lazy(() => import('./pages/GapAnalysis'));
-const HitlQueue = lazy(() => import('./pages/HitlQueue'));
 const IncidentLog = lazy(() => import('./pages/IncidentLog'));
 const ModelInventory = lazy(() => import('./pages/ModelInventory'));
 const ModelInventoryPage = lazy(() => import('./pages/models/ModelInventoryPage'));
@@ -100,6 +98,8 @@ const Frameworks = lazy(() => import('./pages/Frameworks'));
 
 
 const UseCasePage = lazy(() => import('./pages/use-cases/UseCasePage'));
+const UseCaseCreate = lazy(() => import('./pages/use-cases/UseCaseCreate'));
+const UseCaseDetail = lazy(() => import('./pages/use-cases/UseCaseDetail'));
 const ExplainabilityCenterNew = lazy(() => import('./pages/explainability/ExplainabilityCenter'));
 const ConformityAssessmentNew = lazy(() => import('./pages/conformity/ConformityAssessment'));
 const DataGovernancePage = lazy(() => import('./pages/data-governance/DataGovernancePage'));
@@ -168,32 +168,6 @@ const EvidenceChain = lazy(() => import('./pages/EvidenceChain'));
 const EvidenceCustodyExplorer = lazy(() => import('./pages/EvidenceCustodyExplorer'));
 const AutomationStudio = lazy(() => import('./pages/AutomationStudio'));
 
-// --- WS2 Scaffolded GA-Critical Modules ---
-const BoardReports = lazy(() => import('./pages/scaffold/BoardReports'));
-const CommitteeCalendar = lazy(() => import('./pages/scaffold/CommitteeCalendar'));
-const PolicyLibrary = lazy(() => import('./pages/scaffold/PolicyLibrary'));
-const PolicyAttestation = lazy(() => import('./pages/scaffold/PolicyAttestation'));
-const RegulatoryHorizon = lazy(() => import('./pages/scaffold/RegulatoryHorizon'));
-const ThirdPartyInventory = lazy(() => import('./pages/scaffold/ThirdPartyInventory'));
-const ScaffoldVendorAssessments = lazy(() => import('./pages/scaffold/VendorAssessments'));
-const VendorContractReview = lazy(() => import('./pages/scaffold/VendorContractReview'));
-const IncidentResponsePlaybooks = lazy(() => import('./pages/scaffold/IncidentResponsePlaybooks'));
-const PostIncidentReviews = lazy(() => import('./pages/scaffold/PostIncidentReviews'));
-const ThreatIntelFeed = lazy(() => import('./pages/scaffold/ThreatIntelFeed'));
-const VulnerabilityProgram = lazy(() => import('./pages/scaffold/VulnerabilityProgram'));
-const PrivacyDpiaBuilder = lazy(() => import('./pages/scaffold/PrivacyDpiaBuilder'));
-const PrivacyRopa = lazy(() => import('./pages/scaffold/PrivacyRopa'));
-const PrivacyTransferLog = lazy(() => import('./pages/scaffold/PrivacyTransferLog'));
-const DataMap = lazy(() => import('./pages/scaffold/DataMap'));
-const ScaffoldDataLineage = lazy(() => import('./pages/scaffold/DataLineage'));
-const DataQualityMetrics = lazy(() => import('./pages/scaffold/DataQualityMetrics'));
-const AiRedTeam = lazy(() => import('./pages/scaffold/AiRedTeam'));
-const AiModelRegistry = lazy(() => import('./pages/scaffold/AiModelRegistry'));
-const AiPromptLibrary = lazy(() => import('./pages/scaffold/AiPromptLibrary'));
-const TrainingPrograms = lazy(() => import('./pages/scaffold/TrainingPrograms'));
-const AwarenessCampaigns = lazy(() => import('./pages/scaffold/AwarenessCampaigns'));
-const SoxItGc = lazy(() => import('./pages/scaffold/SoxItGc'));
-const InsuranceCoverage = lazy(() => import('./pages/scaffold/InsuranceCoverage'));
 
 // --- V1 Missing Modules ---
 const AssetManagement = lazy(() => import("@/pages/AssetManagement"));
@@ -204,7 +178,15 @@ const TabletopExercises = lazy(() => import("@/pages/TabletopExercises"));
 const RegulatorFilings = lazy(() => import("@/pages/RegulatorFilings"));
 const BIA = lazy(() => import("@/pages/BIA"));
 
-// ── 5 Enterprise Command Modules ─────────────────────────────────────────────
+// ── AI Gateway Modules ──────────────────────────────────────────────────────
+const AiPlayground = lazy(() => import('./pages/ai-gateway/Playground'));
+
+// ── MCP Gateway Modules ─────────────────────────────────────────────────────
+const McpOverview = lazy(() => import('./pages/mcp-gateway/Overview'));
+const McpServers = lazy(() => import('./pages/mcp-gateway/Servers'));
+const McpToolCatalog = lazy(() => import('./pages/mcp-gateway/ToolCatalog'));
+
+// ============================================================================── 5 Enterprise Command Modules ─────────────────────────────────────────────
 const ExecutiveCenter = lazy(() => import('./pages/ExecutiveCenter'));
 const ModelRiskCommittee = lazy(() => import('./pages/ModelRiskCommittee'));
 const ValueRealization = lazy(() => import('./pages/ValueRealization'));
@@ -312,20 +294,19 @@ export default function App() {
           <Route path="/" element={<Navigate to="/overview" replace />} />
           <Route path="/overview" element={<Overview />} />
           <Route path="/security" element={<SecurityHome />} />
-          <Route path="/security/overview" element={<SecurityOverview />} />
+          <Route path="/security/overview" element={<SecurityHome />} />
           <Route path="/security/threats" element={<ThreatFeed />} />
           <Route path="/security/scans" element={<ScanCenter />} />
           <Route path="/security/scanner" element={<ScanCenter />} />
           <Route path="/security/attack-surface" element={<AttackSurface />} />
-          <Route path="/security/vulnerabilities" element={<VulnTracker />} />
-          <Route path="/security/red-team" element={<RedTeamLab />} />
+          <Route path="/security/model-auditor" element={<SecurityHome />} />
+          <Route path="/security/vuln-tracker" element={<VulnTracker />} />
           <Route path="/security/policies" element={<PolicyFirewall />} />
           <Route path="/security/keys" element={<KeysVault />} />
           <Route path="/security/model-arena" element={<ModelArena />} />
           <Route path="/security/reports" element={<ReportGenerator />} />
           <Route path="/security/jit" element={<Suspense fallback={<Loading />}><JitElevation /></Suspense>} />
           <Route path="/security/mfa" element={<Suspense fallback={<Loading />}><MfaEnrollment /></Suspense>} />
-          <Route path="/security/model-auditor" element={<SecurityOverview />} />
           <Route path="/security/campaigns" element={<ThreatFeed />} />
           <Route path="/security/frameworks" element={<SecurityHome />} />
           <Route path="/security/strategy" element={<SecurityHome />} />
@@ -426,6 +407,8 @@ export default function App() {
           <Route path="/evals/conversation" element={<ConversationViewer />} />
 
           <Route path="/use-cases" element={<UseCasePage />} />
+          <Route path="/use-cases/new" element={<UseCaseCreate />} />
+          <Route path="/use-cases/:id" element={<UseCaseDetail />} />
           <Route path="/data-governance" element={<DataGovernancePage />} />
           <Route path="/notifications/regulatory" element={<StakeholderNotifications />} />
           <Route path="/incident-workflow" element={<IncidentWorkflow />} />
@@ -534,32 +517,27 @@ export default function App() {
             <Route path="/tabletop" element={<Suspense fallback={<Loading />}><TabletopExercises /></Suspense>} />
             <Route path="/regulator-filings" element={<Suspense fallback={<Loading />}><RegulatorFilings /></Suspense>} />
             <Route path="/bia" element={<Suspense fallback={<Loading />}><BIA /></Suspense>} />
-            {/* WS2 Scaffolded GA-Critical Modules */}
-            <Route path="/board/reports" element={<Suspense fallback={<Loading />}><BoardReports /></Suspense>} />
-            <Route path="/board/committee-calendar" element={<Suspense fallback={<Loading />}><CommitteeCalendar /></Suspense>} />
-            <Route path="/governance/policies" element={<Suspense fallback={<Loading />}><PolicyLibrary /></Suspense>} />
-            <Route path="/governance/attestation" element={<Suspense fallback={<Loading />}><PolicyAttestation /></Suspense>} />
-            <Route path="/governance/regulatory-horizon" element={<Suspense fallback={<Loading />}><RegulatoryHorizon /></Suspense>} />
-            <Route path="/vendors/inventory" element={<Suspense fallback={<Loading />}><ThirdPartyInventory /></Suspense>} />
-            <Route path="/vendors/assessments" element={<Suspense fallback={<Loading />}><VendorAssessments /></Suspense>} />
-            <Route path="/vendors/contracts" element={<Suspense fallback={<Loading />}><VendorContractReview /></Suspense>} />
-            <Route path="/incidents/playbooks" element={<Suspense fallback={<Loading />}><IncidentResponsePlaybooks /></Suspense>} />
-            <Route path="/incidents/post-mortems" element={<Suspense fallback={<Loading />}><PostIncidentReviews /></Suspense>} />
-            <Route path="/threat/intel-feed" element={<Suspense fallback={<Loading />}><ThreatIntelFeed /></Suspense>} />
-            <Route path="/threat/vulnerability-program" element={<Suspense fallback={<Loading />}><VulnerabilityProgram /></Suspense>} />
-            <Route path="/privacy/dpia" element={<Suspense fallback={<Loading />}><PrivacyDpiaBuilder /></Suspense>} />
-            <Route path="/privacy/ropa" element={<Suspense fallback={<Loading />}><PrivacyRopa /></Suspense>} />
-            <Route path="/privacy/transfers" element={<Suspense fallback={<Loading />}><PrivacyTransferLog /></Suspense>} />
-            <Route path="/data/data-map" element={<Suspense fallback={<Loading />}><DataMap /></Suspense>} />
-            <Route path="/data/lineage" element={<Suspense fallback={<Loading />}><DataLineage /></Suspense>} />
-            <Route path="/data/quality-metrics" element={<Suspense fallback={<Loading />}><DataQualityMetrics /></Suspense>} />
-            <Route path="/ai/red-team" element={<Suspense fallback={<Loading />}><AiRedTeam /></Suspense>} />
-            <Route path="/ai/model-registry" element={<Suspense fallback={<Loading />}><AiModelRegistry /></Suspense>} />
-            <Route path="/ai/prompt-library" element={<Suspense fallback={<Loading />}><AiPromptLibrary /></Suspense>} />
-            <Route path="/training/programs" element={<Suspense fallback={<Loading />}><TrainingPrograms /></Suspense>} />
-            <Route path="/training/awareness" element={<Suspense fallback={<Loading />}><AwarenessCampaigns /></Suspense>} />
-            <Route path="/assurance/sox-itgc" element={<Suspense fallback={<Loading />}><SoxItGc /></Suspense>} />
-            <Route path="/assurance/insurance" element={<Suspense fallback={<Loading />}><InsuranceCoverage /></Suspense>} />
+
+            {/* AI Gateway Modules */}
+            <Route path="/ai-gateway/playground" element={<Suspense fallback={<Loading />}><AiPlayground /></Suspense>} />
+            <Route path="/ai-gateway/analytics" element={<Suspense fallback={<Loading />}><CostTokenDashboard /></Suspense>} />
+            <Route path="/ai-gateway/endpoints" element={<Suspense fallback={<Loading />}><TrustConfig /></Suspense>} />
+            <Route path="/ai-gateway/prompts" element={<Suspense fallback={<Loading />}><PromptRegistryPage /></Suspense>} />
+            <Route path="/ai-gateway/guardrails" element={<Suspense fallback={<Loading />}><GuardrailActivity /></Suspense>} />
+            <Route path="/ai-gateway/logs" element={<Suspense fallback={<Loading />}><LiveTraceFeed /></Suspense>} />
+            <Route path="/ai-gateway/keys" element={<Suspense fallback={<Loading />}><KeysVault /></Suspense>} />
+            <Route path="/ai-gateway/models" element={<Suspense fallback={<Loading />}><ModelInventoryPage /></Suspense>} />
+            <Route path="/ai-gateway/settings" element={<Suspense fallback={<Loading />}><TrustConfig /></Suspense>} />
+
+            {/* MCP Gateway Modules */}
+            <Route path="/mcp-gateway/overview" element={<Suspense fallback={<Loading />}><McpOverview /></Suspense>} />
+            <Route path="/mcp-gateway/servers" element={<Suspense fallback={<Loading />}><McpServers /></Suspense>} />
+            <Route path="/mcp-gateway/tools" element={<Suspense fallback={<Loading />}><McpToolCatalog /></Suspense>} />
+            <Route path="/mcp-gateway/keys" element={<Suspense fallback={<Loading />}><AgentIAM /></Suspense>} />
+            <Route path="/mcp-gateway/logs" element={<Suspense fallback={<Loading />}><ToolCallMonitor /></Suspense>} />
+            <Route path="/mcp-gateway/approvals" element={<Suspense fallback={<Loading />}><HITLReviewCenter /></Suspense>} />
+            <Route path="/mcp-gateway/guardrails" element={<Suspense fallback={<Loading />}><GuardrailActivity /></Suspense>} />
+            {/* WS2 Scaffolded GA-Critical Modules (Removed - Functionality covered by main modules) */}
           <Route path="*" element={<Suspense fallback={<Loading />}><NotFound /></Suspense>} />
         </Route>
       </Routes>

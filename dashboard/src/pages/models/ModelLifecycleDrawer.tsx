@@ -232,7 +232,7 @@ export default function ModelLifecycleDrawer({ model: propModel, modelId, onClos
                         </span>
                       </div>
                       {idx < PHASE_ORDER.length - 1 && (
-                        <div style={{ flex: 1, height: 2, background: isPast ? LIFECYCLE_PHASES[phase].color + '40' : 'hsl(var(--border))', marginBottom: 20, mx: 2 }} />
+                        <div style={{ flex: 1, height: 2, background: isPast ? LIFECYCLE_PHASES[phase].color + '40' : 'hsl(var(--border))', marginBottom: 20, marginLeft: 4, marginRight: 4 }} />
                       )}
                     </div>
                   );

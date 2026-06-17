@@ -12,6 +12,7 @@ export interface StatCardRowItem {
   value: React.ReactNode
   delta?: string
   deltaDir?: 'up' | 'down'
+  variant?: 'default' | 'danger' | 'warning' | 'success' | 'error' | 'warn' | 'ok' | 'info'
   isPositiveUp?: boolean
   icon?: React.ReactNode
   /** href makes the card a navigation affordance */

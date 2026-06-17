@@ -2,6 +2,13 @@ import { useState } from 'react'
 import { FileMagnifyingGlass, Plus, Eye, X, Trash, PencilSimple, Export, Warning, CheckCircle, Clock, MagnifyingGlass, ArrowRight } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { StatCardRow, StatCardRowItem } from '../components/ui/StatCardRow'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
+import { Card } from '../components/ui/card'
+import { Badge } from '../components/ui/badge'
+import { Button } from '../components/ui/button'
+import { Input } from '../components/ui/input'
+import { PageHeader } from '../components/ui/PageHeader'
 
 // WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
@@ -137,32 +144,32 @@ const BLANK: Omit<AIIA, 'id' | 'findings'> = {
 }
 
 const STATUS_STYLE: Record<AIIAStatus, { bg: string; color: string }> = {
-  Draft: { bg: 'hsl(0 0% 50% / 0.12)', color: 'hsl(var(--text-4))' },
-  'In Progress': { bg: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))' },
-  'Pending Review': { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)' },
-  Approved: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
-  Rejected: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
-  Completed: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
+  Draft: { bg: 'bg-[hsl(var(--surface-3))]', color: 'text-[hsl(var(--text-3))]' },
+  'In Progress': { bg: 'bg-[hsl(var(--brand-subtle))]', color: 'text-[hsl(var(--brand))]' },
+  'Pending Review': { bg: 'bg-yellow-500/10', color: 'text-yellow-500' },
+  Approved: { bg: 'bg-emerald-500/10', color: 'text-emerald-500' },
+  Rejected: { bg: 'bg-red-500/10', color: 'text-red-500' },
+  Completed: { bg: 'bg-emerald-500/10', color: 'text-emerald-500' },
 }
 
 const RISK_STYLE: Record<RiskLevel, { bg: string; color: string }> = {
-  Critical: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))' },
-  High: { bg: 'hsl(25 95% 45% / 0.12)', color: 'hsl(25 85% 40%)' },
-  Medium: { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)' },
-  Low: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(var(--s-ok-tx))' },
-  Minimal: { bg: 'hsl(142 71% 45% / 0.08)', color: 'hsl(var(--s-ok-tx))' },
+  Critical: { bg: 'bg-red-500/10', color: 'text-red-500' },
+  High: { bg: 'bg-orange-500/10', color: 'text-orange-500' },
+  Medium: { bg: 'bg-yellow-500/10', color: 'text-yellow-500' },
+  Low: { bg: 'bg-emerald-500/10', color: 'text-emerald-500' },
+  Minimal: { bg: 'bg-emerald-500/10', color: 'text-emerald-500' },
 }
 
 const MITIGATION_STATUS: Record<string, { bg: string; color: string }> = {
-  Implemented: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
-  Planned: { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)' },
-  'Not Applicable': { bg: 'hsl(0 0% 50% / 0.10)', color: 'hsl(var(--text-4))' },
+  Implemented: { bg: 'bg-emerald-500/10', color: 'text-emerald-500' },
+  Planned: { bg: 'bg-yellow-500/10', color: 'text-yellow-500' },
+  'Not Applicable': { bg: 'bg-[hsl(var(--surface-3))]', color: 'text-[hsl(var(--text-3))]' },
 }
 
-const FINDING_SEV: Record<string, { bg: string; color: string }> = {
-  High: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
-  Medium: { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)' },
-  Low: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(var(--s-ok-tx))' },
+const FINDING_SEV: Record<string, { bg: string; color: string, border: string }> = {
+  High: { bg: 'bg-red-500/10', color: 'text-red-500', border: 'border-red-500' },
+  Medium: { bg: 'bg-orange-500/10', color: 'text-orange-500', border: 'border-orange-500' },
+  Low: { bg: 'bg-emerald-500/10', color: 'text-emerald-500', border: 'border-emerald-500' },
 }
 
 export default function AIImpactAssessments() {
@@ -238,227 +245,240 @@ export default function AIImpactAssessments() {
   const sf = (k: keyof typeof form, v: any) => setForm(prev => ({ ...prev, [k]: v }))
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-[hsl(var(--text-1))] flex items-center gap-2">
-            <FileMagnifyingGlass size={20} className="text-[hsl(var(--brand))]" />
-            AI Impact Assessments
-          </h1>
-          <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">Document and review the impact of AI systems on individuals and society per EU AI Act Art. 9</p>
-        </div>
+      <div className="flex items-start justify-between">
+        <PageHeader 
+          title="AI Impact Assessments" 
+          description="Document and review the impact of AI systems on individuals and society per EU AI Act Art. 9"
+        />
         <div className="flex gap-2">
-          <button onClick={() => toast.success('Exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
-            <Export size={14} /> Export
-          </button>
-          <button onClick={openCreate} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[hsl(var(--brand))] hover:opacity-90">
-            <Plus size={14} /> New Assessment
-          </button>
+          <Button variant="outline" onClick={() => toast.success('Exported')} className="rounded-none border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:text-[hsl(var(--text-1))]">
+            <Export size={16} className="mr-2" /> Export
+          </Button>
+          <Button onClick={openCreate} className="rounded-none bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-hover))]">
+            <Plus size={16} className="mr-2" /> New Assessment
+          </Button>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
-        {[
-          { label: 'Total', value: stats.total, color: 'hsl(var(--text-1))' },
-          { label: 'High / Critical Risk', value: stats.critical, color: 'hsl(var(--destructive))' },
-          { label: 'Under Review', value: stats.pending, color: 'hsl(45 85% 40%)' },
-          { label: 'Completed / Approved', value: stats.completed, color: 'hsl(var(--s-ok-tx))' },
-        ].map(s => (
-          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
-            <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
-            <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
-          </div>
-        ))}
-      </div>
+      <StatCardRow cards={[
+        { label: 'Total Assessments', value: stats.total, variant: 'default' },
+        { label: 'High / Critical Risk', value: stats.critical, variant: 'error' },
+        { label: 'Pending Review', value: stats.pending, variant: 'warn' },
+        { label: 'Completed / Approved', value: stats.completed, variant: 'ok' },
+      ]} />
 
       {/* Filters */}
       <div className="flex gap-3 flex-wrap">
-        <div className="flex items-center gap-2 flex-1 min-w-[180px] border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] px-3">
-          <MagnifyingGlass size={14} className="text-[hsl(var(--text-4))] flex-shrink-0" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search assessments…" className="flex-1 py-2 text-sm bg-transparent text-[hsl(var(--text-1))] placeholder-[hsl(var(--text-4))] focus:outline-none" />
+        <div className="relative flex-1 min-w-[200px]">
+          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-3))]" />
+          <Input 
+            value={search} 
+            onChange={e => setSearch(e.target.value)} 
+            placeholder="Search assessments…" 
+            className="pl-9 bg-[hsl(var(--surface-1))] border-[hsl(var(--border))] rounded-none h-9" 
+          />
         </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] text-[hsl(var(--text-1))] rounded-none h-9 focus:outline-none">
           {['All', 'Draft', 'In Progress', 'Pending Review', 'Approved', 'Rejected', 'Completed'].map(s => <option key={s}>{s}</option>)}
         </select>
-        <select value={riskFilter} onChange={e => setRiskFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+        <select value={riskFilter} onChange={e => setRiskFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] text-[hsl(var(--text-1))] rounded-none h-9 focus:outline-none">
           {['All', 'Critical', 'High', 'Medium', 'Low', 'Minimal'].map(s => <option key={s}>{s}</option>)}
         </select>
       </div>
 
       {/* Table */}
-      <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
-              {['ID', 'Assessment Name', 'AI System', 'Risk Level', 'Status', 'Owner', 'Due Date', 'Actions'].map(h => (
-                <th key={h} className="px-3 py-2.5 text-left text-[11px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wide">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 && (
-              <tr><td colSpan={8} className="px-4 py-8 text-center text-sm text-[hsl(var(--text-4))]">No assessments match your filters.</td></tr>
-            )}
-            {filtered.map(r => {
-              const ss = STATUS_STYLE[r.status]
-              const rs = RISK_STYLE[r.risk]
-              return (
-                <tr key={r.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))] cursor-pointer" onClick={() => setSelected(r)}>
-                  <td className="px-3 py-2.5 font-mono text-[11px] text-[hsl(var(--brand))]">{r.id}</td>
-                  <td className="px-3 py-2.5 font-medium text-[hsl(var(--text-1))] max-w-[200px] truncate">{r.name}</td>
-                  <td className="px-3 py-2.5 text-[hsl(var(--text-3))]">{r.system}</td>
-                  <td className="px-3 py-2.5">
-                    <span className="text-[11px] px-2 py-0.5 font-medium" style={rs}>{r.risk}</span>
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <span className="text-[11px] px-2 py-0.5 font-medium" style={ss}>{r.status}</span>
-                  </td>
-                  <td className="px-3 py-2.5 text-[hsl(var(--text-3))]">{r.owner}</td>
-                  <td className="px-3 py-2.5 text-[hsl(var(--text-4))] font-mono text-xs">{r.dueDate || '—'}</td>
-                  <td className="px-3 py-2.5" onClick={e => e.stopPropagation()}>
-                    <div className="flex items-center gap-1">
-                      <button onClick={() => setSelected(r)} className="p-1.5 hover:bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-2))]" title="View"><Eye size={13} /></button>
-                      <button onClick={() => openEdit(r)} className="p-1.5 hover:bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-2))]" title="Edit"><PencilSimple size={13} /></button>
-                      <button onClick={() => setDeleteTarget(r)} className="p-1.5 hover:bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))]" title="Delete"><Trash size={13} /></button>
-                    </div>
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-        <div className="px-4 py-2 text-xs text-[hsl(var(--text-4))] border-t border-[hsl(var(--border))]">{filtered.length} of {records.length} assessments</div>
-      </div>
+      <Card className="border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] rounded-none overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left">
+            <thead className="text-xs text-[hsl(var(--text-2))] uppercase bg-[hsl(var(--surface-2))] border-b border-[hsl(var(--border))]">
+              <tr>
+                {['ID', 'Assessment Name', 'AI System', 'Risk Level', 'Status', 'Owner', 'Due Date', 'Actions'].map(h => (
+                  <th key={h} className="px-4 py-3 font-medium">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 && (
+                <tr><td colSpan={8} className="px-4 py-8 text-center text-sm text-[hsl(var(--text-3))]">No assessments match your filters.</td></tr>
+              )}
+              {filtered.map(r => {
+                const ss = STATUS_STYLE[r.status]
+                const rs = RISK_STYLE[r.risk]
+                return (
+                  <tr key={r.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--surface-2))] transition-colors cursor-pointer" onClick={() => setSelected(r)}>
+                    <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--brand))]">{r.id}</td>
+                    <td className="px-4 py-3 font-medium text-[hsl(var(--text-1))] max-w-[200px] truncate">{r.name}</td>
+                    <td className="px-4 py-3 text-[hsl(var(--text-2))]">{r.system}</td>
+                    <td className="px-4 py-3">
+                      <Badge className={`${rs.bg} ${rs.color} border-0 rounded-none uppercase text-[10px]`}>{r.risk}</Badge>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge className={`${ss.bg} ${ss.color} border-0 rounded-none`}>{r.status}</Badge>
+                    </td>
+                    <td className="px-4 py-3 text-[hsl(var(--text-2))]">{r.owner}</td>
+                    <td className="px-4 py-3 text-[hsl(var(--text-3))] font-mono text-xs">{r.dueDate || '—'}</td>
+                    <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => setSelected(r)} className="h-8 w-8 p-0 text-[hsl(var(--text-2))] hover:text-[hsl(var(--brand))] rounded-none"><Eye size={16} /></Button>
+                        <Button variant="ghost" size="sm" onClick={() => openEdit(r)} className="h-8 w-8 p-0 text-[hsl(var(--text-2))] hover:text-[hsl(var(--brand))] rounded-none"><PencilSimple size={16} /></Button>
+                        <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(r)} className="h-8 w-8 p-0 text-[hsl(var(--text-2))] hover:text-red-500 rounded-none"><Trash size={16} /></Button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div className="px-4 py-3 text-xs text-[hsl(var(--text-3))] bg-[hsl(var(--surface-2))] border-t border-[hsl(var(--border))]">
+          Showing {filtered.length} of {records.length} assessments
+        </div>
+      </Card>
 
       {/* Detail Drawer */}
       {selected && (
         <div className="fixed inset-0 z-50 flex">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setSelected(null)} />
-          <div className="relative ml-auto w-[640px] h-full bg-[hsl(var(--bg-surface))] border-l border-[hsl(var(--border))] flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelected(null)} />
+          <div className="relative ml-auto w-[700px] h-full bg-[hsl(var(--surface-1))] border-l border-[hsl(var(--border))] flex flex-col overflow-hidden shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-[hsl(var(--border))] bg-[hsl(var(--surface-2))]">
               <div>
-                <span className="font-mono text-xs text-[hsl(var(--brand))]">{selected.id}</span>
-                <h2 className="text-base font-semibold text-[hsl(var(--text-1))] mt-0.5">{selected.name}</h2>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status]}>{selected.status}</span>
-                  <span className="text-[11px] px-2 py-0.5 font-medium" style={RISK_STYLE[selected.risk]}>{selected.risk} Risk</span>
+                <span className="font-mono text-xs text-[hsl(var(--brand))] mb-1 block">{selected.id}</span>
+                <h2 className="text-lg font-bold text-[hsl(var(--text-1))]">{selected.name}</h2>
+                <div className="flex items-center gap-2 mt-2">
+                  <Badge className={`${STATUS_STYLE[selected.status].bg} ${STATUS_STYLE[selected.status].color} border-0 rounded-none`}>{selected.status}</Badge>
+                  <Badge className={`${RISK_STYLE[selected.risk].bg} ${RISK_STYLE[selected.risk].color} border-0 rounded-none uppercase text-[10px]`}>{selected.risk} Risk</Badge>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={() => openEdit(selected)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]"><PencilSimple size={12} /> Edit</button>
+                <Button variant="outline" size="sm" onClick={() => openEdit(selected)} className="rounded-none border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:text-[hsl(var(--text-1))]"><PencilSimple size={16} className="mr-2" /> Edit</Button>
                 {selected.status === 'Draft' || selected.status === 'In Progress' ? (
-                  <button onClick={() => submitForReview(selected)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-[hsl(var(--brand))] text-white hover:opacity-90"><ArrowRight size={12} /> Submit for Review</button>
+                  <Button size="sm" onClick={() => submitForReview(selected)} className="rounded-none bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-hover))]"><ArrowRight size={16} className="mr-2" /> Submit for Review</Button>
                 ) : selected.status === 'Pending Review' ? (
-                  <button onClick={() => approveAssessment(selected)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-[hsl(var(--s-ok-tx))] text-white hover:opacity-90"><CheckCircle size={12} /> Approve</button>
+                  <Button size="sm" onClick={() => approveAssessment(selected)} className="rounded-none bg-emerald-600 hover:bg-emerald-700 text-white"><CheckCircle size={16} className="mr-2" /> Approve</Button>
                 ) : null}
-                <button onClick={() => setSelected(null)}><X size={16} className="text-[hsl(var(--text-4))]" /></button>
+                <Button variant="ghost" size="sm" onClick={() => setSelected(null)} className="h-8 w-8 p-0 rounded-none"><X size={20} className="text-[hsl(var(--text-3))]" /></Button>
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-5 space-y-5 text-sm">
-              {/* Overview */}
-              <div className="grid grid-cols-2 gap-4 p-4 border border-[hsl(var(--border))] rounded">
-                <InfoRow label="AI System" value={selected.system} />
-                <InfoRow label="Department" value={selected.department} />
-                <InfoRow label="Owner" value={selected.owner} />
-                <InfoRow label="Framework" value={selected.framework} />
-                <InfoRow label="Version" value={selected.version} />
-                <InfoRow label="Date" value={selected.date} />
-                <InfoRow label="Due Date" value={selected.dueDate || '—'} />
-                <InfoRow label="Automated Decision" value={selected.automatedDecision ? 'Yes' : 'No'} />
-                {selected.reviewedAt && <InfoRow label="Reviewed At" value={selected.reviewedAt} />}
-              </div>
-
-              {/* Description */}
-              <Section title="Description">
-                <p className="text-[hsl(var(--text-3))] text-sm">{selected.description}</p>
-              </Section>
-
-              {/* Purpose of Use */}
-              <Section title="Purpose of Use">
-                <p className="text-[hsl(var(--text-3))] text-sm">{selected.purposeOfUse}</p>
-              </Section>
-
-              {/* Affected Groups */}
-              <Section title="Data & Affected Groups">
-                <div className="space-y-2">
-                  <div>
-                    <p className="text-[11px] text-[hsl(var(--text-4))] uppercase mb-1">Data Categories</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {selected.dataCategories.map(d => <span key={d} className="text-[11px] px-2 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{d}</span>)}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-[11px] text-[hsl(var(--text-4))] uppercase mb-1">Affected Groups</p>
-                    <p className="text-[hsl(var(--text-3))]">{selected.affectedGroups}</p>
-                  </div>
-                  <div>
-                    <p className="text-[11px] text-[hsl(var(--text-4))] uppercase mb-1">Human Oversight</p>
-                    <p className="text-[hsl(var(--text-3))]">{selected.humanOversight}</p>
-                  </div>
+            <div className="flex-1 overflow-hidden flex flex-col">
+              <Tabs defaultValue="overview" className="flex-1 flex flex-col h-full">
+                <div className="px-6 border-b border-[hsl(var(--border))] bg-[hsl(var(--surface-2))]">
+                  <TabsList className="bg-transparent space-x-4 h-12 p-0">
+                    <TabsTrigger value="overview" className="h-full border-b-2 border-transparent data-[state=active]:border-[hsl(var(--brand))] data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-2 text-sm">Overview</TabsTrigger>
+                    <TabsTrigger value="mitigations" className="h-full border-b-2 border-transparent data-[state=active]:border-[hsl(var(--brand))] data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-2 text-sm">Mitigations & Findings</TabsTrigger>
+                  </TabsList>
                 </div>
-              </Section>
+                
+                <div className="flex-1 overflow-y-auto p-6 text-sm">
+                  <TabsContent value="overview" className="m-0 space-y-6 focus:outline-none">
+                    {/* Overview Grid */}
+                    <div className="grid grid-cols-2 gap-4 p-5 border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] rounded-none">
+                      <InfoRow label="AI System" value={selected.system} />
+                      <InfoRow label="Department" value={selected.department} />
+                      <InfoRow label="Owner" value={selected.owner} />
+                      <InfoRow label="Framework" value={selected.framework} />
+                      <InfoRow label="Version" value={selected.version} />
+                      <InfoRow label="Date" value={selected.date} />
+                      <InfoRow label="Due Date" value={selected.dueDate || '—'} />
+                      <InfoRow label="Automated Decision" value={selected.automatedDecision ? 'Yes' : 'No'} />
+                      {selected.reviewedAt && <InfoRow label="Reviewed At" value={selected.reviewedAt} />}
+                    </div>
 
-              {/* Mitigations */}
-              {selected.mitigations.length > 0 && (
-                <Section title={`Risk Mitigations (${selected.mitigations.length})`}>
-                  <div className="space-y-2">
-                    {selected.mitigations.map((m, i) => (
-                      <div key={i} className="flex items-start justify-between gap-3 p-2.5 border border-[hsl(var(--border))]">
+                    <Section title="Description">
+                      <p className="text-[hsl(var(--text-2))] text-sm leading-relaxed">{selected.description}</p>
+                    </Section>
+
+                    <Section title="Purpose of Use">
+                      <p className="text-[hsl(var(--text-2))] text-sm leading-relaxed">{selected.purposeOfUse}</p>
+                    </Section>
+
+                    <Section title="Data & Affected Groups">
+                      <div className="space-y-5">
                         <div>
-                          <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase">{m.area}</p>
-                          <p className="text-xs text-[hsl(var(--text-2))] mt-0.5">{m.measure}</p>
-                        </div>
-                        <span className="text-[10px] px-2 py-0.5 font-medium flex-shrink-0" style={MITIGATION_STATUS[m.status]}>{m.status}</span>
-                      </div>
-                    ))}
-                  </div>
-                </Section>
-              )}
-
-              {/* Findings */}
-              <Section title={`Findings (${selected.findings.length})`}>
-                {selected.findings.length === 0 ? (
-                  <p className="text-xs text-[hsl(var(--text-4))]">No findings recorded.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {selected.findings.map(f => (
-                      <div key={f.id} className="flex items-start justify-between gap-3 p-2.5 border border-[hsl(var(--border))]">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-0.5">
-                            <span className="font-mono text-[10px] text-[hsl(var(--brand))]">{f.id}</span>
-                            <span className="text-[10px] px-1.5 py-0.5 font-medium" style={FINDING_SEV[f.severity]}>{f.severity}</span>
-                            <span className={`text-[10px] px-1.5 py-0.5 font-medium ${f.status === 'Resolved' ? 'text-[hsl(var(--s-ok-tx))]' : 'text-[hsl(var(--s-wn-tx))]'}`}>{f.status}</span>
+                          <p className="text-xs font-semibold text-[hsl(var(--text-3))] uppercase mb-2 tracking-wider">Data Categories</p>
+                          <div className="flex flex-wrap gap-2">
+                            {selected.dataCategories.map(d => <Badge key={d} className="bg-[hsl(var(--surface-3))] text-[hsl(var(--text-2))] border-[hsl(var(--border))] rounded-none font-normal">{d}</Badge>)}
                           </div>
-                          <p className="text-xs text-[hsl(var(--text-2))]">{f.description}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-[hsl(var(--text-3))] uppercase mb-1 tracking-wider">Affected Groups</p>
+                          <p className="text-[hsl(var(--text-2))]">{selected.affectedGroups}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-[hsl(var(--text-3))] uppercase mb-1 tracking-wider">Human Oversight</p>
+                          <p className="text-[hsl(var(--text-2))]">{selected.humanOversight}</p>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </Section>
+                    </Section>
 
-              {/* Approvers */}
-              {selected.approvers.length > 0 && (
-                <Section title="Approvers">
-                  <div className="flex flex-wrap gap-2">
-                    {selected.approvers.map(a => (
-                      <span key={a} className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-2))]">
-                        <CheckCircle size={11} className="text-[hsl(var(--s-ok-tx))]" /> {a}
-                      </span>
-                    ))}
-                  </div>
-                </Section>
-              )}
+                    {selected.approvers.length > 0 && (
+                      <Section title="Approvers">
+                        <div className="flex flex-wrap gap-2">
+                          {selected.approvers.map(a => (
+                            <Badge key={a} className="bg-[hsl(var(--surface-2))] border-[hsl(var(--border))] text-[hsl(var(--text-1))] rounded-none flex items-center gap-2 px-3 py-1.5 font-normal">
+                              <CheckCircle size={14} className="text-emerald-500" weight="fill" /> {a}
+                            </Badge>
+                          ))}
+                        </div>
+                      </Section>
+                    )}
 
-              {/* Notes */}
-              {selected.notes && (
-                <Section title="Notes">
-                  <p className="text-xs text-[hsl(var(--text-3))]">{selected.notes}</p>
-                </Section>
-              )}
+                    {selected.notes && (
+                      <Section title="Notes">
+                        <div className="bg-[hsl(var(--brand-subtle))] border-l-4 border-[hsl(var(--brand))] p-4 text-[hsl(var(--brand))] text-sm">
+                          {selected.notes}
+                        </div>
+                      </Section>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="mitigations" className="m-0 space-y-8 focus:outline-none">
+                    <Section title={`Risk Mitigations (${selected.mitigations.length})`}>
+                      {selected.mitigations.length === 0 ? (
+                        <p className="text-sm text-[hsl(var(--text-3))]">No mitigations recorded.</p>
+                      ) : (
+                        <div className="space-y-3">
+                          {selected.mitigations.map((m, i) => (
+                            <div key={i} className="flex items-start justify-between gap-4 p-4 border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] rounded-none">
+                              <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-xs font-bold text-[hsl(var(--text-1))] uppercase tracking-wider">{m.area}</span>
+                                </div>
+                                <p className="text-sm text-[hsl(var(--text-2))] mt-1">{m.measure}</p>
+                              </div>
+                              <Badge className={`${MITIGATION_STATUS[m.status].bg} ${MITIGATION_STATUS[m.status].color} border-0 rounded-none whitespace-nowrap`}>{m.status}</Badge>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </Section>
+
+                    <Section title={`Findings (${selected.findings.length})`}>
+                      {selected.findings.length === 0 ? (
+                        <p className="text-sm text-[hsl(var(--text-3))]">No findings recorded.</p>
+                      ) : (
+                        <div className="space-y-3">
+                          {selected.findings.map(f => (
+                            <div key={f.id} className={`flex items-start justify-between gap-4 p-4 border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] border-l-4 ${FINDING_SEV[f.severity].border} rounded-none`}>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className="font-mono text-xs font-bold text-[hsl(var(--text-1))]">{f.id}</span>
+                                  <Badge className={`${FINDING_SEV[f.severity].bg} ${FINDING_SEV[f.severity].color} border-0 rounded-none uppercase text-[10px]`}>{f.severity} Severity</Badge>
+                                  <Badge className={f.status === 'Resolved' ? 'bg-emerald-500/10 text-emerald-500 border-0 rounded-none' : 'bg-yellow-500/10 text-yellow-500 border-0 rounded-none'}>{f.status}</Badge>
+                                </div>
+                                <p className="text-sm text-[hsl(var(--text-2))]">{f.description}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </Section>
+                  </TabsContent>
+                </div>
+              </Tabs>
             </div>
           </div>
         </div>
@@ -467,72 +487,72 @@ export default function AIImpactAssessments() {
       {/* Create / Edit Modal */}
       {formOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setFormOpen(false)} />
-          <div className="relative w-[600px] max-h-[85vh] overflow-y-auto bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
-              <h2 className="text-sm font-semibold text-[hsl(var(--text-1))]">{editing ? 'Edit Assessment' : 'New AI Impact Assessment'}</h2>
-              <button onClick={() => setFormOpen(false)}><X size={16} className="text-[hsl(var(--text-4))]" /></button>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setFormOpen(false)} />
+          <div className="relative w-[700px] max-h-[85vh] overflow-y-auto bg-[hsl(var(--surface-1))] border border-[hsl(var(--border))] flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-[hsl(var(--border))] bg-[hsl(var(--surface-2))]">
+              <h2 className="text-lg font-bold text-[hsl(var(--text-1))]">{editing ? 'Edit Assessment' : 'New AI Impact Assessment'}</h2>
+              <Button variant="ghost" size="sm" onClick={() => setFormOpen(false)} className="h-8 w-8 p-0 rounded-none"><X size={20} className="text-[hsl(var(--text-3))]" /></Button>
             </div>
-            <div className="p-5 space-y-4 text-sm">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="p-6 space-y-6 text-sm">
+              <div className="grid grid-cols-2 gap-5">
                 <FormField label="Assessment Name *">
-                  <input value={form.name} onChange={e => sf('name', e.target.value)} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] text-sm focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. Customer Scoring Model v3" />
+                  <Input value={form.name} onChange={e => sf('name', e.target.value)} className="rounded-none bg-[hsl(var(--surface-2))]" placeholder="e.g. Customer Scoring Model v3" />
                 </FormField>
                 <FormField label="AI System *">
-                  <input value={form.system} onChange={e => sf('system', e.target.value)} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] text-sm focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. Credit Engine" />
+                  <Input value={form.system} onChange={e => sf('system', e.target.value)} className="rounded-none bg-[hsl(var(--surface-2))]" placeholder="e.g. Credit Engine" />
                 </FormField>
                 <FormField label="Department">
-                  <input value={form.department} onChange={e => sf('department', e.target.value)} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] text-sm focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. Risk & Compliance" />
+                  <Input value={form.department} onChange={e => sf('department', e.target.value)} className="rounded-none bg-[hsl(var(--surface-2))]" placeholder="e.g. Risk & Compliance" />
                 </FormField>
                 <FormField label="Owner">
-                  <input value={form.owner} onChange={e => sf('owner', e.target.value)} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] text-sm focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. Sarah Chen" />
+                  <Input value={form.owner} onChange={e => sf('owner', e.target.value)} className="rounded-none bg-[hsl(var(--surface-2))]" placeholder="e.g. Sarah Chen" />
                 </FormField>
                 <FormField label="Risk Level">
-                  <select value={form.risk} onChange={e => sf('risk', e.target.value as RiskLevel)} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] text-sm focus:outline-none">
+                  <select value={form.risk} onChange={e => sf('risk', e.target.value as RiskLevel)} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] text-[hsl(var(--text-1))] text-sm focus:outline-none rounded-none h-10">
                     {['Critical', 'High', 'Medium', 'Low', 'Minimal'].map(v => <option key={v}>{v}</option>)}
                   </select>
                 </FormField>
                 <FormField label="Status">
-                  <select value={form.status} onChange={e => sf('status', e.target.value as AIIAStatus)} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] text-sm focus:outline-none">
+                  <select value={form.status} onChange={e => sf('status', e.target.value as AIIAStatus)} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] text-[hsl(var(--text-1))] text-sm focus:outline-none rounded-none h-10">
                     {['Draft', 'In Progress', 'Pending Review', 'Approved', 'Rejected', 'Completed'].map(v => <option key={v}>{v}</option>)}
                   </select>
                 </FormField>
                 <FormField label="Framework">
-                  <input value={form.framework} onChange={e => sf('framework', e.target.value)} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] text-sm focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. EU AI Act Art. 9" />
+                  <Input value={form.framework} onChange={e => sf('framework', e.target.value)} className="rounded-none bg-[hsl(var(--surface-2))]" placeholder="e.g. EU AI Act Art. 9" />
                 </FormField>
                 <FormField label="Version">
-                  <input value={form.version} onChange={e => sf('version', e.target.value)} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] text-sm focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. v1.0.0" />
+                  <Input value={form.version} onChange={e => sf('version', e.target.value)} className="rounded-none bg-[hsl(var(--surface-2))]" placeholder="e.g. v1.0.0" />
                 </FormField>
                 <FormField label="Assessment Date">
-                  <input type="date" value={form.date} onChange={e => sf('date', e.target.value)} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] text-sm focus:outline-none" />
+                  <Input type="date" value={form.date} onChange={e => sf('date', e.target.value)} className="rounded-none bg-[hsl(var(--surface-2))]" />
                 </FormField>
                 <FormField label="Due Date">
-                  <input type="date" value={form.dueDate} onChange={e => sf('dueDate', e.target.value)} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] text-sm focus:outline-none" />
+                  <Input type="date" value={form.dueDate} onChange={e => sf('dueDate', e.target.value)} className="rounded-none bg-[hsl(var(--surface-2))]" />
                 </FormField>
               </div>
               <FormField label="Description">
-                <textarea value={form.description} onChange={e => sf('description', e.target.value)} rows={3} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] text-sm focus:outline-none resize-none" placeholder="Describe the AI system and its use case…" />
+                <textarea value={form.description} onChange={e => sf('description', e.target.value)} rows={3} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] text-[hsl(var(--text-1))] text-sm focus:outline-none resize-none rounded-none" placeholder="Describe the AI system and its use case…" />
               </FormField>
               <FormField label="Purpose of Use">
-                <textarea value={form.purposeOfUse} onChange={e => sf('purposeOfUse', e.target.value)} rows={2} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] text-sm focus:outline-none resize-none" placeholder="How and why the AI system is used…" />
+                <textarea value={form.purposeOfUse} onChange={e => sf('purposeOfUse', e.target.value)} rows={2} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] text-[hsl(var(--text-1))] text-sm focus:outline-none resize-none rounded-none" placeholder="How and why the AI system is used…" />
               </FormField>
               <FormField label="Affected Groups">
-                <input value={form.affectedGroups} onChange={e => sf('affectedGroups', e.target.value)} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] text-sm focus:outline-none" placeholder="e.g. Loan applicants (est. 15,000/month)" />
+                <Input value={form.affectedGroups} onChange={e => sf('affectedGroups', e.target.value)} className="rounded-none bg-[hsl(var(--surface-2))]" placeholder="e.g. Loan applicants (est. 15,000/month)" />
               </FormField>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <input type="checkbox" id="autoDecision" checked={form.automatedDecision} onChange={e => sf('automatedDecision', e.target.checked)} className="w-4 h-4 accent-[hsl(var(--brand))]" />
-                <label htmlFor="autoDecision" className="text-sm text-[hsl(var(--text-2))]">Makes automated decisions affecting individuals</label>
+                <label htmlFor="autoDecision" className="text-sm text-[hsl(var(--text-1))] font-medium">Makes automated decisions affecting individuals</label>
               </div>
               <FormField label="Human Oversight Mechanism">
-                <textarea value={form.humanOversight} onChange={e => sf('humanOversight', e.target.value)} rows={2} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] text-sm focus:outline-none resize-none" placeholder="Describe human oversight and appeal processes…" />
+                <textarea value={form.humanOversight} onChange={e => sf('humanOversight', e.target.value)} rows={2} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] text-[hsl(var(--text-1))] text-sm focus:outline-none resize-none rounded-none" placeholder="Describe human oversight and appeal processes…" />
               </FormField>
               <FormField label="Notes">
-                <textarea value={form.notes} onChange={e => sf('notes', e.target.value)} rows={2} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] text-sm focus:outline-none resize-none" placeholder="Additional reviewer notes…" />
+                <textarea value={form.notes} onChange={e => sf('notes', e.target.value)} rows={2} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] text-[hsl(var(--text-1))] text-sm focus:outline-none resize-none rounded-none" placeholder="Additional reviewer notes…" />
               </FormField>
             </div>
-            <div className="flex justify-end gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
-              <button onClick={() => setFormOpen(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">Cancel</button>
-              <button onClick={saveForm} className="px-4 py-2 text-sm font-medium text-white bg-[hsl(var(--brand))] hover:opacity-90">{editing ? 'Save Changes' : 'Create Assessment'}</button>
+            <div className="flex justify-end gap-3 px-6 py-5 border-t border-[hsl(var(--border))] bg-[hsl(var(--surface-2))]">
+              <Button variant="outline" onClick={() => setFormOpen(false)} className="rounded-none border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:text-[hsl(var(--text-1))]">Cancel</Button>
+              <Button onClick={saveForm} className="rounded-none bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-hover))]">{editing ? 'Save Changes' : 'Create Assessment'}</Button>
             </div>
           </div>
         </div>
@@ -555,7 +575,7 @@ export default function AIImpactAssessments() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="text-[11px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wider mb-2">{title}</p>
+      <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] mb-3">{title}</h3>
       {children}
     </div>
   )
@@ -564,16 +584,16 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-[10px] text-[hsl(var(--text-4))] uppercase tracking-wide">{label}</p>
-      <p className="text-sm text-[hsl(var(--text-1))] font-medium mt-0.5">{value}</p>
+      <p className="text-xs text-[hsl(var(--text-3))] uppercase tracking-wider mb-1">{label}</p>
+      <p className="text-sm text-[hsl(var(--text-1))] font-medium">{value}</p>
     </div>
   )
 }
 
 function FormField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div>
-      <label className="block text-xs font-medium text-[hsl(var(--text-3))] mb-1">{label}</label>
+    <div className="space-y-1.5">
+      <label className="block text-xs font-semibold text-[hsl(var(--text-2))] tracking-wide uppercase">{label}</label>
       {children}
     </div>
   )

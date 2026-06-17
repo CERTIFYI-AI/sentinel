@@ -93,7 +93,7 @@ function MetricTile({ label, value, variant }: { label: string; value: string | 
     error: { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))' },
     warn: { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))', border: 'hsl(var(--s-wn-br))' },
     ok: { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))' },
-    info: { bg: 'hsl(var(--brand-subtle))', text: 'hsl(var(--brand))', border: 'hsl(var(--brand)/30%)' },
+    info: { bg: 'hsl(var(--brand-subtle))', text: 'hsl(var(--brand))', border: 'hsl(var(--brand-subtle))' },
   };
   const c = colors[variant];
   return (
@@ -282,7 +282,7 @@ export default function EthicsReporting() {
 
       {/* Detail Sheet */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent style={{ width: 580, borderRadius: 0 }}>
+        <SheetContent style={{ width: 580, borderRadius: 0, background: 'hsl(var(--bg-surface))', borderLeft: '1px solid hsl(var(--border))' }}>
           {selected && (
             <>
               <SheetHeader className="pb-4 border-b" style={{ borderColor: 'hsl(var(--border))' }}>

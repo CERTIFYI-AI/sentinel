@@ -2,10 +2,11 @@ import { useState, useCallback } from 'react';
 import {
   CurrencyDollar, Lightning, ChartBar, Export, Warning,
   Bell, Clock, CheckCircle, Info, Gauge,
+  Database, CloudCheck, WarningCircle, TrendUp
 } from '@phosphor-icons/react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
-  ResponsiveContainer, LineChart, Line, Cell,
+  ResponsiveContainer, LineChart, Line, Cell, AreaChart, Area
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
@@ -48,12 +49,12 @@ const DAILY_COST_TREND = [
 ];
 
 const COST_BY_MODEL = [
-  { model: 'GPT-4o', cost: 3.82, color: 'hsl(var(--s-in-tx))' },
-  { model: 'Claude-3-Opus', cost: 2.14, color: 'hsl(var(--s-ok-tx))' },
-  { model: 'GPT-3.5-Turbo', cost: 1.21, color: 'hsl(var(--s-wn-tx))' },
-  { model: 'Claude-3-Haiku', cost: 0.89, color: 'hsl(var(--s-wn-tx))' },
-  { model: 'GPT-4o-Mini', cost: 0.74, color: 'hsl(280 67% 56%)' },
-  { model: 'Mistral-7B', cost: 0.59, color: 'hsl(var(--destructive))' },
+  { model: 'GPT-4o', cost: 3.82, prompt: 420, comp: 180, color: 'hsl(var(--s-in-tx))' },
+  { model: 'Claude-3-Opus', cost: 2.14, prompt: 150, comp: 90, color: 'hsl(var(--s-ok-tx))' },
+  { model: 'GPT-3.5-Turbo', cost: 1.21, prompt: 850, comp: 120, color: 'hsl(var(--s-wn-tx))' },
+  { model: 'Claude-3-Haiku', cost: 0.89, prompt: 300, comp: 150, color: 'hsl(var(--s-wn-tx))' },
+  { model: 'GPT-4o-Mini', cost: 0.74, prompt: 500, comp: 200, color: 'hsl(280 67% 56%)' },
+  { model: 'Mistral-7B', cost: 0.59, prompt: 100, comp: 45, color: 'hsl(var(--destructive))' },
 ];
 
 const TOKEN_BY_AGENT = [
@@ -62,6 +63,12 @@ const TOKEN_BY_AGENT = [
   { agent: 'LoanAssistant', tokens: 45.3, pct: 14 },
   { agent: 'SupportBot', tokens: 31.2, pct: 10 },
   { agent: 'RiskAnalyzer', tokens: 20.4, pct: 7 },
+];
+
+const PROVIDER_TRAFFIC = [
+  { provider: 'OpenAI', reqs: 14200, pct: 65, activeKeys: 3, latency: '420ms', status: 'Healthy' },
+  { provider: 'Anthropic', reqs: 5800, pct: 28, activeKeys: 2, latency: '650ms', status: 'Healthy' },
+  { provider: 'Local Llama', reqs: 1200, pct: 7, activeKeys: 1, latency: '120ms', status: 'Healthy' },
 ];
 
 // ── Metric Tile ───────────────────────────────────────────────────────────────
@@ -114,10 +121,13 @@ function CostTooltip({ active, payload, label }: any) {
 
 function ModelCostTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
+  const data = payload[0].payload;
   return (
-    <div className="px-3 py-2 text-xs shadow-lg" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0, color: 'hsl(var(--text-1))' }}>
+    <div className="px-3 py-2 text-xs shadow-lg space-y-1" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0, color: 'hsl(var(--text-1))' }}>
       <p className="font-semibold">{label}</p>
-      <p>Cost: ${payload[0].value}</p>
+      <div className="flex justify-between gap-4"><span style={{ color: 'hsl(var(--text-3))' }}>Total Cost:</span> <span>${payload[0].value.toFixed(2)}</span></div>
+      <div className="flex justify-between gap-4"><span style={{ color: 'hsl(var(--text-3))' }}>Prompt Tokens:</span> <span>{data.prompt}K</span></div>
+      <div className="flex justify-between gap-4"><span style={{ color: 'hsl(var(--text-3))' }}>Comp Tokens:</span> <span>{data.comp}K</span></div>
     </div>
   );
 }
@@ -176,8 +186,15 @@ export default function CostTokenDashboard() {
           <div className="flex items-center gap-3 mb-1">
             <CurrencyDollar size={22} weight="fill" style={{ color: 'hsl(var(--brand))' }} />
             <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Cost & Token Dashboard</h1>
+            <Badge className="rounded-none bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 font-medium tracking-wide flex items-center gap-1.5 px-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              LIVE SYNC: AI GATEWAY DB
+            </Badge>
           </div>
-          <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} — LLM token usage and cost tracking</p>
+          <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} — Real-time LLM token usage and cost tracking across all providers</p>
         </div>
         <div className="flex items-center gap-3">
           <Select value={dateRange} onValueChange={setDateRange}>
@@ -198,12 +215,24 @@ export default function CostTokenDashboard() {
         </div>
       </div>
 
+      {/* Anomaly Banner */}
+      <div className="flex items-center justify-between p-3" style={{ background: 'hsl(45 93% 47% / 0.10)', border: '1px solid hsl(45 93% 47% / 0.3)', borderRadius: 0 }}>
+        <div className="flex items-center gap-3">
+          <WarningCircle size={20} weight="fill" className="text-orange-500" />
+          <div>
+            <p className="text-sm font-semibold text-orange-500">Anomaly Detected: High Token Usage</p>
+            <p className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>OpenAI-API-Connector usage spiked by 42% in the last 4 hours compared to 7-day moving average.</p>
+          </div>
+        </div>
+        <Button variant="outline" size="sm" className="rounded-none border-orange-500/30 text-orange-500 hover:bg-orange-500/10">Investigate Logs</Button>
+      </div>
+
       {/* Metrics */}
       <div className="grid grid-cols-4 gap-4">
         <MetricTile label="Tokens This Week" value={`${Math.round(totalTokens)}K`} variant="info" icon={<Lightning size={16} weight="fill" className="text-blue-600 dark:text-blue-400" />} />
         <MetricTile label="Total Cost This Week" value={`$${totalCost.toFixed(2)}`} variant="ok" icon={<CurrencyDollar size={16} weight="fill" className="text-green-600 dark:text-green-400" />} sub="+12% WoW" />
         <MetricTile label="Active Models" value="4" variant="info" icon={<Gauge size={16} className="text-blue-600 dark:text-blue-400" />} />
-        <MetricTile label="Active Agents" value="5" variant="info" icon={<ChartBar size={16} className="text-blue-600 dark:text-blue-400" />} />
+        <MetricTile label="Cost Per 1K Tokens (Avg)" value="$0.012" variant="warn" icon={<TrendUp size={16} className="text-orange-600 dark:text-orange-400" />} sub="Up 3% from yesterday" />
       </div>
 
       {/* Charts Row 1: Token Usage + Cost Trend */}
@@ -285,6 +314,55 @@ export default function CostTokenDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Provider Breakdown */}
+      <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+        <CardHeader className="pb-3 border-b" style={{ borderColor: 'hsl(var(--border))' }}>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2" style={{ color: 'hsl(var(--text-1))' }}>
+              <Database size={16} /> Data Sources & Provider Traffic
+            </CardTitle>
+            <Badge variant="outline" className="rounded-none text-xs text-[hsl(var(--text-3))]">Real-time Gateway Routing</Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <table className="w-full text-sm text-left">
+            <thead className="text-xs uppercase" style={{ background: 'hsl(var(--surface-2))', color: 'hsl(var(--text-3))' }}>
+              <tr>
+                <th className="px-4 py-3 font-semibold">Provider Endpoint</th>
+                <th className="px-4 py-3 font-semibold">Requests (24h)</th>
+                <th className="px-4 py-3 font-semibold">Traffic Share</th>
+                <th className="px-4 py-3 font-semibold">Active Keys</th>
+                <th className="px-4 py-3 font-semibold">Avg Latency</th>
+                <th className="px-4 py-3 font-semibold text-right">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y" style={{ borderColor: 'hsl(var(--border))' }}>
+              {PROVIDER_TRAFFIC.map((p, i) => (
+                <tr key={i} className="hover:bg-[hsl(var(--surface-2))] transition-colors">
+                  <td className="px-4 py-3 font-medium flex items-center gap-2" style={{ color: 'hsl(var(--text-1))' }}>
+                    <CloudCheck size={16} className="text-[hsl(var(--brand))]" /> {p.provider}
+                  </td>
+                  <td className="px-4 py-3 font-mono" style={{ color: 'hsl(var(--text-2))' }}>{p.reqs.toLocaleString()}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-24 h-1.5" style={{ background: 'hsl(var(--border))', borderRadius: 0 }}>
+                        <div className="h-full" style={{ width: `${p.pct}%`, background: 'hsl(var(--brand))', borderRadius: 0 }} />
+                      </div>
+                      <span className="text-xs text-[hsl(var(--text-3))]" >{p.pct}%</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3" style={{ color: 'hsl(var(--text-2))' }}>{p.activeKeys} keys</td>
+                  <td className="px-4 py-3 font-mono text-[hsl(var(--text-2))]" >{p.latency}</td>
+                  <td className="px-4 py-3 text-right">
+                    <Badge className="rounded-none bg-emerald-500/10 text-emerald-500 border-emerald-500/30 font-medium">{p.status}</Badge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </CardContent>
+      </Card>
 
       {/* Budget Alert Dialog */}
       <Dialog open={budgetDialogOpen} onOpenChange={setBudgetDialogOpen}>

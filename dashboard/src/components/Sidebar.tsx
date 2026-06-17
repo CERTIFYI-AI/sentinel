@@ -133,6 +133,32 @@ const NAV: NavSection[] = [
     ],
   },
   {
+    title: 'AI GATEWAY',
+    items: [
+      { label: 'Analytics',         to: '/ai-gateway/analytics', icon: ChartLine },
+      { label: 'Endpoints',         to: '/ai-gateway/endpoints', icon: Plugs },
+      { label: 'Playground',        to: '/ai-gateway/playground', icon: Sparkle },
+      { label: 'Prompts',           to: '/ai-gateway/prompts', icon: ChatTeardropText },
+      { label: 'Guardrails',        to: '/ai-gateway/guardrails', icon: ShieldCheck },
+      { label: 'Logs',              to: '/ai-gateway/logs', icon: Scroll },
+      { label: 'Virtual Keys',      to: '/ai-gateway/keys', icon: Lock },
+      { label: 'Models Catalog',    to: '/ai-gateway/models', icon: Robot },
+      { label: 'Gateway Settings',  to: '/ai-gateway/settings', icon: Gear },
+    ],
+  },
+  {
+    title: 'MCP GATEWAY',
+    items: [
+      { label: 'Overview',          to: '/mcp-gateway/overview', icon: ChartPieSlice },
+      { label: 'MCP Servers',       to: '/mcp-gateway/servers', icon: Database },
+      { label: 'Tool Catalog',      to: '/mcp-gateway/tools', icon: Briefcase },
+      { label: 'Agent Keys',        to: '/mcp-gateway/keys', icon: Lock },
+      { label: 'Audit Log',         to: '/mcp-gateway/logs', icon: Scroll },
+      { label: 'HITL Approvals',    to: '/mcp-gateway/approvals', icon: UserCircleCheck },
+      { label: 'MCP Guardrails',    to: '/mcp-gateway/guardrails', icon: ShieldCheck },
+    ],
+  },
+  {
     title: 'SECURITY',
     items: [
       {

@@ -1,8 +1,10 @@
 import { useState, useMemo, useCallback, type ReactNode } from 'react';
+import { toast } from 'sonner';
 import {
   ChatTeardropText, Plus, MagnifyingGlass, PencilSimple, Trash,
   Eye, ClockCounterClockwise, Tag, Robot, CheckCircle,
   Warning, Clock, Archive, Funnel, ArrowsClockwise,
+  ShieldCheck, Scales, Lock, Sparkle,
 } from '@phosphor-icons/react';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -77,22 +79,23 @@ function Toaster({ toasts, remove }: { toasts: ToastMsg[]; remove: (id: number) 
 // ── Stats ─────────────────────────────────────────────────────────────────────
 function StatsRow({ records }: { records: PromptRecord[] }) {
   const stats = [
-    { label: 'Total',        value: records.length,                                                              color: 'hsl(var(--brand))' },
-    { label: 'Active',       value: records.filter(r => r.status === 'active').length,                          color: 'hsl(var(--s-ok-tx))' },
-    { label: 'Under Review', value: records.filter(r => r.status === 'under_review').length,                    color: 'hsl(var(--s-wn-tx))' },
-    { label: 'Draft',        value: records.filter(r => r.status === 'draft').length,                           color: 'hsl(var(--s-nt-tx))' },
-    { label: 'Deprecated',   value: records.filter(r => r.status === 'deprecated').length,                      color: 'hsl(var(--s-er-tx))' },
-    { label: 'Avg Tokens',   value: Math.round(records.reduce((a, r) => a + r.tokenCount, 0) / Math.max(records.length, 1)), color: 'hsl(var(--text-2))' },
+    { label: 'Total Prompts', value: records.length, color: 'hsl(var(--brand))', icon: <ChatTeardropText size={14} /> },
+    { label: 'Active', value: records.filter(r => r.status === 'active').length, color: 'hsl(var(--s-ok-tx))', icon: <CheckCircle size={14} /> },
+    { label: 'Under Review', value: records.filter(r => r.status === 'under_review').length, color: 'hsl(var(--s-wn-tx))', icon: <Warning size={14} /> },
+    { label: 'Draft', value: records.filter(r => r.status === 'draft').length, color: 'hsl(var(--text-3))', icon: <Clock size={14} /> },
+    { label: 'Deprecated', value: records.filter(r => r.status === 'deprecated').length, color: 'hsl(var(--s-er-tx))', icon: <Archive size={14} /> },
+    { label: 'Avg Tokens', value: Math.round(records.reduce((a, r) => a + r.tokenCount, 0) / Math.max(records.length, 1)), color: 'hsl(var(--text-2))', icon: <Tag size={14} /> },
   ];
   return (
-    <div className="grid grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10, marginBottom: 20 }}>
       {stats.map(s => (
-        <Card key={s.label} className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
-          <CardContent className="p-3">
-            <p className="text-xs text-[hsl(var(--text-4))] mb-1">{s.label}</p>
-            <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
-          </CardContent>
-        </Card>
+        <div key={s.label} style={{ padding: '12px 14px', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+            <span style={{ color: s.color }}>{s.icon}</span>
+            <p style={{ fontSize: 10, color: 'hsl(var(--text-4))', margin: 0 }}>{s.label}</p>
+          </div>
+          <p style={{ fontSize: 22, fontWeight: 700, color: s.color, margin: 0 }}>{s.value}</p>
+        </div>
       ))}
     </div>
   );
@@ -169,91 +172,248 @@ function PromptCard({ record, onView, onEdit, onDelete }: {
   );
 }
 
+// ── Token Budget Bar ──────────────────────────────────────────────────────────
+function TokenBudgetBar({ count, max = 4096 }: { count: number; max?: number }) {
+  const pct = Math.min(count / max * 100, 100);
+  const color = pct > 85 ? 'hsl(var(--s-er-tx))' : pct > 60 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))';
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+        <span style={{ fontSize: 10, fontWeight: 600, color: 'hsl(var(--text-4))', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Token Budget</span>
+        <span style={{ fontSize: 11, fontWeight: 700, color }}>{count} / {max.toLocaleString()} ({pct.toFixed(0)}%)</span>
+      </div>
+      <div style={{ height: 6, background: 'hsl(var(--bg-muted))', borderRadius: 0 }}>
+        <div style={{ height: '100%', width: `${pct}%`, background: color, transition: 'width 0.4s ease' }} />
+      </div>
+      {pct > 85 && (
+        <p style={{ fontSize: 10, color: 'hsl(var(--s-er-tx))', marginTop: 3 }}>
+          ⚠ Token usage exceeds 85% — consider splitting into sub-prompts.
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ── View Sheet ────────────────────────────────────────────────────────────────
 function ViewSheet({ record, open, onClose }: { record: PromptRecord | null; open: boolean; onClose: () => void }) {
-  const [tab, setTab] = useState<'content' | 'versions' | 'meta'>('content');
+  const [tab, setTab] = useState<'content' | 'safety' | 'versions' | 'meta'>('content');
   if (!record) return null;
   const sc = statusConfig(record.status);
+
+  // Simulated safety analysis scores
+  const safetyAnalysis = {
+    injectionRisk: record.category === 'user' ? 'HIGH' : record.category === 'tool_call' ? 'MEDIUM' : 'LOW',
+    piiDetected: record.content.toLowerCase().includes('name') || record.content.toLowerCase().includes('email'),
+    toxicityScore: record.category === 'safety' ? 2 : 8,
+    jailbreakResistance: record.category === 'safety' ? 'HIGH' : record.tags.includes('guardrail') ? 'HIGH' : 'MEDIUM',
+    dataExfil: record.content.toLowerCase().includes('system') ? 'LOW' : 'NONE',
+  };
+
   return (
     <Sheet open={open} onOpenChange={v => !v && onClose()}>
-      <SheetContent side="right" className="w-[640px] max-w-full flex flex-col overflow-hidden p-0 bg-[hsl(var(--bg-surface))]">
-        <SheetHeader className="px-6 py-4 border-b border-[hsl(var(--border))] flex-shrink-0">
-          <div className="flex items-center gap-2 flex-wrap mb-1">
-            <span className="text-xs font-mono text-[hsl(var(--text-4))]">{record.id}</span>
-            <Badge style={{ background: sc.bg, color: sc.color, borderRadius: 0, fontSize: 10, display: 'flex', alignItems: 'center', gap: 3 }}>{sc.icon}{sc.label}</Badge>
-            <Badge style={{ background: 'hsl(var(--bg-raised))', color: 'hsl(var(--text-3))', borderRadius: 0, fontSize: 10 }}>v{record.currentVersion}</Badge>
+      <SheetContent side="right" className="w-[660px] max-w-full flex flex-col overflow-hidden p-0"
+        style={{ background: 'hsl(var(--bg-surface))' }}>
+        <SheetHeader style={{ padding: '16px 20px', borderBottom: '1px solid hsl(var(--border))', flexShrink: 0, background: 'hsl(var(--bg-raised))' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
+            <span style={{ fontSize: 11, fontFamily: 'monospace', color: 'hsl(var(--text-4))', background: 'hsl(var(--bg-muted))', padding: '2px 6px' }}>{record.id}</span>
+            <Badge style={{ background: sc.bg, color: sc.color, borderRadius: 0, fontSize: 10, display: 'flex', alignItems: 'center', gap: 4 }}>{sc.icon}{sc.label}</Badge>
+            <Badge style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))', borderRadius: 0, fontSize: 10, fontFamily: 'monospace' }}>v{record.currentVersion}</Badge>
+            <Badge style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))', borderRadius: 0, fontSize: 10 }}>{categoryLabel(record.category)}</Badge>
           </div>
-          <SheetTitle className="text-base font-bold text-[hsl(var(--text-1))]">{record.name}</SheetTitle>
-          <p className="text-xs text-[hsl(var(--text-3))] mt-1">{record.description}</p>
+          <SheetTitle style={{ fontSize: 15, fontWeight: 700, color: 'hsl(var(--text-1))', margin: 0 }}>{record.name}</SheetTitle>
+          <p style={{ fontSize: 12, color: 'hsl(var(--text-3))', marginTop: 4, marginBottom: 10 }}>{record.description}</p>
+          <TokenBudgetBar count={record.tokenCount} />
+
+          {/* Action buttons */}
+          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+            {record.status === 'under_review' && (
+              <>
+                <button
+                  onClick={() => toast.success(`"${record.name}" approved and promoted to Active`)}
+                  style={{ padding: '6px 12px', background: 'hsl(var(--s-ok-bg))', border: '1px solid hsl(var(--s-ok-br))', cursor: 'pointer', fontSize: 11, fontWeight: 700, color: 'hsl(var(--s-ok-tx))' }}
+                >
+                  ✓ Approve
+                </button>
+                <button
+                  onClick={() => toast.error(`"${record.name}" rejected — returned to draft`)}
+                  style={{ padding: '6px 12px', background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-br))', cursor: 'pointer', fontSize: 11, fontWeight: 700, color: 'hsl(var(--s-er-tx))' }}
+                >
+                  ✗ Reject
+                </button>
+              </>
+            )}
+            {record.status === 'draft' && (
+              <button
+                onClick={() => toast.info(`"${record.name}" submitted for review`)}
+                style={{ padding: '6px 12px', background: 'hsl(var(--s-wn-bg))', border: '1px solid hsl(var(--s-wn-br))', cursor: 'pointer', fontSize: 11, fontWeight: 700, color: 'hsl(var(--s-wn-tx))' }}
+              >
+                Submit for Review
+              </button>
+            )}
+            {record.status === 'active' && (
+              <button
+                onClick={() => toast.success(`Safety analysis initiated for "${record.name}"`)}
+                style={{ padding: '6px 12px', background: 'hsl(var(--brand-subtle))', border: '1px solid hsl(var(--brand-subtle))', cursor: 'pointer', fontSize: 11, fontWeight: 600, color: 'hsl(var(--brand))' }}
+              >
+                <Sparkle size={12} style={{ display: 'inline', marginRight: 4 }} />
+                Run Safety Scan
+              </button>
+            )}
+          </div>
         </SheetHeader>
-        <div className="flex border-b border-[hsl(var(--border))] flex-shrink-0">
-          {(['content', 'versions', 'meta'] as const).map(t => (
+
+        {/* Tabs */}
+        <div style={{ display: 'flex', borderBottom: '1px solid hsl(var(--border))', flexShrink: 0, background: 'hsl(var(--bg-raised))' }}>
+          {(['content', 'safety', 'versions', 'meta'] as const).map(t => (
             <button key={t} onClick={() => setTab(t)}
-              className="px-4 py-2.5 text-xs font-medium capitalize transition-colors"
-              style={{ color: tab === t ? 'hsl(var(--brand))' : 'hsl(var(--text-3))', borderBottom: tab === t ? '2px solid hsl(var(--brand))' : '2px solid transparent' }}>
-              {t === 'versions' ? 'History' : t.charAt(0).toUpperCase() + t.slice(1)}
+              style={{
+                padding: '10px 14px', fontSize: 11, fontWeight: tab === t ? 600 : 400, cursor: 'pointer',
+                color: tab === t ? 'hsl(var(--brand))' : 'hsl(var(--text-3))',
+                borderBottom: tab === t ? '2px solid hsl(var(--brand))' : '2px solid transparent',
+                background: 'none', border: 'none', textTransform: 'capitalize',
+              }}>
+              {t === 'safety' ? 'Safety Analysis' : t === 'versions' ? 'Version History' : t.charAt(0).toUpperCase() + t.slice(1)}
             </button>
           ))}
         </div>
-        <div className="flex-1 overflow-y-auto p-6">
+
+        <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
           {tab === 'content' && (
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-semibold text-[hsl(var(--text-4))] uppercase tracking-wider">Prompt Content</p>
-                <span className="text-[10px] text-[hsl(var(--text-4))]">{record.tokenCount} tokens</span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <p style={{ fontSize: 11, fontWeight: 600, color: 'hsl(var(--text-4))', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>Prompt Content</p>
+                <span style={{ fontSize: 10, fontFamily: 'monospace', color: 'hsl(var(--text-4))' }}>{record.tokenCount} tokens</span>
               </div>
-              <pre className="text-xs font-mono bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] p-4 whitespace-pre-wrap leading-relaxed text-[hsl(var(--text-2))] overflow-x-auto mb-4">
+              <pre style={{ fontSize: 12, fontFamily: 'monospace', background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))', padding: 14, whiteSpace: 'pre-wrap', lineHeight: 1.7, color: 'hsl(var(--text-2))', overflowX: 'auto', marginBottom: 14 }}>
                 {record.content}
               </pre>
-              <div className="flex flex-wrap gap-2">
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {record.tags.map(t => (
-                  <span key={t} className="text-[10px] px-2 py-1 bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))]">{t}</span>
+                  <span key={t} style={{ fontSize: 10, padding: '3px 8px', background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))' }}>{t}</span>
                 ))}
+              </div>
+              {record.approvedBy && (
+                <div style={{ marginTop: 14, padding: '10px 12px', background: 'hsl(var(--s-ok-bg))', border: '1px solid hsl(var(--s-ok-br))', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <CheckCircle size={14} weight="fill" style={{ color: 'hsl(var(--s-ok-tx))' }} />
+                  <span style={{ fontSize: 12, color: 'hsl(var(--s-ok-tx))', fontWeight: 600 }}>Approved by {record.approvedBy} on {formatDate(record.approvalDate!)}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {tab === 'safety' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ padding: '12px 14px', background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))' }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: 'hsl(var(--text-4))', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>Automated Safety Analysis</p>
+                {[
+                  {
+                    label: 'Prompt Injection Risk',
+                    value: safetyAnalysis.injectionRisk,
+                    ok: safetyAnalysis.injectionRisk === 'LOW',
+                    warn: safetyAnalysis.injectionRisk === 'MEDIUM',
+                    desc: 'Susceptibility to adversarial injection or jailbreak via user input.',
+                  },
+                  {
+                    label: 'PII Leakage Risk',
+                    value: safetyAnalysis.piiDetected ? 'DETECTED' : 'NONE',
+                    ok: !safetyAnalysis.piiDetected,
+                    warn: false,
+                    desc: 'Presence of PII-sensitive field references that may expose personal data.',
+                  },
+                  {
+                    label: 'Jailbreak Resistance',
+                    value: safetyAnalysis.jailbreakResistance,
+                    ok: safetyAnalysis.jailbreakResistance === 'HIGH',
+                    warn: safetyAnalysis.jailbreakResistance === 'MEDIUM',
+                    desc: 'Resistance to role-play or DAN-style adversarial override attempts.',
+                  },
+                  {
+                    label: 'Data Exfiltration Pattern',
+                    value: safetyAnalysis.dataExfil,
+                    ok: safetyAnalysis.dataExfil === 'NONE',
+                    warn: safetyAnalysis.dataExfil === 'LOW',
+                    desc: 'Presence of instruction patterns that may exfiltrate system data.',
+                  },
+                ].map(item => (
+                  <div key={item.label} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '9px 0', borderBottom: '1px solid hsl(var(--border))' }}>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontSize: 12, fontWeight: 600, color: 'hsl(var(--text-1))', marginBottom: 2 }}>{item.label}</p>
+                      <p style={{ fontSize: 11, color: 'hsl(var(--text-4))' }}>{item.desc}</p>
+                    </div>
+                    <span style={{
+                      fontSize: 10, fontWeight: 800, padding: '3px 8px', marginLeft: 12, letterSpacing: '0.05em', flexShrink: 0,
+                      background: item.ok ? 'hsl(var(--s-ok-bg))' : item.warn ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-er-bg))',
+                      color: item.ok ? 'hsl(var(--s-ok-tx))' : item.warn ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-er-tx))',
+                      border: `1px solid ${item.ok ? 'hsl(var(--s-ok-br))' : item.warn ? 'hsl(var(--s-wn-br))' : 'hsl(var(--s-er-br))'}`,
+                    }}>
+                      {item.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Toxicity bar */}
+              <div style={{ padding: '12px 14px', background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))' }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: 'hsl(var(--text-4))', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>Toxicity Score</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ flex: 1, height: 8, background: 'hsl(var(--bg-muted))' }}>
+                    <div style={{ height: '100%', width: `${safetyAnalysis.toxicityScore}%`, background: safetyAnalysis.toxicityScore > 20 ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-ok-tx))', transition: 'width 0.5s' }} />
+                  </div>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: safetyAnalysis.toxicityScore > 20 ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-ok-tx))', minWidth: 40, textAlign: 'right' }}>{safetyAnalysis.toxicityScore}/100</span>
+                </div>
+                <p style={{ fontSize: 11, color: 'hsl(var(--text-4))', marginTop: 6 }}>Perspective API — lower is safer. Threshold: &lt;20 for production use.</p>
+              </div>
+
+              <div style={{ padding: '10px 12px', background: 'hsl(var(--brand-subtle))', border: '1px solid hsl(var(--brand-subtle))', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <ShieldCheck size={14} style={{ color: 'hsl(var(--brand))' }} />
+                <p style={{ fontSize: 12, color: 'hsl(var(--brand))', margin: 0 }}>Analysis performed by Sentinel Prompt Guard v2.1 · Last scan: {formatDate(record.lastModified)}</p>
               </div>
             </div>
           )}
+
           {tab === 'versions' && (
-            <div className="space-y-3">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {record.versions.map((v, i) => (
-                <div key={v.version} className="border border-[hsl(var(--border))] p-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold font-mono text-[hsl(var(--brand))]">v{v.version}</span>
+                <div key={v.version} style={{ border: `1px solid ${i === 0 ? 'hsl(var(--brand-subtle))' : 'hsl(var(--border))'}`, padding: '12px 14px', background: i === 0 ? 'hsl(var(--bg-raised))' : 'hsl(var(--bg-surface))' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, fontFamily: 'monospace', color: 'hsl(var(--brand))' }}>v{v.version}</span>
                       {i === 0 && <Badge style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))', borderRadius: 0, fontSize: 9 }}>CURRENT</Badge>}
                     </div>
-                    <span className="text-[10px] text-[hsl(var(--text-4))]">{formatDate(v.changedAt)}</span>
+                    <span style={{ fontSize: 11, color: 'hsl(var(--text-4))' }}>{formatDate(v.changedAt)}</span>
                   </div>
-                  <p className="text-[10px] text-[hsl(var(--text-3))] mb-1">by {v.author}</p>
-                  <p className="text-xs text-[hsl(var(--text-2))]">{v.changeNote}</p>
+                  <p style={{ fontSize: 11, color: 'hsl(var(--text-4))', marginBottom: 4 }}>by {v.author}</p>
+                  <p style={{ fontSize: 12, color: 'hsl(var(--text-2))' }}>{v.changeNote}</p>
                 </div>
               ))}
             </div>
           )}
+
           {tab === 'meta' && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 {[
-                  { label: 'Category',      value: categoryLabel(record.category) },
-                  { label: 'Model',         value: record.model },
-                  { label: 'Owner',         value: record.owner },
-                  { label: 'Version',       value: `v${record.currentVersion}` },
-                  { label: 'Created',       value: formatDate(record.createdDate) },
+                  { label: 'Category', value: categoryLabel(record.category) },
+                  { label: 'Model', value: record.model },
+                  { label: 'Owner', value: record.owner },
+                  { label: 'Version', value: `v${record.currentVersion}` },
+                  { label: 'Created', value: formatDate(record.createdDate) },
                   { label: 'Last Modified', value: formatDate(record.lastModified) },
-                  { label: 'Approved By',   value: record.approvedBy ?? '— Pending' },
+                  { label: 'Approved By', value: record.approvedBy ?? '— Pending' },
                   { label: 'Approval Date', value: record.approvalDate ? formatDate(record.approvalDate) : '— Pending' },
                 ].map(m => (
-                  <div key={m.label} className="border border-[hsl(var(--border))] p-3">
-                    <p className="text-[10px] text-[hsl(var(--text-4))] uppercase tracking-wider mb-1">{m.label}</p>
-                    <p className="text-sm font-medium text-[hsl(var(--text-1))]">{m.value}</p>
+                  <div key={m.label} style={{ border: '1px solid hsl(var(--border))', padding: '10px 12px' }}>
+                    <p style={{ fontSize: 10, color: 'hsl(var(--text-4))', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>{m.label}</p>
+                    <p style={{ fontSize: 13, fontWeight: 500, color: 'hsl(var(--text-1))', margin: 0 }}>{m.value}</p>
                   </div>
                 ))}
               </div>
               {record.usedBy.length > 0 && (
                 <div>
-                  <p className="text-xs font-semibold text-[hsl(var(--text-4))] uppercase tracking-wider mb-2">Used By</p>
-                  <div className="flex flex-wrap gap-2">
+                  <p style={{ fontSize: 11, fontWeight: 600, color: 'hsl(var(--text-4))', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Used By</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                     {record.usedBy.map(u => (
-                      <span key={u} className="text-xs px-2 py-1 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-2))] flex items-center gap-1">
+                      <span key={u} style={{ fontSize: 12, padding: '4px 10px', background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-2))', display: 'flex', alignItems: 'center', gap: 5 }}>
                         <Robot size={10} />{u}
                       </span>
                     ))}

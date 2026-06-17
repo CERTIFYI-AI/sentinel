@@ -25,26 +25,49 @@ export default function Breadcrumbs() {
   const location = useLocation();
   const segments = location.pathname.split('/').filter(Boolean);
   if (segments.length === 0) return null;
+
   return (
-    <nav className="flex items-center gap-1 text-sm text-[hsl(var(--text-3))] mb-4">
-      <Link to="/overview" className="hover:text-[hsl(var(--text-1))] transition-colors">
-        <House size={16} />
-      </Link>
-      {segments.map((seg, i) => {
-        const path = '/' + segments.slice(0, i + 1).join('/');
-        const title = ROUTE_TITLES[seg] || seg.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-        const isLast = i === segments.length - 1;
-        return (
-          <span key={path} className="flex items-center gap-1">
-            <CaretRight size={12} />
-            {isLast ? (
-              <span className="text-[hsl(var(--text-1))] font-medium">{title}</span>
-            ) : (
-              <Link to={path} className="hover:text-[hsl(var(--text-1))] transition-colors">{title}</Link>
-            )}
-          </span>
-        );
-      })}
+    <nav aria-label="breadcrumb">
+      <ol className="flex items-center flex-wrap gap-1.5 text-xs text-[hsl(var(--text-4))] mb-4">
+        {/* Home crumb */}
+        <li className="flex items-center">
+          <Link
+            to="/overview"
+            aria-label="Home"
+            className="flex items-center text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-1))] transition-colors"
+          >
+            <House size={14} />
+          </Link>
+        </li>
+
+        {segments.map((seg, i) => {
+          const path = '/' + segments.slice(0, i + 1).join('/');
+          const title = ROUTE_TITLES[seg] || seg.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+          const isLast = i === segments.length - 1;
+
+          return (
+            <li
+              key={path}
+              className="flex items-center gap-1.5"
+              aria-current={isLast ? 'page' : undefined}
+            >
+              <CaretRight size={11} className="text-[hsl(var(--text-4))] shrink-0" aria-hidden />
+              {isLast ? (
+                <span className="text-[hsl(var(--text-2))] font-medium whitespace-nowrap">
+                  {title}
+                </span>
+              ) : (
+                <Link
+                  to={path}
+                  className="text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-1))] transition-colors whitespace-nowrap"
+                >
+                  {title}
+                </Link>
+              )}
+            </li>
+          );
+        })}
+      </ol>
     </nav>
   );
 }

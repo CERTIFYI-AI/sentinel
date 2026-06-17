@@ -22,7 +22,13 @@ export function SlideOverPanel({
 }: SlideOverPanelProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[480px] sm:max-w-[480px] p-0 flex flex-col h-full rounded-none border-l border-border bg-surface">
+      <SheetContent
+        className="w-[480px] sm:max-w-[480px] p-0 flex flex-col h-full rounded-none"
+        style={{
+          background: 'hsl(var(--bg-surface))',
+          borderLeft: '1px solid hsl(var(--border))',
+        }}
+      >
         <SheetHeader className="p-4 border-b border-border">
           <SheetTitle className="text-sm font-bold uppercase tracking-wider text-text-primary">
             {title}

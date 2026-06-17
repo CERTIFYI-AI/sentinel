@@ -167,18 +167,24 @@ export default function GapAnalysis() {
   })).filter((d: any) => d.gaps > 0);
 
   function handleCreate() {
-    // Gaps are derived from controls — create a control in the controls page
+    const newGap: Gap = {
+      ...formData,
+      id: `gap-${Date.now()}`,
+    };
+    setLocalGaps(prev => [newGap, ...prev]);
     setCreateOpen(false);
     setFormData(EMPTY_GAP);
   }
 
   function handleEdit() {
     if (!editItem) return;
+    setLocalGaps(prev => prev.map(g => g.id === editItem.id ? { ...editItem } : g));
     setEditItem(null);
   }
 
   function handleDelete() {
     if (!deleteItem) return;
+    setLocalGaps(prev => prev.filter(g => g.id !== deleteItem.id));
     setDeleteItem(null);
   }
 

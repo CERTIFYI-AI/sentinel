@@ -38,16 +38,16 @@ interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fairnessColor(score: number, threshold = 85) {
-  if (score < 75) return { bg: 'hsl(0 72% 51% / 0.15)', text: 'hsl(var(--destructive))' };
-  if (score < threshold) return { bg: 'hsl(45 93% 47% / 0.15)', text: 'hsl(var(--s-wn-tx))' };
-  return { bg: 'hsl(142 71% 45% / 0.15)', text: 'hsl(var(--s-ok-tx))' };
+  if (score < 75) return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))' };
+  if (score < threshold) return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))' };
+  return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))' };
 }
 
 function driftBadge(d: Model['driftStatus']) {
   const map: Record<string, { bg: string; color: string }> = {
-    stable: { bg: 'hsl(142 71% 45% / 0.15)', color: 'hsl(var(--s-ok-tx))' },
-    warning: { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(var(--s-wn-tx))' },
-    critical: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))' },
+    stable: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+    warning: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+    critical: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))' },
   };
   const s = map[d];
   return (
@@ -59,10 +59,10 @@ function driftBadge(d: Model['driftStatus']) {
 
 function riskTierBadge(tier: Model['riskTier']) {
   const map: Record<string, { bg: string; color: string }> = {
-    unacceptable: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))' },
-    high: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))' },
-    limited: { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(var(--s-wn-tx))' },
-    minimal: { bg: 'hsl(142 71% 45% / 0.15)', color: 'hsl(var(--s-ok-tx))' },
+    unacceptable: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))' },
+    high: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))' },
+    limited: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+    minimal: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
   };
   const s = map[tier];
   return (
@@ -75,11 +75,11 @@ function riskTierBadge(tier: Model['riskTier']) {
 // ── Lifecycle Stepper ────────────────────────────────────────────────────────
 
 const LIFECYCLE_STAGES = [
-  { key: 'development', label: 'Development', color: '#8b5cf6' },
-  { key: 'staging', label: 'Staging', color: '#3b82f6' },
-  { key: 'production', label: 'Production', color: '#10b981' },
-  { key: 'deprecated', label: 'Deprecated', color: '#f97316' },
-  { key: 'retired', label: 'Retired', color: '#6b7280' },
+  { key: 'development', label: 'Development', color: 'hsl(var(--s-in-tx))' },
+  { key: 'staging', label: 'Staging', color: 'hsl(var(--brand))' },
+  { key: 'production', label: 'Production', color: 'hsl(var(--s-ok-tx))' },
+  { key: 'deprecated', label: 'Deprecated', color: 'hsl(var(--s-wn-tx))' },
+  { key: 'retired', label: 'Retired', color: 'hsl(var(--text-4))' },
 ] as const;
 
 function resolveLifecycleIndex(status: string): number {
