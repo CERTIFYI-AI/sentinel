@@ -313,6 +313,7 @@ export default function App() {
           <Route path="/security/campaigns" element={<ThreatFeed />} />
           <Route path="/security/frameworks" element={<SecurityHome />} />
           <Route path="/security/strategy" element={<SecurityHome />} />
+          <Route path="/security/red-team" element={<Suspense fallback={<Loading />}><RedTeamLab /></Suspense>} />
           <Route path="/evals" element={<QualityMetrics />} />
           <Route path="/evals/quality-metrics" element={<QualityMetrics />} />
           <Route path="/evals/techniques" element={<EvalTechniques />} />

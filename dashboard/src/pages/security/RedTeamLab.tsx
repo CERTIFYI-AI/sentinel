@@ -19,6 +19,9 @@ import { RED_TEAM_EXERCISES, RedTeamExercise, severityColor, statusColor, format
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useRedTeamFindingsData } from '../../hooks/useRedTeamFindingsData';
 import { PageSkeleton } from '../../components/ui/PageSkeleton';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { ErrorState } from '../../components/ui/ErrorState';
+import React from 'react';
 
 const EMPTY_EXERCISE = {
   name: '', attackVector: 'Prompt Injection', targetModel: 'MDL-001',
@@ -159,11 +162,14 @@ function MetricTile({ label, value, variant, icon, sub }: {
 
 export default function RedTeamLab() {
   const { orgName } = useSettingsStore();
-  const { items: redTeamFindings, isLoading: rtLoading, saveRedTeamFindings, removeRedTeamFindings } = useRedTeamFindingsData();
-  // Use red_team_findings from Supabase (confirmed has data 8192 bytes), fallback to EXTENDED_EXERCISES
-  const [exercises, setExercises] = useState<ExtExercise[]>(
-    redTeamFindings.length > 0 ? redTeamFindings as any : EXTENDED_EXERCISES
-  );
+  const { items: redTeamFindings, isLoading: rtLoading, error, saveRedTeamFindings, removeRedTeamFindings } = useRedTeamFindingsData();
+  const [exercises, setExercises] = useState<ExtExercise[]>(EXTENDED_EXERCISES);
+
+  React.useEffect(() => {
+    if (redTeamFindings && redTeamFindings.length > 0) {
+      setExercises(redTeamFindings as any);
+    }
+  }, [redTeamFindings]);
   const [selected, setSelected] = useState<ExtExercise | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ExtExercise | null>(null);
@@ -179,6 +185,7 @@ export default function RedTeamLab() {
 
   // All hooks called above — safe to do early return now
   if (rtLoading) return <PageSkeleton />;
+  if (error) return <ErrorState title="Failed to load Red Team Lab" description="We couldn't load the campaign data. Please try again." onRetry={() => window.location.reload()} />;
 
   const totalFindings = exercises.reduce((a, e) => a + e.findings, 0);
   const criticalFindings = exercises.reduce((a, e) => a + e.criticalFindings, 0);
@@ -260,7 +267,15 @@ export default function RedTeamLab() {
         <MetricTile label="Mitigated Findings" value={String(mitigatedFindings)} variant="ok" icon={<CheckCircle size={16} weight="fill" className="text-green-600 dark:text-green-400" />} />
       </div>
 
-      {/* Table */}
+      {/* Table / Empty State */}
+      {exercises.length === 0 ? (
+        <EmptyState
+          icon={<Sword size={32} weight="duotone" />}
+          title="No Red Team campaigns yet"
+          description="Create your first test to track adversarial evaluations, jailbreak tests, and attack scenarios."
+          action={<Button onClick={() => setCreateOpen(true)}><Plus size={14} className="mr-2" />Create Exercise</Button>}
+        />
+      ) : (
       <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -314,6 +329,7 @@ export default function RedTeamLab() {
           </div>
         </CardContent>
       </Card>
+      )}
 
       {/* Create Exercise Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
