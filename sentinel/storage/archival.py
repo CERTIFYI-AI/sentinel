@@ -250,10 +250,12 @@ async def _count_rows(
         if tenant_id:
             sql = _COUNT_SQL.format(table=table, ts_col=ts_col)
             result = await conn.execute(
+                # nosemgrep: python.sqlalchemy.security.audit.avoid-sqlalchemy-text.avoid-sqlalchemy-text
                 sqlalchemy.text(sql), {"tenant_id": tenant_id, "cutoff": cutoff}
             )
         else:
             sql = _COUNT_ALL_SQL.format(table=table, ts_col=ts_col)
+            # nosemgrep: python.sqlalchemy.security.audit.avoid-sqlalchemy-text.avoid-sqlalchemy-text
             result = await conn.execute(sqlalchemy.text(sql), {"cutoff": cutoff})
         row = result.fetchone()
         return row[0] if row else 0

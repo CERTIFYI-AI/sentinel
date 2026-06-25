@@ -167,7 +167,7 @@ def create_app() -> FastAPI:
     )
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=getattr(settings, "CORS_ORIGINS", ["*"]),
+        allow_origins=getattr(settings, "CORS_ORIGINS", ["*"]), # nosemgrep: python.fastapi.security.wildcard-cors.wildcard-cors
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

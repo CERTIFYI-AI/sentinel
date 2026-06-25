@@ -16,17 +16,15 @@ export type FrameworkRecord = {
   updated_at: string
 }
 
-import { FRAMEWORKS } from '../data/seed'
-
-export async function fetchAllFrameworks(filters: Record<string,any> = {}): Promise<FrameworkRecord[]> {
-  if (!isSupabaseConfigured() || !supabase) return FRAMEWORKS as any[]
+export async function fetchAllFrameworks(filters: Record<string, any> = {}): Promise<FrameworkRecord[]> {
+  if (!isSupabaseConfigured() || !supabase) return []
   try {
     let q = supabase.from('frameworks').select('*').order('name', { ascending: true })
     if (filters.status) q = q.eq('status', filters.status)
     const { data, error } = await q
-    if (error) { console.warn('[frameworkService] fetch:', error.message); return FRAMEWORKS as any[] }
-    return (data && data.length > 0 ? data : FRAMEWORKS) as FrameworkRecord[]
-  } catch { return FRAMEWORKS as any[] }
+    if (error) { console.warn('[frameworkService] fetch:', error.message); return [] }
+    return (data ?? []) as FrameworkRecord[]
+  } catch { return [] }
 }
 
 export async function upsertFramework(record: Partial<FrameworkRecord>): Promise<FrameworkRecord | null> {

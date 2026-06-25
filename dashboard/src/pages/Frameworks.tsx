@@ -16,7 +16,7 @@ import {
   StackSimple, Plus, PencilSimple, Trash, Info, CalendarCheck, ShieldCheck,
   Warning, ArrowRight, Eye, ArrowsLeftRight,
 } from '@phosphor-icons/react';
-import { FRAMEWORKS, CONTROLS, GAPS, Framework, formatDate } from '../data/seed';
+import { CONTROLS, GAPS, Framework, formatDate } from '../data/seed';
 import { useSettingsStore } from '../stores/settingsStore';
 
 const EMPTY_FRAMEWORK: Omit<Framework, 'id'> = {
@@ -98,32 +98,42 @@ export default function Frameworks() {
   const { orgName } = useSettingsStore();
   const navigate = useNavigate();
 
-  const [frameworks, setFrameworks] = useState<Framework[]>(FRAMEWORKS);
-  const { frameworks: supabaseFrameworks } = useFrameworksData();
-  useEffect(() => { if (supabaseFrameworks.length > 0) setFrameworks(supabaseFrameworks as any); }, [supabaseFrameworks]);
+  const { frameworks, isLoading: frameworksLoading, save: saveFramework, remove: removeFramework } = useFrameworksData();
+
   const [viewItem, setViewItem] = useState<Framework | null>(null);
   const [editItem, setEditItem] = useState<Framework | null>(null);
   const [deleteItem, setDeleteItem] = useState<Framework | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [formData, setFormData] = useState<Omit<Framework, 'id'>>(EMPTY_FRAMEWORK);
 
-  function handleCreate() {
-    const id = `FW-${String(frameworks.length + 1).padStart(3, '0')}`;
-    setFrameworks(prev => [...prev, { ...formData, id }]);
+  async function handleCreate() {
+    await saveFramework({ ...formData });
     setCreateOpen(false);
     setFormData(EMPTY_FRAMEWORK);
   }
 
-  function handleEdit() {
+  async function handleEdit() {
     if (!editItem) return;
-    setFrameworks(prev => prev.map(f => f.id === editItem.id ? editItem : f));
+    await saveFramework(editItem);
     setEditItem(null);
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!deleteItem) return;
-    setFrameworks(prev => prev.filter(f => f.id !== deleteItem.id));
+    await removeFramework(deleteItem.id);
     setDeleteItem(null);
+  }
+
+  if (frameworksLoading) {
+    return (
+      <div className="animate-pulse space-y-4 p-6">
+        <div className="h-8 rounded w-1/3" style={{ background: 'hsl(var(--bg-raised))' }} />
+        <div className="h-4 rounded w-2/3" style={{ background: 'hsl(var(--bg-raised))' }} />
+        <div className="grid grid-cols-3 gap-4 mt-6">
+          {[1,2,3].map(i => <div key={i} className="h-32 rounded" style={{ background: 'hsl(var(--bg-raised))' }} />)}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -159,11 +169,13 @@ export default function Frameworks() {
       {/* Framework Cards Grid */}
       <div className="grid grid-cols-3 gap-4">
         {frameworks.map(fw => {
-          const badge = complianceBadge(fw.complianceScore);
+          const anyFw = fw as any;
+          const score = anyFw.compliance_score || anyFw.complianceScore || 0;
+          const badge = complianceBadge(score);
           const controls = CONTROLS.filter(c => c.framework === fw.name);
-          const categoryColor = CATEGORY_COLORS[fw.category] || 'hsl(var(--brand))';
-          const borderColor = ragBorderColor(fw.complianceScore);
-          const isNonCompliant = fw.complianceScore < 65;
+          const categoryColor = CATEGORY_COLORS[fw.category || ''] || 'hsl(var(--brand))';
+          const borderColor = ragBorderColor(score);
+          const isNonCompliant = score < 65;
 
           return (
             <Card
@@ -181,7 +193,7 @@ export default function Frameworks() {
               onMouseLeave={e => {
                 e.currentTarget.style.transform = '';
               }}
-              onClick={() => setViewItem(fw)}
+              onClick={() => setViewItem(fw as any)}
             >
               <CardContent className="p-5">
                 {/* Top: category + warning + actions */}
@@ -195,10 +207,10 @@ export default function Frameworks() {
                     )}
                   </div>
                   <div className="flex gap-1" onClick={e => e.stopPropagation()}>
-                    <Button size="sm" variant="ghost" style={{ padding: '2px 6px' }} onClick={() => setEditItem({ ...fw })}>
+                    <Button size="sm" variant="ghost" style={{ padding: '2px 6px' }} onClick={() => setEditItem({ ...fw } as any)}>
                       <PencilSimple size={12} />
                     </Button>
-                    <Button size="sm" variant="ghost" style={{ padding: '2px 6px', color: '#ef4444' }} onClick={() => setDeleteItem(fw)}>
+                    <Button size="sm" variant="ghost" style={{ padding: '2px 6px', color: '#ef4444' }} onClick={() => setDeleteItem(fw as any)}>
                       <Trash size={12} />
                     </Button>
                   </div>
@@ -212,15 +224,15 @@ export default function Frameworks() {
                 <div className="mb-3">
                   <div className="flex justify-between text-xs mb-1.5">
                     <span style={{ color: 'hsl(var(--text-3))' }}>Compliance Score</span>
-                    <span className="font-bold" style={{ color: scoreBarColor(fw.complianceScore) }}>
-                      {fw.complianceScore}%
+                    <span className="font-bold" style={{ color: scoreBarColor(score) }}>
+                      {score}%
                     </span>
                   </div>
                   <div style={{ background: 'hsl(var(--bg-muted))', height: 8 }}>
                     <div style={{
-                      width: fw.complianceScore + '%',
+                      width: score + '%',
                       height: '100%',
-                      background: scoreBarColor(fw.complianceScore),
+                      background: scoreBarColor(score),
                       transition: 'width 0.3s',
                     }} />
                   </div>
@@ -230,7 +242,7 @@ export default function Frameworks() {
                 <div className="flex justify-between text-xs mb-3">
                   <span style={{ color: 'hsl(var(--text-3))' }}>Controls</span>
                   <span style={{ color: 'hsl(var(--text-1))' }}>
-                    {fw.controlsImplemented}/{fw.controlsTotal} implemented
+                    {anyFw.controlsImplemented || 0}/{anyFw.controlsTotal || 0} implemented
                   </span>
                 </div>
 
@@ -239,7 +251,7 @@ export default function Frameworks() {
                   <Badge style={{ background: badge.bg, color: badge.text, border: `1px solid ${badge.border}`, borderRadius: 0, fontSize: 10 }}>
                     {badge.label}
                   </Badge>
-                  <AuditDateDisplay dateStr={fw.nextAudit} />
+                  <AuditDateDisplay dateStr={anyFw.nextAudit || anyFw.next_audit} />
                 </div>
 
                 {/* View Controls button */}

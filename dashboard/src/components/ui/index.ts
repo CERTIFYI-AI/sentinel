@@ -21,6 +21,8 @@ export type { FilterBarProps, FilterField, FilterOption } from './FilterBar';
 // ── Data display ──────────────────────────────────────────────────────────────
 export { default as DataTable } from './DataTable';
 export { EmptyState } from './EmptyState';
+export { default as ErrorState } from './ErrorState';
+export { PageSkeleton } from './PageSkeleton';
 export { EtlHealthDot } from './EtlHealthDot';
 
 // ── Overlays ──────────────────────────────────────────────────────────────────
@@ -34,7 +36,6 @@ export { ChartContainer } from './ChartContainer';
 export type { ChartContainerProps } from './ChartContainer';
 
 // ── Feedback ─────────────────────────────────────────────────────────────────
-export { PageSkeleton } from './PageSkeleton';
 
 // ── Antigravity UI/UX ────────────────────────────────────────────────────────
 export { RiskBadge } from './RiskBadge';

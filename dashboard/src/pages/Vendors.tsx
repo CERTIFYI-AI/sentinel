@@ -8,31 +8,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { MagnifyingGlass as Search, Plus, Buildings as Building2, Warning as AlertTriangle, Shield, X, Clock, CheckCircle, Export, Bell } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import { useVendorsData } from "@/hooks/useVendorsData";
+import { PageSkeleton } from "@/components/ui/PageSkeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
-
-interface Vendor {
-  id: string;
-  name: string;
-  category: string;
-  services: string;
-  riskTier: number;
-  status: string;
-  lastAssessment: string;
-  contractExpiry: string;
-  contact: string;
-}
-
-const mockVendors: Vendor[] = [
-  { id: "VND-001", name: "OpenAI", category: "AI Model Provider", services: "GPT-4, DALL-E, Whisper", riskTier: 1, status: "active", lastAssessment: "2026-05-15", contractExpiry: "2026-01-31", contact: "enterprise@openai.com" },
-  { id: "VND-002", name: "Anthropic", category: "AI Model Provider", services: "Claude-3 Opus/Haiku", riskTier: 1, status: "active", lastAssessment: "2026-05-20", contractExpiry: "2026-12-31", contact: "sales@anthropic.com" },
-  { id: "VND-003", name: "AWS", category: "Cloud Infrastructure", services: "Bedrock, SageMaker", riskTier: 2, status: "active", lastAssessment: "2026-04-10", contractExpiry: "2026-03-15", contact: "aws-enterprise@amazon.com" },
-  { id: "VND-004", name: "Microsoft Azure", category: "Cloud Infrastructure", services: "Azure OpenAI, Cognitive", riskTier: 2, status: "active", lastAssessment: "2026-05-01", contractExpiry: "2026-06-30", contact: "azure@microsoft.com" },
-  { id: "VND-005", name: "HuggingFace", category: "Model Hub", services: "Model Hosting, Inference API", riskTier: 2, status: "under-review", lastAssessment: "2026-03-20", contractExpiry: "2026-09-30", contact: "enterprise@huggingface.co" },
-  { id: "VND-006", name: "Pinecone", category: "Vector Database", services: "Vector Search, Embeddings", riskTier: 3, status: "active", lastAssessment: "2026-04-25", contractExpiry: "2026-11-30", contact: "sales@pinecone.io" },
-  { id: "VND-007", name: "Datadog", category: "Monitoring", services: "LLM Observability", riskTier: 3, status: "active", lastAssessment: "2026-05-10", contractExpiry: "2026-02-28", contact: "sales@datadog.com" },
-  { id: "VND-008", name: "Scale AI", category: "Data Labeling", services: "RLHF, Data Annotation", riskTier: 2, status: "inactive", lastAssessment: "2026-01-15", contractExpiry: "2026-06-30", contact: "enterprise@scale.com" },
-];
 
 const TODAY = new Date("2026-04-10");
 
@@ -78,21 +57,26 @@ function statusBadge(status: string) {
 }
 
 export default function Vendors() {
+  const { vendors: allVendors, isLoading } = useVendorsData();
   const [search, setSearch] = useState("");
-  const [sel, setSel] = useState<Vendor | null>(null);
+  const [sel, setSel] = useState<any | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [dismissedAlerts, setDismissedAlerts] = useState<string[]>([]);
 
-  const filtered = mockVendors.filter(
-    v => v.name.toLowerCase().includes(search.toLowerCase()) || v.category.toLowerCase().includes(search.toLowerCase())
+  if (isLoading) return <PageSkeleton title="Vendor Registry" rows={8} />;
+
+  const filtered = allVendors.filter(
+    (v: any) => v.name?.toLowerCase().includes(search.toLowerCase()) || v.category?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const expiredVendors = mockVendors.filter(v => daysUntilExpiry(v.contractExpiry) < 0 && !dismissedAlerts.includes(v.id));
-  const expiringSoon = mockVendors.filter(v => {
-    const d = daysUntilExpiry(v.contractExpiry);
+  const expiredVendors = allVendors.filter((v: any) => v.contract_expiry && daysUntilExpiry(v.contract_expiry) < 0 && !dismissedAlerts.includes(v.id));
+  const expiringSoon = allVendors.filter((v: any) => {
+    if (!v.contract_expiry) return false;
+    const d = daysUntilExpiry(v.contract_expiry);
     return d >= 0 && d <= 90 && !dismissedAlerts.includes(v.id);
   });
   const alertVendors = [...expiredVendors, ...expiringSoon];
+
 
   return (
     <div className="space-y-5">
@@ -121,7 +105,7 @@ export default function Vendors() {
       {alertVendors.length > 0 && (
         <div className="space-y-2">
           {alertVendors.map(v => {
-            const days = daysUntilExpiry(v.contractExpiry);
+            const days = daysUntilExpiry(v.contract_expiry || '');
             const expired = days < 0;
             return (
               <div
@@ -141,7 +125,7 @@ export default function Vendors() {
                       : `Contract expiring in ${days} days — ${v.name} (${v.category})`}
                   </span>
                   <span className="text-xs" style={{ color: "hsl(var(--text-4))" }}>
-                    Expiry: {v.contractExpiry} · Tier {v.riskTier} · {v.contact}
+                    Expiry: {v.contract_expiry} · Tier {v.risk_tier} · {v.contact_email || 'N/A'}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -175,7 +159,7 @@ export default function Vendors() {
               <Building2 size={20} style={{ color: "hsl(var(--brand))" }} />
               <div>
                 <div className="text-xs" style={{ color: "hsl(var(--text-4))" }}>Total Vendors</div>
-                <div className="text-2xl font-bold" style={{ color: "hsl(var(--text-1))" }}>{mockVendors.length}</div>
+                <div className="text-2xl font-bold" style={{ color: "hsl(var(--text-1))" }}>{allVendors.length}</div>
               </div>
             </div>
           </CardContent>
@@ -186,7 +170,7 @@ export default function Vendors() {
               <CheckCircle size={20} style={{ color: "hsl(var(--s-ok-tx))" }} />
               <div>
                 <div className="text-xs" style={{ color: "hsl(var(--text-4))" }}>Active</div>
-                <div className="text-2xl font-bold" style={{ color: "hsl(var(--s-ok-tx))" }}>{mockVendors.filter(v => v.status === "active").length}</div>
+                <div className="text-2xl font-bold" style={{ color: "hsl(var(--s-ok-tx))" }}>{allVendors.filter((v: any) => v.status === "active").length}</div>
               </div>
             </div>
           </CardContent>
@@ -197,7 +181,7 @@ export default function Vendors() {
               <Shield size={20} style={{ color: "hsl(var(--s-er-tx))" }} />
               <div>
                 <div className="text-xs" style={{ color: "hsl(var(--text-4))" }}>Tier 1 (Critical)</div>
-                <div className="text-2xl font-bold" style={{ color: "hsl(var(--s-er-tx))" }}>{mockVendors.filter(v => v.riskTier === 1).length}</div>
+                <div className="text-2xl font-bold" style={{ color: "hsl(var(--s-er-tx))" }}>{allVendors.filter((v: any) => v.risk === 'critical' || v.risk === 'high').length}</div>
               </div>
             </div>
           </CardContent>
@@ -241,7 +225,8 @@ export default function Vendors() {
           </TableHeader>
           <TableBody>
             {filtered.map(v => {
-              const exp = expiryLabel(v.contractExpiry);
+              const anyV = v as any;
+              const exp = expiryLabel(anyV.contract_expiry || '');
               return (
                 <TableRow
                   key={v.id}
@@ -251,14 +236,14 @@ export default function Vendors() {
                 >
                   <TableCell className="font-mono text-xs py-3" style={{ color: "hsl(var(--brand))" }}>{v.id}</TableCell>
                   <TableCell className="font-semibold text-sm py-3" style={{ color: "hsl(var(--text-1))" }}>{v.name}</TableCell>
-                  <TableCell className="text-xs py-3" style={{ color: "hsl(var(--text-3))" }}>{v.category}</TableCell>
-                  <TableCell className="text-xs py-3 max-w-[180px] truncate" style={{ color: "hsl(var(--text-4))" }}>{v.services}</TableCell>
-                  <TableCell className="py-3">{tierBadge(v.riskTier)}</TableCell>
-                  <TableCell className="py-3">{statusBadge(v.status)}</TableCell>
-                  <TableCell className="text-xs py-3" style={{ color: "hsl(var(--text-4))" }}>{v.lastAssessment}</TableCell>
+                  <TableCell className="text-xs py-3" style={{ color: "hsl(var(--text-3))" }}>{anyV.category}</TableCell>
+                  <TableCell className="text-xs py-3 max-w-[180px] truncate" style={{ color: "hsl(var(--text-4))" }}>{anyV.services}</TableCell>
+                  <TableCell className="py-3">{tierBadge(anyV.risk_tier)}</TableCell>
+                  <TableCell className="py-3">{statusBadge(v.status || '')}</TableCell>
+                  <TableCell className="text-xs py-3" style={{ color: "hsl(var(--text-4))" }}>{anyV.last_assessment}</TableCell>
                   <TableCell className="py-3">
                     <span className="text-xs font-mono px-1.5 py-0.5" style={{ background: exp.bg, color: exp.color }}>
-                      {exp.label !== v.contractExpiry ? `${exp.label} — ${v.contractExpiry}` : v.contractExpiry}
+                      {exp.label !== anyV.contract_expiry ? `${exp.label} — ${anyV.contract_expiry}` : anyV.contract_expiry}
                     </span>
                   </TableCell>
                 </TableRow>

@@ -18,7 +18,7 @@ import {
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid,
 } from 'recharts';
-import { POLICIES, Policy, statusColor, formatDate } from '../data/seed';
+import { Policy, statusColor, formatDate } from '../data/seed';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useChartTheme } from '../hooks/useChartTheme';
 
@@ -44,12 +44,11 @@ const EMPTY_POLICY: Omit<Policy, 'id'> = {
 export default function Policies() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
-  const { data: supabasePolicies } = usePolicies();
+  const { data: supabasePolicies, isLoading: policiesLoading } = usePolicies();
   const upsertMutation = useUpsertPolicy();
   const deleteMutation = useDeletePolicy();
-  const [localPolicies, setLocalPolicies] = useState<Policy[]>(POLICIES);
-  const policies = (supabasePolicies && supabasePolicies.length > 0 ? supabasePolicies : localPolicies) as Policy[];
-  const setPolicies = (fn: (prev: Policy[]) => Policy[]) => setLocalPolicies(fn);
+  const policies = (supabasePolicies ?? []) as Policy[];
+
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
 
@@ -84,9 +83,7 @@ export default function Policies() {
     const id = `POL-${String(policies.length + 1).padStart(3, '0')}`;
     upsertMutation.mutate({ ...formData, id } as any, {
       onSuccess: () => { toast.success('Policy created'); },
-      onError: () => { setPolicies(prev => [...prev, { ...formData, id }]); },
     });
-    setPolicies(prev => [...prev, { ...formData, id }]);
     setCreateOpen(false);
     setFormData(EMPTY_POLICY);
   }
@@ -95,9 +92,7 @@ export default function Policies() {
     if (!editItem) return;
     upsertMutation.mutate(editItem as any, {
       onSuccess: () => { toast.success('Policy updated'); },
-      onError: () => { setPolicies(prev => prev.map(p => p.id === editItem!.id ? editItem! : p)); },
     });
-    setPolicies(prev => prev.map(p => p.id === editItem.id ? editItem : p));
     setEditItem(null);
   }
 
@@ -105,9 +100,7 @@ export default function Policies() {
     if (!deleteItem) return;
     deleteMutation.mutate(deleteItem.id, {
       onSuccess: () => { toast.success('Policy deleted'); },
-      onError: () => { setPolicies(prev => prev.filter(p => p.id !== deleteItem!.id)); },
     });
-    setPolicies(prev => prev.filter(p => p.id !== deleteItem.id));
     setDeleteItem(null);
   }
 

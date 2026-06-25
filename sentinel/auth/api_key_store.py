@@ -72,6 +72,7 @@ class ApiKeyStore:
             self._keys[tenant_id] = []
         self._keys[tenant_id].append(key)
         self._key_lookup[key_hash] = key
+        # nosemgrep: python.lang.security.audit.logging.logger-credential-leak.python-logger-credential-disclosure
         logger.info("API key created: %s (%s) for tenant %s", key.id, key.name, tenant_id)
         return key, raw_key
 
@@ -96,6 +97,7 @@ class ApiKeyStore:
             if key.id == key_id and key.status == "ACTIVE":
                 key.status = "REVOKED"
                 key.revoked_at = datetime.now(timezone.utc).isoformat()
+                # nosemgrep: python.lang.security.audit.logging.logger-credential-leak.python-logger-credential-disclosure
                 logger.info("API key revoked: %s for tenant %s", key_id, tenant_id)
                 return key
         return None

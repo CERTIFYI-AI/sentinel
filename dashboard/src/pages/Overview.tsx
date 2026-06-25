@@ -218,6 +218,43 @@ export default function Overview() {
     fullName: f.name,
   }));
 
+  // Compute risk trend from real risk data grouped by creation month (last 6 months)
+  const riskTrendData = (() => {
+    const now = new Date();
+    const months: { month: string; open: number; critical: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const label = d.toLocaleString('en-US', { month: 'short' });
+      const monthStart = new Date(d.getFullYear(), d.getMonth(), 1).toISOString();
+      const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59).toISOString();
+      const monthRisks = risks.filter((r: any) => {
+        const c = r.created_at;
+        return c >= monthStart && c <= monthEnd;
+      });
+      months.push({
+        month: label,
+        open: monthRisks.filter((r: any) => r.status === 'open' || r.status === 'Open').length,
+        critical: monthRisks.filter((r: any) => (r.risk_score || r.score || 0) >= 15).length,
+      });
+    }
+    // Fall back to static data if no real risk data available
+    if (months.every(m => m.open === 0 && m.critical === 0)) {
+      return RISK_TREND;
+    }
+    return months;
+  })();
+
+  // CISO frameworks scorecard: prefer real data over static
+  const cisoFrameworksData = frameworks.length > 0
+    ? frameworks.map((f: any) => ({
+        key: (f.id || f.name || '').toLowerCase().replace(/\s+/g, '_'),
+        label: f.name || 'Unknown',
+        score: f.compliance_score || f.complianceScore || 0,
+        trend: Array.from({ length: 30 }, (_, i) => Math.max(0, Math.min(100, (f.compliance_score || 0) - (29 - i) * 0.5))),
+      }))
+    : CISO_FRAMEWORKS;
+
+
   const recentActivity = [
     { id: 'act-001', action: 'Bias Audit Triggered', entity: 'Credit Scorer (v3.2.0)', actor: 'System (Policy Gate)', category: 'in_review', timestamp: '2026-06-16T07:15:00Z' },
     { id: 'act-002', action: 'Kill Switch Activated', entity: 'Marketing Agent (AGT-010)', actor: 'Sarah Chen (CISO)', category: 'escalated', timestamp: '2026-06-16T06:30:00Z' },
@@ -415,7 +452,7 @@ export default function Overview() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-5 gap-4">
-              {(frameworks.length > 0 ? frameworks : CISO_FRAMEWORKS).map((fw: any) => {
+              {cisoFrameworksData.map((fw: any) => {
                 // Normalize live framework data to CISO display format
                 const fwScore = fw.compliance_score || fw.complianceScore || fw.score || 0;
                 const fwLabel = fw.label || fw.name || '';
@@ -816,7 +853,7 @@ export default function Overview() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={RISK_TREND}>
+              <LineChart data={riskTrendData}>
                 <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
                 <XAxis dataKey="month" tick={{ fontSize: 11, fill: ct.axis }} />
                 <YAxis

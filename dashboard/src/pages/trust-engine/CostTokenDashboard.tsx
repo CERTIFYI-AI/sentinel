@@ -28,48 +28,7 @@ interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info
 
 // ── Chart Data ────────────────────────────────────────────────────────────────
 
-const DAILY_TOKEN_USAGE = [
-  { day: 'Mon', tokens: 42.3 },
-  { day: 'Tue', tokens: 48.1 },
-  { day: 'Wed', tokens: 44.7 },
-  { day: 'Thu', tokens: 51.2 },
-  { day: 'Fri', tokens: 47.8 },
-  { day: 'Sat', tokens: 38.2 },
-  { day: 'Sun', tokens: 40.7 },
-];
-
-const DAILY_COST_TREND = [
-  { day: 'Mon', cost: 1.27 },
-  { day: 'Tue', cost: 1.44 },
-  { day: 'Wed', cost: 1.34 },
-  { day: 'Thu', cost: 1.54 },
-  { day: 'Fri', cost: 1.43 },
-  { day: 'Sat', cost: 1.15 },
-  { day: 'Sun', cost: 1.22 },
-];
-
-const COST_BY_MODEL = [
-  { model: 'GPT-4o', cost: 3.82, prompt: 420, comp: 180, color: 'hsl(var(--s-in-tx))' },
-  { model: 'Claude-3-Opus', cost: 2.14, prompt: 150, comp: 90, color: 'hsl(var(--s-ok-tx))' },
-  { model: 'GPT-3.5-Turbo', cost: 1.21, prompt: 850, comp: 120, color: 'hsl(var(--s-wn-tx))' },
-  { model: 'Claude-3-Haiku', cost: 0.89, prompt: 300, comp: 150, color: 'hsl(var(--s-wn-tx))' },
-  { model: 'GPT-4o-Mini', cost: 0.74, prompt: 500, comp: 200, color: 'hsl(280 67% 56%)' },
-  { model: 'Mistral-7B', cost: 0.59, prompt: 100, comp: 45, color: 'hsl(var(--destructive))' },
-];
-
-const TOKEN_BY_AGENT = [
-  { agent: 'OpenAI-API-Connector', tokens: 78.2, pct: 25 },
-  { agent: 'DataLabeler-v2', tokens: 63.1, pct: 20 },
-  { agent: 'LoanAssistant', tokens: 45.3, pct: 14 },
-  { agent: 'SupportBot', tokens: 31.2, pct: 10 },
-  { agent: 'RiskAnalyzer', tokens: 20.4, pct: 7 },
-];
-
-const PROVIDER_TRAFFIC = [
-  { provider: 'OpenAI', reqs: 14200, pct: 65, activeKeys: 3, latency: '420ms', status: 'Healthy' },
-  { provider: 'Anthropic', reqs: 5800, pct: 28, activeKeys: 2, latency: '650ms', status: 'Healthy' },
-  { provider: 'Local Llama', reqs: 1200, pct: 7, activeKeys: 1, latency: '120ms', status: 'Healthy' },
-];
+import { useCostMetrics } from '../../hooks/useCostMetrics';
 
 // ── Metric Tile ───────────────────────────────────────────────────────────────
 
@@ -139,8 +98,10 @@ export default function CostTokenDashboard() {
   const ct = useChartTheme();
   const [dateRange, setDateRange] = useState('week');
   const [budgetDialogOpen, setBudgetDialogOpen] = useState(false);
-  const [budgetThreshold, setBudgetThreshold] = useState('15');
+  const [budgetThreshold, setBudgetThreshold] = useState(() => localStorage.getItem('budgetAlert') || '15');
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
+
+  const { tokenUsage, costTrend, costByModel, tokenByAgent, totalTokens, totalCost, providerTraffic } = useCostMetrics(dateRange);
 
   const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
     const id = Date.now();
@@ -149,7 +110,7 @@ export default function CostTokenDashboard() {
   }, []);
 
   const handleExportCSV = () => {
-    const csv = 'Day,Tokens(K),Cost($)\n' + DAILY_TOKEN_USAGE.map((d, i) => `${d.day},${d.tokens},${DAILY_COST_TREND[i].cost}`).join('\n');
+    const csv = 'Day,Tokens(K),Cost($)\n' + tokenUsage.map((d, i) => `${d.day},${d.tokens},${costTrend[i].cost}`).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -161,12 +122,11 @@ export default function CostTokenDashboard() {
   const handleSetBudget = () => {
     const val = parseFloat(budgetThreshold);
     if (isNaN(val) || val <= 0) { toast('Invalid threshold', 'error'); return; }
+    localStorage.setItem('budgetAlert', val.toString());
     toast(`Budget alert set at $${val}/week. You will be notified when exceeded.`, 'success');
     setBudgetDialogOpen(false);
   };
 
-  const totalCost = DAILY_COST_TREND.reduce((a, d) => a + d.cost, 0);
-  const totalTokens = DAILY_TOKEN_USAGE.reduce((a, d) => a + d.tokens, 0);
 
   return (
     <div className="space-y-6">
@@ -243,7 +203,7 @@ export default function CostTokenDashboard() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={DAILY_TOKEN_USAGE} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+              <BarChart data={tokenUsage} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} vertical={false} />
                 <XAxis dataKey="day" tick={{ fill: ct.axis, fontSize: 11 }} axisLine={{ stroke: ct.grid }} tickLine={false} />
                 <YAxis label={{ value: 'Tokens (K)', angle: -90, position: 'insideLeft', offset: 10, style: { fill: ct.axis, fontSize: 11 } }} tick={{ fill: ct.axis, fontSize: 11 }} axisLine={{ stroke: ct.grid }} tickLine={false} />
@@ -260,7 +220,7 @@ export default function CostTokenDashboard() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={DAILY_COST_TREND} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+              <LineChart data={costTrend} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} vertical={false} />
                 <XAxis dataKey="day" tick={{ fill: ct.axis, fontSize: 11 }} axisLine={{ stroke: ct.grid }} tickLine={false} />
                 <YAxis label={{ value: 'Cost ($)', angle: -90, position: 'insideLeft', offset: 10, style: { fill: ct.axis, fontSize: 11 } }} tick={{ fill: ct.axis, fontSize: 11 }} axisLine={{ stroke: ct.grid }} tickLine={false} />
@@ -280,13 +240,13 @@ export default function CostTokenDashboard() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={COST_BY_MODEL} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+              <BarChart data={costByModel} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} vertical={false} />
                 <XAxis dataKey="model" tick={{ fill: ct.axis, fontSize: 10 }} axisLine={{ stroke: ct.grid }} tickLine={false} />
                 <YAxis label={{ value: 'Cost ($)', angle: -90, position: 'insideLeft', offset: 10, style: { fill: ct.axis, fontSize: 11 } }} tick={{ fill: ct.axis, fontSize: 11 }} axisLine={{ stroke: ct.grid }} tickLine={false} />
                 <ReTooltip content={<ModelCostTooltip />} />
                 <Bar dataKey="cost" maxBarSize={36}>
-                  {COST_BY_MODEL.map((entry, idx) => (
+                  {costByModel.map((entry, idx) => (
                     <Cell key={idx} fill={entry.color} />
                   ))}
                 </Bar>
@@ -300,7 +260,7 @@ export default function CostTokenDashboard() {
             <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Token Usage by Agent</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {TOKEN_BY_AGENT.map(agent => (
+            {tokenByAgent.map(agent => (
               <div key={agent.agent}>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{agent.agent}</span>
@@ -338,7 +298,7 @@ export default function CostTokenDashboard() {
               </tr>
             </thead>
             <tbody className="divide-y" style={{ borderColor: 'hsl(var(--border))' }}>
-              {PROVIDER_TRAFFIC.map((p, i) => (
+              {providerTraffic.map((p, i) => (
                 <tr key={i} className="hover:bg-[hsl(var(--surface-2))] transition-colors">
                   <td className="px-4 py-3 font-medium flex items-center gap-2" style={{ color: 'hsl(var(--text-1))' }}>
                     <CloudCheck size={16} className="text-[hsl(var(--brand))]" /> {p.provider}
@@ -353,7 +313,7 @@ export default function CostTokenDashboard() {
                     </div>
                   </td>
                   <td className="px-4 py-3" style={{ color: 'hsl(var(--text-2))' }}>{p.activeKeys} keys</td>
-                  <td className="px-4 py-3 font-mono text-[hsl(var(--text-2))]" >{p.latency}</td>
+                  <td className="px-4 py-3 font-mono text-[hsl(var(--text-2))]" >{p.latency}ms</td>
                   <td className="px-4 py-3 text-right">
                     <Badge className="rounded-none bg-emerald-500/10 text-emerald-500 border-emerald-500/30 font-medium">{p.status}</Badge>
                   </td>

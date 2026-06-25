@@ -1,5 +1,7 @@
 // @ts-nocheck
-import { supabase } from './supabase';
+import { supabase, isSupabaseConfigured } from './supabase';
+
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true';
 
 export interface AuthUser {
   id: string;
@@ -20,6 +22,13 @@ const DEMO_USER: AuthUser = {
 };
 
 export async function signIn(email: string, password: string): Promise<{ user: AuthUser | null; error: string | null }> {
+  // Demo mode — bypass Supabase auth entirely
+  if (DEMO_MODE) {
+    return { user: DEMO_USER, error: null };
+  }
+  if (!isSupabaseConfigured()) {
+    return { user: null, error: 'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.local' };
+  }
   try {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
@@ -27,10 +36,6 @@ export async function signIn(email: string, password: string): Promise<{ user: A
     const profile = await getProfile(data.user.id);
     return { user: profile, error: null };
   } catch (e: unknown) {
-    console.warn('Supabase auth failed, using demo fallback:', e);
-    if (email === 'admin@sentinel.demo') {
-      return { user: DEMO_USER, error: null };
-    }
     return { user: null, error: e instanceof Error ? e.message : 'Auth failed' };
   }
 }
@@ -54,6 +59,7 @@ export async function signOut(): Promise<void> {
 }
 
 export async function getProfile(userId: string): Promise<AuthUser | null> {
+  if (DEMO_MODE) return DEMO_USER;
   try {
     const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
     if (error) throw error;
@@ -66,18 +72,20 @@ export async function getProfile(userId: string): Promise<AuthUser | null> {
       avatarUrl: data.avatar_url,
     };
   } catch {
-    return DEMO_USER;
+    return DEMO_MODE ? DEMO_USER : null;
   }
 }
 
 export async function getSession(): Promise<AuthUser | null> {
+  if (DEMO_MODE) return DEMO_USER;
+  if (!isSupabaseConfigured()) return null;
   try {
     const { data } = await supabase.auth.getSession();
     if (data.session?.user) {
       return getProfile(data.session.user.id);
     }
-    return DEMO_USER;
+    return null;
   } catch {
-    return DEMO_USER;
+    return null;
   }
 }
