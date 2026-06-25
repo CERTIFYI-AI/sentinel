@@ -42,10 +42,9 @@ export const isSupabaseConfigured = (): boolean => {
  */
 function createSupabaseClient(): SupabaseClient {
   if (!DEMO_MODE && (!SUPABASE_URL || !SUPABASE_ANON_KEY)) {
-    throw new Error(
+    console.error(
       '[Sentinel] VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY must be set. ' +
-      'Copy dashboard/.env.example to dashboard/.env.local and fill in the values. ' +
-      'To run without Supabase, set VITE_DEMO_MODE=true.'
+      'Missing credentials detected. Falling back to Demo Mode to prevent crashes.'
     )
   }
 
