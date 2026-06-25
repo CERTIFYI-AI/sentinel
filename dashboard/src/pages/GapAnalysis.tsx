@@ -64,7 +64,6 @@ export default function GapAnalysis() {
   const { controls, isLoading: ctrlLoading } = useControlData();
   const { frameworks: fwList, isLoading: fwLoading } = useFrameworksData();
   const isLoading = ctrlLoading || fwLoading;
-  if (isLoading) return <PageSkeleton />;
 
   // Derive gaps from controls that are not fully implemented
   const derivedGaps: Gap[] = (controls || [])
@@ -188,6 +187,7 @@ export default function GapAnalysis() {
     setDeleteItem(null);
   }
 
+  if (isLoading) return <PageSkeleton />;
   return (
     <div className="space-y-6">
       {/* Enterprise Page Header */}

@@ -132,7 +132,7 @@ export default function EthicsReporting() {
   const [wSystem, setWSystem] = useState('');
   const [wInvestigator, setWInvestigator] = useState('David Kim');
 
-  if (isLoading) return <PageSkeleton title="Ethics Reporting" />;
+
 
   const filtered = useMemo(() => reports.filter(r =>
     !search || r.category.toLowerCase().includes(search.toLowerCase()) || r.id.toLowerCase().includes(search.toLowerCase()) || r.description.toLowerCase().includes(search.toLowerCase())
@@ -173,6 +173,8 @@ export default function EthicsReporting() {
     setCreateOpen(false);
     setWDesc(''); setWSystem('');
   }
+
+  if (isLoading) return <PageSkeleton title="Ethics Reporting" />;
 
   return (
     <div className="space-y-6">

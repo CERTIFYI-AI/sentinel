@@ -463,7 +463,7 @@ export default function BusinessContinuity() {
   // Delete confirm
   const [deleteTarget, setDeleteTarget] = useState<BCPPlan | null>(null);
 
-  if (isLoading) return <PageSkeleton title="Business Continuity" />;
+
 
   // ── Filtering ─────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
@@ -541,6 +541,8 @@ export default function BusinessContinuity() {
     a.click();
     toast.success('BCP plans exported as CSV');
   };
+
+  if (isLoading) return <PageSkeleton title="Business Continuity" />;
 
   return (
     <div className="space-y-6">

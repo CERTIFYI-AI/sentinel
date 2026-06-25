@@ -59,7 +59,6 @@ const MONTH_DATES = ['2026-02-01', '2026-03-01', '2026-04-01', '2026-05-01', '20
 export default function RemediationTracker() {
   const { orgName } = useSettingsStore();
   const { items: remediationItems, isLoading } = useRemediationData();
-  if (isLoading) return <PageSkeleton />;
   // Map live data to TrackerItem shape
   const TRACKER_ITEMS: TrackerItem[] = (remediationItems || []).map((r: any) => {
     const defaultStart = r.created_at?.split('T')[0] || '2026-02-15';
@@ -90,6 +89,7 @@ export default function RemediationTracker() {
   const ASSIGNEES = Array.from(new Set(TRACKER_ITEMS.map(i => i.assignee)));
   const todayPercent = dateToPercent(new Date().toISOString().split('T')[0]);
 
+  if (isLoading) return <PageSkeleton />;
   return (
     <div className="space-y-6">
       {/* Header */}

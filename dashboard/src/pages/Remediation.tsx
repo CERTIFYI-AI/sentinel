@@ -73,7 +73,6 @@ export default function Remediation() {
   const ct = useChartTheme();
   const { items: plans, isLoading, saveRemediation, removeRemediation } = useRemediationData();
   const { risks } = useRisksData();
-  if (isLoading) return <PageSkeleton />;
   const _plansPlaceholder = useState<any[]>([]); // kept for TS compat
   const [search, setSearch] = useState('');
   const [filterPriority, setFilterPriority] = useState('all');
@@ -124,6 +123,7 @@ export default function Remediation() {
     setDeleteItem(null);
   }
 
+  if (isLoading) return <PageSkeleton />;
   return (
     <div className="space-y-6">
       {/* Header */}

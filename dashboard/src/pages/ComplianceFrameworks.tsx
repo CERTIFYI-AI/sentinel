@@ -49,7 +49,6 @@ const EMPTY: any = {
 
 export default function ComplianceFrameworks() {
   const { frameworks: items, isLoading, save: saveFramework, remove: removeFramework } = useFrameworksData();
-  if (isLoading) return <PageSkeleton />;
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -125,6 +124,7 @@ export default function ComplianceFrameworks() {
     setDeleteTarget(null);
   };
 
+  if (isLoading) return <PageSkeleton />;
   return (
     <div className="p-6 space-y-5 max-w-[1400px]">
       {/* Enterprise Page Header */}

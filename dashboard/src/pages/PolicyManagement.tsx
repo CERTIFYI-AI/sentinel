@@ -34,7 +34,6 @@ const EMPTY: any = { title:"", version:"1.0", type:"AI Governance", framework:"E
 
 export default function PolicyManagement() {
   const { policies: sbItems, isLoading, save: savePolicy, remove: removePolicy } = usePolicyData()
-  if (isLoading) return <PageSkeleton />;
   const [localItems, setLocalItems] = useState<any[]>([])
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set())
   const items = [...localItems, ...sbItems.filter((i:any) => !localItems.find((l:any) => l.id === i.id))].filter((i:any) => !deletedIds.has(i.id))
@@ -86,6 +85,7 @@ export default function PolicyManagement() {
 
   const uniqueTypes = [...new Set(items.map(i=>i.type))];
 
+  if (isLoading) return <PageSkeleton />;
   return (
     <div className="p-6 space-y-5 max-w-[1400px]">
       <Breadcrumbs />

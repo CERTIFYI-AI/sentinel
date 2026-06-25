@@ -39,7 +39,6 @@ export default function Datasets() {
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   useEffect(() => { if (liveItems.length > 0) setItems(liveItems); }, [liveItems]);
-  if (isLoading) return <PageSkeleton />;
 
   const filtered = useMemo(() => items.filter(i => {
     const q = search.toLowerCase();
@@ -81,6 +80,7 @@ export default function Datasets() {
 
   const sensColors: Record<string, string> = { Public:"#22c55e", Internal:"#3b82f6", Confidential:"#f59e0b", Restricted:"#ef4444", "Top Secret":"#7c3aed" };
 
+  if (isLoading) return <PageSkeleton />;
   return (
     <div className="p-6 space-y-5 max-w-[1400px]">
       <Breadcrumbs />

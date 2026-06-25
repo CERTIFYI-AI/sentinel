@@ -110,7 +110,6 @@ function truncateHash(h: string) {
 export default function EvidenceVault() {
   const { orgName } = useSettingsStore();
   const { evidence, isLoading, save: saveEvidence, remove: removeEvidence } = useEvidenceData();
-  if (isLoading) return <PageSkeleton />;
   const [_localEvidence, _setLocalEvidence] = useState<Evidence[]>([]);
   const [chain, setChain] = useState<ChainEntry[]>(CHAIN_ENTRIES);
   const [search, setSearch] = useState('');
@@ -219,6 +218,8 @@ export default function EvidenceVault() {
       isPositiveUp: true,
     },
   ];
+
+  if (isLoading) return <PageSkeleton />;
 
   return (
     <div className="space-y-6">

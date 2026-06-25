@@ -1,45 +1,33 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { WarningCircle, House, ArrowLeft } from '@phosphor-icons/react';
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { WarningCircle, ArrowLeft } from '@phosphor-icons/react';
+import { Button } from '../components/ui/button';
 
 export default function NotFound() {
-  const navigate = useNavigate();
-
   return (
-    <div
-      className="flex flex-col items-center justify-center min-h-screen"
-      style={{ background: 'hsl(var(--bg-page))' }}
-    >
-      <div className="flex flex-col items-center text-center max-w-sm px-4">
-        <WarningCircle size={64} style={{ color: 'hsl(var(--text-4))' }} weight="thin" />
-
-        <h1 className="text-7xl font-bold mt-6 tabular-nums" style={{ color: 'hsl(var(--text-1))' }}>404</h1>
-        <p className="text-xl font-semibold mt-3" style={{ color: 'hsl(var(--text-2))' }}>Page not found</p>
-        <p className="text-sm mt-2 leading-relaxed" style={{ color: 'hsl(var(--text-3))' }}>
-          The page you're looking for doesn't exist or has been moved to another location.
-        </p>
-
-        <div className="flex gap-3 mt-8">
-          <Link to="/overview">
-            <button
-              className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-hover))] text-white text-sm font-medium transition-colors"
-            >
-              <House size={14} />
-              Go to Dashboard
-            </button>
-          </Link>
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-2 px-4 py-2 border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))] text-sm font-medium transition-colors"
-          >
-            <ArrowLeft size={14} />
-            Go Back
-          </button>
+    <div className="flex-1 flex flex-col items-center justify-center p-8 bg-sentinel-background text-sentinel-text">
+      <div 
+        className="flex flex-col items-center text-center p-8 rounded-lg max-w-md w-full"
+        style={{
+          background: 'hsl(var(--bg-card))',
+          border: '1px solid hsl(var(--border))',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+        }}
+      >
+        <div className="w-16 h-16 rounded-full flex items-center justify-center mb-6" style={{ background: 'hsl(0 72% 51% / 0.1)', color: 'hsl(0 72% 51%)' }}>
+          <WarningCircle size={32} weight="fill" />
         </div>
+        <h1 className="text-3xl font-bold mb-2 text-sentinel-text">404 - Not Found</h1>
+        <p className="text-sentinel-text-muted mb-8 text-sm">
+          The page you are looking for doesn't exist or has been moved.
+        </p>
+        <Link to="/">
+          <Button variant="default" className="w-full flex items-center gap-2">
+            <ArrowLeft size={16} />
+            Return to Dashboard
+          </Button>
+        </Link>
       </div>
-
-      <p className="text-xs mt-16" style={{ color: 'hsl(var(--text-4))' }}>
-        Certifyi Sentinel GRC Platform
-      </p>
     </div>
   );
 }

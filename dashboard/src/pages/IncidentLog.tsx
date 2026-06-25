@@ -136,6 +136,7 @@ function SlaCountdownBadge({ reportedDate, severity, status }: {
   const bg = breached || isRed ? 'hsl(var(--s-er-bg))' : isAmber ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-ok-bg))';
   const fg = breached || isRed ? 'hsl(var(--s-er-tx))' : isAmber ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))';
 
+  if (isLoading) return <PageSkeleton />;
   return (
     <span
       className={`text-[10px] font-mono px-1.5 py-0.5 font-semibold inline-flex items-center gap-1 ${breached || isRed ? 'animate-pulse' : ''}`}
@@ -364,7 +365,6 @@ export default function IncidentLog() {
     return (incidents || []).map(normalizeIncident);
   }, [incidents]);
 
-  if (isLoading) return <PageSkeleton />;
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
 

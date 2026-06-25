@@ -50,7 +50,6 @@ const EMPTY: any = {
 
 export default function ComplianceControls() {
   const { controls: items, isLoading, save: saveControl, remove: removeControl } = useControlData();
-  if (isLoading) return <PageSkeleton />;
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -153,6 +152,7 @@ export default function ComplianceControls() {
     setDeleteTarget(null);
   };
 
+  if (isLoading) return <PageSkeleton />;
   return (
     <div className="p-6 space-y-5 max-w-[1400px]">
       {/* Enterprise Page Header */}

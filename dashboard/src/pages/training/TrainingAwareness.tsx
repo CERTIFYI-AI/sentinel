@@ -339,7 +339,7 @@ export default function TrainingAwareness() {
   const [createForm, setCreateForm] = useState({ title: '', category: 'AI Ethics', format: 'Interactive' as Course['format'], duration: '', assignedTo: '', dueDate: '' });
   const [deleteTarget, setDeleteTarget] = useState<Course | null>(null);
 
-  if (isLoading) return <PageSkeleton title="Training & Awareness" />;
+
 
   // ── Filtering ──────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
@@ -428,6 +428,8 @@ export default function TrainingAwareness() {
     };
     return map[category] || { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))' };
   };
+
+  if (isLoading) return <PageSkeleton title="Training & Awareness" />;
 
   return (
     <div className="space-y-6">

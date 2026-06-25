@@ -326,7 +326,6 @@ function RiskHeatmap({
 export default function RiskRegister() {
   const { orgName } = useSettingsStore();
   const { risks, isLoading, saveRisk, removeRisk } = useRisksData();
-  if (isLoading) return <PageSkeleton />;
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -517,6 +516,8 @@ export default function RiskRegister() {
       </Card>
     );
   };
+
+  if (isLoading) return <PageSkeleton />;
 
   return (
     <TooltipProvider>
