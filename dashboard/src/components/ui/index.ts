@@ -36,8 +36,6 @@ export { ChartContainer } from './ChartContainer';
 export type { ChartContainerProps } from './ChartContainer';
 
 // ── Feedback ─────────────────────────────────────────────────────────────────
-
-// ── Antigravity UI/UX ────────────────────────────────────────────────────────
 export { RiskBadge } from './RiskBadge';
 export { StatusPill } from './StatusPill';
 export { InterlinkChip } from './InterlinkChip';
