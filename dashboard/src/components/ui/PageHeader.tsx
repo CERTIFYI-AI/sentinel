@@ -80,7 +80,9 @@ export function PageHeader({
                 <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M224,115.55V208a16,16,0,0,1-16,16H168a16,16,0,0,1-16-16V168a8,8,0,0,0-8-8H112a8,8,0,0,0-8,8v40a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V115.55a16,16,0,0,1,5.17-11.78l80-75.48.11-.11a16,16,0,0,1,21.53,0,1.14,1.14,0,0,0,.11.11l80,75.48A16,16,0,0,1,224,115.55Z"></path></svg>
               </a>
             </li>
-            {breadcrumbs.map((crumb, i) => (
+            {breadcrumbs
+              .filter((crumb, i) => !(i === 0 && (crumb.label === 'Home' || crumb.label === 'Dashboard')))
+              .map((crumb, i) => (
               <li key={i} className="flex items-center gap-1.5">
                 <ChevronRight className="w-3 h-3 text-[hsl(var(--text-4))] shrink-0" aria-hidden="true" />
                 {crumb.href ? (
