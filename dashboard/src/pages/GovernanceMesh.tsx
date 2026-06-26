@@ -1,5 +1,4 @@
 // Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
-// WS2 — Governance Mesh: real-time agent cascade visualizer.
 import { useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useRequiredOrgId } from '../hooks/useTenant';

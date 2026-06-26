@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
 //
-// WS0.3 — <Can> / <CanAny> / <ProtectedRoute> component tests.
 //
 // The supabase rpc() call is mocked at module boundary so we exercise
 // the full TanStack Query lifecycle (loading → success → error) without

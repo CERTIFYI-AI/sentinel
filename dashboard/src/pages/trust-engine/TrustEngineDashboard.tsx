@@ -30,7 +30,6 @@ import { PageHeader } from '../../components/ui/PageHeader';
 import { StatCardRow } from '../../components/ui/StatCardRow';
 import type { StatCardRowItem } from '../../components/ui/StatCardRow';
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

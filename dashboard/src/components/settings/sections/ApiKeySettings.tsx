@@ -1,4 +1,3 @@
-// @ts-nocheck
 // src/components/settings/sections/ApiKeySettings.tsx
 import { useState } from "react";
 import { useApiKeys, useCreateApiKey, useRevokeApiKey } from "../../../hooks/use-settings";

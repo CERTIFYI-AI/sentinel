@@ -1,6 +1,5 @@
 // Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
 //
-// WS5 — Framework catalog browser.
 //
 // Renders the full set of GRC frameworks (currently 22) grouped by
 // domain, each linking to its authoritative source. This page is a

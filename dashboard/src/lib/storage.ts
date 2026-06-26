@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { supabase } from './supabase';
 
 export type Bucket = 'evidence' | 'reports' | 'avatars';

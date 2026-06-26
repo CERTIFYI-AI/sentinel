@@ -3,6 +3,7 @@
 import { useRisksData } from "@/hooks/useRisksData";
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { StatCardRow } from '@/components/ui/StatCardRow';
 import { FilterBar } from '@/components/ui/FilterBar';
 import React, { useState, useMemo } from 'react';
@@ -703,98 +704,113 @@ export default function RiskRegister() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map(risk => {
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      const scoreStyle = riskScoreStyle((risk.score ?? 0) as number);
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      const sevColor = severityColor((risk.severity ?? '') as any);
-                      const statColor = statusColor(risk.status);
-                      const controls = RISK_CONTROL_MAP[risk.id] || [];
-                      return (
-                        <tr
-                          key={risk.id}
-                          className="hover:bg-muted/30 cursor-pointer"
-                          style={{ borderBottom: '1px solid hsl(var(--border))' }}
-                          onClick={() => openDetail(risk)}
-                        >
-                          <td className="px-3 py-2">
-                            <span className="font-mono text-xs font-medium" style={{ color: 'hsl(var(--brand))' }}>{risk.id}</span>
-                          </td>
-                          <td className="px-3 py-2">
-                            <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{risk.title}</span>
-                          </td>
-                          <td className="px-3 py-2">
-                            <Badge style={{ background: sevColor.bg, color: sevColor.text, borderRadius: 0, fontSize: 11 }}>
-                              {risk.category}
-                            </Badge>
-                          </td>
-                          <td className="px-3 py-2 text-center">
-                            <span className="text-sm font-mono" style={{ color: 'hsl(var(--text-1))' }}>{risk.likelihood}</span>
-                          </td>
-                          <td className="px-3 py-2 text-center">
-                            <span className="text-sm font-mono" style={{ color: 'hsl(var(--text-1))' }}>{risk.impact}</span>
-                          </td>
-                          <td className="px-3 py-2">
-                            <Badge style={{
-                              background: scoreStyle.bg, color: scoreStyle.text, borderRadius: 0,
-                              fontWeight: scoreStyle.bold ? 800 : 600, fontSize: 12,
-                            }}>
-                              {risk.score}
-                            </Badge>
-                          </td>
-                          <td className="px-3 py-2">
-                            <Badge style={{ background: statColor.bg, color: statColor.text, borderRadius: 0, fontSize: 11 }}>
-                              {risk.status}
-                            </Badge>
-                          </td>
-                          <td className="px-3 py-2">
-                            <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{risk.owner}</span>
-                          </td>
-                          <td className="px-3 py-2">
-                            <div className="flex flex-wrap gap-1">
-                              {controls.map(ctrl => (
-                                <Badge key={ctrl} className="text-[10px] font-mono px-1 py-0" style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0 }}>
-                                  {ctrl}
-                                </Badge>
-                              ))}
-                              {controls.length === 0 && <span className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>—</span>}
-                            </div>
-                          </td>
-                          <td className="px-3 py-2"><TrendIcon trend={risk.trending} /></td>
-                          <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex items-center justify-end gap-1">
-                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openDetail(risk)}>
-                                <Eye size={14} style={{ color: 'hsl(var(--text-4))' }} />
+                    {filtered.length === 0 ? (
+                      <tr>
+                        <td colSpan={10} className="p-0">
+                          <EmptyState
+                            icon={<Warning size={32} weight="duotone" />}
+                            title="No risks found"
+                            description="No risks match the current filter criteria."
+                            action={
+                              <Button variant="outline" onClick={() => { setFilterCategory('all'); setFilterStatus('all'); setSearch(''); }}>
+                                Clear Filters
                               </Button>
-                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { setEditRisk(risk); setAddOpen(true); }}>
-                                <PencilSimple size={14} style={{ color: 'hsl(var(--text-4))' }} />
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                                    <Trash size={14} style={{ color: 'hsl(var(--s-er-tx))' }} />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent style={{ borderRadius: 0 }}>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Delete Risk</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Delete "{risk.id} — {risk.title}"? This action cannot be undone.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteRisk(risk.id)} style={{ borderRadius: 0, background: 'hsl(var(--destructive))' }}>
-                                      Delete
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                            }
+                          />
+                        </td>
+                      </tr>
+                    ) : (
+                      filtered.map(risk => {
+                        const scoreStyle = riskScoreStyle((risk.score ?? 0) as number);
+                        const sevColor = severityColor((risk.severity ?? '') as any);
+                        const statColor = statusColor(risk.status);
+                        const controls = RISK_CONTROL_MAP[risk.id] || [];
+                        return (
+                          <tr
+                            key={risk.id}
+                            className="hover:bg-muted/30 cursor-pointer"
+                            style={{ borderBottom: '1px solid hsl(var(--border))' }}
+                            onClick={() => openDetail(risk)}
+                          >
+                            <td className="px-3 py-2">
+                              <span className="font-mono text-xs font-medium" style={{ color: 'hsl(var(--brand))' }}>{risk.id}</span>
+                            </td>
+                            <td className="px-3 py-2">
+                              <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{risk.title}</span>
+                            </td>
+                            <td className="px-3 py-2">
+                              <Badge style={{ background: sevColor.bg, color: sevColor.text, borderRadius: 0, fontSize: 11 }}>
+                                {risk.category}
+                              </Badge>
+                            </td>
+                            <td className="px-3 py-2 text-center">
+                              <span className="text-sm font-mono" style={{ color: 'hsl(var(--text-1))' }}>{risk.likelihood}</span>
+                            </td>
+                            <td className="px-3 py-2 text-center">
+                              <span className="text-sm font-mono" style={{ color: 'hsl(var(--text-1))' }}>{risk.impact}</span>
+                            </td>
+                            <td className="px-3 py-2">
+                              <Badge style={{
+                                background: scoreStyle.bg, color: scoreStyle.text, borderRadius: 0,
+                                fontWeight: scoreStyle.bold ? 800 : 600, fontSize: 12,
+                              }}>
+                                {risk.score}
+                              </Badge>
+                            </td>
+                            <td className="px-3 py-2">
+                              <Badge style={{ background: statColor.bg, color: statColor.text, borderRadius: 0, fontSize: 11 }}>
+                                {risk.status}
+                              </Badge>
+                            </td>
+                            <td className="px-3 py-2">
+                              <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{risk.owner}</span>
+                            </td>
+                            <td className="px-3 py-2">
+                              <div className="flex flex-wrap gap-1">
+                                {controls.map(ctrl => (
+                                  <Badge key={ctrl} className="text-[10px] font-mono px-1 py-0" style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0 }}>
+                                    {ctrl}
+                                  </Badge>
+                                ))}
+                                {controls.length === 0 && <span className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>—</span>}
+                              </div>
+                            </td>
+                            <td className="px-3 py-2"><TrendIcon trend={risk.trending} /></td>
+                            <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex items-center justify-end gap-1">
+                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openDetail(risk)}>
+                                  <Eye size={14} style={{ color: 'hsl(var(--text-4))' }} />
+                                </Button>
+                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { setEditRisk(risk); setAddOpen(true); }}>
+                                  <PencilSimple size={14} style={{ color: 'hsl(var(--text-4))' }} />
+                                </Button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                      <Trash size={14} style={{ color: 'hsl(var(--s-er-tx))' }} />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent style={{ borderRadius: 0 }}>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Delete Risk</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Delete "{risk.id} — {risk.title}"? This action cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => handleDeleteRisk(risk.id)} style={{ borderRadius: 0, background: 'hsl(var(--destructive))' }}>
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
                   </tbody>
                 </table>
               </div>

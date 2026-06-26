@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * RequireAuth – route guard that redirects unauthenticated users.
  *

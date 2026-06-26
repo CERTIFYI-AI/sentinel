@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchAllRisks, upsertRisk, deleteRisk } from '../../services/riskService'
 import { toast } from 'sonner'

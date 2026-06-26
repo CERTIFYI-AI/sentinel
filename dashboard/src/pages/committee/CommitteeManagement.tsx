@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useEffect } from 'react';
 import { useCommitteesData } from '../../hooks/useCommitteesData';
 import { PageSkeleton } from '../../components/ui/PageSkeleton';
@@ -22,7 +21,6 @@ import { Progress } from '../../components/ui/progress';
 import { formatDate } from '../../data/seed';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 interface CommitteeMember {
   name: string; role: string; department: string; votingRight: boolean;
@@ -290,7 +288,7 @@ export default function CommitteeManagement() {
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div>
                     <span className="text-[hsl(var(--text-4))]">Chair</span>
-                    <p className="text-[hsl(var(--text-2))] font-medium truncate">{c.chair.split(' (')[0]}</p>
+                    <p className="text-[hsl(var(--text-2))] font-medium truncate">{(c.chair ?? '').split(' (')[0] || '—'}</p>
                   </div>
                   <div>
                     <span className="text-[hsl(var(--text-4))]">Members</span>
@@ -357,7 +355,7 @@ export default function CommitteeManagement() {
                   {selected.members.map((m, i) => (
                     <div key={i} className="flex items-center gap-3 p-3 border border-[hsl(var(--border))] rounded-none">
                       <div className="w-8 h-8 rounded-full bg-[hsl(var(--brand))] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                        {m.name.split(' ').map(n => n[0]).join('').slice(0,2)}
+                        {(m.name ?? '').split(' ').filter(Boolean).map((n: string) => n[0]).join('').slice(0,2) || '?'}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-[hsl(var(--text-1))]">{m.name}</p>

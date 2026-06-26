@@ -1,6 +1,5 @@
 // Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
 //
-// WS3 — Structured telemetry sink.
 //
 // Replaces ad-hoc `console.*` calls across the services layer. The sink
 // is intentionally minimal here; WS6 wires it into Sentry + OTEL. In

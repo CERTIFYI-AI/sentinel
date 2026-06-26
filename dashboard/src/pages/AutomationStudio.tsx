@@ -19,7 +19,6 @@ import { Label } from '../components/ui/label'
 import { Button } from '../components/ui/button'
 import {
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '../components/ui/select'
 

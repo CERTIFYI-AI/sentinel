@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchAllGaps, upsertGap, deleteGap } from '@/services/gapService'
 import { toast } from 'sonner'

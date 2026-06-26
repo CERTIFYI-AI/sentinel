@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { MagnifyingGlass, Bell, ArrowsClockwise, Sun, Moon, Monitor, User, Gear, SignOut, CaretRight, PaintBrush } from '@phosphor-icons/react'

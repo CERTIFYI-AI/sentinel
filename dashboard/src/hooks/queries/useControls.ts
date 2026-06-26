@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchAllControls, upsertControl, deleteControl } from '../../services/controlService'
 import { toast } from 'sonner'

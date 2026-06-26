@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../queryClient";
 import { QK } from "../queryKeys";

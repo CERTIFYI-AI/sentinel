@@ -1,6 +1,5 @@
 // Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
 //
-// WS0.4 — Evidence custody explorer.
 //
 // Per-artifact detail page: shows metadata, full append-only custody
 // timeline, verify-chain button, and re-hash status. Accessible:

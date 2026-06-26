@@ -32,7 +32,6 @@ const EMPTY_ASSET: Omit<AttackSurfaceAsset, 'id' | 'lastScanned' | 'status'> = {
   protocol: 'HTTPS', owner: '', description: '', openPorts: 1,
 };
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -53,8 +52,8 @@ const externalAssets = ATTACK_SURFACE.filter(a => a.exposure === 'public');
 const internalAssets = ATTACK_SURFACE.filter(a => a.exposure !== 'public');
 
 const EXPOSURE_CHART_DATA = [
-  ...externalAssets.map(a => ({ name: a.name.split('.')[0], score: getExposureScore(a), group: 'External', fill: 'hsl(var(--destructive))' })),
-  ...internalAssets.map(a => ({ name: a.name.split('.')[0], score: getExposureScore(a), group: 'Internal', fill: 'hsl(var(--s-in-tx))' })),
+  ...externalAssets.map(a => ({ name: (a.name ?? '').split('.')[0], score: getExposureScore(a), group: 'External', fill: 'hsl(var(--destructive))' })),
+  ...internalAssets.map(a => ({ name: (a.name ?? '').split('.')[0], score: getExposureScore(a), group: 'Internal', fill: 'hsl(var(--s-in-tx))' })),
 ];
 
 // ── Metric Tile ───────────────────────────────────────────────────────────────

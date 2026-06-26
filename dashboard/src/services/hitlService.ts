@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
 // Use HitlItem (PascalCase) - confirmed has data in Supabase

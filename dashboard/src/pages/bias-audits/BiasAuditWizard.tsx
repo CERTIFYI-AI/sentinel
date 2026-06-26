@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useMemo } from 'react';
 import {
   Eye, Trash, Plus, Warning, ArrowRight, ArrowLeft,
@@ -33,7 +32,6 @@ import {
 import { useChartTheme } from '../../hooks/useChartTheme';
 import { useSettingsStore } from '../../stores/settingsStore';
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 // ── Score Color ───────────────────────────────────────────────────────────────
 function scoreColor(score: number): { bg: string; text: string } {

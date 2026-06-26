@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useMemo, useEffect } from 'react';
 import { useIncidentData } from '@/hooks/useIncidentData';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';

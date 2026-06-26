@@ -1,4 +1,3 @@
-// @ts-nocheck
 // vendorService.ts — Production Supabase service for the 'vendors' table.
 // Maps Supabase column schema → UI VendorRecord shape used across all vendor pages.
 //

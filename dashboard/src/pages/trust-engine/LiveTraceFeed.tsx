@@ -19,7 +19,6 @@ import { TRACES, Trace, TRUST_POLICIES, severityColor, formatNumber } from '../.
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useChartTheme } from '../../hooks/useChartTheme';
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

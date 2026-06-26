@@ -3,7 +3,6 @@ import { Certificate, MagnifyingGlass, Plus, X, Export, Trash, ShieldCheck, File
 import { toast } from 'sonner'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 type AttestationStatus = 'Valid' | 'Expired' | 'Pending' | 'Rejected' | 'Under Review'
 type AttestationType = 'Data Provenance' | 'Model Integrity' | 'Security Review' | 'Bias Audit' | 'Privacy Assessment' | 'SBOM/AIBOM Verification'

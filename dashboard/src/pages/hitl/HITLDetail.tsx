@@ -15,7 +15,6 @@ import {
 import { useChartTheme } from '../../hooks/useChartTheme';
 import {
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
   RadialBarChart, RadialBar, ResponsiveContainer, Cell,
   PolarAngleAxis,
 } from 'recharts';
@@ -240,8 +239,8 @@ export default function HITLDetail() {
         {[
           { label: 'Risk Score', value: review.riskScore, color: riskBarColor(review.riskScore), icon: Warning, suffix: '/100' },
           { label: 'Model ID', value: review.modelId, color: 'hsl(var(--brand))', icon: Brain, suffix: '' },
-          { label: 'Assignee', value: review.assignee.split(' ')[0], color: '#6366f1', icon: User, suffix: '' },
-          { label: 'Review Type', value: review.type.split(' ').map(w => w[0]).join(''), color: '#06b6d4', icon: ListChecks, suffix: '' },
+          { label: 'Assignee', value: (review.assignee ?? '').split(' ')[0] || '—', color: '#6366f1', icon: User, suffix: '' },
+          { label: 'Review Type', value: (review.type ?? '').split(' ').filter(Boolean).map((w: string) => w[0]).join(''), color: '#06b6d4', icon: ListChecks, suffix: '' },
         ].map(s => (
           <Card key={s.label} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
             <CardContent className="p-4">
@@ -429,7 +428,7 @@ export default function HITLDetail() {
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           fontSize: 9, fontWeight: 700, color: 'hsl(var(--text-2))',
                         }}>
-                          {d.actor === 'System' ? 'SY' : d.actor === 'Reviewer' ? 'RV' : d.actor.split(' ').map(x => x[0]).join('')}
+                          {d.actor === 'System' ? 'SY' : d.actor === 'Reviewer' ? 'RV' : (d.actor ?? '').split(' ').filter(Boolean).map((x: string) => x[0]).join('')}
                         </div>
                         <div>
                           <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-2))' }}>{d.actor}</span>
@@ -549,7 +548,7 @@ export default function HITLDetail() {
                           <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{risk.description.slice(0, 80)}…</p>
                           <div className="flex items-center gap-3 mt-2">
                             <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Score: {risk.score}</span>
-                            <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Owner: {risk.owner.split(' ')[0]}</span>
+                            <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Owner: {(risk.owner ?? '').split(' ')[0] || '—'}</span>
                             <Badge style={{ background: statusColor(risk.status).bg, color: statusColor(risk.status).text, border: 'none', borderRadius: 0, fontSize: 9 }}>
                               {risk.status}
                             </Badge>

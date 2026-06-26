@@ -6,7 +6,6 @@ import {
 import { USERS } from '../../data/seed';
 import { governanceBus } from '../../lib/governance/eventBus';
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 // ── types ──────────────────────────────────────────────────────────────────
 

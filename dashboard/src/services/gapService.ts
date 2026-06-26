@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
 export type GapRecord = {

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useCallback } from 'react';
 import {
   Sword, Eye, PencilSimple, Trash, Plus, ShieldWarning, Fire,
@@ -19,6 +18,7 @@ import { RED_TEAM_EXERCISES, RedTeamExercise, severityColor, statusColor, format
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useRedTeamFindingsData } from '../../hooks/useRedTeamFindingsData';
 import { PageSkeleton } from '../../components/ui/PageSkeleton';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ErrorState } from '../../components/ui/ErrorState';
 import React from 'react';
@@ -240,24 +240,22 @@ export default function RedTeamLab() {
         ))}
       </div>
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <Sword size={22} weight="fill" className="text-destructive" />
-            <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Red Team Lab</h1>
-          </div>
-          <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} — Adversarial testing campaigns and AI security exercises</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => { setFormEx({ ...EMPTY_EXERCISE }); setCreateOpen(true); }}>
-            <Plus size={14} className="mr-2" />Create Exercise
-          </Button>
-          <Button style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: '#fff' }}>
-            <Lightning size={14} className="mr-2" />Launch Campaign
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Red Team Lab"
+        subtitle={`${orgName} — Adversarial testing campaigns and AI security exercises`}
+        breadcrumbs={[{ label: 'Home', href: '/overview' }, { label: 'Security', href: '/security' }, { label: 'Red Team Lab' }]}
+        badge={<Sword size={22} weight="fill" className="text-destructive ml-2" />}
+        actions={
+          <>
+            <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => { setFormEx({ ...EMPTY_EXERCISE }); setCreateOpen(true); }}>
+              <Plus size={14} className="mr-2" />Create Exercise
+            </Button>
+            <Button style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: '#fff' }}>
+              <Lightning size={14} className="mr-2" />Launch Campaign
+            </Button>
+          </>
+        }
+      />
 
       {/* Metrics */}
       <div className="grid grid-cols-4 gap-4">

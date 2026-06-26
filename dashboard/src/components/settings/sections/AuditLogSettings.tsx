@@ -1,4 +1,3 @@
-// @ts-nocheck
 // src/components/settings/sections/AuditLogSettings.tsx
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../../../api/client";

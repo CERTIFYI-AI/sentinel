@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
   ArrowLeft, EnvelopeSimple, ArrowRight, CheckCircle, ShieldCheck, Lock,
 } from '@phosphor-icons/react';
 

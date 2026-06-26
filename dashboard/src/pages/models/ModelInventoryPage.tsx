@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useModelsData } from "@/hooks/useModelsData";
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -10,6 +9,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Skeleton } from '../../components/ui/skeleton';
 import { Badge } from '../../components/ui/badge';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../components/ui/sheet';
@@ -29,7 +29,6 @@ import {
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useChartTheme } from '../../hooks/useChartTheme';
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -231,16 +230,16 @@ export default function ModelInventoryPage() {
         ))}
       </div>
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Model Inventory</h1>
-          <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} · EU AI Act compliant AI model registry</p>
-        </div>
-        <Button onClick={() => setRegisterOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
-          <Plus className="h-4 w-4 mr-2" />Register Model
-        </Button>
-      </div>
+      <PageHeader
+        title="Model Inventory"
+        subtitle={`${orgName} · EU AI Act compliant AI model registry`}
+        breadcrumbs={[{ label: 'Home', href: '/overview' }, { label: 'Models' }]}
+        actions={
+          <Button onClick={() => setRegisterOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+            <Plus className="h-4 w-4 mr-2" />Register Model
+          </Button>
+        }
+      />
 
       {/* Metric Tiles */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

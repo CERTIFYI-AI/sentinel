@@ -1,6 +1,5 @@
 // Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
 //
-// WS6 — OpenTelemetry browser tracer (W3C Trace Context).
 //
 // A minimal, dependency-free tracer that produces W3C-compliant
 // traceparent headers for outgoing supabase / Worker calls. Swappable

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import logger from '@/lib/logger';
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { Users, MagnifyingGlass, Plus, PencilSimple, Trash, X, Warning, CaretLeft, CaretRight, Eye, Export } from '@phosphor-icons/react'
@@ -11,7 +10,6 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { isSupabaseConfigured } from "../../lib/supabase"
 import { fetchUsers as sbFetchUsers, fetchRoles as sbFetchRoles, fetchDepartments as sbFetchDepts, createUser as sbCreateUser, updateUser as sbUpdateUser, deleteUser as sbDeleteUser, suspendUser as sbSuspendUser } from "../../lib/supabase-access-control"
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 const STATUS_STYLE: Record<UserStatus, { bg: string; color: string }> = {
   active:    { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },

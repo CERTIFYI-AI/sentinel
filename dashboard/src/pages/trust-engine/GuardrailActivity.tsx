@@ -22,7 +22,6 @@ import { useChartTheme } from '../../hooks/useChartTheme';
 import { usePolicyFirewallData } from '../../hooks/usePolicyFirewallData';
 import { PageSkeleton } from '../../components/ui/PageSkeleton';
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

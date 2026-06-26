@@ -12,7 +12,6 @@ import { useSettingsStore } from '../../stores/settingsStore';
 import { useEffect } from 'react'
 import { useBiasAudits } from '../../hooks/queries/useBiasAudits'
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 function ScoreGauge({ score, size = 120 }: { score: number; size?: number }) {
   const color = score >= 0.85 ? '#10b981' : score >= 0.70 ? '#f97316' : '#ef4444';

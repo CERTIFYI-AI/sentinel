@@ -19,7 +19,6 @@ import { EVIDENCE, Evidence, EvidenceStatus, statusColor, formatDate } from '../
 import { useSettingsStore } from '../../stores/settingsStore';
 import { toast } from 'sonner';
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 const EMPTY_EVIDENCE: Omit<Evidence, 'id'> = {
   title: '', source: '', framework: '', control: '', type: 'Report',

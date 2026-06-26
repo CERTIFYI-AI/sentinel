@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Outlet } from "react-router-dom";
 import { AppSidebar } from "@/components/Sidebar";
 import { ModuleRail } from "@/components/layout/ModuleRail";

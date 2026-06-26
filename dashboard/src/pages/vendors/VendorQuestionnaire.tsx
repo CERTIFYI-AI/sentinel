@@ -11,7 +11,6 @@ import {
 import { VENDORS, statusColor } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 interface QuestionOption {
   value: string;

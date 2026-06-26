@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchNotifications, upsertNotification, deleteNotification } from '../services/notificationService'
 import { NOTIFICATIONS } from '../data/seed'

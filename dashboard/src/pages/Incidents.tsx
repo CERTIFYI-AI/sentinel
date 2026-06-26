@@ -59,10 +59,8 @@ export default function Incidents() {
   const p1CriticalCount = items.filter(i => i.severity === 'P1 Critical').length;
   // Avg MTTR: parse hours from resolved items with numeric mttr strings
   const resolvedWithMttr = items.filter(i => i.status === 'Resolved' && i.mttr);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const avgMttr = resolvedWithMttr.length > 0
     ? (() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const parsed = resolvedWithMttr.map((i: any) => {
           const match = String(i.mttr).match(/([\d.]+)\s*(hour|hr|h)/i);
           return match ? parseFloat(match[1]) : null;
@@ -194,7 +192,6 @@ export default function Incidents() {
         )}
       </CardContent></Card>
 
-      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <PaginationBar total={sp.total} page={sp.currentPage} perPage={sp.perPage} onPage={sp.setPage} onPerPage={sp.setPerPage} />
 
       <CrudModal open={modal==="create"||modal==="edit"} onClose={() => setModal(null)} title={editId?"Edit Incident":"Report New Incident"} size="xl">

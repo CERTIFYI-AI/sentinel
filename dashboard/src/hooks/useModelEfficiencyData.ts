@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchAllModelEfficiency, upsertModelEfficiency, deleteModelEfficiency } from '@/services/modelEfficiencyService'
 import { toast } from 'sonner'

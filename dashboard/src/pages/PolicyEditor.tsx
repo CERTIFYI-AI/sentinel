@@ -8,7 +8,6 @@ import { Separator } from "../components/ui/separator";
 import { Textarea } from "../components/ui/textarea";
 import { CaretRight as ChevronRight, ArrowLeft, PencilSimple as Edit3, Eye, PaperPlaneRight as Send, CheckCircle, FileArrowDown as FileDown, Clock, ChatCircle as MessageSquare, Shield, LinkSimple as Link2, Warning as AlertTriangle, XCircle, ClockCounterClockwise as History, User } from "@phosphor-icons/react";
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 const STEPS = ["Draft","In Review","Approved","Published","Expired","Archived"];
 

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
 //
-// WS0.2 — Multi-tenant RLS sweep invariants (static analysis).
 //
 // These tests parse the WS0.2 migration SQL and assert structural
 // invariants that give us confidence the sweep is complete without

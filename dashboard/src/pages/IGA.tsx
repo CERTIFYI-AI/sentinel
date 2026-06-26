@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useMemo } from "react";
 import { UserList, Plus, MagnifyingGlass, Eye, PencilSimple, Trash, Export, X, Warning, CheckCircle, XCircle } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";

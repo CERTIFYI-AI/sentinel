@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "../components/ui/card";
@@ -13,7 +12,6 @@ import { PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Resp
 import { useChartTheme } from "../../hooks/useChartTheme";
 import { FileText, CheckCircle, Clock, XCircle, MagnifyingGlass as Search, Plus, DownloadSimple as Download, CaretLeft as ChevronLeft, CaretRight as ChevronRight, PencilSimple as Edit, CopySimple as Copy, Archive, Trash as Trash2, Eye, DotsThreeVertical as MoreVertical, Shield, GitBranch, FilePdf } from "@phosphor-icons/react";
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 const COLORS = ["#10b981","#3b82f6","#f59e0b","#ef4444","#8b5cf6","#ec4899"];
 // Status normalization — always Title Case display

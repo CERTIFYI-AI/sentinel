@@ -1,6 +1,5 @@
 // Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
 //
-// WS3 — Typed consent records service (reference implementation).
 //
 // Drop-in modern replacement for the legacy `consentRecordsService`. The
 // legacy module stays in place until WS6 completes the org-wide

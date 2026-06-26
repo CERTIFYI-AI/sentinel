@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
 //
-// WS0.3 — Canonical permission catalog tests.
 //
 // These assertions are the client-side half of the server-client
 // contract. `permissionMatches()` MUST behave identically to the

@@ -20,7 +20,6 @@ import {
 } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -458,7 +457,7 @@ export default function HITLReviewCenter() {
                   </div>
                   <div>
                     <p style={{ color: 'hsl(var(--text-4))' }}>Created</p>
-                    <p style={{ color: 'hsl(var(--text-1))' }}>{formatDate(selectedItem.createdDate.split('T')[0])}</p>
+                    <p style={{ color: 'hsl(var(--text-1))' }}>{formatDate((selectedItem.createdDate ?? '').split('T')[0])}</p>
                   </div>
                 </div>
               </div>

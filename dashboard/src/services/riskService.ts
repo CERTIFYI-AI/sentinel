@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
 // Maps production 'risks' table columns to the RiskRecord shape used by the UI

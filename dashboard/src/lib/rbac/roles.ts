@@ -1,6 +1,5 @@
 // Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
 //
-// WS4 — Canonical RBAC surface (12 roles + permission matrix).
 //
 // The server is the source of truth. These client maps are used only
 // for UI gating (hiding buttons users can't use); any real mutation

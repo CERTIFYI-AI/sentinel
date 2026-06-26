@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useMemo, useEffect } from 'react';
 import { useEthicsReportsData } from '../hooks/useEthicsReportsData';
 import { PageSkeleton } from '../components/ui/PageSkeleton';

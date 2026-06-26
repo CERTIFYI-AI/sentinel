@@ -15,7 +15,6 @@ import { Label } from '../../components/ui/label';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { CONFORMITY_ASSESSMENTS, MODELS, formatDate } from '../../data/seed';
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 // ── Types ────────────────────────────────────────────────────────────────────
 

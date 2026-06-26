@@ -31,7 +31,6 @@ import { StatCardRow } from '../../components/ui/StatCardRow';
 import { FilterBar } from '../../components/ui/FilterBar';
 import type { StatCardRowItem } from '../../components/ui/StatCardRow';
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

@@ -17,7 +17,6 @@ import { FALLBACK_LOG, FallbackEntry, formatDate } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useChartTheme } from '../../hooks/useChartTheme';
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -72,7 +71,7 @@ interface ExtFallback extends FallbackEntry {
 }
 
 const EXTENDED_ENTRIES: ExtFallback[] = FALLBACK_LOG.map(fb => {
-  const parts = fb.modelChain.split(' → ');
+  const parts = (fb.modelChain ?? '').split(' → ');
   return {
     ...fb,
     primaryModel: parts[0] || '',

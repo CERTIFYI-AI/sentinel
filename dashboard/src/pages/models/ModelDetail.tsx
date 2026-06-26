@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -90,7 +89,7 @@ function DataLineage({ model }: { model: typeof MODELS[0] }) {
     { id: 'ds', label: 'Datasets', sub: 'DS-001, DS-004', x: 70, y: 130, color: 'hsl(var(--s-in-tx))' },
     { id: 'pre', label: 'Preprocessing', sub: 'StandardScaler · SMOTE', x: 230, y: 130, color: 'hsl(var(--s-wn-tx))' },
     { id: 'train', label: 'Training', sub: model.framework, x: 390, y: 130, color: 'hsl(var(--brand))' },
-    { id: 'mdl', label: model.name.split(' ').slice(0, 2).join(' '), sub: `v${model.version}`, x: 550, y: 130, color: 'hsl(var(--s-ok-tx))' },
+    { id: 'mdl', label: (model.name ?? '').split(' ').slice(0, 2).join(' '), sub: `v${model.version}`, x: 550, y: 130, color: 'hsl(var(--s-ok-tx))' },
     { id: 'inf', label: 'Inference', sub: `${model.monthlyInferences}/mo`, x: 710, y: 130, color: 'hsl(var(--brand))' },
   ];
   const edges = [

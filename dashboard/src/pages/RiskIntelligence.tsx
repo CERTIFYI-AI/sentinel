@@ -3,7 +3,6 @@ import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, BarC
 import { Globe, Lightning, Warning, CheckCircle, Clock, ArrowRight, MagnifyingGlass, Bell, ArrowUp, ArrowDown, Minus, FileText, Target, Shield, Download, Plus, X, TrendUp } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 type RegStatus = 'Compliant' | 'Gap Identified' | 'Under Review' | 'Not Assessed'
 type ObStatus = 'Mapped' | 'Unmapped' | 'Partial' | 'Exempt'

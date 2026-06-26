@@ -312,7 +312,6 @@ export default function Marketplace() {
                     <div className="flex gap-2">
                       <button onClick={() => toast.success(`Auto-import enabled for ${v.name}`)} className="text-xs px-2 py-1 border" style={{ border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-2))' }}>
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
                         Auto-Import: On
                       </button>
                       <button onClick={() => setSelectedVendor(v)} className="text-xs px-2 py-1" style={{ background: 'hsl(var(--bg-raised))', color: 'hsl(var(--text-2))' }}>

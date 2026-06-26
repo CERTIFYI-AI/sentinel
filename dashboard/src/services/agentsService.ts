@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 
 // Try Agent (PascalCase, confirmed has data) first, then agents as fallback

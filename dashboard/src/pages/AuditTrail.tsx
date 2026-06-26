@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useState, useMemo } from 'react';
 import {
   ClockCounterClockwise, MagnifyingGlass, Export, Eye, X,

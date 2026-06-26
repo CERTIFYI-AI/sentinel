@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useState } from 'react';
 import type { FrameworkAuditResult } from '../../lib/compliance-types';
 import { LegalWeightBadge } from './LegalWeightBadge';

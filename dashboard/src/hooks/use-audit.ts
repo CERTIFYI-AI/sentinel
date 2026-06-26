@@ -1,4 +1,3 @@
-// @ts-nocheck
 // dashboard/src/hooks/use-audit.ts
 
 import { useQuery, keepPreviousData } from "@tanstack/react-query";

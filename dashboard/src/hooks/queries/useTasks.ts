@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchAllTasks, upsertTask, deleteTask } from '../../services/taskService'
 import { toast } from 'sonner'

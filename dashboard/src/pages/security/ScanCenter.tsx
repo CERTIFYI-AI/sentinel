@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
@@ -26,7 +25,6 @@ import { useSecurityScansData } from '../../hooks/useSecurityScansData';
 import { PageSkeleton } from '../../components/ui/PageSkeleton';
 import { SEED_VULNERABILITIES } from '../../data/seedData';
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 interface SecurityScan {
   id: string;

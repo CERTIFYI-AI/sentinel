@@ -597,7 +597,6 @@ export default function SecurityHome() {
                 </thead>
                 <tbody>
                   {RED_TEAM_FINDINGS.map(f => {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const sc = severityColor(f.severity as any);
                     const statusStyle = f.status === 'Remediated'
                       ? { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' }

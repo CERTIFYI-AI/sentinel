@@ -2,7 +2,6 @@ import { useState, useMemo } from 'react'
 import { Lock, CheckCircle, Warning, X, Download, MagnifyingGlass, ShieldCheck, Eye, ArrowRight, Copy, Shield, FileText, Clock, ArrowDown, Plus } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 type ActionType = 'Control Assessment' | 'Evidence Upload' | 'Bias Audit' | 'Risk Review' | 'Policy Approval' | 'DSR Processed' | 'Incident Logged' | 'Model Approved'
 type VerifyStatus = 'Valid' | 'Tampered' | 'Pending'

@@ -1,6 +1,5 @@
 // Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
 //
-// WS5 — Framework catalog loader.
 //
 // The source of truth is /frameworks/*.yaml at the repo root. At build
 // time, the manifest (/frameworks/manifest.json) is imported here as a

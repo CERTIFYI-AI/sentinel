@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from 'react';
 import { Badge } from '../../components/ui/badge';
 import {
@@ -11,7 +10,6 @@ import type { Severity } from '../../data/seed';
 import { useEffect } from 'react'
 import { useTasks } from '../../hooks/queries/useTasks'
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 // ── helpers ────────────────────────────────────────────────────────────────
 

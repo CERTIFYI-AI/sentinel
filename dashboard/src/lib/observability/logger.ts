@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
 //
-// WS0.6 — Structured logger. Replaces every console.* call in
 // dashboard code. In production it forwards to a Workers collector
 // endpoint (configured via VITE_LOG_ENDPOINT); in tests / dev it's a
 // no-op unless VITE_LOG_CONSOLE=1.

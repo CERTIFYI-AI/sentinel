@@ -6,7 +6,6 @@ import {
 } from '@phosphor-icons/react';
 import { AGENTS, statusColor } from '../../data/seed';
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 // ── timeline entries ───────────────────────────────────────────────────────
 

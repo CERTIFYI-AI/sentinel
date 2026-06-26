@@ -1,6 +1,5 @@
 // Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
 //
-// WS6 — Client-side token bucket rate limiter.
 //
 // Used to throttle UI-triggered bursts against the Supabase API
 // (e.g. infinite-scroll fetches, accidental double-clicks). The server

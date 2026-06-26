@@ -3,7 +3,6 @@ import { Power, Warning, MagnifyingGlass, Plus, Eye, X, Export, ShieldWarning, C
 import { toast } from 'sonner'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 type KillSwitchTrigger = 'Manual' | 'Automated — Trust Score' | 'Automated — Error Rate' | 'Automated — Bias Threshold' | 'Regulatory Order' | 'Security Incident'
 type KSStatus = 'Active — Agent Suspended' | 'Resolved' | 'Under Investigation' | 'Escalated'

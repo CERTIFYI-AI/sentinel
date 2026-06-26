@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
 //
-// WS0.5 — Thin wrapper over react-hook-form + zod. Exposes a typed
 // handle and a hand-rolled resolver so we don't take a hard dep on
 // the @hookform/resolvers/zod generic signature (which churns across
 // zod 3/4 + rhf 7 majors).

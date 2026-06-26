@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -11,7 +10,6 @@ import {
 import Breadcrumbs from '../components/Breadcrumbs';
 import { INCIDENTS, USERS, severityColor, formatDate } from '../data/seed';
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 // ── State Machine Definition ─────────────────────────────────────────────────
 type IncidentStatus = 'open' | 'triaged' | 'investigating' | 'escalated' | 'mitigating' | 'resolved' | 'post_mortem';

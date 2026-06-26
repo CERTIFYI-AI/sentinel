@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchFrameworks, upsertFramework, deleteFramework } from '@/services/frameworkService'
 import { toast } from 'sonner'

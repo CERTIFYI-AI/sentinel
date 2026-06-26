@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { ShieldCheck, CheckCircle } from '@phosphor-icons/react';
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 const CATEGORIES = [
   'AI Bias/Discrimination',

@@ -63,7 +63,6 @@ export function ChartContainer({
       const el = containerRef.current
       if (!el) return
       // Dynamic import to keep bundle lean
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const html2canvas = ((await import('html2canvas' as string)) as any).default
       const canvas = await html2canvas(el)
       const link = document.createElement('a')

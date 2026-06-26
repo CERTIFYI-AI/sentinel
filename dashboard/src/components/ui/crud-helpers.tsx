@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useState } from "react";
 import { Trash, Export, ArrowUp, ArrowDown, X, CheckSquare } from "@phosphor-icons/react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";

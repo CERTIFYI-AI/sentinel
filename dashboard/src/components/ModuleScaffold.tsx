@@ -1,6 +1,5 @@
 // Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
 //
-// WS2 — ModuleScaffold.
 //
 // Shared layout primitive for all newly scaffolded GA pages. Every new
 // module composes this component to get uniform:

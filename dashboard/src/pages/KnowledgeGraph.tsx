@@ -11,7 +11,6 @@ import {
 } from '@phosphor-icons/react';
 import { useSettingsStore } from '../stores/settingsStore';
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 const ENTITY_COLORS: Record<string, string> = {
   Model: 'hsl(var(--brand))',

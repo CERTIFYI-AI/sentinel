@@ -1,7 +1,7 @@
-// @ts-nocheck
 import { useState, useEffect } from 'react';
 import { useNotificationData } from '../hooks/useNotificationData';
 import { PageSkeleton } from '../components/ui/PageSkeleton';
+import { PageHeader } from '../components/ui/PageHeader';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -15,7 +15,6 @@ import {
 import { severityColor } from '../data/seed';
 import type { Severity } from '../data/seed';
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 // ── notification seed ──────────────────────────────────────────────────────
 
@@ -291,34 +290,32 @@ export default function Notifications() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Notification Center</h1>
-          <p className="text-sm mt-0.5" style={{ color: 'hsl(var(--text-3))' }}>
-            Real-time alerts across compliance, security, and model operations
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={markAllRead}
-            disabled={unread === 0}
-            style={{ borderRadius: 0, gap: 6 }}
-          >
-            <CheckCircle size={14} /> Mark All Read
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setShowFilter(p => !p)}
-            style={{ borderRadius: 0, gap: 6 }}
-          >
-            <Funnel size={14} /> Filter <CaretDown size={10} />
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Notification Center"
+        subtitle="Real-time alerts across compliance, security, and model operations"
+        breadcrumbs={[{ label: 'Home', href: '/overview' }, { label: 'Notifications' }]}
+        actions={
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={markAllRead}
+              disabled={unread === 0}
+              style={{ borderRadius: 0, gap: 6 }}
+            >
+              <CheckCircle size={14} /> Mark All Read
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowFilter(p => !p)}
+              style={{ borderRadius: 0, gap: 6 }}
+            >
+              <Funnel size={14} /> Filter <CaretDown size={10} />
+            </Button>
+          </>
+        }
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">

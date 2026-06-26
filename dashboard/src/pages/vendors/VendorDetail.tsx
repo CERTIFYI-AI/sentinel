@@ -20,7 +20,6 @@ import {
 import { useSettingsStore } from '../../stores/settingsStore';
 import { toast } from 'sonner';
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 const Activity = Clock;
 
@@ -535,7 +534,7 @@ export default function VendorDetail() {
                             <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{s.owner}</td>
                             <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{formatDate(s.lastMeasuredAt)}</td>
                             <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {s.escalationPath.split('→')[0].trim()} →
+                              {(s.escalationPath ?? '').split('→')[0].trim()} →
                             </td>
                             <td className="p-3">
                               <Button size="sm" variant="ghost" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => toast.info(`Viewing SLA ${s.id}`)}>

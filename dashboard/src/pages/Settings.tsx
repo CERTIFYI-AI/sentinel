@@ -1,6 +1,6 @@
-// @ts-nocheck
 import { useState } from 'react';
 import { Building, Globe, Shield, Key, Bell, Database, FloppyDisk, Plus, Copy, Eye, EyeSlash, ArrowCounterClockwise, Trash, CheckCircle, XCircle, Warning, Lock, User, ClockCounterClockwise, Moon, Sun, Desktop, PaintBrush } from '@phosphor-icons/react';
+import { PageHeader } from '../components/ui/PageHeader';
 import { useTheme } from '../providers/theme';
 import { getStoredAccent, setAccent, type Accent } from '../store/accentStore';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -21,7 +21,6 @@ import {
   fetchApiKeys, createApiKey, revokeApiKey, deleteApiKey
 } from '../services/settingsService'
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 // ── API Keys ─────────────────────────────────────────────────────────────────
 interface ApiKey {
@@ -279,11 +278,11 @@ export default function Settings() {
 
   return (
     <div className="space-y-6 max-w-4xl">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Settings</h1>
-        <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} · Platform configuration</p>
-      </div>
+      <PageHeader
+        title="Settings"
+        subtitle={`${orgName} · Platform configuration`}
+        breadcrumbs={[{ label: 'Home', href: '/overview' }, { label: 'Settings' }]}
+      />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList style={{ borderRadius: 0, background: 'hsl(var(--border) / 0.3)' }}>

@@ -21,7 +21,6 @@ import {
 import { useChartTheme } from '../../hooks/useChartTheme';
 import { MODELS, formatDate } from '../../data/seed';
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 type ValStatus = 'Passed' | 'Failed' | 'In Progress' | 'Pending' | 'Waived';
 

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import logger from '@/lib/logger';
 import { eventBus } from "./eventBus";
 import type { EventMap } from "./eventBus";

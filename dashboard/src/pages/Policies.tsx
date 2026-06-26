@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
+import { PageHeader } from '../components/ui/PageHeader';
 import { Input } from '../components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
@@ -22,7 +23,6 @@ import { Policy, statusColor, formatDate } from '../data/seed';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useChartTheme } from '../hooks/useChartTheme';
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 const POLICY_REVIEW_TREND = [
   { month: 'Oct', reviews: 2 },
@@ -111,21 +111,19 @@ export default function Policies() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Policy Management</h1>
-          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>
-            {orgName} · {policies.length} policies across all categories
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm"><Download size={14} className="mr-1" /> Export</Button>
-          <Button size="sm" onClick={() => { setFormData(EMPTY_POLICY); setCreateOpen(true); }}>
-            <Plus size={14} className="mr-1" /> New Policy
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Policy Management"
+        subtitle={`${orgName} · ${policies.length} policies across all categories`}
+        breadcrumbs={[{ label: 'Home', href: '/overview' }, { label: 'Policies' }]}
+        actions={
+          <>
+            <Button variant="outline" size="sm"><Download size={14} className="mr-1" /> Export</Button>
+            <Button size="sm" onClick={() => { setFormData(EMPTY_POLICY); setCreateOpen(true); }}>
+              <Plus size={14} className="mr-1" /> New Policy
+            </Button>
+          </>
+        }
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">

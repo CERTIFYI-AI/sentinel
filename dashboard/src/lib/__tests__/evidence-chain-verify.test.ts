@@ -1,6 +1,5 @@
 // Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
 //
-// WS0.5 — Chain-verify unit tests mirroring the client-side verifier in
 // EvidenceCustodyExplorer. Guards against regressions in the O(n) chain
 // walk and against breaking changes in custody event ordering rules.
 

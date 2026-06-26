@@ -1,4 +1,3 @@
-// @ts-nocheck
 export { PolicyTemplateLibrary } from './PolicyTemplateLibrary';
 export { PolicyWorkflow } from './PolicyWorkflow';
 export { ComplianceDashboard } from './ComplianceDashboard';

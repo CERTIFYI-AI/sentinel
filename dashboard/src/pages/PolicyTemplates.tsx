@@ -1,10 +1,8 @@
-// @ts-nocheck
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog'
 import { Button } from '../components/ui/button'
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 const TEMPLATES = [
   { id: 1, name: 'AI Policy', framework: 'ISO/IEC 42001', article: 'Clause 5.2', category: 'AI Management', risk_level: 'High', status: 'Draft', used_by: 0, last_updated: '2026-04-19', description: 'Editable template for ai policy mapped to ISO/IEC 42001.' },

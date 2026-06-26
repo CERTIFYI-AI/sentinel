@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useEffect, useRef, useCallback } from "react";
 import { eventBus } from "../eventBus";
 import type { EventName, EventMap } from "../eventBus";

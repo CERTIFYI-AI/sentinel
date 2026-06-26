@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from "react"
 import { toast } from 'sonner'
 import {
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
   Brain, PaperPlaneRight, ArrowClockwise, Warning, CheckCircle,
   Clock, Lightbulb, ShieldWarning, ChartBar, X, Funnel,
 } from '@phosphor-icons/react'

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import logger from '@/lib/logger';
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { Buildings, MagnifyingGlass, Plus, PencilSimple, Trash, Users, X, CaretDown, CaretUp, Export } from '@phosphor-icons/react'
@@ -11,7 +10,6 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { isSupabaseConfigured } from "../../lib/supabase"
 import { fetchDepartments as sbFetchDepts, fetchUsers as sbFetchUsers, createDepartment as sbCreateDept, updateDepartment as sbUpdateDept, deleteDepartment as sbDeleteDept } from "../../lib/supabase-access-control"
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 const BLANK: Omit<Department, 'id' | 'createdAt' | 'updatedAt'> = {
   name: '', code: '', description: '', headCount: 0, status: 'active',

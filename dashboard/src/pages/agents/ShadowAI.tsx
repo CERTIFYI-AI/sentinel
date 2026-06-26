@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useCallback } from 'react';
 import {
   ShieldWarning, Warning, Prohibit, Siren, Detective, Eye,
@@ -20,7 +19,6 @@ import {
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useChartTheme } from '../../hooks/useChartTheme';
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

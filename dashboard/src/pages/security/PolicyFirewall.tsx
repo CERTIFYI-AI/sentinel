@@ -24,7 +24,6 @@ import { useChartTheme } from '../../hooks/useChartTheme';
 import { useEffect } from 'react'
 import { useGuardrails } from '../../hooks/queries/useSecurity'
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 interface FirewallRule {
   id: string;

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useMemo, useEffect } from 'react';
 import { useTrainingData } from '../../hooks/useTrainingData';
 import { PageSkeleton } from '../../components/ui/PageSkeleton';
@@ -27,7 +26,6 @@ import {
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { useSettingsStore } from '../../stores/settingsStore';
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface Course {

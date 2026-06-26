@@ -83,7 +83,6 @@ export default function ExplainabilityCenter() {
 
   function FidelityBar({ score }: { score: number | null | string }) {
     if (score === null || score === "") return <span className="text-xs text-[hsl(var(--text-4))]">—</span>;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const numScore = typeof score === 'string' ? parseFloat(score) : (score as number);
     const pct = Math.round(numScore * 100);
     const color = pct >= 85 ? "#22c55e" : pct >= 70 ? "#f59e0b" : "#ef4444";

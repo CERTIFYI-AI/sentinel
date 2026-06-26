@@ -11,7 +11,6 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { StatCardRow } from '@/components/ui/StatCardRow'
 import { FilterBar } from '@/components/ui/FilterBar'
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 type AgentStatus = 'Active' | 'Suspended' | 'Quarantined' | 'Decommissioned' | 'Pending Approval'
 type AgentType = 'Autonomous' | 'Semi-Autonomous' | 'Tool-Using' | 'Multi-Modal' | 'Orchestrator' | 'Worker'

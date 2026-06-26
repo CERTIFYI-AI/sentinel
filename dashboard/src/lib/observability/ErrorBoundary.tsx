@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
 //
-// WS0.6 — React error boundary. Catches render errors, logs to the
 // structured logger, and renders a recoverable fallback. Wrap route
 // elements and any async data surface that renders out-of-band.
 

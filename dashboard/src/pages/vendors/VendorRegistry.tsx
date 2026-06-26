@@ -27,6 +27,7 @@ import { Progress } from '../../components/ui/progress';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { StatCardRow } from '../../components/ui/StatCardRow';
 import { FilterBar } from '../../components/ui/FilterBar';
+import { EmptyState } from '../../components/ui/EmptyState';
 import type { StatCardRowItem } from '../../components/ui/StatCardRow';
 import {
   Vendor, MODELS, severityColor, statusColor, formatDate,
@@ -34,7 +35,6 @@ import {
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { useSettingsStore } from '../../stores/settingsStore';
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -323,10 +323,16 @@ export default function VendorRegistry() {
       <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
         <CardContent className="p-0">
           {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12" style={{ color: 'hsl(var(--text-4))' }}>
-              <Buildings size={32} className="mb-2 opacity-40" />
-              <p className="text-sm">No vendors found</p>
-            </div>
+            <EmptyState
+              icon={<Buildings size={32} weight="duotone" />}
+              title="No vendors found"
+              description="No vendors match your search or filter criteria."
+              action={
+                <Button variant="outline" onClick={clearAll}>
+                  Clear Filters
+                </Button>
+              }
+            />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -687,7 +693,6 @@ function AddVendorForm({ onSubmit, nextId }: { onSubmit: (v: Vendor) => void; ne
   const handleSubmit = () => {
     if (!canSubmit) return;
     const now = new Date().toISOString().split('T')[0];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onSubmit({
       id: nextId, name, category, risk: riskTier, score: 50, status: 'in_review',
       lastReview: now, contact, website, dpaStatus, description: whatProvides,

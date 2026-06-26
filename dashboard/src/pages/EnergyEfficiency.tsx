@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useMemo } from 'react'
 import { Lightning, Export, Plus, X, Lightbulb, CheckCircle, ArrowDown, Leaf, Cpu, Trash, Eye, PencilSimple } from '@phosphor-icons/react'
 import { toast } from 'sonner'

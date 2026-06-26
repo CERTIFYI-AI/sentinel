@@ -3,7 +3,6 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import {
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
   Eye, EyeSlash, ShieldCheck, CheckCircle, Lock, ArrowRight, Check,
 } from '@phosphor-icons/react';
 

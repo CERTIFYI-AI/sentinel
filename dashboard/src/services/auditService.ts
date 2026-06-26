@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
 //
-// WS0.4 — Typed audit service.
 // Replaces the legacy @ts-nocheck auditLogService.ts. Read-only:
 // mutations go through the Worker's withAudit() path. Delete/update
 // are impossible at the DB level (append-only RLS) so this module

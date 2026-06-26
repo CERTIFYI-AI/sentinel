@@ -1,6 +1,5 @@
 // Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
 //
-// WS0.5 — Vitest global setup.
 // - Registers @testing-library/jest-dom matchers.
 // - Auto-cleans React Testing Library between tests.
 // - Polyfills browser APIs jsdom does not ship.

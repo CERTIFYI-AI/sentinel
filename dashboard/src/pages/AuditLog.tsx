@@ -16,7 +16,6 @@ import { PageSkeleton } from '../components/ui/PageSkeleton';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { FilterBar } from '@/components/ui/FilterBar';
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 const CATEGORY_COLORS: Record<string, { bg: string; color: string }> = {
   model: { bg: 'hsl(220 90% 56% / 0.15)', color: 'hsl(var(--s-in-tx))' },

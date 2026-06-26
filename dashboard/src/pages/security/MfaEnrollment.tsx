@@ -1,6 +1,5 @@
 // Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
 //
-// WS4 — MFA enrollment surface.
 //
 // The sensitive secrets live in Supabase Auth's factor tables; this
 // module only indexes factor labels + last-used metadata so admins can

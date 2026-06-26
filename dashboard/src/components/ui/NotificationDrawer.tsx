@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from 'react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from './sheet'
 import { Button } from './button'

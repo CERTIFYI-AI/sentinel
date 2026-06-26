@@ -47,7 +47,6 @@ function makeStub(initial: Row[]): { supabase: unknown; rows: () => Row[] } {
     let limitVal: number | null = null;
     let single = false;
     let maybe = false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const chain: any = {
       select: () => {
         op = { kind: "select" };
@@ -148,7 +147,6 @@ describe("createService — happy path", () => {
         deleted_at: null,
       },
     ]);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const svc = createService<Row, { title: string; org_id: string }>(supabase as any, {
       table: "risks",
       rowSchema,
@@ -164,7 +162,6 @@ describe("createService — happy path", () => {
 
   it("get returns not_found when the row is missing", async () => {
     const { supabase } = makeStub([]);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const svc = createService<Row, { title: string; org_id: string }>(supabase as any, {
       table: "risks",
       rowSchema,
@@ -177,7 +174,6 @@ describe("createService — happy path", () => {
 
   it("create validates input and rejects bad payloads before any IO", async () => {
     const { supabase } = makeStub([]);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const svc = createService<Row, { title: string; org_id: string }>(supabase as any, {
       table: "risks",
       rowSchema,
@@ -199,7 +195,6 @@ describe("createService — happy path", () => {
         deleted_at: null,
       },
     ]);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const svc = createService<Row, { title: string; org_id: string }>(supabase as any, {
       table: "risks",
       rowSchema,
@@ -229,7 +224,6 @@ describe("createService — happy path", () => {
         deleted_at: null,
       },
     ]);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const svc = createService<Row, { title: string; org_id: string }>(supabase as any, {
       table: "risks",
       rowSchema,
@@ -256,7 +250,6 @@ describe("createService — security", () => {
         deleted_at: "2026-04-21T00:00:00Z",
       },
     ]);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const svc = createService<Row, { title: string; org_id: string }>(supabase as any, {
       table: "risks",
       rowSchema,

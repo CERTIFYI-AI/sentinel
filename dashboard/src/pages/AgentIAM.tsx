@@ -3,7 +3,6 @@ import { IdentificationCard, MagnifyingGlass, Plus, Eye, X, Export, Key, ShieldC
 import { toast } from 'sonner'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 interface AgentIdentity {
   id: string
@@ -269,7 +268,7 @@ export default function AgentIAM() {
             <div key={a.time} className="mb-2 p-2 border border-[hsl(var(--border))]" style={{ borderLeft: `3px solid ${a.severity === 'high' ? '#ef4444' : a.severity === 'medium' ? '#f59e0b' : '#6366f1'}` }}>
               <div className="flex items-center justify-between mb-0.5">
                 <p className="text-xs font-medium text-[hsl(var(--text-1))]">{a.agent}</p>
-                <span className="text-[10px] text-[hsl(var(--text-4))]">{a.time.split(' ')[1]}</span>
+                <span className="text-[10px] text-[hsl(var(--text-4))]">{(a.time ?? '').split(' ')[1] ?? ''}</span>
               </div>
               <p className="text-xs text-[hsl(var(--text-3))]">{a.anomaly}</p>
               <button onClick={() => toast.info('Anomaly investigation opened')} className="mt-1 text-[10px] px-2 py-0.5 border border-[hsl(var(--border))] text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-raised))]">Investigate</button>

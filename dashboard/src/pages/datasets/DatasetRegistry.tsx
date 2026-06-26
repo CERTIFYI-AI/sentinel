@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useCallback } from 'react';
 import {
   Eye, PencilSimple, Trash, Plus, Database, MagnifyingGlass, Funnel,
@@ -20,7 +19,6 @@ import {
 } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

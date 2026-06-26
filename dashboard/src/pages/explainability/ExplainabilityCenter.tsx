@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useCallback } from 'react';
 import {
   Eye, PencilSimple, Trash, Plus, MagnifyingGlass, Brain,
@@ -20,7 +19,6 @@ import { useChartTheme } from '../../hooks/useChartTheme';
 import { useEffect } from 'react'
 import { useExplainabilityReports } from '../../hooks/queries/useExplainability'
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 // ── Types ────────────────────────────────────────────────────────────────────
 

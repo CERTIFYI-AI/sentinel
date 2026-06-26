@@ -1,6 +1,5 @@
 // Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
 //
-// WS0.5 — Unit tests for audit-log client-side chain verification helpers.
 // Mirrors the canonicalisation defined in the WS0.3 migration so drift in
 // either direction fails CI.
 

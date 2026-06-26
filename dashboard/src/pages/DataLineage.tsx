@@ -1,10 +1,8 @@
-// @ts-nocheck
 import { useState } from 'react'
 import { ChartLine, Export, X, ArrowRight, Warning, Plus, MagnifyingGlass, Pencil, Trash, Database, ArrowsDownUp, GitBranch } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 interface LineageRecord {
   id: string

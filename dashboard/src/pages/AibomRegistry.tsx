@@ -3,7 +3,6 @@ import { Package, MagnifyingGlass, Plus, Eye, X, Export, Warning, CheckCircle, T
 import { toast } from 'sonner'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 interface AIBOMRecord {
   id: string

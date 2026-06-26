@@ -1,7 +1,8 @@
-// @ts-nocheck
 import { useState, useCallback, useEffect } from 'react';
 import { useTaskData } from '../hooks/useTaskData';
 import { PageSkeleton } from '../components/ui/PageSkeleton';
+import { PageHeader } from '../components/ui/PageHeader';
+import { EmptyState } from '../components/ui/EmptyState';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -22,7 +23,6 @@ import { CSS } from '@dnd-kit/utilities';
 import { GAPS, RISKS, USERS, severityColor, statusColor, formatDate } from '../data/seed';
 import type { Severity } from '../data/seed';
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 // ── Task data derived from GAPS + RISKS ─────────────────────────────────
 
@@ -496,62 +496,60 @@ export default function Tasks() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Task Management</h1>
-          <p className="text-sm mt-0.5" style={{ color: 'hsl(var(--text-3))' }}>
-            Compliance and governance tasks derived from risks and gaps
-          </p>
-        </div>
-        <div className="flex gap-2 items-center">
-          {/* View toggle */}
-          <div style={{ display: 'flex', border: '1px solid hsl(var(--border))' }}>
+      <PageHeader
+        title="Task Management"
+        subtitle="Compliance and governance tasks derived from risks and gaps"
+        breadcrumbs={[{ label: 'Home', href: '/overview' }, { label: 'Tasks' }]}
+        actions={
+          <>
+            <div style={{ display: 'flex', border: '1px solid hsl(var(--border))' }}>
+              <button
+                onClick={() => setView('table')}
+                style={{
+                  padding: '6px 12px',
+                  background: view === 'table' ? 'hsl(var(--brand))' : 'hsl(var(--bg-surface))',
+                  color: view === 'table' ? '#fff' : 'hsl(var(--text-2))',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  fontSize: 12,
+                }}
+              >
+                <Rows size={13} /> Table
+              </button>
+              <button
+                onClick={() => setView('kanban')}
+                style={{
+                  padding: '6px 12px',
+                  background: view === 'kanban' ? 'hsl(var(--brand))' : 'hsl(var(--bg-surface))',
+                  color: view === 'kanban' ? '#fff' : 'hsl(var(--text-2))',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  fontSize: 12,
+                }}
+              >
+                <Kanban size={13} /> Kanban
+              </button>
+            </div>
             <button
-              onClick={() => setView('table')}
+              onClick={openAdd}
               style={{
-                padding: '6px 12px',
-                background: view === 'table' ? 'hsl(var(--brand))' : 'hsl(var(--bg-surface))',
-                color: view === 'table' ? '#fff' : 'hsl(var(--text-2))',
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '7px 14px',
+                background: 'hsl(var(--brand))',
+                color: '#fff',
                 border: 'none',
                 cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: 5,
-                fontSize: 12,
+                fontSize: 13,
+                fontWeight: 500,
               }}
             >
-              <Rows size={13} /> Table
+              <Plus size={14} /> Add Task
             </button>
-            <button
-              onClick={() => setView('kanban')}
-              style={{
-                padding: '6px 12px',
-                background: view === 'kanban' ? 'hsl(var(--brand))' : 'hsl(var(--bg-surface))',
-                color: view === 'kanban' ? '#fff' : 'hsl(var(--text-2))',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: 5,
-                fontSize: 12,
-              }}
-            >
-              <Kanban size={13} /> Kanban
-            </button>
-          </div>
-          <button
-            onClick={openAdd}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '7px 14px',
-              background: 'hsl(var(--brand))',
-              color: '#fff',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: 13,
-              fontWeight: 500,
-            }}
-          >
-            <Plus size={14} /> Add Task
-          </button>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* Overdue banner */}
       {overdue > 0 && (
@@ -666,73 +664,84 @@ export default function Tasks() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((t, i) => (
-                <tr
-                  key={t.id}
-                  style={{
-                    borderBottom: i < filtered.length - 1 ? '1px solid hsl(var(--border))' : 'none',
-                    background: t.status === 'overdue' ? 'hsl(var(--s-er-bg)/20%)' : 'transparent',
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => setDetailTask(t)}
-                >
-                  <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontSize: 11, color: 'hsl(var(--text-3))' }}>{t.id}</td>
-                  <td style={{ padding: '10px 14px', fontWeight: 500, color: 'hsl(var(--text-1))', maxWidth: 280 }}>
-                    <span style={{ display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                      {t.title}
-                    </span>
-                  </td>
-                  <td style={{ padding: '10px 14px' }}>
-                    <PriorityBadge priority={t.priority} />
-                  </td>
-                  <td style={{ padding: '10px 14px' }}>
-                    <StatusBadge status={t.status} />
-                  </td>
-                  <td style={{ padding: '10px 14px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <AvatarInitials name={t.assignee} />
-                      <span style={{ color: 'hsl(var(--text-2))', fontSize: 12 }}>{(t.assignee ?? '').split(' ')[0] || '–'}</span>
-                    </div>
-                  </td>
-                  <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: t.status === 'overdue' ? 'hsl(var(--s-er-tx))' : 'hsl(var(--text-2))' }}>
-                      <CalendarBlank size={12} />
-                      <span style={{ fontSize: 12 }}>{formatDate(t.dueDate)}</span>
-                    </div>
-                  </td>
-                  <td style={{ padding: '10px 14px' }}>
-                    <Badge style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))', border: '1px solid hsl(var(--border))', borderRadius: 0, fontSize: 10, fontFamily: 'monospace' }}>
-                      {t.source}
-                    </Badge>
-                  </td>
-                  <td style={{ padding: '10px 14px' }}>
-                    <div style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
-                      <button
-                        onClick={() => openEdit(t)}
-                        style={{ background: 'none', border: '1px solid hsl(var(--border))', cursor: 'pointer', color: 'hsl(var(--text-3))', padding: '3px 6px' }}
-                        title="Edit"
-                      >
-                        <PencilSimple size={13} />
-                      </button>
-                      <button
-                        onClick={() => deleteTask(t.id)}
-                        style={{ background: 'none', border: '1px solid hsl(var(--border))', cursor: 'pointer', color: '#ef4444', padding: '3px 6px' }}
-                        title="Delete"
-                      >
-                        <Trash size={13} />
-                      </button>
-                    </div>
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="p-0">
+                    <EmptyState
+                      icon={<ClipboardText size={32} weight="duotone" />}
+                      title="No tasks found"
+                      description="Try adjusting your filters or search terms."
+                      action={
+                        <button onClick={() => { setFilterStatus('all'); setFilterPriority('all'); setSearch(''); }} style={{ padding: '6px 12px', background: 'transparent', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-2))', cursor: 'pointer', fontSize: 12 }}>
+                          Clear Filters
+                        </button>
+                      }
+                    />
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filtered.map((t, i) => (
+                  <tr
+                    key={t.id}
+                    style={{
+                      borderBottom: i < filtered.length - 1 ? '1px solid hsl(var(--border))' : 'none',
+                      background: t.status === 'overdue' ? 'hsl(var(--s-er-bg)/20%)' : 'transparent',
+                      cursor: 'pointer',
+                    }}
+                    onClick={() => setDetailTask(t)}
+                  >
+                    <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontSize: 11, color: 'hsl(var(--text-3))' }}>{t.id}</td>
+                    <td style={{ padding: '10px 14px', fontWeight: 500, color: 'hsl(var(--text-1))', maxWidth: 280 }}>
+                      <span style={{ display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                        {t.title}
+                      </span>
+                    </td>
+                    <td style={{ padding: '10px 14px' }}>
+                      <PriorityBadge priority={t.priority} />
+                    </td>
+                    <td style={{ padding: '10px 14px' }}>
+                      <StatusBadge status={t.status} />
+                    </td>
+                    <td style={{ padding: '10px 14px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <AvatarInitials name={t.assignee} />
+                        <span style={{ color: 'hsl(var(--text-2))', fontSize: 12 }}>{(t.assignee ?? '').split(' ')[0] || '–'}</span>
+                      </div>
+                    </td>
+                    <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: t.status === 'overdue' ? 'hsl(var(--s-er-tx))' : 'hsl(var(--text-2))' }}>
+                        <CalendarBlank size={12} />
+                        <span style={{ fontSize: 12 }}>{formatDate(t.dueDate)}</span>
+                      </div>
+                    </td>
+                    <td style={{ padding: '10px 14px' }}>
+                      <Badge style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))', border: '1px solid hsl(var(--border))', borderRadius: 0, fontSize: 10, fontFamily: 'monospace' }}>
+                        {t.source}
+                      </Badge>
+                    </td>
+                    <td style={{ padding: '10px 14px' }}>
+                      <div style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
+                        <button
+                          onClick={() => openEdit(t)}
+                          style={{ background: 'none', border: '1px solid hsl(var(--border))', cursor: 'pointer', color: 'hsl(var(--text-3))', padding: '3px 6px' }}
+                          title="Edit"
+                        >
+                          <PencilSimple size={13} />
+                        </button>
+                        <button
+                          onClick={() => deleteTask(t.id)}
+                          style={{ background: 'none', border: '1px solid hsl(var(--border))', cursor: 'pointer', color: '#ef4444', padding: '3px 6px' }}
+                          title="Delete"
+                        >
+                          <Trash size={13} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
-          {filtered.length === 0 && (
-            <div style={{ padding: '40px', textAlign: 'center', color: 'hsl(var(--text-3))' }}>
-              <ClipboardText size={32} style={{ margin: '0 auto 10px', opacity: 0.3 }} />
-              <p style={{ fontSize: 13 }}>No tasks match your filters</p>
-            </div>
-          )}
           <div style={{ padding: '10px 14px', borderTop: '1px solid hsl(var(--border))', fontSize: 12, color: 'hsl(var(--text-4))' }}>
             {filtered.length} of {tasks.length} tasks
           </div>

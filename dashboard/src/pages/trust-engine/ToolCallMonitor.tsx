@@ -16,7 +16,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/ta
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useChartTheme } from '../../hooks/useChartTheme';
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -432,7 +431,7 @@ export default function ToolCallMonitor() {
                           </td>
                           <td className="px-4 py-3 max-w-48">
                             <span className="text-xs font-mono line-clamp-1" style={{ color: 'hsl(var(--text-4))' }}>
-                              {c.args.split('\n')[0].slice(0, 50)}...
+                              {(c.args ?? '').split('\n')[0].slice(0, 50)}...
                             </span>
                           </td>
                           <td className="px-4 py-3">{resultBadge(c.result)}</td>

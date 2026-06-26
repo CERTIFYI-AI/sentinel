@@ -1,6 +1,5 @@
 // Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
 //
-// WS6 — Sentry bootstrap.
 //
 // We never hard-import @sentry/browser — that would hoist a ~80 KB
 // dependency into every page load. Instead, the SDK is loaded

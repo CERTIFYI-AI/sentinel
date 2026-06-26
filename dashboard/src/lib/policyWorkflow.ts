@@ -1,4 +1,3 @@
-// @ts-nocheck
 export type PolicyStatus = 'Draft' | 'In Review' | 'Pending Review' | 'Approved' | 'Published' | 'Archived' | 'Expired';
 
 export interface PolicyTransition {

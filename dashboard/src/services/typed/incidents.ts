@@ -1,6 +1,5 @@
 // Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
 //
-// WS3 — Typed incidents service (reference implementation).
 
 import { z } from "zod";
 import { createService } from "@/lib/serviceFactory";

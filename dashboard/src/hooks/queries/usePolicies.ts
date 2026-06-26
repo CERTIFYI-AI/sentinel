@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchAllPolicys, upsertPolicy, deletePolicy } from '../../services/policyService'
 import { toast } from 'sonner'

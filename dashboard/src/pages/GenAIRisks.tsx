@@ -420,7 +420,7 @@ export default function GenAIRisks() {
                   </div>
                   {selected.guardrails !== 'None' ? (
                     <>
-                      {selected.guardrails.split(', ').map(g => (
+                      {(selected.guardrails ?? '').split(', ').filter(Boolean).map((g: string) => (
                         <div key={g} className="flex items-center justify-between p-3" style={{ background: 'hsl(var(--s-ok-bg))', border: '1px solid hsl(var(--s-ok-br))', borderRadius: 0 }}>
                           <div className="flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full" style={{ background: 'hsl(var(--s-ok-tx))' }} />

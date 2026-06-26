@@ -10,7 +10,6 @@ import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { PageHeader } from '../components/ui/PageHeader'
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 type AIIAStatus = 'Draft' | 'In Progress' | 'Pending Review' | 'Approved' | 'Rejected' | 'Completed'
 type RiskLevel = 'Critical' | 'High' | 'Medium' | 'Low' | 'Minimal'

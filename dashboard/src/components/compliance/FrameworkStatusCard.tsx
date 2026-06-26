@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React from "react";
 import { LegalWeightBadge } from "./LegalWeightBadge";
 import { ComplianceScoreGauge } from "./ComplianceScoreGauge";

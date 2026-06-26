@@ -951,7 +951,7 @@ export default function Overview() {
                       </p>
                     </div>
                     <span className="text-xs flex-shrink-0 font-mono" style={{ color: 'hsl(var(--text-4))' }}>
-                      {formatDate(entry.timestamp.split('T')[0])}
+                      {formatDate((entry.timestamp ?? '').split('T')[0])}
                     </span>
                   </div>
                 );
@@ -1014,7 +1014,7 @@ export default function Overview() {
           <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
             SLA Countdown — Open Remediation Items
           </CardTitle>
-          <Link to="/remediation">
+          <Link to="/risk/remediation">
             <Button variant="ghost" size="sm" style={{ fontSize: 11, padding: '2px 8px' }}>
               View All <ArrowRight size={12} className="ml-1" />
             </Button>
@@ -1325,7 +1325,7 @@ export default function Overview() {
           <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
             AI System Governance Coverage
           </CardTitle>
-          <Link to="/governance">
+          <Link to="/governance-framework">
             <Button variant="ghost" size="sm" style={{ fontSize: 11, padding: '2px 8px' }}>
               Manage Mesh <ArrowRight size={12} className="ml-1" />
             </Button>

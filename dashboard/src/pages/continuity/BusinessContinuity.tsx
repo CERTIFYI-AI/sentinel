@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useMemo, useEffect } from 'react';
 import { useBcpPlansData } from '../../hooks/useBcpPlansData';
 import { PageSkeleton } from '../../components/ui/PageSkeleton';
@@ -28,7 +27,6 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { toast } from 'sonner';
 import { useSettingsStore } from '../../stores/settingsStore';
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 // ── Types ────────────────────────────────────────────────────────────────────
 

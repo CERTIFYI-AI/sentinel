@@ -94,7 +94,6 @@ export function createService<TSchema extends ZodSchema, T extends Record<string
   }
 
   async function update(id: string, orgId: string, input: Partial<T>): Promise<Result<T>> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const partial = (schema as any).partial().safeParse(input)
     if (!partial.success) {
       return err('VALIDATION_ERROR', 'Validation failed', partial.error.message)

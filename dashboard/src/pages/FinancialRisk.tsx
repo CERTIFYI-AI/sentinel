@@ -4,7 +4,6 @@ import { toast } from 'sonner'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LineChart, Line, CartesianGrid, ReferenceLine, Legend, ScatterChart, Scatter, ZAxis } from 'recharts'
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
 
 interface FinancialRiskItem {
   id: string

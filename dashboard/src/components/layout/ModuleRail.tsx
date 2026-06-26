@@ -1,4 +1,3 @@
-// @ts-nocheck
 // dashboard/src/components/layout/ModuleRail.tsx
 import { useNavigate, useLocation } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";

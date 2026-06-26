@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from 'react';
 import {
   Eye, DownloadSimple, Clock, ChartBar, ShieldCheck,
@@ -9,6 +8,7 @@ import {
 import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { Input } from '../../components/ui/input';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
@@ -228,15 +228,11 @@ export default function Reporting() {
   return (
     <TooltipProvider>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Reporting</h1>
-            <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>
-              {orgName} — Compliance reports, risk summaries, and regulatory documentation
-            </p>
-          </div>
-        </div>
+        <PageHeader
+          title="Reporting"
+          subtitle={`${orgName} — Compliance reports, risk summaries, and regulatory documentation`}
+          breadcrumbs={[{ label: 'Home', href: '/overview' }, { label: 'Reporting' }]}
+        />
 
         {/* Metrics */}
         <div className="grid grid-cols-4 gap-4">

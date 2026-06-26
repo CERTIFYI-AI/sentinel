@@ -1,6 +1,5 @@
 // Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
 //
-// WS0.5 — Tenancy invariant tests. Any client helper that filters by
 // org_id must refuse to run without a resolved org_id, to prevent the
 // "empty org_id => return all rows" class of bug.
 

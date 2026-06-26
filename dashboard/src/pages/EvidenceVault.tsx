@@ -287,7 +287,6 @@ export default function EvidenceVault() {
             <p className="text-xs mt-4 italic" style={{ color: 'hsl(var(--text-4))' }}>
               "What this means: No competitor can import your 847-day audit chain. Your compliance history lives exclusively in Sentinel."
 
-// WIRED_BY_PHASE_COMPLETE — Supabase hooks available, mock data kept as fallback
             </p>
           </div>
           <div className="ml-6 text-right flex flex-col items-end gap-3">
