@@ -317,9 +317,9 @@ function SortableCard({
       </p>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <span style={{ width: 18, height: 18, borderRadius: '50%', background: sc.text, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 700, color: '#fff' }}>
-          {task.assignee.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
+          {(task.assignee ?? '').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
         </span>
-        <span style={{ fontSize: 10, color: 'hsl(var(--text-3))', flex: 1 }}>{task.assignee.split(' ')[0]}</span>
+        <span style={{ fontSize: 10, color: 'hsl(var(--text-3))', flex: 1 }}>{(task.assignee ?? '').split(' ')[0] || '–'}</span>
         <PriorityBadge priority={task.priority} />
       </div>
     </div>
@@ -344,12 +344,13 @@ function PriorityBadge({ priority }: { priority: Severity }) {
   );
 }
 
-function AvatarInitials({ name }: { name: string }) {
-  const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+function AvatarInitials({ name }: { name?: string | null }) {
+  const safeName = name ?? '';
+  const initials = safeName.split(' ').filter(Boolean).map(w => w[0]).join('').toUpperCase().slice(0, 2) || '?';
   const colors = ['#6366f1', '#f97316', '#10b981', '#06b6d4', '#a855f7', '#f59e0b'];
-  const idx = name.charCodeAt(0) % colors.length;
+  const idx = safeName.charCodeAt(0) % colors.length;
   return (
-    <div title={name} style={{
+    <div title={safeName} style={{
       width: 22, height: 22, borderRadius: '50%',
       background: colors[idx],
       display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -690,7 +691,7 @@ export default function Tasks() {
                   <td style={{ padding: '10px 14px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <AvatarInitials name={t.assignee} />
-                      <span style={{ color: 'hsl(var(--text-2))', fontSize: 12 }}>{t.assignee.split(' ')[0]}</span>
+                      <span style={{ color: 'hsl(var(--text-2))', fontSize: 12 }}>{(t.assignee ?? '').split(' ')[0] || '–'}</span>
                     </div>
                   </td>
                   <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>

@@ -15,12 +15,13 @@ import { useTasks } from '../../hooks/queries/useTasks'
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
-function AvatarInitials({ name, size = 28 }: { name: string; size?: number }) {
-  const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+function AvatarInitials({ name, size = 28 }: { name?: string | null; size?: number }) {
+  const safeName = name ?? '';
+  const initials = safeName.split(' ').filter(Boolean).map(w => w[0]).join('').toUpperCase().slice(0, 2) || '?';
   const colors = ['#6366f1', '#f97316', '#10b981', '#06b6d4', '#a855f7', '#f59e0b'];
-  const idx = name.charCodeAt(0) % colors.length;
+  const idx = safeName.charCodeAt(0) % colors.length;
   return (
-    <div title={name} style={{
+    <div title={safeName} style={{
       width: size, height: size, borderRadius: '50%',
       background: colors[idx],
       display: 'flex', alignItems: 'center', justifyContent: 'center',

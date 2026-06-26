@@ -7,12 +7,13 @@ import { TASKS, TASK_STATUS_CONFIG, type Task, type TaskStatus } from './taskDat
 import { severityColor, formatDate } from '../../data/seed';
 import type { Severity } from '../../data/seed';
 
-function AvatarInitials({ name }: { name: string }) {
-  const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+function AvatarInitials({ name }: { name?: string | null }) {
+  const safeName = name ?? '';
+  const initials = safeName.split(' ').filter(Boolean).map(w => w[0]).join('').toUpperCase().slice(0, 2) || '?';
   const colors = ['#6366f1', '#f97316', '#10b981', '#06b6d4', '#a855f7', '#f59e0b'];
-  const idx = name.charCodeAt(0) % colors.length;
+  const idx = safeName.charCodeAt(0) % colors.length;
   return (
-    <div title={name} style={{
+    <div title={safeName} style={{
       width: 22, height: 22, borderRadius: '50%',
       background: colors[idx],
       display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -155,7 +156,7 @@ export default function TaskBoard({ onSelectTask }: { onSelectTask?: (task: Task
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <AvatarInitials name={task.assignee} />
                       <span style={{ fontSize: 11, color: 'hsl(var(--text-3))', flex: 1 }}>
-                        {task.assignee.split(' ')[0]}
+                        {(task.assignee ?? '').split(' ')[0] || '–'}
                       </span>
                       <div style={{
                         display: 'flex', alignItems: 'center', gap: 3,

@@ -13,7 +13,17 @@ export async function fetchAllTasks(filters: Record<string,any> = {}): Promise<a
       console.warn('[taskService] fetch failed:', error.message)
       return []
     }
-    return data ?? []
+    // Normalise rows: coerce nullable string columns to '' so UI never receives null
+    return (data ?? []).map((row: any) => ({
+      ...row,
+      assignee: row.assignee ?? '',
+      title: row.title ?? '',
+      description: row.description ?? '',
+      source: row.source ?? '',
+      dueDate: row.due_date ?? row.dueDate ?? '',
+      status: row.status ?? 'todo',
+      priority: row.priority ?? 'medium',
+    }))
   } catch (e) { return [] }
 }
 
