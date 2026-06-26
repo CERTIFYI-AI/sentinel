@@ -83,25 +83,25 @@ graph TD
 
 ## Key Features
 
-### 🤖 AI Model Registry
+### AI Model Registry
 Register, version, and classify every AI model across your organisation. Automatically assign risk tiers, assign ownership, and map to compliance frameworks.
 
-### 📋 Policy Engine
+### Policy Engine
 Define robust governance policies in plain language. The engine translates these into enforceable computational rules attached to models, agents, and data pipelines.
 
-### 🔍 Continuous Monitoring
+### Continuous Monitoring
 Access real-time dashboards tracking model drift, inference anomalies, and policy violations. Set up threshold-based alerting with configurable escalation paths.
 
-### 🛡️ Risk Assessment Workflows
+### Risk Assessment Workflows
 Conduct structured risk assessments fully aligned with the **EU AI Act**, **NIST AI RMF 1.0**, and **ISO/IEC 42001**. Track and compute risk scores over time.
 
-### 📊 Audit & Compliance
+### Audit & Compliance
 Generate immutable, append-only audit trails for every governance decision. Easily produce export-ready compliance reports for regulators and stakeholders.
 
-### 👁️ Agent Observability
+### Agent Observability
 Gain real-time visibility into the actions of 10 autonomous governance agents—know exactly what they triggered, on which model, at what time, and with what outcome.
 
-### 🗳️ Security Questionnaire Automation
+### Security Questionnaire Automation
 Accelerate vendor security assessments (SOC 2, ISO 27001, CAIQ) using AI-assisted automation powered by your existing policy and control libraries.
 
 ---
@@ -151,7 +151,7 @@ VITE_APP_ENV=development
 ### 4. Seed the Database
 ```bash
 # Applies all migrations and seeds the canonical demo tenant
-npm run db:seed
+supabase db reset
 ```
 *This creates **Sentinel Financial Corp** — a canonical demo organisation featuring 6 users, 6 AI models, 12 agents, and 30 days of synthetic governance events, ready to demo in under 2 minutes.*
 
