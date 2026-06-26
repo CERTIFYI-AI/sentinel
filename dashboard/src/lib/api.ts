@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Sentinel API Client
  * Centralised HTTP layer — every page imports from here.

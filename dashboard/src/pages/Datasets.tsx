@@ -45,7 +45,7 @@ export default function Datasets() {
       && (sensitFilter === "all" || i.sensitivity === sensitFilter);
   }), [items, search, sensitFilter]);
 
-  const sp = useSortAndPage(filtered, "name");
+  const sp = useSortAndPage<any>(filtered, "name");
   const setF = (k: string) => (v: any) => setForm((f: any) => ({ ...f, [k]: v }));
 
   const save = async (draft = false) => {
@@ -163,7 +163,7 @@ export default function Datasets() {
         )}
       </CardContent></Card>
 
-      <PaginationBar total={sp.total} page={sp.page} perPage={sp.perPage} onPage={sp.setPage} onPerPage={sp.setPerPage} />
+      <PaginationBar total={sp.total} page={sp.currentPage} perPage={sp.perPage} onPage={sp.setPage} onPerPage={sp.setPerPage} />
 
       <CrudModal open={modal==="create"||modal==="edit"} onClose={() => setModal(null)} title={editId?"Edit Dataset":"Register New Dataset"} size="xl">
         <div className="p-5 space-y-2">

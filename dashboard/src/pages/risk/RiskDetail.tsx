@@ -587,9 +587,9 @@ export default function RiskDetail() {
                 <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid hsl(var(--border))' }}>
                   <p style={{ fontSize: 12, fontWeight: 600, color: 'hsl(var(--text-2))', marginBottom: 10 }}>System Audit Log</p>
                   {auditEntries.map(e => (
-                    <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid hsl(var(--border))' }}>
-                      <span style={{ fontSize: 12, color: 'hsl(var(--text-2))' }}>{e.action}</span>
-                      <span style={{ fontSize: 11, color: 'hsl(var(--text-4))' }}>{e.user}</span>
+                    <div key={e.id} className="flex justify-between items-center py-1.5" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>{e.action}</span>
+                      <span className="text-[11px]" style={{ color: 'hsl(var(--text-4))' }}>{e.actor}</span>
                     </div>
                   ))}
                 </div>

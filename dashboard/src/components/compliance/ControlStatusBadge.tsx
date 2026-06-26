@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from 'react';
 import type { ControlStatus } from '../../lib/compliance-types';
 

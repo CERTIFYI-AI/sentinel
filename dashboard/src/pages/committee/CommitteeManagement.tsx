@@ -4,7 +4,7 @@ import { PageSkeleton } from '../../components/ui/PageSkeleton';
 import { toast } from 'sonner';
 import {
   Users, Plus, Eye, Trash, PencilSimple, CalendarBlank, CheckCircle,
-  Warning, Info, MagnifyingGlass, Export, FileText, Vote,
+  Warning, Info, MagnifyingGlass, Export, FileText, ThumbsUp,
   ClipboardText, ArrowRight, UserCircle, Shield, Clock,
 } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';

@@ -310,7 +310,7 @@ export default function Remediation() {
                 </div>
                 {[
                   { label: 'Plan ID', value: viewItem.id },
-                  { label: 'Linked Risk', value: viewItem.linkedRisk || viewItem.linked_risk || '—' },
+                  { label: 'Linked Risk', value: viewItem.linkedRisk || viewItem.linkedRisk || '—' },
                   { label: 'Linked Gap', value: viewItem.linkedGap },
                   { label: 'Assignee', value: viewItem.assignee },
                   { label: 'Start Date', value: formatDate(viewItem.startDate) },

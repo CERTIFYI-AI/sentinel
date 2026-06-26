@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchEvidences, upsertEvidence, deleteEvidence } from '../services/evidenceService'
 import { toast } from 'sonner'

@@ -4,7 +4,7 @@ import {
   Robot, ArrowRight, Clock, CheckCircle, Warning,
   MagnifyingGlass, ShieldCheck, ShieldWarning, ArrowUpRight,
   CaretUp, CaretDown, ArrowsDownUp, X, GitBranch, Scales,
-  FlaskConical, Gauge, Prohibit, SortAscending, Funnel,
+  Flask, Gauge, Prohibit, SortAscending, Funnel,
 } from '@phosphor-icons/react';
 import { Card, CardContent } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -121,7 +121,8 @@ export default function ModelLifecycle() {
   /* ── Normalize models ── */
   const unifiedModels = useMemo(() => {
     const activeItems = items && items.length > 0 ? items : MODELS;
-    return activeItems.map(m => {
+    return activeItems.map((_m) => {
+      const m = _m as any;
       const lastValDate = m.lastValidated || m.last_validated || '2026-03-15';
       const lastVal = new Date(lastValDate);
       const diffDays = Math.ceil(Math.abs(today.getTime() - lastVal.getTime()) / (1000 * 60 * 60 * 24));

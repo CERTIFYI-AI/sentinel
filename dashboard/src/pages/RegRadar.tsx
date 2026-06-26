@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Radar, Plus, MagnifyingGlass, Eye, PencilSimple, Trash, Export } from "@phosphor-icons/react";
+import { Broadcast, Plus, MagnifyingGlass, Eye, PencilSimple, Trash, Export } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -46,7 +46,7 @@ export default function RegRadar() {
       && (impactFilter === "all" || i.impactLevel === impactFilter);
   }), [items, search, statusFilter, impactFilter]);
 
-  const sp = useSortAndPage(filtered, "title");
+  const sp = useSortAndPage<any>(filtered, "title");
   const setF = (k: string) => (v: any) => setForm((f: any) => ({ ...f, [k]: v }));
 
   const save = (draft = false) => {
@@ -74,7 +74,7 @@ export default function RegRadar() {
       <Breadcrumbs />
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[hsl(var(--text-1))] flex items-center gap-2"><Radar size={24} weight="duotone" className="text-[hsl(var(--brand))]" />Regulatory Radar</h1>
+          <h1 className="text-2xl font-bold text-[hsl(var(--text-1))] flex items-center gap-2"><Broadcast size={24} weight="duotone" className="text-[hsl(var(--brand))]" />Regulatory Radar</h1>
           <p className="text-sm text-[hsl(var(--text-3))] mt-0.5">Track emerging regulations and assess their impact on your AI governance posture</p>
         </div>
         <div className="flex gap-2">
@@ -106,7 +106,7 @@ export default function RegRadar() {
 
       <Card><CardContent className="p-0">
         {sp.paged.length === 0 ? (
-          <EmptyState icon={<Radar size={32} className="text-[hsl(var(--brand))]" />} title="No regulations tracked" description="Add regulations to your radar to track their impact." action={<Button size="sm" onClick={() => { setForm(EMPTY); setModal("create"); }}><Plus size={14} className="mr-1" />Track Regulation</Button>} />
+          <EmptyState icon={<Broadcast size={32} className="text-[hsl(var(--brand))]" />} title="No regulations tracked" description="Add regulations to your radar to track their impact." action={<Button size="sm" onClick={() => { setForm(EMPTY); setModal("create"); }}><Plus size={14} className="mr-1" />Track Regulation</Button>} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -159,7 +159,7 @@ export default function RegRadar() {
         )}
       </CardContent></Card>
 
-      <PaginationBar total={sp.total} page={sp.page} perPage={sp.perPage} onPage={sp.setPage} onPerPage={sp.setPerPage} />
+      <PaginationBar total={sp.total} page={sp.currentPage} perPage={sp.perPage} onPage={sp.setPage} onPerPage={sp.setPerPage} />
 
       <CrudModal open={modal==="create"||modal==="edit"} onClose={() => setModal(null)} title={editId?"Edit Regulatory Item":"Track New Regulation"} size="xl">
         <div className="p-5 space-y-2">

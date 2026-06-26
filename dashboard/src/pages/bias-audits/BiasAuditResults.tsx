@@ -231,8 +231,8 @@ export default function BiasAuditResults() {
         <CardContent>
           <div className="flex flex-wrap gap-2">
             {audit.protectedAttributes.map(attr => (
-              <Badge key={attr} variant="outline" style={{ borderRadius: 0, fontSize: 12 }}>
-                <Shield size={11} className="mr-1" /> {attr}
+              <Badge key={attr.name} variant="outline" style={{ borderRadius: 0, fontSize: 12 }}>
+                <Shield size={11} className="mr-1" /> {attr.name}
               </Badge>
             ))}
           </div>

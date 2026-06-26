@@ -109,7 +109,7 @@ const REPORT_CATEGORIES: ReportCategory[] = ['AI Bias/Discrimination', 'Safety C
 const INVESTIGATORS = ['David Kim', 'James Patel', 'Emma Wilson', 'Sarah Chen', 'Maria Santos'];
 
 export default function EthicsReporting() {
-  const { items: liveItems, isLoading, save, remove } = useEthicsReportsData();
+  const { items: liveItems, isLoading, saveEthicsReports: save, removeEthicsReports: remove } = useEthicsReportsData();
   const [reports, setReports] = useState<any[]>(SEED);
 
   useEffect(() => {

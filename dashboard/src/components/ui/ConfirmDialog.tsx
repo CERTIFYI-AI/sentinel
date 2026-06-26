@@ -8,6 +8,7 @@ interface ConfirmDialogProps {
   onOpenChange?: (open: boolean) => void;
   onConfirm: () => void;
   type?: "danger" | "warning" | "info";
+  variant?: "destructive" | "default" | string;
   title: string;
   message?: string | React.ReactNode;
   description?: string | React.ReactNode;
@@ -22,7 +23,7 @@ interface ConfirmDialogProps {
 
 export function ConfirmDialog({
   open, onClose, onCancel, onOpenChange, onConfirm,
-  type = "info", title, message, description,
+  type = "info", variant, title, message, description,
   confirmLabel = "Confirm", cancelLabel = "Cancel",
   requiresTyping, checklist, isDestructive, destructive, impactList,
 }: ConfirmDialogProps) {
@@ -36,7 +37,7 @@ export function ConfirmDialog({
   const checklistValid = !checklist || checklist.every((_, i) => checked[i]);
   const canConfirm = typingValid && checklistValid;
 
-  const resolvedType = (isDestructive || destructive) ? "danger" : type;
+  const resolvedType = (isDestructive || destructive || variant === 'destructive') ? "danger" : type;
 
   const btnColors: Record<string, string> = {
     danger:  "bg-[hsl(var(--destructive))] text-white hover:opacity-90",

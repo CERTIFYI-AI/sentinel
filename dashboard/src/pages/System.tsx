@@ -52,7 +52,7 @@ export default function System() {
       && (typeFilter === "all" || i.type === typeFilter);
   }), [items, search, statusFilter, typeFilter]);
 
-  const sp = useSortAndPage(filtered, "name");
+  const sp = useSortAndPage<any>(filtered, "name");
   const setF = (k: string) => (v: any) => setForm((f: any) => ({ ...f, [k]: v }));
 
   const save = (draft = false) => {
@@ -164,7 +164,7 @@ export default function System() {
         )}
       </CardContent></Card>
 
-      <PaginationBar total={sp.total} page={sp.page} perPage={sp.perPage} onPage={sp.setPage} onPerPage={sp.setPerPage} />
+      <PaginationBar total={sp.total} page={sp.currentPage} perPage={sp.perPage} onPage={sp.setPage} onPerPage={sp.setPerPage} />
 
       <CrudModal open={modal==="create"||modal==="edit"} onClose={() => setModal(null)} title={editId?"Edit Integration":"Add System Integration"} size="xl">
         <div className="p-5 space-y-2">

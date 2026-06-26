@@ -38,7 +38,7 @@ const BLANK_FORM = {
 }
 
 export default function EsgReports() {
-  const { items, isLoading, save, remove } = useEsgData()
+  const { reports: items, isLoading, save, remove } = useEsgData();
   const chartTheme = useChartTheme()
   if (isLoading) return <PageSkeleton />
 

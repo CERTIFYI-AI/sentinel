@@ -56,7 +56,7 @@ export default function ConformityAssessment() {
       && (frameworkFilter === "all" || i.framework === frameworkFilter);
   }), [items, search, statusFilter, frameworkFilter]);
 
-  const sp = useSortAndPage(filtered, "title");
+  const sp = useSortAndPage<any>(filtered, "title");
   const setF = (k: string) => (v: any) => setForm((f: any) => ({ ...f, [k]: v }));
 
   const save = (draft = false) => {
@@ -177,7 +177,7 @@ export default function ConformityAssessment() {
         )}
       </CardContent></Card>
 
-      <PaginationBar total={sp.total} page={sp.page} perPage={sp.perPage} onPage={sp.setPage} onPerPage={sp.setPerPage} />
+      <PaginationBar total={sp.total} page={sp.currentPage} perPage={sp.perPage} onPage={sp.setPage} onPerPage={sp.setPerPage} />
 
       <CrudModal open={modal==="create"||modal==="edit"} onClose={() => setModal(null)} title={editId?"Edit Assessment":"New Conformity Assessment"} size="xl">
         <div className="p-5 space-y-2">

@@ -84,7 +84,7 @@ export default function DataLineage() {
       ingestionMethod: r.ingestionMethod, transformations: r.transformations.join('\n'),
       downstreamModels: r.downstreamModels.join('\n'), upstreamSources: r.upstreamSources.join('\n'),
       piiPresent: r.piiPresent, piiTypes: r.piiTypes?.join(', ') ?? '',
-      dataClassification: r.dataClassification, retentionPolicy: r.retentionPolicy,
+      dataClassification: r.dataClassification as any, retentionPolicy: r.retentionPolicy,
       quality: r.quality, owner: r.owner, schema: r.schema ?? '', rowCount: r.rowCount ?? '', sla: r.sla ?? '',
     })
     setEditMode(true)

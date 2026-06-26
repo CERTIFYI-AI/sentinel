@@ -135,7 +135,6 @@ function SlaCountdownBadge({ reportedDate, severity, status }: {
   const bg = breached || isRed ? 'hsl(var(--s-er-bg))' : isAmber ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-ok-bg))';
   const fg = breached || isRed ? 'hsl(var(--s-er-tx))' : isAmber ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))';
 
-  if (isLoading) return <PageSkeleton />;
   return (
     <span
       className={`text-[10px] font-mono px-1.5 py-0.5 font-semibold inline-flex items-center gap-1 ${breached || isRed ? 'animate-pulse' : ''}`}
@@ -369,11 +368,11 @@ export default function IncidentLog() {
 
   // Detail sheet
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
+  const [selectedIncident, setSelectedIncident] = useState<any>(null);
 
   // Add modal
   const [addOpen, setAddOpen] = useState(false);
-  const [editIncident, setEditIncident] = useState<Incident | null>(null);
+  const [editIncident, setEditIncident] = useState<any>(null);
 
   // Resolve modal
   const [resolveOpen, setResolveOpen] = useState(false);
@@ -728,7 +727,7 @@ export default function IncidentLog() {
 
                     <div className="space-y-2 mt-4">
                       <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Activity Log</p>
-                      {(selectedIncident.timeline || []).map((entry, i) => (
+                      {(selectedIncident.timeline || []).map((entry: any, i: number) => (
                         <div key={i} className="flex gap-3 p-2" style={{ borderLeft: '2px solid hsl(var(--brand))', borderRadius: 0 }}>
                           <div className="flex items-start gap-2 w-full">
                             <div className="w-5 h-5 flex items-center justify-center shrink-0 mt-0.5"
@@ -764,7 +763,7 @@ export default function IncidentLog() {
                           </div>
                         );
                       }
-                      return similar.map(sim => {
+                      return similar.map((sim: any) => {
                         const simSev = severityColor(sim.severity);
                         const simStat = statusColor(sim.status);
                         return (
@@ -826,7 +825,7 @@ export default function IncidentLog() {
                   {/* Corrective Actions */}
                   <TabsContent value="corrective" className="space-y-4 mt-4">
                     <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Corrective Actions</p>
-                    {(selectedIncident.correctiveActions || []).map((action, i) => (
+                    {(selectedIncident.correctiveActions || []).map((action: any, i: number) => (
                       <div key={i} className="flex items-start gap-2 p-2" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                         <CaretRight size={12} style={{ color: 'hsl(var(--brand))', marginTop: 2 }} />
                         <span className="text-sm" style={{ color: 'hsl(var(--text-1))' }}>{action}</span>

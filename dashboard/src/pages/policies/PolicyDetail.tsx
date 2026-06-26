@@ -510,7 +510,7 @@ export default function PolicyDetail() {
                 {AUDIT_LOG.filter(e => e.action.toLowerCase().includes('policy') || e.action.toLowerCase().includes('compli')).slice(0, 5).map(e => (
                   <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid hsl(var(--border))' }}>
                     <span style={{ fontSize: 12, color: 'hsl(var(--text-2))' }}>{e.action}</span>
-                    <span style={{ fontSize: 11, color: 'hsl(var(--text-4))' }}>{e.user}</span>
+                    <span style={{ fontSize: 11, color: 'hsl(var(--text-4))' }}>{e.actor}</span>
                   </div>
                 ))}
               </div>

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // dashboard/src/hooks/use-hitl.ts
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";

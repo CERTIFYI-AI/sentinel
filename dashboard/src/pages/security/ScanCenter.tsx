@@ -136,7 +136,7 @@ export default function ScanCenter() {
   }
 
   // Task 2: Calculate Aggregated Risk Trends
-  const activeVulns = SEED_VULNERABILITIES.filter(v => v.status !== 'patched' && v.status !== 'resolved');
+  const activeVulns = SEED_VULNERABILITIES.filter(v => v.status !== 'patched' && v.status !== 'false_positive');
   const criticalCount = activeVulns.filter(v => v.severity?.toLowerCase() === 'critical').length;
   const highCount = activeVulns.filter(v => v.severity?.toLowerCase() === 'high').length;
   const mediumCount = activeVulns.filter(v => v.severity?.toLowerCase() === 'medium').length;

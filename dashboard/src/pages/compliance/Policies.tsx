@@ -1,13 +1,13 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card } from "../components/ui/card";
-import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
-import { Input } from "../components/ui/input";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../components/ui/sheet";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
-import { Separator } from "../components/ui/separator";
+import { Card } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
+import { Input } from "../../components/ui/input";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../../components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../../components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../components/ui/tabs";
+import { Separator } from "../../components/ui/separator";
 import { PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, LabelList } from "recharts";
 import { useChartTheme } from "../../hooks/useChartTheme";
 import { FileText, CheckCircle, Clock, XCircle, MagnifyingGlass as Search, Plus, DownloadSimple as Download, CaretLeft as ChevronLeft, CaretRight as ChevronRight, PencilSimple as Edit, CopySimple as Copy, Archive, Trash as Trash2, Eye, DotsThreeVertical as MoreVertical, Shield, GitBranch, FilePdf } from "@phosphor-icons/react";
@@ -150,10 +150,10 @@ export default function PolicyManagement() {
 
       {/* Filters */}
       <div className="flex gap-3 items-center">
-        <div className="relative flex-1"><Search className="absolute left-3 top-2.5 w-4 h-4 text-[hsl(var(--text-4))]"/><Input placeholder="Search policies..." className="pl-10 bg-[hsl(var(--bg-surface))] border-[hsl(var(--border-mid))] text-foreground" value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}}/></div>
-        <select className="bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-[hsl(var(--text-2))]" value={catFilter} onChange={e=>{setCatFilter(e.target.value);setPage(1);}}><option value="all">All Categories</option>{CATS.map(c=><option key={c} value={c}>{c}</option>)}</select>
-        <select className="bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-[hsl(var(--text-2))]" value={statusFilter} onChange={e=>{setStatusFilter(e.target.value);setPage(1);}}><option value="all">All Status</option><option value="active">Active</option><option value="review">Under Review</option><option value="expired">Expired</option><option value="draft">Draft</option><option value="archived">Archived</option></select>
-        <select className="bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-[hsl(var(--text-2))]" value={fwFilter} onChange={e=>{setFwFilter(e.target.value);setPage(1);}}><option value="all">All Frameworks</option>{FWS.map(f=><option key={f} value={f}>{f}</option>)}</select>
+        <div className="relative flex-1"><Search className="absolute left-3 top-2.5 w-4 h-4 text-[hsl(var(--text-4))]"/><Input placeholder="Search policies..." className="pl-10 bg-[hsl(var(--bg-surface))] border-[hsl(var(--border-mid))] text-foreground" value={search} onChange={(e:any)=>{setSearch(e.target.value);setPage(1);}}/></div>
+        <select className="bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-[hsl(var(--text-2))]" value={catFilter} onChange={(e:any)=>{setCatFilter(e.target.value);setPage(1);}}><option value="all">All Categories</option>{CATS.map(c=><option key={c} value={c}>{c}</option>)}</select>
+        <select className="bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-[hsl(var(--text-2))]" value={statusFilter} onChange={(e:any)=>{setStatusFilter(e.target.value);setPage(1);}}><option value="all">All Status</option><option value="active">Active</option><option value="review">Under Review</option><option value="expired">Expired</option><option value="draft">Draft</option><option value="archived">Archived</option></select>
+        <select className="bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-[hsl(var(--text-2))]" value={fwFilter} onChange={(e:any)=>{setFwFilter(e.target.value);setPage(1);}}><option value="all">All Frameworks</option>{FWS.map(f=><option key={f} value={f}>{f}</option>)}</select>
       </div>
 
       {/* Table */}
@@ -346,17 +346,17 @@ export default function PolicyManagement() {
         <DialogContent className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-foreground max-w-lg">
           <DialogHeader><DialogTitle>{editPolicy?"Update Policy":"Create Policy"}</DialogTitle></DialogHeader>
           <div className="space-y-4 mt-2">
-            <div><label className="text-[hsl(var(--text-3))] text-xs">Policy Name</label><Input className="bg-[hsl(var(--bg-raised))] border-[hsl(var(--border-mid))] text-foreground mt-1" value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></div>
+            <div><label className="text-[hsl(var(--text-3))] text-xs">Policy Name</label><Input className="bg-[hsl(var(--bg-raised))] border-[hsl(var(--border-mid))] text-foreground mt-1" value={form.name} onChange={(e:any)=>setForm({...form,name:e.target.value})}/></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="text-[hsl(var(--text-3))] text-xs">Category</label><select className="w-full bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-foreground mt-1" value={form.category} onChange={e=>setForm({...form,category:e.target.value})}>{CATS.map(c=><option key={c} value={c}>{c}</option>)}</select></div>
-              <div><label className="text-[hsl(var(--text-3))] text-xs">Framework</label><select className="w-full bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-foreground mt-1" value={form.framework} onChange={e=>setForm({...form,framework:e.target.value})}>{FWS.map(f=><option key={f} value={f}>{f}</option>)}</select></div>
+              <div><label className="text-[hsl(var(--text-3))] text-xs">Category</label><select className="w-full bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-foreground mt-1" value={form.category} onChange={(e:any)=>setForm({...form,category:e.target.value})}>{CATS.map(c=><option key={c} value={c}>{c}</option>)}</select></div>
+              <div><label className="text-[hsl(var(--text-3))] text-xs">Framework</label><select className="w-full bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-foreground mt-1" value={form.framework} onChange={(e:any)=>setForm({...form,framework:e.target.value})}>{FWS.map(f=><option key={f} value={f}>{f}</option>)}</select></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="text-[hsl(var(--text-3))] text-xs">Owner</label><select className="w-full bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-foreground mt-1" value={form.owner} onChange={e=>setForm({...form,owner:e.target.value})}>{OWNERS.map(o=><option key={o} value={o}>{o}</option>)}</select></div>
-              <div><label className="text-[hsl(var(--text-3))] text-xs">Risk Level</label><select className="w-full bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-foreground mt-1" value={form.risk} onChange={e=>setForm({...form,risk:e.target.value})}>{["High","Medium","Low"].map(r=><option key={r} value={r}>{r}</option>)}</select></div>
+              <div><label className="text-[hsl(var(--text-3))] text-xs">Owner</label><select className="w-full bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-foreground mt-1" value={form.owner} onChange={(e:any)=>setForm({...form,owner:e.target.value})}>{OWNERS.map(o=><option key={o} value={o}>{o}</option>)}</select></div>
+              <div><label className="text-[hsl(var(--text-3))] text-xs">Risk Level</label><select className="w-full bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-foreground mt-1" value={form.risk} onChange={(e:any)=>setForm({...form,risk:e.target.value})}>{["High","Medium","Low"].map(r=><option key={r} value={r}>{r}</option>)}</select></div>
             </div>
-            <div><label className="text-[hsl(var(--text-3))] text-xs">Scope</label><textarea className="w-full bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-foreground mt-1 h-16 resize-none" value={form.scope} onChange={e=>setForm({...form,scope:e.target.value})}/></div>
-            <div><label className="text-[hsl(var(--text-3))] text-xs">Description</label><textarea className="w-full bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-foreground mt-1 h-20 resize-none" value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></div>
+            <div><label className="text-[hsl(var(--text-3))] text-xs">Scope</label><textarea className="w-full bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-foreground mt-1 h-16 resize-none" value={form.scope} onChange={(e:any)=>setForm({...form,scope:e.target.value})}/></div>
+            <div><label className="text-[hsl(var(--text-3))] text-xs">Description</label><textarea className="w-full bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-foreground mt-1 h-20 resize-none" value={form.description} onChange={(e:any)=>setForm({...form,description:e.target.value})}/></div>
           </div>
           <DialogFooter className="mt-4"><Button variant="outline" className="border-[hsl(var(--border-mid))] text-[hsl(var(--text-2))]" onClick={()=>setShowCreate(false)}>Cancel</Button><Button className="bg-[hsl(var(--brand))] hover:bg-primary/90 text-foreground" onClick={()=>setShowCreate(false)}>{editPolicy?"Update":"Create"}</Button></DialogFooter>
         </DialogContent>

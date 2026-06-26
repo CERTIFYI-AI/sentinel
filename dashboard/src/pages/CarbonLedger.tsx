@@ -33,7 +33,7 @@ const RECOMMENDATIONS = [
 ]
 
 export default function CarbonLedger() {
-  const { items, isLoading, save, remove } = useCarbonRecordsData()
+  const { items, isLoading, saveCarbonRecords: save, removeCarbonRecords: remove } = useCarbonRecordsData()
   const chartTheme = useChartTheme()
   if (isLoading) return <PageSkeleton />
 

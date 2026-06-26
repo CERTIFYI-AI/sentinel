@@ -677,8 +677,8 @@ export default function ModelDetail() {
                               </p>
                               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                                 {audit.protectedAttributes.map(attr => (
-                                  <span key={attr} style={{ fontSize: 11, padding: '3px 8px', background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))', border: '1px solid hsl(var(--brand-subtle))' }}>
-                                    {attr}
+                                  <span key={attr.name} style={{ fontSize: 11, padding: '3px 8px', background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))', border: '1px solid hsl(var(--brand-subtle))' }}>
+                                    {attr.name}
                                   </span>
                                 ))}
                               </div>

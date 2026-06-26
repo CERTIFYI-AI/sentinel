@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Badge } from '../../components/ui/badge';
 import {
   X, PencilSimple, CalendarBlank, User, Flag, Link as LinkIcon,
-  Activity, ChatText, ArrowRight, Check,
+  Pulse, ChatText, ArrowRight, Check,
 } from '@phosphor-icons/react';
 import { TASK_STATUS_CONFIG, type Task, type TaskStatus } from './taskData';
 import { severityColor, formatDate, USERS } from '../../data/seed';
@@ -387,7 +387,7 @@ export default function TaskDrawer({ task, onClose, onSave }: TaskDrawerProps) {
           {activeTab === 'activity' && (
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16 }}>
-                <Activity size={13} style={{ color: 'hsl(var(--brand))' }} />
+                <Pulse size={13} style={{ color: 'hsl(var(--brand))' }} />
                 <span style={{ fontSize: 12, fontWeight: 600, color: 'hsl(var(--text-2))' }}>Activity Log</span>
               </div>
               <div>

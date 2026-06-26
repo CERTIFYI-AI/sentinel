@@ -401,7 +401,7 @@ export default function ExplainabilityCenter() {
                     color: currentReport.method === m || (m === 'LIME' && currentReport.method.includes('SHAP')) ? '#fff' : 'hsl(var(--text-2))',
                     borderColor: 'hsl(var(--border))',
                   }}
-                    onClick={() => toast.info(`${m} explanation generated`)}>
+                    onClick={() => toast(`${m} explanation generated`, 'info')}>
                     {m}
                   </button>
                 ))}
@@ -501,9 +501,9 @@ export default function ExplainabilityCenter() {
               </div>
               <div className="flex gap-2">
                 <button className="px-3 py-1.5 text-xs border" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}
-                  onClick={() => toast.success('Explanation exported as PDF')}>Export PDF</button>
+                  onClick={() => toast('Explanation exported as PDF', 'success')}>Export PDF</button>
                 <button className="px-3 py-1.5 text-xs text-white" style={{ background: 'hsl(var(--brand))' }}
-                  onClick={() => toast.success('Plain-language explanation generated')}>Regenerate</button>
+                  onClick={() => toast('Plain-language explanation generated', 'success')}>Regenerate</button>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">

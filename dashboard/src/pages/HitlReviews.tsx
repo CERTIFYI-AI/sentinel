@@ -44,7 +44,7 @@ export default function HitlReviews() {
       && (outcomeFilter === "all" || i.outcome === outcomeFilter);
   }), [items, search, statusFilter, outcomeFilter]);
 
-  const sp = useSortAndPage(filtered, "itemType");
+  const sp = useSortAndPage<any>(filtered, "itemType");
   const setF = (k: string) => (v: any) => setForm((f: any) => ({ ...f, [k]: v }));
 
   const save = (draft = false) => {
@@ -155,7 +155,7 @@ export default function HitlReviews() {
         )}
       </CardContent></Card>
 
-      <PaginationBar total={sp.total} page={sp.page} perPage={sp.perPage} onPage={sp.setPage} onPerPage={sp.setPerPage} />
+      <PaginationBar total={sp.total} page={sp.currentPage} perPage={sp.perPage} onPage={sp.setPage} onPerPage={sp.setPerPage} />
 
       <CrudModal open={modal==="create"||modal==="edit"} onClose={() => setModal(null)} title={editId?"Edit Review":"Record HITL Review"} size="xl">
         <div className="p-5 space-y-2">

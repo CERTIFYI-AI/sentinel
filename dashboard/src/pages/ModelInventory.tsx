@@ -48,14 +48,14 @@ export default function ModelInventory() {
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [saving, setSaving] = useState(false);
 
-  const filtered = useMemo(() => items.filter(i => {
+  const filtered = useMemo(() => items.filter((i: any) => {
     const q = search.toLowerCase();
     return (i.name.toLowerCase().includes(q) || i.domain.toLowerCase().includes(q) || i.owner.toLowerCase().includes(q))
       && (statusFilter === "all" || i.status === statusFilter)
       && (riskFilter === "all" || i.riskClass === riskFilter);
   }), [items, search, statusFilter, riskFilter]);
 
-  const sp = useSortAndPage(filtered, "name");
+  const sp = useSortAndPage<any>(filtered, "name");
 
   if (isLoading) return <PageSkeleton />
   const setF = (k: string) => (v: any) => setForm((f: any) => ({ ...f, [k]: v }));
@@ -96,7 +96,7 @@ export default function ModelInventory() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {[["Total Models",items.length],["Active",items.filter(i=>i.status==="Active").length],["High Risk",items.filter(i=>i.riskClass==="High Risk").length],["Suspended",items.filter(i=>i.status==="Suspended").length]].map(([l,v])=>(
+        {[["Total Models",items.length],["Active",items.filter((i:any)=>i.status==="Active").length],["High Risk",items.filter((i:any)=>i.riskClass==="High Risk").length],["Suspended",items.filter((i:any)=>i.status==="Suspended").length]].map(([l,v])=>(
           <Card key={l as string}><CardContent className="p-4"><p className="text-2xl font-bold text-[hsl(var(--text-1))]">{v}</p><p className="text-xs text-[hsl(var(--text-3))] mt-0.5">{l}</p></CardContent></Card>
         ))}
       </div>
@@ -163,7 +163,7 @@ export default function ModelInventory() {
         )}
       </CardContent></Card>
 
-      <PaginationBar total={sp.total} page={sp.page} perPage={sp.perPage} onPage={sp.setPage} onPerPage={sp.setPerPage} />
+      <PaginationBar total={sp.total} page={sp.currentPage} perPage={sp.perPage} onPage={sp.setPage} onPerPage={sp.setPerPage} />
 
       <CrudModal open={modal==="create"||modal==="edit"} onClose={() => setModal(null)} title={editId?"Edit Model":"Register New Model"} size="xl">
         <div className="p-5 space-y-2">

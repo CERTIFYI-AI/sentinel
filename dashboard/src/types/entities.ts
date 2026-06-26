@@ -54,7 +54,7 @@ export interface Vendor {
 
 export interface BiasAudit {
   id: string; modelId: string; modelName: string;
-  auditDate: Date; auditor: string;
+  auditDate: Date; auditor: string; technique?: string;
   metrics: { metric: string; value: number; threshold: number; passed: boolean }[];
   overallResult: 'pass' | 'fail' | 'warning';
   recommendations: string; status: 'completed' | 'in_progress';

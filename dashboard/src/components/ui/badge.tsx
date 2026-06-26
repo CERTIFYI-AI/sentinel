@@ -18,6 +18,7 @@ interface BadgeProps {
   pulse?: boolean;
   className?: string;
   style?: React.CSSProperties;
+  onClick?: React.MouseEventHandler<HTMLSpanElement>;
 }
 
 const variantStyles: Record<string, string> = {
@@ -53,13 +54,13 @@ const sizeStyles: Record<BadgeSize, string> = {
   md: "text-xs px-2 py-0.5",
 };
 
-const Badge = ({ variant = 'default', size = 'md', pulse = false, children, className, style }: BadgeProps) => (
+const Badge = ({ variant = 'default', size = 'md', pulse = false, children, className, style, onClick }: BadgeProps) => (
   <span className={clsx(
     "inline-flex items-center gap-1 font-medium whitespace-nowrap rounded-sm",
     variantStyles[variant] ?? variantStyles.default,
     sizeStyles[size],
     className
-  )} style={style}>
+  )} style={style} onClick={onClick}>
     {pulse && <span className="w-[6px] h-[6px] rounded-full bg-current animate-pulse-dot flex-shrink-0" />}
     {children}
   </span>

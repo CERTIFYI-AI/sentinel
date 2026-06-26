@@ -119,7 +119,7 @@ export default function AgentDiscovery() {
         </select>
       </div>
 
-      <BulkActionToolbar count={sp.selectedIds.size} onClear={sp.clearSelected} onDelete={() => { setItems(p=>p.filter(i=>!sp.selectedIds.has(i.id))); sp.clearSelected(); toast.success("Deleted selected"); }} onExport={() => toast.success("Exported")} />
+      <BulkActionToolbar count={sp.selectedIds.size} onClear={sp.clearSelected} onDelete={() => { Array.from(sp.selectedIds).forEach(id => removeAgents(id as string)); sp.clearSelected(); toast.success("Deleted selected"); }} onExport={() => toast.success("Exported")} />
 
       <Card><CardContent className="p-0">
         {sp.paged.length === 0 ? (
@@ -172,7 +172,7 @@ export default function AgentDiscovery() {
         )}
       </CardContent></Card>
 
-      <PaginationBar total={sp.total} page={sp.page} perPage={sp.perPage} onPage={sp.setPage} onPerPage={sp.setPerPage} />
+      <PaginationBar total={sp.total} page={sp.currentPage} perPage={sp.perPage} onPage={sp.setPage} onPerPage={sp.setPerPage} />
 
       <CrudModal open={modal==="create"||modal==="edit"} onClose={() => setModal(null)} title={editId?"Edit Agent":"Register New Agent"} size="xl">
         <div className="p-5 space-y-2">

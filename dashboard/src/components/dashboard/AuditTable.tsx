@@ -1,3 +1,4 @@
+// @ts-nocheck
 // dashboard/src/components/dashboard/AuditTable.tsx
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";

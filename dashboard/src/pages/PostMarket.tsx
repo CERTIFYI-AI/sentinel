@@ -260,7 +260,7 @@ export default function PostMarket() {
               <div className="p-4 border-b" style={{ borderColor: 'hsl(var(--border))' }}>
                 <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Surveillance Events</p>
               </div>
-              <div className="divide-y" style={{ divideColor: 'hsl(var(--border))' }}>
+              <div className="divide-y" style={{ borderColor: 'hsl(var(--border))' }}>
                 {events.map(ev => {
                   const ec = eventColor(ev.severity);
                   return (

@@ -204,21 +204,23 @@ export default function Settings() {
   // Hydrate local state from Supabase on first load
   useEffect(() => {
     if (!backendSettings) return;
-    const s = backendSettings;
+    const s = backendSettings as any;
     if (s.org) {
-      setOrgName(s.org.name ?? orgName);
-      setDomain(s.org.domain ?? domain);
-      setIndustry(s.org.industry ?? industry);
-      setCompanySize(s.org.companySize ?? companySize);
-      setPrimaryContact(s.org.primaryContact ?? primaryContact);
-      setTimezone(s.org.timezone ?? timezone);
-      setFiscalYear(s.org.fiscalYearStart ?? fiscalYear);
+      setOrgForm({
+        orgName: s.org.name ?? orgName,
+        domain: s.org.domain ?? domain,
+        industry: s.org.industry ?? industry,
+        companySize: s.org.company_size ?? companySize,
+        primaryContact: s.org.primary_contact ?? primaryContact,
+        timezone: s.org.timezone ?? timezone,
+        fiscalYearStart: s.org.fiscal_year_start ?? fiscalYearStart
+      });
     }
     if (s.auth) {
-      setMfaEnabled(s.auth.mfa ?? mfaEnabled);
-      setSsoEnabled(s.auth.sso ?? ssoEnabled);
-      setSsoProvider(s.auth.ssoProvider ?? ssoProvider);
-      setSessionTimeout(s.auth.sessionTimeout ?? sessionTimeout);
+      setMfaRequired(s.auth.mfa_required ?? mfaRequired);
+      setSsoEnabled(s.auth.sso_enabled ?? ssoEnabled);
+      setSsoProvider(s.auth.sso_provider ?? ssoProvider);
+      setSessionTimeout(s.auth.session_timeout_minutes?.toString() ?? sessionTimeout);
     }
     if (s.apiKeys) setApiKeys(s.apiKeys as any);
     if (s.notifications) setNotifs(s.notifications as any);

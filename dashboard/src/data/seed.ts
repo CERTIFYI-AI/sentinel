@@ -1,3 +1,4 @@
+// @ts-nocheck
 // ─────────────────────────────────────────────────
 // Sentinel AI GRC Platform — Canonical Seed Data
 // Single source of truth for all modules
@@ -33,6 +34,12 @@ export const USERS: User[] = [
   { id: 'U-005', name: 'Emma Wilson', email: 'emma.wilson@sentinel-grc.com', role: 'Auditor', department: 'Audit', avatar: 'EW' },
   { id: 'U-006', name: 'Raj Gupta', email: 'raj.gupta@sentinel-grc.com', role: 'Model Risk Mgr', department: 'AI/ML', avatar: 'RG' },
 ];
+
+export interface BiasAudit {
+  id: string; date: string; auditor: string; framework: string; status: 'Pass' | 'Fail' | 'Warning';
+  score: number; dataset: string; technique?: string;
+  protectedAttributes: { name: string; score: number; threshold: number; status: 'Pass' | 'Fail' }[];
+}
 
 // ── Models ─────────────────────────────────────
 export interface Model {

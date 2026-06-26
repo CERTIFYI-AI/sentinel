@@ -9,7 +9,7 @@ import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
 import {
   ClipboardText, Clock, CheckCircle, Warning, Plus, MagnifyingGlass,
-  Funnel, LayoutFour, Table, Trash, PencilSimple, X,
+  Funnel, Table, Trash, PencilSimple, X,
   CalendarBlank, User, ArrowUp, Rows, Kanban, CaretDown, DotsSixVertical,
 } from '@phosphor-icons/react';
 import {
