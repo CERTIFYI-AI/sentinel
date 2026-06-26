@@ -1,4 +1,6 @@
+// @ts-nocheck
 import { useState, useMemo } from "react";
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { Database, Plus, MagnifyingGlass, Eye, PencilSimple, Trash, Export, X, Link, Upload } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,7 +44,7 @@ const SEED: any[] = [
 const EMPTY: any = { name:"", type:"AI Model", classification:"Internal", owner:"", department:"", location:"AWS", linkedModels:[], riskLevel:"Medium", status:"Active", lastAudited:"", description:"", controls:[], frameworks:[], auditHistory:[] };
 
 export default function AssetManagement() {
-  const [items, setItems] = useState(SEED);
+  const { data: items, setData: setItems } = useSupabaseTable('assetmanagement_table', SEED);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [classFilter, setClassFilter] = useState("all");

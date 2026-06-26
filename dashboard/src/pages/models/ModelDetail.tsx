@@ -16,8 +16,10 @@ import {
   PolarGrid, PolarAngleAxis, PolarRadiusAxis, Cell,
 } from 'recharts';
 import {
-  MODELS, BIAS_AUDITS, INCIDENTS, formatDate,
+  MODELS, BIAS_AUDITS, INCIDENTS,
+  formatDate, Model,
 } from '../../data/seed';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { useChartTheme } from '../../hooks/useChartTheme';
 import Breadcrumbs from '../../components/Breadcrumbs';
 
@@ -277,45 +279,39 @@ export default function ModelDetail() {
     <div>
       <Breadcrumbs />
 
-      {/* ── Header ── */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-          <button
-            onClick={() => navigate('/models/inventory')}
-            style={{ background: 'none', border: '1px solid hsl(var(--border))', cursor: 'pointer', padding: '6px 8px', color: 'hsl(var(--text-2))', display: 'flex', alignItems: 'center' }}
-            aria-label="Back to inventory"
-          >
-            <ArrowLeft size={16} />
-          </button>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
-              <h1 style={{ fontSize: 20, fontWeight: 700, color: 'hsl(var(--text-1))', margin: 0 }}>{model.name}</h1>
-              <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0, fontSize: 10, fontWeight: 700, letterSpacing: '0.05em' }}>
-                {model.status.toUpperCase()}
-              </Badge>
-              <Badge style={{ background: riskBg[model.riskTier], color: riskTierColors[model.riskTier], borderRadius: 0, fontSize: 10, fontWeight: 700 }}>
-                {model.riskTier.toUpperCase()} RISK
-              </Badge>
-              <span style={{ fontSize: 11, fontFamily: 'monospace', color: 'hsl(var(--text-4))' }}>{model.id} · {model.version}</span>
+      <PageHeader 
+        title={model.name}
+        description={model.description}
+        icon={Brain}
+        actions={
+          <div className="flex items-center gap-2">
+            <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0, fontSize: 10, fontWeight: 700, letterSpacing: '0.05em' }}>
+              {model.status.toUpperCase()}
+            </Badge>
+            <Badge style={{ background: riskBg[model.riskTier], color: riskTierColors[model.riskTier], borderRadius: 0, fontSize: 10, fontWeight: 700 }}>
+              {model.riskTier.toUpperCase()} RISK
+            </Badge>
+            <span style={{ fontSize: 11, fontFamily: 'monospace', color: 'hsl(var(--text-4))' }}>{model.id} · {model.version}</span>
+            <div style={{ display: 'flex', gap: 8, flexShrink: 0, marginLeft: 8 }}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDriftModal(true)}
+                style={{ borderRadius: 0 }}
+              >
+                <Bell size={14} style={{ marginRight: 6 }} /> Alerts
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => toast.success('Model Card PDF generated')}
+                style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+              >
+                <Export size={14} style={{ marginRight: 6 }} /> Export
+              </Button>
             </div>
-            <p style={{ fontSize: 13, color: 'hsl(var(--text-3))', margin: 0 }}>{model.description}</p>
           </div>
-        </div>
-        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-          <button
-            onClick={() => setShowDriftModal(true)}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', cursor: 'pointer', color: 'hsl(var(--text-2))', fontSize: 12 }}
-          >
-            <Bell size={14} /> Configure Alerts
-          </button>
-          <button
-            onClick={() => toast.success('Model Card PDF generated')}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', background: 'hsl(var(--brand))', border: 'none', cursor: 'pointer', color: '#fff', fontSize: 12, fontWeight: 600 }}
-          >
-            <Export size={14} /> Export
-          </button>
-        </div>
-      </div>
+        }
+      />
 
       {/* ── Tabs ── */}
       <div style={{ display: 'flex', borderBottom: '1px solid hsl(var(--border))', marginBottom: 20, overflowX: 'auto', background: 'hsl(var(--bg-raised))' }}>

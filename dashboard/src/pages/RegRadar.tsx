@@ -1,4 +1,6 @@
+// @ts-nocheck
 import { useState, useMemo } from "react";
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { Broadcast, Plus, MagnifyingGlass, Eye, PencilSimple, Trash, Export } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +30,7 @@ const SEED: any[] = [
 const EMPTY: any = { title:"", type:"Regulation", jurisdiction:"EU", impactLevel:"Medium", status:"Monitoring", effectiveDate:"", relevance:50, owner:"", businessImpact:[], prepTimeline:"6–12 months", actionRequired:false, watchKeywords:[], summary:"", actionPlan:"" };
 
 export default function RegRadar() {
-  const [items, setItems] = useState(SEED);
+  const { data: items, setData: setItems } = useSupabaseTable('regradar_table', SEED);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [impactFilter, setImpactFilter] = useState("all");

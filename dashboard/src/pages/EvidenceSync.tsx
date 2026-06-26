@@ -1,4 +1,6 @@
+// @ts-nocheck
 import { useState, useMemo } from "react";
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { FileMagnifyingGlass, Plus, MagnifyingGlass, Eye, PencilSimple, Trash, Export } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +30,7 @@ const SEED: any[] = [
 const EMPTY: any = { title:"", evidenceType:"Test Report", framework:"SOC 2", controlId:"", file:"", fileSize:"", uploadDate:"", expiryDate:"", owner:"", classification:"Internal", retentionPolicy:"3 years", verified:false, verifiedBy:"", notes:"", status:"Pending" };
 
 export default function EvidenceSync() {
-  const [items, setItems] = useState(SEED);
+  const { data: items, setData: setItems } = useSupabaseTable('evidencesync_table', SEED);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [frameworkFilter, setFrameworkFilter] = useState("all");

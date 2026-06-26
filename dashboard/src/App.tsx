@@ -76,6 +76,7 @@ const DepartmentsPage = lazy(() => import('./pages/rbac/DepartmentsPage'));
 const AgentDiscovery = lazy(() => import('./pages/agents/AgentDiscovery'));
 const ShadowAI = lazy(() => import('./pages/agents/ShadowAI'));
 const AgentDetail = lazy(() => import('./pages/agents/AgentDetail'));
+const AgentObservability = lazy(() => import('./pages/agents/AgentObservability'));
 const VendorRegistry = lazy(() => import('./pages/vendors/VendorRegistry'));
 const VendorDetail = lazy(() => import('./pages/vendors/VendorDetail'));
 const VendorQuestionnaire = lazy(() => import('./pages/vendors/VendorQuestionnaire'));
@@ -357,6 +358,7 @@ export default function App() {
           {/* AI Inventory */}
           <Route path="/agents" element={<AgentDiscovery />} />
           <Route path="/agents/shadow-ai" element={<ShadowAI />} />
+          <Route path="/agents/observability" element={<AgentObservability />} />
           <Route path="/agents/:id" element={<AgentDetail />} />
           <Route path="/datasets" element={<DatasetRegistry />} />
           <Route path="/datasets/:id" element={<DatasetDetail />} />

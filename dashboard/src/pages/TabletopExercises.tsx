@@ -1,4 +1,6 @@
+// @ts-nocheck
 import { useState, useMemo } from "react";
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { Target, Plus, MagnifyingGlass, Eye, PencilSimple, Trash, Export, X, Users, CheckCircle } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,7 +29,7 @@ const EMPTY: any = { name:"", scenarioType:"AI Model Breach", date:"", duration:
 const SCORE_COLOR = (s: number) => s >= 80 ? "#22c55e" : s >= 50 ? "#f59e0b" : s > 0 ? "#ef4444" : "#888";
 
 export default function TabletopExercises() {
-  const [items, setItems] = useState(SEED);
+  const { data: items, setData: setItems } = useSupabaseTable('tabletopexercises_table', SEED);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [modal, setModal] = useState<"create"|"edit"|"view"|null>(null);

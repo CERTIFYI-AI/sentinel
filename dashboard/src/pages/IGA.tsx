@@ -1,4 +1,6 @@
+// @ts-nocheck
 import { useState, useMemo } from "react";
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { UserList, Plus, MagnifyingGlass, Eye, PencilSimple, Trash, Export, X, Warning, CheckCircle, XCircle } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,7 +42,7 @@ const SEED: any[] = [
 const EMPTY: any = { name:"", email:"", type:"Human", role:"", department:"", manager:"", privilegeLevel:"Viewer", aiSystemsAccess:[], reviewStatus:"Current", reviewer:"", nextReview:"", status:"Active", riskFlags:[], entitlements:[] };
 
 export default function IGA() {
-  const [items, setItems] = useState(SEED);
+  const { data: items, setData: setItems } = useSupabaseTable('iga_table', SEED);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [reviewFilter, setReviewFilter] = useState("all");

@@ -14,6 +14,7 @@ import {
   RISKS, INCIDENTS, CONTROLS, BIAS_AUDITS, MODELS, AUDIT_LOG,
   severityColor, statusColor, formatDate, Risk, RiskStatus,
 } from '../../data/seed';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { useSettingsStore } from '../../stores/settingsStore';
 
 // ── Per-risk extended metadata ────────────────────────────────────────────────
@@ -195,13 +196,12 @@ export default function RiskDetail() {
 
   return (
     <div style={{ paddingBottom: 40 }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 24 }}>
-        <Button variant="ghost" size="sm" onClick={() => navigate('/risk')} style={{ borderRadius: 0, marginTop: 2 }}>
-          <ArrowLeft size={16} />
-        </Button>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+      <PageHeader 
+        title={risk.title}
+        description={`${orgName} · Owner: ${risk.owner} · Last updated ${formatDate(risk.lastUpdated)}`}
+        icon={Warning}
+        actions={
+          <div className="flex items-center gap-2">
             <span style={{ fontSize: 11, fontWeight: 600, color: 'hsl(var(--text-4))', fontFamily: 'monospace' }}>{risk.id}</span>
             <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0, fontSize: 10 }}>{risk.severity.toUpperCase()}</Badge>
             <Badge style={{ background: stc.bg, color: stc.text, border: `1px solid ${stc.border}`, borderRadius: 0, fontSize: 10 }}>{risk.status.toUpperCase()}</Badge>
@@ -210,16 +210,12 @@ export default function RiskDetail() {
               <TrendIcon size={13} style={{ color: trendColor }} />
               <span style={{ fontSize: 11, color: trendColor, fontWeight: 600 }}>{risk.trending.toUpperCase()}</span>
             </div>
+            <Button style={{ borderRadius: 0 }} onClick={openEdit}>
+              <PencilSimple size={14} style={{ marginRight: 6 }} /> Edit Risk
+            </Button>
           </div>
-          <h1 style={{ fontSize: 20, fontWeight: 700, color: 'hsl(var(--text-1))', margin: 0, lineHeight: 1.3 }}>{risk.title}</h1>
-          <p style={{ fontSize: 13, color: 'hsl(var(--text-3))', margin: '4px 0 0 0' }}>
-            {orgName} · Owner: {risk.owner} · Last updated {formatDate(risk.lastUpdated)}
-          </p>
-        </div>
-        <Button style={{ borderRadius: 0 }} onClick={openEdit}>
-          <PencilSimple size={14} style={{ marginRight: 6 }} /> Edit Risk
-        </Button>
-      </div>
+        }
+      />
 
       {/* KPI Row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>

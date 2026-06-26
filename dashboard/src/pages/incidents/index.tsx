@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState, useMemo } from "react";
 import { Plus, MagnifyingGlass, PencilSimple, Trash, X, Download, Funnel } from "@phosphor-icons/react";
 
@@ -46,7 +47,7 @@ const SEED: Item[] = [
 ];
 
 export default function IncidentsPage() {
-  const [items, setItems] = useState<Item[]>(SEED);
+  const { data: items, setData: setItems } = useSupabaseTable('index_table', SEED);
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);

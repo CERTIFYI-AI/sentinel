@@ -5,6 +5,7 @@ import {
   Skull, X, Shield, Lock, Key, Network, CheckCircle,
 } from '@phosphor-icons/react';
 import { Card } from '../../components/ui/card';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { Button } from '../../components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { toast } from 'sonner';
@@ -247,42 +248,31 @@ export default function AgentDetail() {
 
   return (
     <div>
-      {/* Header */}
-      <div style={{ marginBottom: 20 }}>
-        <button onClick={() => navigate('/agents')} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: '1px solid hsl(var(--border))', cursor: 'pointer', padding: '6px 10px', color: 'hsl(var(--text-2))', fontSize: 13, marginBottom: 16 }}>
-          <ArrowLeft size={14} /> Back to Agents
-        </button>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-            <div style={{ padding: 8, border: `1px solid ${isShadow ? 'hsl(var(--s-er-br))' : 'hsl(var(--border))'}`, background: isShadow ? 'hsl(var(--s-er-bg))' : 'hsl(var(--bg-surface))' }}>
-              {isShadow ? <ShieldSlash size={24} style={{ color: 'hsl(var(--s-er-tx))' }} /> : <Robot size={24} style={{ color: 'hsl(var(--brand))' }} />}
-            </div>
-            <div>
-              <h1 style={{ fontSize: 20, fontWeight: 700, color: isShadow ? 'hsl(var(--s-er-tx))' : 'hsl(var(--text-1))', marginBottom: 6, margin: 0 }}>{agent.name}</h1>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'hsl(var(--text-4))' }}>{agent.id}</span>
-                <span style={{ padding: '1px 7px', fontSize: 11, background: sc.bg, color: sc.text, border: `1px solid ${sc.border}` }}>{agent.status}</span>
-                <span style={{ padding: '1px 7px', fontSize: 11, background: rc.bg, color: rc.text, border: `1px solid ${rc.border}` }}>{agent.risk} risk</span>
-              </div>
-              <p style={{ fontSize: 13, color: 'hsl(var(--text-4))', marginTop: 4, margin: 0 }}>{agent.description}</p>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <div style={{ textAlign: 'right', fontSize: 12, color: 'hsl(var(--text-4))', marginRight: 12 }}>
+      <PageHeader 
+        title={agent.name}
+        description={agent.description}
+        icon={isShadow ? ShieldSlash : Robot}
+        actions={
+          <div className="flex items-center gap-2">
+            <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'hsl(var(--text-4))' }}>{agent.id}</span>
+            <span style={{ padding: '1px 7px', fontSize: 11, background: sc.bg, color: sc.text, border: `1px solid ${sc.border}` }}>{agent.status}</span>
+            <span style={{ padding: '1px 7px', fontSize: 11, background: rc.bg, color: rc.text, border: `1px solid ${rc.border}` }}>{agent.risk} risk</span>
+            <div style={{ textAlign: 'right', fontSize: 12, color: 'hsl(var(--text-4))', marginLeft: 12 }}>
               <div>Last Active: {formatDate(agent.lastActive)}</div>
-              <div style={{ marginTop: 3 }}>API Calls 7d: {formatNumber(agent.apiCalls7d)}</div>
             </div>
             {(isShadow || agent.risk === 'critical' || agent.risk === 'high') && (
-              <button
+              <Button
+                size="sm"
+                variant="outline"
                 onClick={() => setShowKillSwitch(true)}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-br))', cursor: 'pointer', color: 'hsl(var(--s-er-tx))', fontSize: 12, fontWeight: 700 }}
+                style={{ marginLeft: 8, background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-br))', color: 'hsl(var(--s-er-tx))' }}
               >
-                <Skull size={14} /> Kill Switch
-              </button>
+                <Skull size={14} style={{ marginRight: 6 }} /> Kill Switch
+              </Button>
             )}
           </div>
-        </div>
-      </div>
+        }
+      />
 
       {isShadow && (
         <div style={{ marginBottom: 20, padding: 14, border: '1px solid hsl(var(--s-er-br))', background: 'hsl(var(--s-er-bg))', display: 'flex', alignItems: 'center', gap: 10 }}>

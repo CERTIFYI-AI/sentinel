@@ -14,6 +14,7 @@ import {
   POLICIES, CONTROLS, EVIDENCE, AUDIT_LOG, GAPS, FRAMEWORKS,
   statusColor, formatDate, Policy,
 } from '../../data/seed';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { useSettingsStore } from '../../stores/settingsStore';
 
 // ── Per-policy extended metadata ──────────────────────────────────────────────
@@ -145,27 +146,22 @@ export default function PolicyDetail() {
 
   return (
     <div style={{ paddingBottom: 40 }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 24 }}>
-        <Button variant="ghost" size="sm" onClick={() => navigate('/policies')} style={{ borderRadius: 0, marginTop: 2 }}>
-          <ArrowLeft size={16} />
-        </Button>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+      <PageHeader 
+        title={policy.title}
+        description={`${orgName} · ${policy.framework} · Owner: ${policy.owner}`}
+        icon={FileText}
+        actions={
+          <div className="flex items-center gap-2">
             <span style={{ fontSize: 11, fontWeight: 600, color: 'hsl(var(--text-4))', fontFamily: 'monospace' }}>{policy.id}</span>
             <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0, fontSize: 10 }}>{policy.status.replace('_', ' ').toUpperCase()}</Badge>
             <Badge style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))', border: '1px solid hsl(var(--border))', borderRadius: 0, fontSize: 10 }}>{policy.category}</Badge>
             <Badge style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))', border: '1px solid hsl(var(--border))', borderRadius: 0, fontSize: 10 }}>{policy.version}</Badge>
+            <Button style={{ borderRadius: 0 }} onClick={() => { setEditData({ ...policy }); setEditOpen(true); }}>
+              <PencilSimple size={14} style={{ marginRight: 6 }} /> Edit Policy
+            </Button>
           </div>
-          <h1 style={{ fontSize: 20, fontWeight: 700, color: 'hsl(var(--text-1))', margin: 0, lineHeight: 1.3 }}>{policy.title}</h1>
-          <p style={{ fontSize: 13, color: 'hsl(var(--text-3))', margin: '4px 0 0 0' }}>
-            {orgName} · {policy.framework} · Owner: {policy.owner}
-          </p>
-        </div>
-        <Button style={{ borderRadius: 0 }} onClick={() => { setEditData({ ...policy }); setEditOpen(true); }}>
-          <PencilSimple size={14} style={{ marginRight: 6 }} /> Edit Policy
-        </Button>
-      </div>
+        }
+      />
 
       {/* KPI Row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>

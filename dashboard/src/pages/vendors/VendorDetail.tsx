@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -255,20 +256,19 @@ export default function VendorDetail() {
           </div>
         )}
 
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>{vendor.name}</h1>
-            <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>
-              {orgName} · {vendor.category} · {vendor.id}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge style={{ background: rc.bg, color: rc.text, border: `1px solid ${rc.border}`, borderRadius: 0 }}>{vendor.risk} risk</Badge>
-            <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0 }}>{vendor.status}</Badge>
-            <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={() => toast.info('Edit vendor form opened')}>Edit</Button>
-            <Button size="sm" variant="outline" style={{ borderRadius: 0, borderColor: '#ef4444', color: '#ef4444' }} onClick={() => toast.warning('Archive workflow initiated')}>Archive</Button>
-          </div>
-        </div>
+        <PageHeader 
+          title={vendor.name}
+          description={`${orgName} · ${vendor.category} · ${vendor.id}`}
+          icon={Buildings}
+          actions={
+            <div className="flex items-center gap-2">
+              <Badge style={{ background: rc.bg, color: rc.text, border: `1px solid ${rc.border}`, borderRadius: 0 }}>{vendor.risk} risk</Badge>
+              <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0 }}>{vendor.status}</Badge>
+              <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={() => toast.info('Edit vendor form opened')}>Edit</Button>
+              <Button size="sm" variant="outline" style={{ borderRadius: 0, borderColor: '#ef4444', color: '#ef4444' }} onClick={() => toast.warning('Archive workflow initiated')}>Archive</Button>
+            </div>
+          }
+        />
       </div>
 
       {/* KPI strip */}

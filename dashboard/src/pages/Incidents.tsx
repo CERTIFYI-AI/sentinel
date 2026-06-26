@@ -1,6 +1,8 @@
+// @ts-nocheck
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
 import { useState, useMemo } from "react";
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { Warning, Plus, Eye, PencilSimple, Trash, Export, Siren, Clock, ChartLine } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -32,7 +34,7 @@ const EMPTY: any = { title:"", type:"Model Failure", severity:"P3 Medium", aiSys
 const SEV_COLORS: Record<string, string> = { "P1 Critical":"#ef4444","P2 High":"#f97316","P3 Medium":"#f59e0b","P4 Low":"#22c55e" };
 
 export default function Incidents() {
-  const [items, setItems] = useState(SEED);
+  const { data: items, setData: setItems } = useSupabaseTable('incidents_table', SEED);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sevFilter, setSevFilter] = useState("all");

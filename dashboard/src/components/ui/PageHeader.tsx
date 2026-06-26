@@ -30,6 +30,7 @@ export interface PageHeaderProps {
   actions?: React.ReactNode
   badge?: React.ReactNode
   className?: string
+  icon?: any
   /** Render a back-navigation affordance */
   onBack?: () => void
 }
@@ -55,6 +56,7 @@ export function PageHeader({
   actions,
   badge,
   className,
+  icon: Icon,
   onBack,
 }: PageHeaderProps) {
   return (
@@ -111,6 +113,7 @@ export function PageHeader({
               <ChevronRight className="w-4 h-4 rotate-180" aria-hidden="true" />
             </button>
           )}
+          {Icon && <Icon className="w-6 h-6 text-[hsl(var(--brand))]" />}
           <h1
             id="page-title"
             className="text-xl font-semibold text-[hsl(var(--text-1))] truncate"

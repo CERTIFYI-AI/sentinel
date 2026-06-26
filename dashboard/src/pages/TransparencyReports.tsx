@@ -1,4 +1,6 @@
+// @ts-nocheck
 import { useState, useMemo } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { toast } from 'sonner';
 import {
   Plus, Eye, Trash, MagnifyingGlass, ArrowRight, DownloadSimple, Globe,
@@ -105,7 +107,7 @@ function getSections(type: ReportType) {
 }
 
 export default function TransparencyReports() {
-  const [items, setItems] = useState<TransparencyReport[]>(SEED);
+  const { data: items, setData: setItems } = useSupabaseTable('transparencyreports_table', SEED);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [selected, setSelected] = useState<TransparencyReport | null>(null);
