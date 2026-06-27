@@ -143,7 +143,7 @@ const BLANK: Omit<AIIA, 'id' | 'findings'> = {
 }
 
 const STATUS_STYLE: Record<AIIAStatus, { bg: string; color: string }> = {
-  Draft: { bg: 'bg-[hsl(var(--surface-3))]', color: 'text-[hsl(var(--text-3))]' },
+  Draft: { bg: 'bg-[hsl(var(--bg-sunken))]', color: 'text-[hsl(var(--text-3))]' },
   'In Progress': { bg: 'bg-[hsl(var(--brand-subtle))]', color: 'text-[hsl(var(--brand))]' },
   'Pending Review': { bg: 'bg-yellow-500/10', color: 'text-yellow-500' },
   Approved: { bg: 'bg-emerald-500/10', color: 'text-emerald-500' },
@@ -162,7 +162,7 @@ const RISK_STYLE: Record<RiskLevel, { bg: string; color: string }> = {
 const MITIGATION_STATUS: Record<string, { bg: string; color: string }> = {
   Implemented: { bg: 'bg-emerald-500/10', color: 'text-emerald-500' },
   Planned: { bg: 'bg-yellow-500/10', color: 'text-yellow-500' },
-  'Not Applicable': { bg: 'bg-[hsl(var(--surface-3))]', color: 'text-[hsl(var(--text-3))]' },
+  'Not Applicable': { bg: 'bg-[hsl(var(--bg-sunken))]', color: 'text-[hsl(var(--text-3))]' },
 }
 
 const FINDING_SEV: Record<string, { bg: string; color: string, border: string }> = {
@@ -277,22 +277,22 @@ export default function AIImpactAssessments() {
             value={search} 
             onChange={e => setSearch(e.target.value)} 
             placeholder="Search assessments…" 
-            className="pl-9 bg-[hsl(var(--surface-1))] border-[hsl(var(--border))] rounded-none h-9" 
+            className="pl-9 bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] rounded-none h-9" 
           />
         </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] text-[hsl(var(--text-1))] rounded-none h-9 focus:outline-none">
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] rounded-none h-9 focus:outline-none">
           {['All', 'Draft', 'In Progress', 'Pending Review', 'Approved', 'Rejected', 'Completed'].map(s => <option key={s}>{s}</option>)}
         </select>
-        <select value={riskFilter} onChange={e => setRiskFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] text-[hsl(var(--text-1))] rounded-none h-9 focus:outline-none">
+        <select value={riskFilter} onChange={e => setRiskFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] rounded-none h-9 focus:outline-none">
           {['All', 'Critical', 'High', 'Medium', 'Low', 'Minimal'].map(s => <option key={s}>{s}</option>)}
         </select>
       </div>
 
       {/* Table */}
-      <Card className="border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] rounded-none overflow-hidden">
+      <Card className="border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] rounded-none overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
-            <thead className="text-xs text-[hsl(var(--text-2))] uppercase bg-[hsl(var(--surface-2))] border-b border-[hsl(var(--border))]">
+            <thead className="text-xs text-[hsl(var(--text-2))] uppercase bg-[hsl(var(--bg-raised))] border-b border-[hsl(var(--border))]">
               <tr>
                 {['ID', 'Assessment Name', 'AI System', 'Risk Level', 'Status', 'Owner', 'Due Date', 'Actions'].map(h => (
                   <th key={h} className="px-4 py-3 font-medium">{h}</th>
@@ -307,7 +307,7 @@ export default function AIImpactAssessments() {
                 const ss = STATUS_STYLE[r.status]
                 const rs = RISK_STYLE[r.risk]
                 return (
-                  <tr key={r.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--surface-2))] transition-colors cursor-pointer" onClick={() => setSelected(r)}>
+                  <tr key={r.id} className="border-b border-[hsl(var(--border))] hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => setSelected(r)}>
                     <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--brand))]">{r.id}</td>
                     <td className="px-4 py-3 font-medium text-[hsl(var(--text-1))] max-w-[200px] truncate">{r.name}</td>
                     <td className="px-4 py-3 text-[hsl(var(--text-2))]">{r.system}</td>
@@ -332,7 +332,7 @@ export default function AIImpactAssessments() {
             </tbody>
           </table>
         </div>
-        <div className="px-4 py-3 text-xs text-[hsl(var(--text-3))] bg-[hsl(var(--surface-2))] border-t border-[hsl(var(--border))]">
+        <div className="px-4 py-3 text-xs text-[hsl(var(--text-3))] bg-[hsl(var(--bg-raised))] border-t border-[hsl(var(--border))]">
           Showing {filtered.length} of {records.length} assessments
         </div>
       </Card>
@@ -341,8 +341,8 @@ export default function AIImpactAssessments() {
       {selected && (
         <div className="fixed inset-0 z-50 flex">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelected(null)} />
-          <div className="relative ml-auto w-[700px] h-full bg-[hsl(var(--surface-1))] border-l border-[hsl(var(--border))] flex flex-col overflow-hidden shadow-2xl">
-            <div className="flex items-center justify-between px-6 py-5 border-b border-[hsl(var(--border))] bg-[hsl(var(--surface-2))]">
+          <div className="relative ml-auto w-[700px] h-full bg-[hsl(var(--bg-surface))] border-l border-[hsl(var(--border))] flex flex-col overflow-hidden shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
               <div>
                 <span className="font-mono text-xs text-[hsl(var(--brand))] mb-1 block">{selected.id}</span>
                 <h2 className="text-lg font-bold text-[hsl(var(--text-1))]">{selected.name}</h2>
@@ -364,7 +364,7 @@ export default function AIImpactAssessments() {
 
             <div className="flex-1 overflow-hidden flex flex-col">
               <Tabs defaultValue="overview" className="flex-1 flex flex-col h-full">
-                <div className="px-6 border-b border-[hsl(var(--border))] bg-[hsl(var(--surface-2))]">
+                <div className="px-6 border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
                   <TabsList className="bg-transparent space-x-4 h-12 p-0">
                     <TabsTrigger value="overview" className="h-full border-b-2 border-transparent data-[state=active]:border-[hsl(var(--brand))] data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-2 text-sm">Overview</TabsTrigger>
                     <TabsTrigger value="mitigations" className="h-full border-b-2 border-transparent data-[state=active]:border-[hsl(var(--brand))] data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-2 text-sm">Mitigations & Findings</TabsTrigger>
@@ -374,7 +374,7 @@ export default function AIImpactAssessments() {
                 <div className="flex-1 overflow-y-auto p-6 text-sm">
                   <TabsContent value="overview" className="m-0 space-y-6 focus:outline-none">
                     {/* Overview Grid */}
-                    <div className="grid grid-cols-2 gap-4 p-5 border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] rounded-none">
+                    <div className="grid grid-cols-2 gap-4 p-5 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] rounded-none">
                       <InfoRow label="AI System" value={selected.system} />
                       <InfoRow label="Department" value={selected.department} />
                       <InfoRow label="Owner" value={selected.owner} />
@@ -399,7 +399,7 @@ export default function AIImpactAssessments() {
                         <div>
                           <p className="text-xs font-semibold text-[hsl(var(--text-3))] uppercase mb-2 tracking-wider">Data Categories</p>
                           <div className="flex flex-wrap gap-2">
-                            {selected.dataCategories.map(d => <Badge key={d} className="bg-[hsl(var(--surface-3))] text-[hsl(var(--text-2))] border-[hsl(var(--border))] rounded-none font-normal">{d}</Badge>)}
+                            {selected.dataCategories.map(d => <Badge key={d} className="bg-[hsl(var(--bg-sunken))] text-[hsl(var(--text-2))] border-[hsl(var(--border))] rounded-none font-normal">{d}</Badge>)}
                           </div>
                         </div>
                         <div>
@@ -417,7 +417,7 @@ export default function AIImpactAssessments() {
                       <Section title="Approvers">
                         <div className="flex flex-wrap gap-2">
                           {selected.approvers.map(a => (
-                            <Badge key={a} className="bg-[hsl(var(--surface-2))] border-[hsl(var(--border))] text-[hsl(var(--text-1))] rounded-none flex items-center gap-2 px-3 py-1.5 font-normal">
+                            <Badge key={a} className="bg-[hsl(var(--bg-raised))] border-[hsl(var(--border))] text-[hsl(var(--text-1))] rounded-none flex items-center gap-2 px-3 py-1.5 font-normal">
                               <CheckCircle size={14} className="text-emerald-500" weight="fill" /> {a}
                             </Badge>
                           ))}
@@ -441,7 +441,7 @@ export default function AIImpactAssessments() {
                       ) : (
                         <div className="space-y-3">
                           {selected.mitigations.map((m, i) => (
-                            <div key={i} className="flex items-start justify-between gap-4 p-4 border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] rounded-none">
+                            <div key={i} className="flex items-start justify-between gap-4 p-4 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] rounded-none">
                               <div>
                                 <div className="flex items-center gap-2 mb-1">
                                   <span className="text-xs font-bold text-[hsl(var(--text-1))] uppercase tracking-wider">{m.area}</span>
@@ -461,7 +461,7 @@ export default function AIImpactAssessments() {
                       ) : (
                         <div className="space-y-3">
                           {selected.findings.map(f => (
-                            <div key={f.id} className={`flex items-start justify-between gap-4 p-4 border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] border-l-4 ${FINDING_SEV[f.severity].border} rounded-none`}>
+                            <div key={f.id} className={`flex items-start justify-between gap-4 p-4 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] border-l-4 ${FINDING_SEV[f.severity].border} rounded-none`}>
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-2">
                                   <span className="font-mono text-xs font-bold text-[hsl(var(--text-1))]">{f.id}</span>
@@ -487,69 +487,69 @@ export default function AIImpactAssessments() {
       {formOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setFormOpen(false)} />
-          <div className="relative w-[700px] max-h-[85vh] overflow-y-auto bg-[hsl(var(--surface-1))] border border-[hsl(var(--border))] flex flex-col shadow-2xl">
-            <div className="flex items-center justify-between px-6 py-5 border-b border-[hsl(var(--border))] bg-[hsl(var(--surface-2))]">
+          <div className="relative w-[700px] max-h-[85vh] overflow-y-auto bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
               <h2 className="text-lg font-bold text-[hsl(var(--text-1))]">{editing ? 'Edit Assessment' : 'New AI Impact Assessment'}</h2>
               <Button variant="ghost" size="sm" onClick={() => setFormOpen(false)} className="h-8 w-8 p-0 rounded-none"><X size={20} className="text-[hsl(var(--text-3))]" /></Button>
             </div>
             <div className="p-6 space-y-6 text-sm">
               <div className="grid grid-cols-2 gap-5">
                 <FormField label="Assessment Name *">
-                  <Input value={form.name} onChange={e => sf('name', e.target.value)} className="rounded-none bg-[hsl(var(--surface-2))]" placeholder="e.g. Customer Scoring Model v3" />
+                  <Input value={form.name} onChange={e => sf('name', e.target.value)} className="rounded-none bg-[hsl(var(--bg-raised))]" placeholder="e.g. Customer Scoring Model v3" />
                 </FormField>
                 <FormField label="AI System *">
-                  <Input value={form.system} onChange={e => sf('system', e.target.value)} className="rounded-none bg-[hsl(var(--surface-2))]" placeholder="e.g. Credit Engine" />
+                  <Input value={form.system} onChange={e => sf('system', e.target.value)} className="rounded-none bg-[hsl(var(--bg-raised))]" placeholder="e.g. Credit Engine" />
                 </FormField>
                 <FormField label="Department">
-                  <Input value={form.department} onChange={e => sf('department', e.target.value)} className="rounded-none bg-[hsl(var(--surface-2))]" placeholder="e.g. Risk & Compliance" />
+                  <Input value={form.department} onChange={e => sf('department', e.target.value)} className="rounded-none bg-[hsl(var(--bg-raised))]" placeholder="e.g. Risk & Compliance" />
                 </FormField>
                 <FormField label="Owner">
-                  <Input value={form.owner} onChange={e => sf('owner', e.target.value)} className="rounded-none bg-[hsl(var(--surface-2))]" placeholder="e.g. Sarah Chen" />
+                  <Input value={form.owner} onChange={e => sf('owner', e.target.value)} className="rounded-none bg-[hsl(var(--bg-raised))]" placeholder="e.g. Sarah Chen" />
                 </FormField>
                 <FormField label="Risk Level">
-                  <select value={form.risk} onChange={e => sf('risk', e.target.value as RiskLevel)} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] text-[hsl(var(--text-1))] text-sm focus:outline-none rounded-none h-10">
+                  <select value={form.risk} onChange={e => sf('risk', e.target.value as RiskLevel)} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] text-sm focus:outline-none rounded-none h-10">
                     {['Critical', 'High', 'Medium', 'Low', 'Minimal'].map(v => <option key={v}>{v}</option>)}
                   </select>
                 </FormField>
                 <FormField label="Status">
-                  <select value={form.status} onChange={e => sf('status', e.target.value as AIIAStatus)} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] text-[hsl(var(--text-1))] text-sm focus:outline-none rounded-none h-10">
+                  <select value={form.status} onChange={e => sf('status', e.target.value as AIIAStatus)} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] text-sm focus:outline-none rounded-none h-10">
                     {['Draft', 'In Progress', 'Pending Review', 'Approved', 'Rejected', 'Completed'].map(v => <option key={v}>{v}</option>)}
                   </select>
                 </FormField>
                 <FormField label="Framework">
-                  <Input value={form.framework} onChange={e => sf('framework', e.target.value)} className="rounded-none bg-[hsl(var(--surface-2))]" placeholder="e.g. EU AI Act Art. 9" />
+                  <Input value={form.framework} onChange={e => sf('framework', e.target.value)} className="rounded-none bg-[hsl(var(--bg-raised))]" placeholder="e.g. EU AI Act Art. 9" />
                 </FormField>
                 <FormField label="Version">
-                  <Input value={form.version} onChange={e => sf('version', e.target.value)} className="rounded-none bg-[hsl(var(--surface-2))]" placeholder="e.g. v1.0.0" />
+                  <Input value={form.version} onChange={e => sf('version', e.target.value)} className="rounded-none bg-[hsl(var(--bg-raised))]" placeholder="e.g. v1.0.0" />
                 </FormField>
                 <FormField label="Assessment Date">
-                  <Input type="date" value={form.date} onChange={e => sf('date', e.target.value)} className="rounded-none bg-[hsl(var(--surface-2))]" />
+                  <Input type="date" value={form.date} onChange={e => sf('date', e.target.value)} className="rounded-none bg-[hsl(var(--bg-raised))]" />
                 </FormField>
                 <FormField label="Due Date">
-                  <Input type="date" value={form.dueDate} onChange={e => sf('dueDate', e.target.value)} className="rounded-none bg-[hsl(var(--surface-2))]" />
+                  <Input type="date" value={form.dueDate} onChange={e => sf('dueDate', e.target.value)} className="rounded-none bg-[hsl(var(--bg-raised))]" />
                 </FormField>
               </div>
               <FormField label="Description">
-                <textarea value={form.description} onChange={e => sf('description', e.target.value)} rows={3} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] text-[hsl(var(--text-1))] text-sm focus:outline-none resize-none rounded-none" placeholder="Describe the AI system and its use case…" />
+                <textarea value={form.description} onChange={e => sf('description', e.target.value)} rows={3} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] text-sm focus:outline-none resize-none rounded-none" placeholder="Describe the AI system and its use case…" />
               </FormField>
               <FormField label="Purpose of Use">
-                <textarea value={form.purposeOfUse} onChange={e => sf('purposeOfUse', e.target.value)} rows={2} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] text-[hsl(var(--text-1))] text-sm focus:outline-none resize-none rounded-none" placeholder="How and why the AI system is used…" />
+                <textarea value={form.purposeOfUse} onChange={e => sf('purposeOfUse', e.target.value)} rows={2} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] text-sm focus:outline-none resize-none rounded-none" placeholder="How and why the AI system is used…" />
               </FormField>
               <FormField label="Affected Groups">
-                <Input value={form.affectedGroups} onChange={e => sf('affectedGroups', e.target.value)} className="rounded-none bg-[hsl(var(--surface-2))]" placeholder="e.g. Loan applicants (est. 15,000/month)" />
+                <Input value={form.affectedGroups} onChange={e => sf('affectedGroups', e.target.value)} className="rounded-none bg-[hsl(var(--bg-raised))]" placeholder="e.g. Loan applicants (est. 15,000/month)" />
               </FormField>
               <div className="flex items-center gap-3">
                 <input type="checkbox" id="autoDecision" checked={form.automatedDecision} onChange={e => sf('automatedDecision', e.target.checked)} className="w-4 h-4 accent-[hsl(var(--brand))]" />
                 <label htmlFor="autoDecision" className="text-sm text-[hsl(var(--text-1))] font-medium">Makes automated decisions affecting individuals</label>
               </div>
               <FormField label="Human Oversight Mechanism">
-                <textarea value={form.humanOversight} onChange={e => sf('humanOversight', e.target.value)} rows={2} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] text-[hsl(var(--text-1))] text-sm focus:outline-none resize-none rounded-none" placeholder="Describe human oversight and appeal processes…" />
+                <textarea value={form.humanOversight} onChange={e => sf('humanOversight', e.target.value)} rows={2} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] text-sm focus:outline-none resize-none rounded-none" placeholder="Describe human oversight and appeal processes…" />
               </FormField>
               <FormField label="Notes">
-                <textarea value={form.notes} onChange={e => sf('notes', e.target.value)} rows={2} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] text-[hsl(var(--text-1))] text-sm focus:outline-none resize-none rounded-none" placeholder="Additional reviewer notes…" />
+                <textarea value={form.notes} onChange={e => sf('notes', e.target.value)} rows={2} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] text-sm focus:outline-none resize-none rounded-none" placeholder="Additional reviewer notes…" />
               </FormField>
             </div>
-            <div className="flex justify-end gap-3 px-6 py-5 border-t border-[hsl(var(--border))] bg-[hsl(var(--surface-2))]">
+            <div className="flex justify-end gap-3 px-6 py-5 border-t border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
               <Button variant="outline" onClick={() => setFormOpen(false)} className="rounded-none border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:text-[hsl(var(--text-1))]">Cancel</Button>
               <Button onClick={saveForm} className="rounded-none bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-hover))]">{editing ? 'Save Changes' : 'Create Assessment'}</Button>
             </div>
