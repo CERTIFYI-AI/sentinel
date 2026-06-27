@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 
 type Theme = 'light' | 'dark' | 'system';
 interface ThemeContextValue {
@@ -14,7 +14,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(
     (localStorage.getItem('sentinel-theme') as Theme) ?? 'dark'
   );
-  const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
+  const systemDarkRef = useRef(window.matchMedia('(prefers-color-scheme: dark)'));
+  const systemDark = systemDarkRef.current;
   const resolvedTheme: 'light' | 'dark' =
     theme === 'system' ? (systemDark.matches ? 'dark' : 'light') : theme;
 
@@ -33,7 +34,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     };
     systemDark.addEventListener('change', handler);
     return () => systemDark.removeEventListener('change', handler);
-  }, [theme]);
+  }, [theme, systemDark]);
 
   const setTheme = (t: Theme) => setThemeState(t);
   const toggleTheme = () =>

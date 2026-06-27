@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -40,7 +40,7 @@ export function EvidenceAttachments({ entityType, entityId }: Props) {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [uploading, setUploading] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!entityId) return;
     const { data } = await supabase
       .from('evidence_attachments')
@@ -49,9 +49,9 @@ export function EvidenceAttachments({ entityType, entityId }: Props) {
       .eq('entity_id', entityId)
       .order('created_at', { ascending: false });
     setAttachments(data || []);
-  };
+  }, [entityType, entityId]);
 
-  useEffect(() => { load(); }, [entityType, entityId]);
+  useEffect(() => { load(); }, [load]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;

@@ -39,5 +39,7 @@ export function useChartTheme(): ChartTheme {
         'hsl(200 70% 55%)',
       ],
     };
+  // `resolved` intentionally triggers CSS-var re-read when theme changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resolved]);
 }

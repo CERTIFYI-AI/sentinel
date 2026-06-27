@@ -147,7 +147,6 @@ export default function ModelRegistrationDrawer({ onClose, onRegister }: ModelRe
       await governanceBus.emit('MODEL_REGISTERED', 'ai-inventory', payload);
     } catch (err) {
       // Log but don't block UI — cascade failures are self-healing via DLQ.
-      // eslint-disable-next-line no-console
       console.error('[ModelRegistration] Cascade emit failed', err);
     }
   }

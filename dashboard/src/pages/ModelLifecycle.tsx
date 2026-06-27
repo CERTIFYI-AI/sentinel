@@ -116,10 +116,9 @@ export default function ModelLifecycle() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [confirm, setConfirm] = useState<null | 'promote' | 'retire'>(null);
 
-  const today = new Date();
-
   /* ── Normalize models ── */
   const unifiedModels = useMemo(() => {
+    const today = new Date();
     const activeItems = items && items.length > 0 ? items : MODELS;
     return activeItems.map((_m) => {
       const m = _m as any;

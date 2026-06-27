@@ -36,7 +36,6 @@ function envStr(key: string): string | undefined {
 function emit(event: LogEvent): void {
   // Dev / test: pipe to console only if explicitly enabled.
   if (envFlag("VITE_LOG_CONSOLE")) {
-    // eslint-disable-next-line no-console -- sanctioned dev-only output
     const fn = (globalThis.console as Console)[event.level] ?? console.log;
     fn.call(globalThis.console, event.msg, event.ctx ?? {});
   }

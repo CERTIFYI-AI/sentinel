@@ -42,7 +42,6 @@ export async function runSmoke() {
   assert('cascade depth limit enforced', overLimit === null)
 
   const failed = results.filter(r => !r.pass)
-  // eslint-disable-next-line no-console
   console.log('[governance smoke] results:', results)
   if (failed.length) {
     throw new Error(`governance smoke failed: ${failed.map(f => f.name).join(', ')}`)
@@ -53,7 +52,6 @@ export async function runSmoke() {
 // Allow running via `tsx` directly.
 if (typeof require !== 'undefined' && require.main === module) {
   runSmoke().then(() => process.exit(0)).catch(err => {
-    // eslint-disable-next-line no-console
     console.error(err)
     process.exit(1)
   })

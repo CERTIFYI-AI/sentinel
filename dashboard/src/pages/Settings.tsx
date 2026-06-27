@@ -226,6 +226,10 @@ export default function Settings() {
     if (s.notifications) setNotifs(s.notifications as any);
     if (s.retention) setRetention(s.retention as any);
     if (s.integrations) setIntegrations(s.integrations as any);
+  // Hydrate local state from Supabase on first load.
+  // Intentionally depends only on backendSettings — adding form state vars
+  // would cause an infinite loop (set state → trigger effect → set state …).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [backendSettings]);
   // ── End Supabase wiring ──────────────────────────────────────────────
 

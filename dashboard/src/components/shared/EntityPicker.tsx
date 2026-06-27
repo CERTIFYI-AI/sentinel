@@ -38,7 +38,8 @@ export function EntityPicker({
       setItems(data || []);
     };
     load();
-  }, [table, labelColumn, valueColumn]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [table, labelColumn, valueColumn, JSON.stringify(filter)]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
