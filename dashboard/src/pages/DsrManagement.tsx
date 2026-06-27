@@ -129,7 +129,7 @@ export default function DsrManagement() {
           <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">Data Subject Request tracking — GDPR, CCPA, EU AI Act Art. 14 rights management with AI system impact mapping</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => exportCsv(records, 'dsr-requests.csv')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+          <button onClick={() => exportCsv(records, 'dsr-requests.csv')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
             <Export size={14} /> Export
           </button>
           <button onClick={() => { setForm(BLANK); setShowCreate(true) }} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90">
@@ -146,7 +146,7 @@ export default function DsrManagement() {
           { label: 'Pending / In Review', value: stats.pending + records.filter(r => r.status === 'In Review').length, sub: 'Require action', color: 'hsl(45 85% 40%)' },
           { label: 'Completed', value: stats.completed, sub: 'This quarter', color: 'hsl(var(--s-ok-tx))' },
         ].map(s => (
-          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
             <p className="text-xs text-[hsl(var(--text-4))]">{s.label}</p>
             <p className="text-2xl font-bold mt-1" style={{ color: s.color }}>{s.value}</p>
             <p className="text-xs text-[hsl(var(--text-4))] mt-0.5">{s.sub}</p>
@@ -159,24 +159,24 @@ export default function DsrManagement() {
         <div className="relative flex-1 min-w-48">
           <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by subject, email, or ID…"
-            className="w-full pl-8 pr-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] outline-none focus:border-[hsl(var(--brand))]" />
+            className="w-full pl-8 pr-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] outline-none focus:border-[hsl(var(--brand))]" />
         </div>
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-          className="px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm text-[hsl(var(--text-2))] outline-none">
+          className="px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm text-[hsl(var(--text-2))] outline-none">
           {['All', 'Pending', 'In Review', 'Completed', 'Rejected', 'Overdue'].map(s => <option key={s}>{s}</option>)}
         </select>
         <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}
-          className="px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm text-[hsl(var(--text-2))] outline-none">
+          className="px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm text-[hsl(var(--text-2))] outline-none">
           {['All', 'Access', 'Erasure', 'Rectification', 'Portability', 'Objection', 'Restriction'].map(t => <option key={t}>{t}</option>)}
         </select>
         <span className="text-xs text-[hsl(var(--text-4))]">{filtered.length} request{filtered.length !== 1 ? 's' : ''}</span>
       </div>
 
       {/* Table */}
-      <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] overflow-hidden">
+      <div className="rounded border border-[hsl(var(--border))] bg-surface overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
+            <tr className="border-b border-[hsl(var(--border))] bg-raised">
               {['Request ID', 'Subject', 'Type', 'Regulation', 'AI Systems', 'Status', 'Due Date', 'Assignee', 'Actions'].map(h => (
                 <th key={h} className="text-left px-3 py-2.5 text-xs font-semibold text-[hsl(var(--text-4))] uppercase tracking-wide">{h}</th>
               ))}
@@ -184,7 +184,7 @@ export default function DsrManagement() {
           </thead>
           <tbody>
             {filtered.map(r => (
-              <tr key={r.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))] transition-colors">
+              <tr key={r.id} className="border-b border-[hsl(var(--border))] hover:bg-raised transition-colors">
                 <td className="px-3 py-2.5">
                   <span className="font-mono text-xs text-[hsl(var(--brand))] font-medium">{r.id}</span>
                 </td>
@@ -227,7 +227,7 @@ export default function DsrManagement() {
       {selected && (
         <div className="fixed inset-0 z-40 flex">
           <div className="flex-1 bg-black/40" onClick={() => { setSelected(null); setEditMode(false) }} />
-          <div className="w-[520px] bg-[hsl(var(--bg-surface))] border-l border-[hsl(var(--border))] h-full flex flex-col">
+          <div className="w-[520px] bg-surface border-l border-[hsl(var(--border))] h-full flex flex-col">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
               <div>
                 <p className="font-mono text-xs text-[hsl(var(--brand))] font-semibold">{selected.id}</p>
@@ -268,7 +268,7 @@ export default function DsrManagement() {
                           { label: 'Submitted', value: selected.submittedDate },
                           { label: 'Due Date', value: selected.dueDate },
                         ].map(f => (
-                          <div key={f.label} className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                          <div key={f.label} className="p-3 bg-raised border border-[hsl(var(--border))]">
                             <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{f.label}</p>
                             <p className="text-xs font-medium text-[hsl(var(--text-1))] mt-0.5 truncate">{f.value}</p>
                           </div>
@@ -276,7 +276,7 @@ export default function DsrManagement() {
                       </div>
                       <div>
                         <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Case Notes</p>
-                        <p className="text-sm text-[hsl(var(--text-2))] bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] p-3 leading-relaxed">{selected.notes}</p>
+                        <p className="text-sm text-[hsl(var(--text-2))] bg-raised border border-[hsl(var(--border))] p-3 leading-relaxed">{selected.notes}</p>
                       </div>
                     </>
                   )}
@@ -296,7 +296,7 @@ export default function DsrManagement() {
                         ))}
                         {selected.aiSystemsAffected.length === 0 && <p className="text-xs text-[hsl(var(--text-4))]">No AI systems identified yet</p>}
                       </div>
-                      <div className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                      <div className="p-3 bg-raised border border-[hsl(var(--border))]">
                         <p className="text-[10px] font-semibold text-[hsl(var(--text-3))] uppercase mb-2">Regulatory Obligation</p>
                         <p className="text-xs text-[hsl(var(--text-2))] leading-relaxed">
                           {selected.type === 'Erasure' && `All identified AI systems must purge personal data for ${selected.subject} within the SLA window. Training data derived from this subject may also need removal per ${selected.regulation}.`}
@@ -332,7 +332,7 @@ export default function DsrManagement() {
                           { phase: 'Response Prepared', date: selected.dueDate, done: selected.status === 'Completed' },
                           { phase: 'Completed & Documented', date: selected.dueDate, done: selected.status === 'Completed' },
                         ].map(step => (
-                          <div key={step.phase} className="flex items-center gap-3 p-2.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                          <div key={step.phase} className="flex items-center gap-3 p-2.5 bg-raised border border-[hsl(var(--border))]">
                             <div className="w-3 h-3 rounded-full flex-shrink-0 border-2" style={step.done ? { background: 'hsl(var(--s-ok-tx))', borderColor: 'hsl(var(--s-ok-tx))' } : { background: 'transparent', borderColor: 'hsl(var(--border))' }} />
                             <p className="text-xs text-[hsl(var(--text-2))] flex-1">{step.phase}</p>
                             <span className="text-[10px] text-[hsl(var(--text-4))]">{step.date}</span>
@@ -360,14 +360,14 @@ export default function DsrManagement() {
                             await saveDsrRequests({ ...selected, status: 'In Review' })
                             setSelected(prev => prev ? { ...prev, status: 'In Review' } : null)
                             toast.success('DSR moved to In Review')
-                          }} className="w-full flex items-center gap-2 p-3 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+                          }} className="w-full flex items-center gap-2 p-3 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
                             Move to In Review
                           </button>
                         )}
-                        <button onClick={() => { openEdit(selected) }} className="w-full flex items-center gap-2 p-3 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+                        <button onClick={() => { openEdit(selected) }} className="w-full flex items-center gap-2 p-3 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
                           <Pencil size={14} /> Edit Request Details
                         </button>
-                        <button onClick={() => toast.success('DSR exported as PDF')} className="w-full flex items-center gap-2 p-3 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+                        <button onClick={() => toast.success('DSR exported as PDF')} className="w-full flex items-center gap-2 p-3 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
                           Export Compliance Evidence
                         </button>
                         <button onClick={() => setDeleteTarget(selected.id)} className="w-full flex items-center gap-2 p-3 border border-[hsl(var(--destructive)/0.4)] text-sm text-[hsl(var(--destructive))] hover:bg-[hsl(0_72%_51%/0.05)]">
@@ -390,20 +390,20 @@ export default function DsrManagement() {
                       <div key={f.key}>
                         <label className="text-xs text-[hsl(var(--text-4))]">{f.label}</label>
                         <input type={f.type} value={(form as any)[f.key]} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
-                          className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none focus:border-[hsl(var(--brand))]" />
+                          className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
                       </div>
                     ))}
                     <div>
                       <label className="text-xs text-[hsl(var(--text-4))]">Status</label>
                       <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value as DSRStatus }))}
-                        className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none">
+                        className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
                         {['Pending', 'In Review', 'Completed', 'Rejected', 'Overdue'].map(s => <option key={s}>{s}</option>)}
                       </select>
                     </div>
                     <div>
                       <label className="text-xs text-[hsl(var(--text-4))]">Notes</label>
                       <textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={4}
-                        className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none resize-none focus:border-[hsl(var(--brand))]" />
+                        className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none resize-none focus:border-[hsl(var(--brand))]" />
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -421,7 +421,7 @@ export default function DsrManagement() {
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowCreate(false)} />
-          <div className="relative bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] rounded w-full max-w-lg shadow-xl">
+          <div className="relative bg-surface border border-[hsl(var(--border))] rounded w-full max-w-lg shadow-xl">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
               <h2 className="font-semibold text-[hsl(var(--text-1))]">New Data Subject Request</h2>
               <button onClick={() => setShowCreate(false)} className="text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-1))]"><X size={16} /></button>
@@ -431,26 +431,26 @@ export default function DsrManagement() {
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Subject Name *</label>
                   <input value={form.subject} onChange={e => setForm(p => ({ ...p, subject: e.target.value }))} placeholder="Full name"
-                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none focus:border-[hsl(var(--brand))]" />
+                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
                 </div>
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Email *</label>
                   <input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="subject@email.com"
-                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none focus:border-[hsl(var(--brand))]" />
+                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Request Type</label>
                   <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value as DSRType }))}
-                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none">
+                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
                     {['Access', 'Erasure', 'Rectification', 'Portability', 'Objection', 'Restriction'].map(t => <option key={t}>{t}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Regulation</label>
                   <select value={form.regulation} onChange={e => setForm(p => ({ ...p, regulation: e.target.value }))}
-                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none">
+                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
                     {['GDPR Art. 15', 'GDPR Art. 16', 'GDPR Art. 17', 'GDPR Art. 20', 'GDPR Art. 21', 'GDPR Art. 18', 'CCPA § 1798.110', 'CCPA § 1798.105', 'EU AI Act Art. 14'].map(r => <option key={r}>{r}</option>)}
                   </select>
                 </div>
@@ -459,12 +459,12 @@ export default function DsrManagement() {
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Due Date</label>
                   <input type="date" value={form.dueDate} onChange={e => setForm(p => ({ ...p, dueDate: e.target.value }))}
-                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none focus:border-[hsl(var(--brand))]" />
+                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
                 </div>
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Priority</label>
                   <select value={form.priority} onChange={e => setForm(p => ({ ...p, priority: e.target.value as any }))}
-                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none">
+                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
                     {['High', 'Medium', 'Low'].map(p => <option key={p}>{p}</option>)}
                   </select>
                 </div>
@@ -472,14 +472,14 @@ export default function DsrManagement() {
               <div>
                 <label className="text-xs text-[hsl(var(--text-4))]">Assignee</label>
                 <select value={form.assignee} onChange={e => setForm(p => ({ ...p, assignee: e.target.value }))}
-                  className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none">
+                  className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
                   {['Unassigned', 'Maria Santos', 'Sarah Chen', 'Marcus Johnson', 'James Liu'].map(a => <option key={a}>{a}</option>)}
                 </select>
               </div>
               <div>
                 <label className="text-xs text-[hsl(var(--text-4))]">Notes</label>
                 <textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={3} placeholder="Describe the request and any relevant context…"
-                  className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none resize-none focus:border-[hsl(var(--brand))]" />
+                  className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none resize-none focus:border-[hsl(var(--brand))]" />
               </div>
             </div>
             <div className="flex gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
@@ -494,7 +494,7 @@ export default function DsrManagement() {
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" />
-          <div className="relative bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] rounded w-full max-w-sm p-6 text-center shadow-xl">
+          <div className="relative bg-surface border border-[hsl(var(--border))] rounded w-full max-w-sm p-6 text-center shadow-xl">
             <Warning size={32} className="mx-auto text-[hsl(var(--destructive))] mb-3" />
             <h3 className="font-semibold text-[hsl(var(--text-1))] mb-1">Delete DSR Request?</h3>
             <p className="text-sm text-[hsl(var(--text-3))] mb-4">This action cannot be undone. The request record will be permanently removed.</p>

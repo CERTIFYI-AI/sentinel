@@ -152,7 +152,7 @@ export default function AibomRegistry() {
           <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">AI Bill of Materials — full component inventory for all AI models including base models, datasets, frameworks, and dependencies</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={handleExport} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+          <button onClick={handleExport} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
             <Export size={14} /> Export CSV
           </button>
           <button onClick={openWizard} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90">
@@ -168,7 +168,7 @@ export default function AibomRegistry() {
           { label: 'Total Vulnerabilities', value: records.reduce((s, r) => s + r.vulnerabilities, 0), color: 'hsl(var(--destructive))' },
           { label: 'License Conflicts', value: records.reduce((s, r) => s + r.licenseConflicts, 0), color: 'hsl(45 85% 40%)' },
         ].map(s => (
-          <div key={s.label} className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4" style={{ borderRadius: 0 }}>
+          <div key={s.label} className="border border-[hsl(var(--border))] bg-surface p-4" style={{ borderRadius: 0 }}>
             <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
             <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
           </div>
@@ -177,13 +177,13 @@ export default function AibomRegistry() {
 
       <div className="relative max-w-xs">
         <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search models…" className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search models…" className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]" />
       </div>
 
-      <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] overflow-hidden">
+      <div className="rounded border border-[hsl(var(--border))] bg-surface overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
+            <tr className="border-b border-[hsl(var(--border))] bg-raised">
               {['AIBOM ID', 'Model', 'Base Model', 'Format', 'Datasets', 'Vulns', 'License Issues', 'Generated', 'Status', ''].map(h => (
                 <th key={h} className="text-left px-4 py-3 text-[11px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wide">{h}</th>
               ))}
@@ -191,7 +191,7 @@ export default function AibomRegistry() {
           </thead>
           <tbody>
             {filtered.map(r => (
-              <tr key={r.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))] cursor-pointer" onClick={() => setSelected(r)}>
+              <tr key={r.id} className="border-b border-[hsl(var(--border))] hover:bg-raised cursor-pointer" onClick={() => setSelected(r)}>
                 <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--brand))]">{r.id}</td>
                 <td className="px-4 py-3"><p className="font-medium text-[hsl(var(--text-1))] text-xs">{r.modelName}</p><p className="text-[10px] text-[hsl(var(--text-4))]">{r.modelVersion}</p></td>
                 <td className="px-4 py-3 text-xs text-[hsl(var(--text-3))] max-w-[120px] truncate">{r.baseModel}</td>
@@ -215,7 +215,7 @@ export default function AibomRegistry() {
       {selected && (
         <div className="fixed inset-0 z-50 flex">
           <div className="flex-1 bg-black/40" onClick={() => setSelected(null)} />
-          <div className="w-[520px] bg-[hsl(var(--bg-surface))] border-l border-[hsl(var(--border))] flex flex-col h-full">
+          <div className="w-[520px] bg-surface border-l border-[hsl(var(--border))] flex flex-col h-full">
             <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))]">
               <div><p className="font-mono text-xs text-[hsl(var(--brand))]">{selected.id}</p><h2 className="text-base font-semibold text-[hsl(var(--text-1))]">{selected.modelName} {selected.modelVersion}</h2></div>
               <div className="flex gap-2 items-center">
@@ -237,7 +237,7 @@ export default function AibomRegistry() {
                 <>
                   <div className="flex gap-2 flex-wrap">
                     <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status]}>{selected.status}</span>
-                    <span className="text-[11px] px-2 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{selected.format}</span>
+                    <span className="text-[11px] px-2 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{selected.format}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     {[
@@ -248,7 +248,7 @@ export default function AibomRegistry() {
                       { label: 'Generated', value: selected.generatedDate },
                       { label: 'SHA-256', value: selected.sha256 },
                     ].map(({ label, value }) => (
-                      <div key={label} className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                      <div key={label} className="p-3 bg-raised border border-[hsl(var(--border))]">
                         <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{label}</p>
                         <p className="text-xs font-mono font-medium text-[hsl(var(--text-1))] mt-0.5 truncate">{value}</p>
                       </div>
@@ -258,7 +258,7 @@ export default function AibomRegistry() {
                     <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Training Datasets</p>
                     <div className="space-y-1">
                       {selected.trainingDatasets.map(d => (
-                        <div key={d.name} className="p-2 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                        <div key={d.name} className="p-2 bg-raised border border-[hsl(var(--border))]">
                           <p className="text-xs font-medium text-[hsl(var(--text-1))]">{d.name} {d.version}</p>
                           <p className="text-[10px] text-[hsl(var(--text-4))]">License: {d.license}</p>
                         </div>
@@ -275,7 +275,7 @@ export default function AibomRegistry() {
                     <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Frameworks & Runtime</p>
                     <div className="space-y-1">
                       {selected.frameworks.map(f => (
-                        <div key={f} className="flex items-center gap-2 p-2 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                        <div key={f} className="flex items-center gap-2 p-2 bg-raised border border-[hsl(var(--border))]">
                           <div className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--brand))]" />
                           <p className="text-xs text-[hsl(var(--text-2))]">{f}</p>
                         </div>
@@ -287,7 +287,7 @@ export default function AibomRegistry() {
                     <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Dependencies ({selected.dependencies.length})</p>
                     <div className="space-y-1">
                       {selected.dependencies.map(d => (
-                        <div key={d.name} className="flex items-center justify-between p-2 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                        <div key={d.name} className="flex items-center justify-between p-2 bg-raised border border-[hsl(var(--border))]">
                           <div>
                             <p className="text-xs font-medium text-[hsl(var(--text-1))]">{d.name} <span className="font-normal text-[hsl(var(--text-4))]">{d.version}</span></p>
                             <p className="text-[10px] text-[hsl(var(--text-4))]">{d.license}</p>
@@ -316,7 +316,7 @@ export default function AibomRegistry() {
                       {(['High', 'Medium', 'Low'] as const).map(risk => {
                         const count = selected.dependencies.filter(d => d.risk === risk).length
                         return (
-                          <div key={risk} className="flex items-center gap-3 p-2.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                          <div key={risk} className="flex items-center gap-3 p-2.5 bg-raised border border-[hsl(var(--border))]">
                             <div className="w-2 h-2 rounded-full" style={{ background: risk === 'High' ? 'hsl(var(--destructive))' : risk === 'Medium' ? 'hsl(45 85% 40%)' : 'hsl(var(--s-ok-tx))' }} />
                             <p className="text-xs text-[hsl(var(--text-2))] flex-1">{risk} Risk</p>
                             <span className="text-xs font-bold text-[hsl(var(--text-1))]">{count}</span>
@@ -327,7 +327,7 @@ export default function AibomRegistry() {
                   </div>
                   <div>
                     <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Scan Details</p>
-                    <div className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] space-y-1">
+                    <div className="p-3 bg-raised border border-[hsl(var(--border))] space-y-1">
                       <p className="text-xs text-[hsl(var(--text-2))]"><span className="text-[hsl(var(--text-4))]">Last Scan:</span> {selected.generatedDate}</p>
                       <p className="text-xs text-[hsl(var(--text-2))]"><span className="text-[hsl(var(--text-4))]">Scanner:</span> Sentinel CVE Scanner + OSV.dev</p>
                       <p className="text-xs text-[hsl(var(--text-2))]"><span className="text-[hsl(var(--text-4))]">Total Dependencies Scanned:</span> {selected.dependencies.length}</p>
@@ -349,7 +349,7 @@ export default function AibomRegistry() {
                     </div>
                     <div className="space-y-1">
                       {selected.dependencies.map(d => (
-                        <div key={d.name} className="flex items-center justify-between p-2 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                        <div key={d.name} className="flex items-center justify-between p-2 bg-raised border border-[hsl(var(--border))]">
                           <p className="text-xs text-[hsl(var(--text-2))]">{d.name} {d.version}</p>
                           <span className="text-[10px] font-mono text-[hsl(var(--text-3))]">{d.license}</span>
                         </div>
@@ -366,7 +366,7 @@ export default function AibomRegistry() {
                         { check: 'Training datasets declared', pass: selected.trainingDatasets.length > 0 },
                         { check: 'Attestation signed', pass: selected.attestedBy !== 'Pending' && selected.attestedBy !== 'Unassigned' },
                       ].map(({ check, pass }) => (
-                        <div key={check} className="flex items-center gap-2 p-2.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                        <div key={check} className="flex items-center gap-2 p-2.5 bg-raised border border-[hsl(var(--border))]">
                           <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: pass ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))' }} />
                           <p className="text-xs text-[hsl(var(--text-2))] flex-1">{check}</p>
                           <span className="text-[10px] font-medium" style={{ color: pass ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))' }}>{pass ? 'PASS' : 'FAIL'}</span>
@@ -385,7 +385,7 @@ export default function AibomRegistry() {
               <button
                 onClick={() => handleAttest(selected!)}
                 disabled={attesting || selected?.attestedBy !== 'Pending' && selected?.attestedBy !== 'Unassigned'}
-                className="flex items-center gap-1.5 px-4 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-1.5 px-4 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {attesting ? <Spinner size={14} className="animate-spin" /> : <Seal size={14} />}
                 {attesting ? 'Signing…' : selected?.attestedBy === 'Pending' || selected?.attestedBy === 'Unassigned' ? 'Sign Attestation' : 'Attested'}
@@ -397,7 +397,7 @@ export default function AibomRegistry() {
       {/* ── Generate AIBOM Wizard Modal ──────────────────────────── */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-[600px] max-h-[90vh] flex flex-col bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))]" style={{ borderRadius: 0 }}>
+          <div className="w-[600px] max-h-[90vh] flex flex-col bg-surface border border-[hsl(var(--border))]" style={{ borderRadius: 0 }}>
             {/* Modal Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
               <div>
@@ -431,24 +431,24 @@ export default function AibomRegistry() {
                     <div>
                       <label className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide block mb-1">Model Name *</label>
                       <input value={form.model} onChange={e => setForm(p => ({ ...p, model: e.target.value }))} placeholder="e.g. Loan Approval Model"
-                        className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+                        className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
                     </div>
                     <div>
                       <label className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide block mb-1">Version *</label>
                       <input value={form.version} onChange={e => setForm(p => ({ ...p, version: e.target.value }))} placeholder="e.g. v3.1"
-                        className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+                        className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
                     </div>
                     <div>
                       <label className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide block mb-1">AIBOM Format</label>
                       <select value={form.format} onChange={e => setForm(p => ({ ...p, format: e.target.value as any }))}
-                        className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+                        className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
                         <option>Sentinel-AIBOM</option><option>CycloneDX</option><option>SPDX</option>
                       </select>
                     </div>
                     <div>
                       <label className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide block mb-1">Owner Team</label>
                       <select value={form.owner} onChange={e => setForm(p => ({ ...p, owner: e.target.value }))}
-                        className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+                        className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
                         <option value="">Select owner…</option>
                         {['ML Engineering', 'Security AI', 'Customer Analytics', 'Risk & Compliance', 'Data Science'].map(o => <option key={o}>{o}</option>)}
                       </select>
@@ -456,12 +456,12 @@ export default function AibomRegistry() {
                     <div>
                       <label className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide block mb-1">Base Model *</label>
                       <input value={form.baseModel} onChange={e => setForm(p => ({ ...p, baseModel: e.target.value }))} placeholder="e.g. LightGBM 4.3.0"
-                        className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+                        className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
                     </div>
                     <div>
                       <label className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide block mb-1">Base Model Provider</label>
                       <select value={form.baseModelProvider} onChange={e => setForm(p => ({ ...p, baseModelProvider: e.target.value }))}
-                        className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+                        className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
                         {['Open Source', 'OpenAI', 'Anthropic', 'Google DeepMind', 'Meta', 'Hugging Face', 'Microsoft', 'Internal'].map(p => <option key={p}>{p}</option>)}
                       </select>
                     </div>
@@ -469,7 +469,7 @@ export default function AibomRegistry() {
                   <div>
                     <label className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide block mb-1">Description</label>
                     <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={2} placeholder="Brief description of this model and its purpose…"
-                      className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none resize-none" />
+                      className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none resize-none" />
                   </div>
                 </div>
               )}
@@ -478,15 +478,15 @@ export default function AibomRegistry() {
               {wizardStep === 2 && (
                 <div className="space-y-3">
                   <p className="text-xs text-[hsl(var(--text-4))]">Add training datasets used for this model. Include name, version, and license type.</p>
-                  <div className="p-3 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] space-y-2">
+                  <div className="p-3 border border-[hsl(var(--border))] bg-raised space-y-2">
                     <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide">Add Dataset</p>
                     <div className="grid grid-cols-3 gap-2">
                       <input value={newDs.name} onChange={e => setNewDs(p => ({ ...p, name: e.target.value }))} placeholder="Dataset name"
-                        className="px-2 py-1.5 text-xs border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none" />
+                        className="px-2 py-1.5 text-xs border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none" />
                       <input value={newDs.version} onChange={e => setNewDs(p => ({ ...p, version: e.target.value }))} placeholder="Version / Date"
-                        className="px-2 py-1.5 text-xs border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none" />
+                        className="px-2 py-1.5 text-xs border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none" />
                       <select value={newDs.license} onChange={e => setNewDs(p => ({ ...p, license: e.target.value }))}
-                        className="px-2 py-1.5 text-xs border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+                        className="px-2 py-1.5 text-xs border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
                         {['Proprietary', 'Public Domain', 'Commercial', 'CC BY 4.0', 'MIT', 'Apache-2.0', 'Research Only'].map(l => <option key={l}>{l}</option>)}
                       </select>
                     </div>
@@ -499,7 +499,7 @@ export default function AibomRegistry() {
                   <div className="space-y-1">
                     {wizardDatasets.length === 0 && <p className="text-xs text-[hsl(var(--text-4))] text-center py-4">No datasets added yet</p>}
                     {wizardDatasets.map((d, i) => (
-                      <div key={i} className="flex items-center justify-between p-2.5 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))]">
+                      <div key={i} className="flex items-center justify-between p-2.5 border border-[hsl(var(--border))] bg-surface">
                         <div>
                           <p className="text-xs font-medium text-[hsl(var(--text-1))]">{d.name} <span className="font-normal text-[hsl(var(--text-4))]">{d.version}</span></p>
                           <p className="text-[10px] text-[hsl(var(--text-4))]">{d.license}</p>
@@ -520,13 +520,13 @@ export default function AibomRegistry() {
                       <input value={wizardFwInput} onChange={e => setWizardFwInput(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter' && wizardFwInput.trim()) { setWizardFw(p => [...p, wizardFwInput.trim()]); setWizardFwInput('') }}}
                         placeholder="e.g. scikit-learn 1.4.0 (press Enter)"
-                        className="flex-1 px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none" />
+                        className="flex-1 px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none" />
                       <button onClick={() => { if (wizardFwInput.trim()) { setWizardFw(p => [...p, wizardFwInput.trim()]); setWizardFwInput('') }}}
                         className="px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm"><Plus size={14} /></button>
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {wizardFw.map((f, i) => (
-                        <span key={i} className="flex items-center gap-1 px-2 py-0.5 text-xs border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-2))]">
+                        <span key={i} className="flex items-center gap-1 px-2 py-0.5 text-xs border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-2))]">
                           {f} <button onClick={() => setWizardFw(p => p.filter((_, idx) => idx !== i))}><X size={10} /></button>
                         </span>
                       ))}
@@ -535,18 +535,18 @@ export default function AibomRegistry() {
 
                   <div className="space-y-2">
                     <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide">Dependencies</p>
-                    <div className="p-3 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] space-y-2">
+                    <div className="p-3 border border-[hsl(var(--border))] bg-raised space-y-2">
                       <div className="grid grid-cols-4 gap-2">
                         <input value={newDep.name} onChange={e => setNewDep(p => ({ ...p, name: e.target.value }))} placeholder="Package"
-                          className="px-2 py-1.5 text-xs border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none" />
+                          className="px-2 py-1.5 text-xs border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none" />
                         <input value={newDep.version} onChange={e => setNewDep(p => ({ ...p, version: e.target.value }))} placeholder="Version"
-                          className="px-2 py-1.5 text-xs border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none" />
+                          className="px-2 py-1.5 text-xs border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none" />
                         <select value={newDep.license} onChange={e => setNewDep(p => ({ ...p, license: e.target.value }))}
-                          className="px-2 py-1.5 text-xs border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+                          className="px-2 py-1.5 text-xs border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
                           {['MIT', 'Apache-2.0', 'BSD-3', 'GPL-3.0', 'LGPL', 'Proprietary'].map(l => <option key={l}>{l}</option>)}
                         </select>
                         <select value={newDep.risk} onChange={e => setNewDep(p => ({ ...p, risk: e.target.value as any }))}
-                          className="px-2 py-1.5 text-xs border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+                          className="px-2 py-1.5 text-xs border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
                           <option>Low</option><option>Medium</option><option>High</option>
                         </select>
                       </div>
@@ -559,7 +559,7 @@ export default function AibomRegistry() {
                     <div className="space-y-1">
                       {wizardDeps.length === 0 && <p className="text-xs text-[hsl(var(--text-4))] text-center py-3">No dependencies added</p>}
                       {wizardDeps.map((d, i) => (
-                        <div key={i} className="flex items-center justify-between p-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))]">
+                        <div key={i} className="flex items-center justify-between p-2 border border-[hsl(var(--border))] bg-surface">
                           <div className="flex items-center gap-2 flex-1">
                             <p className="text-xs font-medium text-[hsl(var(--text-1))]">{d.name} <span className="font-normal text-[hsl(var(--text-4))]">{d.version}</span></p>
                             <span className="text-[10px] font-mono text-[hsl(var(--text-4))]">{d.license}</span>
@@ -594,7 +594,7 @@ export default function AibomRegistry() {
                       { label: 'Frameworks', value: wizardFw.length, color: 'hsl(var(--s-ok-tx))' },
                       { label: 'Dependencies', value: wizardDeps.length, color: wizardDeps.filter(d => d.risk === 'High').length > 0 ? 'hsl(var(--destructive))' : 'hsl(var(--s-ok-tx))' },
                     ].map(({ label, value, color }) => (
-                      <div key={label} className="p-3 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))]">
+                      <div key={label} className="p-3 border border-[hsl(var(--border))] bg-surface">
                         <p className="text-lg font-bold" style={{ color }}>{value}</p>
                         <p className="text-[10px] text-[hsl(var(--text-4))]">{label}</p>
                       </div>
@@ -606,7 +606,7 @@ export default function AibomRegistry() {
                       <p className="text-xs text-[hsl(var(--text-2))]">{wizardDeps.filter(d => d.risk === 'High').length} high-risk dependency(ies) detected — will flag vulnerabilities after generation</p>
                     </div>
                   )}
-                  <div className="p-3 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
+                  <div className="p-3 border border-[hsl(var(--border))] bg-raised">
                     <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">Post-Generation Steps</p>
                     <ul className="space-y-1">
                       {['SHA-256 cryptographic hash will be auto-generated', 'Status set to "Pending Verification" — requires attestation', 'CVE scan will run against registered dependencies', 'License compatibility check will be performed'].map(s => (
@@ -623,7 +623,7 @@ export default function AibomRegistry() {
             {/* Modal Footer */}
             <div className="flex items-center justify-between px-5 py-4 border-t border-[hsl(var(--border))]">
               <button onClick={() => wizardStep > 1 ? setWizardStep(s => s - 1) : setShowCreate(false)}
-                className="flex items-center gap-1.5 px-4 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+                className="flex items-center gap-1.5 px-4 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
                 <ArrowLeft size={14} /> {wizardStep === 1 ? 'Cancel' : 'Back'}
               </button>
               {wizardStep < 4 ? (

@@ -290,16 +290,16 @@ function NodeRow({ node, index, total, onUpdate, onDelete }: {
           </div>
           <div className="flex items-center gap-1">
             <button onClick={() => { setLocalConfig({ ...node.config }); setEditing(e => !e) }}
-              className="p-1.5 hover:bg-[hsl(var(--bg-surface))] transition-colors"
+              className="p-1.5 hover:bg-surface transition-colors"
               title={editing ? 'Collapse' : 'Edit config'}>
               <PencilSimple size={11} style={{ color: 'hsl(var(--text-4))' }} />
             </button>
             <button onClick={() => onDelete(node.id)}
-              className="p-1.5 hover:bg-[hsl(var(--bg-surface))] transition-colors" title="Remove step">
+              className="p-1.5 hover:bg-surface transition-colors" title="Remove step">
               <Trash size={11} style={{ color: 'hsl(var(--s-er-tx))' }} />
             </button>
             <button onClick={() => { setLocalConfig({ ...node.config }); setEditing(e => !e) }}
-              className="p-1.5 hover:bg-[hsl(var(--bg-surface))] transition-colors">
+              className="p-1.5 hover:bg-surface transition-colors">
               {editing ? <CaretUp size={11} style={{ color: 'hsl(var(--text-4))' }} /> : <CaretDown size={11} style={{ color: 'hsl(var(--text-4))' }} />}
             </button>
           </div>
@@ -314,7 +314,7 @@ function NodeRow({ node, index, total, onUpdate, onDelete }: {
                 <input
                   value={v}
                   onChange={e => setLocalConfig(c => ({ ...c, [k]: e.target.value }))}
-                  className="flex-1 px-2 py-1 text-xs border bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]"
+                  className="flex-1 px-2 py-1 text-xs border bg-surface text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]"
                   style={{ borderColor: 'hsl(var(--border))' }}
                 />
               </div>
@@ -323,7 +323,7 @@ function NodeRow({ node, index, total, onUpdate, onDelete }: {
               <button onClick={save} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-[hsl(var(--brand))] text-white hover:opacity-90">
                 <Check size={11} /> Save
               </button>
-              <button onClick={() => setEditing(false)} className="px-3 py-1.5 text-xs border hover:bg-[hsl(var(--bg-surface))]" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-3))' }}>
+              <button onClick={() => setEditing(false)} className="px-3 py-1.5 text-xs border hover:bg-surface" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-3))' }}>
                 Cancel
               </button>
             </div>
@@ -579,7 +579,7 @@ export default function AutomationStudio() {
         </div>
         <div className="flex gap-2">
           <button onClick={() => setYamlOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 border text-sm transition-colors hover:bg-[hsl(var(--bg-raised))]"
+            className="flex items-center gap-1.5 px-3 py-2 border text-sm transition-colors hover:bg-raised"
             style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}>
             <Code size={14} /> Import YAML
           </button>
@@ -633,11 +633,11 @@ export default function AutomationStudio() {
             <div className="relative flex-1 max-w-sm">
               <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--text-4))' }} />
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search workflows…"
-                className="w-full pl-9 pr-3 py-2 text-sm border bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]"
+                className="w-full pl-9 pr-3 py-2 text-sm border bg-surface text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]"
                 style={{ borderColor: 'hsl(var(--border))' }} />
             </div>
             <select value={catFilter} onChange={e => setCatFilter(e.target.value)}
-              className="px-3 py-2 text-sm border bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none"
+              className="px-3 py-2 text-sm border bg-surface text-[hsl(var(--text-1))] focus:outline-none"
               style={{ borderColor: 'hsl(var(--border))' }}>
               {categories.map(c => <option key={c}>{c}</option>)}
             </select>
@@ -679,13 +679,13 @@ export default function AutomationStudio() {
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0">
                     <button onClick={() => handleTestRun(wf)} disabled={testRunning === wf.id}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] border transition-colors hover:bg-[hsl(var(--bg-raised))]"
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] border transition-colors hover:bg-raised"
                       style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-3))' }}
                       title="Test run">
                       {testRunning === wf.id ? <Timer size={11} className="animate-spin" /> : <Play size={11} />}
                       {testRunning === wf.id ? 'Running…' : 'Test'}
                     </button>
-                    <button onClick={() => cloneWorkflow(wf)} title="Clone" className="p-2 border hover:bg-[hsl(var(--bg-raised))]"
+                    <button onClick={() => cloneWorkflow(wf)} title="Clone" className="p-2 border hover:bg-raised"
                       style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }}>
                       <Copy size={13} />
                     </button>
@@ -762,7 +762,7 @@ export default function AutomationStudio() {
                 POST https://api.sentinel.ai/v1/workflows/trigger
               </code>
               <button onClick={() => { navigator.clipboard.writeText('POST https://api.sentinel.ai/v1/workflows/trigger'); showToast('Endpoint copied') }}
-                className="px-3 py-2 border text-xs hover:bg-[hsl(var(--bg-surface))]"
+                className="px-3 py-2 border text-xs hover:bg-surface"
                 style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}>
                 Copy
               </button>
@@ -933,13 +933,13 @@ export default function AutomationStudio() {
             {/* Footer actions */}
             <div className="p-4 border-t flex gap-2" style={{ borderColor: 'hsl(var(--border))' }}>
               <button onClick={() => handleTestRun(selected)} disabled={testRunning === selected.id}
-                className="flex-1 py-2 border text-sm transition-colors hover:bg-[hsl(var(--bg-raised))] flex items-center justify-center gap-1.5"
+                className="flex-1 py-2 border text-sm transition-colors hover:bg-raised flex items-center justify-center gap-1.5"
                 style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}>
                 {testRunning === selected.id ? <Timer size={13} className="animate-spin" /> : <Play size={13} />}
                 {testRunning === selected.id ? 'Running…' : 'Test Run'}
               </button>
               <button onClick={() => toggleStatus(selected)}
-                className="flex-1 py-2 border text-sm transition-colors hover:bg-[hsl(var(--bg-raised))]"
+                className="flex-1 py-2 border text-sm transition-colors hover:bg-raised"
                 style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}>
                 {selected.status === 'Active' ? 'Pause' : 'Activate'}
               </button>

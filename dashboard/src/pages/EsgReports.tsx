@@ -171,7 +171,7 @@ function EsgReportsInner({ reports: initialReports, save, remove, chartTheme }: 
           <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">AI-specific ESG reporting aligned to GRI, SASB, EU CSRD, and TCFD frameworks</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => exportCsv(reports, 'esg-reports.csv')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]"><Export size={14} /> Export CSV</button>
+          <button onClick={() => exportCsv(reports, 'esg-reports.csv')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised"><Export size={14} /> Export CSV</button>
           <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 px-4 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90"><Plus size={14} /> New Report</button>
         </div>
       </div>
@@ -185,7 +185,7 @@ function EsgReportsInner({ reports: initialReports, save, remove, chartTheme }: 
             { label: 'Governance Score', value: `${latest.governanceScore}/100`, color: 'hsl(220 90% 56%)' },
             { label: 'Overall ESG Score', value: `${latest.overallScore}/100`, color: 'hsl(var(--text-1))' },
           ].map(s => (
-            <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+            <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
               <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
               <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
               <p className="text-[10px] text-[hsl(var(--text-4))] mt-1">{latest.period}</p>
@@ -198,7 +198,7 @@ function EsgReportsInner({ reports: initialReports, save, remove, chartTheme }: 
       {(radarData.length > 0 || scoreTrend.length > 0) && (
         <div className="grid grid-cols-2 gap-4">
           {radarData.length > 0 && (
-            <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+            <div className="rounded border border-[hsl(var(--border))] bg-surface p-4">
               <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] mb-3">ESG Dimension Comparison (Latest vs Prior)</h3>
               <ResponsiveContainer width="100%" height={220}>
                 <RadarChart data={radarData}>
@@ -212,7 +212,7 @@ function EsgReportsInner({ reports: initialReports, save, remove, chartTheme }: 
             </div>
           )}
           {scoreTrend.length > 0 && (
-            <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+            <div className="rounded border border-[hsl(var(--border))] bg-surface p-4">
               <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] mb-3">Score Trend by Dimension</h3>
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={scoreTrend}>
@@ -232,11 +232,11 @@ function EsgReportsInner({ reports: initialReports, save, remove, chartTheme }: 
 
       {/* AI Metrics for latest */}
       {latest && latest.aiSpecificMetrics && latest.aiSpecificMetrics.length > 0 && (
-        <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+        <div className="rounded border border-[hsl(var(--border))] bg-surface p-4">
           <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] mb-3">AI-Specific Metrics — {latest.period}</h3>
           <div className="grid grid-cols-3 gap-2">
             {latest.aiSpecificMetrics.map((m: any) => (
-              <div key={m.metric} className="flex items-center justify-between p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+              <div key={m.metric} className="flex items-center justify-between p-3 bg-raised border border-[hsl(var(--border))]">
                 <span className="text-xs text-[hsl(var(--text-3))]">{m.metric}</span>
                 <div className="flex items-center gap-1.5">
                   <span className="text-sm font-semibold text-[hsl(var(--text-1))]">{m.value}</span>
@@ -252,7 +252,7 @@ function EsgReportsInner({ reports: initialReports, save, remove, chartTheme }: 
 
       {/* Report list */}
       {reports.length === 0 ? (
-        <div className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-12 text-center">
+        <div className="border border-[hsl(var(--border))] bg-surface p-12 text-center">
           <Globe size={32} className="mx-auto mb-3 text-[hsl(var(--text-4))]" />
           <p className="text-sm text-[hsl(var(--text-3))]">No ESG reports yet. Create your first report.</p>
         </div>
@@ -261,7 +261,7 @@ function EsgReportsInner({ reports: initialReports, save, remove, chartTheme }: 
           {reports.map((r: any) => (
             <div
               key={r.id}
-              className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4 flex items-center justify-between cursor-pointer hover:border-[hsl(var(--brand)/0.4)] transition-colors"
+              className="rounded border border-[hsl(var(--border))] bg-surface p-4 flex items-center justify-between cursor-pointer hover:border-[hsl(var(--brand)/0.4)] transition-colors"
               onClick={() => setSelected(r)}
             >
               <div className="flex items-center gap-4">
@@ -298,7 +298,7 @@ function EsgReportsInner({ reports: initialReports, save, remove, chartTheme }: 
       {selected && (
         <div className="fixed inset-0 z-50 flex">
           <div className="flex-1 bg-black/40" onClick={() => setSelected(null)} />
-          <div className="w-[500px] bg-[hsl(var(--bg-surface))] border-l border-[hsl(var(--border))] flex flex-col h-full overflow-y-auto">
+          <div className="w-[500px] bg-surface border-l border-[hsl(var(--border))] flex flex-col h-full overflow-y-auto">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
               <div>
                 <p className="font-mono text-xs text-[hsl(var(--brand))]">{String(selected.id).slice(0, 16)}</p>
@@ -324,7 +324,7 @@ function EsgReportsInner({ reports: initialReports, save, remove, chartTheme }: 
                     { label: 'Overall Score', value: `${selected.overallScore}/100` },
                   ] : []),
                 ].map(({ label, value }) => (
-                  <div key={label} className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                  <div key={label} className="p-3 bg-raised border border-[hsl(var(--border))]">
                     <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{label}</p>
                     <p className="text-xs font-semibold text-[hsl(var(--text-1))] mt-0.5">{value}</p>
                   </div>
@@ -361,7 +361,7 @@ function EsgReportsInner({ reports: initialReports, save, remove, chartTheme }: 
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowCreate(false)} />
-          <div className="relative bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] w-full max-w-lg mx-4 shadow-2xl max-h-[90vh] flex flex-col">
+          <div className="relative bg-surface border border-[hsl(var(--border))] w-full max-w-lg mx-4 shadow-2xl max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
               <h2 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2">
                 <Globe size={15} className="text-[hsl(var(--brand))]" />
@@ -375,35 +375,35 @@ function EsgReportsInner({ reports: initialReports, save, remove, chartTheme }: 
                 <input
                   value={form.title}
                   onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
-                  className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]"
+                  className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]"
                   placeholder="e.g. AI ESG Report — Q2 2026"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[11px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Reporting Period *</label>
-                  <select value={form.period} onChange={e => setForm(p => ({ ...p, period: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
+                  <select value={form.period} onChange={e => setForm(p => ({ ...p, period: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
                     <option value="">Select period...</option>
                     {PERIODS.map(p => <option key={p}>{p}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="text-[11px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Framework *</label>
-                  <select value={form.framework} onChange={e => setForm(p => ({ ...p, framework: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
+                  <select value={form.framework} onChange={e => setForm(p => ({ ...p, framework: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
                     <option value="">Select framework...</option>
                     {FRAMEWORKS.map(f => <option key={f}>{f}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="text-[11px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Lead Author *</label>
-                  <select value={form.author} onChange={e => setForm(p => ({ ...p, author: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
+                  <select value={form.author} onChange={e => setForm(p => ({ ...p, author: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
                     <option value="">Select author...</option>
                     {AUTHORS.map(a => <option key={a}>{a}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="text-[11px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Initial Status</label>
-                  <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
+                  <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
                     <option value="Draft">Draft</option>
                     <option value="Under Review">Under Review</option>
                   </select>
@@ -419,7 +419,7 @@ function EsgReportsInner({ reports: initialReports, save, remove, chartTheme }: 
                   ].map(({ key, label }) => (
                     <div key={key}>
                       <label className="text-[10px] text-[hsl(var(--text-4))] mb-1 block">{label}</label>
-                      <input type="number" min={0} max={100} value={(form as any)[key]} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="0–100" />
+                      <input type="number" min={0} max={100} value={(form as any)[key]} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="0–100" />
                     </div>
                   ))}
                 </div>
@@ -430,13 +430,13 @@ function EsgReportsInner({ reports: initialReports, save, remove, chartTheme }: 
                   value={form.highlights}
                   onChange={e => setForm(p => ({ ...p, highlights: e.target.value }))}
                   rows={4}
-                  className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))] resize-none"
+                  className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))] resize-none"
                   placeholder={'Carbon footprint reduced 17%\nRenewable energy at 84%'}
                 />
               </div>
             </div>
             <div className="flex justify-end gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
-              <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">Cancel</button>
+              <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">Cancel</button>
               <button onClick={handleCreate} className="px-4 py-2 text-sm font-medium bg-[hsl(var(--brand))] text-white hover:opacity-90">Generate Report</button>
             </div>
           </div>

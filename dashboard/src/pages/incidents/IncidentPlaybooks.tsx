@@ -329,7 +329,7 @@ export default function IncidentPlaybooks() {
 
                 <TabsContent value="steps" className="mt-4 space-y-3">
                   {/* Trigger Conditions */}
-                  <div className="p-3 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))]">
+                  <div className="p-3 border border-[hsl(var(--border))] bg-surface">
                     <p className="text-xs font-medium text-[hsl(var(--text-3))] mb-2">TRIGGER CONDITIONS</p>
                     <div className="flex flex-wrap gap-2">
                       {selected.triggerConditions.map(tc => (
@@ -405,7 +405,7 @@ export default function IncidentPlaybooks() {
                         </Badge>
                       </div>
                       <p className="text-xs text-[hsl(var(--text-3))]"><strong>Trigger:</strong> {n.trigger}</p>
-                      <p className="text-xs text-[hsl(var(--text-3))] bg-[hsl(var(--bg-surface))] p-2">{n.template}</p>
+                      <p className="text-xs text-[hsl(var(--text-3))] bg-surface p-2">{n.template}</p>
                       <Button size="sm" variant="outline" className="gap-1.5 rounded-none h-7 text-xs" onClick={() => addToast(`Notification draft prepared for ${n.authority}`)}>
                         <Bell size={12} /> Generate Notification
                       </Button>

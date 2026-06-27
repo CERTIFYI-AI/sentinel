@@ -172,7 +172,7 @@ export default function BiasAudits() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-[hsl(var(--bg-raised))] border-b border-[hsl(var(--border))]">
+              <thead className="bg-raised border-b border-[hsl(var(--border))]">
                 <tr>
                   <th className="px-3 py-2.5 w-8"><input type="checkbox" checked={sp.selectedIds.size===sp.paged.length&&sp.paged.length>0} onChange={sp.toggleAll} /></th>
                   <Th col="name" label="Audit Name" sortCol={sp.sortCol} sortDir={sp.sortDir} onSort={sp.handleSort} />
@@ -188,14 +188,14 @@ export default function BiasAudits() {
               </thead>
               <tbody>
                 {sp.paged.map((item: any) => ( // any: audit item shape from hook
-                  <tr key={item.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))] cursor-pointer" onClick={() => { setViewItem(item); setModal("view"); }}>
+                  <tr key={item.id} className="border-b border-[hsl(var(--border))] hover:bg-raised cursor-pointer" onClick={() => { setViewItem(item); setModal("view"); }}>
                     <td className="px-3 py-2.5" onClick={e=>e.stopPropagation()}><input type="checkbox" checked={sp.selectedIds.has(item.id)} onChange={() => sp.toggleSelect(item.id)} /></td>
                     <td className="px-3 py-2.5"><p className="font-medium text-[hsl(var(--text-1))]">{item.name}</p><p className="text-xs text-[hsl(var(--text-4))] font-mono">{item.id}</p></td>
                     <td className="px-3 py-2.5 text-[hsl(var(--text-2))]">{item.model}</td>
                     <td className="px-3 py-2.5 text-[hsl(var(--text-3))] whitespace-nowrap">{item.date}</td>
                     <td className="px-3 py-2.5">
                       <div className="flex flex-wrap gap-1">
-                        {item.attributes.slice(0,2).map((a:string)=><span key={a} className="text-xs px-1.5 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{a}</span>)}
+                        {item.attributes.slice(0,2).map((a:string)=><span key={a} className="text-xs px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))]">{a}</span>)}
                         {item.attributes.length>2&&<span className="text-xs text-[hsl(var(--text-4))]">+{item.attributes.length-2}</span>}
                       </div>
                     </td>
@@ -205,8 +205,8 @@ export default function BiasAudits() {
                     <td className="px-3 py-2.5 text-[hsl(var(--text-2))]">{item.auditor}</td>
                     <td className="px-3 py-2.5 text-right" onClick={e=>e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => { setViewItem(item); setModal("view"); }} className="p-1.5 hover:bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-3))]"><Eye size={14} /></button>
-                        <button onClick={() => openEdit(item)} className="p-1.5 hover:bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-3))]"><PencilSimple size={14} /></button>
+                        <button onClick={() => { setViewItem(item); setModal("view"); }} className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"><Eye size={14} /></button>
+                        <button onClick={() => openEdit(item)} className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"><PencilSimple size={14} /></button>
                         <button onClick={() => setDeleteTarget(item)} className="p-1.5 hover:bg-red-50 text-[hsl(0_72%_51%)]"><Trash size={14} /></button>
                       </div>
                     </td>
@@ -273,7 +273,7 @@ export default function BiasAudits() {
                 ))}
               </div>
               <div><p className="text-xs text-[hsl(var(--text-4))] mb-1.5">Protected Attributes</p>
-                <div className="flex flex-wrap gap-1.5">{viewItem.attributes.map((a:string)=><span key={a} className="text-xs px-2 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{a}</span>)}</div>
+                <div className="flex flex-wrap gap-1.5">{viewItem.attributes.map((a:string)=><span key={a} className="text-xs px-2 py-0.5 bg-raised border border-[hsl(var(--border))]">{a}</span>)}</div>
               </div>
               <div><p className="text-xs text-[hsl(var(--text-4))] mb-1">Overall Bias Score</p><ScoreBar score={viewItem.score} /></div>
               {viewItem.findings&&<div><p className="text-xs text-[hsl(var(--text-4))] mb-1">Findings Summary</p><p className="text-sm text-[hsl(var(--text-2))]">{viewItem.findings}</p></div>}

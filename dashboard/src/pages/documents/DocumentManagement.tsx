@@ -199,7 +199,7 @@ export default function DocumentManagement() {
                 <td className="px-3 py-2"><div className="flex flex-wrap gap-1">{doc.frameworks.map(fw=><Badge key={fw} variant="outline" style={{borderRadius:0,fontSize:10,color:'hsl(var(--text-3))',borderColor:'hsl(var(--border))'}}>{fw}</Badge>)}</div></td>
                 <td className="px-3 py-2" onClick={e=>e.stopPropagation()}>
                   <div className="flex gap-1">
-                    <button onClick={()=>openEdit(doc)} className="p-1 hover:bg-[hsl(var(--bg-raised))]" title="Edit"><PencilSimple size={14} style={{color:'hsl(var(--text-4))'}} /></button>
+                    <button onClick={()=>openEdit(doc)} className="p-1 hover:bg-raised" title="Edit"><PencilSimple size={14} style={{color:'hsl(var(--text-4))'}} /></button>
                     <button onClick={()=>setDeleteTarget(doc)} className="p-1 hover:bg-red-50" title="Delete"><Trash size={14} style={{color:'hsl(0 72% 51%)'}} /></button>
                   </div>
                 </td>

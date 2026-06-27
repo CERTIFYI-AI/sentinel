@@ -135,7 +135,7 @@ export function ConfirmDialog({
         <div className="flex justify-end gap-2 px-5 py-4">
           <button
             onClick={handleClose}
-            className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))] transition-colors"
+            className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised transition-colors"
           >
             {cancelLabel}
           </button>

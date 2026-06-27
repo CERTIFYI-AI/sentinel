@@ -166,11 +166,11 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${
           isSelected
             ? 'bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))]'
-            : 'hover:bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-2))]'
+            : 'hover:bg-raised text-[hsl(var(--text-2))]'
         }`}
       >
         <span className={`w-7 h-7 flex items-center justify-center flex-shrink-0 ${
-          isSelected ? 'bg-[hsl(var(--brand))] text-white' : 'bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-4))]'
+          isSelected ? 'bg-[hsl(var(--brand))] text-white' : 'bg-raised text-[hsl(var(--text-4))]'
         }`}>
           <Icon size={14} weight='duotone' />
         </span>
@@ -200,7 +200,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       />
 
       {/* Panel */}
-      <div className='relative w-full max-w-[560px] bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] shadow-2xl overflow-hidden'>
+      <div className='relative w-full max-w-[560px] bg-surface border border-[hsl(var(--border))] shadow-2xl overflow-hidden'>
         {/* Search input */}
         <div className='flex items-center gap-3 px-4 py-3 border-b border-[hsl(var(--border))]'>
           <MagnifyingGlass size={16} className='text-[hsl(var(--text-4))] flex-shrink-0' />
@@ -245,7 +245,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           ) : (
             grouped && Array.from(grouped.entries()).map(([group, items]) => (
               <div key={group}>
-                <div className='px-3 py-1.5 bg-[hsl(var(--bg-raised))] border-b border-[hsl(var(--border))]'>
+                <div className='px-3 py-1.5 bg-raised border-b border-[hsl(var(--border))]'>
                   <p className='text-[10px] font-semibold uppercase tracking-wider text-[hsl(var(--text-4))]'>
                     {group}
                   </p>
@@ -260,7 +260,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         </div>
 
         {/* Footer */}
-        <div className='flex items-center gap-4 px-4 py-2.5 border-t border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]'>
+        <div className='flex items-center gap-4 px-4 py-2.5 border-t border-[hsl(var(--border))] bg-raised'>
           <span className='flex items-center gap-1.5 text-[10px] text-[hsl(var(--text-4))]'>
             <kbd className='px-1 py-0.5 border border-[hsl(var(--border))] text-[9px]'>↑↓</kbd>
             Navigate

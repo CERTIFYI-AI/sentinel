@@ -254,7 +254,7 @@ export default function GenAIRisks() {
                   const sc = severityColor(p.severity);
                   const mc = mitigationColor(p.mitigationStatus);
                   return (
-                    <tr key={p.id} className="border-b hover:bg-[hsl(var(--bg-raised))] transition-colors cursor-pointer" style={{ borderColor: 'hsl(var(--border))' }}
+                    <tr key={p.id} className="border-b hover:bg-raised transition-colors cursor-pointer" style={{ borderColor: 'hsl(var(--border))' }}
                       onClick={() => { setSelected(p); setSheetOpen(true); }}>
                       <td className="px-3 py-2.5">
                         <span className="font-mono text-xs px-1.5 py-0.5" style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))' }}>{p.id}</span>

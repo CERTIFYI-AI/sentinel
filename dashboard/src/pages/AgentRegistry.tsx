@@ -135,7 +135,7 @@ export default function AgentRegistry() {
     <div className="flex gap-2">
       <button
         onClick={() => toast.success('Agent registry exported')}
-        className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]"
+        className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised"
       >
         <Export size={14} /> Export
       </button>
@@ -209,10 +209,10 @@ export default function AgentRegistry() {
         }
       />
 
-      <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] overflow-hidden">
+      <div className="rounded border border-[hsl(var(--border))] bg-surface overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
+            <tr className="border-b border-[hsl(var(--border))] bg-raised">
               {['Agent', 'Type', 'Model', 'Risk Tier', 'Status', 'Trust', 'Daily Calls', 'Kill Switch', 'Actions'].map(h => (
                 <th key={h} className="text-left px-3 py-2.5 text-xs font-semibold text-[hsl(var(--text-4))] uppercase tracking-wide">{h}</th>
               ))}
@@ -220,7 +220,7 @@ export default function AgentRegistry() {
           </thead>
           <tbody>
             {filtered.map(a => (
-              <tr key={a.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))]">
+              <tr key={a.id} className="border-b border-[hsl(var(--border))] hover:bg-raised">
                 <td className="px-3 py-2.5">
                   <p className="font-medium text-[hsl(var(--text-1))]">{a.name}</p>
                   <p className="text-xs text-[hsl(var(--text-4))]">{a.id} · v{a.version} · {a.team}</p>
@@ -231,7 +231,7 @@ export default function AgentRegistry() {
                 <td className="px-3 py-2.5"><span className="px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap" style={STATUS_STYLE[a.status]}>{a.status}</span></td>
                 <td className="px-3 py-2.5">
                   <div className="flex items-center gap-1.5">
-                    <div className="h-1.5 w-14 bg-[hsl(var(--bg-raised))] rounded-full overflow-hidden">
+                    <div className="h-1.5 w-14 bg-raised rounded-full overflow-hidden">
                       <div className="h-full rounded-full" style={{ width: `${a.trustScore}%`, background: a.trustScore >= 80 ? 'hsl(var(--s-ok-tx))' : a.trustScore >= 60 ? 'hsl(45 85% 40%)' : 'hsl(var(--destructive))' }} />
                     </div>
                     <span className="text-xs font-medium text-[hsl(var(--text-2))]">{a.trustScore}</span>
@@ -263,8 +263,8 @@ export default function AgentRegistry() {
       {selected && (
         <div className="fixed inset-0 z-40 flex">
           <div className="flex-1 bg-black/40" onClick={() => { setSelected(null); setEditMode(false) }} />
-          <div className="w-[540px] bg-[hsl(var(--bg-surface))] border-l border-[hsl(var(--border))] h-full overflow-y-auto flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))] sticky top-0 bg-[hsl(var(--bg-surface))]">
+          <div className="w-[540px] bg-surface border-l border-[hsl(var(--border))] h-full overflow-y-auto flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))] sticky top-0 bg-surface">
               <div>
                 <p className="font-mono text-xs text-[hsl(var(--brand))] font-semibold">{selected.id}</p>
                 <h2 className="text-base font-semibold text-[hsl(var(--text-1))] mt-0.5">{selected.name} <span className="text-xs font-normal text-[hsl(var(--text-4))]">v{selected.version}</span></h2>
@@ -280,7 +280,7 @@ export default function AgentRegistry() {
                   <div className="flex flex-wrap gap-2">
                     <span className="px-2 py-0.5 rounded text-xs font-medium" style={TIER_STYLE[selected.riskTier]}>{selected.riskTier} Risk</span>
                     <span className="px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap" style={STATUS_STYLE[selected.status]}>{selected.status}</span>
-                    <span className="px-2 py-0.5 rounded text-xs bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-3))]">{selected.type}</span>
+                    <span className="px-2 py-0.5 rounded text-xs bg-raised text-[hsl(var(--text-3))]">{selected.type}</span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
@@ -304,7 +304,7 @@ export default function AgentRegistry() {
                   <div>
                     <p className="text-xs text-[hsl(var(--text-4))] mb-1">Trust Score</p>
                     <div className="flex items-center gap-3">
-                      <div className="flex-1 h-2 bg-[hsl(var(--bg-raised))] rounded-full overflow-hidden">
+                      <div className="flex-1 h-2 bg-raised rounded-full overflow-hidden">
                         <div className="h-full rounded-full" style={{ width: `${selected.trustScore}%`, background: selected.trustScore >= 80 ? 'hsl(var(--s-ok-tx))' : selected.trustScore >= 60 ? 'hsl(45 85% 40%)' : 'hsl(var(--destructive))' }} />
                       </div>
                       <span className="text-lg font-bold text-[hsl(var(--text-1))]">{selected.trustScore}</span>
@@ -313,13 +313,13 @@ export default function AgentRegistry() {
 
                   <div>
                     <p className="text-xs text-[hsl(var(--text-4))] mb-1">Purpose</p>
-                    <p className="text-sm text-[hsl(var(--text-2))] bg-[hsl(var(--bg-raised))] p-3 rounded">{selected.purpose}</p>
+                    <p className="text-sm text-[hsl(var(--text-2))] bg-raised p-3 rounded">{selected.purpose}</p>
                   </div>
 
                   <div>
                     <p className="text-xs text-[hsl(var(--text-4))] mb-2">Tools ({selected.tools.length})</p>
                     <div className="flex flex-wrap gap-1.5">
-                      {selected.tools.map(t => <span key={t} className="px-2 py-0.5 text-xs bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-3))] rounded">{t}</span>)}
+                      {selected.tools.map(t => <span key={t} className="px-2 py-0.5 text-xs bg-raised text-[hsl(var(--text-3))] rounded">{t}</span>)}
                     </div>
                   </div>
 
@@ -337,7 +337,7 @@ export default function AgentRegistry() {
 
                   <div>
                     <p className="text-xs text-[hsl(var(--text-4))] mb-1">Escalation Policy</p>
-                    <p className="text-sm text-[hsl(var(--text-2))] bg-[hsl(var(--bg-raised))] p-3 rounded">{selected.escalationPolicy}</p>
+                    <p className="text-sm text-[hsl(var(--text-2))] bg-raised p-3 rounded">{selected.escalationPolicy}</p>
                   </div>
 
                   <div className="flex gap-2 pt-2 border-t border-[hsl(var(--border))]">
@@ -363,21 +363,21 @@ export default function AgentRegistry() {
                     <div key={f.key}>
                       <label className="text-xs text-[hsl(var(--text-4))]">{f.label}</label>
                       <input value={(form as any)[f.key]} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))} // any: dynamic key access
-                        className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none focus:border-[hsl(var(--brand))]" />
+                        className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
                     </div>
                   ))}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs text-[hsl(var(--text-4))]">Status</label>
                       <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value as AgentStatus }))}
-                        className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none">
+                        className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
                         {['Active', 'Suspended', 'Quarantined', 'Decommissioned', 'Pending Approval'].map(s => <option key={s}>{s}</option>)}
                       </select>
                     </div>
                     <div>
                       <label className="text-xs text-[hsl(var(--text-4))]">Risk Tier</label>
                       <select value={form.riskTier} onChange={e => setForm(p => ({ ...p, riskTier: e.target.value as RiskTier }))}
-                        className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none">
+                        className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
                         {['Critical', 'High', 'Medium', 'Low'].map(t => <option key={t}>{t}</option>)}
                       </select>
                     </div>
@@ -385,7 +385,7 @@ export default function AgentRegistry() {
                   <div>
                     <label className="text-xs text-[hsl(var(--text-4))]">Trust Score (0–100)</label>
                     <input type="number" min="0" max="100" value={form.trustScore} onChange={e => setForm(p => ({ ...p, trustScore: Number(e.target.value) }))}
-                      className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none focus:border-[hsl(var(--brand))]" />
+                      className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
                   </div>
                   <div className="flex gap-2">
                     <button onClick={handleEdit} className="flex-1 py-2 bg-[hsl(var(--brand))] text-white text-sm">Save</button>
@@ -402,7 +402,7 @@ export default function AgentRegistry() {
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowCreate(false)} />
-          <div className="relative bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] rounded w-full max-w-lg shadow-xl">
+          <div className="relative bg-surface border border-[hsl(var(--border))] rounded w-full max-w-lg shadow-xl">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
               <h2 className="font-semibold text-[hsl(var(--text-1))]">Register New Agent</h2>
               <button onClick={() => setShowCreate(false)}><X size={16} className="text-[hsl(var(--text-4))]" /></button>
@@ -412,26 +412,26 @@ export default function AgentRegistry() {
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Agent Name *</label>
                   <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="MyComplianceAgent"
-                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none focus:border-[hsl(var(--brand))]" />
+                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
                 </div>
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Version</label>
                   <input value={form.version} onChange={e => setForm(p => ({ ...p, version: e.target.value }))} placeholder="1.0.0"
-                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none focus:border-[hsl(var(--brand))]" />
+                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Type</label>
                   <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value as AgentType }))}
-                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none">
+                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
                     {['Autonomous', 'Semi-Autonomous', 'Tool-Using', 'Multi-Modal', 'Orchestrator', 'Worker'].map(t => <option key={t}>{t}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Risk Tier</label>
                   <select value={form.riskTier} onChange={e => setForm(p => ({ ...p, riskTier: e.target.value as RiskTier }))}
-                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none">
+                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
                     {['Critical', 'High', 'Medium', 'Low'].map(t => <option key={t}>{t}</option>)}
                   </select>
                 </div>
@@ -440,30 +440,30 @@ export default function AgentRegistry() {
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Owner</label>
                   <input value={form.owner} onChange={e => setForm(p => ({ ...p, owner: e.target.value }))} placeholder="John Smith"
-                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none focus:border-[hsl(var(--brand))]" />
+                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
                 </div>
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Team</label>
                   <input value={form.team} onChange={e => setForm(p => ({ ...p, team: e.target.value }))} placeholder="AI Platform"
-                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none focus:border-[hsl(var(--brand))]" />
+                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
                 </div>
               </div>
               <div>
                 <label className="text-xs text-[hsl(var(--text-4))]">LLM / Model</label>
                 <select value={form.model} onChange={e => setForm(p => ({ ...p, model: e.target.value }))}
-                  className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none">
+                  className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
                   {['GPT-4o via OpenAI', 'GPT-4o-mini via OpenAI', 'Claude 3.5 Sonnet via Anthropic', 'Claude 3 Haiku via Anthropic', 'GPT-4 via Azure OpenAI', 'Llama 3 70B via Groq'].map(m => <option key={m}>{m}</option>)}
                 </select>
               </div>
               <div>
                 <label className="text-xs text-[hsl(var(--text-4))]">Purpose</label>
                 <textarea value={form.purpose} onChange={e => setForm(p => ({ ...p, purpose: e.target.value }))} rows={3} placeholder="Describe what this agent does…"
-                  className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none resize-none focus:border-[hsl(var(--brand))]" />
+                  className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none resize-none focus:border-[hsl(var(--brand))]" />
               </div>
               <div>
                 <label className="text-xs text-[hsl(var(--text-4))]">Max Monthly Budget (USD)</label>
                 <input type="number" value={form.maxBudget} onChange={e => setForm(p => ({ ...p, maxBudget: Number(e.target.value) }))}
-                  className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none focus:border-[hsl(var(--brand))]" />
+                  className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
               </div>
             </div>
             <div className="flex gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
@@ -478,7 +478,7 @@ export default function AgentRegistry() {
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" />
-          <div className="relative bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] rounded w-full max-w-sm p-6 text-center shadow-xl">
+          <div className="relative bg-surface border border-[hsl(var(--border))] rounded w-full max-w-sm p-6 text-center shadow-xl">
             <Warning size={32} className="mx-auto text-[hsl(var(--destructive))] mb-3" />
             <h3 className="font-semibold text-[hsl(var(--text-1))] mb-1">Deregister Agent?</h3>
             <p className="text-sm text-[hsl(var(--text-3))] mb-4">This will permanently remove the agent from the registry. This action cannot be undone.</p>

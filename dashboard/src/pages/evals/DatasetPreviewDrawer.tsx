@@ -60,7 +60,7 @@ export default function DatasetPreviewDrawer() {
       </div>
 
       {/* Data Table */}
-      <div className="flex-1 overflow-auto bg-[hsl(var(--bg-surface))]">
+      <div className="flex-1 overflow-auto bg-surface">
         <table className="w-full text-left border-collapse min-w-[800px]">
           <thead className="sticky top-0 z-10 shadow-sm" style={{ background: 'hsl(var(--bg-muted))' }}>
             <tr>

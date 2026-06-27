@@ -113,7 +113,7 @@ export default function RedTeamFindings() {
           <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">AI adversarial testing results — attack vectors, CVSS scores, impact assessment, and remediation tracking</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => toast.success('Red team report exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]"><Export size={14} /> Export</button>
+          <button onClick={() => toast.success('Red team report exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised"><Export size={14} /> Export</button>
           <button onClick={() => { setForm(BLANK); setShowCreate(true) }} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90"><Plus size={14} weight="bold" /> Log Finding</button>
         </div>
       </div>
@@ -125,7 +125,7 @@ export default function RedTeamFindings() {
           { label: 'In Remediation', value: stats.remediation, sub: 'Active work in progress', color: 'hsl(45 85% 40%)' },
           { label: 'Avg CVSS Score', value: stats.avgCvss, sub: 'Across all findings', color: Number(stats.avgCvss) >= 7 ? 'hsl(var(--destructive))' : 'hsl(45 85% 40%)' },
         ].map(s => (
-          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
             <p className="text-xs text-[hsl(var(--text-4))]">{s.label}</p>
             <p className="text-2xl font-bold mt-1" style={{ color: s.color }}>{s.value}</p>
             <p className="text-xs text-[hsl(var(--text-4))] mt-0.5">{s.sub}</p>
@@ -137,21 +137,21 @@ export default function RedTeamFindings() {
         <div className="relative flex-1 min-w-48">
           <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search findings, models…"
-            className="w-full pl-8 pr-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none focus:border-[hsl(var(--brand))]" />
+            className="w-full pl-8 pr-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
         </div>
-        <select value={sevFilter} onChange={e => setSevFilter(e.target.value)} className="px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none">
+        <select value={sevFilter} onChange={e => setSevFilter(e.target.value)} className="px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
           {['All', 'Critical', 'High', 'Medium', 'Low'].map(s => <option key={s}>{s}</option>)}
         </select>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none">
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
           {['All', 'Open', 'In Remediation', 'Resolved', 'Accepted Risk'].map(s => <option key={s}>{s}</option>)}
         </select>
         <span className="text-xs text-[hsl(var(--text-4))]">{filtered.length} finding{filtered.length !== 1 ? 's' : ''}</span>
       </div>
 
-      <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] overflow-hidden">
+      <div className="rounded border border-[hsl(var(--border))] bg-surface overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
+            <tr className="border-b border-[hsl(var(--border))] bg-raised">
               {['ID', 'Finding', 'Vector', 'CVSS', 'Severity', 'Status', 'Model', 'Discovered', 'Owner', ''].map(h => (
                 <th key={h} className="text-left px-3 py-2.5 text-xs font-semibold text-[hsl(var(--text-4))] uppercase tracking-wide">{h}</th>
               ))}
@@ -159,7 +159,7 @@ export default function RedTeamFindings() {
           </thead>
           <tbody>
             {filtered.map(f => (
-              <tr key={f.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))]">
+              <tr key={f.id} className="border-b border-[hsl(var(--border))] hover:bg-raised">
                 <td className="px-3 py-2.5 font-mono text-xs text-[hsl(var(--brand))] font-medium whitespace-nowrap">{f.id}</td>
                 <td className="px-3 py-2.5 max-w-xs">
                   <p className="font-medium text-[hsl(var(--text-1))] line-clamp-1">{f.title}</p>
@@ -192,8 +192,8 @@ export default function RedTeamFindings() {
       {selected && (
         <div className="fixed inset-0 z-40 flex">
           <div className="flex-1 bg-black/40" onClick={() => { setSelected(null); setEditMode(false) }} />
-          <div className="w-[540px] bg-[hsl(var(--bg-surface))] border-l border-[hsl(var(--border))] h-full overflow-y-auto flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))] sticky top-0 bg-[hsl(var(--bg-surface))]">
+          <div className="w-[540px] bg-surface border-l border-[hsl(var(--border))] h-full overflow-y-auto flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))] sticky top-0 bg-surface">
               <div>
                 <p className="font-mono text-xs text-[hsl(var(--brand))] font-semibold">{selected.id}</p>
                 <h2 className="text-base font-semibold text-[hsl(var(--text-1))] mt-0.5 leading-snug">{selected.title}</h2>
@@ -209,8 +209,8 @@ export default function RedTeamFindings() {
                   <div className="flex flex-wrap gap-2">
                     <span className="px-2 py-0.5 rounded text-xs font-medium" style={SEV[selected.severity]}>{selected.severity}</span>
                     <span className="px-2 py-0.5 rounded text-xs font-medium" style={STS[selected.status]}>{selected.status}</span>
-                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-3))]">CVSS {selected.cvssScore}</span>
-                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-3))]">{selected.attackVector}</span>
+                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-raised text-[hsl(var(--text-3))]">CVSS {selected.cvssScore}</span>
+                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-raised text-[hsl(var(--text-3))]">{selected.attackVector}</span>
                   </div>
                   {[
                     { label: 'Model Affected', value: selected.model },
@@ -230,7 +230,7 @@ export default function RedTeamFindings() {
                   ].map(f => (
                     <div key={f.label}>
                       <p className="text-xs text-[hsl(var(--text-4))] mb-1">{f.label}</p>
-                      <p className="text-sm text-[hsl(var(--text-2))] bg-[hsl(var(--bg-raised))] p-3 rounded">{f.value}</p>
+                      <p className="text-sm text-[hsl(var(--text-2))] bg-raised p-3 rounded">{f.value}</p>
                     </div>
                   ))}
                   <div className="flex gap-2 pt-2 border-t border-[hsl(var(--border))]">
@@ -253,20 +253,20 @@ export default function RedTeamFindings() {
                     <div key={f.key}>
                       <label className="text-xs text-[hsl(var(--text-4))]">{f.label}</label>
                       <input type={f.type} value={(form as any)[f.key]} onChange={e => setForm(p => ({ ...p, [f.key]: f.type === 'number' ? Number(e.target.value) : e.target.value }))}
-                        className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none focus:border-[hsl(var(--brand))]" />
+                        className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
                     </div>
                   ))}
                   <div>
                     <label className="text-xs text-[hsl(var(--text-4))]">Status</label>
                     <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value as FindingStatus }))}
-                      className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none">
+                      className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
                       {['Open', 'In Remediation', 'Resolved', 'Accepted Risk'].map(s => <option key={s}>{s}</option>)}
                     </select>
                   </div>
                   <div>
                     <label className="text-xs text-[hsl(var(--text-4))]">Recommendation</label>
                     <textarea value={form.recommendation} onChange={e => setForm(p => ({ ...p, recommendation: e.target.value }))} rows={4}
-                      className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none resize-none focus:border-[hsl(var(--brand))]" />
+                      className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none resize-none focus:border-[hsl(var(--brand))]" />
                   </div>
                   <div className="flex gap-2">
                     <button onClick={handleEdit} className="flex-1 py-2 bg-[hsl(var(--brand))] text-white text-sm">Save</button>
@@ -283,7 +283,7 @@ export default function RedTeamFindings() {
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowCreate(false)} />
-          <div className="relative bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] rounded w-full max-w-lg shadow-xl">
+          <div className="relative bg-surface border border-[hsl(var(--border))] rounded w-full max-w-lg shadow-xl">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
               <h2 className="font-semibold text-[hsl(var(--text-1))]">Log Red Team Finding</h2>
               <button onClick={() => setShowCreate(false)}><X size={16} className="text-[hsl(var(--text-4))]" /></button>
@@ -292,20 +292,20 @@ export default function RedTeamFindings() {
               <div>
                 <label className="text-xs text-[hsl(var(--text-4))]">Finding Title *</label>
                 <input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="Describe the vulnerability or attack finding"
-                  className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none focus:border-[hsl(var(--brand))]" />
+                  className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Attack Vector</label>
                   <select value={form.attackVector} onChange={e => setForm(p => ({ ...p, attackVector: e.target.value as AttackVector }))}
-                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none">
+                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
                     {['Prompt Injection', 'Jailbreak', 'Model Extraction', 'Data Poisoning', 'Adversarial Input', 'Membership Inference', 'Training Data Leakage', 'Supply Chain', 'API Abuse', 'Evasion Attack'].map(v => <option key={v}>{v}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Severity</label>
                   <select value={form.severity} onChange={e => setForm(p => ({ ...p, severity: e.target.value as Severity }))}
-                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none">
+                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
                     {['Critical', 'High', 'Medium', 'Low'].map(s => <option key={s}>{s}</option>)}
                   </select>
                 </div>
@@ -314,42 +314,42 @@ export default function RedTeamFindings() {
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">CVSS Score (0–10)</label>
                   <input type="number" min="0" max="10" step="0.1" value={form.cvssScore} onChange={e => setForm(p => ({ ...p, cvssScore: Number(e.target.value) }))}
-                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none focus:border-[hsl(var(--brand))]" />
+                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
                 </div>
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Discovery Date</label>
                   <input type="date" value={form.discoveredDate} onChange={e => setForm(p => ({ ...p, discoveredDate: e.target.value }))}
-                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none focus:border-[hsl(var(--brand))]" />
+                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Model Affected</label>
                   <select value={form.model} onChange={e => setForm(p => ({ ...p, model: e.target.value }))}
-                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none">
+                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
                     {['Credit Scoring Model v2.1', 'Loan Approval Model v3.0', 'Fraud Detection Engine v4.2', 'Customer Churn Predictor v2.3'].map(m => <option key={m}>{m}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Discovered By</label>
                   <input value={form.discoveredBy} onChange={e => setForm(p => ({ ...p, discoveredBy: e.target.value }))} placeholder="Red Team Alpha"
-                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none focus:border-[hsl(var(--brand))]" />
+                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
                 </div>
               </div>
               <div>
                 <label className="text-xs text-[hsl(var(--text-4))]">Description</label>
                 <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={3}
-                  className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none resize-none focus:border-[hsl(var(--brand))]" />
+                  className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none resize-none focus:border-[hsl(var(--brand))]" />
               </div>
               <div>
                 <label className="text-xs text-[hsl(var(--text-4))]">Recommendation</label>
                 <textarea value={form.recommendation} onChange={e => setForm(p => ({ ...p, recommendation: e.target.value }))} rows={2}
-                  className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none resize-none focus:border-[hsl(var(--brand))]" />
+                  className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none resize-none focus:border-[hsl(var(--brand))]" />
               </div>
               <div>
                 <label className="text-xs text-[hsl(var(--text-4))]">Remediation Owner</label>
                 <select value={form.remediationOwner} onChange={e => setForm(p => ({ ...p, remediationOwner: e.target.value }))}
-                  className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none">
+                  className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
                   {['Sarah Chen', 'James Liu', 'Marcus Johnson', 'Maria Santos'].map(o => <option key={o}>{o}</option>)}
                 </select>
               </div>
@@ -365,7 +365,7 @@ export default function RedTeamFindings() {
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" />
-          <div className="relative bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] rounded w-full max-w-sm p-6 text-center shadow-xl">
+          <div className="relative bg-surface border border-[hsl(var(--border))] rounded w-full max-w-sm p-6 text-center shadow-xl">
             <Warning size={32} className="mx-auto text-[hsl(var(--destructive))] mb-3" />
             <h3 className="font-semibold text-[hsl(var(--text-1))] mb-1">Delete Finding?</h3>
             <p className="text-sm text-[hsl(var(--text-3))] mb-4">This will permanently remove the finding record.</p>

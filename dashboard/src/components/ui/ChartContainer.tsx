@@ -77,7 +77,7 @@ export function ChartContainer({
   return (
     <div
       className={cn(
-        'rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))]',
+        'rounded-lg border border-[hsl(var(--border))] bg-surface',
         'shadow-sm hover:shadow-md transition-shadow duration-150',
         className,
       )}

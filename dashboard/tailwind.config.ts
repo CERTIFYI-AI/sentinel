@@ -49,6 +49,14 @@ const config: Config = {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
+        surface: {
+          DEFAULT: 'hsl(var(--bg-surface))',
+          1: 'hsl(var(--bg-surface))',
+          2: 'hsl(var(--bg-raised))',
+          3: 'hsl(var(--bg-sunken))',
+        },
+        raised: 'hsl(var(--bg-raised))',
+        sunken: 'hsl(var(--bg-sunken))',
         sidebar: {
           DEFAULT: 'hsl(var(--sidebar-background))',
           foreground: 'hsl(var(--sidebar-foreground))',

@@ -86,7 +86,7 @@ function StatCardItem({
     <div
       className={cn(
         'flex flex-col gap-2 p-4 rounded-lg border',
-        'border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))]',
+        'border-[hsl(var(--border))] bg-surface',
         'shadow-sm hover:shadow-md transition-shadow duration-150',
         'border-l-4 border-l-[hsl(var(--brand))]',
         href && 'cursor-pointer',
@@ -130,7 +130,7 @@ function StatCardSkeleton() {
     <div
       className={cn(
         'flex flex-col gap-2 p-4 rounded-lg border',
-        'border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))]',
+        'border-[hsl(var(--border))] bg-surface',
         'border-l-4 border-l-[hsl(var(--bg-muted))]',
       )}
       aria-busy="true"

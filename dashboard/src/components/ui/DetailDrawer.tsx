@@ -137,7 +137,7 @@ export function DetailDrawer({
         aria-label={title}
         className={cn(
           'fixed top-0 right-0 bottom-0 z-50 flex flex-col',
-          'bg-[hsl(var(--bg-surface))] border-l border-[hsl(var(--border))]',
+          'bg-surface border-l border-[hsl(var(--border))]',
           'shadow-2xl transition-transform duration-200 ease-out',
           widthClass,
           open ? 'translate-x-0' : 'translate-x-full',

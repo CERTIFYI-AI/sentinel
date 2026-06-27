@@ -112,7 +112,7 @@ export default function EvidenceSync() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-[hsl(var(--bg-raised))] border-b border-[hsl(var(--border))]">
+              <thead className="bg-raised border-b border-[hsl(var(--border))]">
                 <tr>
                   <th className="px-3 py-2.5 w-8"><input type="checkbox" checked={sp.selectedIds.size===sp.paged.length&&sp.paged.length>0} onChange={sp.toggleAll} /></th>
                   <Th col="title" label="Evidence Title" sortCol={sp.sortCol} sortDir={sp.sortDir} onSort={sp.handleSort} />
@@ -128,13 +128,13 @@ export default function EvidenceSync() {
               </thead>
               <tbody>
                 {sp.paged.map((item: any) => (
-                  <tr key={item.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))] cursor-pointer" onClick={() => { setViewItem(item); setModal("view"); }}>
+                  <tr key={item.id} className="border-b border-[hsl(var(--border))] hover:bg-raised cursor-pointer" onClick={() => { setViewItem(item); setModal("view"); }}>
                     <td className="px-3 py-2.5" onClick={e=>e.stopPropagation()}><input type="checkbox" checked={sp.selectedIds.has(item.id)} onChange={() => sp.toggleSelect(item.id)} /></td>
                     <td className="px-3 py-2.5 max-w-[200px]">
                       <p className="font-medium text-[hsl(var(--text-1))] line-clamp-1">{item.title}</p>
                       <p className="text-xs text-[hsl(var(--text-4))] font-mono">{item.id} · {item.fileSize}</p>
                     </td>
-                    <td className="px-3 py-2.5 text-xs"><span className="px-1.5 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{item.evidenceType}</span></td>
+                    <td className="px-3 py-2.5 text-xs"><span className="px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))]">{item.evidenceType}</span></td>
                     <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-2))]">{item.framework}</td>
                     <td className="px-3 py-2.5 text-xs font-mono text-[hsl(var(--text-3))]">{item.controlId}</td>
                     <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))] whitespace-nowrap">{item.uploadDate}</td>
@@ -143,8 +143,8 @@ export default function EvidenceSync() {
                     <td className="px-3 py-2.5"><div className="flex items-center gap-1.5"><StatusBadge status={item.status} />{item.verified&&<span className="text-xs text-green-600">✓</span>}</div></td>
                     <td className="px-3 py-2.5 text-right" onClick={e=>e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => { setViewItem(item); setModal("view"); }} className="p-1.5 hover:bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-3))]"><Eye size={14} /></button>
-                        <button onClick={() => openEdit(item)} className="p-1.5 hover:bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-3))]"><PencilSimple size={14} /></button>
+                        <button onClick={() => { setViewItem(item); setModal("view"); }} className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"><Eye size={14} /></button>
+                        <button onClick={() => openEdit(item)} className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"><PencilSimple size={14} /></button>
                         <button onClick={() => setDeleteTarget(item)} className="p-1.5 hover:bg-red-50 text-[hsl(0_72%_51%)]"><Trash size={14} /></button>
                       </div>
                     </td>
@@ -199,7 +199,7 @@ export default function EvidenceSync() {
               <div className="flex items-center gap-2 flex-wrap">
                 <StatusBadge status={viewItem.status} />
                 {viewItem.verified&&<span className="text-xs px-1.5 py-0.5 bg-green-50 text-green-600 border border-green-200">Verified ✓</span>}
-                <span className="text-xs px-1.5 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{viewItem.classification}</span>
+                <span className="text-xs px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))]">{viewItem.classification}</span>
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 {[["Evidence Type",viewItem.evidenceType],["Framework",viewItem.framework],["Linked Control",viewItem.controlId],["Owner",viewItem.owner],["File",viewItem.file],["File Size",viewItem.fileSize],["Upload Date",viewItem.uploadDate],["Expiry Date",viewItem.expiryDate],["Retention",viewItem.retentionPolicy],["Verified By",viewItem.verifiedBy||"—"]].map(([k,v])=>(

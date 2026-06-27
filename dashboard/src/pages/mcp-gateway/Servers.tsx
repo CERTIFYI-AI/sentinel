@@ -43,17 +43,17 @@ export default function Servers() {
         </Button>
       </div>
 
-      <Card className="border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] rounded-none">
+      <Card className="border-[hsl(var(--border))] bg-surface-1 rounded-none">
         
         {/* Table Toolbar */}
-        <div className="p-4 border-b border-[hsl(var(--border))] flex items-center justify-between bg-[hsl(var(--surface-2))]">
+        <div className="p-4 border-b border-[hsl(var(--border))] flex items-center justify-between bg-surface-2">
           <div className="relative w-64">
             <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-3))]" />
             <Input 
               placeholder="Search servers..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 bg-[hsl(var(--surface-1))] border-[hsl(var(--border))] rounded-none h-9"
+              className="pl-9 bg-surface-1 border-[hsl(var(--border))] rounded-none h-9"
             />
           </div>
           <Button variant="outline" className="rounded-none border-[hsl(var(--border))] text-[hsl(var(--text-2))] flex items-center gap-2 h-9">
@@ -64,7 +64,7 @@ export default function Servers() {
         {/* Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
-            <thead className="text-xs text-[hsl(var(--text-2))] uppercase bg-[hsl(var(--surface-2))] border-b border-[hsl(var(--border))]">
+            <thead className="text-xs text-[hsl(var(--text-2))] uppercase bg-surface-2 border-b border-[hsl(var(--border))]">
               <tr>
                 <th className="px-6 py-4 font-medium">Server Name</th>
                 <th className="px-6 py-4 font-medium">Endpoint URL</th>
@@ -77,10 +77,10 @@ export default function Servers() {
             </thead>
             <tbody>
               {filtered.map((server) => (
-                <tr key={server.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--surface-2))] transition-colors">
+                <tr key={server.id} className="border-b border-[hsl(var(--border))] hover:bg-surface-2 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-[hsl(var(--surface-3))] rounded-none">
+                      <div className="p-2 bg-surface-3 rounded-none">
                         <Database size={16} className="text-[hsl(var(--brand))]" />
                       </div>
                       <span className="font-medium text-[hsl(var(--text-1))]">{server.name}</span>
@@ -110,7 +110,7 @@ export default function Servers() {
                     {server.auth}
                   </td>
                   <td className="px-6 py-4 text-center">
-                    <Badge className="bg-[hsl(var(--surface-3))] text-[hsl(var(--text-1))] border border-[hsl(var(--border))] rounded-none font-mono">
+                    <Badge className="bg-surface-3 text-[hsl(var(--text-1))] border border-[hsl(var(--border))] rounded-none font-mono">
                       {server.toolsCount}
                     </Badge>
                   </td>

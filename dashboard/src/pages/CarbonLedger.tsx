@@ -177,7 +177,7 @@ function CarbonLedgerInner({ entries: initialEntries, save, remove, chartTheme }
           <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">AI model carbon footprint tracking — training, inference, energy consumption, and offset accounting</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => exportCsv(entries, 'carbon-ledger.csv')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]"><Export size={14} /> Export CSV</button>
+          <button onClick={() => exportCsv(entries, 'carbon-ledger.csv')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised"><Export size={14} /> Export CSV</button>
           <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90"><Plus size={14} /> Log Entry</button>
         </div>
       </div>
@@ -241,7 +241,7 @@ function CarbonLedgerInner({ entries: initialEntries, save, remove, chartTheme }
             color: monthlyChange < 0 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))',
           },
         ].map(s => (
-          <div key={s.label} className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+          <div key={s.label} className="border border-[hsl(var(--border))] bg-surface p-4">
             <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
             <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
             <p className="text-[10px] text-[hsl(var(--text-4))] mt-1">{s.sub}</p>
@@ -280,7 +280,7 @@ function CarbonLedgerInner({ entries: initialEntries, save, remove, chartTheme }
       )}
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+        <div className="border border-[hsl(var(--border))] bg-surface p-4">
           <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] mb-4">Emissions Trend by Period (tCO₂e)</h3>
           <ResponsiveContainer width="100%" height={180}>
             <AreaChart data={trendData}>
@@ -292,7 +292,7 @@ function CarbonLedgerInner({ entries: initialEntries, save, remove, chartTheme }
             </AreaChart>
           </ResponsiveContainer>
         </div>
-        <div className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+        <div className="border border-[hsl(var(--border))] bg-surface p-4">
           <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] mb-4">Emissions by Model (tCO₂e)</h3>
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={modelData} layout="vertical">
@@ -307,7 +307,7 @@ function CarbonLedgerInner({ entries: initialEntries, save, remove, chartTheme }
 
       {/* Energy Efficiency Scores */}
       {modelData.length > 0 && (
-        <div className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+        <div className="border border-[hsl(var(--border))] bg-surface p-4">
           <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] mb-4">Energy Efficiency Scores by Model</h3>
           <div className="space-y-3">
             {[...modelData].sort((a, b) => b.efficiency - a.efficiency).map(m => {
@@ -335,15 +335,15 @@ function CarbonLedgerInner({ entries: initialEntries, save, remove, chartTheme }
       )}
 
       {entries.length === 0 ? (
-        <div className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-12 text-center">
+        <div className="border border-[hsl(var(--border))] bg-surface p-12 text-center">
           <Leaf size={32} className="mx-auto mb-3 text-[hsl(var(--text-4))]" />
           <p className="text-sm text-[hsl(var(--text-3))]">No carbon records yet. Log your first entry.</p>
         </div>
       ) : (
-        <div className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] overflow-hidden">
+        <div className="border border-[hsl(var(--border))] bg-surface overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
+              <tr className="border-b border-[hsl(var(--border))] bg-raised">
                 {['ID', 'Model', 'Period', 'Training', 'Inference', 'Total', 'Energy (kWh)', 'Renewable', 'Efficiency', 'Offset', 'Net', 'Verified', 'View', 'Del'].map(h => (
                   <th key={h} className="text-left px-3 py-3 text-[11px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wide">{h === 'View' || h === 'Del' ? '' : h}</th>
                 ))}
@@ -351,7 +351,7 @@ function CarbonLedgerInner({ entries: initialEntries, save, remove, chartTheme }
             </thead>
             <tbody>
               {entries.map((e: any) => (
-                <tr key={e.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))] cursor-pointer" onClick={() => setSelected(e)}>
+                <tr key={e.id} className="border-b border-[hsl(var(--border))] hover:bg-raised cursor-pointer" onClick={() => setSelected(e)}>
                   <td className="px-3 py-3 font-mono text-xs text-[hsl(var(--brand))]">{String(e.id).slice(0, 12)}</td>
                   <td className="px-3 py-3 text-xs font-medium text-[hsl(var(--text-1))] max-w-[120px] truncate">{e.model}</td>
                   <td className="px-3 py-3 text-xs text-[hsl(var(--text-3))]">{e.period}</td>
@@ -387,7 +387,7 @@ function CarbonLedgerInner({ entries: initialEntries, save, remove, chartTheme }
       {selected && (
         <div className="fixed inset-0 z-50 flex">
           <div className="flex-1 bg-black/40" onClick={() => setSelected(null)} />
-          <div className="w-[420px] bg-[hsl(var(--bg-surface))] border-l border-[hsl(var(--border))] flex flex-col h-full overflow-y-auto">
+          <div className="w-[420px] bg-surface border-l border-[hsl(var(--border))] flex flex-col h-full overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))]">
               <div><p className="font-mono text-xs text-[hsl(var(--brand))]">{String(selected.id).slice(0, 12)}</p><h2 className="text-sm font-semibold text-[hsl(var(--text-1))]">{selected.model} — {selected.period}</h2></div>
               <button onClick={() => setSelected(null)}><X size={18} className="text-[hsl(var(--text-4))]" /></button>
@@ -406,7 +406,7 @@ function CarbonLedgerInner({ entries: initialEntries, save, remove, chartTheme }
                   { label: 'Compute Provider', value: selected.computeProvider },
                   { label: 'Region', value: selected.region },
                 ].map(({ label, value }) => (
-                  <div key={label} className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                  <div key={label} className="p-3 bg-raised border border-[hsl(var(--border))]">
                     <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{label}</p>
                     <p className="text-sm font-semibold text-[hsl(var(--text-1))] mt-0.5">{value}</p>
                   </div>
@@ -421,7 +421,7 @@ function CarbonLedgerInner({ entries: initialEntries, save, remove, chartTheme }
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowCreate(false)} />
-          <div className="relative bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] w-full max-w-lg mx-4 shadow-2xl">
+          <div className="relative bg-surface border border-[hsl(var(--border))] w-full max-w-lg mx-4 shadow-2xl">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
               <h2 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2">
                 <Leaf size={15} className="text-[hsl(var(--s-ok-tx))]" />
@@ -433,45 +433,45 @@ function CarbonLedgerInner({ entries: initialEntries, save, remove, chartTheme }
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Model *</label>
-                  <input value={form.model} onChange={e => setForm(p => ({ ...p, model: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="Model name" />
+                  <input value={form.model} onChange={e => setForm(p => ({ ...p, model: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="Model name" />
                 </div>
                 <div>
                   <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Period *</label>
-                  <select value={form.period} onChange={e => setForm(p => ({ ...p, period: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
+                  <select value={form.period} onChange={e => setForm(p => ({ ...p, period: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
                     {['2026-Q1', '2026-Q2', '2025-Q4', '2025-Q3'].map(p => <option key={p}>{p}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Training Emissions (tCO₂e)</label>
-                  <input type="number" step="0.1" min={0} value={form.trainingEmissions} onChange={e => setForm(p => ({ ...p, trainingEmissions: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. 48.2" />
+                  <input type="number" step="0.1" min={0} value={form.trainingEmissions} onChange={e => setForm(p => ({ ...p, trainingEmissions: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. 48.2" />
                 </div>
                 <div>
                   <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Inference Emissions (tCO₂e)</label>
-                  <input type="number" step="0.1" min={0} value={form.inferenceEmissions} onChange={e => setForm(p => ({ ...p, inferenceEmissions: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. 8.9" />
+                  <input type="number" step="0.1" min={0} value={form.inferenceEmissions} onChange={e => setForm(p => ({ ...p, inferenceEmissions: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. 8.9" />
                 </div>
                 <div>
                   <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Energy (kWh)</label>
-                  <input type="number" min={0} value={form.energyKwh} onChange={e => setForm(p => ({ ...p, energyKwh: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. 22100" />
+                  <input type="number" min={0} value={form.energyKwh} onChange={e => setForm(p => ({ ...p, energyKwh: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. 22100" />
                 </div>
                 <div>
                   <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Renewable Energy %</label>
-                  <input type="number" min={0} max={100} value={form.renewablePercent} onChange={e => setForm(p => ({ ...p, renewablePercent: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. 72" />
+                  <input type="number" min={0} max={100} value={form.renewablePercent} onChange={e => setForm(p => ({ ...p, renewablePercent: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. 72" />
                 </div>
                 <div>
                   <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Compute Provider *</label>
-                  <select value={form.computeProvider} onChange={e => setForm(p => ({ ...p, computeProvider: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
+                  <select value={form.computeProvider} onChange={e => setForm(p => ({ ...p, computeProvider: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
                     <option value="">Select provider...</option>
                     {['AWS us-east-1', 'AWS us-west-2', 'Azure East US', 'GCP us-central1', 'OpenAI API', 'On-premise'].map(p => <option key={p}>{p}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Carbon Offset (tCO₂e)</label>
-                  <input type="number" step="0.1" min={0} value={form.offset} onChange={e => setForm(p => ({ ...p, offset: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. 20" />
+                  <input type="number" step="0.1" min={0} value={form.offset} onChange={e => setForm(p => ({ ...p, offset: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. 20" />
                 </div>
               </div>
             </div>
             <div className="flex justify-end gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
-              <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">Cancel</button>
+              <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">Cancel</button>
               <button onClick={handleCreate} className="px-4 py-2 text-sm font-medium bg-[hsl(var(--brand))] text-white hover:opacity-90">Log Entry</button>
             </div>
           </div>

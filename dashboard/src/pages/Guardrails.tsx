@@ -183,8 +183,8 @@ export default function Guardrails() {
     (rules.filter(r => r.avgLatencyMs > 0).length || 1)
   )
 
-  const inputCls = "w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]"
-  const selectCls = "w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none"
+  const inputCls = "w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]"
+  const selectCls = "w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none"
 
   return (
     <div className="space-y-5">
@@ -212,7 +212,7 @@ export default function Guardrails() {
           { label: 'Blocks (all time)', value: fmt(totalBlocked), color: 'hsl(var(--destructive))' },
           { label: 'Avg Latency', value: `${avgLatency}ms`, color: 'hsl(var(--brand))' },
         ].map(s => (
-          <div key={s.label} className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4" style={{ borderRadius: 0 }}>
+          <div key={s.label} className="border border-[hsl(var(--border))] bg-surface p-4" style={{ borderRadius: 0 }}>
             <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
             <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
           </div>
@@ -224,14 +224,14 @@ export default function Guardrails() {
         <div className="relative flex-1 min-w-[200px] max-w-xs">
           <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search rules…"
-            className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+            className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]" />
         </div>
         <div className="flex items-center gap-1 text-[hsl(var(--text-4))]"><Funnel size={13} /></div>
-        <select value={filterType} onChange={e => setFilterType(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+        <select value={filterType} onChange={e => setFilterType(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
           <option value="all">All Types</option>
           {(['Privacy', 'Safety', 'Security', 'Accuracy', 'Governance', 'Rate Limiting'] as RuleType[]).map(t => <option key={t}>{t}</option>)}
         </select>
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
           <option value="all">All Statuses</option>
           <option value="active">Active</option>
           <option value="testing">Testing</option>
@@ -241,10 +241,10 @@ export default function Guardrails() {
       </div>
 
       {/* Rules Table */}
-      <div className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] overflow-hidden" style={{ borderRadius: 0 }}>
+      <div className="border border-[hsl(var(--border))] bg-surface overflow-hidden" style={{ borderRadius: 0 }}>
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
+            <tr className="border-b border-[hsl(var(--border))] bg-raised">
               {['Rule', 'Type', 'Action', 'Target', 'Evaluations', 'Triggered', 'Avg Latency', 'Status', ''].map(h => (
                 <th key={h} className="text-left px-4 py-3 text-[11px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wide whitespace-nowrap">{h}</th>
               ))}
@@ -256,7 +256,7 @@ export default function Guardrails() {
               const ss = STATUS_STYLE[r.status]
               return (
                 <tr key={r.id}
-                  className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))] cursor-pointer"
+                  className="border-b border-[hsl(var(--border))] hover:bg-raised cursor-pointer"
                   style={{ opacity: r.status === 'disabled' ? 0.6 : 1 }}
                   onClick={() => setSelected(r)}>
                   <td className="px-4 py-3">
@@ -312,7 +312,7 @@ export default function Guardrails() {
       {selected && (
         <div className="fixed inset-0 z-50 flex">
           <div className="flex-1 bg-black/40" onClick={() => setSelected(null)} />
-          <div className="w-[480px] bg-[hsl(var(--bg-surface))] border-l border-[hsl(var(--border))] flex flex-col h-full">
+          <div className="w-[480px] bg-surface border-l border-[hsl(var(--border))] flex flex-col h-full">
             <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))]">
               <div>
                 <p className="font-mono text-xs text-[hsl(var(--brand))]">{selected.id}</p>
@@ -340,7 +340,7 @@ export default function Guardrails() {
                 </span>
               </div>
 
-              <div className="p-3 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
+              <div className="p-3 border border-[hsl(var(--border))] bg-raised">
                 <p className="text-xs text-[hsl(var(--text-3))]">{selected.description}</p>
               </div>
 
@@ -353,7 +353,7 @@ export default function Guardrails() {
                   { label: 'Target', value: selected.target },
                   { label: 'Created By', value: selected.createdBy },
                 ].map(({ label, value }) => (
-                  <div key={label} className="p-2.5 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
+                  <div key={label} className="p-2.5 border border-[hsl(var(--border))] bg-raised">
                     <p className="text-[10px] text-[hsl(var(--text-4))] uppercase tracking-wide">{label}</p>
                     <p className="text-xs font-medium text-[hsl(var(--text-1))] mt-0.5 truncate">{value}</p>
                   </div>
@@ -361,7 +361,7 @@ export default function Guardrails() {
               </div>
 
               {selected.evaluations > 0 && (
-                <div className="p-3 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
+                <div className="p-3 border border-[hsl(var(--border))] bg-raised">
                   <div className="flex justify-between mb-1.5">
                     <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide">Trigger Rate</p>
                     <p className="text-xs font-bold" style={{ color: ACTION_STYLE[selected.action].color }}>
@@ -379,7 +379,7 @@ export default function Guardrails() {
 
               <div>
                 <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Detection Pattern</p>
-                <div className="p-3 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
+                <div className="p-3 border border-[hsl(var(--border))] bg-raised">
                   <p className="text-[11px] font-mono text-[hsl(var(--brand))] break-all">{selected.pattern}</p>
                 </div>
               </div>
@@ -387,7 +387,7 @@ export default function Guardrails() {
 
             <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
               <button onClick={() => toggleStatus(selected)}
-                className="flex-1 py-2 text-sm font-medium border border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))]"
+                className="flex-1 py-2 text-sm font-medium border border-[hsl(var(--border))] hover:bg-raised"
                 style={{ color: selected.status === 'active' ? 'hsl(var(--destructive))' : 'hsl(var(--s-ok-tx))' }}>
                 {selected.status === 'active' ? 'Disable Rule' : 'Enable Rule'}
               </button>
@@ -402,7 +402,7 @@ export default function Guardrails() {
       {/* Create / Edit Modal */}
       {createOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-[540px] max-h-[85vh] flex flex-col bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))]" style={{ borderRadius: 0 }}>
+          <div className="w-[540px] max-h-[85vh] flex flex-col bg-surface border border-[hsl(var(--border))]" style={{ borderRadius: 0 }}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
               <h2 className="text-base font-semibold text-[hsl(var(--text-1))]">
                 {editTarget ? 'Edit Guardrail Rule' : 'New Guardrail Rule'}
@@ -443,12 +443,12 @@ export default function Guardrails() {
                 <label className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide block mb-1">Description</label>
                 <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
                   rows={3} placeholder="Describe what this guardrail does and when it triggers…"
-                  className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none resize-none" />
+                  className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none resize-none" />
               </div>
             </div>
             <div className="flex gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
               <button onClick={() => setCreateOpen(false)}
-                className="flex-1 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+                className="flex-1 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
                 Cancel
               </button>
               <button onClick={handleSave} disabled={!form.name.trim()}

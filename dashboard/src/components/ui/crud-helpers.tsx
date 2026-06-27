@@ -102,7 +102,7 @@ export function BulkActionToolbar({
             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs border ${
               a.variant === "destructive"
                 ? "border-[hsl(0_72%_51%/0.4)] text-[hsl(0_72%_51%)] hover:bg-[hsl(0_72%_51%/0.08)]"
-                : "border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]"
+                : "border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised"
             }`}
           >
             {a.label}
@@ -110,12 +110,12 @@ export function BulkActionToolbar({
         ))}
         {/* individual callbacks API */}
         {!actions && onExport && (
-          <button onClick={onExport} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+          <button onClick={onExport} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">
             <Export size={12} /> Export
           </button>
         )}
         {!actions && onStatusChange && (
-          <button onClick={onStatusChange} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+          <button onClick={onStatusChange} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">
             Bulk Status
           </button>
         )}
@@ -177,7 +177,7 @@ export function PaginationBar({
         <button
           disabled={_page === 1}
           onClick={() => _onPage?.(_page - 1)}
-          className="px-2 py-1 text-xs border border-[hsl(var(--border))] disabled:opacity-40 hover:bg-[hsl(var(--bg-raised))]"
+          className="px-2 py-1 text-xs border border-[hsl(var(--border))] disabled:opacity-40 hover:bg-raised"
         >
           ‹ Prev
         </button>
@@ -187,7 +187,7 @@ export function PaginationBar({
             <button
               key={p}
               onClick={() => _onPage?.(p)}
-              className={`px-2 py-1 text-xs border ${_page === p ? "bg-[hsl(var(--brand))] text-white border-[hsl(var(--brand))]" : "border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))]"}`}
+              className={`px-2 py-1 text-xs border ${_page === p ? "bg-[hsl(var(--brand))] text-white border-[hsl(var(--brand))]" : "border-[hsl(var(--border))] hover:bg-raised"}`}
             >
               {p}
             </button>
@@ -196,7 +196,7 @@ export function PaginationBar({
         <button
           disabled={_page === totalPages}
           onClick={() => _onPage?.(_page + 1)}
-          className="px-2 py-1 text-xs border border-[hsl(var(--border))] disabled:opacity-40 hover:bg-[hsl(var(--bg-raised))]"
+          className="px-2 py-1 text-xs border border-[hsl(var(--border))] disabled:opacity-40 hover:bg-raised"
         >
           Next ›
         </button>
@@ -282,7 +282,7 @@ export function MetaBar({ record, items }: { record?: any; items?: { label: stri
   // If items array provided, use that
   if (items) {
     return (
-      <div className="grid grid-cols-2 gap-3 p-4 bg-[hsl(var(--bg-raised))] border-b border-[hsl(var(--border))] text-xs mb-4">
+      <div className="grid grid-cols-2 gap-3 p-4 bg-raised border-b border-[hsl(var(--border))] text-xs mb-4">
         {items.map(({ label, value }) => (
           <div key={label}>
             <p className="text-[hsl(var(--text-4))] uppercase tracking-wider mb-0.5">{label}</p>
@@ -295,7 +295,7 @@ export function MetaBar({ record, items }: { record?: any; items?: { label: stri
   // Fallback: record object (old API)
   if (!record) return null;
   return (
-    <div className="grid grid-cols-2 gap-3 p-4 bg-[hsl(var(--bg-raised))] border-b border-[hsl(var(--border))] text-xs mb-4">
+    <div className="grid grid-cols-2 gap-3 p-4 bg-raised border-b border-[hsl(var(--border))] text-xs mb-4">
       {[
         ["Record ID", record.id],
         ["Created At", record.createdAt ?? record.created_at ?? "—"],
@@ -491,12 +491,12 @@ export function FormFooter({
 
   return (
     <div className="flex items-center justify-between gap-3 px-5 py-4 border-t border-[hsl(var(--border))] flex-shrink-0 bg-[hsl(var(--card))]">
-      <button onClick={onCancel} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+      <button onClick={onCancel} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">
         Cancel
       </button>
       <div className="flex items-center gap-2">
         {_onDraft && (
-          <button onClick={_onDraft} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+          <button onClick={_onDraft} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">
             Save as Draft
           </button>
         )}

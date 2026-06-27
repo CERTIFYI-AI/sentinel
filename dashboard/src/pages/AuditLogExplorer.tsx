@@ -190,7 +190,7 @@ export default function AuditLogExplorer() {
                 key={f}
                 type="button"
                 onClick={() => void runExport(f)}
-                className="text-xs border border-[hsl(var(--border))] px-2 py-1.5 hover:bg-[hsl(var(--bg-raised))]"
+                className="text-xs border border-[hsl(var(--border))] px-2 py-1.5 hover:bg-raised"
                 aria-label={`Export as ${f.toUpperCase()}`}
               >
                 {f.toUpperCase()}
@@ -251,7 +251,7 @@ export default function AuditLogExplorer() {
           <button
             type="button"
             onClick={() => void runVerify()}
-            className="text-xs border border-[hsl(var(--border))] px-3 py-1.5 hover:bg-[hsl(var(--bg-raised))]"
+            className="text-xs border border-[hsl(var(--border))] px-3 py-1.5 hover:bg-raised"
             aria-label="Verify hash chain integrity"
             disabled={verifyState.kind === 'running'}
           >
@@ -289,7 +289,7 @@ export default function AuditLogExplorer() {
 
       <div className="border border-[hsl(var(--border))] overflow-auto">
         <table className="w-full border-collapse">
-          <thead className="bg-[hsl(var(--bg-raised))]">
+          <thead className="bg-raised">
             <tr>
               <th scope="col" className={headerCell}>#</th>
               <th scope="col" className={headerCell}>When</th>
@@ -317,7 +317,7 @@ export default function AuditLogExplorer() {
               </tr>
             ) : (
               rows.map(r => (
-                <tr key={r.id} className="hover:bg-[hsl(var(--bg-raised))]">
+                <tr key={r.id} className="hover:bg-raised">
                   <td className={`${bodyCell} font-mono`}>{r.sequence_no}</td>
                   <td className={bodyCell}>{new Date(r.occurred_at).toLocaleString()}</td>
                   <td className={bodyCell}>

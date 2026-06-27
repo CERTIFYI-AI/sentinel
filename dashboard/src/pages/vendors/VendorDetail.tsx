@@ -883,7 +883,7 @@ export default function VendorDetail() {
                     <button
                       key={obj.label}
                       onClick={() => navigate(obj.route)}
-                      className="flex flex-col items-center justify-center py-4 gap-2 transition-colors hover:bg-[hsl(var(--bg-raised))]"
+                      className="flex flex-col items-center justify-center py-4 gap-2 transition-colors hover:bg-raised"
                       style={{ border: '1px solid hsl(var(--border))' }}
                     >
                       <obj.icon size={22} style={{ color: obj.color }} />

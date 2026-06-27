@@ -129,7 +129,7 @@ export default function AiAdvisor() {
       {/* Left — Chat */}
       <div className="flex flex-col flex-1 min-w-0 gap-3">
         {/* Header */}
-        <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4 flex items-center gap-3">
+        <div className="rounded border border-[hsl(var(--border))] bg-surface p-4 flex items-center gap-3">
           <div className="w-10 h-10 bg-[hsl(var(--brand))] flex items-center justify-center flex-shrink-0">
             <Brain size={20} weight="fill" className="text-white" />
           </div>
@@ -152,7 +152,7 @@ export default function AiAdvisor() {
         </div>
 
         {/* Chat history */}
-        <div className="flex-1 rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4 overflow-y-auto space-y-4">
+        <div className="flex-1 rounded border border-[hsl(var(--border))] bg-surface p-4 overflow-y-auto space-y-4">
           {messages.map((m, i) => (
             <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               {m.role === 'assistant' && (
@@ -164,7 +164,7 @@ export default function AiAdvisor() {
                 className={`max-w-[85%] rounded px-4 py-3 text-[13px] leading-relaxed ${
                   m.role === 'user'
                     ? 'bg-[hsl(var(--brand))] text-white'
-                    : 'bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]'
+                    : 'bg-raised border border-[hsl(var(--border))]'
                 }`}
               >
                 {m.role === 'assistant' ? formatText(m.text) : m.text}
@@ -176,7 +176,7 @@ export default function AiAdvisor() {
               <div className="w-7 h-7 bg-[hsl(var(--brand))] flex items-center justify-center flex-shrink-0 mr-2">
                 <Brain size={14} weight="fill" className="text-white" />
               </div>
-              <div className="bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] rounded px-4 py-3 flex items-center gap-1.5">
+              <div className="bg-raised border border-[hsl(var(--border))] rounded px-4 py-3 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 bg-[hsl(var(--brand))] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                 <span className="w-1.5 h-1.5 bg-[hsl(var(--brand))] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                 <span className="w-1.5 h-1.5 bg-[hsl(var(--brand))] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
@@ -192,7 +192,7 @@ export default function AiAdvisor() {
             <button
               key={p}
               onClick={() => { setInput(p); }}
-              className="text-[11px] px-2.5 py-1 border border-[hsl(var(--border))] text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-1))] transition-colors rounded-sm"
+              className="text-[11px] px-2.5 py-1 border border-[hsl(var(--border))] text-[hsl(var(--text-3))] hover:bg-raised hover:text-[hsl(var(--text-1))] transition-colors rounded-sm"
             >
               {p}
             </button>
@@ -202,7 +202,7 @@ export default function AiAdvisor() {
         {/* Input */}
         <div className="flex gap-2">
           <input
-            className="flex-1 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] px-4 py-2.5 text-sm text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))] rounded"
+            className="flex-1 border border-[hsl(var(--border))] bg-surface px-4 py-2.5 text-sm text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))] rounded"
             placeholder="Ask about compliance, bias, risks, vendors, incidents…"
             value={input}
             onChange={e => setInput(e.target.value)}
@@ -222,7 +222,7 @@ export default function AiAdvisor() {
       {/* Right — Advisory Queue */}
       <div className="w-96 flex flex-col gap-3 flex-shrink-0">
         {/* Filter bar */}
-        <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-3">
+        <div className="rounded border border-[hsl(var(--border))] bg-surface p-3">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-1.5">
               <Lightbulb size={14} weight="fill" className="text-[hsl(var(--brand))]" />
@@ -268,7 +268,7 @@ export default function AiAdvisor() {
           {filtered.map(s => {
             const sty = SEVERITY_STYLES[s.severity] ?? SEVERITY_STYLES.Medium
             return (
-              <div key={s.id} className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-3 space-y-2">
+              <div key={s.id} className="rounded border border-[hsl(var(--border))] bg-surface p-3 space-y-2">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span
@@ -290,7 +290,7 @@ export default function AiAdvisor() {
                 </div>
                 <p className="text-[12px] font-medium text-[hsl(var(--text-1))] leading-snug">{s.title}</p>
                 <p className="text-[11px] text-[hsl(var(--text-4))] leading-relaxed">{s.description}</p>
-                <div className="p-2 bg-[hsl(var(--bg-raised))] border-l-2 border-[hsl(var(--brand))]">
+                <div className="p-2 bg-raised border-l-2 border-[hsl(var(--brand))]">
                   <p className="text-[10px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-0.5">Recommended Action</p>
                   <p className="text-[11px] text-[hsl(var(--text-2))]">{s.action}</p>
                 </div>
@@ -303,7 +303,7 @@ export default function AiAdvisor() {
                   </button>
                   <button
                     onClick={() => handleDismiss(s.id)}
-                    className="text-[11px] px-3 py-1.5 border border-[hsl(var(--border))] text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-raised))]"
+                    className="text-[11px] px-3 py-1.5 border border-[hsl(var(--border))] text-[hsl(var(--text-3))] hover:bg-raised"
                   >
                     Dismiss
                   </button>
@@ -314,7 +314,7 @@ export default function AiAdvisor() {
         </div>
 
         {/* Stats footer */}
-        <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-3 grid grid-cols-3 gap-2 text-center">
+        <div className="rounded border border-[hsl(var(--border))] bg-surface p-3 grid grid-cols-3 gap-2 text-center">
           {[
             { label: 'Open', value: suggestions.filter(s => s.status === 'Open').length, icon: Clock, color: 'hsl(var(--s-wn-tx))' },
             { label: 'In Progress', value: suggestions.filter(s => s.status === 'In Progress').length, icon: ArrowClockwise, color: 'hsl(var(--s-in-tx))' },

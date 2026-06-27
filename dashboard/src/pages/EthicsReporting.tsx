@@ -229,7 +229,7 @@ export default function EthicsReporting() {
                   const sc = severityColor(r.severity);
                   const stc = statusColor(r.status);
                   return (
-                    <tr key={r.id} className="border-b hover:bg-[hsl(var(--bg-raised))] transition-colors cursor-pointer" style={{ borderColor: 'hsl(var(--border))' }}
+                    <tr key={r.id} className="border-b hover:bg-raised transition-colors cursor-pointer" style={{ borderColor: 'hsl(var(--border))' }}
                       onClick={() => { setSelected(r); setSheetOpen(true); }}>
                       <td className="px-3 py-2.5">
                         <span className="font-mono text-xs px-1.5 py-0.5" style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))' }}>{r.id}</span>

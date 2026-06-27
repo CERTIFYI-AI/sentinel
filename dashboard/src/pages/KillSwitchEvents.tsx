@@ -75,7 +75,7 @@ export default function KillSwitchEvents() {
           <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">Audit log of all agent suspension events — manual, automated, and regulatory</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => toast.success('Exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+          <button onClick={() => toast.success('Exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
             <Export size={14} /> Export
           </button>
           <button
@@ -88,7 +88,7 @@ export default function KillSwitchEvents() {
       </div>
 
       {/* Blast Radius Analysis */}
-      <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+      <div className="rounded border border-[hsl(var(--border))] bg-surface p-4">
         <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2 mb-3">
           <ShieldWarning size={15} className="text-[hsl(var(--s-wn-tx))]" weight="duotone" />
           Blast Radius Analysis — If All Active Agents Are Suspended
@@ -128,7 +128,7 @@ export default function KillSwitchEvents() {
           { label: 'Resolved', value: stats.resolved, color: 'hsl(var(--s-ok-tx))' },
           { label: 'Reg. Notification Pending', value: stats.pendingNotification, color: 'hsl(45 85% 40%)' },
         ].map(s => (
-          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
             <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
             <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
           </div>
@@ -143,11 +143,11 @@ export default function KillSwitchEvents() {
       )}
 
       <div className="flex gap-3">
-        <div className="flex items-center gap-2 flex-1 max-w-xs border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] px-3">
+        <div className="flex items-center gap-2 flex-1 max-w-xs border border-[hsl(var(--border))] bg-surface px-3">
           <MagnifyingGlass size={14} className="text-[hsl(var(--text-4))] flex-shrink-0" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search events…" className="flex-1 py-2 text-sm bg-transparent text-[hsl(var(--text-1))] placeholder-[hsl(var(--text-4))] focus:outline-none" />
         </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
           {['All', 'Active — Agent Suspended', 'Resolved', 'Under Investigation', 'Escalated'].map(s => <option key={s}>{s}</option>)}
         </select>
       </div>
@@ -156,13 +156,13 @@ export default function KillSwitchEvents() {
         {filtered.map(e => {
           const ss = STATUS_STYLE[e.status]
           return (
-            <div key={e.id} className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4 cursor-pointer hover:border-[hsl(var(--brand)/0.4)]" onClick={() => setSelected(e)}>
+            <div key={e.id} className="rounded border border-[hsl(var(--border))] bg-surface p-4 cursor-pointer hover:border-[hsl(var(--brand)/0.4)]" onClick={() => setSelected(e)}>
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="font-mono text-[10px] text-[hsl(var(--destructive))]">{e.id}</span>
                     <span className="text-[11px] px-2 py-0.5 font-medium" style={ss}>{e.status}</span>
-                    <span className="text-[10px] px-1.5 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-4))]">{e.trigger}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-4))]">{e.trigger}</span>
                     {e.regulatoryNotificationRequired && (
                       <span className="text-[10px] px-1.5 py-0.5" style={{ background: 'hsl(280 67% 56% / 0.12)', color: 'hsl(280 60% 55%)' }}>Reg. Required</span>
                     )}
@@ -182,7 +182,7 @@ export default function KillSwitchEvents() {
       </div>
 
       {/* ── Post-mortem Templates ─────────────────────────────────────────── */}
-      <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+      <div className="rounded border border-[hsl(var(--border))] bg-surface p-4">
         <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2 mb-3">
           <ClipboardText size={15} className="text-[hsl(var(--brand))]" />
           Post-mortem Templates
@@ -198,7 +198,7 @@ export default function KillSwitchEvents() {
               </div>
               <button
                 onClick={() => setPostMortemOpen(e)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">
                 <ClipboardText size={12} /> Generate Post-mortem
               </button>
             </div>
@@ -210,7 +210,7 @@ export default function KillSwitchEvents() {
       {killAllOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/60" onClick={() => setKillAllOpen(false)} />
-          <div className="relative w-[480px] bg-[hsl(var(--bg-surface))] border border-[hsl(var(--destructive)/0.5)]" style={{ boxShadow: '0 0 40px hsl(0 72% 51% / 0.3)' }}>
+          <div className="relative w-[480px] bg-surface border border-[hsl(var(--destructive)/0.5)]" style={{ boxShadow: '0 0 40px hsl(0 72% 51% / 0.3)' }}>
             <div className="p-5 border-b border-[hsl(var(--destructive)/0.3)] bg-[hsl(0_72%_51%/0.08)]">
               <div className="flex items-center gap-3">
                 <Siren size={22} className="text-[hsl(var(--destructive))]" weight="fill" />
@@ -242,12 +242,12 @@ export default function KillSwitchEvents() {
                       value={killAllCode}
                       onChange={e => setKillAllCode(e.target.value.toUpperCase())}
                       placeholder="Type KILLALL"
-                      className="w-full px-3 py-2 text-sm border font-mono bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none"
+                      className="w-full px-3 py-2 text-sm border font-mono bg-raised text-[hsl(var(--text-1))] focus:outline-none"
                       style={{ borderColor: killAllCode === 'KILLALL' ? 'hsl(var(--destructive))' : 'hsl(var(--border))' }}
                     />
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={() => setKillAllOpen(false)} className="flex-1 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">Cancel</button>
+                    <button onClick={() => setKillAllOpen(false)} className="flex-1 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">Cancel</button>
                     <button
                       disabled={killAllCode !== 'KILLALL'}
                       onClick={() => setKillAllStep('mfa')}
@@ -260,7 +260,7 @@ export default function KillSwitchEvents() {
               )}
               {killAllStep === 'mfa' && (
                 <div className="space-y-4">
-                  <div className="p-3 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-center">
+                  <div className="p-3 border border-[hsl(var(--border))] bg-raised text-center">
                     <p className="text-[10px] text-[hsl(var(--text-4))] uppercase mb-1">Simulated MFA Code</p>
                     <p className="text-2xl font-mono font-bold tracking-[0.3em] text-[hsl(var(--brand))]">847293</p>
                     <p className="text-[10px] text-[hsl(var(--text-4))] mt-1">Enter the 6-digit code from your authenticator app</p>
@@ -273,12 +273,12 @@ export default function KillSwitchEvents() {
                       onChange={e => setMfaInput(e.target.value.replace(/\D/g, '').slice(0, 6))}
                       placeholder="000000"
                       maxLength={6}
-                      className="w-full px-3 py-2 text-xl font-mono text-center border bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none tracking-[0.3em]"
+                      className="w-full px-3 py-2 text-xl font-mono text-center border bg-raised text-[hsl(var(--text-1))] focus:outline-none tracking-[0.3em]"
                       style={{ borderColor: mfaInput.length === 6 ? 'hsl(var(--destructive))' : 'hsl(var(--border))' }}
                     />
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={() => setKillAllStep('confirm')} className="flex-1 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">← Back</button>
+                    <button onClick={() => setKillAllStep('confirm')} className="flex-1 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">← Back</button>
                     <button
                       disabled={mfaInput.length !== 6}
                       onClick={() => {
@@ -320,14 +320,14 @@ export default function KillSwitchEvents() {
       {postMortemOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={() => setPostMortemOpen(null)} />
-          <div className="relative w-[640px] max-h-[80vh] overflow-y-auto bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))]">
+          <div className="relative w-[640px] max-h-[80vh] overflow-y-auto bg-surface border border-[hsl(var(--border))]">
             <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))]">
               <div>
                 <span className="font-mono text-xs text-[hsl(var(--brand))]">{postMortemOpen.id}</span>
                 <h2 className="text-sm font-semibold text-[hsl(var(--text-1))]">Post-mortem Report — {postMortemOpen.agentName}</h2>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => toast.success('Post-mortem exported as PDF')} className="px-3 py-1.5 text-xs border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">Export PDF</button>
+                <button onClick={() => toast.success('Post-mortem exported as PDF')} className="px-3 py-1.5 text-xs border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">Export PDF</button>
                 <button onClick={() => setPostMortemOpen(null)}><X size={16} className="text-[hsl(var(--text-4))]" /></button>
               </div>
             </div>
@@ -354,7 +354,7 @@ export default function KillSwitchEvents() {
       {selected && (
         <div className="fixed inset-0 z-50 flex">
           <div className="flex-1 bg-black/40" onClick={() => setSelected(null)} />
-          <div className="w-[520px] bg-[hsl(var(--bg-surface))] border-l border-[hsl(var(--border))] flex flex-col h-full overflow-y-auto">
+          <div className="w-[520px] bg-surface border-l border-[hsl(var(--border))] flex flex-col h-full overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))]">
               <div><p className="font-mono text-xs text-[hsl(var(--destructive))]">{selected.id}</p><h2 className="text-sm font-semibold text-[hsl(var(--text-1))]">Kill Switch — {selected.agentName}</h2></div>
               <button onClick={() => setSelected(null)}><X size={18} className="text-[hsl(var(--text-4))]" /></button>
@@ -362,7 +362,7 @@ export default function KillSwitchEvents() {
             <div className="p-4 space-y-4">
               <div className="flex gap-2 flex-wrap">
                 <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status]}>{selected.status}</span>
-                <span className="text-[11px] px-2 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{selected.trigger}</span>
+                <span className="text-[11px] px-2 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{selected.trigger}</span>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {[
@@ -371,20 +371,20 @@ export default function KillSwitchEvents() {
                   { label: 'Impacted Users', value: selected.impactedUsers.toLocaleString() },
                   { label: 'Reg. Notification', value: selected.regulatoryNotificationRequired ? (selected.regulatoryNotificationSent ? 'Sent ✓' : 'PENDING') : 'Not Required' },
                 ].map(({ label, value }) => (
-                  <div key={label} className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                  <div key={label} className="p-3 bg-raised border border-[hsl(var(--border))]">
                     <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{label}</p>
                     <p className="text-xs font-medium text-[hsl(var(--text-1))] mt-0.5">{value}</p>
                   </div>
                 ))}
               </div>
               <div><p className="text-[11px] font-semibold text-[hsl(var(--destructive))] uppercase tracking-wide mb-1">Suspension Reason</p><p className="text-sm text-[hsl(var(--text-2))] p-3 bg-[hsl(0_72%_51%/0.06)] border border-[hsl(var(--destructive)/0.3)] leading-relaxed">{selected.reason}</p></div>
-              <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Impacted Systems</p><div className="space-y-1">{selected.impactedSystems.map(s => <div key={s} className="text-xs text-[hsl(var(--text-2))] p-2 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{s}</div>)}</div></div>
+              <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Impacted Systems</p><div className="space-y-1">{selected.impactedSystems.map(s => <div key={s} className="text-xs text-[hsl(var(--text-2))] p-2 bg-raised border border-[hsl(var(--border))]">{s}</div>)}</div></div>
               {selected.resolutionNotes && <div><p className="text-[11px] font-semibold text-[hsl(var(--s-ok-tx))] uppercase tracking-wide mb-1">Resolution Notes</p><p className="text-sm text-[hsl(var(--text-2))] p-3 bg-[hsl(142_71%_45%/0.06)] border border-[hsl(var(--s-ok-tx)/0.3)] leading-relaxed">{selected.resolutionNotes}</p></div>}
             </div>
             {selected.status === 'Active — Agent Suspended' && (
               <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
                 <button onClick={() => setResumeTarget(selected)} className="flex-1 py-2 bg-[hsl(var(--s-ok-tx))] text-white text-sm font-medium hover:opacity-90">Approve Resumption</button>
-                <button onClick={() => toast.info('Escalation path opened')} className="px-4 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">Escalate</button>
+                <button onClick={() => toast.info('Escalation path opened')} className="px-4 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">Escalate</button>
               </div>
             )}
           </div>

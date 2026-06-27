@@ -170,7 +170,7 @@ const SEVERITY_COLOR: Record<NotifSeverity, { dot: string; badge: string; badgeT
   medium:   { dot: 'bg-[hsl(var(--s-wn-tx))]', badge: 'bg-[hsl(var(--s-wn-bg))]', badgeText: 'text-[hsl(var(--s-wn-tx))]' },
   low:      { dot: 'bg-[hsl(var(--s-ok-tx))]', badge: 'bg-[hsl(var(--s-ok-bg))]', badgeText: 'text-[hsl(var(--s-ok-tx))]' },
   info:     { dot: 'bg-[hsl(var(--brand))]', badge: 'bg-[hsl(var(--brand-subtle))]', badgeText: 'text-[hsl(var(--brand))]' },
-  system:   { dot: 'bg-[hsl(var(--text-4))]', badge: 'bg-[hsl(var(--bg-raised))]', badgeText: 'text-[hsl(var(--text-3))]' },
+  system:   { dot: 'bg-[hsl(var(--text-4))]', badge: 'bg-raised', badgeText: 'text-[hsl(var(--text-3))]' },
 }
 
 function timeAgo(ts: string): string {
@@ -218,7 +218,7 @@ export function NotificationDrawer({ open, onOpenChange }: NotificationDrawerPro
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side='right'
-        className='w-[380px] sm:w-[420px] p-0 flex flex-col bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]'
+        className='w-[380px] sm:w-[420px] p-0 flex flex-col bg-surface border-[hsl(var(--border))]'
       >
         {/* Header */}
         <SheetHeader className='px-4 py-3 border-b border-[hsl(var(--border))] flex-shrink-0'>
@@ -266,7 +266,7 @@ export function NotificationDrawer({ open, onOpenChange }: NotificationDrawerPro
                 className={`px-3 py-1 text-xs font-medium transition-colors ${
                   filter === f
                     ? 'bg-[hsl(var(--brand))] text-white'
-                    : 'text-[hsl(var(--text-3))] hover:text-[hsl(var(--text-1))] hover:bg-[hsl(var(--bg-raised))]'
+                    : 'text-[hsl(var(--text-3))] hover:text-[hsl(var(--text-1))] hover:bg-raised'
                 }`}
               >
                 {f === 'all' ? `All (${notifications.length})` : `Unread (${unreadCount})`}
@@ -290,7 +290,7 @@ export function NotificationDrawer({ open, onOpenChange }: NotificationDrawerPro
                 <button
                   key={n.id}
                   onClick={() => handleClick(n)}
-                  className={`w-full text-left px-4 py-3 hover:bg-[hsl(var(--bg-raised))] transition-colors group relative ${
+                  className={`w-full text-left px-4 py-3 hover:bg-raised transition-colors group relative ${
                     !n.read ? 'bg-[hsl(var(--bg-raised)/0.4)]' : ''
                   }`}
                 >
@@ -337,7 +337,7 @@ export function NotificationDrawer({ open, onOpenChange }: NotificationDrawerPro
         </div>
 
         {/* Footer */}
-        <div className='border-t border-[hsl(var(--border))] px-4 py-2.5 flex-shrink-0 bg-[hsl(var(--bg-raised))]'>
+        <div className='border-t border-[hsl(var(--border))] px-4 py-2.5 flex-shrink-0 bg-raised'>
           <p className='text-[10px] text-[hsl(var(--text-4))]'>
             Showing {filtered.length} notification{filtered.length !== 1 ? 's' : ''} • Real-time alerts enabled
           </p>

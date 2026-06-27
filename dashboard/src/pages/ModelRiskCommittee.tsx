@@ -240,7 +240,7 @@ export default function ModelRiskCommittee() {
         ]} />
 
         {/* Quorum Progress Bar */}
-        <div className="p-5 bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] rounded-none">
+        <div className="p-5 bg-surface border border-[hsl(var(--border))] rounded-none">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-[hsl(var(--text-1))]">Meeting Quorum Members</h3>
             <Badge className={`rounded-none uppercase text-[10px] ${quorumMet ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30' : 'bg-red-500/10 text-red-500 border border-red-500/30'}`}>
@@ -249,7 +249,7 @@ export default function ModelRiskCommittee() {
           </div>
           <div className="flex flex-wrap gap-3">
             {MRC_MEMBERS.map(member => (
-              <div key={member.id} className={`flex items-center gap-2 px-3 py-2 border rounded-none ${member.quorum ? 'bg-[hsl(var(--brand-subtle))] border-[hsl(var(--brand)/30)]' : 'bg-[hsl(var(--bg-raised))] border-[hsl(var(--border))] opacity-60'}`}>
+              <div key={member.id} className={`flex items-center gap-2 px-3 py-2 border rounded-none ${member.quorum ? 'bg-[hsl(var(--brand-subtle))] border-[hsl(var(--brand)/30)]' : 'bg-raised border-[hsl(var(--border))] opacity-60'}`}>
                 <div className={`w-2 h-2 rounded-full ${member.quorum ? 'bg-[hsl(var(--brand))]' : 'bg-[hsl(var(--text-4))]'}`} />
                 <span className="text-sm font-medium text-[hsl(var(--text-1))]">{member.name}</span>
                 {member.chair && <Star size={12} weight="fill" className="text-yellow-500" />}
@@ -285,7 +285,7 @@ export default function ModelRiskCommittee() {
               const rejectVotes = item.votes.filter(v => v.vote === 'reject').length;
               const total = item.votes.filter(v => v.vote !== 'pending').length;
               return (
-                <Card key={item.id} className={`rounded-none border bg-[hsl(var(--bg-surface))] ${item.status === 'pending' ? 'border-[hsl(var(--brand))/30]' : 'border-[hsl(var(--border))]'}`}>
+                <Card key={item.id} className={`rounded-none border bg-surface ${item.status === 'pending' ? 'border-[hsl(var(--brand))/30]' : 'border-[hsl(var(--border))]'}`}>
                   <CardContent className="p-5">
                     <div className="flex items-start justify-between mb-4">
                       <div>
@@ -293,7 +293,7 @@ export default function ModelRiskCommittee() {
                           <span className="text-xs font-mono text-[hsl(var(--text-3))]">{item.id}</span>
                           <Badge className="border-0 rounded-none uppercase text-[10px]" style={{ background: ss.bg, color: ss.tx }}>{ss.label}</Badge>
                           <Badge className="border-0 rounded-none uppercase text-[10px]" style={{ background: ts.bg, color: ts.tx }}>{item.riskTier} RISK</Badge>
-                          <Badge className="border-0 rounded-none uppercase text-[10px] bg-[hsl(var(--bg-sunken))] text-[hsl(var(--text-2))]">{item.type}</Badge>
+                          <Badge className="border-0 rounded-none uppercase text-[10px] bg-sunken text-[hsl(var(--text-2))]">{item.type}</Badge>
                         </div>
                         <p className="text-lg font-bold text-[hsl(var(--text-1))]">{item.model}</p>
                         <p className="text-xs text-[hsl(var(--text-3))] mt-1">Presenter: <strong className="text-[hsl(var(--text-2))]">{item.presenter}</strong> · Regulatory basis: {item.regulatoryBasis}</p>
@@ -323,7 +323,7 @@ export default function ModelRiskCommittee() {
                             <Clock size={14} /> <span>{item.votes.filter(v => v.vote === 'pending').length} Pending</span>
                           </div>
                         </div>
-                        <div className="h-2 w-full flex overflow-hidden bg-[hsl(var(--bg-sunken))]">
+                        <div className="h-2 w-full flex overflow-hidden bg-sunken">
                           <div style={{ width: `${(approveVotes / item.votes.length) * 100}%` }} className="bg-emerald-500 h-full" />
                           <div style={{ width: `${(rejectVotes / item.votes.length) * 100}%` }} className="bg-red-500 h-full" />
                         </div>
@@ -335,7 +335,7 @@ export default function ModelRiskCommittee() {
                       {item.votes.map(v => {
                         const member = MRC_MEMBERS.find(m => m.id === v.memberId);
                         return (
-                          <div key={v.memberId} className="flex items-center gap-2 px-2.5 py-1.5 text-xs border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
+                          <div key={v.memberId} className="flex items-center gap-2 px-2.5 py-1.5 text-xs border border-[hsl(var(--border))] bg-raised">
                             <div className="w-5 h-5 flex items-center justify-center text-[10px] font-bold bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))]">
                               {member?.name.split(' ').map(n => n[0]).join('')}
                             </div>
@@ -366,10 +366,10 @@ export default function ModelRiskCommittee() {
 
           {/* ── History ── */}
           <TabsContent value="history" className="mt-4">
-            <Card className="rounded-none border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] overflow-hidden">
+            <Card className="rounded-none border-[hsl(var(--border))] bg-surface overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left">
-                  <thead className="text-xs text-[hsl(var(--text-2))] uppercase bg-[hsl(var(--bg-raised))] border-b border-[hsl(var(--border))]">
+                  <thead className="text-xs text-[hsl(var(--text-2))] uppercase bg-raised border-b border-[hsl(var(--border))]">
                     <tr>
                       {['Meeting ID', 'Date', 'Type', 'Items', 'Outcome', 'Quorum'].map(h => (
                         <th key={h} className="px-4 py-3 font-medium">{h}</th>
@@ -378,12 +378,12 @@ export default function ModelRiskCommittee() {
                   </thead>
                   <tbody>
                     {MEETING_HISTORY.map((m, i) => (
-                      <tr key={i} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))] cursor-pointer transition-colors"
+                      <tr key={i} className="border-b border-[hsl(var(--border))] hover:bg-raised cursor-pointer transition-colors"
                         onClick={() => toast.info(`Meeting ${m.id} minutes — PDF available`)}>
                         <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--brand))]">{m.id}</td>
                         <td className="px-4 py-3 text-[hsl(var(--text-3))] font-mono text-xs">{m.date}</td>
                         <td className="px-4 py-3">
-                          <Badge className={`border-0 rounded-none uppercase text-[10px] ${m.type === 'Emergency' ? 'bg-red-500/10 text-red-500' : 'bg-[hsl(var(--bg-sunken))] text-[hsl(var(--text-2))]'}`}>{m.type}</Badge>
+                          <Badge className={`border-0 rounded-none uppercase text-[10px] ${m.type === 'Emergency' ? 'bg-red-500/10 text-red-500' : 'bg-sunken text-[hsl(var(--text-2))]'}`}>{m.type}</Badge>
                         </td>
                         <td className="px-4 py-3 font-bold text-[hsl(var(--text-1))]">{m.items}</td>
                         <td className="px-4 py-3">
@@ -408,7 +408,7 @@ export default function ModelRiskCommittee() {
           <TabsContent value="committee" className="mt-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {MRC_MEMBERS.map(m => (
-                <div key={m.id} className={`p-5 flex items-start gap-4 border rounded-none ${m.chair ? 'bg-[hsl(var(--brand-subtle))] border-[hsl(var(--brand)/40)]' : 'bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]'}`}>
+                <div key={m.id} className={`p-5 flex items-start gap-4 border rounded-none ${m.chair ? 'bg-[hsl(var(--brand-subtle))] border-[hsl(var(--brand)/40)]' : 'bg-surface border-[hsl(var(--border))]'}`}>
                   <div className="w-12 h-12 flex items-center justify-center text-sm font-bold flex-shrink-0 bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))]">
                     {m.name.split(' ').map(n => n[0]).join('')}
                   </div>
@@ -421,7 +421,7 @@ export default function ModelRiskCommittee() {
                     <p className="text-[10px] text-[hsl(var(--text-4))] uppercase tracking-wider">{m.department}</p>
                     <div className="flex items-center gap-2 mt-3">
                       {m.chair && <Badge className="bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))] border-0 rounded-none uppercase text-[9px]">CHAIR</Badge>}
-                      <Badge className={`border-0 rounded-none uppercase text-[9px] ${m.quorum ? 'bg-emerald-500/10 text-emerald-500' : 'bg-[hsl(var(--bg-sunken))] text-[hsl(var(--text-3))]'}`}>
+                      <Badge className={`border-0 rounded-none uppercase text-[9px] ${m.quorum ? 'bg-emerald-500/10 text-emerald-500' : 'bg-sunken text-[hsl(var(--text-3))]'}`}>
                         {m.quorum ? 'QUORUM MEMBER' : 'NON-QUORUM'}
                       </Badge>
                     </div>
@@ -429,7 +429,7 @@ export default function ModelRiskCommittee() {
                 </div>
               ))}
             </div>
-            <div className="mt-4 p-4 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] rounded-none">
+            <div className="mt-4 p-4 text-sm border border-[hsl(var(--border))] bg-raised rounded-none">
               <p className="text-[hsl(var(--text-2))]">
                 <strong className="text-[hsl(var(--text-1))]">Quorum requirement:</strong> {Math.ceil(MRC_MEMBERS.length * 0.6)} of {MRC_MEMBERS.length} members must be present ({quorumMet ? <span className="text-emerald-500 font-medium">Currently met</span> : <span className="text-red-500 font-medium">Not met</span>}).
                 Per SR 11-7 guidance, model approval decisions require documented quorum and dissenting votes must be recorded.
@@ -439,7 +439,7 @@ export default function ModelRiskCommittee() {
 
           <TabsContent value="analytics" className="mt-4">
             <div className="grid grid-cols-2 gap-4">
-              <Card className="rounded-none bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
+              <Card className="rounded-none bg-surface border-[hsl(var(--border))]">
                 <CardContent className="p-5">
                   <p className="text-sm font-semibold mb-4 text-[hsl(var(--text-1))]">Approval Outcomes (All Time)</p>
                   <ResponsiveContainer width="100%" height={250}>
@@ -453,7 +453,7 @@ export default function ModelRiskCommittee() {
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
-              <Card className="rounded-none bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
+              <Card className="rounded-none bg-surface border-[hsl(var(--border))]">
                 <CardContent className="p-5">
                   <p className="text-sm font-semibold mb-4 text-[hsl(var(--text-1))]">Items Per Quarterly Meeting</p>
                   <ResponsiveContainer width="100%" height={250}>
@@ -523,7 +523,7 @@ export default function ModelRiskCommittee() {
 
       {/* Vote Dialog */}
       <Dialog open={!!voteDialog} onOpenChange={() => setVoteDialog(null)}>
-        <DialogContent className="max-w-[600px] bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] rounded-none shadow-2xl">
+        <DialogContent className="max-w-[600px] bg-surface border-[hsl(var(--border))] rounded-none shadow-2xl">
           <DialogHeader className="border-b border-[hsl(var(--border))] pb-4">
             <DialogTitle className="text-[hsl(var(--text-1))] flex items-center gap-2 text-xl">
               <Gavel size={20} className="text-[hsl(var(--brand))]" />
@@ -531,7 +531,7 @@ export default function ModelRiskCommittee() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-5 py-4">
-            <div className="p-4 text-sm bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] rounded-none">
+            <div className="p-4 text-sm bg-raised border border-[hsl(var(--border))] rounded-none">
               <p className="text-[hsl(var(--text-1))] font-bold mb-1">{voteDialog?.type} Review</p>
               <p className="text-[hsl(var(--text-3))]">ID: {voteDialog?.id} · Regulatory basis: {voteDialog?.regulatoryBasis}</p>
             </div>
@@ -545,7 +545,7 @@ export default function ModelRiskCommittee() {
                         : v === 'reject'
                           ? 'border-red-500/50 bg-red-500/10 text-red-500'
                           : 'border-yellow-500/50 bg-yellow-500/10 text-yellow-600'
-                      : 'border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-3))] hover:border-[hsl(var(--text-4))]'
+                      : 'border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-3))] hover:border-[hsl(var(--text-4))]'
                   }`}>
                   {v === 'approve' ? '✓ Approve' : v === 'reject' ? '✗ Reject' : '— Abstain'}
                 </button>
@@ -554,16 +554,16 @@ export default function ModelRiskCommittee() {
             {vote === 'approve' && (
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-[hsl(var(--text-2))] uppercase tracking-wide">Conditions (optional)</label>
-                <Textarea placeholder="Add any approval conditions…" value={condition} onChange={e => setCondition(e.target.value)} className="text-sm bg-[hsl(var(--bg-raised))] border-[hsl(var(--border))] text-[hsl(var(--text-1))] rounded-none focus-visible:ring-[hsl(var(--brand))] min-h-[60px]" />
+                <Textarea placeholder="Add any approval conditions…" value={condition} onChange={e => setCondition(e.target.value)} className="text-sm bg-raised border-[hsl(var(--border))] text-[hsl(var(--text-1))] rounded-none focus-visible:ring-[hsl(var(--brand))] min-h-[60px]" />
               </div>
             )}
             <div className="space-y-2">
               <label className="text-xs font-semibold text-[hsl(var(--text-2))] uppercase tracking-wide">Rationale <span className="text-red-500">*</span></label>
-              <Textarea placeholder="Your documented rationale for this vote (required for audit trail)…" value={rationale} onChange={e => setRationale(e.target.value)} className="text-sm bg-[hsl(var(--bg-raised))] border-[hsl(var(--border))] text-[hsl(var(--text-1))] rounded-none focus-visible:ring-[hsl(var(--brand))] min-h-[80px]" />
+              <Textarea placeholder="Your documented rationale for this vote (required for audit trail)…" value={rationale} onChange={e => setRationale(e.target.value)} className="text-sm bg-raised border-[hsl(var(--border))] text-[hsl(var(--text-1))] rounded-none focus-visible:ring-[hsl(var(--brand))] min-h-[80px]" />
             </div>
           </div>
           <DialogFooter className="border-t border-[hsl(var(--border))] pt-5">
-            <Button variant="outline" className="rounded-none border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:text-[hsl(var(--text-1))] hover:bg-[hsl(var(--bg-raised))]" onClick={() => setVoteDialog(null)}>Cancel</Button>
+            <Button variant="outline" className="rounded-none border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:text-[hsl(var(--text-1))] hover:bg-raised" onClick={() => setVoteDialog(null)}>Cancel</Button>
             <Button className={`rounded-none text-white ${
               vote === 'approve' ? 'bg-emerald-600 hover:bg-emerald-700' :
               vote === 'reject' ? 'bg-red-600 hover:bg-red-700' :
@@ -577,7 +577,7 @@ export default function ModelRiskCommittee() {
 
       {/* Schedule MRC Meeting Dialog */}
       <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
-        <DialogContent className="rounded-none max-w-[600px] bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] shadow-2xl">
+        <DialogContent className="rounded-none max-w-[600px] bg-surface border-[hsl(var(--border))] shadow-2xl">
           <DialogHeader className="border-b border-[hsl(var(--border))] pb-4">
             <DialogTitle className="flex items-center gap-2 text-xl text-[hsl(var(--text-1))]">
               <Calendar size={20} className="text-[hsl(var(--brand))]" />Schedule MRC Meeting
@@ -587,26 +587,26 @@ export default function ModelRiskCommittee() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-semibold mb-1 block uppercase tracking-wide text-[hsl(var(--text-2))]">Date *</label>
-                <input type="date" value={mtgDate} onChange={e => setMtgDate(e.target.value)} className="w-full h-10 rounded-none border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[hsl(var(--brand))] text-[hsl(var(--text-1))]" />
+                <input type="date" value={mtgDate} onChange={e => setMtgDate(e.target.value)} className="w-full h-10 rounded-none border border-[hsl(var(--border))] bg-raised px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[hsl(var(--brand))] text-[hsl(var(--text-1))]" />
               </div>
               <div>
                 <label className="text-xs font-semibold mb-1 block uppercase tracking-wide text-[hsl(var(--text-2))]">Time</label>
-                <input type="time" value={mtgTime} onChange={e => setMtgTime(e.target.value)} className="w-full h-10 rounded-none border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[hsl(var(--brand))] text-[hsl(var(--text-1))]" />
+                <input type="time" value={mtgTime} onChange={e => setMtgTime(e.target.value)} className="w-full h-10 rounded-none border border-[hsl(var(--border))] bg-raised px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[hsl(var(--brand))] text-[hsl(var(--text-1))]" />
               </div>
             </div>
             <div>
               <label className="text-xs font-semibold mb-1 block uppercase tracking-wide text-[hsl(var(--text-2))]">Meeting Type</label>
-              <select value={mtgType} onChange={e => setMtgType(e.target.value)} className="w-full h-10 rounded-none border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[hsl(var(--brand))] text-[hsl(var(--text-1))]">
+              <select value={mtgType} onChange={e => setMtgType(e.target.value)} className="w-full h-10 rounded-none border border-[hsl(var(--border))] bg-raised px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[hsl(var(--brand))] text-[hsl(var(--text-1))]">
                 {['Quarterly Review', 'Emergency Session', 'Model Approval', 'Annual Review', 'Ad Hoc'].map(t => <option key={t}>{t}</option>)}
               </select>
             </div>
             <div>
               <label className="text-xs font-semibold mb-1 block uppercase tracking-wide text-[hsl(var(--text-2))]">Attendees</label>
-              <Textarea value={mtgAttendees} onChange={e => setMtgAttendees(e.target.value)} className="text-sm bg-[hsl(var(--bg-raised))] border-[hsl(var(--border))] text-[hsl(var(--text-1))] rounded-none min-h-[60px]" />
+              <Textarea value={mtgAttendees} onChange={e => setMtgAttendees(e.target.value)} className="text-sm bg-raised border-[hsl(var(--border))] text-[hsl(var(--text-1))] rounded-none min-h-[60px]" />
             </div>
             <div>
               <label className="text-xs font-semibold mb-1 block uppercase tracking-wide text-[hsl(var(--text-2))]">Agenda Items</label>
-              <Textarea value={mtgAgenda} onChange={e => setMtgAgenda(e.target.value)} placeholder={`e.g.\n1. Review ${AGENDA_ITEMS.filter(a => a.status === 'pending').length} pending model approvals\n2. Q2 risk posture update\n3. SR 11-7 compliance review`} className="text-sm bg-[hsl(var(--bg-raised))] border-[hsl(var(--border))] text-[hsl(var(--text-1))] rounded-none min-h-[80px]" />
+              <Textarea value={mtgAgenda} onChange={e => setMtgAgenda(e.target.value)} placeholder={`e.g.\n1. Review ${AGENDA_ITEMS.filter(a => a.status === 'pending').length} pending model approvals\n2. Q2 risk posture update\n3. SR 11-7 compliance review`} className="text-sm bg-raised border-[hsl(var(--border))] text-[hsl(var(--text-1))] rounded-none min-h-[80px]" />
             </div>
             <div className="p-4 text-sm bg-yellow-500/10 border-l-4 border-yellow-500">
               <p className="font-bold mb-1 text-yellow-600 uppercase tracking-wide">Quorum requirement</p>
@@ -614,7 +614,7 @@ export default function ModelRiskCommittee() {
             </div>
           </div>
           <DialogFooter className="border-t border-[hsl(var(--border))] pt-5">
-            <Button variant="outline" className="rounded-none border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:text-[hsl(var(--text-1))] hover:bg-[hsl(var(--bg-raised))]" onClick={() => setScheduleOpen(false)}>Cancel</Button>
+            <Button variant="outline" className="rounded-none border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:text-[hsl(var(--text-1))] hover:bg-raised" onClick={() => setScheduleOpen(false)}>Cancel</Button>
             <Button className="rounded-none bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-hover))]" onClick={() => {
               if (!mtgDate) { toast.error('Meeting date is required'); return; }
               toast.success(`MRC ${mtgType} scheduled for ${mtgDate} at ${mtgTime} — calendar invites sending to ${MRC_MEMBERS.filter(m => m.quorum).length} quorum members`);

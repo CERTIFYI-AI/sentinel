@@ -152,7 +152,7 @@ export default function DataLineage() {
           <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">End-to-end data lineage — trace from source system to AI model, with PII mapping, quality metrics, and compliance tagging</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => toast.success('Lineage map exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+          <button onClick={() => toast.success('Lineage map exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
             <Export size={14} /> Export
           </button>
           <button onClick={openCreate} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90">
@@ -168,7 +168,7 @@ export default function DataLineage() {
           { label: 'Avg Quality Score', value: `${stats.avgQuality}%`, color: 'hsl(var(--s-ok-tx))' },
           { label: 'Datasets with Issues', value: stats.issues, color: 'hsl(45 85% 40%)' },
         ].map(s => (
-          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
             <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
             <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
           </div>
@@ -178,19 +178,19 @@ export default function DataLineage() {
       <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 max-w-xs">
           <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search datasets…" className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search datasets…" className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]" />
         </div>
-        <select value={classFilter} onChange={e => setClassFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+        <select value={classFilter} onChange={e => setClassFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
           {['All', 'Public', 'Internal', 'Confidential', 'Restricted'].map(c => <option key={c}>{c}</option>)}
         </select>
       </div>
 
       <div className="space-y-3">
         {filtered.length === 0 && (
-          <div className="text-center py-12 text-[hsl(var(--text-4))] text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))]">No datasets match your filters</div>
+          <div className="text-center py-12 text-[hsl(var(--text-4))] text-sm border border-[hsl(var(--border))] bg-surface">No datasets match your filters</div>
         )}
         {filtered.map(d => (
-          <div key={d.id} className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4 cursor-pointer hover:border-[hsl(var(--brand)/0.4)] transition-colors" onClick={() => openDrawer(d)}>
+          <div key={d.id} className="rounded border border-[hsl(var(--border))] bg-surface p-4 cursor-pointer hover:border-[hsl(var(--brand)/0.4)] transition-colors" onClick={() => openDrawer(d)}>
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -208,7 +208,7 @@ export default function DataLineage() {
                   <p className="text-[10px] text-[hsl(var(--text-4))]">Quality</p>
                 </div>
                 <div className="flex gap-1">
-                  <button onClick={e => { e.stopPropagation(); openEdit(d) }} className="p-1.5 rounded text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))] hover:bg-[hsl(var(--bg-raised))]"><Pencil size={13} /></button>
+                  <button onClick={e => { e.stopPropagation(); openEdit(d) }} className="p-1.5 rounded text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))] hover:bg-raised"><Pencil size={13} /></button>
                   <button onClick={e => { e.stopPropagation(); setDeleteTarget(d) }} className="p-1.5 rounded text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(0_72%_51%/0.06)]"><Trash size={13} /></button>
                 </div>
               </div>
@@ -224,7 +224,7 @@ export default function DataLineage() {
               <ArrowRight size={12} className="text-[hsl(var(--text-4))] flex-shrink-0" />
               <div className="flex-shrink-0 text-[10px] px-2 py-1 bg-[hsl(220_90%_56%/0.1)] border border-[hsl(220_90%_56%/0.3)] text-[hsl(var(--s-in-tx))] whitespace-nowrap">{d.sourceSystem.split(' ')[0]}</div>
               <ArrowRight size={12} className="text-[hsl(var(--text-4))] flex-shrink-0" />
-              <div className="flex-shrink-0 text-[10px] px-2 py-1 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-3))] whitespace-nowrap">{d.transformations.length} transforms</div>
+              <div className="flex-shrink-0 text-[10px] px-2 py-1 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-3))] whitespace-nowrap">{d.transformations.length} transforms</div>
               <ArrowRight size={12} className="text-[hsl(var(--text-4))] flex-shrink-0" />
               {d.downstreamModels.map(m => (
                 <div key={m} className="flex-shrink-0 text-[10px] px-2 py-1 bg-[hsl(var(--brand)/0.1)] border border-[hsl(var(--brand)/0.2)] text-[hsl(var(--brand))] whitespace-nowrap">{m.split(' ')[0]}</div>
@@ -244,7 +244,7 @@ export default function DataLineage() {
       {selected && (
         <div className="fixed inset-0 z-50 flex">
           <div className="flex-1 bg-black/40" onClick={() => setSelected(null)} />
-          <div className="w-[520px] bg-[hsl(var(--bg-surface))] border-l border-[hsl(var(--border))] flex flex-col h-full">
+          <div className="w-[520px] bg-surface border-l border-[hsl(var(--border))] flex flex-col h-full">
             <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))]">
               <div>
                 <p className="font-mono text-xs text-[hsl(var(--brand))]">{selected.id}</p>
@@ -273,7 +273,7 @@ export default function DataLineage() {
                   <div className="flex gap-2 flex-wrap">
                     <span className="text-[11px] px-2 py-0.5 font-medium" style={CLASS_STYLE[selected.dataClassification]}>{selected.dataClassification}</span>
                     {selected.piiPresent && <span className="text-[11px] px-2 py-0.5" style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' }}>Contains PII</span>}
-                    <span className="text-[11px] px-2 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{selected.version}</span>
+                    <span className="text-[11px] px-2 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{selected.version}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     {[
@@ -286,7 +286,7 @@ export default function DataLineage() {
                       { label: 'Row Count', value: selected.rowCount ?? 'N/A' },
                       { label: 'SLA', value: selected.sla ?? 'N/A' },
                     ].map(({ label, value }) => (
-                      <div key={label} className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                      <div key={label} className="p-3 bg-raised border border-[hsl(var(--border))]">
                         <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{label}</p>
                         <p className="text-xs font-medium text-[hsl(var(--text-1))] mt-0.5">{value}</p>
                       </div>
@@ -295,7 +295,7 @@ export default function DataLineage() {
                   {selected.schema && (
                     <div>
                       <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">Schema File</p>
-                      <p className="text-xs font-mono text-[hsl(var(--brand))] p-2 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{selected.schema}</p>
+                      <p className="text-xs font-mono text-[hsl(var(--brand))] p-2 bg-raised border border-[hsl(var(--border))]">{selected.schema}</p>
                     </div>
                   )}
                   {selected.piiPresent && selected.piiTypes && (
@@ -340,7 +340,7 @@ export default function DataLineage() {
                     <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Transformations Applied</p>
                     <div className="space-y-1">
                       {selected.transformations.map((t, i) => (
-                        <div key={i} className="flex items-center gap-2 p-2 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                        <div key={i} className="flex items-center gap-2 p-2 bg-raised border border-[hsl(var(--border))]">
                           <span className="text-[10px] font-mono text-[hsl(var(--text-4))] w-5">T{i + 1}</span>
                           <p className="text-xs text-[hsl(var(--text-2))]">{t}</p>
                         </div>
@@ -349,7 +349,7 @@ export default function DataLineage() {
                   </div>
                   <div>
                     <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Ingestion Details</p>
-                    <div className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] space-y-1">
+                    <div className="p-3 bg-raised border border-[hsl(var(--border))] space-y-1">
                       <p className="text-xs text-[hsl(var(--text-2))]"><span className="text-[hsl(var(--text-4))]">Method:</span> {selected.ingestionMethod}</p>
                       {selected.sla && <p className="text-xs text-[hsl(var(--text-2))]"><span className="text-[hsl(var(--text-4))]">SLA:</span> {selected.sla}</p>}
                       <p className="text-xs text-[hsl(var(--text-2))]"><span className="text-[hsl(var(--text-4))]">Last Run:</span> {selected.lastUpdated}</p>
@@ -375,7 +375,7 @@ export default function DataLineage() {
                   </div>
                   <div>
                     <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Impact Analysis</p>
-                    <div className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] space-y-2">
+                    <div className="p-3 bg-raised border border-[hsl(var(--border))] space-y-2">
                       <p className="text-xs text-[hsl(var(--text-2))]">This dataset feeds <strong>{selected.downstreamModels.length}</strong> AI model{selected.downstreamModels.length !== 1 ? 's' : ''}. Any quality issue, PII breach, or schema change in this dataset will directly affect these models.</p>
                       {selected.piiPresent && (
                         <div className="flex items-start gap-1.5 p-2 bg-[hsl(0_72%_51%/0.06)] border border-[hsl(var(--destructive)/0.3)]">
@@ -387,7 +387,7 @@ export default function DataLineage() {
                   </div>
                   <div>
                     <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Data Quality Score</p>
-                    <div className="flex items-center gap-3 p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                    <div className="flex items-center gap-3 p-3 bg-raised border border-[hsl(var(--border))]">
                       <div className="flex-1 bg-[hsl(var(--bg-page))] h-3 rounded-full overflow-hidden">
                         <div className="h-full rounded-full" style={{ width: `${selected.quality}%`, background: selected.quality >= 95 ? 'hsl(var(--s-ok-tx))' : selected.quality >= 85 ? 'hsl(45 85% 40%)' : 'hsl(var(--destructive))' }} />
                       </div>
@@ -399,7 +399,7 @@ export default function DataLineage() {
             </div>
 
             <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
-              <button onClick={() => openEdit(selected)} className="flex-1 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))] flex items-center justify-center gap-1.5">
+              <button onClick={() => openEdit(selected)} className="flex-1 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised flex items-center justify-center gap-1.5">
                 <Pencil size={13} /> Edit
               </button>
               <button onClick={() => toast.success(`Lineage for ${selected.datasetName} exported`)} className="flex-1 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90 flex items-center justify-center gap-1.5">
@@ -416,7 +416,7 @@ export default function DataLineage() {
       {showCreate && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowCreate(false)} />
-          <div className="relative bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] w-full max-w-lg mx-4 shadow-2xl max-h-[90vh] flex flex-col">
+          <div className="relative bg-surface border border-[hsl(var(--border))] w-full max-w-lg mx-4 shadow-2xl max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
               <h2 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2">
                 <ChartLine size={15} className="text-[hsl(var(--brand))]" />
@@ -428,64 +428,64 @@ export default function DataLineage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Dataset Name *</label>
-                  <input value={form.datasetName} onChange={e => setForm(p => ({ ...p, datasetName: e.target.value }))} placeholder="e.g. ACME Credit History" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+                  <input value={form.datasetName} onChange={e => setForm(p => ({ ...p, datasetName: e.target.value }))} placeholder="e.g. ACME Credit History" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
                 </div>
                 <div>
                   <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Version</label>
-                  <input value={form.version} onChange={e => setForm(p => ({ ...p, version: e.target.value }))} placeholder="e.g. v1.0 or 2026-Q1" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+                  <input value={form.version} onChange={e => setForm(p => ({ ...p, version: e.target.value }))} placeholder="e.g. v1.0 or 2026-Q1" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
                 </div>
               </div>
               <div>
                 <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Source System *</label>
-                <input value={form.sourceSystem} onChange={e => setForm(p => ({ ...p, sourceSystem: e.target.value }))} placeholder="e.g. Core Banking System (FIS Horizon)" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+                <input value={form.sourceSystem} onChange={e => setForm(p => ({ ...p, sourceSystem: e.target.value }))} placeholder="e.g. Core Banking System (FIS Horizon)" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Ingestion Method</label>
-                  <select value={form.ingestionMethod} onChange={e => setForm(p => ({ ...p, ingestionMethod: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
+                  <select value={form.ingestionMethod} onChange={e => setForm(p => ({ ...p, ingestionMethod: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
                     {['Batch ETL · Daily', 'Batch ETL · Nightly', 'Streaming · Real-time', 'API Pull · Weekly', 'Manual upload', 'Event-driven'].map(m => <option key={m}>{m}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Classification</label>
-                  <select value={form.dataClassification} onChange={e => setForm(p => ({ ...p, dataClassification: e.target.value as any }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
+                  <select value={form.dataClassification} onChange={e => setForm(p => ({ ...p, dataClassification: e.target.value as any }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
                     {['Public', 'Internal', 'Confidential', 'Restricted'].map(c => <option key={c}>{c}</option>)}
                   </select>
                 </div>
               </div>
               <div>
                 <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Upstream Sources (one per line)</label>
-                <textarea value={form.upstreamSources} onChange={e => setForm(p => ({ ...p, upstreamSources: e.target.value }))} rows={2} placeholder="e.g. FIS Horizon Core DB&#10;Oracle GL Ledger" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))] resize-none" />
+                <textarea value={form.upstreamSources} onChange={e => setForm(p => ({ ...p, upstreamSources: e.target.value }))} rows={2} placeholder="e.g. FIS Horizon Core DB&#10;Oracle GL Ledger" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))] resize-none" />
               </div>
               <div>
                 <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Transformations (one per line)</label>
-                <textarea value={form.transformations} onChange={e => setForm(p => ({ ...p, transformations: e.target.value }))} rows={3} placeholder="e.g. PII tokenization&#10;Normalization (Z-score)" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))] resize-none" />
+                <textarea value={form.transformations} onChange={e => setForm(p => ({ ...p, transformations: e.target.value }))} rows={3} placeholder="e.g. PII tokenization&#10;Normalization (Z-score)" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))] resize-none" />
               </div>
               <div>
                 <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Downstream AI Models (one per line)</label>
-                <textarea value={form.downstreamModels} onChange={e => setForm(p => ({ ...p, downstreamModels: e.target.value }))} rows={2} placeholder="e.g. Credit Scoring Model v2.1&#10;Loan Approval Model v3.0" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))] resize-none" />
+                <textarea value={form.downstreamModels} onChange={e => setForm(p => ({ ...p, downstreamModels: e.target.value }))} rows={2} placeholder="e.g. Credit Scoring Model v2.1&#10;Loan Approval Model v3.0" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))] resize-none" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Owner *</label>
-                  <input value={form.owner} onChange={e => setForm(p => ({ ...p, owner: e.target.value }))} placeholder="e.g. Data Engineering" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+                  <input value={form.owner} onChange={e => setForm(p => ({ ...p, owner: e.target.value }))} placeholder="e.g. Data Engineering" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
                 </div>
                 <div>
                   <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Quality Score (%)</label>
-                  <input type="number" min={0} max={100} value={form.quality} onChange={e => setForm(p => ({ ...p, quality: Number(e.target.value) }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+                  <input type="number" min={0} max={100} value={form.quality} onChange={e => setForm(p => ({ ...p, quality: Number(e.target.value) }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Retention Policy</label>
-                  <input value={form.retentionPolicy} onChange={e => setForm(p => ({ ...p, retentionPolicy: e.target.value }))} placeholder="e.g. 7 years (regulatory)" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+                  <input value={form.retentionPolicy} onChange={e => setForm(p => ({ ...p, retentionPolicy: e.target.value }))} placeholder="e.g. 7 years (regulatory)" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
                 </div>
                 <div>
                   <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Row Count</label>
-                  <input value={form.rowCount} onChange={e => setForm(p => ({ ...p, rowCount: e.target.value }))} placeholder="e.g. 4.2M rows" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+                  <input value={form.rowCount} onChange={e => setForm(p => ({ ...p, rowCount: e.target.value }))} placeholder="e.g. 4.2M rows" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
                 </div>
               </div>
-              <div className="flex items-center gap-2 p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+              <div className="flex items-center gap-2 p-3 bg-raised border border-[hsl(var(--border))]">
                 <input type="checkbox" id="pii" checked={form.piiPresent} onChange={e => setForm(p => ({ ...p, piiPresent: e.target.checked }))} className="w-4 h-4 accent-[hsl(var(--brand))]" />
                 <label htmlFor="pii" className="text-sm text-[hsl(var(--text-2))]">Dataset contains PII</label>
               </div>
@@ -497,7 +497,7 @@ export default function DataLineage() {
               )}
             </div>
             <div className="flex justify-end gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
-              <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">Cancel</button>
+              <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">Cancel</button>
               <button onClick={handleSave} className="px-4 py-2 text-sm font-medium bg-[hsl(var(--brand))] text-white hover:opacity-90">{editMode ? 'Save Changes' : 'Register Dataset'}</button>
             </div>
           </div>

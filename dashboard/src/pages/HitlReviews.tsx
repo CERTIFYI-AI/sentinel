@@ -112,7 +112,7 @@ export default function HitlReviews() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-[hsl(var(--bg-raised))] border-b border-[hsl(var(--border))]">
+              <thead className="bg-raised border-b border-[hsl(var(--border))]">
                 <tr>
                   <th className="px-3 py-2.5 w-8"><input type="checkbox" checked={sp.selectedIds.size===sp.paged.length&&sp.paged.length>0} onChange={sp.toggleAll} /></th>
                   <Th col="id" label="Review ID" sortCol={sp.sortCol} sortDir={sp.sortDir} onSort={sp.handleSort} />
@@ -128,10 +128,10 @@ export default function HitlReviews() {
               </thead>
               <tbody>
                 {sp.paged.map((item: any) => (
-                  <tr key={item.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))] cursor-pointer" onClick={() => { setViewItem(item); setModal("view"); }}>
+                  <tr key={item.id} className="border-b border-[hsl(var(--border))] hover:bg-raised cursor-pointer" onClick={() => { setViewItem(item); setModal("view"); }}>
                     <td className="px-3 py-2.5" onClick={e=>e.stopPropagation()}><input type="checkbox" checked={sp.selectedIds.has(item.id)} onChange={() => sp.toggleSelect(item.id)} /></td>
                     <td className="px-3 py-2.5 font-mono text-xs text-[hsl(var(--text-3))]">{item.id}</td>
-                    <td className="px-3 py-2.5 text-xs"><span className="px-1.5 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{item.itemType}</span></td>
+                    <td className="px-3 py-2.5 text-xs"><span className="px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))]">{item.itemType}</span></td>
                     <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-2))] max-w-[240px] line-clamp-2">{item.aiOutputSummary}</td>
                     <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-2))]">{item.reviewer||"—"}</td>
                     <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))] whitespace-nowrap">{item.reviewDate||"—"}</td>
@@ -144,8 +144,8 @@ export default function HitlReviews() {
                     <td className="px-3 py-2.5"><StatusBadge status={item.status} /></td>
                     <td className="px-3 py-2.5 text-right" onClick={e=>e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => { setViewItem(item); setModal("view"); }} className="p-1.5 hover:bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-3))]"><Eye size={14} /></button>
-                        <button onClick={() => openEdit(item)} className="p-1.5 hover:bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-3))]"><PencilSimple size={14} /></button>
+                        <button onClick={() => { setViewItem(item); setModal("view"); }} className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"><Eye size={14} /></button>
+                        <button onClick={() => openEdit(item)} className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"><PencilSimple size={14} /></button>
                         <button onClick={() => setDeleteTarget(item)} className="p-1.5 hover:bg-red-50 text-[hsl(0_72%_51%)]"><Trash size={14} /></button>
                       </div>
                     </td>
@@ -192,14 +192,14 @@ export default function HitlReviews() {
               <div className="flex items-center gap-2 flex-wrap">
                 <StatusBadge status={viewItem.status} />
                 {viewItem.outcome&&<span className="text-xs px-1.5 py-0.5 border font-medium" style={{ color:outcomeColors[viewItem.outcome], borderColor:`${outcomeColors[viewItem.outcome]}40`, background:`${outcomeColors[viewItem.outcome]}12` }}>{viewItem.outcome}</span>}
-                <span className="text-xs px-1.5 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{viewItem.itemType}</span>
+                <span className="text-xs px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))]">{viewItem.itemType}</span>
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 {[["AI System",viewItem.aiSystem],["Reviewer",viewItem.reviewer||"—"],["Review Date",viewItem.reviewDate||"—"],["Time to Review",viewItem.timeToReview||"—"]].map(([k,v])=>(
                   <div key={k}><p className="text-xs text-[hsl(var(--text-4))] mb-0.5">{k}</p><p className="font-medium text-[hsl(var(--text-1))]">{v}</p></div>
                 ))}
               </div>
-              <div><p className="text-xs text-[hsl(var(--text-4))] mb-1">AI Output Summary</p><p className="text-sm text-[hsl(var(--text-2))] p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{viewItem.aiOutputSummary}</p></div>
+              <div><p className="text-xs text-[hsl(var(--text-4))] mb-1">AI Output Summary</p><p className="text-sm text-[hsl(var(--text-2))] p-3 bg-raised border border-[hsl(var(--border))]">{viewItem.aiOutputSummary}</p></div>
               {viewItem.overrideReason&&<div><p className="text-xs text-[hsl(var(--text-4))] mb-1">Override / Justification</p><p className="text-sm text-[hsl(var(--text-2))]">{viewItem.overrideReason}</p></div>}
               <ActivityTimeline items={[{date:viewItem.createdAt,actor:viewItem.createdBy,action:"created this review item"},{date:viewItem.updatedAt,actor:viewItem.reviewer||"system",action:"submitted decision"}]} />
             </div>

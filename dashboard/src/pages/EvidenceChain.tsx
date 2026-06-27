@@ -99,7 +99,7 @@ export default function EvidenceChain() {
           </p>
         </div>
         <div className="flex gap-2">
-          <button onClick={handleExportPackage} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+          <button onClick={handleExportPackage} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
             <Download size={14} /> Export Evidence Package
           </button>
           <button onClick={() => toast.success('Chain integrity verification started across all 847 blocks')} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90">
@@ -115,7 +115,7 @@ export default function EvidenceChain() {
           { label: 'Frameworks Covered', value: frameworks, sub: 'Active regulatory references', color: 'hsl(var(--text-1))' },
           { label: 'Last Block', value: '2m ago', sub: 'Auto-sealed every action', color: 'hsl(var(--text-1))' },
         ].map(s => (
-          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
             <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide">{s.label}</p>
             <p className="text-2xl font-bold mt-1" style={{ color: s.color }}>{s.value}</p>
             <p className="text-xs text-[hsl(var(--text-4))] mt-0.5">{s.sub}</p>
@@ -137,9 +137,9 @@ export default function EvidenceChain() {
       <div className="flex gap-3">
         <div className="relative flex-1 max-w-sm">
           <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by entity, actor, tag…" className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by entity, actor, tag…" className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]" />
         </div>
-        <select value={actionFilter} onChange={e => setActionFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+        <select value={actionFilter} onChange={e => setActionFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
           {['All', 'Control Assessment', 'Bias Audit', 'Policy Approval', 'DSR Processed', 'Risk Review', 'Incident Logged', 'Model Approved', 'Evidence Upload'].map(a => <option key={a}>{a}</option>)}
         </select>
       </div>
@@ -149,8 +149,8 @@ export default function EvidenceChain() {
         <div className="space-y-3">
           {filtered.map((entry, idx) => (
             <div key={entry.id} className="relative pl-12">
-              <div className="absolute left-[16px] top-4 w-3 h-3 rounded-full border-2 border-[hsl(var(--brand))] bg-[hsl(var(--bg-surface))] z-10" />
-              <div onClick={() => { setSelected(entry); setDrawerTab('detail'); setVerifyResult(null) }} className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4 cursor-pointer hover:border-[hsl(var(--brand)/0.4)] transition-colors">
+              <div className="absolute left-[16px] top-4 w-3 h-3 rounded-full border-2 border-[hsl(var(--brand))] bg-surface z-10" />
+              <div onClick={() => { setSelected(entry); setDrawerTab('detail'); setVerifyResult(null) }} className="rounded border border-[hsl(var(--border))] bg-surface p-4 cursor-pointer hover:border-[hsl(var(--brand)/0.4)] transition-colors">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -202,7 +202,7 @@ export default function EvidenceChain() {
       {selected && (
         <div className="fixed inset-0 z-50 flex">
           <div className="flex-1 bg-black/40" onClick={() => setSelected(null)} />
-          <div className="w-[520px] bg-[hsl(var(--bg-surface))] border-l border-[hsl(var(--border))] flex flex-col h-full">
+          <div className="w-[520px] bg-surface border-l border-[hsl(var(--border))] flex flex-col h-full">
             <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))]">
               <div>
                 <p className="font-mono text-xs text-[hsl(var(--brand))]">{selected.id} · Block #{selected.blockIndex}</p>
@@ -237,18 +237,18 @@ export default function EvidenceChain() {
                     ))}
                   </div>
                   <div className="space-y-2">
-                    <div className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                    <div className="p-3 bg-raised border border-[hsl(var(--border))]">
                       <div className="flex items-center justify-between mb-1">
                         <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">Block Hash (SHA-256)</p>
                         <button onClick={() => { navigator.clipboard.writeText(selected.hash); toast.success('Hash copied') }} className="text-[10px] text-[hsl(var(--brand))] hover:underline flex items-center gap-1"><Copy size={9} /> Copy</button>
                       </div>
                       <p className="font-mono text-[10px] text-[hsl(var(--text-1))] break-all leading-5">{selected.hash}</p>
                     </div>
-                    <div className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                    <div className="p-3 bg-raised border border-[hsl(var(--border))]">
                       <p className="text-[10px] text-[hsl(var(--text-4))] uppercase mb-1">Previous Block Hash</p>
                       <p className="font-mono text-[10px] text-[hsl(var(--text-3))] break-all leading-5">{selected.prevHash}</p>
                     </div>
-                    <div className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                    <div className="p-3 bg-raised border border-[hsl(var(--border))]">
                       <p className="text-[10px] text-[hsl(var(--text-4))] uppercase mb-1">Digital Signature</p>
                       <p className="font-mono text-[10px] text-[hsl(var(--text-3))] break-all">{selected.signature}</p>
                     </div>
@@ -257,7 +257,7 @@ export default function EvidenceChain() {
               )}
               {drawerTab === 'verify' && (
                 <>
-                  <div className="p-4 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] space-y-2">
+                  <div className="p-4 bg-raised border border-[hsl(var(--border))] space-y-2">
                     <p className="text-xs font-semibold text-[hsl(var(--text-1))]">Hash Chain Verification</p>
                     <p className="text-xs text-[hsl(var(--text-3))] leading-relaxed">Verify that this block's hash correctly links to the previous block and that the content has not been tampered with since recording.</p>
                     <div className="mt-3 space-y-1.5 text-[11px]">
@@ -285,7 +285,7 @@ export default function EvidenceChain() {
               )}
               {drawerTab === 'export' && (
                 <>
-                  <div className="p-4 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                  <div className="p-4 bg-raised border border-[hsl(var(--border))]">
                     <p className="text-xs font-semibold text-[hsl(var(--text-1))] mb-2">Court-Admissible Evidence Package</p>
                     <p className="text-xs text-[hsl(var(--text-3))] leading-relaxed mb-4">Generate a digitally-signed, tamper-proof evidence package accepted by EU AI Act conformity assessors, ISO 42001 auditors, and legal proceedings under eIDAS standards.</p>
                     <div className="space-y-2 text-[11px]">
@@ -301,7 +301,7 @@ export default function EvidenceChain() {
                     <button onClick={handleExportPackage} className="w-full py-2.5 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90 flex items-center justify-center gap-2">
                       <Download size={14} /> Generate Evidence Package (ZIP)
                     </button>
-                    <button onClick={() => toast.success('Shared with external auditor — access link valid for 72 hours')} className="w-full py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+                    <button onClick={() => toast.success('Shared with external auditor — access link valid for 72 hours')} className="w-full py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
                       Share with External Auditor
                     </button>
                   </div>

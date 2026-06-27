@@ -337,7 +337,7 @@ export default function Overview() {
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-2 border border-[hsl(var(--border))] px-3 py-1 bg-[hsl(var(--bg-surface))] h-8">
+          <div className="flex items-center gap-2 border border-[hsl(var(--border))] px-3 py-1 bg-surface h-8">
             <span className="text-xs font-semibold" style={{ color: 'hsl(var(--text-3))' }}>Risk Gate: {riskThreshold}</span>
             <input
               type="range"
@@ -798,7 +798,7 @@ export default function Overview() {
                       <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{rs.label}</p>
                       <p className="text-lg font-bold" style={{ color: barColor }}>{pct}%</p>
                     </div>
-                    <div className="w-full h-2 bg-[hsl(var(--bg-raised))]">
+                    <div className="w-full h-2 bg-raised">
                       <div className="h-full transition-all" style={{ width: `${pct}%`, background: barColor }} />
                     </div>
                     <div className="flex items-center justify-between text-xs">
@@ -1268,7 +1268,7 @@ export default function Overview() {
                 ].map(metric => (
                   <div key={metric.label} className="w-full flex items-center justify-between gap-3 text-xs">
                     <span className="w-28 truncate" style={{ color: 'hsl(var(--text-2))' }}>{metric.label}</span>
-                    <div className="flex-1 h-1.5 bg-[hsl(var(--bg-raised))]">
+                    <div className="flex-1 h-1.5 bg-raised">
                       <div className="h-full" style={{ width: `${metric.score}%`, background: metric.score >= 80 ? 'hsl(142 71% 45%)' : 'hsl(45 93% 47%)' }} />
                     </div>
                     <span className="w-6 text-right font-mono" style={{ color: metric.color }}>{metric.score}</span>

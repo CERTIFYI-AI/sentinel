@@ -120,7 +120,7 @@ export default function IntegrationsPage() {
           { label: 'Errors', value: stats.errors, color: 'hsl(var(--destructive))' },
           { label: 'Pending Setup', value: stats.pending, color: 'hsl(var(--s-in-tx))' },
         ].map(s => (
-          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
             <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
             <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
           </div>
@@ -137,10 +137,10 @@ export default function IntegrationsPage() {
 
       <div className="grid grid-cols-2 gap-4">
         {filtered.map(int => (
-          <div key={int.id} className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4 cursor-pointer hover:border-[hsl(var(--brand)/0.4)] transition-colors" onClick={() => setSelected(int)}>
+          <div key={int.id} className="rounded border border-[hsl(var(--border))] bg-surface p-4 cursor-pointer hover:border-[hsl(var(--brand)/0.4)] transition-colors" onClick={() => setSelected(int)}>
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 flex items-center justify-center border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
+                <div className="w-10 h-10 flex items-center justify-center border border-[hsl(var(--border))] bg-raised">
                   <Plugs size={18} style={{ color: CAT_COLORS[int.category] }} />
                 </div>
                 <div>
@@ -179,7 +179,7 @@ export default function IntegrationsPage() {
       {selected && (
         <div className="fixed inset-0 z-50 flex">
           <div className="flex-1 bg-black/40" onClick={() => setSelected(null)} />
-          <div className="w-[440px] bg-[hsl(var(--bg-surface))] border-l border-[hsl(var(--border))] flex flex-col h-full overflow-y-auto">
+          <div className="w-[440px] bg-surface border-l border-[hsl(var(--border))] flex flex-col h-full overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))]">
               <div><p className="text-[10px] text-[hsl(var(--text-4))]">{selected.category}</p><h2 className="text-base font-semibold text-[hsl(var(--text-1))]">{selected.name}</h2></div>
               <button onClick={() => setSelected(null)}><X size={18} className="text-[hsl(var(--text-4))]" /></button>
@@ -198,16 +198,16 @@ export default function IntegrationsPage() {
                   { label: 'Connected Date', value: selected.connectedDate ?? 'N/A' },
                   { label: 'Last Sync', value: selected.lastSync ?? 'Never' },
                 ].map(({ label, value }) => (
-                  <div key={label} className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                  <div key={label} className="p-3 bg-raised border border-[hsl(var(--border))]">
                     <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{label}</p>
                     <p className="text-xs font-medium text-[hsl(var(--text-1))] mt-0.5">{value}</p>
                   </div>
                 ))}
               </div>
-              <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Data Flows</p><div className="space-y-1">{selected.dataFlows.map(f => <div key={f} className="text-xs text-[hsl(var(--text-2))] p-2 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{f}</div>)}</div></div>
+              <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Data Flows</p><div className="space-y-1">{selected.dataFlows.map(f => <div key={f} className="text-xs text-[hsl(var(--text-2))] p-2 bg-raised border border-[hsl(var(--border))]">{f}</div>)}</div></div>
             </div>
             <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
-              <button onClick={() => toast.success(`${selected.name} synced`)} className="flex-1 flex items-center justify-center gap-1.5 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]"><ArrowClockwise size={14} /> Sync Now</button>
+              <button onClick={() => toast.success(`${selected.name} synced`)} className="flex-1 flex items-center justify-center gap-1.5 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised"><ArrowClockwise size={14} /> Sync Now</button>
               {selected.status === 'Error' && <button onClick={() => { toast.success(`${selected.name} reconnected`); setSelected(null) }} className="flex-1 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90">Reconnect</button>}
               <button onClick={() => { setDeleteTarget(selected); setSelected(null) }} className="px-3 py-2 border border-[hsl(var(--destructive)/0.3)] text-[hsl(var(--destructive))] text-sm hover:bg-[hsl(0_72%_51%/0.06)]"><Trash size={14} /></button>
             </div>
@@ -219,7 +219,7 @@ export default function IntegrationsPage() {
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowCreate(false)} />
-          <div className="relative bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] w-full max-w-md mx-4 shadow-2xl">
+          <div className="relative bg-surface border border-[hsl(var(--border))] w-full max-w-md mx-4 shadow-2xl">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
               <h2 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2">
                 <Plugs size={15} className="text-[hsl(var(--brand))]" />
@@ -230,27 +230,27 @@ export default function IntegrationsPage() {
             <div className="p-5 space-y-4">
               <div>
                 <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Integration Name *</label>
-                <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Vertex AI, Datadog, ServiceNow..." className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+                <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Vertex AI, Datadog, ServiceNow..." className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
               </div>
               <div>
                 <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Category *</label>
-                <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value as IntegrationCategory }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
+                <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value as IntegrationCategory }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
                   {['AI Provider', 'Data Source', 'Compliance Tool', 'Monitoring', 'Identity', 'Notification', 'Ticketing'].map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
               <div>
                 <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Auth Method</label>
-                <select value={form.authMethod} onChange={e => setForm(p => ({ ...p, authMethod: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
+                <select value={form.authMethod} onChange={e => setForm(p => ({ ...p, authMethod: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
                   {['API Key', 'OAuth 2.0', 'Service Account Token', 'mTLS Certificate', 'IAM Role', 'SAML 2.0', 'Integration Key'].map(a => <option key={a}>{a}</option>)}
                 </select>
               </div>
               <div>
                 <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Description</label>
-                <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={3} placeholder="Describe what this integration is used for..." className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))] resize-none" />
+                <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={3} placeholder="Describe what this integration is used for..." className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))] resize-none" />
               </div>
             </div>
             <div className="flex justify-end gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
-              <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">Cancel</button>
+              <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">Cancel</button>
               <button onClick={handleCreate} className="px-4 py-2 text-sm font-medium bg-[hsl(var(--brand))] text-white hover:opacity-90">Add Integration</button>
             </div>
           </div>

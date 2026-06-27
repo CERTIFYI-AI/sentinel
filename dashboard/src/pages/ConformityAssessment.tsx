@@ -126,7 +126,7 @@ export default function ConformityAssessment() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-[hsl(var(--bg-raised))] border-b border-[hsl(var(--border))]">
+              <thead className="bg-raised border-b border-[hsl(var(--border))]">
                 <tr>
                   <th className="px-3 py-2.5 w-8"><input type="checkbox" checked={sp.selectedIds.size===sp.paged.length&&sp.paged.length>0} onChange={sp.toggleAll} /></th>
                   <Th col="title" label="Assessment Title" sortCol={sp.sortCol} sortDir={sp.sortDir} onSort={sp.handleSort} />
@@ -142,13 +142,13 @@ export default function ConformityAssessment() {
               </thead>
               <tbody>
                 {sp.paged.map((item: any) => (
-                  <tr key={item.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))] cursor-pointer" onClick={() => { setViewItem(item); setModal("view"); }}>
+                  <tr key={item.id} className="border-b border-[hsl(var(--border))] hover:bg-raised cursor-pointer" onClick={() => { setViewItem(item); setModal("view"); }}>
                     <td className="px-3 py-2.5" onClick={e=>e.stopPropagation()}><input type="checkbox" checked={sp.selectedIds.has(item.id)} onChange={() => sp.toggleSelect(item.id)} /></td>
                     <td className="px-3 py-2.5 max-w-[200px]">
                       <p className="font-medium text-[hsl(var(--text-1))] line-clamp-1">{item.title}</p>
                       <p className="text-xs text-[hsl(var(--text-4))] font-mono">{item.id} · {item.auditor}</p>
                     </td>
-                    <td className="px-3 py-2.5 text-xs"><span className="px-1.5 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{item.framework}</span></td>
+                    <td className="px-3 py-2.5 text-xs"><span className="px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))]">{item.framework}</span></td>
                     <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))]">{item.assessmentType}</td>
                     <td className="px-3 py-2.5"><ProgressBar pct={item.completion} /></td>
                     <td className="px-3 py-2.5">
@@ -166,8 +166,8 @@ export default function ConformityAssessment() {
                     <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))] whitespace-nowrap">{item.dueDate}</td>
                     <td className="px-3 py-2.5 text-right" onClick={e=>e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => { setViewItem(item); setModal("view"); }} className="p-1.5 hover:bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-3))]"><Eye size={14} /></button>
-                        <button onClick={() => openEdit(item)} className="p-1.5 hover:bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-3))]"><PencilSimple size={14} /></button>
+                        <button onClick={() => { setViewItem(item); setModal("view"); }} className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"><Eye size={14} /></button>
+                        <button onClick={() => openEdit(item)} className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"><PencilSimple size={14} /></button>
                         <button onClick={() => setDeleteTarget(item)} className="p-1.5 hover:bg-red-50 text-[hsl(0_72%_51%)]"><Trash size={14} /></button>
                       </div>
                     </td>
@@ -233,10 +233,10 @@ export default function ConformityAssessment() {
               <div className="flex items-center gap-2 flex-wrap">
                 <StatusBadge status={viewItem.status} />
                 <span className="text-xs px-1.5 py-0.5 border font-medium" style={{ color:outcomeColors[viewItem.outcome], borderColor:`${outcomeColors[viewItem.outcome]}40`, background:`${outcomeColors[viewItem.outcome]}12` }}>{viewItem.outcome}</span>
-                <span className="text-xs px-1.5 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{viewItem.assessmentType}</span>
+                <span className="text-xs px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))]">{viewItem.assessmentType}</span>
                 {viewItem.certificationRequired&&<span className="text-xs px-1.5 py-0.5 bg-blue-50 text-blue-600 border border-blue-200">Certification Required</span>}
               </div>
-              <div className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+              <div className="p-3 bg-raised border border-[hsl(var(--border))]">
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-xs text-[hsl(var(--text-4))]">Assessment Progress</span>
                   <span className="text-sm font-bold text-[hsl(var(--text-1))]">{viewItem.completion}%</span>

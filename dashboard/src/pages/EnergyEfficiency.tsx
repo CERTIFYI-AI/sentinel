@@ -178,7 +178,7 @@ function EnergyEfficiencyInner({ readings: initialReadings, save, remove, chartT
           <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">Per-model AI energy consumption, efficiency scoring, and sustainability recommendations</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => exportCsv(readings, 'energy-efficiency.csv')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]"><Export size={14} /> Export CSV</button>
+          <button onClick={() => exportCsv(readings, 'energy-efficiency.csv')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised"><Export size={14} /> Export CSV</button>
           <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 px-4 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90"><Plus size={14} /> Log Energy Reading</button>
         </div>
       </div>
@@ -191,7 +191,7 @@ function EnergyEfficiencyInner({ readings: initialReadings, save, remove, chartT
           { label: 'Avg Renewable Energy', value: `${stats.avgRenewable}%`, sub: 'Target: 90% by EOY', color: stats.avgRenewable >= 85 ? 'hsl(var(--s-ok-tx))' : 'hsl(45 85% 40%)' },
           { label: 'Total GPU Hours', value: stats.totalGpuHours.toLocaleString(), sub: 'Aggregate', color: 'hsl(var(--text-1))' },
         ].map(s => (
-          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
             <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
             <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
             <p className="text-[10px] text-[hsl(var(--text-4))] mt-1">{s.sub}</p>
@@ -202,7 +202,7 @@ function EnergyEfficiencyInner({ readings: initialReadings, save, remove, chartT
       {/* Charts row */}
       {trendData.length > 0 && (
         <div className="grid grid-cols-2 gap-4">
-          <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+          <div className="rounded border border-[hsl(var(--border))] bg-surface p-4">
             <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] mb-3">Tokens per kWh Trend</h3>
             <ResponsiveContainer width="100%" height={180}>
               <LineChart data={trendData}>
@@ -213,7 +213,7 @@ function EnergyEfficiencyInner({ readings: initialReadings, save, remove, chartT
               </LineChart>
             </ResponsiveContainer>
           </div>
-          <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+          <div className="rounded border border-[hsl(var(--border))] bg-surface p-4">
             <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] mb-3">Efficiency by Period</h3>
             <ResponsiveContainer width="100%" height={180}>
               <LineChart data={trendData}>
@@ -231,7 +231,7 @@ function EnergyEfficiencyInner({ readings: initialReadings, save, remove, chartT
       {/* Efficiency vs kWh Scatter + Region Scorecard */}
       <div className="grid grid-cols-2 gap-4">
         {scatterData.length > 0 && (
-          <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+          <div className="rounded border border-[hsl(var(--border))] bg-surface p-4">
             <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] mb-3">Efficiency Score vs kWh Consumption</h3>
             <ResponsiveContainer width="100%" height={180}>
               <ScatterChart margin={{ top: 10, right: 20, bottom: 10, left: 0 }}>
@@ -244,7 +244,7 @@ function EnergyEfficiencyInner({ readings: initialReadings, save, remove, chartT
                     if (active && payload?.length) {
                       const d = payload[0].payload
                       return (
-                        <div className="bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] px-3 py-2 text-xs">
+                        <div className="bg-surface border border-[hsl(var(--border))] px-3 py-2 text-xs">
                           <p className="font-medium text-[hsl(var(--text-1))]">{d.name}</p>
                           <p className="text-[hsl(var(--text-4))]">kWh: {d.x.toLocaleString()}</p>
                           <p className="text-[hsl(var(--text-4))]">Efficiency: {d.y}/100</p>
@@ -259,11 +259,11 @@ function EnergyEfficiencyInner({ readings: initialReadings, save, remove, chartT
             </ResponsiveContainer>
           </div>
         )}
-        <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+        <div className="rounded border border-[hsl(var(--border))] bg-surface p-4">
           <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] mb-3">Compute Region Efficiency</h3>
           <div className="space-y-2">
             {REGIONS.map(r => (
-              <div key={r.region} className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+              <div key={r.region} className="p-3 bg-raised border border-[hsl(var(--border))]">
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-xs font-medium text-[hsl(var(--text-1))]">{r.region}</span>
                   <span className="text-sm font-bold" style={{ color: r.score >= 85 ? 'hsl(var(--s-ok-tx))' : r.score >= 70 ? 'hsl(45 85% 40%)' : 'hsl(var(--destructive))' }}>{r.score}/100</span>
@@ -282,7 +282,7 @@ function EnergyEfficiencyInner({ readings: initialReadings, save, remove, chartT
       </div>
 
       {/* Per-model readings table */}
-      <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+      <div className="rounded border border-[hsl(var(--border))] bg-surface p-4">
         <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] mb-4">Energy Readings by Model</h3>
         {readings.length === 0 ? (
           <p className="text-sm text-[hsl(var(--text-4))] text-center py-8">No energy readings yet. Log your first reading.</p>
@@ -300,7 +300,7 @@ function EnergyEfficiencyInner({ readings: initialReadings, save, remove, chartT
       </div>
 
       {/* Recommendations Panel */}
-      <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+      <div className="rounded border border-[hsl(var(--border))] bg-surface p-4">
         <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2 mb-3">
           <Lightbulb size={15} className="text-[hsl(var(--brand))]" weight="duotone" />
           Efficiency Recommendations
@@ -334,7 +334,7 @@ function EnergyEfficiencyInner({ readings: initialReadings, save, remove, chartT
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowCreate(false)} />
-          <div className="relative bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] w-full max-w-lg mx-4 shadow-2xl">
+          <div className="relative bg-surface border border-[hsl(var(--border))] w-full max-w-lg mx-4 shadow-2xl">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
               <h2 className="text-sm font-semibold text-[hsl(var(--text-1))]">Log Energy Reading</h2>
               <button onClick={() => setShowCreate(false)} className="text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-2))]"><X size={16} /></button>
@@ -343,52 +343,52 @@ function EnergyEfficiencyInner({ readings: initialReadings, save, remove, chartT
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[11px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Model *</label>
-                  <input value={form.model} onChange={e => setForm(p => ({ ...p, model: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="Model name" />
+                  <input value={form.model} onChange={e => setForm(p => ({ ...p, model: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="Model name" />
                 </div>
                 <div>
                   <label className="text-[11px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Period *</label>
-                  <select value={form.period} onChange={e => setForm(p => ({ ...p, period: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
+                  <select value={form.period} onChange={e => setForm(p => ({ ...p, period: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
                     <option value="">Select period...</option>
                     {['2026-Q1', '2026-Q2', '2025-Q4', '2025-Q3'].map(p => <option key={p}>{p}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="text-[11px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">GPU Hours *</label>
-                  <input type="number" min={0} value={form.gpuHours} onChange={e => setForm(p => ({ ...p, gpuHours: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. 320" />
+                  <input type="number" min={0} value={form.gpuHours} onChange={e => setForm(p => ({ ...p, gpuHours: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. 320" />
                 </div>
                 <div>
                   <label className="text-[11px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">kWh Consumed *</label>
-                  <input type="number" min={0} value={form.kwh} onChange={e => setForm(p => ({ ...p, kwh: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. 4800" />
+                  <input type="number" min={0} value={form.kwh} onChange={e => setForm(p => ({ ...p, kwh: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. 4800" />
                 </div>
                 <div>
                   <label className="text-[11px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Tokens Generated</label>
-                  <input type="number" min={0} value={form.tokensGenerated} onChange={e => setForm(p => ({ ...p, tokensGenerated: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. 10080000" />
+                  <input type="number" min={0} value={form.tokensGenerated} onChange={e => setForm(p => ({ ...p, tokensGenerated: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. 10080000" />
                 </div>
                 <div>
                   <label className="text-[11px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Renewable %</label>
-                  <input type="number" min={0} max={100} value={form.renewablePercent} onChange={e => setForm(p => ({ ...p, renewablePercent: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. 85" />
+                  <input type="number" min={0} max={100} value={form.renewablePercent} onChange={e => setForm(p => ({ ...p, renewablePercent: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. 85" />
                 </div>
                 <div>
                   <label className="text-[11px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Compute Provider *</label>
-                  <select value={form.computeProvider} onChange={e => setForm(p => ({ ...p, computeProvider: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
+                  <select value={form.computeProvider} onChange={e => setForm(p => ({ ...p, computeProvider: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
                     <option value="">Select provider...</option>
                     {['AWS us-east-1', 'AWS us-west-2', 'Azure East US', 'GCP us-central1', 'OpenAI API', 'Anthropic API', 'On-premise'].map(p => <option key={p}>{p}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="text-[11px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Measurement Source</label>
-                  <select value={form.measurementSource} onChange={e => setForm(p => ({ ...p, measurementSource: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
+                  <select value={form.measurementSource} onChange={e => setForm(p => ({ ...p, measurementSource: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
                     {['Cloud Console', 'API Usage Report', 'Smart Meter', 'Estimated', 'Third-party Audit'].map(s => <option key={s}>{s}</option>)}
                   </select>
                 </div>
               </div>
               <div>
                 <label className="text-[11px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Notes</label>
-                <textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={2} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))] resize-none" placeholder="Observations..." />
+                <textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={2} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))] resize-none" placeholder="Observations..." />
               </div>
             </div>
             <div className="flex justify-end gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
-              <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">Cancel</button>
+              <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">Cancel</button>
               <button onClick={handleCreate} className="px-4 py-2 text-sm font-medium bg-[hsl(var(--brand))] text-white hover:opacity-90">Log Reading</button>
             </div>
           </div>
@@ -399,7 +399,7 @@ function EnergyEfficiencyInner({ readings: initialReadings, save, remove, chartT
       {selected && (
         <div className="fixed inset-0 z-50 flex">
           <div className="flex-1 bg-black/40" onClick={() => setSelected(null)} />
-          <div className="w-[480px] bg-[hsl(var(--bg-surface))] border-l border-[hsl(var(--border))] flex flex-col h-full overflow-y-auto">
+          <div className="w-[480px] bg-surface border-l border-[hsl(var(--border))] flex flex-col h-full overflow-y-auto">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
               <div>
                 <p className="font-mono text-xs text-[hsl(var(--brand))]">{String(selected.id).slice(0, 12)}</p>
@@ -411,7 +411,7 @@ function EnergyEfficiencyInner({ readings: initialReadings, save, remove, chartT
               </div>
             </div>
             <div className="p-5 space-y-4">
-              <div className="p-4 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] text-center">
+              <div className="p-4 bg-raised border border-[hsl(var(--border))] text-center">
                 <p className="text-[10px] text-[hsl(var(--text-4))] uppercase tracking-wider mb-1">Efficiency Score</p>
                 <p className="text-4xl font-bold" style={{ color: effColor(selected.efficiencyScore) }}>{selected.efficiencyScore}/100</p>
               </div>
@@ -426,14 +426,14 @@ function EnergyEfficiencyInner({ readings: initialReadings, save, remove, chartT
                   { label: 'Measurement Source', value: selected.measurementSource },
                   { label: 'Date Logged', value: selected.date },
                 ].map(({ label, value }) => (
-                  <div key={label} className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                  <div key={label} className="p-3 bg-raised border border-[hsl(var(--border))]">
                     <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{label}</p>
                     <p className="text-xs font-semibold text-[hsl(var(--text-1))] mt-0.5">{value}</p>
                   </div>
                 ))}
               </div>
               {selected.notes && (
-                <div className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                <div className="p-3 bg-raised border border-[hsl(var(--border))]">
                   <p className="text-[10px] text-[hsl(var(--text-4))] uppercase mb-1">Notes</p>
                   <p className="text-xs text-[hsl(var(--text-2))]">{selected.notes}</p>
                 </div>

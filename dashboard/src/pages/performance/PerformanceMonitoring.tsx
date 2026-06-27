@@ -250,7 +250,7 @@ export default function PerformanceMonitoring() {
                     { label: 'RPM', value: ep.status === 'down' ? '—' : `${(ep.throughputRpm / 1000).toFixed(1)}K`, ok: ep.throughputRpm < ep.throughputCapacity * 0.85 },
                     { label: 'Error %', value: ep.status === 'down' ? '100%' : `${ep.errorRate}%`, ok: ep.errorRate <= ep.errorThreshold },
                   ].map(m => (
-                    <div key={m.label} className="bg-[hsl(var(--bg-surface))] p-2">
+                    <div key={m.label} className="bg-surface p-2">
                       <p className="text-xs text-[hsl(var(--text-4))]">{m.label}</p>
                       <p className="text-sm font-semibold mt-0.5" style={{ color: m.ok ? 'hsl(var(--text-1))' : '#ef4444' }}>{m.value}</p>
                     </div>
@@ -300,7 +300,7 @@ export default function PerformanceMonitoring() {
               </thead>
               <tbody>
                 {ENDPOINTS.map((ep, i) => (
-                  <tr key={ep.modelId} className={`border-b border-[hsl(var(--border))] ${i % 2 === 0 ? '' : 'bg-[hsl(var(--bg-surface))]'}`}>
+                  <tr key={ep.modelId} className={`border-b border-[hsl(var(--border))] ${i % 2 === 0 ? '' : 'bg-surface'}`}>
                     <td className="px-3 py-2 font-medium text-[hsl(var(--text-1))]">{ep.modelName.split(' ')[0]} {ep.modelName.split(' ')[1]}</td>
                     <td className="px-3 py-2 font-mono text-[hsl(var(--text-3))]">{ep.endpoint}</td>
                     <td className="px-3 py-2 text-[hsl(var(--text-2))]">${ep.costPerInference.toFixed(4)}</td>

@@ -115,7 +115,7 @@ export default function VendorUpload() {
           { label: 'Pending Review', value: submissions.filter(s => s.status === 'Pending Review').length, color: 'hsl(var(--s-in-tx))' },
           { label: 'Expiring < 90 days', value: 2, color: 'hsl(45 85% 40%)' },
         ].map(s => (
-          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
             <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
             <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
           </div>
@@ -123,19 +123,19 @@ export default function VendorUpload() {
       </div>
 
       <div className="flex gap-3">
-        <div className="flex items-center gap-2 flex-1 max-w-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] px-3">
+        <div className="flex items-center gap-2 flex-1 max-w-sm border border-[hsl(var(--border))] bg-surface px-3">
           <MagnifyingGlass size={14} className="text-[hsl(var(--text-4))] flex-shrink-0" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search vendors, files…" className="flex-1 py-2 text-sm bg-transparent text-[hsl(var(--text-1))] placeholder-[hsl(var(--text-4))] focus:outline-none" />
         </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
           {['All', 'Pending Review', 'Under Review', 'Accepted', 'Rejected'].map(s => <option key={s}>{s}</option>)}
         </select>
       </div>
 
-      <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] overflow-hidden">
+      <div className="rounded border border-[hsl(var(--border))] bg-surface overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
+            <tr className="border-b border-[hsl(var(--border))] bg-raised">
               {['ID', 'Vendor', 'Document Type', 'File', 'Uploaded', 'Size', 'Expires', 'Reviewed By', 'Status', 'Actions'].map(h => (
                 <th key={h} className="text-left px-4 py-3 text-[11px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wide">{h}</th>
               ))}
@@ -143,7 +143,7 @@ export default function VendorUpload() {
           </thead>
           <tbody>
             {filtered.map(s => (
-              <tr key={s.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))] cursor-pointer" onClick={() => setSelected(s)}>
+              <tr key={s.id} className="border-b border-[hsl(var(--border))] hover:bg-raised cursor-pointer" onClick={() => setSelected(s)}>
                 <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--brand))]">{s.id}</td>
                 <td className="px-4 py-3 text-xs font-medium text-[hsl(var(--text-1))]">{s.vendor}</td>
                 <td className="px-4 py-3 text-xs text-[hsl(var(--text-3))]">{s.type}</td>
@@ -171,14 +171,14 @@ export default function VendorUpload() {
       {selected && (
         <div className="fixed inset-0 z-50 flex">
           <div className="flex-1 bg-black/40" onClick={() => setSelected(null)} />
-          <div className="w-[440px] bg-[hsl(var(--bg-surface))] border-l border-[hsl(var(--border))] flex flex-col h-full overflow-y-auto">
+          <div className="w-[440px] bg-surface border-l border-[hsl(var(--border))] flex flex-col h-full overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))]">
               <div><p className="font-mono text-xs text-[hsl(var(--brand))]">{selected.id}</p><h2 className="text-sm font-semibold text-[hsl(var(--text-1))]">{selected.vendor} — {selected.type}</h2></div>
               <button onClick={() => setSelected(null)}><X size={18} className="text-[hsl(var(--text-4))]" /></button>
             </div>
             <div className="p-4 space-y-4">
               <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status]}>{selected.status}</span>
-              <div className="flex items-center gap-2 p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] cursor-pointer hover:bg-[hsl(var(--bg-page))]" onClick={() => toast.info(`Opening ${selected.filename}`)}>
+              <div className="flex items-center gap-2 p-3 bg-raised border border-[hsl(var(--border))] cursor-pointer hover:bg-[hsl(var(--bg-page))]" onClick={() => toast.info(`Opening ${selected.filename}`)}>
                 <FileText size={16} className="text-[hsl(var(--brand))]" />
                 <div><p className="text-xs font-medium text-[hsl(var(--text-1))]">{selected.filename}</p><p className="text-[10px] text-[hsl(var(--text-4))]">{selected.size}</p></div>
               </div>
@@ -189,13 +189,13 @@ export default function VendorUpload() {
                   { label: 'Expiry Date', value: selected.expiryDate ?? 'N/A' },
                   { label: 'Reviewed By', value: selected.reviewedBy ?? 'Unassigned' },
                 ].map(({ label, value }) => (
-                  <div key={label} className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                  <div key={label} className="p-3 bg-raised border border-[hsl(var(--border))]">
                     <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{label}</p>
                     <p className="text-xs font-medium text-[hsl(var(--text-1))] mt-0.5">{value}</p>
                   </div>
                 ))}
               </div>
-              {selected.reviewNotes && <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">Review Notes</p><p className="text-sm text-[hsl(var(--text-2))] p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] leading-relaxed">{selected.reviewNotes}</p></div>}
+              {selected.reviewNotes && <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">Review Notes</p><p className="text-sm text-[hsl(var(--text-2))] p-3 bg-raised border border-[hsl(var(--border))] leading-relaxed">{selected.reviewNotes}</p></div>}
             </div>
             {(selected.status === 'Pending Review' || selected.status === 'Under Review') && (
               <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">

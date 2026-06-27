@@ -76,7 +76,7 @@ export function PageHeader({
             <button
               onClick={onBack}
               aria-label="Go back"
-              className="rounded p-1 hover:bg-[hsl(var(--bg-surface))] transition-colors text-[hsl(var(--text-3))]"
+              className="rounded p-1 hover:bg-surface transition-colors text-[hsl(var(--text-3))]"
             >
               <ChevronRight className="w-4 h-4 rotate-180" aria-hidden="true" />
             </button>

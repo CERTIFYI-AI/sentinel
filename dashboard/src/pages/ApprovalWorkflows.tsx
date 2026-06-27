@@ -250,7 +250,7 @@ export default function ApprovalWorkflows() {
           <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">Manage multi-stage approval pipelines for governance actions</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => toast.success('Exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+          <button onClick={() => toast.success('Exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
             <Export size={14} /> Export
           </button>
           <button onClick={openCreate} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[hsl(var(--brand))] hover:opacity-90">
@@ -267,7 +267,7 @@ export default function ApprovalWorkflows() {
           { label: 'Pending Approvals', value: stats.pending, color: 'hsl(45 85% 40%)' },
           { label: 'Avg Cycle Time', value: stats.avgCycle, color: 'hsl(var(--brand))' },
         ].map(s => (
-          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
             <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
             <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
           </div>
@@ -286,11 +286,11 @@ export default function ApprovalWorkflows() {
 
       {/* Filters */}
       <div className="flex gap-3">
-        <div className="flex items-center gap-2 flex-1 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] px-3">
+        <div className="flex items-center gap-2 flex-1 border border-[hsl(var(--border))] bg-surface px-3">
           <MagnifyingGlass size={14} className="text-[hsl(var(--text-4))] flex-shrink-0" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search workflows…" className="flex-1 py-2 text-sm bg-transparent text-[hsl(var(--text-1))] placeholder-[hsl(var(--text-4))] focus:outline-none" />
         </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
           {['All', 'Active', 'Paused', 'Disabled'].map(s => <option key={s}>{s}</option>)}
         </select>
       </div>
@@ -303,15 +303,15 @@ export default function ApprovalWorkflows() {
         {filtered.map(r => {
           const ss = STATUS_STYLE[r.status]
           return (
-            <div key={r.id} className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] overflow-hidden">
+            <div key={r.id} className="rounded border border-[hsl(var(--border))] bg-surface overflow-hidden">
               {/* Card Header */}
-              <div className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-[hsl(var(--bg-raised))]" onClick={() => setSelected(r)}>
+              <div className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-raised" onClick={() => setSelected(r)}>
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-1 h-10 rounded-full flex-shrink-0" style={{ background: TYPE_COLOR[r.type] }} />
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
                       <span className="font-mono text-[10px] text-[hsl(var(--text-4))]">{r.id}</span>
-                      <span className="text-[10px] px-1.5 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-4))]">{r.type}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-4))]">{r.type}</span>
                       <span className="text-[11px] px-2 py-0.5 font-medium" style={ss}>{r.status}</span>
                       {r.pending > 0 && <span className="text-[10px] px-1.5 py-0.5 font-semibold text-white" style={{ background: 'hsl(45 85% 40%)' }}>{r.pending} pending</span>}
                     </div>
@@ -320,11 +320,11 @@ export default function ApprovalWorkflows() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <button onClick={e => toggleStatus(r, e)} className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+                  <button onClick={e => toggleStatus(r, e)} className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">
                     {r.status === 'Active' ? <><Pause size={11} /> Pause</> : <><Play size={11} /> Resume</>}
                   </button>
-                  <button onClick={e => openEdit(r, e)} className="p-1.5 hover:bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-2))]"><PencilSimple size={14} /></button>
-                  <button onClick={e => { e.stopPropagation(); setDeleteTarget(r) }} className="p-1.5 hover:bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))]"><Trash size={14} /></button>
+                  <button onClick={e => openEdit(r, e)} className="p-1.5 hover:bg-raised text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-2))]"><PencilSimple size={14} /></button>
+                  <button onClick={e => { e.stopPropagation(); setDeleteTarget(r) }} className="p-1.5 hover:bg-raised text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))]"><Trash size={14} /></button>
                   <ArrowRight size={14} className="text-[hsl(var(--text-4))]" />
                 </div>
               </div>
@@ -360,18 +360,18 @@ export default function ApprovalWorkflows() {
       {selected && (
         <div className="fixed inset-0 z-50 flex">
           <div className="absolute inset-0 bg-black/40" onClick={() => setSelected(null)} />
-          <div className="relative ml-auto w-[600px] h-full bg-[hsl(var(--bg-surface))] border-l border-[hsl(var(--border))] flex flex-col overflow-hidden">
+          <div className="relative ml-auto w-[600px] h-full bg-surface border-l border-[hsl(var(--border))] flex flex-col overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
               <div>
                 <span className="font-mono text-xs text-[hsl(var(--text-4))]">{selected.id}</span>
                 <h2 className="text-base font-semibold text-[hsl(var(--text-1))] mt-0.5">{selected.name}</h2>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status]}>{selected.status}</span>
-                  <span className="text-[10px] px-1.5 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-4))]">{selected.type}</span>
+                  <span className="text-[10px] px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-4))]">{selected.type}</span>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={e => openEdit(selected, e)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]"><PencilSimple size={12} /> Edit</button>
+                <button onClick={e => openEdit(selected, e)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised"><PencilSimple size={12} /> Edit</button>
                 <button onClick={() => setSelected(null)}><X size={16} className="text-[hsl(var(--text-4))]" /></button>
               </div>
             </div>
@@ -456,7 +456,7 @@ export default function ApprovalWorkflows() {
       {formOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={() => setFormOpen(false)} />
-          <div className="relative w-[520px] max-h-[80vh] overflow-y-auto bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] flex flex-col">
+          <div className="relative w-[520px] max-h-[80vh] overflow-y-auto bg-surface border border-[hsl(var(--border))] flex flex-col">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
               <h2 className="text-sm font-semibold text-[hsl(var(--text-1))]">{editing ? 'Edit Workflow' : 'New Approval Workflow'}</h2>
               <button onClick={() => setFormOpen(false)}><X size={16} className="text-[hsl(var(--text-4))]" /></button>
@@ -504,7 +504,7 @@ export default function ApprovalWorkflows() {
               </div>
             </div>
             <div className="flex justify-end gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
-              <button onClick={() => setFormOpen(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">Cancel</button>
+              <button onClick={() => setFormOpen(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">Cancel</button>
               <button onClick={saveForm} className="px-4 py-2 text-sm font-medium text-white bg-[hsl(var(--brand))] hover:opacity-90">{editing ? 'Save Changes' : 'Create Workflow'}</button>
             </div>
           </div>
@@ -536,7 +536,7 @@ export default function ApprovalWorkflows() {
   )
 }
 
-const INPUT_CLS = 'w-full px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] text-sm focus:outline-none focus:border-[hsl(var(--brand))]'
+const INPUT_CLS = 'w-full px-3 py-2 border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] text-sm focus:outline-none focus:border-[hsl(var(--brand))]'
 
 function Field({ label, children, colSpan }: { label: string; children: React.ReactNode; colSpan?: boolean }) {
   return (

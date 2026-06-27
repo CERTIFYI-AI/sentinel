@@ -88,7 +88,7 @@ export default function MultiAgentChoreography() {
           <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">Live view of multi-agent workflows, orchestration state, and HITL intervention points</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => toast.success('Exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+          <button onClick={() => toast.success('Exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
             <Export size={14} /> Export
           </button>
           <button onClick={() => { setNewWfName(''); setNewWfTrigger('Manual'); setNewWfOrch(''); setShowCreate(true) }} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90">
@@ -104,7 +104,7 @@ export default function MultiAgentChoreography() {
           { label: 'Failed', value: stats.failed, color: 'hsl(var(--destructive))' },
           { label: 'Total AI Cost', value: `$${stats.totalCost}`, color: 'hsl(var(--brand))' },
         ].map(s => (
-          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
             <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
             <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
           </div>
@@ -112,11 +112,11 @@ export default function MultiAgentChoreography() {
       </div>
 
       <div className="flex gap-3">
-        <div className="flex items-center gap-2 flex-1 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] px-3">
+        <div className="flex items-center gap-2 flex-1 border border-[hsl(var(--border))] bg-surface px-3">
           <MagnifyingGlass size={14} className="text-[hsl(var(--text-4))] flex-shrink-0" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search workflows…" className="flex-1 py-2 text-sm bg-transparent text-[hsl(var(--text-1))] placeholder-[hsl(var(--text-4))] focus:outline-none" />
         </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
           {['All', 'Running', 'Completed', 'Failed', 'Paused', 'Awaiting Approval'].map(s => <option key={s}>{s}</option>)}
         </select>
       </div>
@@ -126,7 +126,7 @@ export default function MultiAgentChoreography() {
           const progress = (w.stepsCompleted / w.stepsTotal) * 100
           const ss = STATUS_STYLE[w.status]
           return (
-            <div key={w.id} className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4 cursor-pointer hover:border-[hsl(var(--brand)/0.4)] transition-colors" onClick={() => setSelected(w)}>
+            <div key={w.id} className="rounded border border-[hsl(var(--border))] bg-surface p-4 cursor-pointer hover:border-[hsl(var(--brand)/0.4)] transition-colors" onClick={() => setSelected(w)}>
               <div className="flex items-start justify-between gap-4 mb-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
@@ -166,7 +166,7 @@ export default function MultiAgentChoreography() {
                 {w.workerAgents.map((a, i) => (
                   <div key={a} className="flex items-center gap-1">
                     <ArrowRight size={10} className="text-[hsl(var(--text-4))]" />
-                    <span className="text-[10px] px-2 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{a}</span>
+                    <span className="text-[10px] px-2 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{a}</span>
                   </div>
                 ))}
               </div>
@@ -186,7 +186,7 @@ export default function MultiAgentChoreography() {
       {selected && (
         <div className="fixed inset-0 z-50 flex">
           <div className="flex-1 bg-black/40" onClick={() => setSelected(null)} />
-          <div className="w-[520px] bg-[hsl(var(--bg-surface))] border-l border-[hsl(var(--border))] flex flex-col h-full">
+          <div className="w-[520px] bg-surface border-l border-[hsl(var(--border))] flex flex-col h-full">
             <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))]">
               <div>
                 <p className="font-mono text-xs text-[hsl(var(--brand))]">{selected.id}</p>
@@ -213,7 +213,7 @@ export default function MultiAgentChoreography() {
                   <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">{selected.description}</p>
                   <div>
                     <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">Trigger</p>
-                    <p className="text-xs text-[hsl(var(--text-2))] p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] leading-relaxed">{selected.trigger}</p>
+                    <p className="text-xs text-[hsl(var(--text-2))] p-3 bg-raised border border-[hsl(var(--border))] leading-relaxed">{selected.trigger}</p>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     {[
@@ -222,7 +222,7 @@ export default function MultiAgentChoreography() {
                       { label: 'Owner', value: selected.owner },
                       { label: 'Steps', value: `${selected.stepsCompleted}/${selected.stepsTotal}` },
                     ].map(({ label, value }) => (
-                      <div key={label} className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                      <div key={label} className="p-3 bg-raised border border-[hsl(var(--border))]">
                         <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{label}</p>
                         <p className="text-xs font-medium text-[hsl(var(--text-1))] mt-0.5">{value}</p>
                       </div>
@@ -250,7 +250,7 @@ export default function MultiAgentChoreography() {
                     <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Worker Agents ({selected.workerAgents.length})</p>
                     <div className="space-y-2">
                       {selected.workerAgents.map((agent, i) => (
-                        <div key={agent} className="flex items-center gap-3 p-2.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                        <div key={agent} className="flex items-center gap-3 p-2.5 bg-raised border border-[hsl(var(--border))]">
                           <span className="text-[10px] font-mono text-[hsl(var(--text-4))] w-4">#{i + 1}</span>
                           <ArrowRight size={10} className="text-[hsl(var(--text-4))]" />
                           <p className="text-xs font-medium text-[hsl(var(--text-2))]">{agent}</p>
@@ -260,13 +260,13 @@ export default function MultiAgentChoreography() {
                   </div>
                   <div>
                     <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Agent Chain Visualization</p>
-                    <div className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] overflow-x-auto">
+                    <div className="p-3 bg-raised border border-[hsl(var(--border))] overflow-x-auto">
                       <div className="flex items-center gap-1 flex-nowrap min-w-max">
                         <span className="text-[10px] px-2 py-1 bg-[hsl(var(--brand)/0.15)] border border-[hsl(var(--brand)/0.3)] text-[hsl(var(--brand))] font-medium whitespace-nowrap">{selected.orchestratorAgent.split(' ')[0]}</span>
                         {selected.workerAgents.map((a, i) => (
                           <div key={a} className="flex items-center gap-1">
                             <ArrowRight size={10} className="text-[hsl(var(--text-4))] flex-shrink-0" />
-                            <span className="text-[10px] px-2 py-1 bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] text-[hsl(var(--text-3))] whitespace-nowrap">{a}</span>
+                            <span className="text-[10px] px-2 py-1 bg-surface border border-[hsl(var(--border))] text-[hsl(var(--text-3))] whitespace-nowrap">{a}</span>
                           </div>
                         ))}
                       </div>
@@ -279,7 +279,7 @@ export default function MultiAgentChoreography() {
                 <>
                   <div>
                     <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Progress</p>
-                    <div className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                    <div className="p-3 bg-raised border border-[hsl(var(--border))]">
                       <div className="flex items-center justify-between mb-2">
                         <p className="text-xs text-[hsl(var(--text-2))]">{selected.stepsCompleted} of {selected.stepsTotal} steps</p>
                         <p className="text-xs font-bold text-[hsl(var(--text-1))]">{Math.round((selected.stepsCompleted / selected.stepsTotal) * 100)}%</p>
@@ -299,7 +299,7 @@ export default function MultiAgentChoreography() {
                         { label: 'Total Tokens', value: (selected.inputTokens + selected.outputTokens).toLocaleString() },
                         { label: 'Total Cost', value: `$${selected.cost.toFixed(4)}` },
                       ].map(({ label, value }) => (
-                        <div key={label} className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                        <div key={label} className="p-3 bg-raised border border-[hsl(var(--border))]">
                           <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{label}</p>
                           <p className="text-xs font-bold text-[hsl(var(--text-1))] mt-0.5">{value}</p>
                         </div>
@@ -309,12 +309,12 @@ export default function MultiAgentChoreography() {
                   <div>
                     <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Timeline</p>
                     <div className="space-y-2">
-                      <div className="flex gap-3 p-2.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                      <div className="flex gap-3 p-2.5 bg-raised border border-[hsl(var(--border))]">
                         <div className="w-2 h-2 rounded-full mt-1 bg-[hsl(var(--s-ok-tx))] flex-shrink-0" />
                         <div><p className="text-xs text-[hsl(var(--text-2))]">Started</p><p className="text-[10px] text-[hsl(var(--text-4))]">{selected.startedAt}</p></div>
                       </div>
                       {selected.completedAt && (
-                        <div className="flex gap-3 p-2.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                        <div className="flex gap-3 p-2.5 bg-raised border border-[hsl(var(--border))]">
                           <div className="w-2 h-2 rounded-full mt-1 bg-[hsl(var(--brand))] flex-shrink-0" />
                           <div><p className="text-xs text-[hsl(var(--text-2))]">Completed</p><p className="text-[10px] text-[hsl(var(--text-4))]">{selected.completedAt} · Duration: {selected.duration}</p></div>
                         </div>
@@ -380,7 +380,7 @@ export default function MultiAgentChoreography() {
       {showCreate && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowCreate(false)} />
-          <div className="relative bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] w-full max-w-md shadow-2xl">
+          <div className="relative bg-surface border border-[hsl(var(--border))] w-full max-w-md shadow-2xl">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
               <h2 className="font-semibold text-[hsl(var(--text-1))]">New Workflow</h2>
               <button onClick={() => setShowCreate(false)}><X size={16} className="text-[hsl(var(--text-4))]" /></button>
@@ -389,17 +389,17 @@ export default function MultiAgentChoreography() {
               <div>
                 <label className="text-xs text-[hsl(var(--text-4))]">Workflow Name *</label>
                 <input value={newWfName} onChange={e => setNewWfName(e.target.value)} placeholder="e.g. Monthly Bias Audit — Loan Model"
-                  className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none focus:border-[hsl(var(--brand))]" />
+                  className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
               </div>
               <div>
                 <label className="text-xs text-[hsl(var(--text-4))]">Orchestrator Agent *</label>
                 <input value={newWfOrch} onChange={e => setNewWfOrch(e.target.value)} placeholder="e.g. ComplianceMonitorAgent v3.0"
-                  className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none focus:border-[hsl(var(--brand))]" />
+                  className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
               </div>
               <div>
                 <label className="text-xs text-[hsl(var(--text-4))]">Trigger</label>
                 <select value={newWfTrigger} onChange={e => setNewWfTrigger(e.target.value)}
-                  className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none">
+                  className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
                   {['Manual', 'Scheduled', 'Event-driven', 'API', 'Webhook'].map(t => <option key={t}>{t}</option>)}
                 </select>
               </div>

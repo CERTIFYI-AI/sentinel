@@ -118,7 +118,7 @@ export default function FinancialRisk() {
           <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">FAIR-based monetary quantification of AI governance risks — Annual Expected Loss modeling</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => toast.success('Exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+          <button onClick={() => toast.success('Exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
             <Export size={14} /> Export
           </button>
           <button onClick={openCreate} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90">
@@ -133,7 +133,7 @@ export default function FinancialRisk() {
           { label: 'Residual Risk (Post-Controls)', value: formatCurrency(totalResidual), sub: `${Math.round((totalResidual / totalAEL) * 100)}% of gross risk remains`, color: 'hsl(var(--s-wn-tx))' },
           { label: 'Worst-Case Scenario', value: formatCurrency(worstCase), sub: '95th percentile annual loss estimate', color: 'hsl(45 85% 40%)' },
         ].map(s => (
-          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
             <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
             <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
             <p className="text-[11px] text-[hsl(var(--text-4))] mt-1">{s.sub}</p>
@@ -142,7 +142,7 @@ export default function FinancialRisk() {
       </div>
 
       {/* Chart */}
-      <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+      <div className="rounded border border-[hsl(var(--border))] bg-surface p-4">
         <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] mb-4">AEL vs Residual Risk by Risk ID ($ millions)</h3>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={chartData} margin={{ top: 0, right: 20, bottom: 0, left: 0 }}>
@@ -156,19 +156,19 @@ export default function FinancialRisk() {
       </div>
 
       <div className="flex gap-3">
-        <div className="flex items-center gap-2 flex-1 max-w-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] px-3">
+        <div className="flex items-center gap-2 flex-1 max-w-sm border border-[hsl(var(--border))] bg-surface px-3">
           <MagnifyingGlass size={14} className="text-[hsl(var(--text-4))] flex-shrink-0" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search risks…" className="flex-1 py-2 text-sm bg-transparent text-[hsl(var(--text-1))] placeholder-[hsl(var(--text-4))] focus:outline-none" />
         </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
           {['All', 'Critical', 'Elevated', 'Monitored', 'Mitigated'].map(s => <option key={s}>{s}</option>)}
         </select>
       </div>
 
-      <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] overflow-hidden">
+      <div className="rounded border border-[hsl(var(--border))] bg-surface overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
+            <tr className="border-b border-[hsl(var(--border))] bg-raised">
               {['ID', 'Risk', 'AI System', 'Gross AEL', 'Worst Case', 'Probability', 'Control Eff.', 'Residual', 'Status', 'Actions'].map(h => (
                 <th key={h} className="text-left px-4 py-3 text-[11px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wide">{h}</th>
               ))}
@@ -176,7 +176,7 @@ export default function FinancialRisk() {
           </thead>
           <tbody>
             {filtered.map(r => (
-              <tr key={r.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))] cursor-pointer" onClick={() => setSelected(r)}>
+              <tr key={r.id} className="border-b border-[hsl(var(--border))] hover:bg-raised cursor-pointer" onClick={() => setSelected(r)}>
                 <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--brand))]">{r.id}</td>
                 <td className="px-4 py-3 max-w-[180px]"><p className="text-xs font-medium text-[hsl(var(--text-1))] truncate">{r.riskName}</p><p className="text-[10px] text-[hsl(var(--text-4))]">{r.category}</p></td>
                 <td className="px-4 py-3 text-xs text-[hsl(var(--text-3))] max-w-[140px] truncate">{r.aiSystem}</td>
@@ -188,7 +188,7 @@ export default function FinancialRisk() {
                 <td className="px-4 py-3"><span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[r.status]}>{r.status}</span></td>
                 <td className="px-4 py-3" onClick={ev => ev.stopPropagation()}>
                   <div className="flex items-center gap-1">
-                    <button onClick={() => openEdit(r)} className="p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))] hover:bg-[hsl(var(--bg-raised))]"><PencilSimple size={13} /></button>
+                    <button onClick={() => openEdit(r)} className="p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))] hover:bg-raised"><PencilSimple size={13} /></button>
                     <button onClick={() => setDeleteTarget(r)} className="p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(0_72%_51%/0.05)]"><Trash size={13} /></button>
                   </div>
                 </td>
@@ -200,7 +200,7 @@ export default function FinancialRisk() {
       </div>
 
       {/* ── Monte Carlo Simulation Panel ─────────────────────────────────────── */}
-      <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+      <div className="rounded border border-[hsl(var(--border))] bg-surface p-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2">
             <ChartLine size={16} className="text-[hsl(var(--brand))]" weight="duotone" />
@@ -238,7 +238,7 @@ export default function FinancialRisk() {
 
       {/* ── FAIR Model Tuning & Risk Appetite ──────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+        <div className="rounded border border-[hsl(var(--border))] bg-surface p-4">
           <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2 mb-4">
             <Sliders size={16} className="text-[hsl(var(--brand))]" weight="duotone" />
             FAIR Model Tuning
@@ -265,7 +265,7 @@ export default function FinancialRisk() {
           <button onClick={() => toast.success('FAIR model recalculated')} className="w-full text-xs py-1.5 bg-[hsl(var(--brand))] text-white hover:opacity-90">Recalculate AEL</button>
         </div>
 
-        <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+        <div className="rounded border border-[hsl(var(--border))] bg-surface p-4">
           <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2 mb-4">
             <Calculator size={16} className="text-[hsl(var(--brand))]" weight="duotone" />
             Controls ROI Calculator
@@ -296,7 +296,7 @@ export default function FinancialRisk() {
       </div>
 
       {/* ── Insurance Coverage Mapping ─────────────────────────────────────── */}
-      <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+      <div className="rounded border border-[hsl(var(--border))] bg-surface p-4">
         <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2 mb-4">
           <span className="text-base">🛡</span>
           Insurance Coverage Mapping — AI Risk Transfer Analysis
@@ -361,7 +361,7 @@ export default function FinancialRisk() {
       {selected && (
         <div className="fixed inset-0 z-50 flex">
           <div className="flex-1 bg-black/40" onClick={() => setSelected(null)} />
-          <div className="w-[480px] bg-[hsl(var(--bg-surface))] border-l border-[hsl(var(--border))] flex flex-col h-full overflow-y-auto">
+          <div className="w-[480px] bg-surface border-l border-[hsl(var(--border))] flex flex-col h-full overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))]">
               <div><p className="font-mono text-xs text-[hsl(var(--brand))]">{selected.id}</p><h2 className="text-sm font-semibold text-[hsl(var(--text-1))] max-w-sm">{selected.riskName}</h2></div>
               <button onClick={() => setSelected(null)}><X size={18} className="text-[hsl(var(--text-4))]" /></button>
@@ -369,8 +369,8 @@ export default function FinancialRisk() {
             <div className="p-4 space-y-4">
               <div className="flex gap-2">
                 <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status]}>{selected.status}</span>
-                <span className="text-[11px] px-2 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{selected.framework}</span>
-                <span className="text-[11px] px-2 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{selected.category}</span>
+                <span className="text-[11px] px-2 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{selected.framework}</span>
+                <span className="text-[11px] px-2 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{selected.category}</span>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {[
@@ -381,17 +381,17 @@ export default function FinancialRisk() {
                   { label: 'Residual Risk', value: formatCurrency(selected.residualRisk) },
                   { label: 'Owner', value: selected.owner },
                 ].map(({ label, value }) => (
-                  <div key={label} className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                  <div key={label} className="p-3 bg-raised border border-[hsl(var(--border))]">
                     <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{label}</p>
                     <p className="text-sm font-semibold text-[hsl(var(--text-1))] mt-0.5">{value}</p>
                   </div>
                 ))}
               </div>
-              <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">AI System</p><p className="text-sm text-[hsl(var(--text-2))] p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{selected.aiSystem}</p></div>
-              <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">Notes</p><p className="text-sm text-[hsl(var(--text-2))] p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] leading-relaxed">{selected.notes}</p></div>
+              <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">AI System</p><p className="text-sm text-[hsl(var(--text-2))] p-3 bg-raised border border-[hsl(var(--border))]">{selected.aiSystem}</p></div>
+              <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">Notes</p><p className="text-sm text-[hsl(var(--text-2))] p-3 bg-raised border border-[hsl(var(--border))] leading-relaxed">{selected.notes}</p></div>
             </div>
             <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
-              <button onClick={() => openEdit(selected)} className="flex-1 flex items-center justify-center gap-1.5 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]"><PencilSimple size={13} /> Edit</button>
+              <button onClick={() => openEdit(selected)} className="flex-1 flex items-center justify-center gap-1.5 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised"><PencilSimple size={13} /> Edit</button>
               <button onClick={() => setDeleteTarget(selected)} className="px-4 py-2 border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] text-sm hover:bg-[hsl(0_72%_51%/0.05)]"><Trash size={13} /></button>
             </div>
           </div>
@@ -402,7 +402,7 @@ export default function FinancialRisk() {
       {showForm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowForm(false)} />
-          <div className="relative w-[560px] max-h-[90vh] overflow-y-auto bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))]">
+          <div className="relative w-[560px] max-h-[90vh] overflow-y-auto bg-surface border border-[hsl(var(--border))]">
             <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))]">
               <h2 className="text-sm font-semibold text-[hsl(var(--text-1))]">{editTarget ? 'Edit Risk Quantification' : 'Quantify New Risk'}</h2>
               <button onClick={() => setShowForm(false)}><X size={16} className="text-[hsl(var(--text-4))]" /></button>
@@ -415,13 +415,13 @@ export default function FinancialRisk() {
                 </div>
                 <div>
                   <label className="text-xs font-medium text-[hsl(var(--text-2))] block mb-1">Category</label>
-                  <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+                  <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
                     {CATEGORIES.map(c => <option key={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="text-xs font-medium text-[hsl(var(--text-2))] block mb-1">Status</label>
-                  <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value as FinancialRiskItem['status'] }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+                  <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value as FinancialRiskItem['status'] }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
                     {['Monitored', 'Elevated', 'Critical', 'Mitigated'].map(s => <option key={s}>{s}</option>)}
                   </select>
                 </div>
@@ -451,7 +451,7 @@ export default function FinancialRisk() {
                 </div>
                 <div>
                   <label className="text-xs font-medium text-[hsl(var(--text-2))] block mb-1">Owner</label>
-                  <select value={form.owner} onChange={e => setForm(p => ({ ...p, owner: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+                  <select value={form.owner} onChange={e => setForm(p => ({ ...p, owner: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
                     {OWNERS.map(o => <option key={o}>{o}</option>)}
                   </select>
                 </div>
@@ -462,7 +462,7 @@ export default function FinancialRisk() {
               </div>
             </div>
             <div className="flex justify-end gap-2 p-4 border-t border-[hsl(var(--border))]">
-              <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">Cancel</button>
+              <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">Cancel</button>
               <button onClick={saveForm} className="px-4 py-2 text-sm bg-[hsl(var(--brand))] text-white hover:opacity-90">{editTarget ? 'Save Changes' : 'Add Risk'}</button>
             </div>
           </div>

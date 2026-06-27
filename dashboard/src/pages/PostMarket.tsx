@@ -206,7 +206,7 @@ export default function PostMarket() {
                     {filtered.map(plan => {
                       const pc = planStatusColor(plan.status);
                       return (
-                        <tr key={plan.id} className="border-b hover:bg-[hsl(var(--bg-raised))] transition-colors cursor-pointer"
+                        <tr key={plan.id} className="border-b hover:bg-raised transition-colors cursor-pointer"
                           style={{ borderColor: 'hsl(var(--border))', borderLeft: plan.status === 'Critical' ? '3px solid hsl(var(--s-er-tx))' : plan.status === 'Alert' ? '3px solid hsl(var(--s-wn-tx))' : 'none' }}
                           onClick={() => { setSelected(plan); setSheetOpen(true); }}>
                           <td className="px-3 py-2.5">

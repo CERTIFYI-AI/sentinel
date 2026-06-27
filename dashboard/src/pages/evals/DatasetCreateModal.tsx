@@ -58,7 +58,7 @@ export default function DatasetCreateModal() {
                   value={datasetName}
                   onChange={(e) => setDatasetName(e.target.value)}
                   placeholder="e.g., Q4 Customer Support Tickets" 
-                  className="w-full max-w-md bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]" 
+                  className="w-full max-w-md bg-surface border-[hsl(var(--border))]" 
                   style={{ borderRadius: 0 }}
                 />
               </div>
@@ -99,7 +99,7 @@ export default function DatasetCreateModal() {
               </div>
 
               {selectedSource === 'csv' && (
-                <div className="mt-8 p-12 border-2 border-dashed border-[hsl(var(--border))] flex flex-col items-center justify-center text-center bg-[hsl(var(--bg-surface))]">
+                <div className="mt-8 p-12 border-2 border-dashed border-[hsl(var(--border))] flex flex-col items-center justify-center text-center bg-surface">
                   <UploadSimple size={48} style={{ color: 'hsl(var(--text-4))' }} className="mb-4" />
                   <h3 className="text-sm font-semibold mb-1" style={{ color: 'hsl(var(--text-1))' }}>Drag & Drop your file</h3>
                   <p className="text-xs mb-4" style={{ color: 'hsl(var(--text-3))' }}>Supports CSV, JSONL up to 50MB</p>
@@ -111,7 +111,7 @@ export default function DatasetCreateModal() {
 
           {step === 2 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="p-4 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))]">
+              <div className="p-4 border border-[hsl(var(--border))] bg-surface">
                 <h3 className="text-sm font-semibold mb-4" style={{ color: 'hsl(var(--text-1))' }}>Schema Mapping</h3>
                 <p className="text-xs mb-6" style={{ color: 'hsl(var(--text-3))' }}>Map your dataset columns to the required evaluation schema.</p>
                 
@@ -162,7 +162,7 @@ export default function DatasetCreateModal() {
                 <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Showing 3 of 1,204 rows</span>
               </div>
               
-              <div className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] overflow-hidden">
+              <div className="border border-[hsl(var(--border))] bg-surface overflow-hidden">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead style={{ background: 'hsl(var(--bg-muted))' }}>
                     <tr>

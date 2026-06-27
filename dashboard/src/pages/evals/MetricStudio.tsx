@@ -124,7 +124,7 @@ export default function MetricStudio() {
           </div>
 
           {/* Sandbox Pane */}
-          <div className="w-[400px] flex-shrink-0 flex flex-col bg-[hsl(var(--bg-surface))]">
+          <div className="w-[400px] flex-shrink-0 flex flex-col bg-surface">
             <div className="h-10 flex items-center px-4 border-b border-[hsl(var(--border))]" style={{ background: 'hsl(var(--bg-muted))' }}>
               <SlidersHorizontal size={16} className="mr-2" style={{ color: 'hsl(var(--text-3))' }} />
               <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--text-2))' }}>Live Sandbox</span>

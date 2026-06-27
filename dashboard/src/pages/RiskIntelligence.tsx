@@ -150,7 +150,7 @@ export default function RegulatoryIntelligenceEngine() {
           </p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => toast.success('Regulatory brief exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+          <button onClick={() => toast.success('Regulatory brief exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
             <Download size={14} /> Export Brief
           </button>
           <button onClick={() => toast.success('Alert subscription updated')} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90">
@@ -166,7 +166,7 @@ export default function RegulatoryIntelligenceEngine() {
           { label: 'Unmapped Obligations', value: unmappedObs, sub: 'Require control mapping', color: 'hsl(var(--destructive))' },
           { label: 'Predicted Gaps', value: criticalGaps, sub: 'Critical — action required', color: 'hsl(var(--destructive))' },
         ].map(s => (
-          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
             <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide">{s.label}</p>
             <p className="text-2xl font-bold mt-1" style={{ color: s.color }}>{s.value}</p>
             <p className="text-xs text-[hsl(var(--text-4))] mt-0.5">{s.sub}</p>
@@ -187,9 +187,9 @@ export default function RegulatoryIntelligenceEngine() {
           <div className="flex gap-3">
             <div className="relative flex-1 max-w-sm">
               <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search regulations…" className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search regulations…" className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]" />
             </div>
-            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
               {['All', 'Compliant', 'Gap Identified', 'Under Review', 'Not Assessed'].map(s => <option key={s}>{s}</option>)}
             </select>
           </div>
@@ -199,7 +199,7 @@ export default function RegulatoryIntelligenceEngine() {
               const pct = Math.round((reg.mappedCount / reg.obligationCount) * 100)
               const isUrgent = reg.daysUntil > 0 && reg.daysUntil <= 90
               return (
-                <div key={reg.id} onClick={() => { setSelected(reg); setDrawerTab('overview') }} className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4 cursor-pointer hover:border-[hsl(var(--brand)/0.4)] transition-colors">
+                <div key={reg.id} onClick={() => { setSelected(reg); setDrawerTab('overview') }} className="rounded border border-[hsl(var(--border))] bg-surface p-4 cursor-pointer hover:border-[hsl(var(--brand)/0.4)] transition-colors">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -243,10 +243,10 @@ export default function RegulatoryIntelligenceEngine() {
       )}
 
       {tab === 'obligations' && (
-        <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] overflow-hidden">
+        <div className="rounded border border-[hsl(var(--border))] bg-surface overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
+              <tr className="border-b border-[hsl(var(--border))] bg-raised">
                 {['ID', 'Regulation', 'Article', 'Obligation', 'Status', 'Controls Mapped', 'Due Date', 'Auto'].map(h => (
                   <th key={h} className="text-left px-4 py-3 text-[11px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wide">{h}</th>
                 ))}
@@ -254,7 +254,7 @@ export default function RegulatoryIntelligenceEngine() {
             </thead>
             <tbody>
               {OBLIGATIONS.map(ob => (
-                <tr key={ob.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))]">
+                <tr key={ob.id} className="border-b border-[hsl(var(--border))] hover:bg-raised">
                   <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--brand))]">{ob.id}</td>
                   <td className="px-4 py-3 text-xs text-[hsl(var(--text-2))] font-medium max-w-[120px] truncate">{ob.regName}</td>
                   <td className="px-4 py-3 text-xs font-mono text-[hsl(var(--text-3))]">{ob.article}</td>
@@ -282,7 +282,7 @@ export default function RegulatoryIntelligenceEngine() {
               ))}
             </tbody>
           </table>
-          <div className="p-3 flex items-center justify-between border-t border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
+          <div className="p-3 flex items-center justify-between border-t border-[hsl(var(--border))] bg-raised">
             <p className="text-xs text-[hsl(var(--text-4))]">{OBLIGATIONS.length} obligations shown · {OBLIGATIONS.filter(o => o.status === 'Unmapped').length} unmapped</p>
             <button onClick={() => toast.success('Auto-mapping initiated for all automatable obligations')} className="text-xs px-3 py-1.5 bg-[hsl(var(--brand))] text-white hover:opacity-90">
               Auto-Map All Automatable
@@ -300,7 +300,7 @@ export default function RegulatoryIntelligenceEngine() {
             </p>
           </div>
           {PREDICTED_GAPS.map(gap => (
-            <div key={gap.id} className="rounded border bg-[hsl(var(--bg-surface))] p-5" style={{ borderColor: gap.urgency === 'Critical' ? 'hsl(var(--destructive) / 0.35)' : gap.urgency === 'High' ? 'hsl(45 93% 47% / 0.4)' : 'hsl(var(--border))' }}>
+            <div key={gap.id} className="rounded border bg-surface p-5" style={{ borderColor: gap.urgency === 'Critical' ? 'hsl(var(--destructive) / 0.35)' : gap.urgency === 'High' ? 'hsl(45 93% 47% / 0.4)' : 'hsl(var(--border))' }}>
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -334,7 +334,7 @@ export default function RegulatoryIntelligenceEngine() {
               </div>
               <div className="flex gap-2 mt-3 pt-3 border-t border-[hsl(var(--border))]">
                 {gap.actions.map(a => (
-                  <a key={a.label} href={a.to} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+                  <a key={a.label} href={a.to} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">
                     {a.label} <ArrowRight size={11} />
                   </a>
                 ))}
@@ -349,7 +349,7 @@ export default function RegulatoryIntelligenceEngine() {
 
       {tab === 'coverage' && (
         <div className="grid grid-cols-2 gap-5">
-          <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+          <div className="rounded border border-[hsl(var(--border))] bg-surface p-4">
             <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] mb-4">Regulatory Coverage Radar</h3>
             <ResponsiveContainer width="100%" height={280}>
               <RadarChart data={RADAR_DATA}>
@@ -359,7 +359,7 @@ export default function RegulatoryIntelligenceEngine() {
               </RadarChart>
             </ResponsiveContainer>
           </div>
-          <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+          <div className="rounded border border-[hsl(var(--border))] bg-surface p-4">
             <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] mb-4">Obligation Coverage Trend</h3>
             <ResponsiveContainer width="100%" height={280}>
               <LineChart data={TIMELINE_DATA}>
@@ -373,7 +373,7 @@ export default function RegulatoryIntelligenceEngine() {
               </LineChart>
             </ResponsiveContainer>
           </div>
-          <div className="col-span-2 rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+          <div className="col-span-2 rounded border border-[hsl(var(--border))] bg-surface p-4">
             <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] mb-3">Framework Coverage Summary</h3>
             <div className="space-y-3">
               {REGULATIONS.map(r => {
@@ -405,7 +405,7 @@ export default function RegulatoryIntelligenceEngine() {
       {selected && (
         <div className="fixed inset-0 z-50 flex">
           <div className="flex-1 bg-black/40" onClick={() => setSelected(null)} />
-          <div className="w-[520px] bg-[hsl(var(--bg-surface))] border-l border-[hsl(var(--border))] flex flex-col h-full">
+          <div className="w-[520px] bg-surface border-l border-[hsl(var(--border))] flex flex-col h-full">
             <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))]">
               <div>
                 <p className="font-mono text-xs text-[hsl(var(--brand))]">{selected.id}</p>
@@ -436,7 +436,7 @@ export default function RegulatoryIntelligenceEngine() {
                       { label: 'Owner', value: selected.owner },
                       { label: 'Unmapped', value: `${selected.unmappedCount} gaps` },
                     ].map(f => (
-                      <div key={f.label} className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                      <div key={f.label} className="p-3 bg-raised border border-[hsl(var(--border))]">
                         <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{f.label}</p>
                         <p className="text-xs font-medium text-[hsl(var(--text-1))] mt-0.5">{f.value}</p>
                       </div>
@@ -458,7 +458,7 @@ export default function RegulatoryIntelligenceEngine() {
                   <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide">{regObligations.length} Obligations extracted</p>
                   <div className="space-y-2">
                     {regObligations.length > 0 ? regObligations.map(ob => (
-                      <div key={ob.id} className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                      <div key={ob.id} className="p-3 bg-raised border border-[hsl(var(--border))]">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-mono text-[10px] text-[hsl(var(--brand))]">{ob.article}</span>
                           <span className="text-[10px] px-1.5 py-0.5 font-medium" style={OB_STYLE[ob.status]}>{ob.status}</span>
@@ -483,7 +483,7 @@ export default function RegulatoryIntelligenceEngine() {
                     <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide">Control Coverage</p>
                     <button onClick={() => toast.success('Auto-mapping initiated')} className="text-xs px-3 py-1.5 bg-[hsl(var(--brand))] text-white hover:opacity-90">Auto-Map</button>
                   </div>
-                  <div className="p-4 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] space-y-3">
+                  <div className="p-4 bg-raised border border-[hsl(var(--border))] space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-[hsl(var(--text-2))]">Mapped obligations</span>
                       <span className="text-xs font-bold text-[hsl(142_71%_35%)]">{selected.mappedCount}</span>
@@ -496,7 +496,7 @@ export default function RegulatoryIntelligenceEngine() {
                       <div className="h-full bg-[hsl(142_71%_45%)]" style={{ width: `${Math.round((selected.mappedCount / selected.obligationCount) * 100)}%` }} />
                     </div>
                   </div>
-                  <button onClick={() => toast.success('Gap analysis report generated')} className="w-full py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+                  <button onClick={() => toast.success('Gap analysis report generated')} className="w-full py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
                     Generate Gap Analysis Report
                   </button>
                 </>
@@ -504,7 +504,7 @@ export default function RegulatoryIntelligenceEngine() {
             </div>
             <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
               <button onClick={() => toast.success('Obligation mapping task created')} className="flex-1 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90">Map Obligations</button>
-              <button onClick={() => toast.success('Regulatory brief exported')} className="px-4 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">Export Brief</button>
+              <button onClick={() => toast.success('Regulatory brief exported')} className="px-4 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">Export Brief</button>
             </div>
           </div>
         </div>

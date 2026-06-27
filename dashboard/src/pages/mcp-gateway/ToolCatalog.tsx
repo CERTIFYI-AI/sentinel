@@ -42,17 +42,17 @@ export default function ToolCatalog() {
         </Button>
       </div>
 
-      <Card className="border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] rounded-none">
+      <Card className="border-[hsl(var(--border))] bg-surface-1 rounded-none">
         
         {/* Table Toolbar */}
-        <div className="p-4 border-b border-[hsl(var(--border))] flex items-center justify-between bg-[hsl(var(--surface-2))]">
+        <div className="p-4 border-b border-[hsl(var(--border))] flex items-center justify-between bg-surface-2">
           <div className="relative w-80">
             <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-3))]" />
             <Input 
               placeholder="Search tools or descriptions..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 bg-[hsl(var(--surface-1))] border-[hsl(var(--border))] rounded-none h-9"
+              className="pl-9 bg-surface-1 border-[hsl(var(--border))] rounded-none h-9"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -65,7 +65,7 @@ export default function ToolCatalog() {
         {/* Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
-            <thead className="text-xs text-[hsl(var(--text-2))] uppercase bg-[hsl(var(--surface-2))] border-b border-[hsl(var(--border))]">
+            <thead className="text-xs text-[hsl(var(--text-2))] uppercase bg-surface-2 border-b border-[hsl(var(--border))]">
               <tr>
                 <th className="px-6 py-4 font-medium">Tool Name & Desc</th>
                 <th className="px-6 py-4 font-medium">Provider Server</th>
@@ -76,10 +76,10 @@ export default function ToolCatalog() {
             </thead>
             <tbody>
               {filtered.map((tool) => (
-                <tr key={tool.id} className={`border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--surface-2))] transition-colors ${tool.status === 'disabled' ? 'opacity-50' : ''}`}>
+                <tr key={tool.id} className={`border-b border-[hsl(var(--border))] hover:bg-surface-2 transition-colors ${tool.status === 'disabled' ? 'opacity-50' : ''}`}>
                   <td className="px-6 py-4">
                     <div className="flex items-start gap-3">
-                      <div className="p-2 bg-[hsl(var(--surface-3))] rounded-none mt-1">
+                      <div className="p-2 bg-surface-3 rounded-none mt-1">
                         <Briefcase size={16} className="text-[hsl(var(--text-1))]" />
                       </div>
                       <div>
@@ -107,7 +107,7 @@ export default function ToolCatalog() {
                     {tool.status === 'active' ? (
                        <Badge className="bg-emerald-500/10 text-emerald-500 border-0 rounded-none">Active</Badge>
                     ) : (
-                       <Badge className="bg-[hsl(var(--surface-3))] text-[hsl(var(--text-3))] border-0 rounded-none">Disabled</Badge>
+                       <Badge className="bg-surface-3 text-[hsl(var(--text-3))] border-0 rounded-none">Disabled</Badge>
                     )}
                   </td>
                 </tr>

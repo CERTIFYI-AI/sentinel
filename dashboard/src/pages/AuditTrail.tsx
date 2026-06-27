@@ -483,7 +483,7 @@ export default function AuditTrail() {
                   return (
                     <tr
                       key={e.id}
-                      className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))] transition-colors cursor-pointer"
+                      className="border-b border-[hsl(var(--border))] hover:bg-raised transition-colors cursor-pointer"
                       onClick={() => setSelected(e)}
                     >
                       <td className="py-3 pr-4 font-mono text-xs text-[hsl(var(--text-4))] whitespace-nowrap">{e.timestamp}</td>

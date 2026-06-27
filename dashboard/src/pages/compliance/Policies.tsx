@@ -106,7 +106,7 @@ export default function PolicyManagement() {
         <div className="flex gap-2 relative">
           <div className="relative">
             <Button variant="outline" className="border-[hsl(var(--border-mid))] text-[hsl(var(--text-2))]" onClick={() => setExportMenu(!exportMenu)}><Download className="w-4 h-4 mr-2"/>Export</Button>
-            {exportMenu && <div className="absolute right-0 top-10 z-50 bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border-mid))] rounded-lg shadow-xl py-1 w-32">{["csv","pdf","json"].map(f=><button key={f} className="w-full text-left px-3 py-2 text-sm text-[hsl(var(--text-2))] hover:bg-muted" onClick={()=>doExport(f)}>{f.toUpperCase()}</button>)}</div>}
+            {exportMenu && <div className="absolute right-0 top-10 z-50 bg-surface border border-[hsl(var(--border-mid))] rounded-lg shadow-xl py-1 w-32">{["csv","pdf","json"].map(f=><button key={f} className="w-full text-left px-3 py-2 text-sm text-[hsl(var(--text-2))] hover:bg-muted" onClick={()=>doExport(f)}>{f.toUpperCase()}</button>)}</div>}
           </div>
           <Button className="bg-[hsl(var(--brand))] hover:bg-primary/90 text-foreground" onClick={openCreate}><Plus className="w-4 h-4 mr-2"/>New Policy</Button>
         </div>
@@ -115,7 +115,7 @@ export default function PolicyManagement() {
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
         {stats.map((s,i) => { const Icon = iconMap[s.icon]; return (
-          <Card key={i} className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] p-4">
+          <Card key={i} className="bg-surface border-[hsl(var(--border))] p-4">
             <div className="flex items-center justify-between">
               <div><p className="text-[hsl(var(--text-3))] text-xs">{s.label}</p><p className="text-2xl font-bold text-foreground mt-1">{s.value}</p></div>
               <Icon className={`w-8 h-8 ${s.color} opacity-80`}/>
@@ -126,13 +126,13 @@ export default function PolicyManagement() {
 
       {/* Charts */}
       <div className="grid grid-cols-2 gap-4">
-        <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] p-4">
+        <Card className="bg-surface border-[hsl(var(--border))] p-4">
           <h3 className="text-foreground font-semibold mb-4">Policies by Category</h3>
           <ResponsiveContainer width="100%" height={220}>
             <PieChart><Pie data={catData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" label={({name,value})=>`${name}: ${value}`}>{catData.map((_,i)=><Cell key={i} fill={COLORS[i%COLORS.length]}/>)}</Pie><Tooltip contentStyle={{background:"hsl(var(--bg-surface))",border:"1px solid hsl(var(--border))",borderRadius:8}}/><Legend/></PieChart>
           </ResponsiveContainer>
         </Card>
-        <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] p-4">
+        <Card className="bg-surface border-[hsl(var(--border))] p-4">
           <h3 className="text-foreground font-semibold mb-4">Policy Reviews (6 Months)</h3>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={reviewData} margin={{ top: 18, right: 8, left: 0, bottom: 0 }}>
@@ -150,20 +150,20 @@ export default function PolicyManagement() {
 
       {/* Filters */}
       <div className="flex gap-3 items-center">
-        <div className="relative flex-1"><Search className="absolute left-3 top-2.5 w-4 h-4 text-[hsl(var(--text-4))]"/><Input placeholder="Search policies..." className="pl-10 bg-[hsl(var(--bg-surface))] border-[hsl(var(--border-mid))] text-foreground" value={search} onChange={(e:any)=>{setSearch(e.target.value);setPage(1);}}/></div>
-        <select className="bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-[hsl(var(--text-2))]" value={catFilter} onChange={(e:any)=>{setCatFilter(e.target.value);setPage(1);}}><option value="all">All Categories</option>{CATS.map(c=><option key={c} value={c}>{c}</option>)}</select>
-        <select className="bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-[hsl(var(--text-2))]" value={statusFilter} onChange={(e:any)=>{setStatusFilter(e.target.value);setPage(1);}}><option value="all">All Status</option><option value="active">Active</option><option value="review">Under Review</option><option value="expired">Expired</option><option value="draft">Draft</option><option value="archived">Archived</option></select>
-        <select className="bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-[hsl(var(--text-2))]" value={fwFilter} onChange={(e:any)=>{setFwFilter(e.target.value);setPage(1);}}><option value="all">All Frameworks</option>{FWS.map(f=><option key={f} value={f}>{f}</option>)}</select>
+        <div className="relative flex-1"><Search className="absolute left-3 top-2.5 w-4 h-4 text-[hsl(var(--text-4))]"/><Input placeholder="Search policies..." className="pl-10 bg-surface border-[hsl(var(--border-mid))] text-foreground" value={search} onChange={(e:any)=>{setSearch(e.target.value);setPage(1);}}/></div>
+        <select className="bg-surface border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-[hsl(var(--text-2))]" value={catFilter} onChange={(e:any)=>{setCatFilter(e.target.value);setPage(1);}}><option value="all">All Categories</option>{CATS.map(c=><option key={c} value={c}>{c}</option>)}</select>
+        <select className="bg-surface border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-[hsl(var(--text-2))]" value={statusFilter} onChange={(e:any)=>{setStatusFilter(e.target.value);setPage(1);}}><option value="all">All Status</option><option value="active">Active</option><option value="review">Under Review</option><option value="expired">Expired</option><option value="draft">Draft</option><option value="archived">Archived</option></select>
+        <select className="bg-surface border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-[hsl(var(--text-2))]" value={fwFilter} onChange={(e:any)=>{setFwFilter(e.target.value);setPage(1);}}><option value="all">All Frameworks</option>{FWS.map(f=><option key={f} value={f}>{f}</option>)}</select>
       </div>
 
       {/* Table */}
-      <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
+      <Card className="bg-surface border-[hsl(var(--border))]">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead><tr className="border-b border-[hsl(var(--border))]">{["ID","Name","Category","Version","Owner","Updated","Framework","Status","Actions"].map(h=><th key={h} className="px-4 py-3 text-left text-[hsl(var(--text-3))] font-medium">{h}</th>)}</tr></thead>
             <tbody>
               {paged.map(p=>(
-                <tr key={p.id} className="border-b border-[hsl(var(--border))]/50 hover:bg-[hsl(var(--bg-raised))]/30 cursor-pointer" onClick={()=>setSel(p)}>
+                <tr key={p.id} className="border-b border-[hsl(var(--border))]/50 hover:bg-raised/30 cursor-pointer" onClick={()=>setSel(p)}>
                   <td className="px-4 py-3 text-[hsl(var(--text-2))] font-mono text-xs">{p.id}</td>
                   <td className="px-4 py-3 text-foreground font-medium">{p.name}</td>
                   <td className="px-4 py-3 text-[hsl(var(--text-2))]">{p.category}</td>
@@ -175,7 +175,7 @@ export default function PolicyManagement() {
                   <td className="px-4 py-3">
                     <div className="relative">
                       <button className="p-1 hover:bg-muted rounded" onClick={e=>{e.stopPropagation();setActionMenu(actionMenu===p.id?null:p.id);}}><MoreVertical className="w-4 h-4 text-[hsl(var(--text-3))]"/></button>
-                      {actionMenu===p.id&&<div className="absolute right-0 top-8 z-50 bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border-mid))] rounded-lg shadow-xl py-1 w-36">
+                      {actionMenu===p.id&&<div className="absolute right-0 top-8 z-50 bg-surface border border-[hsl(var(--border-mid))] rounded-lg shadow-xl py-1 w-36">
                         <button className="w-full text-left px-3 py-2 text-sm text-[hsl(var(--text-2))] hover:bg-muted flex items-center gap-2" onClick={e=>{e.stopPropagation();setActionMenu(null);setSel(p);}}><Eye className="w-3 h-3"/>View</button>
                         <button className="w-full text-left px-3 py-2 text-sm text-[hsl(var(--text-2))] hover:bg-muted flex items-center gap-2" onClick={e=>{e.stopPropagation();setActionMenu(null);openEdit(p);}}><Edit className="w-3 h-3"/>Edit</button>
                         <button className="w-full text-left px-3 py-2 text-sm text-[hsl(var(--text-2))] hover:bg-muted flex items-center gap-2" onClick={e=>{e.stopPropagation();setActionMenu(null);nav(`/policy-editor?id=${p.id}`);}}><Eye className="w-3 h-3"/>Open Editor</button>
@@ -203,7 +203,7 @@ export default function PolicyManagement() {
 
       {/* Side Sheet */}
       <Sheet open={!!sel && !showCreate} onOpenChange={()=>setSel(null)}>
-        <SheetContent className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] w-[520px] sm:max-w-[520px] overflow-y-auto">
+        <SheetContent className="bg-surface border-[hsl(var(--border))] w-[520px] sm:max-w-[520px] overflow-y-auto">
           <SheetHeader>
             <div className="flex items-center justify-between">
               <SheetTitle className="text-foreground">{sel?.name}</SheetTitle>
@@ -252,11 +252,11 @@ export default function PolicyManagement() {
               })()}
             </div>
             <Tabs defaultValue="overview" className="mt-4">
-              <TabsList className="bg-[hsl(var(--bg-raised))]/50 w-full"><TabsTrigger value="overview" className="flex-1">Overview</TabsTrigger><TabsTrigger value="versions" className="flex-1">Versions</TabsTrigger><TabsTrigger value="controls" className="flex-1">Controls</TabsTrigger></TabsList>
+              <TabsList className="bg-raised/50 w-full"><TabsTrigger value="overview" className="flex-1">Overview</TabsTrigger><TabsTrigger value="versions" className="flex-1">Versions</TabsTrigger><TabsTrigger value="controls" className="flex-1">Controls</TabsTrigger></TabsList>
               <TabsContent value="overview" className="space-y-4 mt-4">
                 <div className="grid grid-cols-2 gap-3">
                   {([['Category',sel.category],['Version',sel.version],['Owner',sel.owner],['Framework',sel.framework],['Status',normalizeStatus(sel.status)],['Risk Level',sel.risk],['Created',sel.created],['Last Reviewed',sel.lastReviewed],['Next Review',sel.nextReview],['Approver',sel.approver]] as [string,string][]).map(([k,v],i)=>(
-                    <div key={i} className="bg-[hsl(var(--bg-raised))]/30 rounded-lg p-3"><p className="text-[hsl(var(--text-4))] text-xs">{k}</p><p className="text-foreground text-sm mt-1">{v}</p></div>
+                    <div key={i} className="bg-raised/30 rounded-lg p-3"><p className="text-[hsl(var(--text-4))] text-xs">{k}</p><p className="text-foreground text-sm mt-1">{v}</p></div>
                   ))}
                 </div>
                 <Separator className="bg-muted"/>
@@ -269,7 +269,7 @@ export default function PolicyManagement() {
               </TabsContent>
               <TabsContent value="versions" className="space-y-3 mt-4">
                 {sel.versions.map((v,i)=>(
-                  <div key={i} className="bg-[hsl(var(--bg-raised))]/30 rounded-lg p-3 flex items-start gap-3">
+                  <div key={i} className="bg-raised/30 rounded-lg p-3 flex items-start gap-3">
                     <div className={`w-2 h-2 rounded-full mt-2 ${v.current?"bg-[hsl(var(--brand))]":"bg-zinc-600"}`}/>
                     <div className="flex-1">
                       <div className="flex items-center justify-between"><span className="text-foreground text-sm font-medium">{v.ver}</span>{v.current&&<Badge className="bg-[hsl(var(--brand))]/20 text-[hsl(var(--brand))] text-xs">Current</Badge>}</div>
@@ -286,7 +286,7 @@ export default function PolicyManagement() {
               </TabsContent>
               <TabsContent value="controls" className="space-y-3 mt-4">
                 {sel.controls.map((c,i)=>(
-                  <div key={i} className="bg-[hsl(var(--bg-raised))]/30 rounded-lg p-3">
+                  <div key={i} className="bg-raised/30 rounded-lg p-3">
                     <div className="flex items-center justify-between"><span className="text-foreground text-sm">{c.id}</span><span className={`px-2 py-0.5 rounded text-xs ${c.status==="implemented"?"bg-[hsl(var(--brand))]/20 text-[hsl(var(--brand))]":c.status==="partial"?"bg-amber-500/20 text-amber-400":"bg-blue-500/20 text-blue-400"}`}>{c.status}</span></div>
                     <p className="text-[hsl(var(--text-2))] text-sm mt-1">{c.name}</p>
                     {c.score>0&&<div className="mt-2"><div className="flex justify-between text-xs text-[hsl(var(--text-3))] mb-1"><span>Effectiveness</span><span>{c.score}%</span></div><div className="w-full bg-muted rounded-full h-1.5"><div className="h-1.5 rounded-full bg-[hsl(var(--brand))]" style={{width:`${c.score}%`}}/></div></div>}
@@ -302,7 +302,7 @@ export default function PolicyManagement() {
 
       {/* Version Diff Dialog */}
       <Dialog open={diffOpen} onOpenChange={setDiffOpen}>
-        <DialogContent className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-foreground max-w-2xl">
+        <DialogContent className="bg-surface border-[hsl(var(--border))] text-foreground max-w-2xl">
           <DialogHeader><DialogTitle className="flex items-center gap-2"><GitBranch className="w-4 h-4"/>Version Comparison — {sel?.name}</DialogTitle></DialogHeader>
           {sel && sel.versions.length > 1 && (() => {
             const prev = sel.versions[1];
@@ -343,20 +343,20 @@ export default function PolicyManagement() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-foreground max-w-lg">
+        <DialogContent className="bg-surface border-[hsl(var(--border))] text-foreground max-w-lg">
           <DialogHeader><DialogTitle>{editPolicy?"Update Policy":"Create Policy"}</DialogTitle></DialogHeader>
           <div className="space-y-4 mt-2">
-            <div><label className="text-[hsl(var(--text-3))] text-xs">Policy Name</label><Input className="bg-[hsl(var(--bg-raised))] border-[hsl(var(--border-mid))] text-foreground mt-1" value={form.name} onChange={(e:any)=>setForm({...form,name:e.target.value})}/></div>
+            <div><label className="text-[hsl(var(--text-3))] text-xs">Policy Name</label><Input className="bg-raised border-[hsl(var(--border-mid))] text-foreground mt-1" value={form.name} onChange={(e:any)=>setForm({...form,name:e.target.value})}/></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="text-[hsl(var(--text-3))] text-xs">Category</label><select className="w-full bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-foreground mt-1" value={form.category} onChange={(e:any)=>setForm({...form,category:e.target.value})}>{CATS.map(c=><option key={c} value={c}>{c}</option>)}</select></div>
-              <div><label className="text-[hsl(var(--text-3))] text-xs">Framework</label><select className="w-full bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-foreground mt-1" value={form.framework} onChange={(e:any)=>setForm({...form,framework:e.target.value})}>{FWS.map(f=><option key={f} value={f}>{f}</option>)}</select></div>
+              <div><label className="text-[hsl(var(--text-3))] text-xs">Category</label><select className="w-full bg-raised border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-foreground mt-1" value={form.category} onChange={(e:any)=>setForm({...form,category:e.target.value})}>{CATS.map(c=><option key={c} value={c}>{c}</option>)}</select></div>
+              <div><label className="text-[hsl(var(--text-3))] text-xs">Framework</label><select className="w-full bg-raised border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-foreground mt-1" value={form.framework} onChange={(e:any)=>setForm({...form,framework:e.target.value})}>{FWS.map(f=><option key={f} value={f}>{f}</option>)}</select></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="text-[hsl(var(--text-3))] text-xs">Owner</label><select className="w-full bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-foreground mt-1" value={form.owner} onChange={(e:any)=>setForm({...form,owner:e.target.value})}>{OWNERS.map(o=><option key={o} value={o}>{o}</option>)}</select></div>
-              <div><label className="text-[hsl(var(--text-3))] text-xs">Risk Level</label><select className="w-full bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-foreground mt-1" value={form.risk} onChange={(e:any)=>setForm({...form,risk:e.target.value})}>{["High","Medium","Low"].map(r=><option key={r} value={r}>{r}</option>)}</select></div>
+              <div><label className="text-[hsl(var(--text-3))] text-xs">Owner</label><select className="w-full bg-raised border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-foreground mt-1" value={form.owner} onChange={(e:any)=>setForm({...form,owner:e.target.value})}>{OWNERS.map(o=><option key={o} value={o}>{o}</option>)}</select></div>
+              <div><label className="text-[hsl(var(--text-3))] text-xs">Risk Level</label><select className="w-full bg-raised border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-foreground mt-1" value={form.risk} onChange={(e:any)=>setForm({...form,risk:e.target.value})}>{["High","Medium","Low"].map(r=><option key={r} value={r}>{r}</option>)}</select></div>
             </div>
-            <div><label className="text-[hsl(var(--text-3))] text-xs">Scope</label><textarea className="w-full bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-foreground mt-1 h-16 resize-none" value={form.scope} onChange={(e:any)=>setForm({...form,scope:e.target.value})}/></div>
-            <div><label className="text-[hsl(var(--text-3))] text-xs">Description</label><textarea className="w-full bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-foreground mt-1 h-20 resize-none" value={form.description} onChange={(e:any)=>setForm({...form,description:e.target.value})}/></div>
+            <div><label className="text-[hsl(var(--text-3))] text-xs">Scope</label><textarea className="w-full bg-raised border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-foreground mt-1 h-16 resize-none" value={form.scope} onChange={(e:any)=>setForm({...form,scope:e.target.value})}/></div>
+            <div><label className="text-[hsl(var(--text-3))] text-xs">Description</label><textarea className="w-full bg-raised border border-[hsl(var(--border-mid))] rounded-md px-3 py-2 text-sm text-foreground mt-1 h-20 resize-none" value={form.description} onChange={(e:any)=>setForm({...form,description:e.target.value})}/></div>
           </div>
           <DialogFooter className="mt-4"><Button variant="outline" className="border-[hsl(var(--border-mid))] text-[hsl(var(--text-2))]" onClick={()=>setShowCreate(false)}>Cancel</Button><Button className="bg-[hsl(var(--brand))] hover:bg-primary/90 text-foreground" onClick={()=>setShowCreate(false)}>{editPolicy?"Update":"Create"}</Button></DialogFooter>
         </DialogContent>

@@ -158,7 +158,7 @@ export default function SupplyChainAttestations() {
           <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">Cryptographically signed attestations for AI supply chain — data, models, vendors, and pipelines</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => toast.success('Attestations exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+          <button onClick={() => toast.success('Attestations exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
             <Export size={14} /> Export
           </button>
           <button onClick={openCreate} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90">
@@ -174,7 +174,7 @@ export default function SupplyChainAttestations() {
           { label: 'Expired', value: stats.expired, color: 'hsl(var(--destructive))' },
           { label: 'Under Review', value: stats.underReview, color: 'hsl(45 85% 40%)' },
         ].map(s => (
-          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
             <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
             <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
           </div>
@@ -184,21 +184,21 @@ export default function SupplyChainAttestations() {
       <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 max-w-xs">
           <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search attestations…" className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search attestations…" className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]" />
         </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
           {['All', 'Valid', 'Expired', 'Pending', 'Under Review', 'Rejected'].map(s => <option key={s}>{s}</option>)}
         </select>
-        <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+        <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
           <option>All</option>
           {allTypes.map(t => <option key={t}>{t}</option>)}
         </select>
       </div>
 
-      <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] overflow-hidden">
+      <div className="rounded border border-[hsl(var(--border))] bg-surface overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
+            <tr className="border-b border-[hsl(var(--border))] bg-raised">
               {['ID', 'Subject', 'Type', 'Attested By', 'Attested', 'Valid Until', 'Framework', 'Status', ''].map(h => (
                 <th key={h} className="text-left px-4 py-3 text-[11px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wide">{h}</th>
               ))}
@@ -206,7 +206,7 @@ export default function SupplyChainAttestations() {
           </thead>
           <tbody>
             {filtered.map(a => (
-              <tr key={a.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))] cursor-pointer" onClick={() => openDrawer(a)}>
+              <tr key={a.id} className="border-b border-[hsl(var(--border))] hover:bg-raised cursor-pointer" onClick={() => openDrawer(a)}>
                 <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--brand))]">{a.id}</td>
                 <td className="px-4 py-3">
                   <p className="text-xs font-medium text-[hsl(var(--text-1))]">{a.subject}</p>
@@ -234,7 +234,7 @@ export default function SupplyChainAttestations() {
       {selected && (
         <div className="fixed inset-0 z-50 flex">
           <div className="flex-1 bg-black/40" onClick={() => setSelected(null)} />
-          <div className="w-[520px] bg-[hsl(var(--bg-surface))] border-l border-[hsl(var(--border))] flex flex-col h-full">
+          <div className="w-[520px] bg-surface border-l border-[hsl(var(--border))] flex flex-col h-full">
             <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))]">
               <div>
                 <p className="font-mono text-xs text-[hsl(var(--brand))]">{selected.id}</p>
@@ -272,7 +272,7 @@ export default function SupplyChainAttestations() {
                       { label: 'Attestation Date', value: selected.attestedDate },
                       { label: 'Valid Until', value: selected.validUntil || 'N/A' },
                     ].map(({ label, value }) => (
-                      <div key={label} className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                      <div key={label} className="p-3 bg-raised border border-[hsl(var(--border))]">
                         <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{label}</p>
                         <p className="text-xs font-medium text-[hsl(var(--text-1))] mt-0.5">{value}</p>
                       </div>
@@ -280,16 +280,16 @@ export default function SupplyChainAttestations() {
                   </div>
                   <div>
                     <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">Scope</p>
-                    <p className="text-sm text-[hsl(var(--text-2))] p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] leading-relaxed">{selected.scope}</p>
+                    <p className="text-sm text-[hsl(var(--text-2))] p-3 bg-raised border border-[hsl(var(--border))] leading-relaxed">{selected.scope}</p>
                   </div>
                   <div>
                     <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">Findings</p>
-                    <p className="text-sm text-[hsl(var(--text-2))] p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] leading-relaxed">{selected.findings}</p>
+                    <p className="text-sm text-[hsl(var(--text-2))] p-3 bg-raised border border-[hsl(var(--border))] leading-relaxed">{selected.findings}</p>
                   </div>
                   {selected.reviewNotes && (
                     <div>
                       <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">Review Notes</p>
-                      <p className="text-sm text-[hsl(var(--text-2))] p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] leading-relaxed">{selected.reviewNotes}</p>
+                      <p className="text-sm text-[hsl(var(--text-2))] p-3 bg-raised border border-[hsl(var(--border))] leading-relaxed">{selected.reviewNotes}</p>
                     </div>
                   )}
                 </>
@@ -303,7 +303,7 @@ export default function SupplyChainAttestations() {
                       {selected.evidence.length === 0 ? (
                         <p className="text-xs text-[hsl(var(--text-4))]">No evidence files attached</p>
                       ) : selected.evidence.map(e => (
-                        <div key={e} className="flex items-center gap-2 p-2.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] cursor-pointer hover:border-[hsl(var(--brand)/0.4)]" onClick={() => toast.info(`Opening ${e}`)}>
+                        <div key={e} className="flex items-center gap-2 p-2.5 bg-raised border border-[hsl(var(--border))] cursor-pointer hover:border-[hsl(var(--brand)/0.4)]" onClick={() => toast.info(`Opening ${e}`)}>
                           <FileText size={14} className="text-[hsl(var(--brand))] flex-shrink-0" />
                           <span className="text-xs font-mono text-[hsl(var(--text-2))] flex-1 truncate">{e}</span>
                           <Export size={12} className="text-[hsl(var(--text-4))]" />
@@ -315,11 +315,11 @@ export default function SupplyChainAttestations() {
                     <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Document Metadata</p>
                     <div className="space-y-2">
                       <div className="grid grid-cols-2 gap-3">
-                        <div className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                        <div className="p-3 bg-raised border border-[hsl(var(--border))]">
                           <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">Type</p>
                           <p className="text-xs font-medium text-[hsl(var(--text-1))] mt-0.5">{selected.type}</p>
                         </div>
-                        <div className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                        <div className="p-3 bg-raised border border-[hsl(var(--border))]">
                           <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">Subject Type</p>
                           <p className="text-xs font-medium mt-0.5" style={{ color: SUBJECT_COLOR[selected.subjectType] }}>{selected.subjectType}</p>
                         </div>
@@ -333,7 +333,7 @@ export default function SupplyChainAttestations() {
                 <>
                   <div>
                     <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Cryptographic Verification</p>
-                    <div className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                    <div className="p-3 bg-raised border border-[hsl(var(--border))]">
                       <p className="text-[10px] text-[hsl(var(--text-4))] uppercase mb-1">Signature Hash (SHA-256)</p>
                       <p className="text-[11px] font-mono text-[hsl(var(--text-1))] break-all">{selected.sigHash}</p>
                     </div>
@@ -347,7 +347,7 @@ export default function SupplyChainAttestations() {
                         { check: 'Evidence Files Present', pass: selected.evidence.length > 0 },
                         { check: 'Framework Reference', pass: !!selected.framework },
                       ].map(({ check, pass }) => (
-                        <div key={check} className="flex items-center gap-2 p-2.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                        <div key={check} className="flex items-center gap-2 p-2.5 bg-raised border border-[hsl(var(--border))]">
                           <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: pass ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))' }} />
                           <p className="text-xs text-[hsl(var(--text-2))]">{check}</p>
                           <span className="ml-auto text-[10px] font-medium" style={{ color: pass ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))' }}>{pass ? 'PASS' : 'FAIL'}</span>
@@ -357,7 +357,7 @@ export default function SupplyChainAttestations() {
                   </div>
                   <div>
                     <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Regulatory Framework</p>
-                    <div className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                    <div className="p-3 bg-raised border border-[hsl(var(--border))]">
                       <p className="text-sm font-medium text-[hsl(var(--text-1))]">{selected.framework}</p>
                     </div>
                   </div>
@@ -369,11 +369,11 @@ export default function SupplyChainAttestations() {
                   <div>
                     <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Renewal Schedule</p>
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                      <div className="p-3 bg-raised border border-[hsl(var(--border))]">
                         <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">Valid Until</p>
                         <p className="text-xs font-medium text-[hsl(var(--text-1))] mt-0.5">{selected.validUntil || 'N/A'}</p>
                       </div>
-                      <div className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                      <div className="p-3 bg-raised border border-[hsl(var(--border))]">
                         <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">Next Review</p>
                         <p className="text-xs font-medium text-[hsl(var(--text-1))] mt-0.5">{selected.nextReviewDate ?? 'Not scheduled'}</p>
                       </div>
@@ -390,7 +390,7 @@ export default function SupplyChainAttestations() {
                   <div>
                     <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Renewal History</p>
                     <div className="space-y-2">
-                      <div className="p-2.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                      <div className="p-2.5 bg-raised border border-[hsl(var(--border))]">
                         <p className="text-xs font-medium text-[hsl(var(--text-1))]">Current Cycle</p>
                         <p className="text-[10px] text-[hsl(var(--text-4))] mt-0.5">Attested {selected.attestedDate} by {selected.attestedBy}</p>
                       </div>
@@ -401,7 +401,7 @@ export default function SupplyChainAttestations() {
             </div>
 
             <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
-              <button onClick={() => openEdit(selected)} className="flex-1 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))] flex items-center justify-center gap-1.5">
+              <button onClick={() => openEdit(selected)} className="flex-1 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised flex items-center justify-center gap-1.5">
                 <Pencil size={13} /> Edit
               </button>
               <button onClick={() => { toast.success('Renewal workflow initiated'); setSelected(null) }} className="flex-1 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90 flex items-center justify-center gap-1.5">
@@ -418,7 +418,7 @@ export default function SupplyChainAttestations() {
       {showCreate && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowCreate(false)} />
-          <div className="relative bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] w-full max-w-lg mx-4 shadow-2xl max-h-[90vh] flex flex-col">
+          <div className="relative bg-surface border border-[hsl(var(--border))] w-full max-w-lg mx-4 shadow-2xl max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
               <h2 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2">
                 <ShieldCheck size={15} className="text-[hsl(var(--brand))]" />
@@ -429,18 +429,18 @@ export default function SupplyChainAttestations() {
             <div className="flex-1 overflow-y-auto p-5 space-y-4">
               <div>
                 <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Subject Name *</label>
-                <input value={form.subject} onChange={e => setForm(p => ({ ...p, subject: e.target.value }))} placeholder="e.g. Credit Scoring Model v2.1" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+                <input value={form.subject} onChange={e => setForm(p => ({ ...p, subject: e.target.value }))} placeholder="e.g. Credit Scoring Model v2.1" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Subject Type</label>
-                  <select value={form.subjectType} onChange={e => setForm(p => ({ ...p, subjectType: e.target.value as SubjectType }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
+                  <select value={form.subjectType} onChange={e => setForm(p => ({ ...p, subjectType: e.target.value as SubjectType }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
                     {['Model', 'Dataset', 'Vendor', 'Pipeline'].map(t => <option key={t}>{t}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Attestation Type</label>
-                  <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value as AttestationType }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
+                  <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value as AttestationType }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
                     {['Data Provenance', 'Model Integrity', 'Security Review', 'Bias Audit', 'Privacy Assessment', 'SBOM/AIBOM Verification'].map(t => <option key={t}>{t}</option>)}
                   </select>
                 </div>
@@ -448,42 +448,42 @@ export default function SupplyChainAttestations() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Attested By *</label>
-                  <input value={form.attestedBy} onChange={e => setForm(p => ({ ...p, attestedBy: e.target.value }))} placeholder="e.g. Maria Santos" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+                  <input value={form.attestedBy} onChange={e => setForm(p => ({ ...p, attestedBy: e.target.value }))} placeholder="e.g. Maria Santos" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
                 </div>
                 <div>
                   <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Framework</label>
-                  <input value={form.framework} onChange={e => setForm(p => ({ ...p, framework: e.target.value }))} placeholder="e.g. ISO 42001 A.8.4" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+                  <input value={form.framework} onChange={e => setForm(p => ({ ...p, framework: e.target.value }))} placeholder="e.g. ISO 42001 A.8.4" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Attestation Date *</label>
-                  <input type="date" value={form.attestedDate} onChange={e => setForm(p => ({ ...p, attestedDate: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+                  <input type="date" value={form.attestedDate} onChange={e => setForm(p => ({ ...p, attestedDate: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
                 </div>
                 <div>
                   <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Valid Until</label>
-                  <input type="date" value={form.validUntil} onChange={e => setForm(p => ({ ...p, validUntil: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+                  <input type="date" value={form.validUntil} onChange={e => setForm(p => ({ ...p, validUntil: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
                 </div>
               </div>
               <div>
                 <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Scope</label>
-                <textarea value={form.scope} onChange={e => setForm(p => ({ ...p, scope: e.target.value }))} rows={3} placeholder="Describe what this attestation covers..." className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))] resize-none" />
+                <textarea value={form.scope} onChange={e => setForm(p => ({ ...p, scope: e.target.value }))} rows={3} placeholder="Describe what this attestation covers..." className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))] resize-none" />
               </div>
               <div>
                 <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Findings</label>
-                <textarea value={form.findings} onChange={e => setForm(p => ({ ...p, findings: e.target.value }))} rows={3} placeholder="Key findings from the attestation..." className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))] resize-none" />
+                <textarea value={form.findings} onChange={e => setForm(p => ({ ...p, findings: e.target.value }))} rows={3} placeholder="Key findings from the attestation..." className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))] resize-none" />
               </div>
               <div>
                 <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Evidence Files (one per line)</label>
-                <textarea value={form.evidence} onChange={e => setForm(p => ({ ...p, evidence: e.target.value }))} rows={2} placeholder="e.g. BiasAuditReport.pdf&#10;FairnessMetrics.xlsx" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))] resize-none" />
+                <textarea value={form.evidence} onChange={e => setForm(p => ({ ...p, evidence: e.target.value }))} rows={2} placeholder="e.g. BiasAuditReport.pdf&#10;FairnessMetrics.xlsx" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))] resize-none" />
               </div>
               <div>
                 <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Signature Hash</label>
-                <input value={form.sigHash} onChange={e => setForm(p => ({ ...p, sigHash: e.target.value }))} placeholder="e.g. sha256:9f3a2b..." className="w-full px-3 py-2 text-sm font-mono border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+                <input value={form.sigHash} onChange={e => setForm(p => ({ ...p, sigHash: e.target.value }))} placeholder="e.g. sha256:9f3a2b..." className="w-full px-3 py-2 text-sm font-mono border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
               </div>
             </div>
             <div className="flex justify-end gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
-              <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">Cancel</button>
+              <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">Cancel</button>
               <button onClick={handleSave} className="px-4 py-2 text-sm font-medium bg-[hsl(var(--brand))] text-white hover:opacity-90">{editMode ? 'Save Changes' : 'Create Attestation'}</button>
             </div>
           </div>

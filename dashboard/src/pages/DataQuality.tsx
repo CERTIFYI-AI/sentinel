@@ -250,7 +250,7 @@ export default function DataQuality() {
                   const ac = art10Color(item.art10Status);
                   const isFailing = item.art10Status === 'Not Met';
                   return (
-                    <tr key={item.id} className="border-b hover:bg-[hsl(var(--bg-raised))] transition-colors cursor-pointer"
+                    <tr key={item.id} className="border-b hover:bg-raised transition-colors cursor-pointer"
                       style={{ borderColor: 'hsl(var(--border))', borderLeft: isFailing ? '3px solid hsl(var(--s-er-tx))' : 'none' }}
                       onClick={() => { setSelected(item); setSheetOpen(true); }}>
                       <td className="px-3 py-2.5">
@@ -355,7 +355,7 @@ export default function DataQuality() {
                     return (
                       <div key={dim} className="flex items-center gap-3">
                         <span className="text-xs w-28 flex-shrink-0" style={{ color: 'hsl(var(--text-3))' }}>{dim}</span>
-                        <div className="flex-1 h-1.5 bg-[hsl(var(--bg-raised))]">
+                        <div className="flex-1 h-1.5 bg-raised">
                           <div className="h-full" style={{ width: `${val}%`, background: scorePct(val) }} />
                         </div>
                         <span className="text-xs tabular-nums w-8 text-right" style={{ color: scorePct(val) }}>{val}%</span>

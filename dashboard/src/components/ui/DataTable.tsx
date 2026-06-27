@@ -75,7 +75,7 @@ export function DataTable<T extends Record<string, any>>({
         <div className="relative flex-1 max-w-xs">
           <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
           <input value={search} onChange={e => handleSearch(e.target.value)} placeholder={searchPlaceholder}
-            className="w-full h-8 pl-8 pr-3 text-xs bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--brand))]" />
+            className="w-full h-8 pl-8 pr-3 text-xs bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--brand))]" />
         </div>
         {showPagination && (
           <div className="flex items-center gap-1 ml-auto text-xs text-[hsl(var(--text-4))]">
@@ -83,7 +83,7 @@ export function DataTable<T extends Record<string, any>>({
             <select
               value={pageSize}
               onChange={e => { setPageSize(Number(e.target.value)); setPage(1) }}
-              className="h-8 px-2 text-xs bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-2))] focus:outline-none"
+              className="h-8 px-2 text-xs bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-2))] focus:outline-none"
             >
               {PAGE_SIZE_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
@@ -94,7 +94,7 @@ export function DataTable<T extends Record<string, any>>({
       <div className="border border-[hsl(var(--border))] overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-[hsl(var(--bg-raised))] border-b border-[hsl(var(--border))]">
+            <tr className="bg-raised border-b border-[hsl(var(--border))]">
               {columns.map(col => (
                 <th key={col.key} className={cn("px-4 py-2.5 text-left text-xs font-medium text-[hsl(var(--text-4))] uppercase tracking-wider", col.sortable && "cursor-pointer select-none hover:text-[hsl(var(--text-2))]", col.className)}
                   onClick={() => col.sortable && toggleSort(col.key)}>
@@ -112,7 +112,7 @@ export function DataTable<T extends Record<string, any>>({
               <tr><td colSpan={columns.length + (hasActions ? 1 : 0)} className="px-4 py-8 text-center text-sm text-[hsl(var(--text-4))]">{emptyMessage}</td></tr>
             ) : paginated.map((row, i) => (
               <tr key={i} onClick={() => onRowClick?.(row)}
-                className={cn("group border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))] transition-colors", onRowClick && "cursor-pointer", getRowClassName?.(row))}>
+                className={cn("group border-b border-[hsl(var(--border))] hover:bg-raised transition-colors", onRowClick && "cursor-pointer", getRowClassName?.(row))}>
                 {columns.map(col => (
                   <td key={col.key} className={cn("px-4 py-3 text-[hsl(var(--text-2))]", col.className)}>
                     {col.render ? col.render(row) : String(row[col.key] ?? "")}
@@ -122,8 +122,8 @@ export function DataTable<T extends Record<string, any>>({
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       {actions ? actions(row) : (<>
-                        {onView && <button onClick={e => { e.stopPropagation(); onView(row) }} className="p-1.5 hover:bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))] transition-colors" title="View"><Eye size={16} weight="duotone"/></button>}
-                        {onEdit && <button onClick={e => { e.stopPropagation(); onEdit(row) }} className="p-1.5 hover:bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-1))] transition-colors" title="Edit"><PencilSimple size={16} weight="duotone"/></button>}
+                        {onView && <button onClick={e => { e.stopPropagation(); onView(row) }} className="p-1.5 hover:bg-surface text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))] transition-colors" title="View"><Eye size={16} weight="duotone"/></button>}
+                        {onEdit && <button onClick={e => { e.stopPropagation(); onEdit(row) }} className="p-1.5 hover:bg-surface text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-1))] transition-colors" title="Edit"><PencilSimple size={16} weight="duotone"/></button>}
                         {onDelete && <button onClick={e => { e.stopPropagation(); onDelete(row) }} className="p-1.5 hover:bg-[hsl(var(--s-er-bg))] text-[hsl(var(--text-4))] hover:text-[hsl(var(--s-er-text))] transition-colors" title="Delete"><Trash size={16} weight="duotone"/></button>}
                       </>)}
                     </div>
@@ -144,7 +144,7 @@ export function DataTable<T extends Record<string, any>>({
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={safePage <= 1}
-              className="h-7 px-2 border border-[hsl(var(--border))] disabled:opacity-40 hover:bg-[hsl(var(--bg-raised))] flex items-center gap-1 disabled:cursor-not-allowed"
+              className="h-7 px-2 border border-[hsl(var(--border))] disabled:opacity-40 hover:bg-raised flex items-center gap-1 disabled:cursor-not-allowed"
             >
               <CaretLeft size={12} /> Prev
             </button>
@@ -154,7 +154,7 @@ export function DataTable<T extends Record<string, any>>({
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={safePage >= totalPages}
-              className="h-7 px-2 border border-[hsl(var(--border))] disabled:opacity-40 hover:bg-[hsl(var(--bg-raised))] flex items-center gap-1 disabled:cursor-not-allowed"
+              className="h-7 px-2 border border-[hsl(var(--border))] disabled:opacity-40 hover:bg-raised flex items-center gap-1 disabled:cursor-not-allowed"
             >
               Next <CaretRight size={12} />
             </button>

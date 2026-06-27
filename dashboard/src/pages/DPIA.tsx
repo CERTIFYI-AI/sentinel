@@ -231,7 +231,7 @@ export default function DPIAPage() {
                   const rc = riskColor(item.riskLevel);
                   const dc = dpoColor(item.dpoStatus);
                   return (
-                    <tr key={item.id} className="border-b hover:bg-[hsl(var(--bg-raised))] transition-colors cursor-pointer" style={{ borderColor: 'hsl(var(--border))' }}
+                    <tr key={item.id} className="border-b hover:bg-raised transition-colors cursor-pointer" style={{ borderColor: 'hsl(var(--border))' }}
                       onClick={() => { setSelected(item); setSheetOpen(true); }}>
                       <td className="px-3 py-2.5">
                         <span className="font-mono text-xs px-1.5 py-0.5" style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))' }}>{item.id}</span>
@@ -247,7 +247,7 @@ export default function DPIAPage() {
                       </td>
                       <td className="px-3 py-2.5">
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 h-1.5 bg-[hsl(var(--bg-raised))]" style={{ minWidth: 60 }}>
+                          <div className="flex-1 h-1.5 bg-raised" style={{ minWidth: 60 }}>
                             <div className="h-full" style={{ width: `${item.completion}%`, background: item.completion === 100 ? 'hsl(var(--s-ok-tx))' : item.completion >= 60 ? 'hsl(var(--brand))' : 'hsl(var(--s-wn-tx))' }} />
                           </div>
                           <span className="text-xs tabular-nums" style={{ color: 'hsl(var(--text-3))' }}>{item.completion}%</span>

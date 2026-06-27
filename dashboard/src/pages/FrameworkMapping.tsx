@@ -247,7 +247,7 @@ export default function FrameworkMappingPage() {
             <table className="w-full text-xs">
               <thead>
                 <tr style={{ borderBottom: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-raised))' }}>
-                  <th className="text-left px-3 py-2.5 font-semibold sticky left-0 bg-[hsl(var(--bg-raised))] min-w-[180px]" style={{ color: 'hsl(var(--text-4))' }}>Control</th>
+                  <th className="text-left px-3 py-2.5 font-semibold sticky left-0 bg-raised min-w-[180px]" style={{ color: 'hsl(var(--text-4))' }}>Control</th>
                   {activeFrameworks.map(fw => (
                     <th key={fw} className="text-center px-2 py-2.5 font-semibold min-w-[90px]" style={{ color: 'hsl(var(--text-4))' }}>{fw}</th>
                   ))}
@@ -257,8 +257,8 @@ export default function FrameworkMappingPage() {
               </thead>
               <tbody>
                 {filtered.map(m => (
-                  <tr key={m.id} className="border-b hover:bg-[hsl(var(--bg-raised))] transition-colors" style={{ borderColor: 'hsl(var(--border))' }}>
-                    <td className="px-3 py-2.5 sticky left-0 bg-[hsl(var(--bg-surface))]">
+                  <tr key={m.id} className="border-b hover:bg-raised transition-colors" style={{ borderColor: 'hsl(var(--border))' }}>
+                    <td className="px-3 py-2.5 sticky left-0 bg-surface">
                       <div>
                         <span className="font-mono text-[10px] px-1 py-0.5 mr-1.5" style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))' }}>{m.id}</span>
                         <span className="font-medium" style={{ color: 'hsl(var(--text-1))' }}>{m.control}</span>

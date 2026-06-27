@@ -205,7 +205,7 @@ export default function TopHeader() {
 
   return (
     <>
-      <header className='flex items-center gap-4 px-6 h-14 border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] flex-shrink-0'>
+      <header className='flex items-center gap-4 px-6 h-14 border-b border-[hsl(var(--border))] bg-surface flex-shrink-0'>
         {/* Breadcrumbs */}
         <nav aria-label='Breadcrumb' className='flex-1 min-w-0'>
           <ol className='flex items-center gap-1 text-sm'>
@@ -242,7 +242,7 @@ export default function TopHeader() {
           {/* Search trigger */}
           <button
             onClick={() => setSearchOpen(true)}
-            className='flex items-center gap-2 h-8 px-3 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] hover:bg-[hsl(var(--bg-surface))] hover:border-[hsl(var(--brand))] transition-colors text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-2))] text-xs w-48'
+            className='flex items-center gap-2 h-8 px-3 border border-[hsl(var(--border))] bg-raised hover:bg-surface hover:border-[hsl(var(--brand))] transition-colors text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-2))] text-xs w-48'
             aria-label='Open search (press /)'
           >
             <MagnifyingGlass size={13} className='flex-shrink-0' />
@@ -271,7 +271,7 @@ export default function TopHeader() {
             {colorOpen && (
               <div
                 role='menu'
-                className='absolute right-0 top-full mt-2 w-52 bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] shadow-[var(--shadow-md)] z-50 p-3'
+                className='absolute right-0 top-full mt-2 w-52 bg-surface border border-[hsl(var(--border))] shadow-[var(--shadow-md)] z-50 p-3'
               >
                 <p className='text-[11px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wider mb-2.5'>
                   Accent Color
@@ -286,7 +286,7 @@ export default function TopHeader() {
                         role='menuitem'
                         onClick={() => handleAccentChange(s.key)}
                         title={s.label}
-                        className='flex flex-col items-center gap-1.5 p-2 hover:bg-[hsl(var(--bg-raised))] transition-colors group'
+                        className='flex flex-col items-center gap-1.5 p-2 hover:bg-raised transition-colors group'
                         style={{ outline: isActive ? `2px solid ${color}` : 'none', outlineOffset: 2 }}
                       >
                         <span
@@ -326,7 +326,7 @@ export default function TopHeader() {
             {themeOpen && (
               <div
                 role='menu'
-                className='absolute right-0 top-full mt-2 w-44 bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] shadow-[var(--shadow-md)] z-50 p-1.5'
+                className='absolute right-0 top-full mt-2 w-44 bg-surface border border-[hsl(var(--border))] shadow-[var(--shadow-md)] z-50 p-1.5'
               >
                 <p className='text-[11px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wider px-2 py-1.5'>
                   Appearance
@@ -340,7 +340,7 @@ export default function TopHeader() {
                     key={opt.key}
                     role='menuitem'
                     onClick={() => handleThemeChange(opt.key)}
-                    className='w-full flex items-center gap-2.5 px-2 py-1.5 text-sm hover:bg-[hsl(var(--bg-raised))] transition-colors'
+                    className='w-full flex items-center gap-2.5 px-2 py-1.5 text-sm hover:bg-raised transition-colors'
                     style={{
                       color: theme === opt.key ? 'hsl(var(--brand))' : 'hsl(var(--text-2))',
                       fontWeight: theme === opt.key ? 600 : 400,
@@ -411,7 +411,7 @@ export default function TopHeader() {
             {avatarOpen && (
               <div
                 role='menu'
-                className='absolute right-0 top-full mt-2 w-56 bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] shadow-[var(--shadow-md)] z-50'
+                className='absolute right-0 top-full mt-2 w-56 bg-surface border border-[hsl(var(--border))] shadow-[var(--shadow-md)] z-50'
               >
                 <div className='px-3 py-3 border-b border-[hsl(var(--border))]'>
                   <div className='flex items-center gap-2.5 mb-2'>
@@ -434,14 +434,14 @@ export default function TopHeader() {
                   <button
                     role='menuitem'
                     onClick={() => { closeDropdown(); navigate('/settings'); }}
-                    className='w-full flex items-center gap-2.5 px-3 py-2 text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-1))] transition-colors'
+                    className='w-full flex items-center gap-2.5 px-3 py-2 text-sm text-[hsl(var(--text-2))] hover:bg-raised hover:text-[hsl(var(--text-1))] transition-colors'
                   >
                     <User size={14} className='flex-shrink-0' /> My Profile
                   </button>
                   <button
                     role='menuitem'
                     onClick={() => { closeDropdown(); navigate('/settings'); }}
-                    className='w-full flex items-center gap-2.5 px-3 py-2 text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-1))] transition-colors'
+                    className='w-full flex items-center gap-2.5 px-3 py-2 text-sm text-[hsl(var(--text-2))] hover:bg-raised hover:text-[hsl(var(--text-1))] transition-colors'
                   >
                     <Gear size={14} className='flex-shrink-0' /> Settings
                   </button>

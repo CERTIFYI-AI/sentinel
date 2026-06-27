@@ -196,7 +196,7 @@ export default function ComplianceFrameworks() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-[hsl(var(--bg-raised))] border-b border-[hsl(var(--border))]">
+              <thead className="bg-raised border-b border-[hsl(var(--border))]">
                 <tr>
                   <th className="px-3 py-2.5 w-8">
                     <input
@@ -220,7 +220,7 @@ export default function ComplianceFrameworks() {
                 {sp.paged.map((item: any) => (
                   <tr
                     key={item.id}
-                    className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))] cursor-pointer"
+                    className="border-b border-[hsl(var(--border))] hover:bg-raised cursor-pointer"
                     onClick={() => { setViewItem(item); setModal("view"); }}
                   >
                     <td className="px-3 py-2.5" onClick={e => e.stopPropagation()}>
@@ -232,7 +232,7 @@ export default function ComplianceFrameworks() {
                     </td>
                     <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))]">{item.version}</td>
                     <td className="px-3 py-2.5">
-                      <span className="text-xs px-1.5 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{item.category}</span>
+                      <span className="text-xs px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))]">{item.category}</span>
                     </td>
                     <td className="px-3 py-2.5"><StatusBadge status={item.adoptionStatus} /></td>
                     <td className="px-3 py-2.5 text-center font-mono text-[hsl(var(--text-2))]">{item.controlsCount}</td>
@@ -250,13 +250,13 @@ export default function ComplianceFrameworks() {
                       <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => { setViewItem(item); setModal("view"); }}
-                          className="p-1.5 hover:bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-3))]"
+                          className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"
                         >
                           <Eye size={14} />
                         </button>
                         <button
                           onClick={() => openEdit(item)}
-                          className="p-1.5 hover:bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-3))]"
+                          className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"
                         >
                           <PencilSimple size={14} />
                         </button>
@@ -335,8 +335,8 @@ export default function ComplianceFrameworks() {
             <div className="p-5 space-y-4">
               <div className="flex items-center gap-2 flex-wrap">
                 <StatusBadge status={viewItem.adoptionStatus} />
-                <span className="text-xs px-1.5 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{viewItem.category}</span>
-                <span className="text-xs px-1.5 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">v{viewItem.version}</span>
+                <span className="text-xs px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))]">{viewItem.category}</span>
+                <span className="text-xs px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))]">v{viewItem.version}</span>
               </div>
               <div className="grid grid-cols-3 gap-4 text-sm">
                 {[

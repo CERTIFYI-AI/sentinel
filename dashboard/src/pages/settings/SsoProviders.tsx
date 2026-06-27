@@ -179,7 +179,7 @@ export default function SsoProviders() {
           Type
           <select
             {...register('kind')}
-            className="mt-1 w-full border border-[hsl(var(--border))] px-2 py-1 text-sm bg-[hsl(var(--bg-raised))]"
+            className="mt-1 w-full border border-[hsl(var(--border))] px-2 py-1 text-sm bg-raised"
           >
             <option value="oidc">OIDC (OpenID Connect)</option>
             <option value="saml">SAML 2.0</option>
@@ -190,7 +190,7 @@ export default function SsoProviders() {
           Display name
           <input
             {...register('display_name')}
-            className="mt-1 w-full border border-[hsl(var(--border))] px-2 py-1 text-sm bg-[hsl(var(--bg-raised))]"
+            className="mt-1 w-full border border-[hsl(var(--border))] px-2 py-1 text-sm bg-raised"
             placeholder="Acme Okta"
           />
           {errors.display_name && (
@@ -206,7 +206,7 @@ export default function SsoProviders() {
               Issuer URL
               <input
                 {...register('issuer')}
-                className="mt-1 w-full border border-[hsl(var(--border))] px-2 py-1 text-sm bg-[hsl(var(--bg-raised))]"
+                className="mt-1 w-full border border-[hsl(var(--border))] px-2 py-1 text-sm bg-raised"
                 placeholder="https://auth.example.com"
               />
             </label>
@@ -214,14 +214,14 @@ export default function SsoProviders() {
               JWKS URI
               <input
                 {...register('jwks_uri')}
-                className="mt-1 w-full border border-[hsl(var(--border))] px-2 py-1 text-sm bg-[hsl(var(--bg-raised))]"
+                className="mt-1 w-full border border-[hsl(var(--border))] px-2 py-1 text-sm bg-raised"
               />
             </label>
             <label className="block text-xs">
               Token endpoint
               <input
                 {...register('token_endpoint')}
-                className="mt-1 w-full border border-[hsl(var(--border))] px-2 py-1 text-sm bg-[hsl(var(--bg-raised))]"
+                className="mt-1 w-full border border-[hsl(var(--border))] px-2 py-1 text-sm bg-raised"
               />
             </label>
             <div className="grid grid-cols-2 gap-3">
@@ -229,7 +229,7 @@ export default function SsoProviders() {
                 Client ID
                 <input
                   {...register('client_id')}
-                  className="mt-1 w-full border border-[hsl(var(--border))] px-2 py-1 text-sm bg-[hsl(var(--bg-raised))]"
+                  className="mt-1 w-full border border-[hsl(var(--border))] px-2 py-1 text-sm bg-raised"
                 />
               </label>
               <label className="block text-xs">
@@ -238,7 +238,7 @@ export default function SsoProviders() {
                   {...register('client_secret')}
                   type="password"
                   autoComplete="off"
-                  className="mt-1 w-full border border-[hsl(var(--border))] px-2 py-1 text-sm bg-[hsl(var(--bg-raised))]"
+                  className="mt-1 w-full border border-[hsl(var(--border))] px-2 py-1 text-sm bg-raised"
                 />
               </label>
             </div>
@@ -246,7 +246,7 @@ export default function SsoProviders() {
               Redirect URI
               <input
                 {...register('redirect_uri')}
-                className="mt-1 w-full border border-[hsl(var(--border))] px-2 py-1 text-sm bg-[hsl(var(--bg-raised))]"
+                className="mt-1 w-full border border-[hsl(var(--border))] px-2 py-1 text-sm bg-raised"
                 placeholder="https://sentinel.example.com/sso/oidc/callback"
               />
             </label>
@@ -257,7 +257,7 @@ export default function SsoProviders() {
               SSO URL
               <input
                 {...register('sso_url')}
-                className="mt-1 w-full border border-[hsl(var(--border))] px-2 py-1 text-sm bg-[hsl(var(--bg-raised))]"
+                className="mt-1 w-full border border-[hsl(var(--border))] px-2 py-1 text-sm bg-raised"
               />
             </label>
             <label className="block text-xs">
@@ -265,7 +265,7 @@ export default function SsoProviders() {
               <textarea
                 {...register('x509_cert')}
                 rows={5}
-                className="mt-1 w-full border border-[hsl(var(--border))] px-2 py-1 text-xs font-mono bg-[hsl(var(--bg-raised))]"
+                className="mt-1 w-full border border-[hsl(var(--border))] px-2 py-1 text-xs font-mono bg-raised"
                 placeholder={'-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----'}
               />
             </label>
@@ -276,7 +276,7 @@ export default function SsoProviders() {
           Group claim path (optional)
           <input
             {...register('group_claim_path')}
-            className="mt-1 w-full border border-[hsl(var(--border))] px-2 py-1 text-sm bg-[hsl(var(--bg-raised))]"
+            className="mt-1 w-full border border-[hsl(var(--border))] px-2 py-1 text-sm bg-raised"
             placeholder="groups"
           />
         </label>

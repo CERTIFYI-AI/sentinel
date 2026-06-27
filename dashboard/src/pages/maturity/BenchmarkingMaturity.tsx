@@ -518,7 +518,7 @@ export default function BenchmarkingMaturity() {
       {showAssessment && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowAssessment(false)} />
-          <div className="relative bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] w-full max-w-lg mx-4 shadow-2xl">
+          <div className="relative bg-surface border border-[hsl(var(--border))] w-full max-w-lg mx-4 shadow-2xl">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
               <div>
                 <h2 className="text-sm font-semibold text-[hsl(var(--text-1))]">Maturity Self-Assessment</h2>
@@ -529,7 +529,7 @@ export default function BenchmarkingMaturity() {
             {!assessDone ? (
               <>
                 {/* Progress bar */}
-                <div className="h-1 bg-[hsl(var(--bg-raised))]">
+                <div className="h-1 bg-raised">
                   <div className="h-1 bg-[hsl(var(--brand))] transition-all" style={{ width: `${((assessStep + 1) / ASSESSMENT_QUESTIONS.length) * 100}%` }} />
                 </div>
                 <div className="p-6 space-y-5">
@@ -562,7 +562,7 @@ export default function BenchmarkingMaturity() {
                   <button
                     onClick={() => setAssessStep(p => Math.max(0, p - 1))}
                     disabled={assessStep === 0}
-                    className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))] disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Back
                   </button>
@@ -591,7 +591,7 @@ export default function BenchmarkingMaturity() {
                   </div>
                   <div className="space-y-2 max-h-64 overflow-y-auto">
                     {ASSESSMENT_QUESTIONS.map((q, i) => (
-                      <div key={i} className="flex items-center justify-between p-2 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                      <div key={i} className="flex items-center justify-between p-2 bg-raised border border-[hsl(var(--border))]">
                         <span className="text-xs text-[hsl(var(--text-2))]">{q.dimension}</span>
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-bold" style={{ color: gapColor(Math.max(0, (DIMENSIONS[i]?.target ?? 4) - (answers[i] ?? 3))) }}>
@@ -607,7 +607,7 @@ export default function BenchmarkingMaturity() {
                   </p>
                 </div>
                 <div className="flex justify-end gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
-                  <button onClick={() => setShowAssessment(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">Close</button>
+                  <button onClick={() => setShowAssessment(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">Close</button>
                   <button
                     onClick={() => {
                       setShowAssessment(false);

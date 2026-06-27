@@ -86,7 +86,7 @@ export default function AgentIAM() {
           <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">Identity and access management for AI agents — credentials, roles, scopes, and rotation policies</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => toast.success('Exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+          <button onClick={() => toast.success('Exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
             <Export size={14} /> Export
           </button>
           <button onClick={() => toast.info('Credential provisioning wizard')} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90">
@@ -102,7 +102,7 @@ export default function AgentIAM() {
           { label: 'Pending Rotation', value: stats.pendingRotation, color: 'hsl(45 85% 40%)' },
           { label: 'Audit Required', value: stats.auditRequired, color: 'hsl(var(--brand))' },
         ].map(s => (
-          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
             <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
             <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
           </div>
@@ -120,17 +120,17 @@ export default function AgentIAM() {
       <div className="flex gap-3">
         <div className="relative flex-1 max-w-xs">
           <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search identities…" className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search identities…" className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]" />
         </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
           {['All', 'Active', 'Pending Rotation', 'Revoked', 'Expired'].map(s => <option key={s}>{s}</option>)}
         </select>
       </div>
 
-      <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] overflow-hidden">
+      <div className="rounded border border-[hsl(var(--border))] bg-surface overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
+            <tr className="border-b border-[hsl(var(--border))] bg-raised">
               {['ID', 'Agent', 'Principal Type', 'Principal ID', 'Roles', 'Expires', 'MFA', 'Audit', 'Status', ''].map(h => (
                 <th key={h} className="text-left px-4 py-3 text-[11px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wide">{h}</th>
               ))}
@@ -138,7 +138,7 @@ export default function AgentIAM() {
           </thead>
           <tbody>
             {filtered.map(i => (
-              <tr key={i.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))] cursor-pointer" onClick={() => setSelected(i)}>
+              <tr key={i.id} className="border-b border-[hsl(var(--border))] hover:bg-raised cursor-pointer" onClick={() => setSelected(i)}>
                 <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--brand))]">{i.id}</td>
                 <td className="px-4 py-3 text-xs text-[hsl(var(--text-2))] font-medium">{i.agentName}</td>
                 <td className="px-4 py-3">
@@ -166,19 +166,19 @@ export default function AgentIAM() {
       </div>
 
       {/* ── Least-Privilege Analysis ─────────────────────────────────────────── */}
-      <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+      <div className="rounded border border-[hsl(var(--border))] bg-surface p-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2">
             <Lock size={16} className="text-[hsl(var(--brand))]" weight="duotone" />
             Least-Privilege Analysis
           </h3>
-          <button onClick={() => toast.info('Analysing scope usage...')} className="text-xs px-3 py-1 border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+          <button onClick={() => toast.info('Analysing scope usage...')} className="text-xs px-3 py-1 border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">
             Re-Analyse
           </button>
         </div>
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
+            <tr className="border-b border-[hsl(var(--border))] bg-raised">
               {['Agent', 'Granted Scopes', 'Scopes Used (30d)', 'Unused Scopes', 'Risk', 'Action'].map(h => (
                 <th key={h} className="px-3 py-2 text-left font-medium text-[hsl(var(--text-4))]">{h}</th>
               ))}
@@ -191,7 +191,7 @@ export default function AgentIAM() {
               { agent: 'ComplianceMonitorAgent', granted: 4, used: 4, unused: [], risk: 'None' },
               { agent: 'DataQualityPatrolAgent', granted: 3, used: 2, unused: ['alerts:write'], risk: 'Low' },
             ].map(r => (
-              <tr key={r.agent} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))]">
+              <tr key={r.agent} className="border-b border-[hsl(var(--border))] hover:bg-raised">
                 <td className="px-3 py-2 font-medium text-[hsl(var(--text-1))]">{r.agent}</td>
                 <td className="px-3 py-2 text-[hsl(var(--text-3))]">{r.granted} scopes</td>
                 <td className="px-3 py-2 text-[hsl(var(--text-3))]">{r.used} scopes</td>
@@ -223,7 +223,7 @@ export default function AgentIAM() {
 
       {/* ── Access Review Campaigns & Anomalous Access ──────────────────────── */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+        <div className="rounded border border-[hsl(var(--border))] bg-surface p-4">
           <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2 mb-3">
             <UserCheck size={15} className="text-[hsl(var(--brand))]" weight="duotone" />
             Access Review Campaigns
@@ -255,7 +255,7 @@ export default function AgentIAM() {
           </button>
         </div>
 
-        <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+        <div className="rounded border border-[hsl(var(--border))] bg-surface p-4">
           <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2 mb-3">
             <Siren size={15} className="text-[hsl(var(--destructive))]" weight="duotone" />
             Anomalous Access Detection
@@ -271,10 +271,10 @@ export default function AgentIAM() {
                 <span className="text-[10px] text-[hsl(var(--text-4))]">{(a.time ?? '').split(' ')[1] ?? ''}</span>
               </div>
               <p className="text-xs text-[hsl(var(--text-3))]">{a.anomaly}</p>
-              <button onClick={() => toast.info('Anomaly investigation opened')} className="mt-1 text-[10px] px-2 py-0.5 border border-[hsl(var(--border))] text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-raised))]">Investigate</button>
+              <button onClick={() => toast.info('Anomaly investigation opened')} className="mt-1 text-[10px] px-2 py-0.5 border border-[hsl(var(--border))] text-[hsl(var(--text-3))] hover:bg-raised">Investigate</button>
             </div>
           ))}
-          <div className="mt-2 p-2 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] text-[10px] text-[hsl(var(--text-4))]">
+          <div className="mt-2 p-2 bg-raised border border-[hsl(var(--border))] text-[10px] text-[hsl(var(--text-4))]">
             Anomaly detection powered by baseline behavioural profiles (30-day rolling window). Alerts at 2σ deviation from mean.
           </div>
         </div>
@@ -283,14 +283,14 @@ export default function AgentIAM() {
       {selected && (
         <div className="fixed inset-0 z-50 flex">
           <div className="flex-1 bg-black/40" onClick={() => setSelected(null)} />
-          <div className="w-[480px] bg-[hsl(var(--bg-surface))] border-l border-[hsl(var(--border))] flex flex-col h-full overflow-y-auto">
+          <div className="w-[480px] bg-surface border-l border-[hsl(var(--border))] flex flex-col h-full overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))]">
               <div><p className="font-mono text-xs text-[hsl(var(--brand))]">{selected.id}</p><h2 className="text-sm font-semibold text-[hsl(var(--text-1))]">{selected.agentName} — {selected.principalType}</h2></div>
               <button onClick={() => setSelected(null)}><X size={18} className="text-[hsl(var(--text-4))]" /></button>
             </div>
             <div className="p-4 space-y-4">
               <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status]}>{selected.status}</span>
-              <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">Principal ID</p><p className="font-mono text-xs text-[hsl(var(--text-2))] p-2 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] break-all">{selected.principalId}</p></div>
+              <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">Principal ID</p><p className="font-mono text-xs text-[hsl(var(--text-2))] p-2 bg-raised border border-[hsl(var(--border))] break-all">{selected.principalId}</p></div>
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { label: 'Created', value: selected.created },
@@ -298,16 +298,16 @@ export default function AgentIAM() {
                   { label: 'Last Used', value: selected.lastUsed },
                   { label: 'MFA Required', value: selected.mfaRequired ? 'Yes' : 'No' },
                 ].map(({ label, value }) => (
-                  <div key={label} className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                  <div key={label} className="p-3 bg-raised border border-[hsl(var(--border))]">
                     <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{label}</p>
                     <p className="text-xs font-medium text-[hsl(var(--text-1))] mt-0.5">{value}</p>
                   </div>
                 ))}
               </div>
               <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Roles</p><div className="flex flex-wrap gap-1">{selected.roles.map(r => <span key={r} className="text-[10px] px-2 py-0.5 bg-[hsl(var(--brand)/0.1)] text-[hsl(var(--brand))] border border-[hsl(var(--brand)/0.2)]">{r}</span>)}</div></div>
-              <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">OAuth Scopes</p><div className="space-y-0.5">{selected.scopes.map(s => <div key={s} className="font-mono text-[10px] text-[hsl(var(--text-2))] p-1.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{s}</div>)}</div></div>
-              <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">IP Allowlist</p><div className="space-y-0.5">{selected.ipAllowlist.map(ip => <div key={ip} className="font-mono text-[10px] text-[hsl(var(--text-2))] p-1.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{ip}</div>)}</div></div>
-              <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">Rotation Policy</p><p className="text-sm text-[hsl(var(--text-2))] p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{selected.rotationPolicy}</p></div>
+              <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">OAuth Scopes</p><div className="space-y-0.5">{selected.scopes.map(s => <div key={s} className="font-mono text-[10px] text-[hsl(var(--text-2))] p-1.5 bg-raised border border-[hsl(var(--border))]">{s}</div>)}</div></div>
+              <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">IP Allowlist</p><div className="space-y-0.5">{selected.ipAllowlist.map(ip => <div key={ip} className="font-mono text-[10px] text-[hsl(var(--text-2))] p-1.5 bg-raised border border-[hsl(var(--border))]">{ip}</div>)}</div></div>
+              <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">Rotation Policy</p><p className="text-sm text-[hsl(var(--text-2))] p-3 bg-raised border border-[hsl(var(--border))]">{selected.rotationPolicy}</p></div>
             </div>
             <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
               <button

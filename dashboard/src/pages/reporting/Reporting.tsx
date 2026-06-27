@@ -461,7 +461,7 @@ export default function Reporting() {
                         { id: 'agent-governance', label: 'Agentic Governance', icon: <Brain size={13} /> },
                         { id: 'sla-countdown', label: 'SLA Countdown', icon: <Clock size={13} /> },
                       ].map(m => (
-                        <div key={m.id} className="flex items-center gap-2 p-2 cursor-pointer hover:bg-[hsl(var(--bg-raised))]" style={{ border: '1px solid hsl(var(--border))' }}
+                        <div key={m.id} className="flex items-center gap-2 p-2 cursor-pointer hover:bg-raised" style={{ border: '1px solid hsl(var(--border))' }}
                           onClick={() => {}}>
                           <span style={{ color: 'hsl(var(--brand))' }}>{m.icon}</span>
                           <span className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>{m.label}</span>

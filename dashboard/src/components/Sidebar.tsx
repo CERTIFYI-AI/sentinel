@@ -460,7 +460,7 @@ function NavTooltip({ label, enabled, children }: NavTooltipProps) {
           sideOffset={8}
           className={cn(
             'z-[200] px-2.5 py-1.5 text-[11px] font-medium',
-            'bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-1))]',
+            'bg-raised text-[hsl(var(--text-1))]',
             'border border-[hsl(var(--border))]',
             'shadow-md select-none',
           )}
@@ -596,7 +596,7 @@ export default function Sidebar() {
         role='navigation'
         aria-label='Main navigation'
         className={cn(
-          'flex flex-col h-screen bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))]',
+          'flex flex-col h-screen bg-surface text-[hsl(var(--text-1))]',
           'border-r border-[hsl(var(--border))] flex-shrink-0 overflow-hidden',
           'transition-[width] duration-200 ease-in-out',
           isMobile
@@ -616,7 +616,7 @@ export default function Sidebar() {
                 className={cn(
                   'flex flex-col items-center justify-center w-full h-full gap-1',
                   'text-[hsl(var(--text-3))] hover:text-[hsl(var(--brand))]',
-                  'hover:bg-[hsl(var(--bg-raised))] transition-colors group',
+                  'hover:bg-raised transition-colors group',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--brand))]',
                 )}
                 aria-label='Expand sidebar'
@@ -750,7 +750,7 @@ export default function Sidebar() {
                               'bg-[hsl(var(--brand)/0.08)] text-[hsl(var(--brand))]',
                               !effectiveCollapsed && 'border-l-[3px] border-[hsl(var(--brand))] pl-[5px]',
                             ]
-                          : 'text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-1))]'
+                          : 'text-[hsl(var(--text-3))] hover:bg-raised hover:text-[hsl(var(--text-1))]'
                       )
 
                       const iconEl = (
@@ -851,7 +851,7 @@ export default function Sidebar() {
                                       'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[hsl(var(--brand))] focus-visible:ring-inset',
                                       childIsActive
                                         ? 'text-[hsl(var(--brand))] font-medium'
-                                        : 'text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]'
+                                        : 'text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-2))] hover:bg-raised'
                                     )}
                                   >
                                     {child.label}
@@ -903,7 +903,7 @@ export default function Sidebar() {
                   onClick={cycleTheme}
                   className={cn(
                     'p-1 text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))]',
-                    'hover:bg-[hsl(var(--bg-raised))] transition-colors',
+                    'hover:bg-raised transition-colors',
                     'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[hsl(var(--brand))]',
                   )}
                   title={THEME_NEXT_LABEL[theme]}
@@ -915,7 +915,7 @@ export default function Sidebar() {
                   to='/settings'
                   className={cn(
                     'p-1 text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))]',
-                    'hover:bg-[hsl(var(--bg-raised))] transition-colors',
+                    'hover:bg-raised transition-colors',
                     'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[hsl(var(--brand))]',
                   )}
                   title='Settings'
@@ -927,7 +927,7 @@ export default function Sidebar() {
                   onClick={handleSignOut}
                   className={cn(
                     'p-1 text-[hsl(var(--text-4))] hover:text-red-500',
-                    'hover:bg-[hsl(var(--bg-raised))] transition-colors',
+                    'hover:bg-raised transition-colors',
                     'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[hsl(var(--brand))]',
                   )}
                   title='Sign out'
@@ -945,7 +945,7 @@ export default function Sidebar() {
                 onClick={cycleTheme}
                 className={cn(
                   'p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))]',
-                  'hover:bg-[hsl(var(--bg-raised))] transition-colors',
+                  'hover:bg-raised transition-colors',
                   'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[hsl(var(--brand))]',
                 )}
                 aria-label={THEME_NEXT_LABEL[theme]}
@@ -958,7 +958,7 @@ export default function Sidebar() {
                 to='/settings'
                 className={cn(
                   'p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))]',
-                  'hover:bg-[hsl(var(--bg-raised))] transition-colors',
+                  'hover:bg-raised transition-colors',
                   'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[hsl(var(--brand))]',
                 )}
                 aria-label='Settings'
@@ -971,7 +971,7 @@ export default function Sidebar() {
                 onClick={handleSignOut}
                 className={cn(
                   'p-1.5 text-[hsl(var(--text-4))] hover:text-red-500',
-                  'hover:bg-[hsl(var(--bg-raised))] transition-colors',
+                  'hover:bg-raised transition-colors',
                   'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[hsl(var(--brand))]',
                 )}
                 aria-label='Sign out'
@@ -996,7 +996,7 @@ export default function Sidebar() {
             onClick={() => setMobileOpen(true)}
             className={cn(
               'fixed top-3 left-3 z-50 p-2',
-              'bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] shadow-md',
+              'bg-surface border border-[hsl(var(--border))] shadow-md',
               'text-[hsl(var(--text-2))] hover:text-[hsl(var(--brand))] transition-colors',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--brand))]',
             )}

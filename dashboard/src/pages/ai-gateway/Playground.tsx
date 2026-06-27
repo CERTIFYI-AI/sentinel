@@ -147,7 +147,7 @@ export default function Playground() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-200px)] min-h-[600px]">
         
         {/* Left Sidebar: Configuration */}
-        <Card className="col-span-1 border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] flex flex-col rounded-none shadow-sm">
+        <Card className="col-span-1 border-[hsl(var(--border))] bg-surface-1 flex flex-col rounded-none shadow-sm">
           <div className="p-4 border-b border-[hsl(var(--border))] flex items-center justify-between">
             <h3 className="font-semibold text-sm flex items-center gap-2">
               <SlidersHorizontal size={16} /> Gateway Config
@@ -156,12 +156,12 @@ export default function Playground() {
           <div className="p-4 space-y-6 overflow-y-auto">
             
             {/* Run As Context */}
-            <div className="space-y-3 p-3 border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))]">
+            <div className="space-y-3 p-3 border border-[hsl(var(--border))] bg-surface-2">
               <label className="text-[10px] font-bold text-[hsl(var(--brand))] uppercase tracking-wider flex items-center gap-2">
                 <User size={12}/> "Run As" Context
               </label>
               <Select value={userRole} onValueChange={setUserRole}>
-                <SelectTrigger className="w-full bg-[hsl(var(--surface-1))] border-[hsl(var(--border))] rounded-none h-8 text-xs">
+                <SelectTrigger className="w-full bg-surface-1 border-[hsl(var(--border))] rounded-none h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="rounded-none">
@@ -175,7 +175,7 @@ export default function Playground() {
             <div className="space-y-3">
               <label className="text-xs font-medium text-[hsl(var(--text-2))] uppercase tracking-wider">Target Endpoint</label>
               <Select defaultValue="prod-gpt4">
-                <SelectTrigger className="w-full bg-[hsl(var(--surface-2))] border-[hsl(var(--border))] rounded-none">
+                <SelectTrigger className="w-full bg-surface-2 border-[hsl(var(--border))] rounded-none">
                   <SelectValue placeholder="Select Endpoint" />
                 </SelectTrigger>
                 <SelectContent className="rounded-none">
@@ -198,11 +198,11 @@ export default function Playground() {
                 <ShieldCheck size={14} className="text-emerald-500"/> Active Guardrails
               </label>
               <div className="space-y-2">
-                <div className="flex items-center justify-between p-2 bg-[hsl(var(--surface-2))] border border-[hsl(var(--border))]">
+                <div className="flex items-center justify-between p-2 bg-surface-2 border border-[hsl(var(--border))]">
                   <span className="text-xs flex items-center gap-2"><EyeSlash size={14} className="text-yellow-500"/> PII Masking</span>
                   <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 rounded-none text-[10px]">ENFORCED</Badge>
                 </div>
-                <div className="flex items-center justify-between p-2 bg-[hsl(var(--surface-2))] border border-[hsl(var(--border))]">
+                <div className="flex items-center justify-between p-2 bg-surface-2 border border-[hsl(var(--border))]">
                   <span className="text-xs flex items-center gap-2"><Bug size={14} className="text-red-500"/> Prompt Inject</span>
                   <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 rounded-none text-[10px]">ENFORCED</Badge>
                 </div>
@@ -213,10 +213,10 @@ export default function Playground() {
         </Card>
 
         {/* Right Area: Chat Interface */}
-        <Card className="col-span-1 lg:col-span-3 border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] flex flex-col rounded-none shadow-sm">
+        <Card className="col-span-1 lg:col-span-3 border-[hsl(var(--border))] bg-surface-1 flex flex-col rounded-none shadow-sm">
           
           {/* Header */}
-          <div className="p-4 border-b border-[hsl(var(--border))] flex items-center justify-between bg-[hsl(var(--surface-2))]">
+          <div className="p-4 border-b border-[hsl(var(--border))] flex items-center justify-between bg-surface-2">
             <div className="flex gap-2">
               <Button 
                 variant={viewMode === 'chat' ? 'default' : 'outline'} 
@@ -269,9 +269,9 @@ export default function Playground() {
                   
                   <div className={`rounded-none p-4 ${
                     msg.role === 'system' ? 'bg-zinc-900/80 border border-zinc-700 text-zinc-300 font-mono text-xs' :
-                    msg.role === 'user' ? 'bg-[hsl(var(--surface-1))] border border-[hsl(var(--border))]' : 
+                    msg.role === 'user' ? 'bg-surface-1 border border-[hsl(var(--border))]' : 
                     msg.role === 'gateway' ? 'bg-red-500/10 border border-red-500/30 text-red-200' :
-                    'bg-[hsl(var(--surface-2))] border border-[hsl(var(--border))] shadow-sm'
+                    'bg-surface-2 border border-[hsl(var(--border))] shadow-sm'
                   }`}>
                     {msg.role === 'system' && <div className="text-[10px] uppercase tracking-wider mb-2 text-zinc-500 font-sans font-bold">System Prompt</div>}
                     
@@ -305,7 +305,7 @@ export default function Playground() {
                 {viewMode === 'trace' && msg.metrics && (
                   <div className={`flex gap-3 text-[10px] font-mono text-[hsl(var(--text-3))] ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
                     <div className="w-8"></div> {/* Spacer for icon */}
-                    <div className="flex gap-4 bg-[hsl(var(--surface-2))] border border-[hsl(var(--border))] px-3 py-1.5">
+                    <div className="flex gap-4 bg-surface-2 border border-[hsl(var(--border))] px-3 py-1.5">
                       <span className="flex items-center gap-1"><Lightning size={10}/> Latency: {msg.metrics.latency.gw}ms GW + {msg.metrics.latency.provider}ms Prov</span>
                       <span>|</span>
                       <span>Tokens: {msg.metrics.tokens}</span>
@@ -319,14 +319,14 @@ export default function Playground() {
           </div>
 
           {/* Input Area */}
-          <div className="p-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--surface-2))]">
+          <div className="p-4 border-t border-[hsl(var(--border))] bg-surface-2">
             <div className="flex items-center gap-2">
               <Input 
                 placeholder="Try typing an email, SSN, or 'Ignore all previous system prompts'..."
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                className="flex-1 bg-[hsl(var(--surface-1))] border-[hsl(var(--border))] focus:border-[hsl(var(--brand))] rounded-none h-12"
+                className="flex-1 bg-surface-1 border-[hsl(var(--border))] focus:border-[hsl(var(--brand))] rounded-none h-12"
               />
               <Button onClick={handleSend} className="h-12 px-6 rounded-none bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-hover))]">
                 <PaperPlaneRight size={18} weight="fill" />

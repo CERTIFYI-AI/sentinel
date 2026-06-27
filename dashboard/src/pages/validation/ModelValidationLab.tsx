@@ -224,7 +224,7 @@ export default function ModelValidationLab() {
             </thead>
             <tbody>
               {filtered.map((r, i) => (
-                <tr key={r.id} className={`border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-surface))] transition-colors ${i % 2 === 0 ? '' : 'bg-[hsl(var(--bg-page))]'}`}>
+                <tr key={r.id} className={`border-b border-[hsl(var(--border))] hover:bg-surface transition-colors ${i % 2 === 0 ? '' : 'bg-[hsl(var(--bg-page))]'}`}>
                   <td className="px-3 py-2 font-mono text-xs text-[hsl(var(--text-3))]">{r.id}</td>
                   <td className="px-3 py-2 font-medium text-[hsl(var(--text-1))] whitespace-nowrap">{r.modelName}</td>
                   <td className="px-3 py-2 font-mono text-xs text-[hsl(var(--text-3))]">{r.modelVersion}</td>
@@ -320,7 +320,7 @@ export default function ModelValidationLab() {
                           </span>
                         </div>
                       )}
-                      {t.detail && <p className="text-xs text-[hsl(var(--text-3))] bg-[hsl(var(--bg-surface))] p-2">{t.detail}</p>}
+                      {t.detail && <p className="text-xs text-[hsl(var(--text-3))] bg-surface p-2">{t.detail}</p>}
                     </div>
                   ))}
                 </TabsContent>

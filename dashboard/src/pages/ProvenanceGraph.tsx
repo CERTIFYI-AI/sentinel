@@ -76,7 +76,7 @@ function ProvenanceTree({ chain }: { chain: ProvenanceChain }) {
     <div className="space-y-4 p-4">
       {/* Root node */}
       <div className="flex flex-col items-start">
-        <div className="p-3 border-2 bg-[hsl(var(--bg-raised))] min-w-[220px]" style={{ borderColor: NODE_COLORS.Model }}>
+        <div className="p-3 border-2 bg-raised min-w-[220px]" style={{ borderColor: NODE_COLORS.Model }}>
           <div className="flex items-center gap-2 mb-1">
             <div className="w-2 h-2 rounded-full" style={{ background: NODE_COLORS.Model }} />
             <span className="text-[10px] font-semibold uppercase" style={{ color: NODE_COLORS.Model }}>{root.type}</span>
@@ -91,7 +91,7 @@ function ProvenanceTree({ chain }: { chain: ProvenanceChain }) {
           <div className="ml-6 mt-2 space-y-2 border-l-2 border-[hsl(var(--border))] pl-4">
             {children.map(node => (
               <div key={node.id} className="flex items-start gap-2">
-                <div className="p-2.5 border bg-[hsl(var(--bg-surface))] min-w-[200px]" style={{ borderColor: NODE_COLORS[node.type] }}>
+                <div className="p-2.5 border bg-surface min-w-[200px]" style={{ borderColor: NODE_COLORS[node.type] }}>
                   <div className="flex items-center gap-1.5 mb-0.5">
                     <div className="w-1.5 h-1.5 rounded-full" style={{ background: NODE_COLORS[node.type] }} />
                     <span className="text-[9px] font-semibold uppercase" style={{ color: NODE_COLORS[node.type] }}>{node.type}</span>
@@ -124,7 +124,7 @@ export default function ProvenanceGraph() {
           </h1>
           <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">Visual AI supply chain provenance — trace every component from production model to root source</p>
         </div>
-        <button onClick={() => toast.success('Graph exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]"><Export size={14} /> Export</button>
+        <button onClick={() => toast.success('Graph exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised"><Export size={14} /> Export</button>
       </div>
 
       {/* Legend */}
@@ -155,7 +155,7 @@ export default function ProvenanceGraph() {
       </div>
 
       {/* Chain header */}
-      <div className="flex items-center justify-between p-3 rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))]">
+      <div className="flex items-center justify-between p-3 rounded border border-[hsl(var(--border))] bg-surface">
         <div className="flex items-center gap-3">
           <TreeStructure size={16} className="text-[hsl(var(--brand))]" />
           <div>
@@ -174,15 +174,15 @@ export default function ProvenanceGraph() {
       </div>
 
       {/* Graph */}
-      <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] overflow-auto min-h-[300px]">
+      <div className="rounded border border-[hsl(var(--border))] bg-surface overflow-auto min-h-[300px]">
         <ProvenanceTree chain={selected} />
       </div>
 
       {/* Node table */}
-      <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] overflow-hidden">
+      <div className="rounded border border-[hsl(var(--border))] bg-surface overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
+            <tr className="border-b border-[hsl(var(--border))] bg-raised">
               {['Node ID', 'Type', 'Name', 'Version', 'Provider', 'License', 'Hash', 'Risk', 'Verified'].map(h => (
                 <th key={h} className="text-left px-4 py-3 text-[11px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wide">{h}</th>
               ))}
@@ -190,7 +190,7 @@ export default function ProvenanceGraph() {
           </thead>
           <tbody>
             {selected.nodes.map(n => (
-              <tr key={n.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))]">
+              <tr key={n.id} className="border-b border-[hsl(var(--border))] hover:bg-raised">
                 <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--text-3))]">{n.id}</td>
                 <td className="px-4 py-3"><span className="text-[10px] font-semibold" style={{ color: NODE_COLORS[n.type] }}>{n.type}</span></td>
                 <td className="px-4 py-3 text-xs font-medium text-[hsl(var(--text-1))]">{n.name}</td>

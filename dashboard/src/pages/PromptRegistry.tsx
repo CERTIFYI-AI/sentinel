@@ -109,7 +109,7 @@ function PromptCard({ record, onView, onEdit, onDelete }: {
 }) {
   const sc = statusConfig(record.status);
   return (
-    <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] hover:border-[hsl(var(--brand))] transition-colors group">
+    <Card className="bg-surface border-[hsl(var(--border))] hover:border-[hsl(var(--brand))] transition-colors group">
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex-1 min-w-0">
@@ -133,7 +133,7 @@ function PromptCard({ record, onView, onEdit, onDelete }: {
 
         <p className="text-xs text-[hsl(var(--text-3))] line-clamp-2 mb-3">{record.description}</p>
 
-        <pre className="text-xs font-mono bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] p-2 line-clamp-3 text-[hsl(var(--text-3))] mb-3 whitespace-pre-wrap leading-relaxed overflow-hidden">
+        <pre className="text-xs font-mono bg-raised border border-[hsl(var(--border))] p-2 line-clamp-3 text-[hsl(var(--text-3))] mb-3 whitespace-pre-wrap leading-relaxed overflow-hidden">
           {record.content.slice(0, 180)}{record.content.length > 180 ? '…' : ''}
         </pre>
 
@@ -480,7 +480,7 @@ function EditSheet({ record, open, onClose, onSave }: {
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
-      <SheetContent side="right" className="w-[620px] max-w-full flex flex-col overflow-hidden p-0 bg-[hsl(var(--bg-surface))]">
+      <SheetContent side="right" className="w-[620px] max-w-full flex flex-col overflow-hidden p-0 bg-surface">
         <SheetHeader className="px-6 py-4 border-b border-[hsl(var(--border))] flex-shrink-0">
           <SheetTitle className="text-base font-bold text-[hsl(var(--text-1))]">
             {isNew ? 'Register New Prompt' : `Edit — ${record?.name}`}
@@ -542,7 +542,7 @@ function EditSheet({ record, open, onClose, onSave }: {
             <textarea
               value={description} onChange={e => setDescription(e.target.value)} rows={2}
               placeholder="Brief description of this prompt's purpose and compliance context"
-              className="w-full text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] px-3 py-2 resize-none text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]"
+              className="w-full text-sm border border-[hsl(var(--border))] bg-raised px-3 py-2 resize-none text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]"
             />
           </div>
 
@@ -554,7 +554,7 @@ function EditSheet({ record, open, onClose, onSave }: {
             <textarea
               value={content} onChange={e => setContent(e.target.value)} rows={10}
               placeholder="Enter the full prompt content…"
-              className="w-full text-xs font-mono border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] px-3 py-2 resize-y text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]"
+              className="w-full text-xs font-mono border border-[hsl(var(--border))] bg-raised px-3 py-2 resize-y text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]"
             />
           </div>
 
@@ -581,7 +581,7 @@ function EditSheet({ record, open, onClose, onSave }: {
           </div>
         </div>
 
-        <div className="px-6 py-4 border-t border-[hsl(var(--border))] flex items-center justify-between flex-shrink-0 bg-[hsl(var(--bg-raised))]">
+        <div className="px-6 py-4 border-t border-[hsl(var(--border))] flex items-center justify-between flex-shrink-0 bg-raised">
           <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
           <Button size="sm" disabled={!canSave} onClick={handleSave}
             style={{ background: canSave ? 'hsl(var(--brand))' : undefined, color: canSave ? 'white' : undefined }}>
@@ -689,7 +689,7 @@ export default function PromptRegistry() {
   return (
     <div className="flex flex-col h-full bg-[hsl(var(--bg-page))]">
       {/* Page Header */}
-      <div className="px-6 py-4 border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] flex-shrink-0">
+      <div className="px-6 py-4 border-b border-[hsl(var(--border))] bg-surface flex-shrink-0">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-[hsl(var(--brand-subtle))] flex items-center justify-center">

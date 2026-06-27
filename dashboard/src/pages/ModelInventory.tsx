@@ -122,7 +122,7 @@ export default function ModelInventory() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-[hsl(var(--bg-raised))] border-b border-[hsl(var(--border))]">
+              <thead className="bg-raised border-b border-[hsl(var(--border))]">
                 <tr>
                   <th className="px-3 py-2.5 w-8"><input type="checkbox" checked={sp.selectedIds.size===sp.paged.length&&sp.paged.length>0} onChange={sp.toggleAll} /></th>
                   <Th col="name" label="Model Name" sortCol={sp.sortCol} sortDir={sp.sortDir} onSort={sp.handleSort} />
@@ -138,10 +138,10 @@ export default function ModelInventory() {
               </thead>
               <tbody>
                 {sp.paged.map((item: any) => (
-                  <tr key={item.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))] cursor-pointer" onClick={() => { setViewItem(item); setModal("view"); }}>
+                  <tr key={item.id} className="border-b border-[hsl(var(--border))] hover:bg-raised cursor-pointer" onClick={() => { setViewItem(item); setModal("view"); }}>
                     <td className="px-3 py-2.5" onClick={e=>e.stopPropagation()}><input type="checkbox" checked={sp.selectedIds.has(item.id)} onChange={() => sp.toggleSelect(item.id)} /></td>
                     <td className="px-3 py-2.5"><p className="font-medium text-[hsl(var(--text-1))]">{item.name}</p><p className="text-xs text-[hsl(var(--text-4))] font-mono">{item.id} · {item.version}</p></td>
-                    <td className="px-3 py-2.5 text-xs"><span className="px-1.5 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{item.type}</span></td>
+                    <td className="px-3 py-2.5 text-xs"><span className="px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))]">{item.type}</span></td>
                     <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-2))]">{item.domain}</td>
                     <td className="px-3 py-2.5"><StatusBadge status={item.riskClass} /></td>
                     <td className="px-3 py-2.5"><div className="flex flex-col gap-0.5"><ScoreChip label="XAI" score={item.explainabilityScore} /><ScoreChip label="Rob" score={item.robustnessScore} /></div></td>
@@ -150,8 +150,8 @@ export default function ModelInventory() {
                     <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))] whitespace-nowrap">{item.nextReviewDate||"—"}</td>
                     <td className="px-3 py-2.5 text-right" onClick={e=>e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => { setViewItem(item); setModal("view"); }} className="p-1.5 hover:bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-3))]"><Eye size={14} /></button>
-                        <button onClick={() => openEdit(item)} className="p-1.5 hover:bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-3))]"><PencilSimple size={14} /></button>
+                        <button onClick={() => { setViewItem(item); setModal("view"); }} className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"><Eye size={14} /></button>
+                        <button onClick={() => openEdit(item)} className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"><PencilSimple size={14} /></button>
                         <button onClick={() => setDeleteTarget(item)} className="p-1.5 hover:bg-red-50 text-[hsl(0_72%_51%)]"><Trash size={14} /></button>
                       </div>
                     </td>
@@ -219,7 +219,7 @@ export default function ModelInventory() {
               <div className="flex items-center gap-2 flex-wrap">
                 <StatusBadge status={viewItem.status} />
                 <StatusBadge status={viewItem.riskClass} />
-                <span className="text-xs px-1.5 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{viewItem.type}</span>
+                <span className="text-xs px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))]">{viewItem.type}</span>
                 {viewItem.biasAuditPassed?<span className="text-xs text-green-600 bg-green-50 border border-green-200 px-1.5 py-0.5">Bias Audit ✓</span>:<span className="text-xs text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5">Bias Audit ✗</span>}
                 {viewItem.humanOversight&&<span className="text-xs text-blue-600 bg-blue-50 border border-blue-200 px-1.5 py-0.5">HITL Required</span>}
               </div>
@@ -228,7 +228,7 @@ export default function ModelInventory() {
                   <div key={k}><p className="text-xs text-[hsl(var(--text-4))] mb-0.5">{k}</p><p className="font-medium text-[hsl(var(--text-1))]">{v}</p></div>
                 ))}
               </div>
-              {viewItem.framework?.length>0&&<div><p className="text-xs text-[hsl(var(--text-4))] mb-1.5">Frameworks</p><div className="flex flex-wrap gap-1.5">{viewItem.framework.map((f:string)=><span key={f} className="text-xs px-2 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{f}</span>)}</div></div>}
+              {viewItem.framework?.length>0&&<div><p className="text-xs text-[hsl(var(--text-4))] mb-1.5">Frameworks</p><div className="flex flex-wrap gap-1.5">{viewItem.framework.map((f:string)=><span key={f} className="text-xs px-2 py-0.5 bg-raised border border-[hsl(var(--border))]">{f}</span>)}</div></div>}
               {viewItem.description&&<div><p className="text-xs text-[hsl(var(--text-4))] mb-1">Description</p><p className="text-sm text-[hsl(var(--text-2))]">{viewItem.description}</p></div>}
               {viewItem.intendedUse&&<div><p className="text-xs text-[hsl(var(--text-4))] mb-1">Intended Use</p><p className="text-sm text-[hsl(var(--text-2))]">{viewItem.intendedUse}</p></div>}
               {viewItem.limitations&&<div><p className="text-xs text-[hsl(var(--text-4))] mb-1">Known Limitations</p><p className="text-sm text-[hsl(var(--text-2))]">{viewItem.limitations}</p></div>}

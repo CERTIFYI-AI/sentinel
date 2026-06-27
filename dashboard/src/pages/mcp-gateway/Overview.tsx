@@ -25,7 +25,7 @@ export default function Overview() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-4 border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] rounded-none flex items-center gap-4">
+        <Card className="p-4 border-[hsl(var(--border))] bg-surface-1 rounded-none flex items-center gap-4">
           <div className="p-3 bg-[hsl(var(--brand))] text-white">
             <Robot size={24} />
           </div>
@@ -34,7 +34,7 @@ export default function Overview() {
             <p className="text-2xl font-bold">14</p>
           </div>
         </Card>
-        <Card className="p-4 border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] rounded-none flex items-center gap-4">
+        <Card className="p-4 border-[hsl(var(--border))] bg-surface-1 rounded-none flex items-center gap-4">
           <div className="p-3 bg-emerald-500 text-white">
             <Database size={24} />
           </div>
@@ -43,7 +43,7 @@ export default function Overview() {
             <p className="text-2xl font-bold">8</p>
           </div>
         </Card>
-        <Card className="p-4 border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] rounded-none flex items-center gap-4">
+        <Card className="p-4 border-[hsl(var(--border))] bg-surface-1 rounded-none flex items-center gap-4">
           <div className="p-3 bg-blue-500 text-white">
             <ArrowsLeftRight size={24} />
           </div>
@@ -52,7 +52,7 @@ export default function Overview() {
             <p className="text-2xl font-bold">45.2k</p>
           </div>
         </Card>
-        <Card className="p-4 border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] rounded-none flex items-center gap-4">
+        <Card className="p-4 border-[hsl(var(--border))] bg-surface-1 rounded-none flex items-center gap-4">
           <div className="p-3 bg-orange-500 text-white">
             <ShieldCheck size={24} />
           </div>
@@ -66,25 +66,25 @@ export default function Overview() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Main Architecture Diagram */}
-        <Card className="col-span-1 lg:col-span-2 p-6 border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] rounded-none">
+        <Card className="col-span-1 lg:col-span-2 p-6 border-[hsl(var(--border))] bg-surface-1 rounded-none">
           <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
             <Pulse size={20} className="text-[hsl(var(--brand))]" /> 
             Traffic Flow & Governance
           </h3>
 
-          <div className="relative p-8 bg-[hsl(var(--surface-2))] border border-[hsl(var(--border))]">
+          <div className="relative p-8 bg-surface-2 border border-[hsl(var(--border))]">
             
             <div className="flex justify-between items-center relative z-10">
               
               {/* Client Side (Agents) */}
               <div className="w-1/4 space-y-4">
                 <h4 className="text-xs font-mono text-[hsl(var(--text-2))] uppercase text-center mb-4">1. AI Agents</h4>
-                <div className="p-4 bg-[hsl(var(--surface-1))] border border-[hsl(var(--border))] text-center">
+                <div className="p-4 bg-surface-1 border border-[hsl(var(--border))] text-center">
                   <Robot size={32} className="mx-auto mb-2 text-zinc-400" />
                   <p className="text-sm font-medium">Customer Support Bot</p>
                   <Badge className="mt-2 bg-blue-500/10 text-blue-500 border-0 rounded-none text-[10px]">READ-ONLY</Badge>
                 </div>
-                <div className="p-4 bg-[hsl(var(--surface-1))] border border-[hsl(var(--border))] text-center">
+                <div className="p-4 bg-surface-1 border border-[hsl(var(--border))] text-center">
                   <Robot size={32} className="mx-auto mb-2 text-zinc-400" />
                   <p className="text-sm font-medium">Data Analyst Agent</p>
                   <Badge className="mt-2 bg-red-500/10 text-red-500 border-0 rounded-none text-[10px]">HIGH PRIVILEGE</Badge>
@@ -108,12 +108,12 @@ export default function Overview() {
               {/* Backend Side (Servers) */}
               <div className="w-1/4 space-y-4">
                 <h4 className="text-xs font-mono text-[hsl(var(--text-2))] uppercase text-center mb-4">3. Enterprise Backends</h4>
-                <div className="p-4 bg-[hsl(var(--surface-1))] border border-[hsl(var(--border))] text-center">
+                <div className="p-4 bg-surface-1 border border-[hsl(var(--border))] text-center">
                   <Database size={32} className="mx-auto mb-2 text-zinc-400" />
                   <p className="text-sm font-medium">CRM Database</p>
                   <Badge className="mt-2 bg-zinc-500/10 text-zinc-400 border-0 rounded-none text-[10px]">MCP v1.2</Badge>
                 </div>
-                <div className="p-4 bg-[hsl(var(--surface-1))] border border-[hsl(var(--border))] text-center">
+                <div className="p-4 bg-surface-1 border border-[hsl(var(--border))] text-center">
                   <Database size={32} className="mx-auto mb-2 text-zinc-400" />
                   <p className="text-sm font-medium">Internal Wiki API</p>
                   <Badge className="mt-2 bg-zinc-500/10 text-zinc-400 border-0 rounded-none text-[10px]">MCP v1.2</Badge>
@@ -134,7 +134,7 @@ export default function Overview() {
 
         {/* Info Sidebar */}
         <div className="col-span-1 space-y-6">
-          <Card className="p-6 border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] rounded-none">
+          <Card className="p-6 border-[hsl(var(--border))] bg-surface-1 rounded-none">
             <h3 className="font-semibold mb-4">Why use the MCP Gateway?</h3>
             <div className="space-y-4 text-sm text-[hsl(var(--text-2))]">
               <p>
@@ -146,7 +146,7 @@ export default function Overview() {
             </div>
           </Card>
 
-          <Card className="p-6 border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] rounded-none">
+          <Card className="p-6 border-[hsl(var(--border))] bg-surface-1 rounded-none">
             <h3 className="font-semibold mb-4 text-[hsl(var(--brand))]">Key Capabilities</h3>
             <ul className="space-y-3 text-sm">
               <li className="flex items-start gap-2">

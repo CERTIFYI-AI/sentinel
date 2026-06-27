@@ -459,7 +459,7 @@ export default function Frameworks() {
                         return (
                           <div
                             key={c.id}
-                            className="flex items-center justify-between p-2 cursor-pointer hover:bg-[hsl(var(--bg-raised))] transition-colors"
+                            className="flex items-center justify-between p-2 cursor-pointer hover:bg-raised transition-colors"
                             style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-muted))' }}
                             onClick={() => navigate(`/compliance/controls/${c.id}`)}
                           >

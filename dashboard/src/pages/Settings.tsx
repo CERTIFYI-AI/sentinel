@@ -775,7 +775,7 @@ export default function Settings() {
               {/* X.509 Certificate */}
               <div style={{ borderTop: '1px solid hsl(var(--border))', paddingTop: 16 }}>
                 <p className="text-xs font-semibold mb-3" style={{ color: 'hsl(var(--text-3))', textTransform: 'uppercase', letterSpacing: '0.05em' }}>X.509 Certificate</p>
-                <div className="p-3 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] font-mono text-xs text-[hsl(var(--text-3))] space-y-1">
+                <div className="p-3 border border-[hsl(var(--border))] bg-raised font-mono text-xs text-[hsl(var(--text-3))] space-y-1">
                   <p>-----BEGIN CERTIFICATE-----</p>
                   <p>MIIDqDCCApCgAwIBAgIGAYYQ+oX9MA0GCSqGSIb3DQEBCwUAMIGUMQswCQYD...</p>
                   <p className="text-[hsl(var(--text-4))]">[Certificate truncated — 2048-bit RSA, expires 2027-03-15]</p>

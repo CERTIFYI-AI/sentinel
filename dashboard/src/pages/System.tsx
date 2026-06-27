@@ -124,7 +124,7 @@ export default function System() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-[hsl(var(--bg-raised))] border-b border-[hsl(var(--border))]">
+              <thead className="bg-raised border-b border-[hsl(var(--border))]">
                 <tr>
                   <th className="px-3 py-2.5 w-8"><input type="checkbox" checked={sp.selectedIds.size===sp.paged.length&&sp.paged.length>0} onChange={sp.toggleAll} /></th>
                   <Th col="name" label="Integration" sortCol={sp.sortCol} sortDir={sp.sortDir} onSort={sp.handleSort} />
@@ -140,10 +140,10 @@ export default function System() {
               </thead>
               <tbody>
                 {sp.paged.map((item: any) => (
-                  <tr key={item.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))] cursor-pointer" onClick={() => { setViewItem(item); setModal("view"); }}>
+                  <tr key={item.id} className="border-b border-[hsl(var(--border))] hover:bg-raised cursor-pointer" onClick={() => { setViewItem(item); setModal("view"); }}>
                     <td className="px-3 py-2.5" onClick={e=>e.stopPropagation()}><input type="checkbox" checked={sp.selectedIds.has(item.id)} onChange={() => sp.toggleSelect(item.id)} /></td>
                     <td className="px-3 py-2.5"><p className="font-medium text-[hsl(var(--text-1))]">{item.name}</p><p className="text-xs text-[hsl(var(--text-4))] font-mono">{item.id} · {item.owner}</p></td>
-                    <td className="px-3 py-2.5 text-xs"><span className="px-1.5 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{item.type}</span></td>
+                    <td className="px-3 py-2.5 text-xs"><span className="px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))]">{item.type}</span></td>
                     <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))]">{item.environment}</td>
                     <td className="px-3 py-2.5"><HealthDot status={item.status} /></td>
                     <td className="px-3 py-2.5 text-xs font-mono text-[hsl(var(--text-3))]">{item.responseTimeMs != null ? `${item.responseTimeMs}ms` : "—"}</td>
@@ -152,9 +152,9 @@ export default function System() {
                     <td className="px-3 py-2.5"><span className={`text-xs px-1.5 py-0.5 ${item.enabled?"text-green-600 bg-green-50 border border-green-200":"text-gray-400 bg-gray-100 border border-gray-200"}`}>{item.enabled?"Yes":"No"}</span></td>
                     <td className="px-3 py-2.5 text-right" onClick={e=>e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => testConnection(item)} className="p-1.5 hover:bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-3))]" title="Test"><ArrowClockwise size={14} /></button>
-                        <button onClick={() => { setViewItem(item); setModal("view"); }} className="p-1.5 hover:bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-3))]"><Eye size={14} /></button>
-                        <button onClick={() => openEdit(item)} className="p-1.5 hover:bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-3))]"><PencilSimple size={14} /></button>
+                        <button onClick={() => testConnection(item)} className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]" title="Test"><ArrowClockwise size={14} /></button>
+                        <button onClick={() => { setViewItem(item); setModal("view"); }} className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"><Eye size={14} /></button>
+                        <button onClick={() => openEdit(item)} className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"><PencilSimple size={14} /></button>
                         <button onClick={() => setDeleteTarget(item)} className="p-1.5 hover:bg-red-50 text-[hsl(0_72%_51%)]"><Trash size={14} /></button>
                       </div>
                     </td>
@@ -196,16 +196,16 @@ export default function System() {
             <div className="p-5 space-y-4">
               <div className="flex items-center gap-2 flex-wrap">
                 <HealthDot status={viewItem.status} />
-                <span className="text-xs px-1.5 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{viewItem.type}</span>
-                <span className="text-xs px-1.5 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{viewItem.environment}</span>
+                <span className="text-xs px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))]">{viewItem.type}</span>
+                <span className="text-xs px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))]">{viewItem.environment}</span>
                 {viewItem.enabled?<span className="text-xs text-green-600 bg-green-50 border border-green-200 px-1.5 py-0.5">Enabled</span>:<span className="text-xs text-gray-400 bg-gray-100 border border-gray-200 px-1.5 py-0.5">Disabled</span>}
               </div>
-              <div className="flex items-center justify-between p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+              <div className="flex items-center justify-between p-3 bg-raised border border-[hsl(var(--border))]">
                 <div>
                   <p className="text-xs text-[hsl(var(--text-4))]">Endpoint URL</p>
                   <p className="font-mono text-sm text-[hsl(var(--text-2))] break-all">{viewItem.endpoint||"Not configured"}</p>
                 </div>
-                <button onClick={() => testConnection(viewItem)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))]"><ArrowClockwise size={12} />Test</button>
+                <button onClick={() => testConnection(viewItem)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-[hsl(var(--border))] hover:bg-raised"><ArrowClockwise size={12} />Test</button>
               </div>
               <div className="grid grid-cols-3 gap-4 text-sm">
                 {[["Auth Type",viewItem.authType],["Owner",viewItem.owner],["Latency",viewItem.responseTimeMs!=null?`${viewItem.responseTimeMs}ms`:"—"],["Uptime",viewItem.uptime99!=null?`${viewItem.uptime99}%`:"—"],["Last Check",viewItem.lastHealthCheck?.slice(0,16)||"—"]].map(([k,v])=>(

@@ -231,7 +231,7 @@ export default function ComplianceControls() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-[hsl(var(--bg-raised))] border-b border-[hsl(var(--border))]">
+              <thead className="bg-raised border-b border-[hsl(var(--border))]">
                 <tr>
                   <th className="px-3 py-2.5 w-8">
                     <input
@@ -255,7 +255,7 @@ export default function ComplianceControls() {
                 {sp.paged.map((item: any) => (
                   <tr
                     key={item.id}
-                    className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))] cursor-pointer"
+                    className="border-b border-[hsl(var(--border))] hover:bg-raised cursor-pointer"
                     onClick={() => { setViewItem(item); setModal("view"); }}
                   >
                     <td className="px-3 py-2.5" onClick={e => e.stopPropagation()}>
@@ -264,7 +264,7 @@ export default function ComplianceControls() {
                     <td className="px-3 py-2.5 font-mono text-xs text-[hsl(var(--text-3))]">{item.controlId}</td>
                     <td className="px-3 py-2.5"><p className="font-medium text-[hsl(var(--text-1))]">{item.name}</p></td>
                     <td className="px-3 py-2.5">
-                      <span className="text-xs px-1.5 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{item.framework}</span>
+                      <span className="text-xs px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))]">{item.framework}</span>
                     </td>
                     <td className="px-3 py-2.5 text-[hsl(var(--text-2))] text-xs">{item.domain}</td>
                     <td className="px-3 py-2.5"><StatusBadge status={item.status} /></td>
@@ -275,13 +275,13 @@ export default function ComplianceControls() {
                       <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => { setViewItem(item); setModal("view"); }}
-                          className="p-1.5 hover:bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-3))]"
+                          className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"
                         >
                           <Eye size={14} />
                         </button>
                         <button
                           onClick={() => openEdit(item)}
-                          className="p-1.5 hover:bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-3))]"
+                          className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"
                         >
                           <PencilSimple size={14} />
                         </button>
@@ -361,8 +361,8 @@ export default function ComplianceControls() {
             <div className="p-5 space-y-4">
               <div className="flex items-center gap-2 flex-wrap">
                 <StatusBadge status={viewItem.status} />
-                <span className="text-xs px-1.5 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{viewItem.type}</span>
-                <span className="text-xs px-1.5 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{viewItem.framework}</span>
+                <span className="text-xs px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))]">{viewItem.type}</span>
+                <span className="text-xs px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))]">{viewItem.framework}</span>
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 {[

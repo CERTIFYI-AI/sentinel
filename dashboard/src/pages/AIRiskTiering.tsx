@@ -315,10 +315,10 @@ export default function AIRiskTiering() {
       />
 
       {/* Table */}
-      <Card className="border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] rounded-none overflow-hidden">
+      <Card className="border-[hsl(var(--border))] bg-surface rounded-none overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
-            <thead className="text-xs text-[hsl(var(--text-2))] uppercase bg-[hsl(var(--surface-2))] border-b border-[hsl(var(--border))]">
+            <thead className="text-xs text-[hsl(var(--text-2))] uppercase bg-raised border-b border-[hsl(var(--border))]">
               <tr>
                 {['ID', 'System', 'Type', 'EU AI Act Tier', 'Annex III Category', 'GPAI', 'Transparency Req', 'Review Status', 'Owner', 'Actions'].map(h => (
                   <th key={h} className="px-4 py-3 font-medium">{h}</th>
@@ -330,7 +330,7 @@ export default function AIRiskTiering() {
                 const tc2 = tierColor(item.tier);
                 const rc = reviewColor(item.reviewStatus);
                 return (
-                  <tr key={item.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--surface-2))] transition-colors cursor-pointer"
+                  <tr key={item.id} className="border-b border-[hsl(var(--border))] hover:bg-raised transition-colors cursor-pointer"
                     onClick={() => { setSelected(item); setSheetOpen(true); }}>
                     <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--brand))]">{item.id}</td>
                     <td className="px-4 py-3 font-medium text-[hsl(var(--text-1))]">{item.system}</td>
@@ -356,13 +356,13 @@ export default function AIRiskTiering() {
                           <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-[hsl(var(--text-2))] hover:text-red-500 rounded-none"><Trash size={16} /></Button>
                           </AlertDialogTrigger>
-                          <AlertDialogContent className="rounded-none bg-[hsl(var(--surface-1))] border-[hsl(var(--border))]">
+                          <AlertDialogContent className="rounded-none bg-surface border-[hsl(var(--border))]">
                             <AlertDialogHeader>
                               <AlertDialogTitle className="text-[hsl(var(--text-1))]">Delete Classification</AlertDialogTitle>
                               <AlertDialogDescription className="text-[hsl(var(--text-2))]">Delete {item.id} — {item.system}? This cannot be undone.</AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel className="rounded-none border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:text-[hsl(var(--text-1))] hover:bg-[hsl(var(--surface-2))]">Cancel</AlertDialogCancel>
+                              <AlertDialogCancel className="rounded-none border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:text-[hsl(var(--text-1))] hover:bg-raised">Cancel</AlertDialogCancel>
                               <AlertDialogAction className="rounded-none bg-red-600 hover:bg-red-700 text-white" onClick={() => deleteItem(item.id)}>Delete</AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
@@ -379,7 +379,7 @@ export default function AIRiskTiering() {
 
       {/* Detail Sheet */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent className="overflow-y-auto bg-[hsl(var(--surface-1))] border-l border-[hsl(var(--border))]" style={{ width: 600, borderRadius: 0 }}>
+        <SheetContent className="overflow-y-auto bg-surface border-l border-[hsl(var(--border))]" style={{ width: 600, borderRadius: 0 }}>
           {selected && (
             <div className="flex flex-col h-full">
               <SheetHeader className="pb-5 border-b border-[hsl(var(--border))]">
@@ -420,12 +420,12 @@ export default function AIRiskTiering() {
                   <TabsContent value="obligations" className="m-0 space-y-4">
                     <p className="text-sm text-[hsl(var(--text-2))]">EU AI Act requirements for <strong>{selected.tier}</strong> tier:</p>
                     {selected.tier === 'High Risk' ? HIGH_RISK_OBLIGATIONS.map(ob => (
-                      <div key={ob} className="flex items-center gap-3 p-3 bg-[hsl(var(--surface-2))] border border-[hsl(var(--border))] rounded-none">
+                      <div key={ob} className="flex items-center gap-3 p-3 bg-raised border border-[hsl(var(--border))] rounded-none">
                         <CheckCircle size={18} className="text-emerald-500" />
                         <span className="text-sm text-[hsl(var(--text-1))]">{ob}</span>
                       </div>
                     )) : (
-                      <div className="text-sm p-4 bg-[hsl(var(--surface-2))] border border-[hsl(var(--border))] text-[hsl(var(--text-2))] rounded-none">
+                      <div className="text-sm p-4 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-2))] rounded-none">
                         {selected.tier === 'Unacceptable' ? 'Deployment is prohibited under EU AI Act Art.5.' :
                          selected.tier === 'Limited' ? 'Must disclose AI system nature to users (Art.52).' :
                          'No specific EU AI Act obligations.'}
@@ -473,7 +473,7 @@ export default function AIRiskTiering() {
                         { label: 'Met', value: selected.reviewStatus === 'Approved' ? (selected.tier === 'High Risk' ? 10 : selected.tier === 'Limited' ? 3 : 0) : 0 },
                         { label: 'Gaps', value: selected.reviewStatus === 'Approved' ? (selected.tier === 'High Risk' ? 2 : 0) : (selected.tier === 'High Risk' ? 12 : 3) },
                       ].map(s => (
-                        <div key={s.label} className="p-3 bg-[hsl(var(--surface-2))] border border-[hsl(var(--border))] text-center rounded-none">
+                        <div key={s.label} className="p-3 bg-raised border border-[hsl(var(--border))] text-center rounded-none">
                           <p className="text-xl font-bold text-[hsl(var(--text-1))]">{s.value}</p>
                           <p className="text-[10px] text-[hsl(var(--text-3))] uppercase tracking-wide mt-1">{s.label}</p>
                         </div>
@@ -481,7 +481,7 @@ export default function AIRiskTiering() {
                     </div>
 
                     <div className="flex gap-3">
-                      <Button className="flex-1 rounded-none bg-[hsl(var(--surface-2))] text-[hsl(var(--text-1))] border border-[hsl(var(--border))] hover:bg-[hsl(var(--surface-3))]">
+                      <Button className="flex-1 rounded-none bg-raised text-[hsl(var(--text-1))] border border-[hsl(var(--border))] hover:bg-sunken">
                         <ShieldCheck size={16} className="mr-2 text-[hsl(var(--brand))]" /> View Full Model Record
                       </Button>
                       <Button className="flex-1 rounded-none bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-hover))]">
@@ -495,7 +495,7 @@ export default function AIRiskTiering() {
                       { date: selected.created, action: 'Classification created', user: selected.owner },
                       { date: selected.created, action: `Tier assigned: ${selected.tier}`, user: 'System' },
                     ].map((ev, i) => (
-                      <div key={i} className="flex items-start gap-3 p-3 bg-[hsl(var(--surface-2))] border border-[hsl(var(--border))] rounded-none">
+                      <div key={i} className="flex items-start gap-3 p-3 bg-raised border border-[hsl(var(--border))] rounded-none">
                         <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0 bg-[hsl(var(--brand))]" />
                         <div>
                           <p className="text-sm font-medium text-[hsl(var(--text-1))]">{ev.action}</p>
@@ -513,7 +513,7 @@ export default function AIRiskTiering() {
 
       {/* Wizard Modal */}
       <Dialog open={wizardOpen} onOpenChange={open => { if (!open) resetWizard(); setWizardOpen(open); }}>
-        <DialogContent className="rounded-none max-w-[600px] bg-[hsl(var(--surface-1))] border-[hsl(var(--border))]">
+        <DialogContent className="rounded-none max-w-[600px] bg-surface border-[hsl(var(--border))]">
           <DialogHeader>
             <DialogTitle className="text-[hsl(var(--text-1))]">Classify AI System — Step {step} of 3</DialogTitle>
           </DialogHeader>
@@ -521,7 +521,7 @@ export default function AIRiskTiering() {
           {/* Step indicator */}
           <div className="flex gap-2 mb-4">
             {[1, 2, 3].map(s => (
-              <div key={s} className={`flex-1 h-1.5 rounded-none ${s <= step ? 'bg-[hsl(var(--brand))]' : 'bg-[hsl(var(--surface-3))]'}`} />
+              <div key={s} className={`flex-1 h-1.5 rounded-none ${s <= step ? 'bg-[hsl(var(--brand))]' : 'bg-sunken'}`} />
             ))}
           </div>
 
@@ -530,11 +530,11 @@ export default function AIRiskTiering() {
               <p className="text-sm font-semibold text-[hsl(var(--text-2))]">Step 1 — System Selection</p>
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-[hsl(var(--text-2))] uppercase tracking-wide">System Name *</label>
-                <Input className="rounded-none bg-[hsl(var(--surface-2))]" value={wSystem} onChange={e => setWSystem(e.target.value)} placeholder="e.g. Credit Risk Scorer" />
+                <Input className="rounded-none bg-raised" value={wSystem} onChange={e => setWSystem(e.target.value)} placeholder="e.g. Credit Risk Scorer" />
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-[hsl(var(--text-2))] uppercase tracking-wide">Intended Purpose *</label>
-                <textarea className="w-full text-sm border p-3 min-h-[100px] rounded-none border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] text-[hsl(var(--text-1))] focus:outline-none resize-none"
+                <textarea className="w-full text-sm border p-3 min-h-[100px] rounded-none border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none resize-none"
                   value={wPurpose} onChange={e => setWPurpose(e.target.value)} placeholder="Describe the intended purpose of this AI system..." />
               </div>
             </div>
@@ -548,7 +548,7 @@ export default function AIRiskTiering() {
                 <div className="flex gap-3">
                   {[true, false].map(v => (
                     <button key={String(v)} onClick={() => setWAffectsRights(v)}
-                      className={`flex-1 py-2 text-sm border font-medium transition-colors rounded-none ${wAffectsRights === v ? 'border-[hsl(var(--brand))] bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))]' : 'border-[hsl(var(--border))] bg-transparent text-[hsl(var(--text-2))] hover:bg-[hsl(var(--surface-2))]'}`}>
+                      className={`flex-1 py-2 text-sm border font-medium transition-colors rounded-none ${wAffectsRights === v ? 'border-[hsl(var(--brand))] bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))]' : 'border-[hsl(var(--border))] bg-transparent text-[hsl(var(--text-2))] hover:bg-raised'}`}>
                       {v ? 'Yes' : 'No'}
                     </button>
                   ))}
@@ -558,7 +558,7 @@ export default function AIRiskTiering() {
                 <p className="text-sm font-medium text-[hsl(var(--text-1))]">Q2: EU AI Act Annex III categories (select all that apply):</p>
                 <div className="grid grid-cols-2 gap-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
                   {ANNEX_III.map(cat => (
-                    <label key={cat} className={`flex items-start gap-3 p-3 border cursor-pointer text-sm transition-colors rounded-none ${wAnnexIII.includes(cat) ? 'border-[hsl(var(--brand))] bg-[hsl(var(--brand-subtle))]' : 'border-[hsl(var(--border))] bg-transparent hover:bg-[hsl(var(--surface-2))]'}`}>
+                    <label key={cat} className={`flex items-start gap-3 p-3 border cursor-pointer text-sm transition-colors rounded-none ${wAnnexIII.includes(cat) ? 'border-[hsl(var(--brand))] bg-[hsl(var(--brand-subtle))]' : 'border-[hsl(var(--border))] bg-transparent hover:bg-raised'}`}>
                       <input type="checkbox" checked={wAnnexIII.includes(cat)} onChange={() => setWAnnexIII(prev => prev.includes(cat) ? prev.filter(a => a !== cat) : [...prev, cat])} className="mt-0.5 accent-[hsl(var(--brand))]" />
                       <span className="text-[hsl(var(--text-2))]">{cat}</span>
                     </label>
@@ -570,7 +570,7 @@ export default function AIRiskTiering() {
                 <div className="flex gap-3">
                   {[true, false].map(v => (
                     <button key={String(v)} onClick={() => setWGpai(v)}
-                      className={`flex-1 py-2 text-sm border font-medium transition-colors rounded-none ${wGpai === v ? 'border-[hsl(var(--brand))] bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))]' : 'border-[hsl(var(--border))] bg-transparent text-[hsl(var(--text-2))] hover:bg-[hsl(var(--surface-2))]'}`}>
+                      className={`flex-1 py-2 text-sm border font-medium transition-colors rounded-none ${wGpai === v ? 'border-[hsl(var(--brand))] bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))]' : 'border-[hsl(var(--border))] bg-transparent text-[hsl(var(--text-2))] hover:bg-raised'}`}>
                       {v ? 'Yes' : 'No'}
                     </button>
                   ))}
@@ -581,14 +581,14 @@ export default function AIRiskTiering() {
                 <div className="flex gap-3">
                   {[true, false].map(v => (
                     <button key={String(v)} onClick={() => setWNoDisclosure(v)}
-                      className={`flex-1 py-2 text-sm border font-medium transition-colors rounded-none ${wNoDisclosure === v ? 'border-[hsl(var(--brand))] bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))]' : 'border-[hsl(var(--border))] bg-transparent text-[hsl(var(--text-2))] hover:bg-[hsl(var(--surface-2))]'}`}>
+                      className={`flex-1 py-2 text-sm border font-medium transition-colors rounded-none ${wNoDisclosure === v ? 'border-[hsl(var(--brand))] bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))]' : 'border-[hsl(var(--border))] bg-transparent text-[hsl(var(--text-2))] hover:bg-raised'}`}>
                       {v ? 'Yes' : 'No'}
                     </button>
                   ))}
                 </div>
               </div>
               {/* Auto-classification */}
-              <div className="p-4 border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] rounded-none flex items-center justify-between mt-6">
+              <div className="p-4 border border-[hsl(var(--border))] bg-raised rounded-none flex items-center justify-between mt-6">
                 <p className="text-xs text-[hsl(var(--text-3))] font-bold uppercase tracking-wide">Auto-classification result</p>
                 <Badge className={`${tierColor(derived).bg} ${tierColor(derived).text} border-0 rounded-none uppercase text-[10px]`}>{derived} Risk</Badge>
               </div>
@@ -605,7 +605,7 @@ export default function AIRiskTiering() {
               {derived === 'High Risk' && (
                 <div className="space-y-2">
                   <p className="text-sm font-semibold text-[hsl(var(--text-1))]">Required compliance obligations:</p>
-                  <div className="bg-[hsl(var(--surface-2))] border border-[hsl(var(--border))] p-4 grid grid-cols-2 gap-3">
+                  <div className="bg-raised border border-[hsl(var(--border))] p-4 grid grid-cols-2 gap-3">
                     {HIGH_RISK_OBLIGATIONS.map(ob => (
                       <label key={ob} className="flex items-center gap-2 cursor-pointer text-sm text-[hsl(var(--text-2))]">
                         <input type="checkbox" className="accent-[hsl(var(--brand))]" checked={wObligations.includes(ob)} onChange={() => setWObligations(prev => prev.includes(ob) ? prev.filter(o => o !== ob) : [...prev, ob])} />
@@ -617,7 +617,7 @@ export default function AIRiskTiering() {
               )}
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-[hsl(var(--text-2))] uppercase tracking-wide">Assign Owner *</label>
-                <select className="w-full text-sm border p-3 rounded-none border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] text-[hsl(var(--text-1))] focus:outline-none"
+                <select className="w-full text-sm border p-3 rounded-none border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none"
                   value={wOwner} onChange={e => setWOwner(e.target.value)}>
                   {['Sarah Chen', 'James Patel', 'Maria Santos', 'David Kim', 'Emma Wilson'].map(u => <option key={u}>{u}</option>)}
                 </select>
@@ -626,7 +626,7 @@ export default function AIRiskTiering() {
           )}
 
           <div className="flex items-center justify-between pt-5 mt-4 border-t border-[hsl(var(--border))]">
-            <Button variant="outline" className="rounded-none border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:text-[hsl(var(--text-1))] hover:bg-[hsl(var(--surface-2))]" onClick={() => step > 1 ? setStep(s => s - 1) : setWizardOpen(false)}>
+            <Button variant="outline" className="rounded-none border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:text-[hsl(var(--text-1))] hover:bg-raised" onClick={() => step > 1 ? setStep(s => s - 1) : setWizardOpen(false)}>
               {step > 1 ? 'Back' : 'Cancel'}
             </Button>
             {step < 3 ? (

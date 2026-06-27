@@ -85,7 +85,7 @@ export default function SystemAuditLog() {
           </h1>
           <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">Immutable, tamper-evident log of all platform actions, access events, and AI system changes</p>
         </div>
-        <button onClick={() => toast.success('Audit log exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+        <button onClick={() => toast.success('Audit log exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
           <Export size={14} /> Export Log
         </button>
       </div>
@@ -97,7 +97,7 @@ export default function SystemAuditLog() {
           { label: 'Auth Failures', value: stats.failures, color: 'hsl(var(--destructive))' },
           { label: 'Integrity Status', value: 'Verified', color: 'hsl(var(--s-ok-tx))' },
         ].map(s => (
-          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
             <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
             <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
           </div>
@@ -107,20 +107,20 @@ export default function SystemAuditLog() {
       <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
           <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search events…" className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search events…" className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]" />
         </div>
-        <select value={sevFilter} onChange={e => setSevFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+        <select value={sevFilter} onChange={e => setSevFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
           {['All', 'Info', 'Warning', 'Error', 'Critical'].map(s => <option key={s}>{s}</option>)}
         </select>
-        <select value={catFilter} onChange={e => setCatFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
+        <select value={catFilter} onChange={e => setCatFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
           {['All', 'Authentication', 'Authorization', 'Data Access', 'Configuration', 'AI System', 'Policy', 'Compliance', 'Security'].map(c => <option key={c}>{c}</option>)}
         </select>
       </div>
 
-      <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] overflow-hidden">
+      <div className="rounded border border-[hsl(var(--border))] bg-surface overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
+            <tr className="border-b border-[hsl(var(--border))] bg-raised">
               {['Timestamp', 'User', 'Action', 'Resource', 'Category', 'Outcome', 'Severity', ''].map(h => (
                 <th key={h} className="text-left px-4 py-3 text-[11px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wide">{h}</th>
               ))}
@@ -130,7 +130,7 @@ export default function SystemAuditLog() {
             {filtered.map(e => {
               const CatIcon = CAT_ICON[e.category] || Notepad
               return (
-                <tr key={e.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))] cursor-pointer" onClick={() => setSelected(e)}>
+                <tr key={e.id} className="border-b border-[hsl(var(--border))] hover:bg-raised cursor-pointer" onClick={() => setSelected(e)}>
                   <td className="px-4 py-3 font-mono text-[11px] text-[hsl(var(--text-3))] whitespace-nowrap">{e.timestamp}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1.5">
@@ -165,7 +165,7 @@ export default function SystemAuditLog() {
       {selected && (
         <div className="fixed inset-0 z-50 flex">
           <div className="flex-1 bg-black/40" onClick={() => setSelected(null)} />
-          <div className="w-[520px] bg-[hsl(var(--bg-surface))] border-l border-[hsl(var(--border))] flex flex-col h-full overflow-y-auto">
+          <div className="w-[520px] bg-surface border-l border-[hsl(var(--border))] flex flex-col h-full overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))]">
               <div><p className="font-mono text-xs text-[hsl(var(--brand))]">{selected.id}</p><h2 className="text-sm font-semibold text-[hsl(var(--text-1))]">{selected.action}</h2></div>
               <button onClick={() => setSelected(null)}><X size={18} className="text-[hsl(var(--text-4))]" /></button>
@@ -173,7 +173,7 @@ export default function SystemAuditLog() {
             <div className="p-4 space-y-4">
               <div className="flex gap-2">
                 <span className="text-[11px] px-2 py-0.5 font-medium" style={SEV_STYLE[selected.severity]}>{selected.severity}</span>
-                <span className="text-[11px] px-2 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{selected.category}</span>
+                <span className="text-[11px] px-2 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{selected.category}</span>
                 <span className="text-[11px] px-2 py-0.5 font-medium" style={{ background: selected.outcome === 'Success' ? 'hsl(142 71% 45% / 0.12)' : 'hsl(0 72% 51% / 0.12)', color: selected.outcome === 'Success' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))' }}>{selected.outcome}</span>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -185,15 +185,15 @@ export default function SystemAuditLog() {
                   { label: 'Session ID', value: selected.sessionId },
                   { label: 'Tenant', value: selected.tenantId },
                 ].map(({ label, value }) => (
-                  <div key={label} className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                  <div key={label} className="p-3 bg-raised border border-[hsl(var(--border))]">
                     <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{label}</p>
                     <p className="text-xs font-mono text-[hsl(var(--text-1))] mt-0.5 break-all">{value}</p>
                   </div>
                 ))}
               </div>
-              <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">Resource</p><p className="text-sm text-[hsl(var(--text-2))] p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{selected.resource}</p></div>
-              <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">Event Details</p><p className="text-sm text-[hsl(var(--text-2))] p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] leading-relaxed">{selected.details}</p></div>
-              <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">User Agent</p><p className="text-xs font-mono text-[hsl(var(--text-3))] p-2 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{selected.userAgent}</p></div>
+              <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">Resource</p><p className="text-sm text-[hsl(var(--text-2))] p-3 bg-raised border border-[hsl(var(--border))]">{selected.resource}</p></div>
+              <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">Event Details</p><p className="text-sm text-[hsl(var(--text-2))] p-3 bg-raised border border-[hsl(var(--border))] leading-relaxed">{selected.details}</p></div>
+              <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">User Agent</p><p className="text-xs font-mono text-[hsl(var(--text-3))] p-2 bg-raised border border-[hsl(var(--border))]">{selected.userAgent}</p></div>
             </div>
           </div>
         </div>

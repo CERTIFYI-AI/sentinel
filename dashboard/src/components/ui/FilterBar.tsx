@@ -95,7 +95,7 @@ export function FilterBar({
           aria-label={searchPlaceholder}
           className={cn(
             'w-full h-9 pl-8 pr-8 text-sm rounded-md border',
-            'border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))]',
+            'border-[hsl(var(--border))] bg-surface',
             'text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))]',
             'focus:outline-none focus:ring-2 focus:ring-[hsl(var(--brand))] focus:ring-offset-1',
             'transition-colors',
@@ -121,7 +121,7 @@ export function FilterBar({
             aria-label={`Filter by ${f.label}`}
             className={cn(
               'h-9 pl-3 pr-7 text-sm rounded-md border appearance-none',
-              'border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))]',
+              'border-[hsl(var(--border))] bg-surface',
               'text-[hsl(var(--text-1))]',
               'focus:outline-none focus:ring-2 focus:ring-[hsl(var(--brand))] focus:ring-offset-1',
               f.value ? 'border-[hsl(var(--brand))] text-[hsl(var(--brand))]' : '',

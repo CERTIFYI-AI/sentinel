@@ -298,7 +298,7 @@ export default function CostTokenDashboard() {
             </thead>
             <tbody className="divide-y" style={{ borderColor: 'hsl(var(--border))' }}>
               {providerTraffic.map((p, i) => (
-                <tr key={i} className="hover:bg-[hsl(var(--surface-2))] transition-colors">
+                <tr key={i} className="hover:bg-surface-2 transition-colors">
                   <td className="px-4 py-3 font-medium flex items-center gap-2" style={{ color: 'hsl(var(--text-1))' }}>
                     <CloudCheck size={16} className="text-[hsl(var(--brand))]" /> {p.provider}
                   </td>

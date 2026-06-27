@@ -116,12 +116,12 @@ export default function UseCaseDetail() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Main Details */}
               <div className="md:col-span-2 space-y-6">
-                <div className="bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] p-6">
+                <div className="bg-surface border border-[hsl(var(--border))] p-6">
                   <h3 className="text-sm font-bold uppercase tracking-widest text-[hsl(var(--text-3))] mb-4">Description</h3>
                   <p className="text-sm leading-relaxed text-[hsl(var(--text-2))]">{uc.description || 'No detailed description provided.'}</p>
                 </div>
                 
-                <div className="bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] p-6">
+                <div className="bg-surface border border-[hsl(var(--border))] p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-sm font-bold uppercase tracking-widest text-[hsl(var(--text-3))]">Framework Compliance Status</h3>
                     <Button variant="ghost" size="sm" className="h-8">View All</Button>
@@ -143,7 +143,7 @@ export default function UseCaseDetail() {
                 </div>
 
                 {/* Scope Definition */}
-                <div className="bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] p-6">
+                <div className="bg-surface border border-[hsl(var(--border))] p-6">
                   <h3 className="text-sm font-bold uppercase tracking-widest text-[hsl(var(--text-3))] mb-4">System Scope</h3>
                   <div className="grid grid-cols-2 gap-y-4 gap-x-6">
                     <div className="flex items-start gap-3">
@@ -183,7 +183,7 @@ export default function UseCaseDetail() {
 
               {/* Sidebar Details */}
               <div className="space-y-6">
-                <div className="bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] p-6">
+                <div className="bg-surface border border-[hsl(var(--border))] p-6">
                   <h3 className="text-sm font-bold uppercase tracking-widest text-[hsl(var(--text-3))] mb-4">Properties</h3>
                   <ul className="space-y-4">
                     <li className="flex items-start gap-3">
@@ -224,7 +224,7 @@ export default function UseCaseDetail() {
                   </ul>
                 </div>
 
-                <div className="bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] p-6">
+                <div className="bg-surface border border-[hsl(var(--border))] p-6">
                   <h3 className="text-sm font-bold uppercase tracking-widest text-[hsl(var(--text-3))] mb-4">Dates</h3>
                   <div className="flex justify-between items-center pb-2 border-b border-[hsl(var(--border))]">
                     <span className="text-xs text-[hsl(var(--text-4))]">Created</span>
@@ -241,7 +241,7 @@ export default function UseCaseDetail() {
 
           {/* TAB 2: USE CASE RISKS */}
           <TabsContent value="risks" className="mt-0">
-            <div className="bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))]">
+            <div className="bg-surface border border-[hsl(var(--border))]">
               <div className="p-4 border-b border-[hsl(var(--border))] flex justify-between items-center">
                 <h3 className="font-semibold">Risk Register</h3>
                 <Button size="sm" style={{ borderRadius: 0 }}><Plus size={14} className="mr-2" /> Log Risk</Button>
@@ -284,7 +284,7 @@ export default function UseCaseDetail() {
 
           {/* TAB 3: LINKED MODELS */}
           <TabsContent value="models" className="mt-0">
-            <div className="bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))]">
+            <div className="bg-surface border border-[hsl(var(--border))]">
               <div className="p-4 border-b border-[hsl(var(--border))] flex justify-between items-center">
                 <h3 className="font-semibold">Linked Models ({linkedModels.length})</h3>
                 <Button size="sm" variant="outline" style={{ borderRadius: 0 }}><Briefcase size={14} className="mr-2" /> Link Existing Model</Button>
@@ -322,7 +322,7 @@ export default function UseCaseDetail() {
 
           {/* TAB 4: FRAMEWORKS */}
           <TabsContent value="frameworks" className="mt-0">
-            <div className="bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))]">
+            <div className="bg-surface border border-[hsl(var(--border))]">
               <div className="p-4 border-b border-[hsl(var(--border))]">
                 <h3 className="font-semibold">Frameworks & Regulations</h3>
                 <p className="text-xs text-[hsl(var(--text-4))] mt-1">Track compliance across attached frameworks.</p>
@@ -375,7 +375,7 @@ export default function UseCaseDetail() {
 
           {/* TAB 5: CE MARKING */}
           <TabsContent value="ce" className="mt-0">
-             <div className="bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] p-8 text-center">
+             <div className="bg-surface border border-[hsl(var(--border))] p-8 text-center">
               <ShieldCheck size={48} className="mx-auto text-[hsl(var(--brand))] mb-4" />
               <h3 className="text-lg font-bold mb-2">CE Marking Conformity Assessment</h3>
               <p className="text-[hsl(var(--text-3))] mb-6 max-w-lg mx-auto">
@@ -387,7 +387,7 @@ export default function UseCaseDetail() {
 
           {/* TAB 6: ACTIVITY */}
           <TabsContent value="activity" className="mt-0">
-             <div className="bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] p-6">
+             <div className="bg-surface border border-[hsl(var(--border))] p-6">
                <h3 className="font-semibold mb-6">Audit Log</h3>
                <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-[hsl(var(--border))]">
                   {[
@@ -399,7 +399,7 @@ export default function UseCaseDetail() {
                       <div className="flex items-center justify-center w-10 h-10 rounded-full border border-[hsl(var(--bg-surface))] bg-[hsl(var(--bg-muted))] text-[hsl(var(--text-3))] shadow shrink-0 z-10 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
                         <Clock size={16} />
                       </div>
-                      <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] shadow-sm">
+                      <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 border border-[hsl(var(--border))] bg-raised shadow-sm">
                         <div className="flex items-center justify-between space-x-2 mb-1">
                           <div className="font-bold text-[hsl(var(--text-1))] text-sm">{log.action}</div>
                           <time className="font-mono text-xs text-[hsl(var(--text-4))]">{new Date(log.date).toLocaleDateString()}</time>
@@ -414,7 +414,7 @@ export default function UseCaseDetail() {
 
           {/* TAB 7: MONITORING */}
           <TabsContent value="monitoring" className="mt-0">
-            <div className="bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] p-8 text-center">
+            <div className="bg-surface border border-[hsl(var(--border))] p-8 text-center">
               <ChartLineUp size={48} className="mx-auto text-[hsl(var(--text-4))] mb-4" />
               <h3 className="text-lg font-bold mb-2">Post-Market Monitoring</h3>
               <p className="text-[hsl(var(--text-3))] mb-6 max-w-lg mx-auto">
@@ -425,7 +425,7 @@ export default function UseCaseDetail() {
 
           {/* TAB 8: SETTINGS */}
           <TabsContent value="settings" className="mt-0">
-             <div className="bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] max-w-2xl">
+             <div className="bg-surface border border-[hsl(var(--border))] max-w-2xl">
               <div className="p-4 border-b border-[hsl(var(--border))]">
                 <h3 className="font-semibold text-[hsl(var(--s-er-tx))]">Danger Zone</h3>
               </div>

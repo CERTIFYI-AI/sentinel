@@ -184,7 +184,7 @@ export default function ExplainabilityCenter() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-[hsl(var(--bg-raised))] border-b border-[hsl(var(--border))]">
+              <thead className="bg-raised border-b border-[hsl(var(--border))]">
                 <tr>
                   <th className="px-3 py-2.5 w-8"><input type="checkbox" checked={sp.selectedIds.size===sp.paged.length&&sp.paged.length>0} onChange={sp.toggleAll} /></th>
                   <Th col="runName" label="Run Name" sortCol={sp.sortCol} sortDir={sp.sortDir} onSort={sp.handleSort} />
@@ -200,14 +200,14 @@ export default function ExplainabilityCenter() {
               </thead>
               <tbody>
                 {sp.paged.map((item: any) => ( // any: item from SEED
-                  <tr key={item.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))] cursor-pointer" onClick={() => { setViewItem(item); setModal("view"); }}>
+                  <tr key={item.id} className="border-b border-[hsl(var(--border))] hover:bg-raised cursor-pointer" onClick={() => { setViewItem(item); setModal("view"); }}>
                     <td className="px-3 py-2.5" onClick={e=>e.stopPropagation()}><input type="checkbox" checked={sp.selectedIds.has(item.id)} onChange={() => sp.toggleSelect(item.id)} /></td>
                     <td className="px-3 py-2.5 max-w-[200px]">
                       <p className="font-medium text-[hsl(var(--text-1))] line-clamp-1">{item.runName}</p>
                       <p className="text-xs text-[hsl(var(--text-4))] font-mono">{item.id}</p>
                     </td>
                     <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-2))]">{item.model}</td>
-                    <td className="px-3 py-2.5 text-xs"><span className="px-1.5 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{item.method}</span></td>
+                    <td className="px-3 py-2.5 text-xs"><span className="px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))]">{item.method}</span></td>
                     <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))]">{item.scope}</td>
                     <td className="px-3 py-2.5"><FidelityBar score={item.fidelityScore} /></td>
                     <td className="px-3 py-2.5"><FidelityBar score={item.stabilityScore} /></td>
@@ -215,8 +215,8 @@ export default function ExplainabilityCenter() {
                     <td className="px-3 py-2.5"><StatusBadge status={item.status} /></td>
                     <td className="px-3 py-2.5 text-right" onClick={e=>e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => { setViewItem(item); setModal("view"); }} className="p-1.5 hover:bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-3))]"><Eye size={14} /></button>
-                        <button onClick={() => openEdit(item)} className="p-1.5 hover:bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-3))]"><PencilSimple size={14} /></button>
+                        <button onClick={() => { setViewItem(item); setModal("view"); }} className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"><Eye size={14} /></button>
+                        <button onClick={() => openEdit(item)} className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"><PencilSimple size={14} /></button>
                         <button onClick={() => setDeleteTarget(item)} className="p-1.5 hover:bg-red-50 text-[hsl(0_72%_51%)]"><Trash size={14} /></button>
                       </div>
                     </td>
@@ -275,9 +275,9 @@ export default function ExplainabilityCenter() {
             <div className="p-5 space-y-4">
               <div className="flex items-center gap-2 flex-wrap">
                 <StatusBadge status={viewItem.status} />
-                <span className="text-xs px-1.5 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{viewItem.method}</span>
-                <span className="text-xs px-1.5 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">{viewItem.scope}</span>
-                <span className="text-xs px-1.5 py-0.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">Audience: {viewItem.audience}</span>
+                <span className="text-xs px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))]">{viewItem.method}</span>
+                <span className="text-xs px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))]">{viewItem.scope}</span>
+                <span className="text-xs px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))]">Audience: {viewItem.audience}</span>
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 {[["Model",viewItem.model],["Version",viewItem.version],["Explanation Type",viewItem.type],["Owner",viewItem.owner],["Run Date",viewItem.runDate||"—"],["Fidelity",viewItem.fidelityScore||"—"],["Stability",viewItem.stabilityScore||"—"]].map(([k,v])=>(

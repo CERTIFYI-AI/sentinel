@@ -110,7 +110,7 @@ export default function ConsentManagement() {
           <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">GDPR-compliant consent lifecycle management — purpose tracking, AI system mapping, withdrawal, and audit trail</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => exportCsv(records as any[], 'consent-records.csv')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]"><Export size={14} /> Export CSV</button>
+          <button onClick={() => exportCsv(records as any[], 'consent-records.csv')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised"><Export size={14} /> Export CSV</button>
           <button onClick={() => { setForm(BLANK); setShowCreate(true) }} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90"><Plus size={14} weight="bold" /> New Record</button>
         </div>
       </div>
@@ -122,7 +122,7 @@ export default function ConsentManagement() {
           { label: 'Expired', value: stats.expired, sub: 'Require renewal', color: 'hsl(45 85% 40%)' },
           { label: 'Pending', value: stats.pending, sub: 'Awaiting confirmation', color: 'hsl(var(--s-in-tx))' },
         ].map(s => (
-          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
+          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
             <p className="text-xs text-[hsl(var(--text-4))]">{s.label}</p>
             <p className="text-2xl font-bold mt-1" style={{ color: s.color }}>{s.value}</p>
             <p className="text-xs text-[hsl(var(--text-4))] mt-0.5">{s.sub}</p>
@@ -134,18 +134,18 @@ export default function ConsentManagement() {
         <div className="relative flex-1 min-w-48">
           <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by subject, email, or ID…"
-            className="w-full pl-8 pr-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none focus:border-[hsl(var(--brand))]" />
+            className="w-full pl-8 pr-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
         </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none">
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
           {['All', 'Active', 'Withdrawn', 'Expired', 'Pending'].map(s => <option key={s}>{s}</option>)}
         </select>
         <span className="text-xs text-[hsl(var(--text-4))]">{filtered.length} record{filtered.length !== 1 ? 's' : ''}</span>
       </div>
 
-      <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] overflow-hidden">
+      <div className="rounded border border-[hsl(var(--border))] bg-surface overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
+            <tr className="border-b border-[hsl(var(--border))] bg-raised">
               {['ID', 'Subject', 'Legal Basis', 'Purposes', 'AI Systems', 'Status', 'Consent Date', 'Expiry', 'Channel', ''].map(h => (
                 <th key={h} className="text-left px-3 py-2.5 text-xs font-semibold text-[hsl(var(--text-4))] uppercase tracking-wide">{h}</th>
               ))}
@@ -153,7 +153,7 @@ export default function ConsentManagement() {
           </thead>
           <tbody>
             {filtered.map(r => (
-              <tr key={r.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))]">
+              <tr key={r.id} className="border-b border-[hsl(var(--border))] hover:bg-raised">
                 <td className="px-3 py-2.5 font-mono text-xs text-[hsl(var(--brand))] font-medium">{r.id}</td>
                 <td className="px-3 py-2.5">
                   <p className="font-medium text-[hsl(var(--text-1))]">{r.subject}</p>
@@ -184,7 +184,7 @@ export default function ConsentManagement() {
       {selected && (
         <div className="fixed inset-0 z-40 flex">
           <div className="flex-1 bg-black/40" onClick={() => { setSelected(null); setEditMode(false) }} />
-          <div className="w-[500px] bg-[hsl(var(--bg-surface))] border-l border-[hsl(var(--border))] h-full flex flex-col">
+          <div className="w-[500px] bg-surface border-l border-[hsl(var(--border))] h-full flex flex-col">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
               <div>
                 <p className="font-mono text-xs text-[hsl(var(--brand))] font-semibold">{selected.id}</p>
@@ -213,8 +213,8 @@ export default function ConsentManagement() {
                     <>
                       <div className="flex gap-2 flex-wrap">
                         <span className="px-2 py-0.5 rounded text-xs font-medium" style={STATUS_STYLE[selected.status]}>{selected.status}</span>
-                        <span className="px-2 py-0.5 rounded text-xs bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-3))]">{selected.legalBasis}</span>
-                        <span className="px-2 py-0.5 rounded text-xs bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-3))]">v{selected.version}</span>
+                        <span className="px-2 py-0.5 rounded text-xs bg-raised text-[hsl(var(--text-3))]">{selected.legalBasis}</span>
+                        <span className="px-2 py-0.5 rounded text-xs bg-raised text-[hsl(var(--text-3))]">v{selected.version}</span>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         {[
@@ -225,7 +225,7 @@ export default function ConsentManagement() {
                           { label: 'IP Address', value: selected.ipAddress },
                           { label: 'Consent Version', value: `v${selected.version}` },
                         ].map(f => (
-                          <div key={f.label} className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                          <div key={f.label} className="p-3 bg-raised border border-[hsl(var(--border))]">
                             <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{f.label}</p>
                             <p className="text-xs font-medium text-[hsl(var(--text-1))] mt-0.5">{f.value}</p>
                           </div>
@@ -245,7 +245,7 @@ export default function ConsentManagement() {
                       <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide">Consented Purposes ({selected.purposes.length})</p>
                       <div className="space-y-2">
                         {selected.purposes.map(p => (
-                          <div key={p} className="flex items-center gap-2 p-2.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                          <div key={p} className="flex items-center gap-2 p-2.5 bg-raised border border-[hsl(var(--border))]">
                             <div className="w-2 h-2 rounded-full bg-[hsl(var(--brand))]" />
                             <p className="text-xs text-[hsl(var(--text-2))]">{p}</p>
                           </div>
@@ -254,10 +254,10 @@ export default function ConsentManagement() {
                       </div>
                       <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mt-4">Data Categories</p>
                       <div className="flex flex-wrap gap-1.5">
-                        {selected.dataCategories.map(c => <span key={c} className="px-2 py-0.5 text-xs bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{c}</span>)}
+                        {selected.dataCategories.map(c => <span key={c} className="px-2 py-0.5 text-xs bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{c}</span>)}
                       </div>
                       <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mt-4">Legal Basis</p>
-                      <div className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                      <div className="p-3 bg-raised border border-[hsl(var(--border))]">
                         <p className="text-xs font-medium text-[hsl(var(--text-1))]">{selected.legalBasis}</p>
                         <p className="text-[10px] text-[hsl(var(--text-4))] mt-1">Per GDPR Article 6 / CCPA 1798.100</p>
                       </div>
@@ -293,7 +293,7 @@ export default function ConsentManagement() {
                           { date: selected.consentDate, event: `Consent recorded via ${selected.channel}`, type: 'ok' },
                           ...(selected.withdrawalDate ? [{ date: selected.withdrawalDate, event: `Consent withdrawn — ${selected.withdrawalReason ?? 'No reason provided'}`, type: 'err' }] : []),
                         ].map((e, i) => (
-                          <div key={i} className="flex gap-3 p-2.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                          <div key={i} className="flex gap-3 p-2.5 bg-raised border border-[hsl(var(--border))]">
                             <div className="w-2 h-2 rounded-full mt-1 flex-shrink-0" style={{ background: e.type === 'ok' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))' }} />
                             <div>
                               <p className="text-xs text-[hsl(var(--text-2))]">{e.event}</p>
@@ -302,7 +302,7 @@ export default function ConsentManagement() {
                           </div>
                         ))}
                       </div>
-                      <div className="p-3 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))] mt-2">
+                      <div className="p-3 bg-raised border border-[hsl(var(--border))] mt-2">
                         <p className="text-[10px] text-[hsl(var(--text-4))] uppercase mb-1">Technical Metadata</p>
                         <p className="text-xs text-[hsl(var(--text-2))]">IP: {selected.ipAddress}</p>
                         <p className="text-xs text-[hsl(var(--text-2))]">Version: v{selected.version}</p>
@@ -317,7 +317,7 @@ export default function ConsentManagement() {
                         <Warning size={13} /> Withdraw
                       </button>
                     )}
-                    <button onClick={() => setDeleteTarget(selected.id)} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-raised))]">
+                    <button onClick={() => setDeleteTarget(selected.id)} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-3))] hover:bg-raised">
                       <Trash size={13} /> Delete
                     </button>
                   </div>
@@ -333,13 +333,13 @@ export default function ConsentManagement() {
                     <div key={f.key}>
                       <label className="text-xs text-[hsl(var(--text-4))]">{f.label}</label>
                       <input type={f.type || 'text'} value={(form as any)[f.key]} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
-                        className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none focus:border-[hsl(var(--brand))]" />
+                        className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
                     </div>
                   ))}
                   <div>
                     <label className="text-xs text-[hsl(var(--text-4))]">Status</label>
                     <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value as ConsentStatus }))}
-                      className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none">
+                      className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
                       {['Active', 'Withdrawn', 'Expired', 'Pending'].map(s => <option key={s}>{s}</option>)}
                     </select>
                   </div>
@@ -358,7 +358,7 @@ export default function ConsentManagement() {
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowCreate(false)} />
-          <div className="relative bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] rounded w-full max-w-lg shadow-xl">
+          <div className="relative bg-surface border border-[hsl(var(--border))] rounded w-full max-w-lg shadow-xl">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
               <h2 className="font-semibold text-[hsl(var(--text-1))]">New Consent Record</h2>
               <button onClick={() => setShowCreate(false)}><X size={16} className="text-[hsl(var(--text-4))]" /></button>
@@ -368,38 +368,38 @@ export default function ConsentManagement() {
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Subject Name *</label>
                   <input value={form.subject} onChange={e => setForm(p => ({ ...p, subject: e.target.value }))}
-                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none focus:border-[hsl(var(--brand))]" />
+                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
                 </div>
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Email *</label>
                   <input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
-                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none focus:border-[hsl(var(--brand))]" />
+                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Consent Date</label>
                   <input type="date" value={form.consentDate} onChange={e => setForm(p => ({ ...p, consentDate: e.target.value }))}
-                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none focus:border-[hsl(var(--brand))]" />
+                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
                 </div>
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Expiry Date</label>
                   <input type="date" value={form.expiryDate} onChange={e => setForm(p => ({ ...p, expiryDate: e.target.value }))}
-                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none focus:border-[hsl(var(--brand))]" />
+                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Legal Basis</label>
                   <select value={form.legalBasis} onChange={e => setForm(p => ({ ...p, legalBasis: e.target.value as LegalBasis }))}
-                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none">
+                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
                     {['Consent', 'Legitimate Interest', 'Contract', 'Legal Obligation', 'Vital Interest', 'Public Task'].map(b => <option key={b}>{b}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Channel</label>
                   <select value={form.channel} onChange={e => setForm(p => ({ ...p, channel: e.target.value }))}
-                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none">
+                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
                     {['Web Portal', 'Mobile App', 'Branch', 'API', 'Email', 'Phone'].map(c => <option key={c}>{c}</option>)}
                   </select>
                 </div>
@@ -407,7 +407,7 @@ export default function ConsentManagement() {
               <div>
                 <label className="text-xs text-[hsl(var(--text-4))]">IP Address</label>
                 <input value={form.ipAddress} onChange={e => setForm(p => ({ ...p, ipAddress: e.target.value }))} placeholder="192.168.1.100"
-                  className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-sm outline-none focus:border-[hsl(var(--brand))]" />
+                  className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
               </div>
             </div>
             <div className="flex gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
@@ -421,7 +421,7 @@ export default function ConsentManagement() {
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" />
-          <div className="relative bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] rounded w-full max-w-sm p-6 text-center shadow-xl">
+          <div className="relative bg-surface border border-[hsl(var(--border))] rounded w-full max-w-sm p-6 text-center shadow-xl">
             <Warning size={32} className="mx-auto text-[hsl(var(--destructive))] mb-3" />
             <h3 className="font-semibold mb-1">Delete Consent Record?</h3>
             <p className="text-sm text-[hsl(var(--text-3))] mb-4">This permanently removes the consent record. Consider withdrawing instead.</p>

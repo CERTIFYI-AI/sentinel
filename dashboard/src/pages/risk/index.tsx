@@ -182,7 +182,7 @@ export default function RiskPage() {
       />
 
       {/* Table */}
-      <div className="bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] rounded-lg overflow-hidden">
+      <div className="bg-surface border border-[hsl(var(--border))] rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-[hsl(var(--bg-raised,var(--bg-surface)))] border-b border-[hsl(var(--border))]">
@@ -252,7 +252,7 @@ export default function RiskPage() {
           onClick={() => setShowModal(false)}
         >
           <div
-            className="bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] rounded-lg p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto shadow-xl"
+            className="bg-surface border border-[hsl(var(--border))] rounded-lg p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto shadow-xl"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-5">

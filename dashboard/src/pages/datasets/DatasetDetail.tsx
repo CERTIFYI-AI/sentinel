@@ -80,7 +80,7 @@ export default function DatasetDetail() {
         </Button>
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3">
-            <div className="p-2 bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))]">
+            <div className="p-2 bg-surface border border-[hsl(var(--border))]">
               <Database size={24} className="text-[hsl(var(--brand))]" />
             </div>
             <div>
@@ -167,7 +167,7 @@ export default function DatasetDetail() {
           {model ? (
             <Card className="p-4">
               <div className="flex items-start gap-3">
-                <div className="p-2 bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))]">
+                <div className="p-2 bg-surface border border-[hsl(var(--border))]">
                   <Robot size={18} className="text-[hsl(var(--brand))]" />
                 </div>
                 <div className="flex-1">

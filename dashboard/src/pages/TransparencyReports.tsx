@@ -215,7 +215,7 @@ export default function TransparencyReports() {
                 {filtered.map(item => {
                   const sc = statusColor(item.status);
                   return (
-                    <tr key={item.id} className="border-b hover:bg-[hsl(var(--bg-raised))] transition-colors cursor-pointer" style={{ borderColor: 'hsl(var(--border))' }}
+                    <tr key={item.id} className="border-b hover:bg-raised transition-colors cursor-pointer" style={{ borderColor: 'hsl(var(--border))' }}
                       onClick={() => { setSelected(item); setSheetOpen(true); }}>
                       <td className="px-3 py-2.5">
                         <span className="font-mono text-xs px-1.5 py-0.5" style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))' }}>{item.id}</span>
