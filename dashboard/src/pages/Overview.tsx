@@ -52,9 +52,9 @@ const CISO_FRAMEWORKS: {
 ];
 
 function cisoTrafficColor(score: number): string {
-  if (score >= 85) return '#10b981'; // green
-  if (score >= 65) return '#f59e0b'; // amber
-  return '#ef4444'; // red
+  if (score >= 85) return 'hsl(var(--s-ok-tx))';
+  if (score >= 65) return 'hsl(var(--s-wn-tx))';
+  return 'hsl(var(--s-er-tx))';
 }
 
 function cisoTrafficLabel(score: number): string {
@@ -83,19 +83,18 @@ function Sparkline({ data, color, width = 100, height = 28 }: { data: number[]; 
 }
 
 function TrendIcon({ trend }: { trend: 'up' | 'down' | 'stable' }) {
-  if (trend === 'up') return <TrendUp size={14} style={{ color: '#ef4444' }} />;
-  if (trend === 'down') return <TrendDown size={14} style={{ color: '#10b981' }} />;
-  return <Minus size={14} style={{ color: '#6b7280' }} />;
+  if (trend === 'up') return <TrendUp size={14} style={{ color: 'hsl(var(--s-er-tx))' }} />;
+  if (trend === 'down') return <TrendDown size={14} style={{ color: 'hsl(var(--s-ok-tx))' }} />;
+  return <Minus size={14} style={{ color: 'hsl(var(--text-4))' }} />;
 }
 
 // RAG ring color helper
 function ragColor(value: number, type: 'score' | 'risk' | 'incident'): string {
-  if (type === 'incident') return value >= 2 ? '#ef4444' : value >= 1 ? '#f97316' : '#10b981';
-  if (type === 'risk') return value >= 10 ? '#f97316' : value >= 5 ? '#f97316' : '#10b981';
-  // score type: compliance %
-  if (value >= 85) return '#10b981';
-  if (value >= 60) return '#f97316';
-  return '#ef4444';
+  if (type === 'incident') return value >= 2 ? 'hsl(var(--s-er-tx))' : value >= 1 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-ok-tx))';
+  if (type === 'risk') return value >= 10 ? 'hsl(var(--r-hi-tx))' : value >= 5 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-ok-tx))';
+  if (value >= 85) return 'hsl(var(--s-ok-tx))';
+  if (value >= 60) return 'hsl(var(--r-hi-tx))';
+  return 'hsl(var(--s-er-tx))';
 }
 
 function ScoreRing({ value, label, color, size = 80 }: { value: number | string; label: string; color: string; size?: number }) {
@@ -192,17 +191,17 @@ export default function Overview() {
   const kpis = [
     { label: 'Open Tasks', value: overdueGaps + 5, icon: Clock, color: ragColor(overdueGaps + 5, 'risk'), link: '/tasks' },
     { label: 'Open Risks', value: openRisks, icon: Warning, color: ragColor(openRisks, 'risk'), link: '/risk', ragType: 'risk' as const },
-    { label: 'Active Models', value: activeModels, icon: Brain, color: '#8b5cf6', link: '/models/inventory' },
+    { label: 'Active Models', value: activeModels, icon: Brain, color: 'hsl(var(--tag-purple))', link: '/models/inventory' },
     { label: 'Critical Incidents', value: criticalIncidents, icon: WarningCircle, color: ragColor(criticalIncidents, 'incident'), link: '/risk/incidents', ragType: 'incident' as const },
-    { label: 'Vendors', value: vendors.length, icon: Briefcase, color: '#06b6d4', link: '/vendors' },
-    { label: 'Frameworks', value: frameworks.length, icon: StackSimple, color: '#6366f1', link: '/frameworks' },
+    { label: 'Vendors', value: vendors.length, icon: Briefcase, color: 'hsl(var(--s-in-tx))', link: '/vendors' },
+    { label: 'Frameworks', value: frameworks.length, icon: StackSimple, color: 'hsl(var(--brand))', link: '/frameworks' },
   ];
 
   // RAG border color for KPI tiles
   function kpiBorderColor(k: typeof kpis[0]): string {
-    if (k.label === 'Critical Incidents') return criticalIncidents >= 2 ? '#ef4444' : criticalIncidents >= 1 ? '#f97316' : '#10b981';
-    if (k.label === 'Open Risks') return openRisks >= 10 ? '#f97316' : '#10b981';
-    if (k.label === 'Open Tasks') return (overdueGaps + 5) >= 5 ? '#f97316' : '#10b981';
+    if (k.label === 'Critical Incidents') return criticalIncidents >= 2 ? 'hsl(var(--s-er-tx))' : criticalIncidents >= 1 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-ok-tx))';
+    if (k.label === 'Open Risks') return openRisks >= 10 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-ok-tx))';
+    if (k.label === 'Open Tasks') return (overdueGaps + 5) >= 5 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-ok-tx))';
     return 'hsl(var(--border))';
   }
 
@@ -303,7 +302,7 @@ export default function Overview() {
   return (
     <div className="space-y-6">
       {/* Skip to main content (WCAG) */}
-      <a href="#main-content" style={{ position: 'absolute', left: -9999, top: 0, zIndex: 999, padding: '8px 14px', background: '#DC2626', color: '#fff', fontSize: 13 }}
+      <a href="#main-content" style={{ position: 'absolute', left: -9999, top: 0, zIndex: 999, padding: '8px 14px', background: 'hsl(var(--s-er-tx))', color: 'hsl(var(--bg-surface))', fontSize: 13 }}
         onFocus={e => { e.currentTarget.style.left = '0'; }} onBlur={e => { e.currentTarget.style.left = '-9999px'; }}>
         Skip to main content
       </a>
@@ -383,7 +382,7 @@ export default function Overview() {
           alignItems: 'center',
           gap: 12,
           padding: '10px 16px',
-          background: '#FEF2F2', borderLeft: '4px solid #EF4444',
+          background: 'hsl(var(--s-er-bg))', borderLeft: '4px solid hsl(var(--s-er-tx))',
           border: '1px solid hsl(var(--s-er-br))',
           cursor: 'pointer',
         }}
@@ -531,18 +530,18 @@ export default function Overview() {
                 <div className="flex items-center justify-center w-[90px] h-[90px]">
                   <span className="text-3xl font-bold" style={{ color: ragColor(openRisks, 'risk') }}>{openRisks}</span>
                 </div>
-                <span className="text-xs" style={{ color: '#D97706' }}>Open Risks</span>
+                <span className="text-xs" style={{ color: 'hsl(var(--s-wn-tx))' }}>Open Risks</span>
               </div>
               <div className="flex flex-col items-center gap-1">
                 <div className="flex items-center justify-center w-[90px] h-[90px]">
                   <span className="text-3xl font-bold" style={{ color: ragColor(criticalIncidents, 'incident') }}>{criticalIncidents}</span>
                 </div>
-                <span className="text-xs" style={{ color: '#DC2626' }}>Critical Incidents</span>
+                <span className="text-xs" style={{ color: 'hsl(var(--s-er-tx))' }}>Critical Incidents</span>
               </div>
             </div>
             <div className="flex-1 min-w-0 max-w-sm">
               <div className="flex items-center gap-2 mb-2">
-                <Siren size={16} style={{ color: '#f97316' }} />
+                <Siren size={16} style={{ color: 'hsl(var(--r-hi-tx))' }} />
                 <span className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Attention Required</span>{/* consolidated — primary banner above is the authoritative source */}
               </div>
               <p className="text-xs mb-3" style={{ color: 'hsl(var(--text-3))' }}>
@@ -551,7 +550,7 @@ export default function Overview() {
               <Button
                 size="sm"
                 onClick={() => navigate('/risk')}
-                style={{ borderRadius: 0, background: '#DC2626', color: '#fff' }}
+                style={{ borderRadius: 0, background: 'hsl(var(--s-er-tx))', color: 'hsl(var(--bg-surface))' }}
               >
                 View All Issues <ArrowRight size={12} className="ml-1" />
               </Button>
@@ -862,8 +861,8 @@ export default function Overview() {
                 />
                 <Tooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.tooltipText, borderRadius: 0 }} />
                 <Legend wrapperStyle={{ fontSize: 11, color: ct.axis }} />
-                <Line type="monotone" dataKey="open" stroke="#f97316" strokeWidth={2} dot={false} name="Open Risks" />
-                <Line type="monotone" dataKey="critical" stroke="#ef4444" strokeWidth={2} dot={false} name="Critical" />
+                <Line type="monotone" dataKey="open" stroke="hsl(var(--r-hi-tx))" strokeWidth={2} dot={false} name="Open Risks" />
+                <Line type="monotone" dataKey="critical" stroke="hsl(var(--s-er-tx))" strokeWidth={2} dot={false} name="Critical" />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -975,7 +974,7 @@ export default function Overview() {
           <CardContent className="p-0">
             {overdueGapItems.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10">
-                <CheckCircle size={28} style={{ color: '#10b981' }} />
+                <CheckCircle size={28} style={{ color: 'hsl(var(--s-ok-tx))' }} />
                 <p className="text-sm mt-2" style={{ color: 'hsl(var(--text-3))' }}>No overdue gaps</p>
               </div>
             ) : (
@@ -996,7 +995,7 @@ export default function Overview() {
                           {gap.framework} · {gap.owner}
                         </p>
                       </div>
-                      <span className="text-xs flex-shrink-0 font-medium" style={{ color: '#ef4444' }}>
+                      <span className="text-xs flex-shrink-0 font-medium" style={{ color: 'hsl(var(--s-er-tx))' }}>
                         {daysOver}d overdue
                       </span>
                     </div>
@@ -1175,7 +1174,7 @@ export default function Overview() {
                       </Badge>
                     </td>
                     <td className="p-3">
-                      <span className="text-sm font-bold" style={{ color: (r.score || r.risk_score || 0) >= 16 ? '#ef4444' : (r.score || r.risk_score || 0) >= 10 ? '#f97316' : 'hsl(var(--text-1))' }}>
+                      <span className="text-sm font-bold" style={{ color: (r.score || r.risk_score || 0) >= 16 ? 'hsl(var(--s-er-tx))' : (r.score || r.risk_score || 0) >= 10 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--text-1))' }}>
                         {r.score || r.risk_score || 0}
                       </span>
                     </td>

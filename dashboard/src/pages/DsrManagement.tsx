@@ -3,6 +3,10 @@ import { UserList, MagnifyingGlass, Plus, Eye, X, Export, Funnel, Pencil, Trash,
 import { toast } from 'sonner'
 import { useDsrRequestsData } from '@/hooks/useDsrRequestsData'
 import { PageSkeleton } from '@/components/ui/PageSkeleton'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { StatCardRow, type StatCardRowItem } from '@/components/ui/StatCardRow'
+import { StatusPill } from '@/components/ui/StatusPill'
+import { RiskBadge } from '@/components/ui/RiskBadge'
 
 // Supabase-wired — no mock data
 
@@ -46,10 +50,15 @@ const STATUS_STYLE: Record<DSRStatus, { bg: string; color: string }> = {
   Rejected: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
   Overdue: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))' },
 }
-const TYPE_COLOR: Record<DSRType, string> = {
-  Access: '#3b82f6', Erasure: '#ef4444', Rectification: '#22c55e',
-  Portability: '#a855f7', Objection: '#f97316', Restriction: '#eab308',
+const TYPE_TOKEN: Record<DSRType, { bg: string; tx: string; br: string }> = {
+  Access:        { bg: 'hsl(var(--s-in-bg))', tx: 'hsl(var(--s-in-tx))', br: 'hsl(var(--s-in-br))' },
+  Erasure:       { bg: 'hsl(var(--s-er-bg))', tx: 'hsl(var(--s-er-tx))', br: 'hsl(var(--s-er-br))' },
+  Rectification: { bg: 'hsl(var(--s-ok-bg))', tx: 'hsl(var(--s-ok-tx))', br: 'hsl(var(--s-ok-br))' },
+  Portability:   { bg: 'hsl(var(--tag-purple-bg))', tx: 'hsl(var(--tag-purple))', br: 'hsl(var(--tag-purple-border))' },
+  Objection:     { bg: 'hsl(var(--r-hi-bg))', tx: 'hsl(var(--r-hi-tx))', br: 'hsl(var(--r-hi-br))' },
+  Restriction:   { bg: 'hsl(var(--s-wn-bg))', tx: 'hsl(var(--s-wn-tx))', br: 'hsl(var(--s-wn-br))' },
 }
+const TYPE_FALLBACK = { bg: 'hsl(var(--bg-raised))', tx: 'hsl(var(--text-3))', br: 'hsl(var(--border))' }
 const PRIORITY_STYLE: Record<string, { bg: string; color: string }> = {
   High: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(var(--destructive))' },
   Medium: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(45 85% 40%)' },
@@ -117,109 +126,106 @@ export default function DsrManagement() {
     setEditMode(true)
   }
 
+  const statCards: StatCardRowItem[] = [
+    { label: 'Total Requests', value: stats.total, description: 'All time', icon: <UserList size={14} weight="fill" /> },
+    { label: 'Overdue', value: stats.overdue, description: 'SLA breach', variant: stats.overdue > 0 ? 'danger' : 'default', icon: <Warning size={14} weight="fill" /> },
+    { label: 'Pending / In Review', value: stats.pending + records.filter(r => r.status === 'In Review').length, description: 'Require action', variant: 'warning', icon: <Clock size={14} weight="fill" /> },
+    { label: 'Completed', value: stats.completed, description: 'This quarter', variant: 'success', icon: <CheckCircle size={14} weight="fill" /> },
+  ]
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-3">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-[hsl(var(--text-1))] flex items-center gap-2">
-            <UserList size={20} weight="fill" className="text-[hsl(var(--brand))]" />
-            DSR / Rights Management
-          </h1>
-          <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">Data Subject Request tracking — GDPR, CCPA, EU AI Act Art. 14 rights management with AI system impact mapping</p>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={() => exportCsv(records, 'dsr-requests.csv')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
-            <Export size={14} /> Export
-          </button>
-          <button onClick={() => { setForm(BLANK); setShowCreate(true) }} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90">
-            <Plus size={14} weight="bold" /> New DSR
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="DSR / Rights Management"
+        subtitle="GDPR, CCPA, EU AI Act Art. 14 rights management with AI system impact mapping"
+        icon={UserList}
+        actions={
+          <div className="flex gap-2">
+            <button onClick={() => exportCsv(records, 'dsr-requests.csv')} className="flex items-center gap-1.5 px-3 py-1.5 border border-[hsl(var(--border))] text-xs text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
+              <Export size={13} /> Export
+            </button>
+            <button onClick={() => { setForm(BLANK); setShowCreate(true) }} className="flex items-center gap-1.5 px-3 py-1.5 bg-[hsl(var(--brand))] text-white text-xs hover:bg-[hsl(var(--brand-hover))]">
+              <Plus size={13} weight="bold" /> New DSR
+            </button>
+          </div>
+        }
+      />
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
-        {[
-          { label: 'Total Requests', value: stats.total, sub: 'All time', color: 'hsl(var(--brand))' },
-          { label: 'Overdue', value: stats.overdue, sub: 'Breach of SLA', color: 'hsl(var(--destructive))' },
-          { label: 'Pending / In Review', value: stats.pending + records.filter(r => r.status === 'In Review').length, sub: 'Require action', color: 'hsl(45 85% 40%)' },
-          { label: 'Completed', value: stats.completed, sub: 'This quarter', color: 'hsl(var(--s-ok-tx))' },
-        ].map(s => (
-          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
-            <p className="text-xs text-[hsl(var(--text-4))]">{s.label}</p>
-            <p className="text-2xl font-bold mt-1" style={{ color: s.color }}>{s.value}</p>
-            <p className="text-xs text-[hsl(var(--text-4))] mt-0.5">{s.sub}</p>
-          </div>
-        ))}
-      </div>
+      <StatCardRow cards={statCards} />
 
       {/* Filters */}
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex items-center gap-2 flex-wrap">
         <div className="relative flex-1 min-w-48">
-          <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
+          <MagnifyingGlass size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by subject, email, or ID…"
-            className="w-full pl-8 pr-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] outline-none focus:border-[hsl(var(--brand))]" />
+            className="w-full pl-7 pr-2 py-1.5 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-xs text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] outline-none focus:border-[hsl(var(--brand))]" />
         </div>
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-          className="px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm text-[hsl(var(--text-2))] outline-none">
+          className="px-2 py-1.5 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-xs text-[hsl(var(--text-2))] outline-none">
           {['All', 'Pending', 'In Review', 'Completed', 'Rejected', 'Overdue'].map(s => <option key={s}>{s}</option>)}
         </select>
         <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}
-          className="px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm text-[hsl(var(--text-2))] outline-none">
+          className="px-2 py-1.5 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-xs text-[hsl(var(--text-2))] outline-none">
           {['All', 'Access', 'Erasure', 'Rectification', 'Portability', 'Objection', 'Restriction'].map(t => <option key={t}>{t}</option>)}
         </select>
-        <span className="text-xs text-[hsl(var(--text-4))]">{filtered.length} request{filtered.length !== 1 ? 's' : ''}</span>
+        <span className="text-[10px] font-mono text-[hsl(var(--text-4))]">{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
       </div>
 
       {/* Table */}
-      <div className="rounded border border-[hsl(var(--border))] bg-surface overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] overflow-hidden">
+        <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-[hsl(var(--border))] bg-raised">
-              {['Request ID', 'Subject', 'Type', 'Regulation', 'AI Systems', 'Status', 'Due Date', 'Assignee', 'Actions'].map(h => (
-                <th key={h} className="text-left px-3 py-2.5 text-xs font-semibold text-[hsl(var(--text-4))] uppercase tracking-wide">{h}</th>
+            <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
+              {['Request ID', 'Subject', 'Type', 'Regulation', 'AI Systems', 'Status', 'Priority', 'Due Date', 'Assignee', ''].map(h => (
+                <th key={h} className="text-left px-2.5 py-2 text-[10px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wider">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {filtered.map(r => (
-              <tr key={r.id} className="border-b border-[hsl(var(--border))] hover:bg-raised transition-colors">
-                <td className="px-3 py-2.5">
-                  <span className="font-mono text-xs text-[hsl(var(--brand))] font-medium">{r.id}</span>
+            {filtered.map(r => {
+              const tt = TYPE_TOKEN[r.type as DSRType] || TYPE_FALLBACK
+              return (
+              <tr key={r.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-raised))] transition-colors">
+                <td className="px-2.5 py-1.5">
+                  <span className="font-mono text-[11px] text-[hsl(var(--brand))] font-medium">{r.id}</span>
                 </td>
-                <td className="px-3 py-2.5">
-                  <p className="font-medium text-[hsl(var(--text-1))]">{r.subject}</p>
-                  <p className="text-xs text-[hsl(var(--text-4))]">{r.email}</p>
+                <td className="px-2.5 py-1.5">
+                  <p className="font-medium text-[hsl(var(--text-1))] text-xs">{r.subject}</p>
+                  <p className="text-[10px] text-[hsl(var(--text-4))] font-mono">{r.email}</p>
                 </td>
-                <td className="px-3 py-2.5">
-                  <span className="px-2 py-0.5 rounded text-xs font-semibold text-white" style={{ background: TYPE_COLOR[r.type as DSRType] }}>{r.type}</span>
+                <td className="px-2.5 py-1.5">
+                  <span className="px-1.5 py-0.5 text-[10px] font-semibold border" style={{ background: tt.bg, color: tt.tx, borderColor: tt.br }}>{r.type}</span>
                 </td>
-                <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))]">{r.regulation}</td>
-                <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))]">{r.aiSystemsAffected.length} system{r.aiSystemsAffected.length !== 1 ? 's' : ''}</td>
-                <td className="px-3 py-2.5">
-                  <span className="px-2 py-0.5 rounded text-xs font-medium" style={STATUS_STYLE[r.status as DSRStatus] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{r.status}</span>
+                <td className="px-2.5 py-1.5 text-[10px] text-[hsl(var(--text-3))] font-mono">{r.regulation}</td>
+                <td className="px-2.5 py-1.5 text-[10px] text-[hsl(var(--text-3))] font-mono">{r.aiSystemsAffected.length}</td>
+                <td className="px-2.5 py-1.5">
+                  <StatusPill status={r.status} />
                 </td>
-                <td className="px-3 py-2.5">
-                  <p className={`text-xs font-medium ${r.daysRemaining < 0 ? 'text-[hsl(var(--destructive))]' : r.daysRemaining <= 7 ? 'text-[hsl(45_85%_40%)]' : 'text-[hsl(var(--text-2))]'}`}>
+                <td className="px-2.5 py-1.5">
+                  <RiskBadge level={r.priority === 'High' ? 'HIGH' : r.priority === 'Medium' ? 'MEDIUM' : 'LOW'} showIcon={false} />
+                </td>
+                <td className="px-2.5 py-1.5">
+                  <p className={`text-[11px] font-mono font-medium ${r.daysRemaining < 0 ? 'text-[hsl(var(--destructive))]' : r.daysRemaining <= 7 ? 'text-[hsl(var(--s-wn-tx))]' : 'text-[hsl(var(--text-2))]'}`}>
                     {r.dueDate}
                   </p>
-                  <p className="text-[10px] text-[hsl(var(--text-4))]">{r.daysRemaining < 0 ? `${Math.abs(r.daysRemaining)}d overdue` : r.daysRemaining === 0 ? 'Completed' : `${r.daysRemaining}d left`}</p>
+                  <p className="text-[10px] text-[hsl(var(--text-4))]">{r.daysRemaining < 0 ? `${Math.abs(r.daysRemaining)}d overdue` : r.daysRemaining === 0 ? 'Done' : `${r.daysRemaining}d`}</p>
                 </td>
-                <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))]">{r.assignee}</td>
-                <td className="px-3 py-2.5">
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => { setSelected(r); setEditMode(false) }} className="p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-subtle))]"><Eye size={13} /></button>
-                    <button onClick={() => { setSelected(r); openEdit(r) }} className="p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-subtle))]"><Pencil size={13} /></button>
-                    <button onClick={() => setDeleteTarget(r.id)} className="p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(0_72%_51%/0.08)]"><Trash size={13} /></button>
+                <td className="px-2.5 py-1.5 text-[10px] text-[hsl(var(--text-3))]">{r.assignee}</td>
+                <td className="px-2.5 py-1.5">
+                  <div className="flex items-center gap-0.5">
+                    <button onClick={() => { setSelected(r); setEditMode(false) }} className="p-1 text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-subtle))]"><Eye size={12} /></button>
+                    <button onClick={() => { setSelected(r); openEdit(r) }} className="p-1 text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-subtle))]"><Pencil size={12} /></button>
+                    <button onClick={() => setDeleteTarget(r.id)} className="p-1 text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(var(--s-er-bg))]"><Trash size={12} /></button>
                   </div>
                 </td>
               </tr>
-            ))}
+            )})}
           </tbody>
         </table>
         {filtered.length === 0 && (
-          <div className="py-16 text-center text-sm text-[hsl(var(--text-4))]">No DSR requests match the current filters</div>
+          <div className="py-10 text-center text-xs text-[hsl(var(--text-4))]">No DSR requests match the current filters</div>
         )}
       </div>
 
@@ -227,11 +233,11 @@ export default function DsrManagement() {
       {selected && (
         <div className="fixed inset-0 z-40 flex">
           <div className="flex-1 bg-black/40" onClick={() => { setSelected(null); setEditMode(false) }} />
-          <div className="w-[520px] bg-surface border-l border-[hsl(var(--border))] h-full flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
+          <div className="w-[500px] bg-[hsl(var(--bg-surface))] border-l border-[hsl(var(--border))] h-full flex flex-col">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[hsl(var(--border))]">
               <div>
-                <p className="font-mono text-xs text-[hsl(var(--brand))] font-semibold">{selected.id}</p>
-                <h2 className="text-base font-semibold text-[hsl(var(--text-1))] mt-0.5">{selected.type} — {selected.subject}</h2>
+                <p className="font-mono text-[10px] text-[hsl(var(--brand))] font-semibold tracking-wide">{selected.id}</p>
+                <h2 className="text-sm font-semibold text-[hsl(var(--text-1))] mt-0.5">{selected.type} — {selected.subject}</h2>
               </div>
               <div className="flex items-center gap-2">
                 {!editMode && <button onClick={() => openEdit(selected)} className="p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))]"><Pencil size={15} /></button>}
@@ -249,28 +255,30 @@ export default function DsrManagement() {
               </div>
             )}
 
-            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {!editMode ? (
                 <>
                   {drawerTab === 'overview' && (
                     <>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="px-2 py-0.5 rounded text-xs font-semibold text-white" style={{ background: TYPE_COLOR[selected.type] }}>{selected.type}</span>
-                        <span className="px-2 py-0.5 rounded text-xs font-medium" style={STATUS_STYLE[selected.status] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{selected.status}</span>
-                        <span className="px-2 py-0.5 rounded text-xs font-medium" style={PRIORITY_STYLE[selected.priority] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{selected.priority} Priority</span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {(() => { const tt = TYPE_TOKEN[selected.type] || TYPE_FALLBACK; return (
+                          <span className="px-1.5 py-0.5 text-[10px] font-semibold border" style={{ background: tt.bg, color: tt.tx, borderColor: tt.br }}>{selected.type}</span>
+                        ); })()}
+                        <StatusPill status={selected.status} />
+                        <RiskBadge level={selected.priority === 'High' ? 'HIGH' : selected.priority === 'Medium' ? 'MEDIUM' : 'LOW'} showIcon={false} />
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-2 gap-2">
                         {[
-                          { label: 'Subject', value: selected.subject },
-                          { label: 'Email', value: selected.email },
-                          { label: 'Regulation', value: selected.regulation },
-                          { label: 'Assignee', value: selected.assignee },
-                          { label: 'Submitted', value: selected.submittedDate },
-                          { label: 'Due Date', value: selected.dueDate },
+                          { label: 'Subject', value: selected.subject, mono: false },
+                          { label: 'Email', value: selected.email, mono: true },
+                          { label: 'Regulation', value: selected.regulation, mono: true },
+                          { label: 'Assignee', value: selected.assignee, mono: false },
+                          { label: 'Submitted', value: selected.submittedDate, mono: true },
+                          { label: 'Due Date', value: selected.dueDate, mono: true },
                         ].map(f => (
-                          <div key={f.label} className="p-3 bg-raised border border-[hsl(var(--border))]">
-                            <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{f.label}</p>
-                            <p className="text-xs font-medium text-[hsl(var(--text-1))] mt-0.5 truncate">{f.value}</p>
+                          <div key={f.label} className="p-2.5 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                            <p className="text-[9px] text-[hsl(var(--text-4))] uppercase tracking-wider">{f.label}</p>
+                            <p className={`text-[11px] font-medium text-[hsl(var(--text-1))] mt-0.5 truncate ${f.mono ? 'font-mono' : ''}`}>{f.value}</p>
                           </div>
                         ))}
                       </div>
@@ -312,19 +320,19 @@ export default function DsrManagement() {
 
                   {drawerTab === 'sla' && (
                     <>
-                      <div className="p-4 rounded border" style={
+                      <div className="p-3 border" style={
                         selected.daysRemaining < 0
-                          ? { background: 'hsl(0 72% 51% / 0.06)', borderColor: 'hsl(var(--destructive) / 0.4)' }
+                          ? { background: 'hsl(var(--s-er-bg))', borderColor: 'hsl(var(--s-er-br))' }
                           : selected.daysRemaining <= 7
-                          ? { background: 'hsl(45 93% 47% / 0.06)', borderColor: 'hsl(45 93% 47% / 0.4)' }
-                          : { background: 'hsl(142 71% 45% / 0.06)', borderColor: 'hsl(142 71% 45% / 0.3)' }
+                          ? { background: 'hsl(var(--s-wn-bg))', borderColor: 'hsl(var(--s-wn-br))' }
+                          : { background: 'hsl(var(--s-ok-bg))', borderColor: 'hsl(var(--s-ok-br))' }
                       }>
-                        <p className="text-2xl font-bold" style={{ color: selected.daysRemaining < 0 ? 'hsl(var(--destructive))' : selected.daysRemaining <= 7 ? 'hsl(45 85% 40%)' : 'hsl(var(--s-ok-tx))' }}>
-                          {selected.daysRemaining < 0 ? `${Math.abs(selected.daysRemaining)} days overdue` : selected.daysRemaining === 0 ? 'Due today' : `${selected.daysRemaining} days remaining`}
+                        <p className="text-xl font-bold font-mono" style={{ color: selected.daysRemaining < 0 ? 'hsl(var(--s-er-tx))' : selected.daysRemaining <= 7 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))' }}>
+                          {selected.daysRemaining < 0 ? `${Math.abs(selected.daysRemaining)}d overdue` : selected.daysRemaining === 0 ? 'Due today' : `${selected.daysRemaining}d remaining`}
                         </p>
-                        <p className="text-xs text-[hsl(var(--text-4))] mt-1">SLA deadline: {selected.dueDate} · Regulation: {selected.regulation}</p>
+                        <p className="text-[10px] text-[hsl(var(--text-4))] mt-1 font-mono">SLA: {selected.dueDate} | {selected.regulation}</p>
                       </div>
-                      <div className="space-y-3">
+                      <div className="space-y-1.5">
                         {[
                           { phase: 'Request Received', date: selected.submittedDate, done: true },
                           { phase: 'Identity Verified', date: selected.submittedDate, done: selected.status !== 'Pending' },
@@ -332,10 +340,10 @@ export default function DsrManagement() {
                           { phase: 'Response Prepared', date: selected.dueDate, done: selected.status === 'Completed' },
                           { phase: 'Completed & Documented', date: selected.dueDate, done: selected.status === 'Completed' },
                         ].map(step => (
-                          <div key={step.phase} className="flex items-center gap-3 p-2.5 bg-raised border border-[hsl(var(--border))]">
-                            <div className="w-3 h-3 rounded-full flex-shrink-0 border-2" style={step.done ? { background: 'hsl(var(--s-ok-tx))', borderColor: 'hsl(var(--s-ok-tx))' } : { background: 'transparent', borderColor: 'hsl(var(--border))' }} />
-                            <p className="text-xs text-[hsl(var(--text-2))] flex-1">{step.phase}</p>
-                            <span className="text-[10px] text-[hsl(var(--text-4))]">{step.date}</span>
+                          <div key={step.phase} className="flex items-center gap-2.5 p-2 bg-[hsl(var(--bg-raised))] border border-[hsl(var(--border))]">
+                            <div className="w-2.5 h-2.5 flex-shrink-0 border-2" style={step.done ? { background: 'hsl(var(--s-ok-tx))', borderColor: 'hsl(var(--s-ok-tx))' } : { background: 'transparent', borderColor: 'hsl(var(--border-mid))' }} />
+                            <p className="text-[11px] text-[hsl(var(--text-2))] flex-1">{step.phase}</p>
+                            <span className="text-[10px] text-[hsl(var(--text-4))] font-mono">{step.date}</span>
                           </div>
                         ))}
                       </div>

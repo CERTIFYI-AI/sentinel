@@ -72,21 +72,26 @@ export default function HitQueue() {
     setDeleteTarget(null);
   };
 
-  const priColors: Record<string, string> = { Urgent:"#ef4444", High:"#f97316", Normal:"#3b82f6", Low:"#22c55e" };
+  const priColors: Record<string, { tx: string; bg: string; br: string }> = {
+    Urgent: { tx:"hsl(var(--r-cr-tx))", bg:"hsl(var(--r-cr-bg))", br:"hsl(var(--r-cr-br))" },
+    High:   { tx:"hsl(var(--r-hi-tx))", bg:"hsl(var(--r-hi-bg))", br:"hsl(var(--r-hi-br))" },
+    Normal: { tx:"hsl(var(--s-in-tx))", bg:"hsl(var(--s-in-bg))", br:"hsl(var(--s-in-br))" },
+    Low:    { tx:"hsl(var(--s-ok-tx))", bg:"hsl(var(--s-ok-bg))", br:"hsl(var(--s-ok-br))" },
+  };
 
   function SLAIndicator({ sla, elapsed }: { sla: number; elapsed: number }) {
     const pct = Math.min((elapsed / sla) * 100, 100);
-    const color = pct >= 90 ? "#ef4444" : pct >= 70 ? "#f97316" : "#22c55e";
+    const color = pct >= 90 ? "hsl(var(--s-er-tx))" : pct >= 70 ? "hsl(var(--s-wn-tx))" : "hsl(var(--s-ok-tx))";
     return (
-      <div className="flex items-center gap-2">
-        <div className="w-16 h-1.5 bg-[hsl(var(--border))]"><div style={{ width:`${pct}%`, background:color, height:"100%" }} /></div>
-        <span className="text-xs" style={{ color }}>{elapsed}h/{sla}h</span>
+      <div className="flex items-center gap-1.5">
+        <div className="w-14 h-1.5 bg-[hsl(var(--border))]"><div style={{ width:`${pct}%`, background:color, height:"100%" }} /></div>
+        <span className="text-[11px] font-mono" style={{ color }}>{elapsed}h/{sla}h</span>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-5 max-w-[1400px]">
+    <div className="p-3 space-y-3 max-w-[1400px]">
       <Breadcrumbs />
       <div className="flex items-start justify-between">
         <div>
@@ -101,7 +106,7 @@ export default function HitQueue() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[["Total Items",items.length],["Urgent / High",items.filter(i=>["Urgent","High"].includes(i.priority)).length],["SLA Breaching",items.filter(i=>(i.elapsedHours/i.slaHours)>=0.9).length],["Unassigned",items.filter(i=>i.assignee==="Unassigned").length]].map(([l,v])=>(
-          <Card key={l as string}><CardContent className="p-4"><p className="text-2xl font-bold text-[hsl(var(--text-1))]">{v}</p><p className="text-xs text-[hsl(var(--text-3))] mt-0.5">{l}</p></CardContent></Card>
+          <Card key={l as string}><CardContent className="p-4"><p className="text-xl font-bold text-[hsl(var(--text-1))]">{v}</p><p className="text-xs text-[hsl(var(--text-3))] mt-0.5">{l}</p></CardContent></Card>
         ))}
       </div>
 
@@ -148,7 +153,7 @@ export default function HitQueue() {
                       <p className="text-xs text-[hsl(var(--text-4))] font-mono">{item.id} · {item.itemType}</p>
                     </td>
                     <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))]">{item.queue}</td>
-                    <td className="px-3 py-2.5"><span className="text-xs px-1.5 py-0.5 font-medium border" style={{ color:priColors[item.priority], borderColor:`${priColors[item.priority]}40`, background:`${priColors[item.priority]}12` }}>{item.priority}</span></td>
+                    <td className="px-3 py-2.5"><span className="text-xs px-1.5 py-0.5 font-medium border" style={{ color:priColors[item.priority]?.tx, borderColor:priColors[item.priority]?.br, background:priColors[item.priority]?.bg }}>{item.priority}</span></td>
                     <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-2))]">{item.assignee}</td>
                     <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))] whitespace-nowrap">{item.dueDate}</td>
                     <td className="px-3 py-2.5"><SLAIndicator sla={item.slaHours} elapsed={item.elapsedHours} /></td>
@@ -157,7 +162,7 @@ export default function HitQueue() {
                       <div className="flex items-center justify-end gap-1">
                         <button onClick={() => { setViewItem(item); setModal("view"); }} className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"><Eye size={14} /></button>
                         <button onClick={() => openEdit(item)} className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"><PencilSimple size={14} /></button>
-                        <button onClick={() => setDeleteTarget(item)} className="p-1.5 hover:bg-red-50 text-[hsl(0_72%_51%)]"><Trash size={14} /></button>
+                        <button onClick={() => setDeleteTarget(item)} className="p-1.5 hover:bg-[hsl(var(--s-er-bg))] text-[hsl(var(--destructive))]"><Trash size={14} /></button>
                       </div>
                     </td>
                   </tr>
@@ -205,7 +210,7 @@ export default function HitQueue() {
             <MetaBar record={viewItem} />
             <div className="p-5 space-y-4">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs px-1.5 py-0.5 font-medium border" style={{ color:priColors[viewItem.priority], borderColor:`${priColors[viewItem.priority]}40`, background:`${priColors[viewItem.priority]}12` }}>{viewItem.priority}</span>
+                <span className="text-xs px-1.5 py-0.5 font-medium border" style={{ color:priColors[viewItem.priority]?.tx, borderColor:priColors[viewItem.priority]?.br, background:priColors[viewItem.priority]?.bg }}>{viewItem.priority}</span>
                 <StatusBadge status={viewItem.status} />
                 <span className="text-xs px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))]">{viewItem.itemType}</span>
               </div>
@@ -218,7 +223,7 @@ export default function HitQueue() {
                 <p className="text-xs text-[hsl(var(--text-4))] mb-1">SLA Progress</p>
                 <div className="flex items-center gap-2">
                   <div className="flex-1 h-2 bg-[hsl(var(--border))]">
-                    <div style={{ width:`${Math.min((viewItem.elapsedHours/viewItem.slaHours)*100,100)}%`, background:(viewItem.elapsedHours/viewItem.slaHours)>=0.9?"#ef4444":"#22c55e", height:"100%" }} />
+                    <div style={{ width:`${Math.min((viewItem.elapsedHours/viewItem.slaHours)*100,100)}%`, background:(viewItem.elapsedHours/viewItem.slaHours)>=0.9?"hsl(var(--s-er-tx))":"hsl(var(--s-ok-tx))", height:"100%" }} />
                   </div>
                   <span className="text-xs">{viewItem.elapsedHours}h elapsed / {viewItem.slaHours}h SLA</span>
                 </div>

@@ -84,12 +84,12 @@ const BOARD_METRICS = [
 
 function scoreColor(s: number) {
   if (s >= 80) return 'hsl(var(--s-ok-tx))';
-  if (s >= 65) return '#f59e0b';
+  if (s >= 65) return 'hsl(var(--s-wn-tx))';
   return 'hsl(var(--destructive))';
 }
 function scoreBg(s: number) {
   if (s >= 80) return 'hsl(var(--s-ok-bg))';
-  if (s >= 65) return 'hsl(45 90% 50% / 0.1)';
+  if (s >= 65) return 'hsl(var(--s-wn-bg))';
   return 'hsl(var(--s-er-bg))';
 }
 function urgencyStyle(u: string) {
@@ -240,7 +240,7 @@ export default function ExecutiveCenter() {
               <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => toast.success('Board pack PDF generating…')}>
                 <FileText size={13} className="mr-1.5" />Export Board Pack
               </Button>
-              <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }} onClick={() => navigate('/reporting')}>
+              <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={() => navigate('/reporting')}>
                 <PresentationChart size={13} className="mr-1.5" />Full Report
               </Button>
             </div>
@@ -260,7 +260,7 @@ export default function ExecutiveCenter() {
             <TabsTrigger value="overview" style={{ borderRadius: 0 }}>Risk Posture</TabsTrigger>
             <TabsTrigger value="actions" style={{ borderRadius: 0 }}>
               Actions Required
-              <span className="ml-1.5 text-[9px] font-bold px-1.5 py-0.5" style={{ background: 'hsl(var(--destructive))', color: '#fff', borderRadius: 0 }}>
+              <span className="ml-1.5 text-[9px] font-bold px-1.5 py-0.5" style={{ background: 'hsl(var(--destructive))', color: 'hsl(var(--bg-surface))', borderRadius: 0 }}>
                 {EXECUTIVE_ACTIONS.filter(a => a.urgency === 'critical' || a.urgency === 'high').length}
               </span>
             </TabsTrigger>
@@ -339,7 +339,7 @@ export default function ExecutiveCenter() {
                         <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ background: s.dot }} />
                         <div>
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[9px] uppercase font-bold px-1.5 py-0.5" style={{ background: s.dot, color: '#fff' }}>
+                            <span className="text-[9px] uppercase font-bold px-1.5 py-0.5" style={{ background: s.dot, color: 'hsl(var(--bg-surface))' }}>
                               {action.urgency}
                             </span>
                             <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{action.title}</p>
@@ -369,7 +369,7 @@ export default function ExecutiveCenter() {
                 <div key={i} className="p-4" style={{ border: `1px solid ${fw.status === 'green' ? 'hsl(var(--s-ok-br))' : fw.status === 'amber' ? 'hsl(var(--s-wn-br))' : 'hsl(var(--destructive) / 0.4)'}`, background: fw.status === 'green' ? 'hsl(var(--s-ok-bg))' : fw.status === 'amber' ? 'hsl(var(--s-wn-bg) / 0.5)' : 'hsl(var(--s-er-bg))' }}>
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{fw.name}</p>
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: fw.status === 'green' ? 'hsl(var(--s-ok-tx))' : fw.status === 'amber' ? '#f59e0b' : 'hsl(var(--destructive))' }} />
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: fw.status === 'green' ? 'hsl(var(--s-ok-tx))' : fw.status === 'amber' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))' }} />
                   </div>
                   <p className="text-2xl font-bold mb-1" style={{ color: scoreColor(fw.score) }}>{fw.score}%</p>
                   <div className="h-1 w-full mb-2 overflow-hidden" style={{ background: 'hsl(var(--border))' }}>
@@ -389,7 +389,7 @@ export default function ExecutiveCenter() {
                   current compliance gaps. Closing the 5 identified critical gaps would reduce maximum exposure by an estimated $28M.
                   See ROI Dashboard for full fine avoidance analysis.
                 </p>
-                <Button size="sm" className="mt-2 h-6 text-[10px] px-2" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+                <Button size="sm" className="mt-2 h-6 text-[10px] px-2" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
                   onClick={() => navigate('/roi')}>
                   View Full Fine Avoidance Analysis <ArrowRight size={9} className="ml-1" />
                 </Button>
@@ -433,7 +433,7 @@ export default function ExecutiveCenter() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1">
-                            <div className="w-2 h-2 rounded-full" style={{ background: m.driftStatus === 'critical' ? 'hsl(var(--destructive))' : m.driftStatus === 'warning' ? '#f59e0b' : 'hsl(var(--s-ok-tx))' }} />
+                            <div className="w-2 h-2 rounded-full" style={{ background: m.driftStatus === 'critical' ? 'hsl(var(--destructive))' : m.driftStatus === 'warning' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))' }} />
                             <span style={{ color: 'hsl(var(--text-3))' }}>{m.driftStatus}</span>
                           </div>
                         </td>
@@ -495,7 +495,7 @@ export default function ExecutiveCenter() {
                       const heatColor = m.riskTier === 'high' && m.driftStatus === 'critical'
                         ? 'hsl(var(--destructive))'
                         : m.riskTier === 'high' || m.driftStatus === 'warning'
-                        ? '#f59e0b'
+                        ? 'hsl(var(--s-wn-tx))'
                         : 'hsl(var(--s-ok-tx))';
                       const heatBg = m.riskTier === 'high' && m.driftStatus === 'critical'
                         ? 'hsl(var(--s-er-bg))'
@@ -538,10 +538,10 @@ export default function ExecutiveCenter() {
                   <div className="space-y-3">
                     {[
                       { label: 'EU AI Act Max Fine', value: '$35M', pct: '2.1% revenue', color: 'hsl(var(--destructive))', note: 'Art. 9 gaps — 112 days to deadline' },
-                      { label: 'GDPR Max Fine', value: '$20M', pct: '1.2% revenue', color: '#f59e0b', note: 'Strong controls, 88% compliant' },
-                      { label: 'ECOA Reg B Exposure', value: '$2.4M', pct: 'Class action risk', color: '#f59e0b', note: 'MDL-001 bias DI below threshold' },
+                      { label: 'GDPR Max Fine', value: '$20M', pct: '1.2% revenue', color: 'hsl(var(--s-wn-tx))', note: 'Strong controls, 88% compliant' },
+                      { label: 'ECOA Reg B Exposure', value: '$2.4M', pct: 'Class action risk', color: 'hsl(var(--s-wn-tx))', note: 'MDL-001 bias DI below threshold' },
                       { label: 'Contract Risk (SOC 2)', value: '$8.5M', pct: 'Customer churn risk', color: 'hsl(var(--s-ok-tx))', note: '85% compliant, low risk' },
-                      { label: 'NIST Fed Contract Risk', value: '$3M', pct: 'Federal revenue at risk', color: '#f59e0b', note: '71% compliant — 3 gaps open' },
+                      { label: 'NIST Fed Contract Risk', value: '$3M', pct: 'Federal revenue at risk', color: 'hsl(var(--s-wn-tx))', note: '71% compliant — 3 gaps open' },
                     ].map((row, i) => (
                       <div key={i} className="flex items-start justify-between p-2.5"
                         style={{ border: `1px solid ${row.color}22`, background: `${row.color}08` }}>

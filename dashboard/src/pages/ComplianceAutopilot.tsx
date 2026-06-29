@@ -17,6 +17,8 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip,
   ResponsiveContainer,
 } from 'recharts';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { StatCardRow, type StatCardRowItem } from '@/components/ui/StatCardRow';
 
 const AUTOPILOT_AGENTS = [
   {
@@ -85,10 +87,11 @@ const EFFICIENCY_TREND = [
 ];
 
 const sevColor = (s: string) => {
-  if (s === 'critical') return { bg: 'hsl(var(--destructive) / 0.12)', tx: 'hsl(var(--destructive))' };
-  if (s === 'high') return { bg: 'hsl(var(--s-wn-bg))', tx: 'hsl(var(--s-wn-tx))' };
-  if (s === 'medium') return { bg: 'hsl(45 90% 50% / 0.12)', tx: 'hsl(45 90% 38%)' };
-  return { bg: 'hsl(var(--s-nt-bg))', tx: 'hsl(var(--text-4))' };
+  if (s === 'critical') return { bg: 'hsl(var(--s-er-bg))', tx: 'hsl(var(--s-er-tx))' };
+  if (s === 'high') return { bg: 'hsl(var(--r-hi-bg))', tx: 'hsl(var(--r-hi-tx))' };
+  if (s === 'medium') return { bg: 'hsl(var(--s-wn-bg))', tx: 'hsl(var(--s-wn-tx))' };
+  if (s === 'low') return { bg: 'hsl(var(--s-ok-bg))', tx: 'hsl(var(--s-ok-tx))' };
+  return { bg: 'hsl(var(--s-nt-bg))', tx: 'hsl(var(--s-nt-tx))' };
 };
 
 export default function ComplianceAutopilot() {
@@ -110,46 +113,35 @@ export default function ComplianceAutopilot() {
     }));
   };
 
+  const statCards: StatCardRowItem[] = [
+    { label: 'Active Agents', value: `${running}/6`, icon: <Robot size={14} weight="fill" />, variant: running >= 5 ? 'success' : 'warning' },
+    { label: 'Actions Today', value: totalActions, icon: <CheckCircle size={14} weight="fill" /> },
+    { label: 'Hours Saved (Apr)', value: `${totalHours.toFixed(1)}h`, icon: <Clock size={14} weight="fill" />, variant: 'success' },
+    { label: 'Tasks Automated', value: '94%', icon: <ChartBar size={14} weight="fill" /> },
+  ];
+
   return (
     <TooltipProvider>
-      <div className="space-y-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Compliance Autopilot</h1>
-              <Badge style={{ borderRadius: 0, fontSize: 9, background: 'hsl(var(--brand) / 0.12)', color: 'hsl(var(--brand))', border: '1px solid hsl(var(--brand) / 0.3)' }}>
-                AGENTIC AUTOMATION
-              </Badge>
-              <Badge style={{ borderRadius: 0, fontSize: 9, background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' }}>
-                {running}/6 AGENTS ACTIVE
-              </Badge>
+      <div className="space-y-3">
+        <PageHeader
+          title="Compliance Autopilot"
+          subtitle={`${orgName} · Autonomous AI agents monitoring, remediating, and filing 24/7`}
+          icon={Robot}
+          badge={
+            <div className="flex items-center gap-1.5">
+              <span className="px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider border" style={{ background: 'hsl(var(--brand) / 0.1)', color: 'hsl(var(--brand))', borderColor: 'hsl(var(--brand) / 0.25)' }}>Agentic</span>
+              <span className="px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider border" style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', borderColor: 'hsl(var(--s-ok-br))' }}>{running}/6 Active</span>
             </div>
-            <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>
-              {orgName} · Autonomous AI agents monitoring, remediating, and filing on your behalf — 24/7
-            </p>
-          </div>
-          <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
-            onClick={() => { toast.success('All agents synchronized'); }}>
-            <Lightning size={13} className="mr-1" />Sync All Agents
-          </Button>
-        </div>
+          }
+          actions={
+            <button onClick={() => { toast.success('All agents synchronized'); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[hsl(var(--brand))] text-white text-xs font-medium hover:bg-[hsl(var(--brand-hover))]">
+              <Lightning size={13} />Sync All
+            </button>
+          }
+        />
 
-        <div className="grid grid-cols-4 gap-3">
-          {[
-            { label: 'Active Autopilot Agents', value: `${running}/6`, icon: Robot, ok: true },
-            { label: 'Autonomous Actions Today', value: totalActions, icon: CheckCircle, ok: true },
-            { label: 'Engineering Hours Saved (Apr)', value: `${totalHours.toFixed(1)}h`, icon: Clock, ok: true },
-            { label: 'Manual Compliance Tasks Replaced', value: '94%', icon: ChartBar, ok: true },
-          ].map((tile, i) => (
-            <div key={i} className="p-4" style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-surface))' }}>
-              <div className="flex items-center gap-2 mb-1">
-                <tile.icon size={14} style={{ color: 'hsl(var(--brand))' }} />
-                <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{tile.label}</span>
-              </div>
-              <p className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>{tile.value}</p>
-            </div>
-          ))}
-        </div>
+        <StatCardRow cards={statCards} />
 
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList style={{ borderRadius: 0 }}>

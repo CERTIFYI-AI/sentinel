@@ -69,10 +69,16 @@ export default function HitlReviews() {
   const openEdit = (item: any) => { setForm({ ...item }); setEditId(item.id); setModal("edit"); };
   const doDelete = () => { setItems(p => p.filter(i => i.id !== deleteTarget?.id)); setDeleteTarget(null); toast.success("Review deleted"); };
 
-  const outcomeColors: Record<string, string> = { Approved:"#22c55e", Rejected:"#ef4444", Escalated:"#f97316", Deferred:"#3b82f6", Withdrawn:"#6b7280" };
+  const outcomeColors: Record<string, { tx: string; bg: string; br: string }> = {
+    Approved:  { tx:"hsl(var(--s-ok-tx))", bg:"hsl(var(--s-ok-bg))", br:"hsl(var(--s-ok-br))" },
+    Rejected:  { tx:"hsl(var(--s-er-tx))", bg:"hsl(var(--s-er-bg))", br:"hsl(var(--s-er-br))" },
+    Escalated: { tx:"hsl(var(--s-wn-tx))", bg:"hsl(var(--s-wn-bg))", br:"hsl(var(--s-wn-br))" },
+    Deferred:  { tx:"hsl(var(--s-in-tx))", bg:"hsl(var(--s-in-bg))", br:"hsl(var(--s-in-br))" },
+    Withdrawn: { tx:"hsl(var(--s-nt-tx))", bg:"hsl(var(--s-nt-bg))", br:"hsl(var(--s-nt-br))" },
+  };
 
   return (
-    <div className="p-6 space-y-5 max-w-[1400px]">
+    <div className="p-3 space-y-3 max-w-[1400px]">
       <Breadcrumbs />
       <div className="flex items-start justify-between">
         <div>
@@ -87,7 +93,7 @@ export default function HitlReviews() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[["Total Reviews",items.length],["Approved",items.filter(i=>i.outcome==="Approved").length],["Rejected",items.filter(i=>i.outcome==="Rejected").length],["Pending",items.filter(i=>i.status==="Pending").length]].map(([l,v])=>(
-          <Card key={l as string}><CardContent className="p-4"><p className="text-2xl font-bold text-[hsl(var(--text-1))]">{v}</p><p className="text-xs text-[hsl(var(--text-3))] mt-0.5">{l}</p></CardContent></Card>
+          <Card key={l as string}><CardContent className="p-4"><p className="text-xl font-bold text-[hsl(var(--text-1))]">{v}</p><p className="text-xs text-[hsl(var(--text-3))] mt-0.5">{l}</p></CardContent></Card>
         ))}
       </div>
 
@@ -137,7 +143,7 @@ export default function HitlReviews() {
                     <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))] whitespace-nowrap">{item.reviewDate||"—"}</td>
                     <td className="px-3 py-2.5">
                       {item.outcome ? (
-                        <span className="text-xs px-1.5 py-0.5 border font-medium" style={{ color:outcomeColors[item.outcome], borderColor:`${outcomeColors[item.outcome]}40`, background:`${outcomeColors[item.outcome]}12` }}>{item.outcome}</span>
+                        <span className="text-xs px-1.5 py-0.5 border font-medium" style={{ color:outcomeColors[item.outcome]?.tx, borderColor:outcomeColors[item.outcome]?.br, background:outcomeColors[item.outcome]?.bg }}>{item.outcome}</span>
                       ) : <span className="text-xs text-[hsl(var(--text-4))]">Pending</span>}
                     </td>
                     <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))]">{item.timeToReview||"—"}</td>
@@ -146,7 +152,7 @@ export default function HitlReviews() {
                       <div className="flex items-center justify-end gap-1">
                         <button onClick={() => { setViewItem(item); setModal("view"); }} className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"><Eye size={14} /></button>
                         <button onClick={() => openEdit(item)} className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"><PencilSimple size={14} /></button>
-                        <button onClick={() => setDeleteTarget(item)} className="p-1.5 hover:bg-red-50 text-[hsl(0_72%_51%)]"><Trash size={14} /></button>
+                        <button onClick={() => setDeleteTarget(item)} className="p-1.5 hover:bg-[hsl(var(--s-er-bg))] text-[hsl(var(--destructive))]"><Trash size={14} /></button>
                       </div>
                     </td>
                   </tr>

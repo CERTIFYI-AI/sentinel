@@ -37,10 +37,10 @@ const SEED: AuditEvent[] = [
 ]
 
 const SEV_STYLE: Record<EventSeverity, { bg: string; color: string }> = {
-  Info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))' },
-  Warning: { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)' },
-  Error: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
-  Critical: { bg: 'hsl(0 72% 51% / 0.18)', color: 'hsl(var(--destructive))' },
+  Info: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
+  Warning: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+  Error: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))' },
+  Critical: { bg: 'hsl(var(--r-cr-bg))', color: 'hsl(var(--r-cr-tx))' },
 }
 
 const CAT_ICON: Record<EventCategory, any> = {
@@ -90,16 +90,16 @@ export default function SystemAuditLog() {
         </button>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-4 gap-3">
         {[
           { label: 'Events Today', value: stats.today, color: 'hsl(var(--text-1))' },
           { label: 'Critical Events', value: stats.critical, color: 'hsl(var(--destructive))' },
           { label: 'Auth Failures', value: stats.failures, color: 'hsl(var(--destructive))' },
           { label: 'Integrity Status', value: 'Verified', color: 'hsl(var(--s-ok-tx))' },
         ].map(s => (
-          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
+          <div key={s.label} className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-[hsl(var(--bg-surface))]))] p-3">
             <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
-            <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
+            <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
           </div>
         ))}
       </div>
@@ -107,22 +107,22 @@ export default function SystemAuditLog() {
       <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
           <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search events…" className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search events…" className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]" />
         </div>
-        <select value={sevFilter} onChange={e => setSevFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
+        <select value={sevFilter} onChange={e => setSevFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
           {['All', 'Info', 'Warning', 'Error', 'Critical'].map(s => <option key={s}>{s}</option>)}
         </select>
-        <select value={catFilter} onChange={e => setCatFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
+        <select value={catFilter} onChange={e => setCatFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
           {['All', 'Authentication', 'Authorization', 'Data Access', 'Configuration', 'AI System', 'Policy', 'Compliance', 'Security'].map(c => <option key={c}>{c}</option>)}
         </select>
       </div>
 
-      <div className="rounded border border-[hsl(var(--border))] bg-surface overflow-hidden">
+      <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[hsl(var(--border))] bg-raised">
               {['Timestamp', 'User', 'Action', 'Resource', 'Category', 'Outcome', 'Severity', ''].map(h => (
-                <th key={h} className="text-left px-4 py-3 text-[11px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wide">{h}</th>
+                <th key={h} className="text-left px-3 py-2 text-[11px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wide">{h}</th>
               ))}
             </tr>
           </thead>
@@ -131,29 +131,29 @@ export default function SystemAuditLog() {
               const CatIcon = CAT_ICON[e.category] || Notepad
               return (
                 <tr key={e.id} className="border-b border-[hsl(var(--border))] hover:bg-raised cursor-pointer" onClick={() => setSelected(e)}>
-                  <td className="px-4 py-3 font-mono text-[11px] text-[hsl(var(--text-3))] whitespace-nowrap">{e.timestamp}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-2 font-mono text-[11px] text-[hsl(var(--text-3))] whitespace-nowrap">{e.timestamp}</td>
+                  <td className="px-3 py-2">
                     <div className="flex items-center gap-1.5">
                       <User size={12} className="text-[hsl(var(--text-4))]" />
                       <span className="text-xs text-[hsl(var(--text-2))]">{e.user}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 font-mono text-[11px] text-[hsl(var(--brand))]">{e.action}</td>
-                  <td className="px-4 py-3 text-xs text-[hsl(var(--text-3))] max-w-[180px] truncate">{e.resource}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-2 font-mono text-[11px] text-[hsl(var(--brand))]">{e.action}</td>
+                  <td className="px-3 py-2 text-xs text-[hsl(var(--text-3))] max-w-[180px] truncate">{e.resource}</td>
+                  <td className="px-3 py-2">
                     <div className="flex items-center gap-1 text-xs text-[hsl(var(--text-4))]">
                       <CatIcon size={11} />
                       {e.category}
                     </div>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-2">
                     <span className="text-[11px] px-1.5 py-0.5" style={{
-                      background: e.outcome === 'Success' ? 'hsl(142 71% 45% / 0.12)' : e.outcome === 'Failure' ? 'hsl(0 72% 51% / 0.12)' : 'hsl(45 93% 47% / 0.12)',
-                      color: e.outcome === 'Success' ? 'hsl(var(--s-ok-tx))' : e.outcome === 'Failure' ? 'hsl(var(--destructive))' : 'hsl(45 85% 40%)',
+                      background: e.outcome === 'Success' ? 'hsl(var(--s-ok-bg))' : e.outcome === 'Failure' ? 'hsl(var(--s-er-bg))' : 'hsl(var(--s-wn-bg))',
+                      color: e.outcome === 'Success' ? 'hsl(var(--s-ok-tx))' : e.outcome === 'Failure' ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-wn-tx))',
                     }}>{e.outcome}</span>
                   </td>
-                  <td className="px-4 py-3"><span className="text-[11px] px-1.5 py-0.5 font-medium" style={SEV_STYLE[e.severity] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{e.severity}</span></td>
-                  <td className="px-4 py-3"><Eye size={14} className="text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))]" /></td>
+                  <td className="px-3 py-2"><span className="text-[11px] px-1.5 py-0.5 font-medium" style={SEV_STYLE[e.severity] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{e.severity}</span></td>
+                  <td className="px-3 py-2"><Eye size={14} className="text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))]" /></td>
                 </tr>
               )
             })}
@@ -165,7 +165,7 @@ export default function SystemAuditLog() {
       {selected && (
         <div className="fixed inset-0 z-50 flex">
           <div className="flex-1 bg-black/40" onClick={() => setSelected(null)} />
-          <div className="w-[520px] bg-surface border-l border-[hsl(var(--border))] flex flex-col h-full overflow-y-auto">
+          <div className="w-[520px] bg-[hsl(var(--bg-surface))] border-l border-[hsl(var(--border))] flex flex-col h-full overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))]">
               <div><p className="font-mono text-xs text-[hsl(var(--brand))]">{selected.id}</p><h2 className="text-sm font-semibold text-[hsl(var(--text-1))]">{selected.action}</h2></div>
               <button onClick={() => setSelected(null)}><X size={18} className="text-[hsl(var(--text-4))]" /></button>
@@ -174,7 +174,7 @@ export default function SystemAuditLog() {
               <div className="flex gap-2">
                 <span className="text-[11px] px-2 py-0.5 font-medium" style={SEV_STYLE[selected.severity] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{selected.severity}</span>
                 <span className="text-[11px] px-2 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{selected.category}</span>
-                <span className="text-[11px] px-2 py-0.5 font-medium" style={{ background: selected.outcome === 'Success' ? 'hsl(142 71% 45% / 0.12)' : 'hsl(0 72% 51% / 0.12)', color: selected.outcome === 'Success' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))' }}>{selected.outcome}</span>
+                <span className="text-[11px] px-2 py-0.5 font-medium" style={{ background: selected.outcome === 'Success' ? 'hsl(var(--s-ok-bg))' : selected.outcome === 'Failure' ? 'hsl(var(--s-er-bg))' : 'hsl(var(--s-wn-bg))', color: selected.outcome === 'Success' ? 'hsl(var(--s-ok-tx))' : selected.outcome === 'Failure' ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-wn-tx))' }}>{selected.outcome}</span>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {[
