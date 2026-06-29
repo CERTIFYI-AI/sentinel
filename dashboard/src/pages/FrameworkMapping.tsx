@@ -137,6 +137,7 @@ function coverageColor(c: Coverage) {
     case 'Partial': return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))', symbol: '⚠' };
     case 'Gap': return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', symbol: '—' };
     case 'N/A': return { bg: 'hsl(var(--bg-raised))', text: 'hsl(var(--text-4))', symbol: 'N/A' };
+    default: return { bg: 'hsl(var(--bg-raised))', text: 'hsl(var(--text-4))', symbol: '?' };
   }
 }
 

@@ -100,6 +100,7 @@ function planStatusColor(s: PlanStatus) {
     case 'Alert': return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))' };
     case 'Critical': return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))' };
     case 'Paused': return { bg: 'hsl(var(--bg-raised))', text: 'hsl(var(--text-4))' };
+    default: return { bg: 'hsl(var(--bg-raised))', text: 'hsl(var(--text-4))' };
   }
 }
 
@@ -108,6 +109,7 @@ function eventColor(sev: 'info' | 'warn' | 'error') {
     case 'info': return { bg: 'hsl(var(--brand-subtle))', text: 'hsl(var(--brand))' };
     case 'warn': return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))' };
     case 'error': return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))' };
+    default: return { bg: 'hsl(var(--bg-raised))', text: 'hsl(var(--text-4))' };
   }
 }
 

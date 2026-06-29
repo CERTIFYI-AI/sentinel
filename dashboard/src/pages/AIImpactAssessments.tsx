@@ -304,8 +304,8 @@ export default function AIImpactAssessments() {
                 <tr><td colSpan={8} className="px-4 py-8 text-center text-sm text-[hsl(var(--text-3))]">No assessments match your filters.</td></tr>
               )}
               {filtered.map(r => {
-                const ss = STATUS_STYLE[r.status]
-                const rs = RISK_STYLE[r.risk]
+                const ss = STATUS_STYLE[r.status] || { bg: 'bg-sunken', color: 'text-[hsl(var(--text-3))]' }
+                const rs = RISK_STYLE[r.risk] || { bg: 'bg-sunken', color: 'text-[hsl(var(--text-3))]' }
                 return (
                   <tr key={r.id} className="border-b border-[hsl(var(--border))] hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => setSelected(r)}>
                     <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--brand))]">{r.id}</td>
@@ -347,8 +347,8 @@ export default function AIImpactAssessments() {
                 <span className="font-mono text-xs text-[hsl(var(--brand))] mb-1 block">{selected.id}</span>
                 <h2 className="text-lg font-bold text-[hsl(var(--text-1))]">{selected.name}</h2>
                 <div className="flex items-center gap-2 mt-2">
-                  <Badge className={`${STATUS_STYLE[selected.status].bg} ${STATUS_STYLE[selected.status].color} border-0 rounded-none`}>{selected.status}</Badge>
-                  <Badge className={`${RISK_STYLE[selected.risk].bg} ${RISK_STYLE[selected.risk].color} border-0 rounded-none uppercase text-[10px]`}>{selected.risk} Risk</Badge>
+                  <Badge className={`${(STATUS_STYLE[selected.status] || { bg: 'bg-sunken', color: 'text-[hsl(var(--text-3))]' }).bg} ${(STATUS_STYLE[selected.status] || { bg: 'bg-sunken', color: 'text-[hsl(var(--text-3))]' }).color} border-0 rounded-none`}>{selected.status}</Badge>
+                  <Badge className={`${(RISK_STYLE[selected.risk] || { bg: 'bg-sunken', color: 'text-[hsl(var(--text-3))]' }).bg} ${(RISK_STYLE[selected.risk] || { bg: 'bg-sunken', color: 'text-[hsl(var(--text-3))]' }).color} border-0 rounded-none uppercase text-[10px]`}>{selected.risk} Risk</Badge>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -448,7 +448,7 @@ export default function AIImpactAssessments() {
                                 </div>
                                 <p className="text-sm text-[hsl(var(--text-2))] mt-1">{m.measure}</p>
                               </div>
-                              <Badge className={`${MITIGATION_STATUS[m.status].bg} ${MITIGATION_STATUS[m.status].color} border-0 rounded-none whitespace-nowrap`}>{m.status}</Badge>
+                              <Badge className={`${(MITIGATION_STATUS[m.status] || { bg: 'bg-sunken', color: 'text-[hsl(var(--text-3))]' }).bg} ${(MITIGATION_STATUS[m.status] || { bg: 'bg-sunken', color: 'text-[hsl(var(--text-3))]' }).color} border-0 rounded-none whitespace-nowrap`}>{m.status}</Badge>
                             </div>
                           ))}
                         </div>
@@ -461,11 +461,11 @@ export default function AIImpactAssessments() {
                       ) : (
                         <div className="space-y-3">
                           {selected.findings.map(f => (
-                            <div key={f.id} className={`flex items-start justify-between gap-4 p-4 border border-[hsl(var(--border))] bg-surface border-l-4 ${FINDING_SEV[f.severity].border} rounded-none`}>
+                            <div key={f.id} className={`flex items-start justify-between gap-4 p-4 border border-[hsl(var(--border))] bg-surface border-l-4 ${(FINDING_SEV[f.severity] || { bg: 'bg-sunken', color: 'text-[hsl(var(--text-3))]', border: 'border-[hsl(var(--border))]' }).border} rounded-none`}>
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-2">
                                   <span className="font-mono text-xs font-bold text-[hsl(var(--text-1))]">{f.id}</span>
-                                  <Badge className={`${FINDING_SEV[f.severity].bg} ${FINDING_SEV[f.severity].color} border-0 rounded-none uppercase text-[10px]`}>{f.severity} Severity</Badge>
+                                  <Badge className={`${(FINDING_SEV[f.severity] || { bg: 'bg-sunken', color: 'text-[hsl(var(--text-3))]', border: 'border-[hsl(var(--border))]' }).bg} ${(FINDING_SEV[f.severity] || { bg: 'bg-sunken', color: 'text-[hsl(var(--text-3))]', border: 'border-[hsl(var(--border))]' }).color} border-0 rounded-none uppercase text-[10px]`}>{f.severity} Severity</Badge>
                                   <Badge className={f.status === 'Resolved' ? 'bg-emerald-500/10 text-emerald-500 border-0 rounded-none' : 'bg-yellow-500/10 text-yellow-500 border-0 rounded-none'}>{f.status}</Badge>
                                 </div>
                                 <p className="text-sm text-[hsl(var(--text-2))]">{f.description}</p>

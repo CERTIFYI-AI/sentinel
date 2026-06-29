@@ -185,7 +185,7 @@ export default function FinancialRisk() {
                 <td className="px-4 py-3 text-xs text-[hsl(var(--text-3))]">{(r.probability * 100).toFixed(0)}%</td>
                 <td className="px-4 py-3 text-xs text-[hsl(var(--text-3))]">{(r.controlEffectiveness * 100).toFixed(0)}%</td>
                 <td className="px-4 py-3 font-mono text-sm font-semibold" style={{ color: r.residualRisk > 1000000 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))' }}>{formatCurrency(r.residualRisk)}</td>
-                <td className="px-4 py-3"><span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[r.status]}>{r.status}</span></td>
+                <td className="px-4 py-3"><span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[r.status] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{r.status}</span></td>
                 <td className="px-4 py-3" onClick={ev => ev.stopPropagation()}>
                   <div className="flex items-center gap-1">
                     <button onClick={() => openEdit(r)} className="p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))] hover:bg-raised"><PencilSimple size={13} /></button>
@@ -368,7 +368,7 @@ export default function FinancialRisk() {
             </div>
             <div className="p-4 space-y-4">
               <div className="flex gap-2">
-                <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status]}>{selected.status}</span>
+                <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{selected.status}</span>
                 <span className="text-[11px] px-2 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{selected.framework}</span>
                 <span className="text-[11px] px-2 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{selected.category}</span>
               </div>

@@ -71,6 +71,7 @@ function statusColor(s: ReportStatus) {
     case 'Published': return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))' };
     case 'Draft': return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))' };
     case 'Overdue': return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))' };
+    default: return { bg: 'hsl(var(--bg-raised))', text: 'hsl(var(--text-4))' };
   }
 }
 

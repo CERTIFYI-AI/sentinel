@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.next/
+*.min.js
+*.lock
+coverage/
+__mocks__/

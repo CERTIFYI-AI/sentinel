@@ -70,6 +70,7 @@ function tierColor(tier: EUTier) {
     case 'High Risk': return { bg: 'bg-orange-500/10', text: 'text-orange-500', border: 'border-orange-500/30' };
     case 'Limited': return { bg: 'bg-[hsl(var(--brand-subtle))]', text: 'text-[hsl(var(--brand))]', border: 'border-[hsl(var(--brand))/30]' };
     case 'Minimal': return { bg: 'bg-emerald-500/10', text: 'text-emerald-500', border: 'border-emerald-500/30' };
+    default: return { bg: 'bg-sunken', text: 'text-[hsl(var(--text-3))]', border: 'border-[hsl(var(--border))]' };
   }
 }
 
@@ -79,6 +80,7 @@ function reviewColor(status: ReviewStatus) {
     case 'In Review': return { bg: 'bg-yellow-500/10', text: 'text-yellow-500' };
     case 'Pending': return { bg: 'bg-orange-500/10', text: 'text-orange-500' };
     case 'Rejected': return { bg: 'bg-red-500/10', text: 'text-red-500' };
+    default: return { bg: 'bg-sunken', text: 'text-[hsl(var(--text-3))]' };
   }
 }
 

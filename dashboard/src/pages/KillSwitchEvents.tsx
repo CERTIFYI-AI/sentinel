@@ -154,7 +154,7 @@ export default function KillSwitchEvents() {
 
       <div className="space-y-3">
         {filtered.map(e => {
-          const ss = STATUS_STYLE[e.status]
+          const ss = STATUS_STYLE[e.status] || { bg: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }
           return (
             <div key={e.id} className="rounded border border-[hsl(var(--border))] bg-surface p-4 cursor-pointer hover:border-[hsl(var(--brand)/0.4)]" onClick={() => setSelected(e)}>
               <div className="flex items-start justify-between gap-4">
@@ -361,7 +361,7 @@ export default function KillSwitchEvents() {
             </div>
             <div className="p-4 space-y-4">
               <div className="flex gap-2 flex-wrap">
-                <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status]}>{selected.status}</span>
+                <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status] || { bg: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }}>{selected.status}</span>
                 <span className="text-[11px] px-2 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{selected.trigger}</span>
               </div>
               <div className="grid grid-cols-2 gap-3">

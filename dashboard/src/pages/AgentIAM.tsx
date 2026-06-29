@@ -156,7 +156,7 @@ export default function AgentIAM() {
                 <td className="px-4 py-3">
                   <span className={`text-[10px] px-1.5 py-0.5 ${i.auditRequired ? 'bg-[hsl(var(--brand)/0.1)] text-[hsl(var(--brand))]' : 'text-[hsl(var(--text-4))]'}`}>{i.auditRequired ? 'Required' : 'Optional'}</span>
                 </td>
-                <td className="px-4 py-3"><span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[i.status]}>{i.status}</span></td>
+                <td className="px-4 py-3"><span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[i.status] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{i.status}</span></td>
                 <td className="px-4 py-3"><Eye size={14} className="text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))]" /></td>
               </tr>
             ))}
@@ -289,7 +289,7 @@ export default function AgentIAM() {
               <button onClick={() => setSelected(null)}><X size={18} className="text-[hsl(var(--text-4))]" /></button>
             </div>
             <div className="p-4 space-y-4">
-              <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status]}>{selected.status}</span>
+              <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{selected.status}</span>
               <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">Principal ID</p><p className="font-mono text-xs text-[hsl(var(--text-2))] p-2 bg-raised border border-[hsl(var(--border))] break-all">{selected.principalId}</p></div>
               <div className="grid grid-cols-2 gap-3">
                 {[

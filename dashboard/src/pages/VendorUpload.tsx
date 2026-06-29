@@ -157,7 +157,7 @@ export default function VendorUpload() {
                 <td className="px-4 py-3 text-xs text-[hsl(var(--text-4))]">{s.size}</td>
                 <td className="px-4 py-3 text-xs text-[hsl(var(--text-4))]">{s.expiryDate ?? '—'}</td>
                 <td className="px-4 py-3 text-xs text-[hsl(var(--text-3))]">{s.reviewedBy ?? '—'}</td>
-                <td className="px-4 py-3"><span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[s.status]}>{s.status}</span></td>
+                <td className="px-4 py-3"><span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[s.status] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{s.status}</span></td>
                 <td className="px-4 py-3" onClick={ev => ev.stopPropagation()}>
                   <button onClick={() => setDeleteTarget(s)} className="p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(0_72%_51%/0.05)]"><Trash size={13} /></button>
                 </td>
@@ -177,7 +177,7 @@ export default function VendorUpload() {
               <button onClick={() => setSelected(null)}><X size={18} className="text-[hsl(var(--text-4))]" /></button>
             </div>
             <div className="p-4 space-y-4">
-              <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status]}>{selected.status}</span>
+              <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{selected.status}</span>
               <div className="flex items-center gap-2 p-3 bg-raised border border-[hsl(var(--border))] cursor-pointer hover:bg-[hsl(var(--bg-page))]" onClick={() => toast.info(`Opening ${selected.filename}`)}>
                 <FileText size={16} className="text-[hsl(var(--brand))]" />
                 <div><p className="text-xs font-medium text-[hsl(var(--text-1))]">{selected.filename}</p><p className="text-[10px] text-[hsl(var(--text-4))]">{selected.size}</p></div>

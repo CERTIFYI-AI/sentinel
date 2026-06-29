@@ -38,9 +38,12 @@ export type { ChartContainerProps } from './ChartContainer';
 // ── Feedback ─────────────────────────────────────────────────────────────────
 export { RiskBadge } from './RiskBadge';
 export { StatusPill } from './StatusPill';
+export { AgentStatusIndicator } from './AgentStatusIndicator';
 export { InterlinkChip } from './InterlinkChip';
 export { AuditTrail } from './AuditTrail';
 export { ContextualAlert } from './ContextualAlert';
 export { SlideOverPanel } from './SlideOverPanel';
 export { MetricGauge } from './MetricGauge';
+export { MetricStrip } from './MetricStrip';
+export type { MetricStripItem } from './MetricStrip';
 

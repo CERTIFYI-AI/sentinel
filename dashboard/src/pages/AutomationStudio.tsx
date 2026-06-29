@@ -654,7 +654,7 @@ export default function AutomationStudio() {
                   <div className="flex-1 min-w-0 cursor-pointer" onClick={() => { setSelected(wf); setDrawerTab('overview') }}>
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className="font-mono text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>{wf.id}</span>
-                      <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[wf.status]}>{wf.status}</span>
+                      <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[wf.status] || { background: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }}>{wf.status}</span>
                       <span className="text-[10px] px-1.5 py-0.5 border" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }}>{wf.category}</span>
                       {wf.trigger === 'CI/CD Gate' && (
                         <span className="text-[10px] px-1.5 py-0.5 font-semibold"
@@ -783,7 +783,7 @@ export default function AutomationStudio() {
               <div className="flex-1 min-w-0 pr-3">
                 <div className="flex items-center gap-2 mb-0.5">
                   <p className="font-mono text-[10px]" style={{ color: 'hsl(var(--brand))' }}>{selected.id}</p>
-                  <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status]}>{selected.status}</span>
+                  <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status] || { background: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }}>{selected.status}</span>
                   <span className="text-[10px] px-1.5 py-0.5 border" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }}>{selected.category}</span>
                 </div>
                 <h2 className="text-base font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{selected.name}</h2>

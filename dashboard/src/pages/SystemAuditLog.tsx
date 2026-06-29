@@ -152,7 +152,7 @@ export default function SystemAuditLog() {
                       color: e.outcome === 'Success' ? 'hsl(var(--s-ok-tx))' : e.outcome === 'Failure' ? 'hsl(var(--destructive))' : 'hsl(45 85% 40%)',
                     }}>{e.outcome}</span>
                   </td>
-                  <td className="px-4 py-3"><span className="text-[11px] px-1.5 py-0.5 font-medium" style={SEV_STYLE[e.severity]}>{e.severity}</span></td>
+                  <td className="px-4 py-3"><span className="text-[11px] px-1.5 py-0.5 font-medium" style={SEV_STYLE[e.severity] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{e.severity}</span></td>
                   <td className="px-4 py-3"><Eye size={14} className="text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))]" /></td>
                 </tr>
               )
@@ -172,7 +172,7 @@ export default function SystemAuditLog() {
             </div>
             <div className="p-4 space-y-4">
               <div className="flex gap-2">
-                <span className="text-[11px] px-2 py-0.5 font-medium" style={SEV_STYLE[selected.severity]}>{selected.severity}</span>
+                <span className="text-[11px] px-2 py-0.5 font-medium" style={SEV_STYLE[selected.severity] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{selected.severity}</span>
                 <span className="text-[11px] px-2 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{selected.category}</span>
                 <span className="text-[11px] px-2 py-0.5 font-medium" style={{ background: selected.outcome === 'Success' ? 'hsl(142 71% 45% / 0.12)' : 'hsl(0 72% 51% / 0.12)', color: selected.outcome === 'Success' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))' }}>{selected.outcome}</span>
               </div>

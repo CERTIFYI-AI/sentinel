@@ -63,6 +63,7 @@ function art10Color(s: Art10Status) {
     case 'Met': return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))' };
     case 'Partial': return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))', border: 'hsl(var(--s-wn-br))' };
     case 'Not Met': return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))' };
+    default: return { bg: 'hsl(var(--bg-raised))', text: 'hsl(var(--text-4))', border: 'hsl(var(--border))' };
   }
 }
 

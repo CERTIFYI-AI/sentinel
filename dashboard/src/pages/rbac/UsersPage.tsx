@@ -38,7 +38,7 @@ function Avatar({ user }: { user: ACUser }) {
 }
 
 function StatusBadge({ status }: { status: UserStatus }) {
-  const s = STATUS_STYLE[status]
+  const s = STATUS_STYLE[status] || { bg: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }
   return <span className="text-[11px] px-2 py-0.5 font-medium" style={s}>{status.charAt(0).toUpperCase() + status.slice(1)}</span>
 }
 
@@ -333,7 +333,7 @@ export default function UsersPage() {
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
                         {userRoles.slice(0, 2).map(r => (
-                          <span key={r.id} className="text-[10px] px-1.5 py-0.5 whitespace-nowrap" style={COLOR_STYLES[r.color]}>{r.name}</span>
+                          <span key={r.id} className="text-[10px] px-1.5 py-0.5 whitespace-nowrap" style={COLOR_STYLES[r.color] || { bg: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }}>{r.name}</span>
                         ))}
                         {userRoles.length > 2 && <span className="text-[10px] px-1.5 py-0.5" style={{ background: 'hsl(var(--bg-raised))', color: 'hsl(var(--text-4))' }}>+{userRoles.length - 2}</span>}
                       </div>
@@ -401,7 +401,7 @@ export default function UsersPage() {
                     return (
                       <div key={rid} className="flex items-center justify-between px-3 py-2 border" style={{ background: 'hsl(var(--bg-raised))', borderColor: 'hsl(var(--border))' }}>
                         <div>
-                          <span className="text-[11px] px-2 py-0.5 font-medium" style={COLOR_STYLES[r.color]}>{r.name}</span>
+                          <span className="text-[11px] px-2 py-0.5 font-medium" style={COLOR_STYLES[r.color] || { bg: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }}>{r.name}</span>
                           <p className="text-[10px] mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>{r.permissions.length} permissions</p>
                         </div>
                       </div>
@@ -550,7 +550,7 @@ export default function UsersPage() {
                             }} className="mt-0.5 w-3.5 h-3.5" style={{ accentColor: 'hsl(var(--brand))' }} />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <span className="text-[11px] px-2 py-0.5 font-medium" style={COLOR_STYLES[r.color]}>{r.name}</span>
+                                <span className="text-[11px] px-2 py-0.5 font-medium" style={COLOR_STYLES[r.color] || { bg: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }}>{r.name}</span>
                                 {r.isSystem && <span className="text-[9px]" style={{ color: 'hsl(var(--text-4))' }}>System</span>}
                               </div>
                               <p className="text-[10px] mt-0.5 truncate" style={{ color: 'hsl(var(--text-4))' }}>{r.description}</p>

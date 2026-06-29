@@ -301,7 +301,7 @@ export default function ApprovalWorkflows() {
           <div className="py-10 text-center text-sm text-[hsl(var(--text-4))]">No workflows found.</div>
         )}
         {filtered.map(r => {
-          const ss = STATUS_STYLE[r.status]
+          const ss = STATUS_STYLE[r.status] || { bg: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }
           return (
             <div key={r.id} className="rounded border border-[hsl(var(--border))] bg-surface overflow-hidden">
               {/* Card Header */}
@@ -366,7 +366,7 @@ export default function ApprovalWorkflows() {
                 <span className="font-mono text-xs text-[hsl(var(--text-4))]">{selected.id}</span>
                 <h2 className="text-base font-semibold text-[hsl(var(--text-1))] mt-0.5">{selected.name}</h2>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status]}>{selected.status}</span>
+                  <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status] || { bg: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }}>{selected.status}</span>
                   <span className="text-[10px] px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-4))]">{selected.type}</span>
                 </div>
               </div>

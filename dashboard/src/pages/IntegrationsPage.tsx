@@ -150,7 +150,7 @@ export default function IntegrationsPage() {
               </div>
               <div className="flex items-center gap-2">
                 {int.healthCheck && <div className="w-2 h-2 rounded-full" style={{ background: HEALTH_DOT[int.healthCheck] }} title={int.healthCheck} />}
-                <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[int.status]}>{int.status}</span>
+                <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[int.status] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{int.status}</span>
               </div>
             </div>
             <p className="text-xs text-[hsl(var(--text-4))] mb-2 line-clamp-2">{int.description}</p>
@@ -186,7 +186,7 @@ export default function IntegrationsPage() {
             </div>
             <div className="p-4 space-y-4">
               <div className="flex gap-2">
-                <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status]}>{selected.status}</span>
+                <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{selected.status}</span>
                 {selected.healthCheck && <span className="text-[11px] px-2 py-0.5 font-medium flex items-center gap-1" style={{ background: selected.healthCheck === 'passing' ? 'hsl(142 71% 45% / 0.12)' : 'hsl(0 72% 51% / 0.12)', color: HEALTH_DOT[selected.healthCheck] }}><div className="w-1.5 h-1.5 rounded-full" style={{ background: HEALTH_DOT[selected.healthCheck] }} />{selected.healthCheck}</span>}
               </div>
               <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">{selected.description}</p>

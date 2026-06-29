@@ -1,0 +1,5 @@
+# Semgrep local configuration for Sentinel AI GRC Platform
+# Used as fallback when Semgrep App token is not available.
+# The CI workflow uses --config auto which pulls community rules.
+# This file can be extended with custom rules as needed.
+rules: []

@@ -2,7 +2,7 @@
 import React from "react";
 import { clsx } from "clsx";
 
-type BadgeVariant = "healthy"|"degraded"|"critical"|"none"|"regen"|"upgrade"|"hitl"|"blocked"|"closed"|"halfopen"|"open"|"mandatory"|"certifiable"|"voluntary"|"policy"|"technical"|"active"|"inactive"|"error"|"pending"|"revoked"|"soon"|"high"|"medium"|"low"|"admin"|"reviewer"|"api"|"connected"|"disconnected";
+type BadgeVariant = "healthy"|"degraded"|"critical"|"none"|"regen"|"upgrade"|"hitl"|"blocked"|"closed"|"halfopen"|"open"|"mandatory"|"certifiable"|"voluntary"|"policy"|"technical"|"active"|"inactive"|"error"|"pending"|"revoked"|"soon"|"high"|"medium"|"low"|"admin"|"reviewer"|"api"|"connected"|"disconnected"|"default"|"secondary"|"destructive"|"outline";
 type BadgeSize = "sm"|"md"|"lg";
 
 interface BadgeProps {
@@ -11,6 +11,7 @@ interface BadgeProps {
   children: React.ReactNode;
   pulse?: boolean;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 const variantStyles: Record<BadgeVariant, string> = {
@@ -44,6 +45,10 @@ const variantStyles: Record<BadgeVariant, string> = {
   api: "bg-[hsl(var(--tag-zinc-bg))] text-[hsl(var(--tag-zinc))] border border-[hsl(var(--tag-zinc-border))]",
   connected: "bg-[hsl(var(--success-bg))] text-[hsl(var(--success))] border border-[hsl(var(--success))]",
   disconnected: "bg-[hsl(var(--tag-zinc-bg))] text-[hsl(var(--tag-zinc))] border border-[hsl(var(--tag-zinc-border))]",
+  default: "bg-[hsl(var(--tag-zinc-bg))] text-[hsl(var(--tag-zinc))] border border-[hsl(var(--tag-zinc-border))]",
+  secondary: "bg-[hsl(var(--tag-zinc-bg))] text-[hsl(var(--foreground))] border border-[hsl(var(--tag-zinc-border))]",
+  destructive: "bg-[hsl(var(--destructive-bg))] text-[hsl(var(--destructive))] border border-[hsl(var(--destructive))]",
+  outline: "bg-transparent text-[hsl(var(--foreground))] border border-[hsl(var(--border))]",
 };
 
 const sizeStyles: Record<BadgeSize, string> = {
@@ -58,9 +63,12 @@ export function trustBadgeVariant(score: number): BadgeVariant {
   return "critical";
 }
 
-export function Badge({ variant="none", size="md", children, pulse=false, className }: BadgeProps) {
+export function Badge({ variant="none", size="md", children, pulse=false, className, style }: BadgeProps) {
   return (
-    <span className={clsx("inline-flex items-center gap-1 font-medium whitespace-nowrap", variantStyles[variant], sizeStyles[size], className)}>
+    <span
+      className={clsx("inline-flex items-center gap-1 font-medium whitespace-nowrap", variantStyles[variant] || variantStyles.none, sizeStyles[size], className)}
+      style={style}
+    >
       {pulse && <span className="w-[6px] h-[6px] rounded-full bg-current animate-pulse-dot flex-shrink-0" />}
       {children}
     </span>

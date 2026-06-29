@@ -217,7 +217,7 @@ export default function SupplyChainAttestations() {
                 <td className="px-4 py-3 text-xs text-[hsl(var(--text-4))]">{a.attestedDate}</td>
                 <td className="px-4 py-3 text-xs text-[hsl(var(--text-4))]">{a.validUntil || '—'}</td>
                 <td className="px-4 py-3 text-xs text-[hsl(var(--text-3))] max-w-[120px] truncate">{a.framework}</td>
-                <td className="px-4 py-3"><span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[a.status]}>{a.status}</span></td>
+                <td className="px-4 py-3"><span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[a.status] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{a.status}</span></td>
                 <td className="px-4 py-3">
                   <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                     <button onClick={() => openEdit(a)} className="p-1 text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))]"><Pencil size={12} /></button>
@@ -258,7 +258,7 @@ export default function SupplyChainAttestations() {
               {drawerTab === 'overview' && (
                 <>
                   <div className="flex gap-2 flex-wrap">
-                    <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status]}>{selected.status}</span>
+                    <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{selected.status}</span>
                     <span className="text-[11px] px-2 py-0.5 border border-[hsl(var(--border))] text-[hsl(var(--text-3))] font-medium" style={{ color: SUBJECT_COLOR[selected.subjectType] }}>{selected.subjectType}</span>
                   </div>
                   <div>

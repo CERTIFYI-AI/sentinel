@@ -162,7 +162,7 @@ export default function ConsentManagement() {
                 <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))]">{r.legalBasis}</td>
                 <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))]">{r.purposes.length} purpose{r.purposes.length !== 1 ? 's' : ''}</td>
                 <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))]">{r.aiSystems.length} system{r.aiSystems.length !== 1 ? 's' : ''}</td>
-                <td className="px-3 py-2.5"><span className="px-2 py-0.5 rounded text-xs font-medium" style={STATUS_STYLE[r.status as ConsentStatus]}>{r.status}</span></td>
+                <td className="px-3 py-2.5"><span className="px-2 py-0.5 rounded text-xs font-medium" style={STATUS_STYLE[r.status as ConsentStatus] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{r.status}</span></td>
                 <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))]">{r.consentDate}</td>
                 <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))]">{r.expiryDate}</td>
                 <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))]">{r.channel}</td>
@@ -212,7 +212,7 @@ export default function ConsentManagement() {
                   {drawerTab === 'overview' && (
                     <>
                       <div className="flex gap-2 flex-wrap">
-                        <span className="px-2 py-0.5 rounded text-xs font-medium" style={STATUS_STYLE[selected.status]}>{selected.status}</span>
+                        <span className="px-2 py-0.5 rounded text-xs font-medium" style={STATUS_STYLE[selected.status] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{selected.status}</span>
                         <span className="px-2 py-0.5 rounded text-xs bg-raised text-[hsl(var(--text-3))]">{selected.legalBasis}</span>
                         <span className="px-2 py-0.5 rounded text-xs bg-raised text-[hsl(var(--text-3))]">v{selected.version}</span>
                       </div>

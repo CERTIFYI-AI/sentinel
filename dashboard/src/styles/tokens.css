@@ -56,6 +56,58 @@
   --shadow-lg: 0 10px 20px rgb(0 0 0/8%);
 
   --destructive: 0 72% 51%;
+
+  /* ── Trust score tokens ─── */
+  --trust-high:    142 69% 28%;
+  --trust-high-bg: 142 69% 96%;
+  --trust-medium:    38 92% 40%;
+  --trust-medium-bg: 38 92% 96%;
+  --trust-low:    0 72% 40%;
+  --trust-low-bg: 0 86% 97%;
+
+  /* ── Semantic UI tokens ─── */
+  --success:    142 69% 28%;
+  --success-bg: 142 69% 96%;
+  --warning:    38 92% 40%;
+  --warning-bg: 38 92% 96%;
+  --info:       214 60% 40%;
+  --info-bg:    214 100% 97%;
+  --destructive-bg: 0 86% 97%;
+
+  /* ── Tag color palette ─── */
+  --tag-zinc:        240 4% 44%;
+  --tag-zinc-bg:     240 5% 96%;
+  --tag-zinc-border: 240 6% 88%;
+  --tag-red:        0 72% 35%;
+  --tag-red-bg:     0 86% 97%;
+  --tag-red-border: 0 86% 85%;
+  --tag-blue:        213 60% 33%;
+  --tag-blue-bg:     214 100% 97%;
+  --tag-blue-border: 213 100% 84%;
+  --tag-green:        142 69% 28%;
+  --tag-green-bg:     142 69% 96%;
+  --tag-green-border: 142 69% 82%;
+  --tag-amber:        32 90% 33%;
+  --tag-amber-bg:     38 92% 96%;
+  --tag-amber-border: 38 92% 78%;
+  --tag-purple:        263 50% 45%;
+  --tag-purple-bg:     263 70% 96%;
+  --tag-purple-border: 263 50% 80%;
+
+  /* ── Intervention tokens ─── */
+  --int-regen:   214 60% 40%;
+  --int-upgrade: 38 92% 40%;
+  --int-hitl:    0 72% 40%;
+  --int-blocked: 263 50% 45%;
+
+  /* ── Button tokens ─── */
+  --primary: 142 47% 38%;
+  --primary-foreground: 0 0% 100%;
+  --primary-hover: 142 47% 31%;
+  --primary-active: 142 47% 26%;
+  --ring: 142 47% 38%;
+  --foreground: 240 10% 4%;
+  --surface-3: 240 5% 95%;
 }
 
 /* Explicit .light class — mirrors :root so ThemeProvider's .light on <html> resolves correctly */

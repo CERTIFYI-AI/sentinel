@@ -227,8 +227,8 @@ export default function AgentRegistry() {
                 </td>
                 <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))]">{a.type}</td>
                 <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))] max-w-[120px] truncate">{a.model}</td>
-                <td className="px-3 py-2.5"><span className="px-2 py-0.5 rounded text-xs font-medium" style={TIER_STYLE[a.riskTier]}>{a.riskTier}</span></td>
-                <td className="px-3 py-2.5"><span className="px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap" style={STATUS_STYLE[a.status]}>{a.status}</span></td>
+                <td className="px-3 py-2.5"><span className="px-2 py-0.5 rounded text-xs font-medium" style={TIER_STYLE[a.riskTier] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{a.riskTier}</span></td>
+                <td className="px-3 py-2.5"><span className="px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap" style={STATUS_STYLE[a.status] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{a.status}</span></td>
                 <td className="px-3 py-2.5">
                   <div className="flex items-center gap-1.5">
                     <div className="h-1.5 w-14 bg-raised rounded-full overflow-hidden">
@@ -278,8 +278,8 @@ export default function AgentRegistry() {
               {!editMode ? (
                 <>
                   <div className="flex flex-wrap gap-2">
-                    <span className="px-2 py-0.5 rounded text-xs font-medium" style={TIER_STYLE[selected.riskTier]}>{selected.riskTier} Risk</span>
-                    <span className="px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap" style={STATUS_STYLE[selected.status]}>{selected.status}</span>
+                    <span className="px-2 py-0.5 rounded text-xs font-medium" style={TIER_STYLE[selected.riskTier] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{selected.riskTier} Risk</span>
+                    <span className="px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap" style={STATUS_STYLE[selected.status] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{selected.status}</span>
                     <span className="px-2 py-0.5 rounded text-xs bg-raised text-[hsl(var(--text-3))]">{selected.type}</span>
                   </div>
 

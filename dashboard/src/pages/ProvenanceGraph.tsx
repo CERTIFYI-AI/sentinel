@@ -101,7 +101,7 @@ function ProvenanceTree({ chain }: { chain: ProvenanceChain }) {
                   <p className="text-[10px] text-[hsl(var(--text-4))]">{node.version} · {node.provider}</p>
                   {node.license && <p className="text-[9px] text-[hsl(var(--text-4))] mt-0.5">{node.license}</p>}
                 </div>
-                <span className="text-[11px] px-1.5 py-0.5 mt-2" style={RISK_STYLE[node.riskLevel]}>{node.riskLevel}</span>
+                <span className="text-[11px] px-1.5 py-0.5 mt-2" style={RISK_STYLE[node.riskLevel] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{node.riskLevel}</span>
               </div>
             ))}
           </div>
@@ -198,7 +198,7 @@ export default function ProvenanceGraph() {
                 <td className="px-4 py-3 text-xs text-[hsl(var(--text-3))]">{n.provider}</td>
                 <td className="px-4 py-3 text-xs text-[hsl(var(--text-4))]">{n.license ?? '—'}</td>
                 <td className="px-4 py-3 font-mono text-[10px] text-[hsl(var(--text-4))]">{n.hash ? n.hash.slice(0, 16) + '...' : '—'}</td>
-                <td className="px-4 py-3"><span className="text-[11px] px-1.5 py-0.5" style={RISK_STYLE[n.riskLevel]}>{n.riskLevel}</span></td>
+                <td className="px-4 py-3"><span className="text-[11px] px-1.5 py-0.5" style={RISK_STYLE[n.riskLevel] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{n.riskLevel}</span></td>
                 <td className="px-4 py-3">
                   <span className={`text-[11px] ${n.verified ? 'text-[hsl(var(--s-ok-tx))]' : 'text-[hsl(var(--destructive))]'}`}>{n.verified ? '✓' : '⚠'}</span>
                 </td>

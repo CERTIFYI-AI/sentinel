@@ -77,6 +77,7 @@ function severityColor(s: Severity) {
     case 'High': return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))' };
     case 'Medium': return { bg: 'hsl(var(--brand-subtle))', text: 'hsl(var(--brand))' };
     case 'Low': return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))' };
+    default: return { bg: 'hsl(var(--bg-raised))', text: 'hsl(var(--text-4))' };
   }
 }
 
@@ -86,6 +87,7 @@ function mitigationColor(s: MitigationStatus) {
     case 'Partial': return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))' };
     case 'Under Review': return { bg: 'hsl(var(--brand-subtle))', text: 'hsl(var(--brand))' };
     case 'Not Addressed': return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))' };
+    default: return { bg: 'hsl(var(--bg-raised))', text: 'hsl(var(--text-4))' };
   }
 }
 

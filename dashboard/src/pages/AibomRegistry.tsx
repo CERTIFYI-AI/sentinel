@@ -204,7 +204,7 @@ export default function AibomRegistry() {
                   <span className={`text-[11px] font-bold ${r.licenseConflicts > 0 ? 'text-[hsl(45_85%_40%)]' : 'text-[hsl(var(--s-ok-tx))]'}`}>{r.licenseConflicts}</span>
                 </td>
                 <td className="px-4 py-3 text-xs text-[hsl(var(--text-4))]">{r.generatedDate}</td>
-                <td className="px-4 py-3"><span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[r.status]}>{r.status}</span></td>
+                <td className="px-4 py-3"><span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[r.status] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{r.status}</span></td>
                 <td className="px-4 py-3"><Eye size={14} className="text-[hsl(var(--text-4))]" /></td>
               </tr>
             ))}
@@ -236,7 +236,7 @@ export default function AibomRegistry() {
               {drawerTab === 'overview' && (
                 <>
                   <div className="flex gap-2 flex-wrap">
-                    <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status]}>{selected.status}</span>
+                    <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{selected.status}</span>
                     <span className="text-[11px] px-2 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{selected.format}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-3">

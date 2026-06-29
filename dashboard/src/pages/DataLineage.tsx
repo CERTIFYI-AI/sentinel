@@ -195,7 +195,7 @@ export default function DataLineage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <span className="font-mono text-[10px] text-[hsl(var(--brand))]">{d.id}</span>
-                  <span className="text-[11px] px-2 py-0.5 font-medium" style={CLASS_STYLE[d.dataClassification]}>{d.dataClassification}</span>
+                  <span className="text-[11px] px-2 py-0.5 font-medium" style={CLASS_STYLE[d.dataClassification] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{d.dataClassification}</span>
                   {d.piiPresent && <span className="text-[10px] px-1.5 py-0.5" style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' }}>PII</span>}
                   {d.issues.length > 0 && <Warning size={12} className="text-[hsl(45_85%_40%)]" />}
                 </div>
@@ -271,7 +271,7 @@ export default function DataLineage() {
               {drawerTab === 'overview' && (
                 <>
                   <div className="flex gap-2 flex-wrap">
-                    <span className="text-[11px] px-2 py-0.5 font-medium" style={CLASS_STYLE[selected.dataClassification]}>{selected.dataClassification}</span>
+                    <span className="text-[11px] px-2 py-0.5 font-medium" style={CLASS_STYLE[selected.dataClassification] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{selected.dataClassification}</span>
                     {selected.piiPresent && <span className="text-[11px] px-2 py-0.5" style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' }}>Contains PII</span>}
                     <span className="text-[11px] px-2 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{selected.version}</span>
                   </div>

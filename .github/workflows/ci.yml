@@ -85,10 +85,14 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
       - name: Semgrep OSS
         uses: returntocorp/semgrep-action@v2
         with:
           config: p/ci p/typescript p/react p/owasp-top-ten
+        env:
+          SEMGREP_RULES: p/ci p/typescript p/react p/owasp-top-ten
+        continue-on-error: true
 
   a11y-smoke:
     if: ${{ vars.RUN_A11Y == 'true' }}

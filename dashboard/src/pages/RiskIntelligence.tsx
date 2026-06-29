@@ -204,7 +204,7 @@ export default function RegulatoryIntelligenceEngine() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <span className="font-mono text-[10px] text-[hsl(var(--brand))]">{reg.id}</span>
-                        <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[reg.status]}>{reg.status}</span>
+                        <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[reg.status] || { background: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{reg.status}</span>
                         <span className="text-[10px] px-1.5 py-0.5 border border-[hsl(var(--border))] text-[hsl(var(--text-4))]">{reg.jurisdiction}</span>
                         <span className="text-[10px] px-1.5 py-0.5 font-medium" style={{ background: URGENCY_DOT[reg.aiImpact] + '20', color: URGENCY_DOT[reg.aiImpact] }}>AI Impact: {reg.aiImpact}</span>
                         {isUrgent && <span className="text-[10px] px-1.5 py-0.5 bg-[hsl(0_72%_51%/0.12)] text-[hsl(var(--destructive))] font-semibold animate-pulse">{reg.daysUntil}d</span>}
@@ -262,7 +262,7 @@ export default function RegulatoryIntelligenceEngine() {
                     <p className="line-clamp-2">{ob.text}</p>
                   </td>
                   <td className="px-4 py-3">
-                    <span className="text-[11px] px-2 py-0.5 font-medium" style={OB_STYLE[ob.status]}>{ob.status}</span>
+                    <span className="text-[11px] px-2 py-0.5 font-medium" style={OB_STYLE[ob.status] || { background: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{ob.status}</span>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1 flex-wrap">
@@ -393,7 +393,7 @@ export default function RegulatoryIntelligenceEngine() {
                       <span className="text-xs font-bold" style={{ color: pct >= 80 ? 'hsl(142 71% 35%)' : pct >= 50 ? 'hsl(45 85% 40%)' : 'hsl(var(--destructive))' }}>{pct}%</span>
                       <span className="text-[10px] text-[hsl(var(--text-4))] ml-1">({r.mappedCount}/{r.obligationCount})</span>
                     </div>
-                    <span className="text-[11px] px-2 py-0.5 font-medium flex-shrink-0 w-28 text-center" style={STATUS_STYLE[r.status]}>{r.status}</span>
+                    <span className="text-[11px] px-2 py-0.5 font-medium flex-shrink-0 w-28 text-center" style={STATUS_STYLE[r.status] || { background: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{r.status}</span>
                   </div>
                 )
               })}
@@ -423,7 +423,7 @@ export default function RegulatoryIntelligenceEngine() {
               {drawerTab === 'overview' && (
                 <>
                   <div className="flex gap-2 flex-wrap">
-                    <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status]}>{selected.status}</span>
+                    <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status] || { background: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{selected.status}</span>
                     <span className="text-[11px] px-2 py-0.5 font-medium" style={{ background: URGENCY_DOT[selected.aiImpact] + '20', color: URGENCY_DOT[selected.aiImpact] }}>AI Impact: {selected.aiImpact}</span>
                   </div>
                   <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">{selected.summary}</p>
@@ -461,7 +461,7 @@ export default function RegulatoryIntelligenceEngine() {
                       <div key={ob.id} className="p-3 bg-raised border border-[hsl(var(--border))]">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-mono text-[10px] text-[hsl(var(--brand))]">{ob.article}</span>
-                          <span className="text-[10px] px-1.5 py-0.5 font-medium" style={OB_STYLE[ob.status]}>{ob.status}</span>
+                          <span className="text-[10px] px-1.5 py-0.5 font-medium" style={OB_STYLE[ob.status] || { background: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{ob.status}</span>
                           {ob.automatable && <span className="text-[10px] px-1.5 py-0.5 bg-[hsl(142_71%_45%/0.12)] text-[hsl(142_71%_35%)]">Automatable</span>}
                         </div>
                         <p className="text-xs text-[hsl(var(--text-2))] leading-relaxed">{ob.text}</p>

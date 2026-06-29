@@ -124,7 +124,7 @@ export default function MultiAgentChoreography() {
       <div className="space-y-3">
         {filtered.map(w => {
           const progress = (w.stepsCompleted / w.stepsTotal) * 100
-          const ss = STATUS_STYLE[w.status]
+          const ss = STATUS_STYLE[w.status] || { bg: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }
           return (
             <div key={w.id} className="rounded border border-[hsl(var(--border))] bg-surface p-4 cursor-pointer hover:border-[hsl(var(--brand)/0.4)] transition-colors" onClick={() => setSelected(w)}>
               <div className="flex items-start justify-between gap-4 mb-3">
@@ -207,7 +207,7 @@ export default function MultiAgentChoreography() {
               {drawerTab === 'overview' && (
                 <>
                   <div className="flex gap-2 flex-wrap">
-                    <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status]}>{selected.status}</span>
+                    <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status] || { bg: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }}>{selected.status}</span>
                     {selected.hitlRequired && <span className="text-[11px] px-2 py-0.5 bg-[hsl(280_67%_56%/0.12)] text-[hsl(280_60%_55%)]">HITL Required</span>}
                   </div>
                   <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">{selected.description}</p>

@@ -252,8 +252,8 @@ export default function Guardrails() {
           </thead>
           <tbody>
             {filtered.map(r => {
-              const as = ACTION_STYLE[r.action]
-              const ss = STATUS_STYLE[r.status]
+              const as = ACTION_STYLE[r.action] || { bg: 'hsl(var(--border))', color: 'hsl(var(--text-4))', label: r.action }
+              const ss = STATUS_STYLE[r.status] || { bg: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }
               return (
                 <tr key={r.id}
                   className="border-b border-[hsl(var(--border))] hover:bg-raised cursor-pointer"
@@ -333,8 +333,8 @@ export default function Guardrails() {
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status]}>{selected.status}</span>
-                <span className="text-[11px] px-2 py-0.5 font-bold" style={ACTION_STYLE[selected.action]}>{ACTION_STYLE[selected.action].label}</span>
+                <span className="text-[10px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status] || { bg: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }}>{selected.status}</span>
+                <span className="text-[11px] px-2 py-0.5 font-bold" style={ACTION_STYLE[selected.action] || { bg: 'hsl(var(--border))', color: 'hsl(var(--text-4))', label: selected.action }}>{(ACTION_STYLE[selected.action] || { label: selected.action }).label}</span>
                 <span className="text-[11px] px-2 py-0.5 border border-[hsl(var(--border))] text-[hsl(var(--text-3))] flex items-center gap-1">
                   {TYPE_ICON[selected.type]} {selected.type}
                 </span>
@@ -364,14 +364,14 @@ export default function Guardrails() {
                 <div className="p-3 border border-[hsl(var(--border))] bg-raised">
                   <div className="flex justify-between mb-1.5">
                     <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide">Trigger Rate</p>
-                    <p className="text-xs font-bold" style={{ color: ACTION_STYLE[selected.action].color }}>
+                    <p className="text-xs font-bold" style={{ color: (ACTION_STYLE[selected.action] || { color: 'hsl(var(--text-4))' }).color }}>
                       {((selected.triggered / selected.evaluations) * 100).toFixed(2)}%
                     </p>
                   </div>
                   <div className="w-full h-2 bg-[hsl(var(--border))]">
                     <div className="h-full transition-all" style={{
                       width: `${Math.min((selected.triggered / selected.evaluations) * 100, 100)}%`,
-                      background: ACTION_STYLE[selected.action].color,
+                      background: (ACTION_STYLE[selected.action] || { color: 'hsl(var(--text-4))' }).color,
                     }} />
                   </div>
                 </div>
