@@ -1,3 +1,7 @@
+## 1.1.0 (2026-06-29)
+
+* feat(ui): Phase 2 enhancements — replace hardcoded colors with design tokens across 8 high-priority  ([4bc2bd3](https://github.com/CERTIFYI-AI/sentinel/commit/4bc2bd3)), closes [hi#priority](https://github.com/hi/issues/priority) [#ef4444](https://github.com/CERTIFYI-AI/sentinel/issues/ef4444) [#f97316](https://github.com/CERTIFYI-AI/sentinel/issues/f97316) [#10b981](https://github.com/CERTIFYI-AI/sentinel/issues/10b981) [#f59e0b](https://github.com/CERTIFYI-AI/sentinel/issues/f59e0b) [#fff](https://github.com/CERTIFYI-AI/sentinel/issues/fff)
+
 ## 1.0.0 (2026-06-29)
 
 * fix: add _headers file for Cloudflare Workers static asset security headers ([1027c59](https://github.com/CERTIFYI-AI/sentinel/commit/1027c59))
