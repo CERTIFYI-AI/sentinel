@@ -1,484 +1,141 @@
-// SPDX-License-Identifier: Apache-2.0
-// Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
-//
-// ComplianceDashboard — enterprise compliance posture overview.
-// Displays framework scores, control coverage, gap analytics, and the
-// cross-framework control mapping matrix.
+import { useState } from "react";
+import { Scale, Download, ChevronDown, ExternalLink } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import {
-  StackSimple, Warning, XCircle, ClipboardText, ShieldCheck, CheckCircle, Info,
-} from '@phosphor-icons/react';
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer,
-  LineChart, Line, Legend, PieChart, Pie, Cell,
-} from 'recharts';
-import { FRAMEWORKS, GAPS, CONTROLS, EVIDENCE, statusColor, formatDate } from '../data/seed';
-import { useSettingsStore } from '../stores/settingsStore';
-import { useChartTheme } from '../hooks/useChartTheme';
-import { PageHeader } from '../components/ui/PageHeader';
-import { StatCardRow } from '../components/ui/StatCardRow';
-import type { StatCardRowItem } from '../components/ui/StatCardRow';
+interface Framework {
+  id: string; name: string; flag: string; score: number; passing: number; total: number;
+  status: "mandatory" | "certifiable" | "voluntary"; enabled: boolean; lastEvidence: string;
+}
 
-const SCORE_TREND = [
-  { month: 'Oct', score: 71 },
-  { month: 'Nov', score: 72 },
-  { month: 'Dec', score: 74 },
-  { month: 'Jan', score: 75 },
-  { month: 'Feb', score: 76 },
-  { month: 'Mar', score: 78 },
+const FRAMEWORKS: Framework[] = [
+  { id: "eu-ai-act", name: "EU AI Act", flag: "🇪🇺", score: 87, passing: 34, total: 39, status: "mandatory", enabled: true, lastEvidence: "2m ago" },
+  { id: "gdpr", name: "GDPR", flag: "🇪🇺", score: 92, passing: 44, total: 48, status: "mandatory", enabled: true, lastEvidence: "5m ago" },
+  { id: "nist-ai-rmf", name: "NIST AI RMF", flag: "🇺🇸", score: 78, passing: 28, total: 36, status: "certifiable", enabled: true, lastEvidence: "12m ago" },
+  { id: "iso-42001", name: "ISO 42001", flag: "🌐", score: 71, passing: 22, total: 31, status: "certifiable", enabled: true, lastEvidence: "1h ago" },
+  { id: "soc2", name: "SOC 2 Type II", flag: "🇺🇸", score: 95, passing: 19, total: 20, status: "certifiable", enabled: true, lastEvidence: "3m ago" },
+  { id: "ieee-7000", name: "IEEE 7000", flag: "🌐", score: 64, passing: 9, total: 14, status: "voluntary", enabled: false, lastEvidence: "45m ago" },
+  { id: "iso-27001", name: "ISO 27001", flag: "🌐", score: 83, passing: 31, total: 37, status: "certifiable", enabled: true, lastEvidence: "8m ago" },
 ];
 
-const GAUGE_COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f97316', '#ef4444', '#06b6d4'];
-
-function complianceBadge(score: number) {
-  if (score >= 85) return { label: 'Compliant', bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))' };
-  if (score >= 65) return { label: 'Partial', bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))', border: 'hsl(var(--s-wn-br))' };
-  return { label: 'Non-Compliant', bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))' };
-}
-
-const overallScore = Math.round(
-  FRAMEWORKS.reduce((s, f) => s + f.complianceScore, 0) / FRAMEWORKS.length
-);
-
-const criticalGaps = GAPS.filter(g => g.severity === 'critical').length;
-const openGaps = GAPS.length;
-const evidenceTotal = EVIDENCE.length;
-const totalControls = CONTROLS.length;
-const implementedControls = CONTROLS.filter(c => c.status === 'implemented').length;
-const controlCoverage = Math.round((implementedControls / totalControls) * 100);
-
-const gapsByFramework = FRAMEWORKS.map(f => ({
-  name: f.name.replace('ISO/IEC ', '').replace('OWASP ', '').split(' ')[0],
-  gaps: GAPS.filter(g => g.framework === f.name).length,
-  fullName: f.name,
-}));
-
-// ── Control Mapping Matrix Data ───────────────────────────────────────────────
-
-type CellStatus = 'implemented' | 'partial' | 'planned' | 'not_mapped';
-
-interface MatrixCell {
-  status: CellStatus;
-  note: string;
-}
-
-const FW_KEYS = ['EU AI Act', 'ISO 27001', 'SOC 2', 'NIST AI RMF', 'OWASP LLM', 'GDPR'];
-
-const CONTROL_MATRIX: Record<string, Record<string, CellStatus>> = {
-  'CTRL-001': { 'EU AI Act': 'implemented', 'ISO 27001': 'partial', 'SOC 2': 'not_mapped', 'NIST AI RMF': 'implemented', 'OWASP LLM': 'not_mapped', 'GDPR': 'partial' },
-  'CTRL-002': { 'EU AI Act': 'implemented', 'ISO 27001': 'partial', 'SOC 2': 'partial', 'NIST AI RMF': 'implemented', 'OWASP LLM': 'not_mapped', 'GDPR': 'implemented' },
-  'CTRL-003': { 'EU AI Act': 'partial', 'ISO 27001': 'not_mapped', 'SOC 2': 'partial', 'NIST AI RMF': 'partial', 'OWASP LLM': 'not_mapped', 'GDPR': 'partial' },
-  'CTRL-004': { 'EU AI Act': 'implemented', 'ISO 27001': 'implemented', 'SOC 2': 'implemented', 'NIST AI RMF': 'implemented', 'OWASP LLM': 'not_mapped', 'GDPR': 'partial' },
-  'CTRL-005': { 'EU AI Act': 'partial', 'ISO 27001': 'implemented', 'SOC 2': 'implemented', 'NIST AI RMF': 'implemented', 'OWASP LLM': 'partial', 'GDPR': 'not_mapped' },
-  'CTRL-006': { 'EU AI Act': 'partial', 'ISO 27001': 'not_mapped', 'SOC 2': 'not_mapped', 'NIST AI RMF': 'partial', 'OWASP LLM': 'not_mapped', 'GDPR': 'partial' },
-  'CTRL-007': { 'EU AI Act': 'partial', 'ISO 27001': 'implemented', 'SOC 2': 'implemented', 'NIST AI RMF': 'partial', 'OWASP LLM': 'partial', 'GDPR': 'partial' },
-  'CTRL-008': { 'EU AI Act': 'partial', 'ISO 27001': 'implemented', 'SOC 2': 'implemented', 'NIST AI RMF': 'partial', 'OWASP LLM': 'planned', 'GDPR': 'implemented' },
-  'CTRL-009': { 'EU AI Act': 'partial', 'ISO 27001': 'partial', 'SOC 2': 'partial', 'NIST AI RMF': 'not_mapped', 'OWASP LLM': 'not_mapped', 'GDPR': 'partial' },
-  'CTRL-010': { 'EU AI Act': 'not_mapped', 'ISO 27001': 'implemented', 'SOC 2': 'implemented', 'NIST AI RMF': 'partial', 'OWASP LLM': 'partial', 'GDPR': 'not_mapped' },
-  'CTRL-011': { 'EU AI Act': 'partial', 'ISO 27001': 'implemented', 'SOC 2': 'implemented', 'NIST AI RMF': 'partial', 'OWASP LLM': 'not_mapped', 'GDPR': 'not_mapped' },
-  'CTRL-012': { 'EU AI Act': 'partial', 'ISO 27001': 'partial', 'SOC 2': 'partial', 'NIST AI RMF': 'partial', 'OWASP LLM': 'partial', 'GDPR': 'not_mapped' },
-  'CTRL-013': { 'EU AI Act': 'planned', 'ISO 27001': 'not_mapped', 'SOC 2': 'not_mapped', 'NIST AI RMF': 'not_mapped', 'OWASP LLM': 'planned', 'GDPR': 'planned' },
-  'CTRL-014': { 'EU AI Act': 'implemented', 'ISO 27001': 'implemented', 'SOC 2': 'partial', 'NIST AI RMF': 'implemented', 'OWASP LLM': 'not_mapped', 'GDPR': 'not_mapped' },
-  'CTRL-015': { 'EU AI Act': 'partial', 'ISO 27001': 'not_mapped', 'SOC 2': 'not_mapped', 'NIST AI RMF': 'not_mapped', 'OWASP LLM': 'not_mapped', 'GDPR': 'partial' },
+const statusBadge: Record<string, string> = {
+  mandatory: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400 border border-red-200 dark:border-red-800",
+  certifiable: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400 border border-blue-200 dark:border-blue-800",
+  voluntary: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400 border border-green-200 dark:border-green-800",
 };
 
-function cellConfig(status: CellStatus) {
-  if (status === 'implemented') return { symbol: '✓', bg: 'hsl(142 71% 45% / 0.15)', color: 'hsl(var(--s-ok-tx))', label: 'Implemented' };
-  if (status === 'partial') return { symbol: '⚠', bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(var(--s-wn-tx))', label: 'Partial' };
-  if (status === 'planned') return { symbol: '○', bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))', label: 'Planned' };
-  return { symbol: '—', bg: 'transparent', color: 'hsl(var(--text-4))', label: 'Not Mapped' };
-}
+const scoreColor = (s: number) => s >= 85 ? "text-green-600 dark:text-green-400" : s >= 70 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400";
+const barColor = (s: number) => s >= 85 ? "bg-green-500" : s >= 70 ? "bg-amber-500" : "bg-red-500";
 
 export default function ComplianceDashboard() {
-  const { orgName } = useSettingsStore();
-  const ct = useChartTheme();
-  const [matrixHover, setMatrixHover] = useState<{ ctrl: string; fw: string } | null>(null);
+  const [frameworks, setFrameworks] = useState(FRAMEWORKS);
+  const [generating, setGenerating] = useState(false);
+  const [reportReady, setReportReady] = useState(false);
+  const [selectedFw, setSelectedFw] = useState<string | null>(null);
 
-  const kpiCards: StatCardRowItem[] = [
-    {
-      label: 'Overall Score',
-      value: `${overallScore}%`,
-      icon: <ShieldCheck size={18} />,
-      delta: '+2%',
-      deltaDir: 'up',
-      isPositiveUp: true,
-      description: `Overall compliance score: ${overallScore}% across ${FRAMEWORKS.length} frameworks`,
-    },
-    {
-      label: 'Total Controls',
-      value: totalControls,
-      icon: <ClipboardText size={18} />,
-      description: `${totalControls} controls tracked`,
-    },
-    {
-      label: 'Implemented',
-      value: `${controlCoverage}%`,
-      icon: <CheckCircle size={18} />,
-      delta: `${implementedControls}/${totalControls}`,
-      deltaDir: 'up',
-      isPositiveUp: true,
-      description: `${implementedControls} of ${totalControls} controls implemented`,
-    },
-    {
-      label: 'Critical Gaps',
-      value: criticalGaps,
-      icon: <XCircle size={18} />,
-      delta: criticalGaps > 0 ? String(criticalGaps) : undefined,
-      deltaDir: 'up',
-      isPositiveUp: false,
-      description: `${criticalGaps} critical compliance gaps require immediate attention`,
-    },
-  ];
+  const toggle = (id: string) => setFrameworks(prev => prev.map(f => f.id === id ? { ...f, enabled: !f.enabled } : f));
 
-  const matrixTotals = FW_KEYS.map(fw => {
-    const cells = CONTROLS.map(c => CONTROL_MATRIX[c.id]?.[fw] ?? 'not_mapped');
-    return {
-      fw,
-      implemented: cells.filter(s => s === 'implemented').length,
-      partial: cells.filter(s => s === 'partial').length,
-      planned: cells.filter(s => s === 'planned').length,
-      not_mapped: cells.filter(s => s === 'not_mapped').length,
-    };
-  });
+  const generateReport = () => {
+    setGenerating(true);
+    setReportReady(false);
+    setTimeout(() => { setGenerating(false); setReportReady(true); }, 2000);
+  };
+
+  const enabled = frameworks.filter(f => f.enabled);
+  const overallScore = enabled.length ? Math.round(enabled.reduce((s, f) => s + f.score, 0) / enabled.length) : 0;
 
   return (
-    <div className="space-y-6">
-      {/* Enterprise Page Header */}
-      <PageHeader
-        title="Compliance Dashboard"
-        subtitle="Framework posture, gap tracking and control coverage"
-        breadcrumbs={[
-          { label: 'Home', href: '/' },
-          { label: 'Compliance' },
-        ]}
-        badge={
-          (() => {
-            const b = complianceBadge(overallScore);
-            return (
-              <Badge style={{ background: b.bg, color: b.text, border: `1px solid ${b.border}`, borderRadius: 0, fontSize: 11 }}>
-                {b.label}
-              </Badge>
-            );
-          })()
-        }
-      />
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-green-100 dark:bg-green-950 rounded-lg"><Scale size={20} className="text-green-600 dark:text-green-400" /></div>
+          <div>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Compliance</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Real-time evidence accumulation across {frameworks.length} global AI governance frameworks</p>
+          </div>
+        </div>
+        <button onClick={generateReport} disabled={generating} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-60 transition-colors">
+          <Download size={14} />
+          {generating ? "Generating..." : "Generate Report"}
+        </button>
+      </div>
 
-      {/* KPI StatCardRow */}
-      <StatCardRow cards={kpiCards} />
+      {reportReady && (
+        <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-4 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <span className="text-green-600 dark:text-green-400 text-lg">{"✓"}</span>
+            <div>
+              <p className="text-sm font-medium text-green-800 dark:text-green-300">Compliance Report Ready</p>
+              <p className="text-xs text-green-600 dark:text-green-400">{enabled.length} frameworks · {enabled.reduce((s,f) => s + f.total, 0)} controls analyzed · Overall score: {overallScore}%</p>
+            </div>
+          </div>
+          <button className="text-sm text-green-700 dark:text-green-400 hover:underline font-medium">Download JSON</button>
+        </div>
+      )}
 
-      {/* Tabs */}
-      <Tabs defaultValue="overview">
-        <TabsList style={{ borderRadius: 0, background: 'hsl(var(--bg-muted))' }}>
-          <TabsTrigger value="overview" style={{ borderRadius: 0 }}>Overview</TabsTrigger>
-          <TabsTrigger value="mapping" style={{ borderRadius: 0 }}>Control Mapping Matrix</TabsTrigger>
-        </TabsList>
-
-        {/* ── Overview Tab ─────────────────────────────────────────────────── */}
-        <TabsContent value="overview" className="space-y-4 mt-4">
-
-          {/* Overall Score + Score Trend */}
-          <div className="grid grid-cols-3 gap-4">
-            <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
-                  Overall Compliance Score
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col items-center py-4">
-                  <div className="relative">
-                    <PieChart width={160} height={90}>
-                      <Pie
-                        data={[{ value: overallScore }, { value: 100 - overallScore }]}
-                        cx={80} cy={80} startAngle={180} endAngle={0}
-                        innerRadius={55} outerRadius={75} paddingAngle={0} dataKey="value"
-                      >
-                        <Cell fill="hsl(var(--brand))" />
-                        <Cell fill="hsl(var(--bg-muted))" />
-                      </Pie>
-                    </PieChart>
-                    <div className="absolute inset-0 flex flex-col items-center justify-end pb-1">
-                      <span className="text-3xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>{overallScore}%</span>
-                    </div>
-                  </div>
-                  <span className="text-xs mt-1" style={{ color: 'hsl(var(--text-3))' }}>
-                    Based on {FRAMEWORKS.length} frameworks
-                  </span>
-                  <div className="mt-3 flex gap-2">
-                    {(() => {
-                      const b = complianceBadge(overallScore);
-                      return (
-                        <Badge style={{ background: b.bg, color: b.text, border: `1px solid ${b.border}`, borderRadius: 0 }}>
-                          {b.label}
-                        </Badge>
-                      );
-                    })()}
-                  </div>
-                  <div className="mt-4 w-full space-y-1">
-                    <div className="flex justify-between text-xs" style={{ color: 'hsl(var(--text-3))' }}>
-                      <span>Controls implemented</span>
-                      <span style={{ color: 'hsl(var(--text-1))' }}>{implementedControls}/{totalControls}</span>
-                    </div>
-                    <div className="flex justify-between text-xs" style={{ color: 'hsl(var(--text-3))' }}>
-                      <span>Coverage</span>
-                      <span style={{ color: '#10b981' }}>{controlCoverage}%</span>
-                    </div>
-                  </div>
+      {/* Overall Governance Score */}
+      <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+        <CardContent className="p-5">
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">AI Governance Score</h3>
+            <span className={`text-3xl font-mono font-bold ${scoreColor(overallScore)}`}>{overallScore}%</span>
+          </div>
+          <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 mb-4">
+            <div className={`h-2 rounded-full ${barColor(overallScore)} transition-all duration-700`} style={{width: `${overallScore}%`}} />
+          </div>
+          <div className="grid grid-cols-5 gap-4 text-center">
+            {[{l: "Trust Enforcement", v: 91}, {l: "PII Protection", v: 88}, {l: "Audit Coverage", v: 94}, {l: "HITL Compliance", v: 82}, {l: "Drift Detection", v: 76}].map(c => (
+              <div key={c.l}>
+                <p className="text-[10px] uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1">{c.l}</p>
+                <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1">
+                  <div className={`h-1 rounded-full ${barColor(c.v)}`} style={{width: `${c.v}%`}} />
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card className="col-span-2" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
-                  Compliance Score Trend (6 Months)
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={SCORE_TREND}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
-                    <XAxis dataKey="month" tick={{ fontSize: 11, fill: ct.axis }} />
-                    <YAxis
-                      domain={[60, 100]}
-                      tick={{ fill: ct.axis, fontSize: 11 }}
-                      label={{ value: 'Score (%)', angle: -90, position: 'insideLeft', style: { fill: ct.axis } }}
-                    />
-                    <Tooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.tooltipText, borderRadius: 0 }}
-                      formatter={(v: number) => [v + '%', 'Overall Score']} />
-                    <Line type="monotone" dataKey="score" stroke="hsl(var(--brand))" strokeWidth={2.5} dot={{ fill: 'hsl(var(--brand))' }} name="Score" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Framework Table + Gaps by Framework */}
-          <div className="grid grid-cols-2 gap-4">
-            <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
-                  Framework Compliance
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <table className="w-full">
-                  <thead style={{ background: 'hsl(var(--bg-muted))' }}>
-                    <tr>
-                      {['Framework', 'Score', 'Controls', 'Status', 'Next Audit'].map(h => (
-                        <th key={h} className="text-left p-3 text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {FRAMEWORKS.map(f => {
-                      const b = complianceBadge(f.complianceScore);
-                      return (
-                        <tr key={f.id} style={{ borderTop: '1px solid hsl(var(--border))' }}>
-                          <td className="p-3">
-                            <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{f.name}</p>
-                            <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{f.category}</p>
-                          </td>
-                          <td className="p-3">
-                            <div className="flex items-center gap-2">
-                              <div className="flex-1" style={{ background: 'hsl(var(--bg-muted))', height: 6 }}>
-                                <div style={{ width: f.complianceScore + '%', background: f.complianceScore >= 85 ? '#10b981' : f.complianceScore >= 65 ? '#f97316' : '#ef4444', height: '100%' }} />
-                              </div>
-                              <span className="text-xs font-bold" style={{ color: 'hsl(var(--text-1))' }}>{f.complianceScore}%</span>
-                            </div>
-                          </td>
-                          <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>
-                            {f.controlsImplemented}/{f.controlsTotal}
-                          </td>
-                          <td className="p-3">
-                            <Badge style={{ background: b.bg, color: b.text, border: `1px solid ${b.border}`, borderRadius: 0, fontSize: 10 }}>
-                              {b.label}
-                            </Badge>
-                          </td>
-                          <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>
-                            {formatDate(f.nextAudit)}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </CardContent>
-            </Card>
-
-            <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
-                  Gaps by Framework
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={gapsByFramework} layout="vertical" barSize={16}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
-                    <XAxis type="number" tick={{ fontSize: 11, fill: ct.axis }}
-                      label={{ value: 'Gap Count', position: 'insideBottom', offset: -2, style: { fill: ct.axis, fontSize: 11 } }} />
-                    <YAxis type="category" dataKey="name" width={72} tick={{ fontSize: 10, fill: ct.axis }} />
-                    <Tooltip
-                      contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.tooltipText, borderRadius: 0 }}
-                      formatter={(v: number, _: string, p: any /* recharts payload */) => [v + ' gaps', p.payload.fullName]}
-                    />
-                    <Bar dataKey="gaps" name="Gaps" fill="#f97316" radius={0} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* ── Control Mapping Matrix Tab ────────────────────────────────────── */}
-        <TabsContent value="mapping" className="mt-4 space-y-4">
-
-          {/* Legend */}
-          <div className="flex items-center gap-6 px-1">
-            <span className="text-xs font-semibold" style={{ color: 'hsl(var(--text-3))' }}>Legend:</span>
-            {(['implemented', 'partial', 'planned', 'not_mapped'] as CellStatus[]).map(s => {
-              const c = cellConfig(s);
-              return (
-                <div key={s} className="flex items-center gap-2">
-                  <span className="text-sm font-bold" style={{ color: c.color }}>{c.symbol}</span>
-                  <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{c.label}</span>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Matrix */}
-          <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-            <CardContent className="p-0">
-              <div style={{ overflowX: 'auto' }}>
-                <table className="w-full" style={{ borderCollapse: 'collapse', minWidth: 780 }}>
-                  <thead>
-                    <tr style={{ background: 'hsl(var(--bg-muted))' }}>
-                      <th className="text-left p-3 text-xs font-semibold" style={{ color: 'hsl(var(--text-2))', minWidth: 240, borderBottom: '1px solid hsl(var(--border))' }}>
-                        Control
-                      </th>
-                      {FW_KEYS.map(fw => (
-                        <th key={fw} className="p-2 text-center text-xs font-semibold" style={{ color: 'hsl(var(--text-2))', minWidth: 96, borderBottom: '1px solid hsl(var(--border))', borderLeft: '1px solid hsl(var(--border))' }}>
-                          <div style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            {fw}
-                          </div>
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {CONTROLS.map((ctrl, idx) => (
-                      <tr
-                        key={ctrl.id}
-                        style={{
-                          background: idx % 2 === 0 ? 'hsl(var(--bg-surface))' : 'hsl(var(--bg-muted) / 0.4)',
-                          borderBottom: '1px solid hsl(var(--border))',
-                        }}
-                      >
-                        <td className="p-3">
-                          <p className="text-xs font-semibold" style={{ color: 'hsl(var(--brand))' }}>{ctrl.id}</p>
-                          <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-1))' }}>{ctrl.title}</p>
-                          <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>{ctrl.framework} · {ctrl.clause}</p>
-                        </td>
-                        {FW_KEYS.map(fw => {
-                          const status = CONTROL_MATRIX[ctrl.id]?.[fw] ?? 'not_mapped';
-                          const c = cellConfig(status);
-                          const isHover = matrixHover?.ctrl === ctrl.id && matrixHover?.fw === fw;
-                          return (
-                            <td
-                              key={fw}
-                              className="text-center"
-                              style={{
-                                borderLeft: '1px solid hsl(var(--border))',
-                                background: isHover ? c.bg : status !== 'not_mapped' ? c.bg : 'transparent',
-                                cursor: 'pointer',
-                                transition: 'background 0.15s',
-                                position: 'relative',
-                              }}
-                              onMouseEnter={() => setMatrixHover({ ctrl: ctrl.id, fw })}
-                              onMouseLeave={() => setMatrixHover(null)}
-                            >
-                              <span className="text-sm font-bold" style={{ color: c.color }}>{c.symbol}</span>
-                              {isHover && status !== 'not_mapped' && (
-                                <div style={{
-                                  position: 'absolute',
-                                  bottom: '100%',
-                                  left: '50%',
-                                  transform: 'translateX(-50%)',
-                                  background: 'hsl(var(--bg-surface))',
-                                  border: '1px solid hsl(var(--border))',
-                                  padding: '6px 10px',
-                                  zIndex: 20,
-                                  whiteSpace: 'nowrap',
-                                  fontSize: 11,
-                                  color: 'hsl(var(--text-2))',
-                                  pointerEvents: 'none',
-                                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                                }}>
-                                  <p className="font-semibold" style={{ color: c.color }}>{c.label}</p>
-                                  <p>{ctrl.id} → {fw}</p>
-                                  <p style={{ color: 'hsl(var(--text-4))' }}>Score: {ctrl.score}% · {ctrl.clause}</p>
-                                </div>
-                              )}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                  {/* Footer totals */}
-                  <tfoot>
-                    <tr style={{ background: 'hsl(var(--bg-muted))', borderTop: '2px solid hsl(var(--border))' }}>
-                      <td className="p-3 text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>
-                        Framework Totals ({CONTROLS.length} controls)
-                      </td>
-                      {matrixTotals.map(t => (
-                        <td key={t.fw} className="p-2 text-center" style={{ borderLeft: '1px solid hsl(var(--border))' }}>
-                          <div className="flex flex-col gap-0.5 items-center">
-                            <span className="text-xs font-bold" style={{ color: 'hsl(var(--s-ok-tx))' }}>{t.implemented}✓</span>
-                            <span className="text-xs font-bold" style={{ color: 'hsl(var(--s-wn-tx))' }}>{t.partial}⚠</span>
-                            <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{t.not_mapped}—</span>
-                          </div>
-                        </td>
-                      ))}
-                    </tr>
-                  </tfoot>
-                </table>
+                <p className={`text-xs font-mono font-bold mt-1 ${scoreColor(c.v)}`}>{c.v}%</p>
               </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Framework Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        {frameworks.map(fw => (
+          <Card key={fw.id} className={`transition-all ${fw.enabled ? "bg-white dark:bg-slate-900 border-green-300 dark:border-green-700 shadow-sm" : "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 opacity-60"}`}>
+            <CardContent className="p-4">
+              <div className="flex justify-between items-center mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{fw.flag}</span>
+                  <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{fw.name}</span>
+                </div>
+                <button onClick={() => toggle(fw.id)} className={`w-10 h-5 rounded-full relative transition-colors ${fw.enabled ? "bg-green-500" : "bg-slate-300 dark:bg-slate-700"}`}>
+                  <div className={`w-4 h-4 rounded-full bg-white absolute top-0.5 transition-all ${fw.enabled ? "left-5" : "left-0.5"}`} />
+                </button>
+              </div>
+              <span className={`text-[10px] font-medium px-2 py-0.5 rounded ${statusBadge[fw.status]}`}>{fw.status}</span>
+              <div className="mt-3">
+                <div className="flex justify-between items-end">
+                  <span className={`text-2xl font-mono font-bold ${scoreColor(fw.score)}`}>{fw.score}%</span>
+                  <span className="text-xs text-slate-400 dark:text-slate-500">{fw.passing}/{fw.total} controls</span>
+                </div>
+                <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 mt-2">
+                  <div className={`h-1.5 rounded-full ${barColor(fw.score)} transition-all`} style={{width: `${fw.score}%`}} />
+                </div>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2">Last evidence: {fw.lastEvidence}</p>
+              </div>
+              <button onClick={() => setSelectedFw(fw.id === selectedFw ? null : fw.id)} className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 hover:underline mt-2 font-medium">
+                View Evidence <ChevronDown size={10} className={`transition-transform ${selectedFw === fw.id ? "rotate-180" : ""}`} />
+              </button>
+              {selectedFw === fw.id && (
+                <div className="mt-2 bg-slate-50 dark:bg-slate-800 rounded-lg p-3 text-xs text-slate-600 dark:text-slate-300 space-y-1.5">
+                  <p className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-green-500" /> Trust score monitoring: Active</p>
+                  <p className="flex items-center gap-1.5"><span className={`w-1.5 h-1.5 rounded-full ${fw.score > 80 ? "bg-green-500" : "bg-amber-500"}`} /> PII detection: {fw.score > 80 ? "Passing" : "Needs review"}</p>
+                  <p className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-green-500" /> Audit chain integrity: Verified</p>
+                  <p className="flex items-center gap-1.5"><span className={`w-1.5 h-1.5 rounded-full ${fw.enabled ? "bg-green-500" : "bg-slate-400"}`} /> Evidence auto-collection: {fw.enabled ? "Enabled" : "Disabled"}</p>
+                </div>
+              )}
             </CardContent>
           </Card>
-
-          {/* Per-framework summary cards */}
-          <div className="grid grid-cols-3 gap-4">
-            {matrixTotals.map(t => {
-              const pct = Math.round((t.implemented / CONTROLS.length) * 100);
-              return (
-                <Card key={t.fw} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-                  <CardContent className="p-3">
-                    <p className="text-xs font-semibold truncate" style={{ color: 'hsl(var(--text-1))' }}>{t.fw}</p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <div style={{ flex: 1, background: 'hsl(var(--bg-muted))', height: 4 }}>
-                        <div style={{ width: pct + '%', background: pct >= 60 ? '#10b981' : '#f97316', height: '100%' }} />
-                      </div>
-                      <span className="text-xs font-bold" style={{ color: 'hsl(var(--text-1))' }}>{pct}%</span>
-                    </div>
-                    <div className="flex gap-3 mt-1 text-xs" style={{ color: 'hsl(var(--text-4))' }}>
-                      <span style={{ color: 'hsl(var(--s-ok-tx))' }}>{t.implemented} impl.</span>
-                      <span style={{ color: 'hsl(var(--s-wn-tx))' }}>{t.partial} partial</span>
-                      <span>{t.not_mapped} unmapped</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </TabsContent>
-      </Tabs>
+        ))}
+      </div>
     </div>
   );
 }

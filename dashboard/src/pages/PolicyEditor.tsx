@@ -1,280 +1,171 @@
 import { useState } from "react";
-import { usePolicyStore } from "../stores/policyStore";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { Card } from "../components/ui/card";
-import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
-import { Separator } from "../components/ui/separator";
-import { Textarea } from "../components/ui/textarea";
-import { CaretRight as ChevronRight, ArrowLeft, PencilSimple as Edit3, Eye, PaperPlaneRight as Send, CheckCircle, FileArrowDown as FileDown, Clock, ChatCircle as MessageSquare, Shield, LinkSimple as Link2, Warning as AlertTriangle, XCircle, ClockCounterClockwise as History, User } from "@phosphor-icons/react";
+import { FileText, Plus, Edit3, Save, X, Clock } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 
+interface Policy { id: string; name: string; framework: string; version: string; updated: string; content: string; status: "active" | "draft" | "archived"; }
 
-const STEPS = ["Draft","In Review","Approved","Published","Expired","Archived"];
-
-const sections = [
-  {title:"1. Purpose & Scope",content:"This policy establishes guidelines for the responsible use of Artificial Intelligence (AI) and Machine Learning (ML) systems across the organization. It defines acceptable use boundaries, risk thresholds, and governance requirements to ensure AI systems are deployed ethically, transparently, and in compliance with applicable regulations including the EU AI Act and NIST AI RMF.\n\nScope: All employees, contractors, vendors, and third parties who develop, deploy, operate, or interact with AI/ML systems owned or managed by the organization."},
-  {title:"2. Definitions",content:"AI System: Any software that uses machine learning, deep learning, natural language processing, computer vision, or other AI techniques to make predictions, recommendations, or decisions.\nHigh-Risk AI: Systems classified as Tier 1 or Tier 2 per POL-002 (AI Model Risk Classification Standard), including those affecting health, safety, legal rights, or financial decisions.\nHuman-in-the-Loop (HITL): A design pattern requiring human review and approval before an AI system acts on its output.\nModel Drift: Degradation in model performance over time due to changes in input data distribution or underlying patterns."},
-  {title:"3. Policy Statements",content:"3.1 All AI systems must be registered in the AI Model Inventory before deployment to any environment.\n3.2 High-risk AI systems require mandatory bias testing per POL-006 before production release.\n3.3 Automated decisions that materially affect individuals must include an explainability mechanism per POL-010.\n3.4 AI training data must comply with data governance standards defined in POL-009.\n3.5 All production AI systems must implement monitoring and drift detection per POL-011.\n3.6 Third-party AI services must complete vendor assessment per POL-004 before integration.\n3.7 Any AI system failure or bias incident must be reported within 4 hours per POL-005.\n3.8 Generative AI tools must not be used to process classified or restricted data without explicit approval."},
-  {title:"4. Roles & Responsibilities",content:"AI Governance Board: Overall policy ownership, exception approvals, and annual review.\nModel Owners: Responsible for ensuring their AI systems comply with this policy and all linked standards.\nData Scientists/Engineers: Must follow approved development practices, document model decisions, and conduct required testing.\nCompliance Team: Monitors adherence, conducts audits, and reports violations.\nCISO Office: Oversees AI security controls and incident response."},
-  {title:"5. Compliance Requirements",content:"EU AI Act: High-risk AI systems must implement conformity assessments and maintain technical documentation.\nNIST AI RMF: All AI systems must be mapped to the NIST AI Risk Management Framework categories (Govern, Map, Measure, Manage).\nGDPR: AI systems processing personal data must implement data protection by design and conduct DPIAs where required.\nISO 27001: AI-related information security controls must align with the organizations ISMS."},
-  {title:"6. Review & Approval",content:"This policy is reviewed quarterly by the AI Governance Board. Material changes require approval from the Chief AI Ethics Officer and CISO. Non-material updates (formatting, references) may be approved by the Policy Owner.\n\nNext scheduled review: 2026-05-15"},
-  {title:"7. Exceptions Process",content:"Exceptions to this policy must be submitted via the GRC platform with justification, risk assessment, compensating controls, and a defined expiration date. Exceptions for high-risk AI systems require board-level approval. All exceptions are logged and audited quarterly."},
-];
-const initialComments = [
-  {author:"Dr. Sarah Mitchell",role:"AI Ethics Officer",date:"2026-02-10",text:"Section 3.8 on generative AI needs tighter language around data classification boundaries."},
-  {author:"David Kim",role:"Security Lead",date:"2026-02-12",text:"Approved from security perspective. Recommend linking to OWASP LLM Top 10 in Section 5."},
-  {author:"Maria Santos",role:"ML Engineering Lead",date:"2026-02-14",text:"Model inventory registration process is now automated. Section 3.1 compliance is simplified."},
+const TEMPLATES: Policy[] = [
+  { id: "p1", name: "AI Usage Policy", framework: "EU AI Act", version: "v2.1", updated: "2025-01-15", status: "active", content: "This policy governs the use of AI systems within the organization. All deployments must pass compliance checks before production release. High-risk AI systems require human oversight and transparency documentation.\n\nScope: All AI/ML models deployed in production or customer-facing environments.\n\nRequirements:\n1. All models must be registered in the Model Inventory before deployment\n2. High-risk models require Ethics Board approval\n3. Trust score monitoring must be active for all production models\n4. HITL review is mandatory when trust score drops below 0.85" },
+  { id: "p2", name: "Data Retention Policy", framework: "GDPR", version: "v1.3", updated: "2025-01-10", status: "active", content: "Personal data collected through AI processing must be retained only for the minimum period necessary. Automated deletion after 90 days unless explicit consent is obtained. Data subjects must be informed of retention periods.\n\nRetention Periods:\n- Model training data: 365 days (with consent)\n- Inference logs: 90 days\n- PII-containing outputs: 30 days (anonymized after 7 days)\n- Audit trail: 7 years (regulatory requirement)" },
+  { id: "p3", name: "Model Deployment Policy", framework: "NIST AI RMF", version: "v3.0", updated: "2025-01-08", status: "active", content: "All AI models must undergo bias testing, security review, and performance benchmarking before deployment. Model cards must be generated and reviewed. Rollback procedures must be documented and tested.\n\nPre-deployment Checklist:\n1. Benchmark suite passed (accuracy, fairness, safety)\n2. Red-team testing completed\n3. Model card reviewed by stakeholders\n4. Rollback procedure documented and tested\n5. Monitoring dashboards configured" },
+  { id: "p4", name: "Bias & Fairness Policy", framework: "IEEE 7000", version: "v1.0", updated: "2025-01-05", status: "active", content: "AI systems must be evaluated for demographic bias across protected attributes. Fairness metrics must meet minimum thresholds. Bias audits must be conducted quarterly." },
+  { id: "p5", name: "AI Risk Management Policy", framework: "ISO 42001", version: "v2.0", updated: "2025-01-12", status: "active", content: "Risks associated with AI systems must be identified, assessed, and mitigated. Risk registers must be maintained. Residual risks must be accepted by designated risk owners." },
+  { id: "p6", name: "Incident Response Policy", framework: "SOC 2 Type II", version: "v1.5", updated: "2025-01-07", status: "active", content: "AI-related security incidents must be reported within 1 hour. Incident severity must be classified. Root cause analysis must be completed within 48 hours." },
+  { id: "p7", name: "Information Security Policy", framework: "ISO 27001", version: "v4.0", updated: "2025-01-03", status: "active", content: "AI systems must comply with information security controls. Access to model endpoints must be authenticated and authorized. Encryption in transit and at rest is mandatory." },
+  { id: "p8", name: "PII Protection Policy", framework: "GDPR", version: "v2.2", updated: "2025-01-14", status: "active", content: "AI systems must detect and mask PII in inputs and outputs. PII processing must have a lawful basis. Data protection impact assessments required for high-risk processing." },
+  { id: "p9", name: "Transparency & Explainability", framework: "EU AI Act", version: "v1.1", updated: "2025-01-06", status: "draft", content: "Users must be informed when interacting with AI. Model decisions must be explainable on request. Technical documentation must be maintained for high-risk systems." },
 ];
 
-const relatedPolicies = [
-  {id:"POL-002",name:"AI Model Risk Classification Standard"},
-  {id:"POL-004",name:"Third-Party AI Vendor Assessment"},
-  {id:"POL-005",name:"AI Incident Response Protocol"},
-  {id:"POL-006",name:"Algorithmic Bias Testing Standard"},
-];
+const fwColor: Record<string, string> = {
+  "EU AI Act": "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400",
+  "GDPR": "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-400",
+  "NIST AI RMF": "bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-400",
+  "IEEE 7000": "bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400",
+  "ISO 42001": "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400",
+  "SOC 2 Type II": "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400",
+  "ISO 27001": "bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-400",
+};
 
-const linkedControls = [
-  {id:"CTRL-AI-001",name:"Model Registration Gate",status:"Implemented"},
-  {id:"CTRL-AI-007",name:"Bias Testing Automation",status:"Implemented"},
-  {id:"CTRL-AI-012",name:"Drift Detection Alert",status:"Partial"},
-  {id:"CTRL-AI-015",name:"HITL Override Logging",status:"Planned"},
-];
-
-const initialAuditLog = [
-  {timestamp:"2026-02-14 09:32",actor:"Maria Santos",action:"Added comment",detail:"Model inventory registration automation note"},
-  {timestamp:"2026-02-12 14:15",actor:"David Kim",action:"Added comment",detail:"Security approval with OWASP recommendation"},
-  {timestamp:"2026-02-10 11:00",actor:"Dr. Sarah Mitchell",action:"Added comment",detail:"Generative AI language review"},
-  {timestamp:"2026-02-01 08:00",actor:"System",action:"Policy created",detail:"Initial draft of POL-001 v3.2"},
-];
+const statusBadge: Record<string, string> = {
+  active: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400",
+  draft: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400",
+  archived: "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400",
+};
 
 export default function PolicyEditor() {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const policyId = searchParams.get("id") || "POL-001";
-  const [editMode, setEditMode] = useState(false);
-  const { getEffectiveStatus, transitionPolicy } = usePolicyStore();
-  const effectiveStatus = getEffectiveStatus(policyId, "Draft");
-  const [currentStep, setCurrentStep] = useState(() => {
-    const idx = STEPS.indexOf(effectiveStatus);
-    return idx >= 0 ? idx : 0;
-  });
-  const [comments, setComments] = useState(initialComments);
-  const [newComment, setNewComment] = useState("");
-  const [auditLog, setAuditLog] = useState(initialAuditLog);
-  const [showAuditLog, setShowAuditLog] = useState(false);
-  const [rejectReason, setRejectReason] = useState("");
-  const [showRejectDialog, setShowRejectDialog] = useState(false);
-  const [sectionEdits, setSectionEdits] = useState<Record<number,string>>({});
+  const [policies, setPolicies] = useState(TEMPLATES);
+  const [selected, setSelected] = useState<string | null>("p1");
+  const [showNew, setShowNew] = useState(false);
+  const [form, setForm] = useState({ name: "", framework: "EU AI Act", content: "" });
+  const [editContent, setEditContent] = useState<string | null>(null);
 
-  const statusLabel = STEPS[currentStep];
-  const statusColor = currentStep === 0 ? "bg-yellow-500/20 text-yellow-400" : currentStep === 1 ? "bg-blue-500/20 text-blue-400" : currentStep === 2 ? "bg-[hsl(var(--brand))]/20 text-[hsl(var(--brand))]" : currentStep === 4 ? "bg-red-500/20 text-red-400" : currentStep === 5 ? "bg-zinc-500/20 text-muted-foreground" : "bg-green-500/20 text-green-400";
+  const sel = policies.find(p => p.id === selected);
 
-  const handleSubmitForReview = () => {
-    if (currentStep === 0) {
-      transitionPolicy(policyId, "submit", "Current User");
-      setCurrentStep(1);
-      const entry = {timestamp:new Date().toISOString().slice(0,16).replace("T"," "),actor:"Current User",action:"Submitted for review",detail:`Policy ${policyId} moved from Draft to In Review`};
-      setAuditLog(prev => [entry, ...prev]);
-    }
+  const addPolicy = () => {
+    if (!form.name.trim() || !form.content.trim()) return;
+    const p: Policy = { id: `p${Date.now()}`, name: form.name, framework: form.framework, version: "v1.0", updated: new Date().toISOString().slice(0, 10), content: form.content, status: "draft" };
+    setPolicies([p, ...policies]);
+    setSelected(p.id);
+    setForm({ name: "", framework: "EU AI Act", content: "" });
+    setShowNew(false);
   };
 
-  const handleApprove = () => {
-    if (currentStep === 1) {
-      setCurrentStep(2);
-      const entry = {timestamp:new Date().toISOString().slice(0,16).replace("T"," "),actor:"Current User",action:"Approved",detail:`Policy ${policyId} approved`};
-      setAuditLog(prev => [entry, ...prev]);
-    } else if (currentStep === 2) {
-      setCurrentStep(3);
-      const entry = {timestamp:new Date().toISOString().slice(0,16).replace("T"," "),actor:"Current User",action:"Published",detail:`Policy ${policyId} published`};
-      setAuditLog(prev => [entry, ...prev]);
-    }
-  };
-
-  const handleReject = () => {
-    if (currentStep === 1 && rejectReason.trim()) {
-      setCurrentStep(0);
-      const comment = {author:"Current User",role:"Reviewer",date:new Date().toISOString().slice(0,10),text:`[REJECTION] ${rejectReason}`};
-      setComments(prev => [comment, ...prev]);
-      const entry = {timestamp:new Date().toISOString().slice(0,16).replace("T"," "),actor:"Current User",action:"Rejected",detail:`Sent back to Draft: ${rejectReason}`};
-      setAuditLog(prev => [entry, ...prev]);
-      setRejectReason("");
-      setShowRejectDialog(false);
-    }
-  };
-
-  const handleAddComment = () => {
-    if (newComment.trim()) {
-      const comment = {author:"Current User",role:"Policy Reviewer",date:new Date().toISOString().slice(0,10),text:newComment};
-      setComments(prev => [comment, ...prev]);
-      const entry = {timestamp:new Date().toISOString().slice(0,16).replace("T"," "),actor:"Current User",action:"Added comment",detail:newComment.slice(0,80)};
-      setAuditLog(prev => [entry, ...prev]);
-      setNewComment("");
-    }
-  };
-
-  const handleExport = () => {
-    const blob = new Blob([sections.map(s => `${s.title}\n${s.content}`).join("\n\n")], {type:"text/plain"});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = `${policyId}-policy.txt`; a.click();
-    URL.revokeObjectURL(url);
-    const entry = {timestamp:new Date().toISOString().slice(0,16).replace("T"," "),actor:"Current User",action:"Exported",detail:`Policy ${policyId} exported as text`};
-    setAuditLog(prev => [entry, ...prev]);
+  const saveEdit = () => {
+    if (!editContent || !sel) return;
+    setPolicies(prev => prev.map(p => p.id === sel.id ? { ...p, content: editContent, updated: new Date().toISOString().slice(0, 10), version: `v${(parseFloat(p.version.slice(1)) + 0.1).toFixed(1)}` } : p));
+    setEditContent(null);
   };
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--bg-page))] text-foreground p-6">
-      {/* Header */}
-      <div className="flex items-center gap-2 text-sm text-[hsl(var(--text-3))] mb-6">
-        <button onClick={() => navigate("/compliance/policies")} className="hover:text-foreground flex items-center gap-1"><ArrowLeft className="w-4 h-4"/> Back</button>
-        <ChevronRight className="w-4 h-4"/>
-        <span>Policy Manager</span>
-        <ChevronRight className="w-4 h-4"/>
-        <span className="text-foreground">{policyId}</span>
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-blue-100 dark:bg-blue-950 rounded-lg"><FileText size={20} className="text-blue-600 dark:text-blue-400" /></div>
+          <div>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Policy Editor</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Create and manage governance policies across all compliance frameworks</p>
+          </div>
+        </div>
+        <button onClick={() => setShowNew(true)} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+          <Plus size={14} /> New Policy
+        </button>
       </div>
 
-      <div className="flex justify-between items-start mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Responsible AI Use Policy</h1>
-          <p className="text-[hsl(var(--text-3))] text-sm mt-1">{policyId} &middot; Version 3.2 &middot; AI Governance</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setShowAuditLog(!showAuditLog)}><History className="w-4 h-4 mr-1"/>{showAuditLog ? "Hide" : "Show"} Audit Log</Button>
-          <Button variant="outline" size="sm" onClick={handleExport}><FileDown className="w-4 h-4 mr-1"/>Export</Button>
-          <Button variant="outline" size="sm" onClick={() => setEditMode(!editMode)}>{editMode ? <><Eye className="w-4 h-4 mr-1"/>View</> : <><Edit3 className="w-4 h-4 mr-1"/>Edit</>}</Button>
-        </div>
-      </div>
-
-      {/* Audit Log Panel */}
-      {showAuditLog && (
-        <Card className="bg-surface border-[hsl(var(--border))] p-4 mb-6">
-          <h3 className="text-foreground font-semibold mb-3 flex items-center gap-2"><History className="w-4 h-4"/>Audit Trail</h3>
-          <div className="space-y-2 max-h-48 overflow-y-auto">
-            {auditLog.map((entry,i) => (
-              <div key={i} className="flex items-start gap-3 text-sm border-l-2 border-[hsl(var(--border-mid))] pl-3 py-1">
-                <span className="text-[hsl(var(--text-4))] whitespace-nowrap w-36 shrink-0">{entry.timestamp}</span>
-                <span className="text-[hsl(var(--text-2))] w-28 shrink-0">{entry.actor}</span>
-                <Badge className="bg-raised text-[hsl(var(--text-2))] shrink-0">{entry.action}</Badge>
-                <span className="text-[hsl(var(--text-3))] truncate">{entry.detail}</span>
+      {/* New Policy Modal */}
+      {showNew && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setShowNew(false)}>
+          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl p-6 w-full max-w-lg border border-slate-200 dark:border-slate-700" onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Create New Policy</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Policy Name *</label>
+                <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white" placeholder="e.g. Data Governance Policy" />
               </div>
-            ))}
+              <div>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Framework</label>
+                <select value={form.framework} onChange={e => setForm({...form, framework: e.target.value})} className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white">
+                  {Object.keys(fwColor).map(f => <option key={f}>{f}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Policy Content *</label>
+                <textarea value={form.content} onChange={e => setForm({...form, content: e.target.value})} rows={5} className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white" placeholder="Write the policy content..." />
+              </div>
+              <div className="flex gap-3 justify-end">
+                <button onClick={() => setShowNew(false)} className="px-4 py-2 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">Cancel</button>
+                <button onClick={addPolicy} disabled={!form.name.trim() || !form.content.trim()} className="px-4 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg disabled:opacity-40 transition-colors">Create Policy</button>
+              </div>
+            </div>
           </div>
-        </Card>
-      )}
-
-      {/* Reject Dialog */}
-      {showRejectDialog && (
-        <Card className="bg-surface border-red-800 p-4 mb-6">
-          <h3 className="text-red-400 font-semibold mb-2 flex items-center gap-2"><XCircle className="w-4 h-4"/>Reject / Request Changes</h3>
-          <Textarea placeholder="Reason for rejection (required)..." value={rejectReason} onChange={(e:React.ChangeEvent<HTMLTextAreaElement>) => setRejectReason(e.target.value)} className="bg-raised border-[hsl(var(--border-mid))] text-foreground mb-2"/>
-          <div className="flex gap-2">
-            <Button size="sm" variant="destructive" onClick={handleReject} disabled={!rejectReason.trim()}>Confirm Rejection</Button>
-            <Button size="sm" variant="outline" onClick={() => setShowRejectDialog(false)}>Cancel</Button>
-          </div>
-        </Card>
-      )}
-
-      <div className="grid grid-cols-3 gap-6">
-        {/* Main Content - Policy Sections */}
-        <div className="col-span-2 space-y-4">
-          {sections.map((s,i) => (
-            <Card key={i} className="bg-surface border-[hsl(var(--border))] p-4">
-              <h3 className="text-foreground font-semibold mb-2">{s.title}</h3>
-              {editMode ? (
-                <Textarea value={sectionEdits[i] !== undefined ? sectionEdits[i] : s.content} onChange={(e:React.ChangeEvent<HTMLTextAreaElement>) => setSectionEdits(prev => ({...prev,[i]:e.target.value}))} className="bg-raised border-[hsl(var(--border-mid))] text-[hsl(var(--text-2))] min-h-[120px]"/>
-              ) : (
-                <p className="text-[hsl(var(--text-3))] text-sm whitespace-pre-line">{sectionEdits[i] !== undefined ? sectionEdits[i] : s.content}</p>
-              )}
-            </Card>
-          ))}
         </div>
+      )}
 
-        {/* Sidebar */}
-        <div className="space-y-4">
-          {/* Status & Metadata */}
-          <Card className="bg-surface border-[hsl(var(--border))] p-4">
-            <h3 className="text-foreground font-semibold text-sm mb-3">Policy Metadata</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between"><span className="text-[hsl(var(--text-3))]">Status</span><Badge className={statusColor}>{statusLabel}</Badge></div>
-              <div className="flex justify-between"><span className="text-[hsl(var(--text-3))]">Category</span><span className="text-[hsl(var(--text-1))]">AI Governance</span></div>
-              <div className="flex justify-between"><span className="text-[hsl(var(--text-3))]">Risk Level</span><Badge className="bg-red-500/20 text-red-400">Critical</Badge></div>
-              <div className="flex justify-between"><span className="text-[hsl(var(--text-3))]">Owner</span><span className="text-[hsl(var(--text-1))]">Dr. Sarah Mitchell</span></div>
-              <div className="flex justify-between"><span className="text-[hsl(var(--text-3))]">Framework</span><span className="text-[hsl(var(--text-1))]">EU AI Act, NIST AI RMF</span></div>
-              <div className="flex justify-between"><span className="text-[hsl(var(--text-3))]">Last Updated</span><span className="text-[hsl(var(--text-1))]">2026-03-15</span></div>
-              <div className="flex justify-between"><span className="text-[hsl(var(--text-3))]">Next Review</span><span className="text-[hsl(var(--text-1))]">2026-05-15</span></div>
-            </div>
-          </Card>
-
-          {/* Review Status Stepper */}
-          <Card className="bg-surface border-[hsl(var(--border))] p-4">
-            <h3 className="text-foreground font-semibold text-sm mb-3 flex items-center gap-2"><Shield className="w-4 h-4"/>Review Status</h3>
-            <div className="space-y-2">
-              {STEPS.map((step,i) => (
-                <div key={i} className="flex items-center gap-2 text-sm">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${i <= currentStep ? "bg-[hsl(var(--brand))] text-foreground" : "bg-muted text-[hsl(var(--text-3))]"}`}>{i < currentStep ? <CheckCircle className="w-3 h-3"/> : i+1}</div>
-                  <span className={i <= currentStep ? "text-foreground" : "text-[hsl(var(--text-4))]"}>{step}</span>
-                </div>
-              ))}
-            </div>
-            <Separator className="my-3 bg-raised"/>
-            <div className="space-y-2">
-              {currentStep === 0 && <Button size="sm" className="w-full" onClick={handleSubmitForReview}><Send className="w-3 h-3 mr-1"/>Submit for Review</Button>}
-              {currentStep === 1 && (
-                <>
-                  <Button size="sm" className="w-full bg-[hsl(var(--brand))] hover:bg-primary/90" onClick={handleApprove}><CheckCircle className="w-3 h-3 mr-1"/>Approve</Button>
-                  <Button size="sm" variant="outline" className="w-full border-red-700 text-red-400 hover:bg-red-900/30" onClick={() => setShowRejectDialog(true)}><XCircle className="w-3 h-3 mr-1"/>Reject / Request Changes</Button>
-                </>
-              )}
-              {currentStep === 2 && <Button size="sm" className="w-full bg-green-600 hover:bg-green-700" onClick={handleApprove}><CheckCircle className="w-3 h-3 mr-1"/>Publish</Button>}
-              {currentStep === 3 && <p className="text-[hsl(var(--brand))] text-sm text-center">Policy is published and active.</p>}
-            </div>
-          </Card>
-
-          {/* Related Policies */}
-          <Card className="bg-surface border-[hsl(var(--border))] p-4">
-            <h3 className="text-foreground font-semibold text-sm mb-3 flex items-center gap-2"><Link2 className="w-4 h-4"/>Related Policies</h3>
-            <div className="space-y-2">
-              {relatedPolicies.map((p) => (
-                <button key={p.id} onClick={() => navigate(`/policy-editor?id=${p.id}`)} className="w-full text-left flex items-center justify-between p-2 rounded hover:bg-raised transition-colors">
-                  <div>
-                    <span className="text-blue-400 text-xs">{p.id}</span>
-                    <p className="text-[hsl(var(--text-2))] text-sm">{p.name}</p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Policy List */}
+        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Policies ({policies.length})</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="divide-y divide-slate-50 dark:divide-slate-800 max-h-[600px] overflow-y-auto">
+              {policies.map(p => (
+                <button key={p.id} onClick={() => { setSelected(p.id); setEditContent(null); }} className={`w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${
+                  selected === p.id ? "bg-green-50 dark:bg-green-950/30 border-l-2 border-l-green-500" : ""
+                }`}>
+                  <div className="flex items-center justify-between mb-0.5">
+                    <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">{p.name}</p>
+                    <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded capitalize flex-shrink-0 ml-2 ${statusBadge[p.status]}`}>{p.status}</span>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-[hsl(var(--text-4))]"/>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${fwColor[p.framework] || "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"}`}>{p.framework}</span>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500">{p.version} · {p.updated}</span>
+                  </div>
                 </button>
               ))}
             </div>
-          </Card>
+          </CardContent>
+        </Card>
 
-          {/* Linked Controls */}
-          <Card className="bg-surface border-[hsl(var(--border))] p-4">
-            <h3 className="text-foreground font-semibold text-sm mb-3 flex items-center gap-2"><Shield className="w-4 h-4"/>Linked Controls</h3>
-            <div className="space-y-2">
-              {linkedControls.map((c) => (
-                <div key={c.id} className="flex items-center justify-between text-sm">
-                  <div><span className="text-[hsl(var(--text-4))]">{c.id}</span><span className="text-[hsl(var(--text-2))] ml-2">{c.name}</span></div>
-                  <Badge className={c.status==="Implemented"?"bg-[hsl(var(--brand))]/20 text-[hsl(var(--brand))]":c.status==="Partial"?"bg-yellow-500/20 text-yellow-400":"bg-muted text-[hsl(var(--text-3))]"}>{c.status}</Badge>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          {/* Review Comments */}
-          <Card className="bg-surface border-[hsl(var(--border))] p-4">
-            <h3 className="text-foreground font-semibold text-sm mb-3"><MessageSquare className="w-4 h-4 inline mr-1"/>Review Comments ({comments.length})</h3>
-            <div className="mb-3">
-              <Textarea placeholder="Add a review comment..." value={newComment} onChange={(e:React.ChangeEvent<HTMLTextAreaElement>) => setNewComment(e.target.value)} className="bg-raised border-[hsl(var(--border-mid))] text-foreground text-sm mb-2" rows={2}/>
-              <Button size="sm" onClick={handleAddComment} disabled={!newComment.trim()} className="w-full"><Send className="w-3 h-3 mr-1"/>Add Comment</Button>
-            </div>
-            <Separator className="mb-3 bg-raised"/>
-            <div className="space-y-3 max-h-64 overflow-y-auto">
-              {comments.map((c,i) => (
-                <div key={i} className="bg-raised/30 rounded-lg p-3">
-                  <div className="flex justify-between items-start"><div><p className="text-foreground text-xs font-medium">{c.author}</p><p className="text-[hsl(var(--text-4))] text-xs">{c.role} &middot; {c.date}</p></div></div>
-                  <p className="text-[hsl(var(--text-2))] text-xs mt-2">{c.text}</p>
-                </div>
-              ))}
-            </div>
+        {/* Policy Content */}
+        <div className="lg:col-span-2">
+          <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+            {sel ? (
+              <>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-base font-bold text-slate-900 dark:text-white">{sel.name}</CardTitle>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded ${fwColor[sel.framework] || ""}`}>{sel.framework}</span>
+                        <span className="text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1"><Clock size={10} /> {sel.version} · Updated {sel.updated}</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      {editContent !== null ? (
+                        <>
+                          <button onClick={() => setEditContent(null)} className="flex items-center gap-1 px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"><X size={12} /> Cancel</button>
+                          <button onClick={saveEdit} className="flex items-center gap-1 px-3 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"><Save size={12} /> Save</button>
+                        </>
+                      ) : (
+                        <button onClick={() => setEditContent(sel.content)} className="flex items-center gap-1 px-3 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors"><Edit3 size={12} /> Edit</button>
+                      )}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {editContent !== null ? (
+                    <textarea value={editContent} onChange={e => setEditContent(e.target.value)} rows={16} className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 text-sm font-mono bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none" />
+                  ) : (
+                    <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap font-mono">{sel.content}</div>
+                  )}
+                </CardContent>
+              </>
+            ) : (
+              <CardContent className="p-10 text-center text-slate-400 dark:text-slate-500">
+                <FileText size={32} className="mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Select a policy to view</p>
+              </CardContent>
+            )}
           </Card>
         </div>
       </div>

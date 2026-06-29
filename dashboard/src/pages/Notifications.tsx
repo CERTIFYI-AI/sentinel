@@ -1,520 +1,107 @@
-import { useState, useEffect } from 'react';
-import { useNotificationData } from '../hooks/useNotificationData';
-import { PageSkeleton } from '../components/ui/PageSkeleton';
-import { PageHeader } from '../components/ui/PageHeader';
-import { Link } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
-import { Button } from '../components/ui/button';
-import {
-  Bell, Warning, ShieldCheck, Robot, FileText, CheckCircle,
-  X, Eye, Funnel, ArrowRight, Archive, SealCheck, Lightning,
-  Virus, Gear, ChartBar, ClipboardText, CalendarBlank, Lock,
-  MagnifyingGlass, CaretDown,
-} from '@phosphor-icons/react';
-import { severityColor } from '../data/seed';
-import type { Severity } from '../data/seed';
-
-
-// ── notification seed ──────────────────────────────────────────────────────
+import { useState } from "react";
+import { Bell, AlertTriangle, Shield, CheckCircle2, Clock, Info, Filter, CheckCheck } from "lucide-react";
+import { Card, CardContent } from "../components/ui/card";
 
 interface Notification {
   id: string;
+  type: "critical" | "warning" | "info" | "success";
   title: string;
   description: string;
+  source: string;
   timestamp: string;
-  severity: Severity | 'info' | 'system';
-  category: 'model' | 'security' | 'compliance' | 'hitl' | 'risk' | 'bias' | 'incident' | 'vendor' | 'policy' | 'redteam' | 'export' | 'system' | 'guardrail';
   read: boolean;
-  link: string;
-  group: 'Today' | 'Yesterday' | 'This Week' | 'Older';
+  actionUrl?: string;
 }
 
-const NOTIFICATIONS: Notification[] = [
-  {
-    id: 'NTF-001',
-    title: 'Critical: Bias threshold exceeded',
-    description: 'MDL-004 Loan Approval Assistant — gender fairness score dropped to 0.62, below 0.85 threshold. Immediate review required.',
-    timestamp: '2026-04-05T13:47:00Z',
-    severity: 'critical',
-    category: 'model',
-    read: false,
-    link: '/models',
-    group: 'Today',
-  },
-  {
-    id: 'NTF-002',
-    title: 'High: Shadow AI agent detected',
-    description: 'AGT-010 in Marketing department — unauthorized LangChain agent accessing customer PII without approval. Agent quarantined.',
-    timestamp: '2026-04-05T11:22:00Z',
-    severity: 'high',
-    category: 'security',
-    read: false,
-    link: '/agents',
-    group: 'Today',
-  },
-  {
-    id: 'NTF-003',
-    title: 'Medium: Evidence EV-005 GDPR DPA expired',
-    description: 'GDPR Data Processing Agreement with OpenAI (EV-005) has expired. Renewal required before continued EU data processing.',
-    timestamp: '2026-04-05T09:15:00Z',
-    severity: 'medium',
-    category: 'compliance',
-    read: false,
-    link: '/evidence',
-    group: 'Today',
-  },
-  {
-    id: 'NTF-004',
-    title: 'New HITL review assigned',
-    description: 'HITL-001 — Bias review for Loan Approval Assistant assigned to you. SLA: 4h remaining. Priority: Critical.',
-    timestamp: '2026-04-05T08:05:00Z',
-    severity: 'critical',
-    category: 'hitl',
-    read: false,
-    link: '/hitl/HITL-001',
-    group: 'Today',
-  },
-  {
-    id: 'NTF-005',
-    title: 'Risk RSK-004 escalated to Critical',
-    description: 'OpenAI DPA gap for EU data — risk score elevated to Critical (20/25). Owner: James Patel. Trending upward.',
-    timestamp: '2026-04-04T16:30:00Z',
-    severity: 'critical',
-    category: 'risk',
-    read: false,
-    link: '/risks',
-    group: 'Yesterday',
-  },
-  {
-    id: 'NTF-006',
-    title: 'Model MDL-002 drift status changed to Stable',
-    description: 'Fraud Detection Engine drift monitoring shows return to stable after 3-week elevated period. No action required.',
-    timestamp: '2026-04-04T14:18:00Z',
-    severity: 'low' as Severity,
-    category: 'model',
-    read: true,
-    link: '/models',
-    group: 'Yesterday',
-  },
-  {
-    id: 'NTF-007',
-    title: 'Compliance control CTRL-003 test result: FAILED',
-    description: 'Automated control CTRL-003 (Risk Assessment Procedure) failed scheduled test. Evidence gap identified under NIST AI RMF.',
-    timestamp: '2026-04-04T11:00:00Z',
-    severity: 'high',
-    category: 'compliance',
-    read: false,
-    link: '/controls',
-    group: 'Yesterday',
-  },
-  {
-    id: 'NTF-008',
-    title: 'Vendor V-007 C3.ai flagged as HIGH RISK',
-    description: 'C3.ai vendor score dropped to 55/100. DPA unsigned. Data residency concerns identified. Enhanced due diligence required.',
-    timestamp: '2026-04-03T15:45:00Z',
-    severity: 'high',
-    category: 'vendor',
-    read: true,
-    link: '/vendors',
-    group: 'This Week',
-  },
-  {
-    id: 'NTF-009',
-    title: 'Bias audit BA-005 completed — FAILED',
-    description: 'Loan Approval Assistant (MDL-004) on DS-001 — GDPR framework. All 4 dimensions failed. Remediation blocked. External audit mandatory.',
-    timestamp: '2026-04-03T10:20:00Z',
-    severity: 'critical',
-    category: 'bias',
-    read: false,
-    link: '/bias-audits',
-    group: 'This Week',
-  },
-  {
-    id: 'NTF-010',
-    title: 'Incident INC-005 LLM hallucination — mitigating',
-    description: 'Loan Approval Assistant fabricated regulatory citations. RAG pipeline implementation in progress. Human review gate enabled.',
-    timestamp: '2026-04-02T09:10:00Z',
-    severity: 'high',
-    category: 'incident',
-    read: true,
-    link: '/incidents',
-    group: 'This Week',
-  },
-  {
-    id: 'NTF-011',
-    title: 'Policy POL-005 EU AI Act framework submitted',
-    description: 'EU AI Act governance framework policy submitted for review by Emma Wilson. 3 reviewers required before publication.',
-    timestamp: '2026-04-01T14:55:00Z',
-    severity: 'medium',
-    category: 'policy',
-    read: true,
-    link: '/policies',
-    group: 'This Week',
-  },
-  {
-    id: 'NTF-012',
-    title: 'Red team exercise RT-004 — 4 critical findings',
-    description: 'Latest red team exercise completed. 4 critical vulnerabilities found including prompt injection on MDL-004 and data exfiltration path.',
-    timestamp: '2026-04-01T08:30:00Z',
-    severity: 'critical',
-    category: 'redteam',
-    read: false,
-    link: '/security',
-    group: 'This Week',
-  },
-  {
-    id: 'NTF-013',
-    title: 'Export completed: Risk Register CSV',
-    description: 'Your requested export of the Risk Register (12 risks, all frameworks) is ready for download. File expires in 24 hours.',
-    timestamp: '2026-03-30T16:00:00Z',
-    severity: 'low' as Severity,
-    category: 'export',
-    read: true,
-    link: '/reporting',
-    group: 'Older',
-  },
-  {
-    id: 'NTF-014',
-    title: 'System: Scheduled maintenance window',
-    description: 'Platform maintenance scheduled for Apr 10, 02:00–04:00 UTC. Evidence sync, model monitoring, and HITL queue will be paused.',
-    timestamp: '2026-03-29T10:00:00Z',
-    severity: 'info' as any,
-    category: 'system',
-    read: true,
-    link: '/system',
-    group: 'Older',
-  },
-  {
-    id: 'NTF-015',
-    title: 'Guardrail blocked: PII detected in ComplianceBot output',
-    description: 'PII Detection guardrail blocked ComplianceBot response. Customer SSN detected in draft output. Event logged to audit trail.',
-    timestamp: '2026-03-28T17:35:00Z',
-    severity: 'high',
-    category: 'guardrail',
-    read: true,
-    link: '/guardrails',
-    group: 'Older',
-  },
+const INITIAL_NOTIFICATIONS: Notification[] = [
+  { id: "n1", type: "critical", title: "PII detected in GPT-4o output", description: "Trust score dropped below threshold. HITL review triggered for request req_a3f2. Patient SSN potentially exposed.", source: "Trust Engine", timestamp: "2 min ago", read: false, actionUrl: "/hitl-queue" },
+  { id: "n2", type: "critical", title: "EU AI Act compliance deadline approaching", description: "3 critical controls remain unmet for Art.9 (Risk Management) and Art.13 (Transparency). Deadline: Feb 2, 2025.", source: "Compliance", timestamp: "15 min ago", read: false, actionUrl: "/gap-analysis" },
+  { id: "n3", type: "warning", title: "Model drift detected — GPT-4o-mini", description: "Trust score deviation of -0.034 over last 24h. Accuracy benchmark dropped below 90% threshold.", source: "Monitoring", timestamp: "1 hour ago", read: false, actionUrl: "/benchmark" },
+  { id: "n4", type: "warning", title: "Vendor contract expiring — Mistral AI", description: "Contract expires June 30, 2025. DPA renewal pending. Status: Under Review.", source: "Vendor Mgmt", timestamp: "2 hours ago", read: true, actionUrl: "/vendors" },
+  { id: "n5", type: "info", title: "Benchmark suite completed", description: "Scheduled benchmark run completed for 4 models. Claude 3.5 Sonnet passed all checks. Llama 3.1 70B has 3 failures.", source: "Eval Engine", timestamp: "3 hours ago", read: true, actionUrl: "/benchmark" },
+  { id: "n6", type: "success", title: "Evidence auto-collected — GDPR", description: "12 new evidence artifacts collected for GDPR framework. Compliance score updated to 92%.", source: "Evidence Engine", timestamp: "4 hours ago", read: true },
+  { id: "n7", type: "info", title: "New model registered — Whisper Large V3", description: "Speech-to-text model registered by Voice Team. Risk tier: Limited. Pending initial benchmark.", source: "Model Registry", timestamp: "6 hours ago", read: true, actionUrl: "/models" },
+  { id: "n8", type: "warning", title: "Remediation item overdue — REM-005", description: "Red-teaming standardization blocked. Security team dependency unresolved. Original due: Jan 15.", source: "Remediation", timestamp: "8 hours ago", read: true, actionUrl: "/remediation" },
+  { id: "n9", type: "success", title: "Incident INC-004 resolved", description: "Latency spike on inference endpoint resolved. Root cause: connection pool exhaustion. P95 latency back to normal.", source: "Incident Mgmt", timestamp: "12 hours ago", read: true, actionUrl: "/incident-log" },
+  { id: "n10", type: "info", title: "Weekly compliance digest ready", description: "Your weekly compliance summary report is ready for download. Overall governance score: 83%.", source: "Export Center", timestamp: "1 day ago", read: true, actionUrl: "/export" },
 ];
 
-// ── helpers ────────────────────────────────────────────────────────────────
-
-const categoryIcon: Record<string, React.ComponentType<any>> = {
-  model: Robot,
-  security: Lock,
-  compliance: ShieldCheck,
-  hitl: Eye,
-  risk: Warning,
-  bias: ChartBar,
-  incident: Virus,
-  vendor: SealCheck,
-  policy: FileText,
-  redteam: Lightning,
-  export: Archive,
-  system: Gear,
-  guardrail: Lock,
+const typeConfig: Record<string, { color: string; bg: string; borderColor: string; icon: typeof Bell }> = {
+  critical: { color: "text-red-600 dark:text-red-400", bg: "bg-red-50 dark:bg-red-950/30", borderColor: "border-l-red-500", icon: AlertTriangle },
+  warning: { color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-950/30", borderColor: "border-l-amber-500", icon: Shield },
+  info: { color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-950/30", borderColor: "border-l-blue-500", icon: Info },
+  success: { color: "text-green-600 dark:text-green-400", bg: "bg-green-50 dark:bg-green-950/30", borderColor: "border-l-green-500", icon: CheckCircle2 },
 };
-
-const categoryColor: Record<string, string> = {
-  model: '#6366f1',
-  security: '#ef4444',
-  compliance: '#06b6d4',
-  hitl: '#a855f7',
-  risk: '#f97316',
-  bias: '#f59e0b',
-  incident: '#dc2626',
-  vendor: '#84cc16',
-  policy: '#3b82f6',
-  redteam: '#ec4899',
-  export: '#10b981',
-  system: 'hsl(var(--text-3))',
-  guardrail: '#ef4444',
-};
-
-const GROUPS = ['Today', 'Yesterday', 'This Week', 'Older'] as const;
-const CATEGORIES = ['all', 'model', 'security', 'compliance', 'hitl', 'risk', 'bias', 'incident', 'vendor', 'policy', 'redteam', 'system', 'guardrail', 'export'] as const;
-
-function SevBadge({ severity }: { severity: string }) {
-  if (severity === 'info' || severity === 'system') {
-    return (
-      <Badge style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))', border: '1px solid hsl(var(--border))', borderRadius: 0, fontSize: 9, fontWeight: 600 }}>
-        INFO
-      </Badge>
-    );
-  }
-  const sc = severityColor(severity as Severity);
-  return (
-    <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0, fontSize: 9, fontWeight: 600 }}>
-      {severity.toUpperCase()}
-    </Badge>
-  );
-}
-
-// ── component ──────────────────────────────────────────────────────────────
 
 export default function Notifications() {
-  const { items: liveItems, isLoading } = useNotificationData();
-  const [notifications, setNotifications] = useState(NOTIFICATIONS);
-  const [filter, setFilter] = useState<string>('all');
-  const [search, setSearch] = useState('');
+  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
+  const [typeFilter, setTypeFilter] = useState("all");
 
-  useEffect(() => {
-    if (liveItems.length > 0) setNotifications(liveItems as any[])
-  }, [liveItems]);
-
-  const [showFilter, setShowFilter] = useState(false);
-
-  if (isLoading) return <PageSkeleton title="Notifications" />;
-
-  const unread = notifications.filter(n => !n.read).length;
-  const critical = notifications.filter(n => n.severity === 'critical').length;
-  const thisWeek = notifications.filter(n => n.group === 'Today' || n.group === 'Yesterday' || n.group === 'This Week').length;
+  const unreadCount = notifications.filter(n => !n.read).length;
+  const filtered = typeFilter === "all" ? notifications : notifications.filter(n => n.type === typeFilter);
 
   const markAllRead = () => setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   const markRead = (id: string) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-  const dismiss = (id: string) => setNotifications(prev => prev.filter(n => n.id !== id));
-
-  const filtered = notifications.filter(n => {
-    const matchCat = filter === 'all' || n.category === filter;
-    const matchSearch = !search || n.title.toLowerCase().includes(search.toLowerCase()) || n.description.toLowerCase().includes(search.toLowerCase());
-    return matchCat && matchSearch;
-  });
-
-  const stats = [
-    { label: 'Total', value: notifications.length, icon: Bell, color: 'hsl(var(--brand))' },
-    { label: 'Unread', value: unread, icon: Eye, color: '#3b82f6' },
-    { label: 'Critical', value: critical, icon: Warning, color: '#ef4444' },
-    { label: 'This Week', value: thisWeek, icon: CalendarBlank, color: '#10b981' },
-  ];
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Notification Center"
-        subtitle="Real-time alerts across compliance, security, and model operations"
-        breadcrumbs={[{ label: 'Home', href: '/overview' }, { label: 'Notifications' }]}
-        actions={
-          <>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={markAllRead}
-              disabled={unread === 0}
-              style={{ borderRadius: 0, gap: 6 }}
-            >
-              <CheckCircle size={14} /> Mark All Read
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowFilter(p => !p)}
-              style={{ borderRadius: 0, gap: 6 }}
-            >
-              <Funnel size={14} /> Filter <CaretDown size={10} />
-            </Button>
-          </>
-        }
-      />
+    <div className="p-6 space-y-6 max-w-4xl">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-violet-100 dark:bg-violet-950 rounded-lg"><Bell size={20} className="text-violet-600 dark:text-violet-400" /></div>
+          <div>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Notifications</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              {unreadCount > 0 ? `${unreadCount} unread notifications` : "All caught up"} · Alerts from trust engine, compliance, and monitoring
+            </p>
+          </div>
+        </div>
+        {unreadCount > 0 && (
+          <button onClick={markAllRead} className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400 hover:underline font-medium">
+            <CheckCheck size={14} /> Mark all read
+          </button>
+        )}
+      </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
-        {stats.map(s => (
-          <Card key={s.label} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{s.label}</span>
-                <s.icon size={16} style={{ color: s.color }} />
-              </div>
-              <div className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</div>
-            </CardContent>
-          </Card>
+      {/* Filters */}
+      <div className="flex items-center gap-2">
+        <Filter size={14} className="text-slate-400" />
+        {["all", "critical", "warning", "info", "success"].map(f => (
+          <button key={f} onClick={() => setTypeFilter(f)} className={`px-3 py-1.5 text-xs rounded-lg capitalize font-medium transition-colors ${
+            typeFilter === f ? "bg-green-600 text-white" : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+          }`}>{f}</button>
         ))}
       </div>
 
-      {/* Filter panel */}
-      {showFilter && (
-        <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-xs font-semibold" style={{ color: 'hsl(var(--text-3))', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Category</span>
-              {CATEGORIES.map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => setFilter(cat)}
-                  style={{
-                    padding: '4px 10px',
-                    fontSize: 12,
-                    fontWeight: filter === cat ? 600 : 400,
-                    background: filter === cat ? 'hsl(var(--brand))' : 'hsl(var(--bg-muted))',
-                    color: filter === cat ? '#fff' : 'hsl(var(--text-2))',
-                    border: '1px solid hsl(var(--border))',
-                    cursor: 'pointer',
-                    textTransform: 'capitalize',
-                  }}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Search */}
-      <div style={{ position: 'relative' }}>
-        <MagnifyingGlass size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'hsl(var(--text-3))' }} />
-        <input
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Search notifications…"
-          style={{
-            width: '100%',
-            padding: '8px 12px 8px 32px',
-            background: 'hsl(var(--bg-surface))',
-            border: '1px solid hsl(var(--border))',
-            color: 'hsl(var(--text-1))',
-            fontSize: 13,
-            outline: 'none',
-          }}
-        />
-      </div>
-
-      {/* Grouped notifications */}
-      {GROUPS.map(group => {
-        const groupItems = filtered.filter(n => n.group === group);
-        if (groupItems.length === 0) return null;
-        return (
-          <div key={group}>
-            {/* Group header */}
-            <div className="flex items-center gap-3 mb-3">
-              <span className="text-xs font-semibold" style={{
-                color: 'hsl(var(--text-3))',
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-              }}>
-                {group}
-              </span>
-              <div style={{ flex: 1, height: 1, background: 'hsl(var(--border))' }} />
-              <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{groupItems.length} notifications</span>
-            </div>
-
-            <div className="space-y-2">
-              {groupItems.map(n => {
-                const Icon = categoryIcon[n.category] || Bell;
-                const iconColor = categoryColor[n.category] || 'hsl(var(--text-3))';
-                return (
-                  <div
-                    key={n.id}
-                    style={{
-                      background: n.read ? 'hsl(var(--bg-surface))' : 'hsl(var(--bg-raised))',
-                      border: `1px solid ${n.read ? 'hsl(var(--border))' : 'hsl(var(--border-mid))'}`,
-                      padding: '12px 16px',
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: 12,
-                      position: 'relative',
-                    }}
-                  >
-                    {/* Unread indicator */}
-                    {!n.read && (
-                      <div style={{
-                        position: 'absolute',
-                        left: 0,
-                        top: 0,
-                        bottom: 0,
-                        width: 3,
-                        background: 'hsl(var(--brand))',
-                      }} />
-                    )}
-
-                    {/* Icon */}
-                    <div style={{
-                      width: 34,
-                      height: 34,
-                      borderRadius: '50%',
-                      background: 'hsl(var(--bg-muted))',
-                      border: '1px solid hsl(var(--border))',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}>
-                      <Icon size={15} style={{ color: iconColor }} />
-                    </div>
-
-                    {/* Content */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3, flexWrap: 'wrap' }}>
-                        <span style={{
-                          fontSize: 13,
-                          fontWeight: n.read ? 500 : 600,
-                          color: 'hsl(var(--text-1))',
-                        }}>
-                          {n.title}
-                        </span>
-                        <SevBadge severity={n.severity as string} />
-                        <Badge style={{
-                          background: 'hsl(var(--bg-muted))',
-                          color: 'hsl(var(--text-3))',
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: 0,
-                          fontSize: 9,
-                          textTransform: 'capitalize',
-                        }}>
-                          {n.category}
-                        </Badge>
-                      </div>
-                      <p style={{ fontSize: 12, color: 'hsl(var(--text-3))', lineHeight: 1.5, marginBottom: 6 }}>
-                        {n.description}
-                      </p>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <span style={{ fontSize: 11, color: 'hsl(var(--text-4))', fontFamily: 'monospace' }}>
-                          {new Date(n.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                        {!n.read && (
-                          <button
-                            onClick={() => markRead(n.id)}
-                            style={{ fontSize: 11, color: 'hsl(var(--brand))', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                          >
-                            Mark as read
-                          </button>
-                        )}
-                        <Link to={n.link} style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: 'hsl(var(--brand))', textDecoration: 'none' }}>
-                          View <ArrowRight size={10} />
-                        </Link>
-                      </div>
-                    </div>
-
-                    {/* Dismiss */}
-                    <button
-                      onClick={() => dismiss(n.id)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: 'hsl(var(--text-4))',
-                        padding: 2,
-                        flexShrink: 0,
-                      }}
-                      title="Dismiss"
-                    >
-                      <X size={14} />
-                    </button>
+      {/* Notification List */}
+      <div className="space-y-2">
+        {filtered.map(n => {
+          const tc = typeConfig[n.type];
+          const Icon = tc.icon;
+          return (
+            <Card key={n.id} className={`border-l-4 ${tc.borderColor} ${!n.read ? tc.bg : "bg-white dark:bg-slate-900"} border-slate-200 dark:border-slate-700 hover:shadow-sm transition-shadow cursor-pointer`} onClick={() => markRead(n.id)}>
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <div className={`mt-0.5 flex-shrink-0 ${tc.color}`}>
+                    <Icon size={16} />
                   </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
-
-      {filtered.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '48px 0', color: 'hsl(var(--text-3))' }}>
-          <Bell size={40} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
-          <p style={{ fontSize: 14 }}>No notifications match your filter</p>
-        </div>
-      )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className={`text-sm font-semibold ${!n.read ? "text-slate-900 dark:text-white" : "text-slate-700 dark:text-slate-300"}`}>{n.title}</h3>
+                      {!n.read && <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />}
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{n.description}</p>
+                    <div className="flex items-center gap-3 mt-2 text-[11px] text-slate-400 dark:text-slate-500">
+                      <span className="flex items-center gap-1"><Clock size={10} /> {n.timestamp}</span>
+                      <span>{n.source}</span>
+                      {n.actionUrl && <span className="text-green-600 dark:text-green-400 hover:underline font-medium">View Details</span>}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
     </div>
   );
 }

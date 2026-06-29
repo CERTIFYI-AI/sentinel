@@ -1,1057 +1,190 @@
-import { useState, useMemo, useEffect } from 'react';
-import { useIncidentData } from '@/hooks/useIncidentData';
-import { PageSkeleton } from '@/components/ui/PageSkeleton';
-import { toast } from 'sonner';
-import {
-  Eye, PencilSimple, Trash, Plus, Warning, Siren,
-  ArrowUp, Clock, User, CaretRight, MagnifyingGlass,
-  Timer, Bell, Megaphone, Check, Info, HourglassHigh,
-} from '@phosphor-icons/react';
-import { Card, CardContent } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import {
-  Sheet, SheetContent, SheetHeader, SheetTitle,
-} from '../components/ui/sheet';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '../components/ui/select';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-  AlertDialogTrigger,
-} from '../components/ui/alert-dialog';
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from '../components/ui/dialog';
-import { Textarea } from '../components/ui/textarea';
-import { Label } from '../components/ui/label';
-import { severityColor, statusColor, formatDate } from '../data/seed';
-type Incident = any;
+import { useState } from "react";
+import { AlertTriangle, Plus, Search, Filter } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 
-function normalizeIncident(inc: any): any {
-  if (!inc) return inc;
-  return {
-    ...inc,
-    id: inc.id,
-    title: inc.title || '',
-    severity: inc.severity || 'medium',
-    status: inc.status || 'open',
-    category: inc.category || '',
-    description: inc.description || '',
-    reporter: inc.reporter || 'System',
-    assignee: inc.assignee || 'Unassigned',
-    reportedDate: inc.reportedDate ?? inc.reported_date ?? inc.created_at ?? new Date().toISOString().split('T')[0],
-    resolvedDate: inc.resolvedDate ?? inc.resolved_date ?? '',
-    linkedModel: inc.linkedModel ?? inc.linked_model ?? inc.affected_system ?? '',
-    rootCause: inc.rootCause ?? inc.root_cause ?? '',
-    correctiveActions: inc.correctiveActions ?? inc.corrective_actions ?? [],
-    timeline: inc.timeline ?? inc.metadata?.timeline ?? [
-      { date: inc.reported_date ?? inc.reportedDate ?? inc.created_at ?? new Date().toISOString().split('T')[0], action: 'Incident reported', actor: inc.reporter || 'System' }
-    ],
-  };
+const SEVERITIES = ["CRITICAL", "HIGH", "MEDIUM", "LOW"] as const;
+const TEAMS = ["Security Team", "ML Team", "Ethics Board", "DevOps", "Release Eng", "Compliance"] as const;
+
+interface Incident {
+  id: string; title: string; severity: typeof SEVERITIES[number];
+  team: string; status: string; created: string; description: string;
 }
 
-// Local fallback constants
-const USERS: any[] = [
-  { id: 'u1', name: 'Dr. Sarah Chen' },
-  { id: 'u2', name: 'Alex Kumar' },
-  { id: 'u3', name: 'James Wilson' },
-  { id: 'u4', name: 'Emma Rodriguez' },
-  { id: 'u5', name: 'Lisa Park' },
-  { id: 'u6', name: 'Mike Johnson' },
+const INITIAL: Incident[] = [
+  { id: "INC-001", title: "PII detected in model output", severity: "CRITICAL", team: "Security Team", status: "investigating", created: "2025-01-15 14:30", description: "Patient SSN leaked in GPT-4o response during customer support interaction" },
+  { id: "INC-002", title: "Model hallucination in legal responses", severity: "HIGH", team: "ML Team", status: "mitigated", created: "2025-01-14 09:15", description: "Claude generated false case citations in contract analysis workflow" },
+  { id: "INC-003", title: "Bias detected in hiring model", severity: "HIGH", team: "Ethics Board", status: "open", created: "2025-01-13 16:45", description: "Gender bias in candidate scoring — female candidates scored 12% lower on average" },
+  { id: "INC-004", title: "Latency spike on inference endpoint", severity: "MEDIUM", team: "DevOps", status: "resolved", created: "2025-01-12 11:00", description: "P95 latency exceeded 2s threshold due to connection pool exhaustion" },
+  { id: "INC-005", title: "Model version mismatch in staging", severity: "LOW", team: "Release Eng", status: "resolved", created: "2025-01-11 08:30", description: "Wrong model version deployed to staging — caught during pre-production testing" },
+  { id: "INC-006", title: "Adversarial prompt bypass detected", severity: "HIGH", team: "Security Team", status: "investigating", created: "2025-01-15 16:00", description: "Jailbreak prompt successfully bypassed safety filters in production" },
 ];
 
-function exportCsv(rows: any[], filename: string) {
-  if (!rows.length) return
-  const keys = Object.keys(rows[0])
-  const csv = [keys.join(','), ...rows.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n')
-  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = filename; a.click()
-}
-import { useSettingsStore } from '../stores/settingsStore';
-
-
-// ── SLA hours by severity ─────────────────────────────────────────────────────
-const SLA_HOURS: Record<string, number> = {
-  critical: 4,
-  high: 8,
-  medium: 24,
-  low: 72,
+const sevColor: Record<string, string> = {
+  CRITICAL: "bg-red-600 text-white",
+  HIGH: "bg-red-500 text-white",
+  MEDIUM: "bg-amber-500 text-white",
+  LOW: "bg-slate-500 text-white",
 };
 
-function getSlaDeadline(reportedDate: string, severity: string): number {
-  const hours = SLA_HOURS[severity] ?? 24;
-  return new Date(reportedDate).getTime() + hours * 60 * 60 * 1000;
-}
+const statusConfig: Record<string, { color: string; dot: string }> = {
+  investigating: { color: "text-red-600 dark:text-red-400", dot: "bg-red-500 animate-pulse" },
+  open: { color: "text-amber-600 dark:text-amber-400", dot: "bg-amber-500" },
+  mitigated: { color: "text-blue-600 dark:text-blue-400", dot: "bg-blue-500" },
+  resolved: { color: "text-green-600 dark:text-green-400", dot: "bg-green-500" },
+};
 
-function getSlaRemaining(reportedDate: string, severity: string): { ms: number; total: number; pct: number } {
-  const hours = SLA_HOURS[severity] ?? 24;
-  const totalMs = hours * 60 * 60 * 1000;
-  const deadline = new Date(reportedDate).getTime() + totalMs;
-  const remaining = deadline - Date.now();
-  return { ms: remaining, total: totalMs, pct: totalMs > 0 ? (remaining / totalMs) * 100 : 0 };
-}
+export default function IncidentLog() {
+  const [incidents, setIncidents] = useState<Incident[]>(INITIAL);
+  const [showForm, setShowForm] = useState(false);
+  const [search, setSearch] = useState("");
+  const [sevFilter, setSevFilter] = useState("all");
+  const [form, setForm] = useState({ title: "", severity: "HIGH" as typeof SEVERITIES[number], team: "Security Team", description: "" });
 
-function formatCountdown(ms: number): string {
-  if (ms <= 0) return 'BREACHED';
-  const totalSec = Math.floor(ms / 1000);
-  const h = Math.floor(totalSec / 3600);
-  const m = Math.floor((totalSec % 3600) / 60);
-  const s = totalSec % 60;
-  if (h > 0) return `${h}h ${String(m).padStart(2, '0')}m`;
-  if (m > 0) return `${m}m ${String(s).padStart(2, '0')}s`;
-  return `${s}s`;
-}
-
-// ── SLA Countdown Badge ──────────────────────────────────────────────────────
-function SlaCountdownBadge({ reportedDate, severity, status }: {
-  reportedDate: string; severity: string; status: string;
-}) {
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    if (status === 'resolved') return;
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, [status]);
-
-  if (status === 'resolved') {
-    return (
-      <span className="text-[10px] font-mono px-1.5 py-0.5 font-semibold"
-        style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', borderRadius: 0 }}>
-        RESOLVED
-      </span>
-    );
-  }
-
-  const { ms, pct } = getSlaRemaining(reportedDate, severity);
-  const label = formatCountdown(ms);
-  const breached = ms <= 0;
-  const isRed = pct < 10;
-  const isAmber = pct >= 10 && pct <= 50;
-
-  const bg = breached || isRed ? 'hsl(var(--s-er-bg))' : isAmber ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-ok-bg))';
-  const fg = breached || isRed ? 'hsl(var(--s-er-tx))' : isAmber ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))';
-
-  return (
-    <span
-      className={`text-[10px] font-mono px-1.5 py-0.5 font-semibold inline-flex items-center gap-1 ${breached || isRed ? 'animate-pulse' : ''}`}
-      style={{ background: bg, color: fg, borderRadius: 0 }}
-    >
-      <HourglassHigh size={10} weight="bold" />
-      {label}
-    </span>
-  );
-}
-
-// ── Timeline stages ───────────────────────────────────────────────────────────
-const TIMELINE_STAGES = ['Reported', 'Triaged', 'Investigating', 'Contained', 'Resolved'];
-
-function getStageIndex(status: string): number {
-  switch (status) {
-    case 'open': return 0;
-    case 'investigating': return 2;
-    case 'mitigating': return 3;
-    case 'resolved': return 4;
-    default: return 0;
-  }
-}
-
-// ── MetricTile ────────────────────────────────────────────────────────────────
-function MetricTile({ label, value, variant }: {
-  label: string; value: string | number; variant: 'default' | 'error' | 'warn' | 'ok';
-}) {
-  const colors = {
-    default: { bg: 'hsl(var(--bg-surface))', text: 'hsl(var(--text-1))', border: 'hsl(var(--border))' },
-    error: { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))' },
-    warn: { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))', border: 'hsl(var(--s-wn-br))' },
-    ok: { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))' },
+  const submit = () => {
+    if (!form.title.trim() || !form.description.trim()) return;
+    const inc: Incident = {
+      id: `INC-${String(incidents.length + 1).padStart(3, "0")}`,
+      ...form, status: "open", created: new Date().toISOString().slice(0, 16).replace("T", " "),
+    };
+    setIncidents([inc, ...incidents]);
+    setForm({ title: "", severity: "HIGH", team: "Security Team", description: "" });
+    setShowForm(false);
   };
-  const c = colors[variant];
-  return (
-    <Card style={{ borderRadius: 0, background: c.bg, border: `1px solid ${c.border}` }}>
-      <CardContent className="px-4 py-3">
-        <p className="text-xs font-medium mb-1" style={{ color: 'hsl(var(--text-4))' }}>{label}</p>
-        <p className="text-2xl font-bold" style={{ color: c.text }}>{value}</p>
-      </CardContent>
-    </Card>
-  );
-}
 
-// ── Horizontal Timeline Gantt ─────────────────────────────────────────────────
-function IncidentTimeline({ status }: { status: string }) {
-  const current = getStageIndex(status);
+  const filtered = incidents.filter(inc => {
+    if (search && !inc.title.toLowerCase().includes(search.toLowerCase())) return false;
+    if (sevFilter !== "all" && inc.severity !== sevFilter) return false;
+    return true;
+  });
+
+  const stats = {
+    total: incidents.length,
+    active: incidents.filter(i => i.status === "investigating" || i.status === "open").length,
+    critical: incidents.filter(i => i.severity === "CRITICAL" && i.status !== "resolved").length,
+    resolved: incidents.filter(i => i.status === "resolved").length,
+  };
+
   return (
-    <div className="flex items-center gap-0 w-full py-4">
-      {TIMELINE_STAGES.map((stage, i) => {
-        const isPast = i < current;
-        const isCurrent = i === current;
-        const isFuture = i > current;
-        return (
-          <div key={stage} className="flex items-center flex-1">
-            <div className="flex flex-col items-center gap-1">
-              <div
-                className="flex items-center justify-center w-8 h-8 relative"
-                style={{
-                  background: isPast ? 'hsl(var(--s-ok-tx))' : isCurrent ? 'hsl(var(--brand))' : 'hsl(var(--bg-surface))',
-                  border: `2px solid ${isPast ? 'hsl(var(--s-ok-tx))' : isCurrent ? 'hsl(var(--brand))' : 'hsl(var(--border))'}`,
-                  borderRadius: '50%',
-                }}
-              >
-                {isPast && <Check size={14} weight="bold" style={{ color: '#fff' }} />}
-                {isCurrent && (
-                  <>
-                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'hsl(var(--bg-page))' }} />
-                    <div className="absolute inset-0 animate-ping opacity-30" style={{ background: 'hsl(var(--brand))', borderRadius: '50%' }} />
-                  </>
-                )}
-              </div>
-              <span className="text-[10px] font-medium" style={{ color: isFuture ? 'hsl(var(--text-4))' : 'hsl(var(--text-1))' }}>
-                {stage}
-              </span>
-            </div>
-            {i < TIMELINE_STAGES.length - 1 && (
-              <div className="flex-1 h-0.5 mx-1" style={{ background: isPast ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--border))' }} />
-            )}
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-red-100 dark:bg-red-950 rounded-lg"><AlertTriangle size={20} className="text-red-600 dark:text-red-400" /></div>
+          <div>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Incident Log</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Track and manage AI safety incidents — {stats.active} active, {stats.critical} critical</p>
           </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// ── Phase Timeline Visualization ─────────────────────────────────────────────
-const LIFECYCLE_PHASES = [
-  { key: 'creation', label: 'Creation', statuses: ['open'] },
-  { key: 'investigation', label: 'Investigation', statuses: ['investigating'] },
-  { key: 'mitigation', label: 'Mitigation', statuses: ['mitigating'] },
-  { key: 'resolution', label: 'Resolution', statuses: ['resolved'] },
-] as const;
-
-function getPhaseIndex(status: string): number {
-  switch (status) {
-    case 'open': return 0;
-    case 'investigating': return 1;
-    case 'mitigating': return 2;
-    case 'resolved': return 3;
-    default: return 0;
-  }
-}
-
-function PhaseTimeline({ incident }: { incident: Incident }) {
-  const currentPhase = getPhaseIndex(incident.status);
-
-  // derive timestamps for each phase from timeline entries
-  const phaseTimestamps: Record<string, string | null> = {
-    creation: incident.reportedDate,
-    investigation: null,
-    mitigation: null,
-    resolution: null,
-  };
-  const timeline = incident.timeline || [];
-  for (const entry of timeline) {
-    const lower = entry.action.toLowerCase();
-    if (lower.includes('investigat') || lower.includes('escalat') || lower.includes('root cause')) {
-      if (!phaseTimestamps.investigation) phaseTimestamps.investigation = entry.date;
-    }
-    if (lower.includes('mitigat') || lower.includes('contain') || lower.includes('suspend') || lower.includes('human-review') || lower.includes('human review') || lower.includes('review gate') || lower.includes('quarantin')) {
-      if (!phaseTimestamps.mitigation) phaseTimestamps.mitigation = entry.date;
-    }
-    if (lower.includes('resolv') || lower.includes('fix deployed') || lower.includes('verified')) {
-      if (!phaseTimestamps.resolution) phaseTimestamps.resolution = entry.date;
-    }
-  }
-
-  // compute elapsed time between creation and current phase
-  const sla = SLA_HOURS[incident.severity] ?? 24;
-  const { ms: remaining } = getSlaRemaining(incident.reportedDate, incident.severity);
-  const elapsed = (sla * 60 * 60 * 1000) - remaining;
-  const elapsedHours = Math.max(0, Math.floor(elapsed / (60 * 60 * 1000)));
-  const elapsedMins = Math.max(0, Math.floor((elapsed % (60 * 60 * 1000)) / (60 * 1000)));
-
-  return (
-    <div className="space-y-4">
-      {/* Phase bar */}
-      <div className="flex items-stretch gap-0 w-full">
-        {LIFECYCLE_PHASES.map((phase, i) => {
-          const isPast = i < currentPhase;
-          const isCurrent = i === currentPhase;
-          const isFuture = i > currentPhase;
-          const ts = phaseTimestamps[phase.key];
-          return (
-            <div key={phase.key} className="flex-1 flex flex-col items-center gap-2">
-              {/* Node */}
-              <div className="flex items-center w-full">
-                {i > 0 && (
-                  <div className="flex-1 h-0.5" style={{ background: isPast || isCurrent ? 'hsl(var(--brand))' : 'hsl(var(--border))' }} />
-                )}
-                <div
-                  className="w-9 h-9 flex items-center justify-center shrink-0 relative"
-                  style={{
-                    background: isPast ? 'hsl(var(--s-ok-tx))' : isCurrent ? 'hsl(var(--brand))' : 'hsl(var(--bg-surface))',
-                    border: `2px solid ${isPast ? 'hsl(var(--s-ok-tx))' : isCurrent ? 'hsl(var(--brand))' : 'hsl(var(--border))'}`,
-                    borderRadius: '50%',
-                  }}
-                >
-                  {isPast && <Check size={14} weight="bold" style={{ color: '#fff' }} />}
-                  {isCurrent && (
-                    <>
-                      <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'hsl(var(--bg-page))' }} />
-                      <div className="absolute inset-0 animate-ping opacity-20" style={{ background: 'hsl(var(--brand))', borderRadius: '50%' }} />
-                    </>
-                  )}
-                  {isFuture && <div className="w-2 h-2" style={{ background: 'hsl(var(--border))', borderRadius: '50%' }} />}
-                </div>
-                {i < LIFECYCLE_PHASES.length - 1 && (
-                  <div className="flex-1 h-0.5" style={{ background: isPast ? 'hsl(var(--brand))' : 'hsl(var(--border))' }} />
-                )}
-              </div>
-              {/* Label + timestamp */}
-              <div className="text-center">
-                <p className="text-[10px] font-semibold" style={{ color: isFuture ? 'hsl(var(--text-4))' : 'hsl(var(--text-1))' }}>
-                  {phase.label}
-                </p>
-                {ts ? (
-                  <p className="text-[9px] font-mono" style={{ color: 'hsl(var(--text-4))' }}>
-                    {formatDate(ts)}
-                  </p>
-                ) : (
-                  <p className="text-[9px]" style={{ color: 'hsl(var(--text-4))' }}>--</p>
-                )}
-              </div>
-            </div>
-          );
-        })}
+        </div>
+        <button onClick={() => setShowForm(true)} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+          <Plus size={14} /> Report Incident
+        </button>
       </div>
 
-      {/* SLA elapsed bar */}
-      {incident.status !== 'resolved' && (
-        <div className="p-3 space-y-2" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>SLA Progress</span>
-            <SlaCountdownBadge reportedDate={incident.reportedDate} severity={incident.severity} status={incident.status} />
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: "Total Incidents", value: stats.total },
+          { label: "Active", value: stats.active, color: "text-amber-600 dark:text-amber-400" },
+          { label: "Critical Open", value: stats.critical, color: "text-red-600 dark:text-red-400" },
+          { label: "Resolved", value: stats.resolved, color: "text-green-600 dark:text-green-400" },
+        ].map((s, i) => (
+          <Card key={i} className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+            <CardContent className="p-4">
+              <p className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-medium">{s.label}</p>
+              <p className={`text-2xl font-bold font-mono mt-1 ${s.color || "text-slate-900 dark:text-white"}`}>{s.value}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search incidents..." className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none" />
+        </div>
+        <div className="flex items-center gap-2">
+          <Filter size={14} className="text-slate-400" />
+          {["all", ...SEVERITIES].map(f => (
+            <button key={f} onClick={() => setSevFilter(f)} className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors ${
+              sevFilter === f ? "bg-green-600 text-white" : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300"
+            }`}>{f === "all" ? "All" : f}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Modal */}
+      {showForm && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setShowForm(false)}>
+          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl p-6 w-full max-w-lg border border-slate-200 dark:border-slate-700" onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Report New Incident</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Title *</label>
+                <input value={form.title} onChange={e => setForm({...form, title: e.target.value})} className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none" placeholder="Brief incident title" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Severity</label>
+                  <select value={form.severity} onChange={e => setForm({...form, severity: e.target.value as any})} className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white">
+                    {SEVERITIES.map(s => <option key={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Assigned Team</label>
+                  <select value={form.team} onChange={e => setForm({...form, team: e.target.value})} className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white">
+                    {TEAMS.map(t => <option key={t}>{t}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Description *</label>
+                <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} rows={3} className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none" placeholder="Detailed description of what happened..." />
+              </div>
+              <div className="flex gap-3 justify-end pt-2">
+                <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">Cancel</button>
+                <button onClick={submit} disabled={!form.title.trim() || !form.description.trim()} className="px-4 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors">Submit Incident</button>
+              </div>
+            </div>
           </div>
-          <div className="w-full h-1.5" style={{ background: 'hsl(var(--border))', borderRadius: 0 }}>
-            <div
-              className="h-full transition-all"
-              style={{
-                width: `${Math.min(100, (elapsed / (sla * 60 * 60 * 1000)) * 100)}%`,
-                background: remaining <= 0 ? 'hsl(var(--s-er-tx))' : remaining / (sla * 60 * 60 * 1000) < 0.1 ? 'hsl(var(--s-er-tx))' : remaining / (sla * 60 * 60 * 1000) < 0.5 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))',
-                borderRadius: 0,
-              }}
-            />
-          </div>
-          <p className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>
-            {elapsedHours}h {elapsedMins}m elapsed of {sla}h SLA ({incident.severity})
-          </p>
         </div>
       )}
-    </div>
-  );
-}
 
-// ═════════════════════════════════════════════════════════════════════════════
-// MAIN COMPONENT
-// ═════════════════════════════════════════════════════════════════════════════
-export default function IncidentLog() {
-  const { orgName } = useSettingsStore();
-  const { incidents, isLoading, save: saveIncident, remove: removeIncidentMutation } = useIncidentData();
-  
-  const normalizedIncidents = useMemo(() => {
-    return (incidents || []).map(normalizeIncident);
-  }, [incidents]);
-
-  const [search, setSearch] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
-
-  // Detail sheet
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [selectedIncident, setSelectedIncident] = useState<any>(null);
-
-  // Add modal
-  const [addOpen, setAddOpen] = useState(false);
-  const [editIncident, setEditIncident] = useState<any>(null);
-
-  // Resolve modal
-  const [resolveOpen, setResolveOpen] = useState(false);
-  const [resolveId, setResolveId] = useState<string>('');
-  const [rootCauseInput, setRootCauseInput] = useState('');
-
-  // Regulatory notification
-  const [notifyOpen, setNotifyOpen] = useState(false);
-  const [notifyRegulation, setNotifyRegulation] = useState('gdpr-33');
-
-  // New incident form
-  const [newTitle, setNewTitle] = useState('');
-  const [newSeverity, setNewSeverity] = useState<string>('medium');
-  const [newCategory, setNewCategory] = useState('');
-  const [newDescription, setNewDescription] = useState('');
-  const [newAssignee, setNewAssignee] = useState('');
-  const [newAffectedSystem, setNewAffectedSystem] = useState('');
-  const [newActions, setNewActions] = useState('');
-
-  // ── Filtering ─────────────────────────────────────────────────────────────
-  const filtered = useMemo(() => {
-    return normalizedIncidents.filter(inc => {
-      if (search && !inc.title.toLowerCase().includes(search.toLowerCase()) && !inc.id.toLowerCase().includes(search.toLowerCase())) return false;
-      if (filterStatus !== 'all' && inc.status !== filterStatus) return false;
-      return true;
-    });
-  }, [normalizedIncidents, search, filterStatus]);
-
-  // ── Metrics ───────────────────────────────────────────────────────────────
-  const totalIncidents = normalizedIncidents.length;
-  const criticalCount = normalizedIncidents.filter(i => i.severity === 'critical').length;
-  const openInvestigating = normalizedIncidents.filter(i => i.status === 'open' || i.status === 'investigating' || i.status === 'mitigating').length;
-  const resolvedCount = normalizedIncidents.filter(i => i.status === 'resolved').length;
-
-  // ── Open detail ───────────────────────────────────────────────────────────
-  const openDetail = (inc: Incident) => {
-    setSelectedIncident(normalizeIncident(inc));
-    setSheetOpen(true);
-  };
-
-  // ── Delete ────────────────────────────────────────────────────────────────
-  const deleteIncident = async (id: string) => {
-    try { await removeIncidentMutation(id); } catch {}
-  };
-
-  // ── Escalate ──────────────────────────────────────────────────────────────
-  const escalateIncident = async (inc: Incident) => {
-    const severityMap: Record<string, string> = { low: 'medium', medium: 'high', high: 'critical', critical: 'critical' };
-    const newSev = severityMap[inc.severity] || 'critical';
-    try { await saveIncident({ ...inc, severity: newSev }); } catch {}
-  };
-
-  // ── Resolve ───────────────────────────────────────────────────────────────
-  const handleResolve = async () => {
-    if (rootCauseInput.length < 100) return;
-    const inc = normalizedIncidents.find((i: any) => i.id === resolveId);
-    if (inc) {
-      try { await saveIncident({ ...inc, status: 'resolved', root_cause: rootCauseInput }); } catch {}
-    }
-    setResolveOpen(false);
-    setResolveId('');
-    setRootCauseInput('');
-  };
-
-  // ── Add incident ──────────────────────────────────────────────────────────
-  const handleAdd = async () => {
-    const inc: any = {
-      title: newTitle,
-      severity: newSeverity,
-      status: 'open',
-      category: newCategory,
-      reported_date: new Date().toISOString().split('T')[0],
-      reporter: 'Current User',
-      assignee: newAssignee,
-      description: newDescription,
-      linked_model: newAffectedSystem,
-      root_cause: '',
-    };
-    try { await saveIncident(inc); } catch {}
-    setAddOpen(false);
-    resetForm();
-  };
-
-  const resetForm = () => {
-    setNewTitle(''); setNewSeverity('medium'); setNewCategory('');
-    setNewDescription(''); setNewAssignee(''); setNewAffectedSystem(''); setNewActions('');
-  };
-
-  // ── GDPR timer calculation ────────────────────────────────────────────────
-  const getGdprHoursRemaining = (reportedDate: string): number => {
-    const reported = new Date(reportedDate).getTime();
-    const deadline = reported + 72 * 60 * 60 * 1000;
-    const now = Date.now();
-    return Math.max(0, Math.round((deadline - now) / (60 * 60 * 1000)));
-  };
-
-  return (
-    <TooltipProvider>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Incident Log</h1>
-            <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>
-              {orgName} · AI incident tracking & response management
-            </p>
-          </div>
-          <Button variant="outline" onClick={() => exportCsv(normalizedIncidents, 'incidents.csv')} style={{ borderRadius: 0 }}>Export CSV</Button>
-          <Button onClick={() => setAddOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
-            <Plus size={14} className="mr-1" />Report Incident
-          </Button>
-        </div>
-
-        {/* Metrics */}
-        <div className="grid grid-cols-4 gap-4">
-          <MetricTile label="Total Incidents" value={totalIncidents} variant="default" />
-          <MetricTile label="Critical" value={criticalCount} variant="error" />
-          <MetricTile label="Open / Investigating" value={openInvestigating} variant="warn" />
-          <MetricTile label="Resolved" value={resolvedCount} variant="ok" />
-        </div>
-
-        {/* Filters */}
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1 max-w-sm">
-            <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--text-4))' }} />
-            <Input
-              placeholder="Search incidents..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 h-8 text-sm"
-              style={{ borderRadius: 0 }}
-            />
-          </div>
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-44 h-8 text-xs" style={{ borderRadius: 0 }}>
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent style={{ borderRadius: 0 }}>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="open">Open</SelectItem>
-              <SelectItem value="investigating">Investigating</SelectItem>
-              <SelectItem value="mitigating">Mitigating</SelectItem>
-              <SelectItem value="resolved">Resolved</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Incident Table */}
-        <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                    {['INC-ID', 'Title', 'Severity', 'Status', 'Category', 'Reported', 'Assigned To', 'SLA Countdown', 'Actions'].map(h => (
-                      <th key={h} className="px-3 py-3 text-left text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map(inc => {
-                    const sevColor = severityColor(inc.severity);
-                    const statColor = statusColor(inc.status);
-                    const isCritical = inc.id === 'INC-001' || inc.id === 'INC-004';
-                    return (
-                      <tr
-                        key={inc.id}
-                        className="hover:bg-muted/30 cursor-pointer"
-                        style={{
-                          borderBottom: '1px solid hsl(var(--border))',
-                          borderLeft: isCritical ? '4px solid hsl(var(--s-er-tx))' : 'none',
-                        }}
-                        onClick={() => openDetail(inc)}
-                      >
-                        <td className="px-3 py-2">
-                          <span className="font-mono text-xs font-medium" style={{ color: 'hsl(var(--brand))' }}>{inc.id}</span>
-                        </td>
-                        <td className="px-3 py-2">
-                          <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{inc.title}</span>
-                        </td>
-                        <td className="px-3 py-2">
-                          <Badge style={{ background: sevColor.bg, color: sevColor.text, borderRadius: 0, fontSize: 11 }}>
-                            {inc.severity}
-                          </Badge>
-                        </td>
-                        <td className="px-3 py-2">
-                          <Badge style={{ background: statColor.bg, color: statColor.text, borderRadius: 0, fontSize: 11 }}>
-                            {inc.status}
-                          </Badge>
-                        </td>
-                        <td className="px-3 py-2">
-                          <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{inc.category}</span>
-                        </td>
-                        <td className="px-3 py-2">
-                          <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{formatDate(inc.reportedDate)}</span>
-                        </td>
-                        <td className="px-3 py-2">
-                          <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{inc.assignee}</span>
-                        </td>
-                        <td className="px-3 py-2">
-                          <SlaCountdownBadge reportedDate={inc.reportedDate} severity={inc.severity} status={inc.status} />
-                        </td>
-                        <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openDetail(inc)}>
-                              <Eye size={14} style={{ color: 'hsl(var(--text-4))' }} />
-                            </Button>
-                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { setEditIncident(inc); setAddOpen(true); }}>
-                              <PencilSimple size={14} style={{ color: 'hsl(var(--text-4))' }} />
-                            </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                                  <Trash size={14} style={{ color: 'hsl(var(--s-er-tx))' }} />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent style={{ borderRadius: 0 }}>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Incident</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Delete "{inc.id} — {inc.title}"? Incident records should be preserved for audit compliance.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => deleteIncident(inc.id)} style={{ borderRadius: 0, background: 'hsl(var(--destructive))' }}>
-                                    Delete
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* ── Incident Detail Sheet ────────────────────────────────────────── */}
-        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-          <SheetContent side="right" className="w-[560px] sm:max-w-[560px] overflow-y-auto" style={{ borderRadius: 0 }}>
-            {selectedIncident && (
-              <>
-                <SheetHeader>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold" style={{ color: 'hsl(var(--brand))' }}>{selectedIncident.id}</span>
-                    <Badge style={{ background: severityColor(selectedIncident.severity).bg, color: severityColor(selectedIncident.severity).text, borderRadius: 0, fontSize: 11 }}>
-                      {selectedIncident.severity}
-                    </Badge>
-                    <Badge style={{ background: statusColor(selectedIncident.status).bg, color: statusColor(selectedIncident.status).text, borderRadius: 0, fontSize: 11 }}>
-                      {selectedIncident.status}
-                    </Badge>
+      {/* Incident List */}
+      <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+        <CardContent className="p-0">
+          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+            {filtered.map(inc => {
+              const sc = statusConfig[inc.status] || statusConfig.open;
+              return (
+                <div key={inc.id} className="px-5 py-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-mono text-xs text-slate-400 dark:text-slate-500">{inc.id}</span>
+                      <span className="font-medium text-sm text-slate-900 dark:text-white">{inc.title}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                      <span>{inc.created}</span>
+                      <span>{inc.team}</span>
+                      <span className="flex items-center gap-1.5">
+                        <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
+                        <span className={`font-medium capitalize ${sc.color}`}>{inc.status}</span>
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 line-clamp-1">{inc.description}</p>
                   </div>
-                  <SheetTitle style={{ color: 'hsl(var(--text-1))' }}>{selectedIncident.title}</SheetTitle>
-                </SheetHeader>
-
-                {/* Action buttons */}
-                <div className="flex items-center gap-2 mt-3">
-                  {selectedIncident.status !== 'resolved' && (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        style={{ borderRadius: 0 }}
-                        onClick={() => escalateIncident(selectedIncident)}
-                      >
-                        <ArrowUp size={12} className="mr-1" />Escalate
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        style={{ borderRadius: 0 }}
-                        onClick={() => {
-                          setResolveId(selectedIncident.id);
-                          setRootCauseInput(selectedIncident.rootCause || '');
-                          setResolveOpen(true);
-                        }}
-                      >
-                        <Check size={12} className="mr-1" />Resolve
-                      </Button>
-                    </>
-                  )}
+                  <span className={`text-xs font-bold px-3 py-1 rounded-full flex-shrink-0 ml-4 ${sevColor[inc.severity]}`}>{inc.severity}</span>
                 </div>
-
-                <Tabs defaultValue="overview" className="mt-4">
-                  <TabsList className="w-full" style={{ borderRadius: 0 }}>
-                    <TabsTrigger value="overview" style={{ borderRadius: 0 }}>Overview</TabsTrigger>
-                    <TabsTrigger value="timeline" style={{ borderRadius: 0 }}>Timeline</TabsTrigger>
-                    <TabsTrigger value="similar" style={{ borderRadius: 0 }}>Similar</TabsTrigger>
-                    <TabsTrigger value="rootcause" style={{ borderRadius: 0 }}>Root Cause</TabsTrigger>
-                    <TabsTrigger value="corrective" style={{ borderRadius: 0 }}>Corrective</TabsTrigger>
-                    <TabsTrigger value="regulatory" style={{ borderRadius: 0 }}>Regulatory</TabsTrigger>
-                  </TabsList>
-
-                  {/* Overview */}
-                  <TabsContent value="overview" className="space-y-4 mt-4">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Reporter</p>
-                        <span className="text-sm" style={{ color: 'hsl(var(--text-1))' }}>{selectedIncident.reporter}</span>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Assignee</p>
-                        <div className="flex items-center gap-1">
-                          <User size={12} style={{ color: 'hsl(var(--text-4))' }} />
-                          <span className="text-sm" style={{ color: 'hsl(var(--text-1))' }}>{selectedIncident.assignee}</span>
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Category</p>
-                        <span className="text-sm" style={{ color: 'hsl(var(--text-1))' }}>{selectedIncident.category}</span>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Reported</p>
-                        <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{formatDate(selectedIncident.reportedDate)}</span>
-                      </div>
-                    </div>
-
-                    {/* SLA countdown in overview */}
-                    <div className="p-3 flex items-center justify-between" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                      <div className="space-y-0.5">
-                        <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>SLA Target</p>
-                        <p className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>
-                          {SLA_HOURS[selectedIncident.severity] ?? 24}h resolution window ({selectedIncident.severity})
-                        </p>
-                      </div>
-                      <SlaCountdownBadge reportedDate={selectedIncident.reportedDate} severity={selectedIncident.severity} status={selectedIncident.status} />
-                    </div>
-
-                    {selectedIncident.linkedModel && (
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Linked Model</p>
-                        <Badge className="font-mono text-xs" style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0 }}>
-                          {selectedIncident.linkedModel}
-                        </Badge>
-                      </div>
-                    )}
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Description</p>
-                      <p className="text-sm" style={{ color: 'hsl(var(--text-1))' }}>{selectedIncident.description}</p>
-                    </div>
-                  </TabsContent>
-
-                  {/* Timeline */}
-                  <TabsContent value="timeline" className="space-y-4 mt-4">
-                    <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Lifecycle Phases</p>
-                    <PhaseTimeline incident={selectedIncident} />
-
-                    <div className="space-y-2 mt-4">
-                      <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Activity Log</p>
-                      {(selectedIncident.timeline || []).map((entry: any, i: number) => (
-                        <div key={i} className="flex gap-3 p-2" style={{ borderLeft: '2px solid hsl(var(--brand))', borderRadius: 0 }}>
-                          <div className="flex items-start gap-2 w-full">
-                            <div className="w-5 h-5 flex items-center justify-center shrink-0 mt-0.5"
-                              style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: '50%' }}>
-                              <Clock size={10} style={{ color: 'hsl(var(--text-4))' }} />
-                            </div>
-                            <div className="space-y-0.5 flex-1">
-                              <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{entry.action}</p>
-                              <div className="flex items-center justify-between">
-                                <p className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>{formatDate(entry.date)}</p>
-                                <p className="text-[10px] font-medium" style={{ color: 'brand' }}>{entry.actor}</p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </TabsContent>
-
-                  {/* Similar Incidents */}
-                  <TabsContent value="similar" className="space-y-4 mt-4">
-                    <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>
-                      Similar Incidents — matched by category "{selectedIncident.category}"
-                    </p>
-                    {(() => {
-                      const similar = incidents.filter(
-                        i => i.id !== selectedIncident.id && i.category === selectedIncident.category
-                      );
-                      if (similar.length === 0) {
-                        return (
-                          <div className="text-xs py-6 text-center" style={{ color: 'hsl(var(--text-4))' }}>
-                            No similar incidents found in category "{selectedIncident.category}".
-                          </div>
-                        );
-                      }
-                      return similar.map((sim: any) => {
-                        const simSev = severityColor(sim.severity);
-                        const simStat = statusColor(sim.status);
-                        return (
-                          <div
-                            key={sim.id}
-                            className="p-3 cursor-pointer hover:opacity-80 transition-opacity"
-                            style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}
-                            onClick={() => setSelectedIncident(sim)}
-                          >
-                            <div className="flex items-center justify-between mb-1.5">
-                              <div className="flex items-center gap-2">
-                                <span className="font-mono text-xs font-bold" style={{ color: 'hsl(var(--brand))' }}>{sim.id}</span>
-                                <Badge style={{ background: simSev.bg, color: simSev.text, borderRadius: 0, fontSize: 10 }}>
-                                  {sim.severity}
-                                </Badge>
-                                <Badge style={{ background: simStat.bg, color: simStat.text, borderRadius: 0, fontSize: 10 }}>
-                                  {sim.status}
-                                </Badge>
-                              </div>
-                              <SlaCountdownBadge reportedDate={sim.reportedDate} severity={sim.severity} status={sim.status} />
-                            </div>
-                            <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{sim.title}</p>
-                            <p className="text-[10px] mt-1 line-clamp-2" style={{ color: 'hsl(var(--text-4))' }}>{sim.description}</p>
-                            <div className="flex items-center gap-3 mt-2">
-                              <span className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>
-                                <User size={10} className="inline mr-0.5" style={{ verticalAlign: 'middle' }} />{sim.assignee}
-                              </span>
-                              <span className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>
-                                <Clock size={10} className="inline mr-0.5" style={{ verticalAlign: 'middle' }} />{formatDate(sim.reportedDate)}
-                              </span>
-                              {sim.linkedModel && (
-                                <span className="text-[10px] font-mono" style={{ color: 'hsl(var(--brand))' }}>
-                                  {sim.linkedModel}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      });
-                    })()}
-                  </TabsContent>
-
-                  {/* Root Cause */}
-                  <TabsContent value="rootcause" className="space-y-4 mt-4">
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Root Cause Analysis</p>
-                      {selectedIncident.rootCause ? (
-                        <p className="text-sm p-3" style={{ color: 'hsl(var(--text-1))', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                          {selectedIncident.rootCause}
-                        </p>
-                      ) : (
-                        <div className="text-xs py-4 text-center" style={{ color: 'hsl(var(--text-4))' }}>
-                          Root cause analysis pending. Required for incident resolution.
-                        </div>
-                      )}
-                    </div>
-                  </TabsContent>
-
-                  {/* Corrective Actions */}
-                  <TabsContent value="corrective" className="space-y-4 mt-4">
-                    <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Corrective Actions</p>
-                    {(selectedIncident.correctiveActions || []).map((action: any, i: number) => (
-                      <div key={i} className="flex items-start gap-2 p-2" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                        <CaretRight size={12} style={{ color: 'hsl(var(--brand))', marginTop: 2 }} />
-                        <span className="text-sm" style={{ color: 'hsl(var(--text-1))' }}>{action}</span>
-                      </div>
-                    ))}
-                  </TabsContent>
-
-                  {/* Regulatory Notify */}
-                  <TabsContent value="regulatory" className="space-y-4 mt-4">
-                    {/* GDPR Timer */}
-                    <div className="p-3 flex items-start gap-2" style={{ background: 'hsl(var(--s-wn-bg))', border: '1px solid hsl(var(--s-wn-br))', borderRadius: 0 }}>
-                      <Timer size={16} weight="bold" style={{ color: 'hsl(var(--s-wn-tx))', marginTop: 1 }} />
-                      <div>
-                        <p className="text-xs font-bold" style={{ color: 'hsl(var(--s-wn-tx))' }}>
-                          72h GDPR breach window — {getGdprHoursRemaining(selectedIncident.reportedDate)} hours remaining
-                        </p>
-                        <p className="text-[10px] mt-0.5" style={{ color: 'hsl(var(--s-wn-tx))' }}>
-                          GDPR Art. 33 requires notification to supervisory authority within 72 hours of becoming aware of a personal data breach.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* EU AI Act Art. 73 */}
-                    <div className="p-3" style={{ background: 'hsl(var(--s-in-bg))', border: '1px solid hsl(var(--s-in-br))', borderRadius: 0 }}>
-                      <p className="text-xs font-semibold" style={{ color: 'hsl(var(--s-in-tx))' }}>
-                        EU AI Act Art. 73 — Serious Incident Reporting
-                      </p>
-                      <p className="text-[10px] mt-1" style={{ color: 'hsl(var(--text-4))' }}>
-                        Providers of high-risk AI systems shall report serious incidents to the market surveillance authority.
-                      </p>
-                    </div>
-
-                    <Button onClick={() => setNotifyOpen(true)} style={{ borderRadius: 0, width: '100%' }} variant="outline">
-                      <Megaphone size={14} className="mr-1.5" />Notify Regulator
-                    </Button>
-
-                    {/* Notification history */}
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Notification History</p>
-                      <div className="text-xs py-3 text-center" style={{ color: 'hsl(var(--text-4))' }}>
-                        No regulatory notifications sent for this incident.
-                      </div>
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              </>
-            )}
-          </SheetContent>
-        </Sheet>
-
-        {/* ── Resolve Dialog ───────────────────────────────────────────────── */}
-        <Dialog open={resolveOpen} onOpenChange={setResolveOpen}>
-          <DialogContent style={{ borderRadius: 0 }}>
-            <DialogHeader>
-              <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>Resolve Incident</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3 mt-2">
-              <div className="space-y-1">
-                <Label className="text-xs">Root Cause (min 100 characters) *</Label>
-                <Textarea
-                  value={rootCauseInput}
-                  onChange={(e) => setRootCauseInput(e.target.value)}
-                  rows={4}
-                  style={{ borderRadius: 0 }}
-                  placeholder="Describe the root cause of this incident..."
-                />
-                <p className="text-[10px]" style={{ color: rootCauseInput.length >= 100 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))' }}>
-                  {rootCauseInput.length}/100 characters minimum
-                </p>
-              </div>
+              );
+            })}
+          </div>
+          {filtered.length === 0 && (
+            <div className="p-8 text-center text-slate-400 dark:text-slate-500">
+              <AlertTriangle size={32} className="mx-auto mb-2 opacity-50" />
+              <p className="text-sm">No incidents match your filters</p>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setResolveOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
-              <Button
-                onClick={handleResolve}
-                disabled={rootCauseInput.length < 100}
-                style={{ borderRadius: 0, background: 'hsl(var(--s-ok-tx))', color: '#fff' }}
-              >
-                <Check size={14} className="mr-1" />Resolve Incident
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* ── Regulatory Notify Dialog ─────────────────────────────────────── */}
-        <Dialog open={notifyOpen} onOpenChange={setNotifyOpen}>
-          <DialogContent style={{ borderRadius: 0 }}>
-            <DialogHeader>
-              <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>Notify Regulator</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3 mt-2">
-              <div className="space-y-1">
-                <Label className="text-xs">Regulation</Label>
-                <Select value={notifyRegulation} onValueChange={setNotifyRegulation}>
-                  <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                  <SelectContent style={{ borderRadius: 0 }}>
-                    <SelectItem value="gdpr-33">GDPR Art. 33 — Breach Notification</SelectItem>
-                    <SelectItem value="gdpr-34">GDPR Art. 34 — Data Subject Notification</SelectItem>
-                    <SelectItem value="eu-ai-73">EU AI Act Art. 73 — Serious Incident</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                <p className="text-xs font-mono" style={{ color: 'hsl(var(--text-1))' }}>
-                  {notifyRegulation === 'gdpr-33' && 'To: Data Protection Authority\nSubject: Personal Data Breach Notification (Art. 33 GDPR)\n\nWe are writing to inform you of a personal data breach that has occurred...'}
-                  {notifyRegulation === 'gdpr-34' && 'To: Affected Data Subjects\nSubject: Notification of Personal Data Breach\n\nWe are writing to inform you that your personal data may have been affected...'}
-                  {notifyRegulation === 'eu-ai-73' && 'To: Market Surveillance Authority\nSubject: Serious Incident Report (Art. 73 EU AI Act)\n\nWe are reporting a serious incident involving a high-risk AI system...'}
-                </p>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setNotifyOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
-              <Button onClick={() => setNotifyOpen(false)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
-                <Megaphone size={14} className="mr-1" />Send Notification
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* ── Report Incident Modal ────────────────────────────────────────── */}
-        <Dialog open={addOpen} onOpenChange={(o) => { setAddOpen(o); if (!o) { setEditIncident(null); resetForm(); } }}>
-          <DialogContent className="sm:max-w-lg" style={{ borderRadius: 0 }}>
-            <DialogHeader>
-              <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>{editIncident ? 'Edit Incident' : 'Report Incident'}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3 mt-2">
-              <div className="space-y-1">
-                <Label className="text-xs">Title *</Label>
-                <Input
-                  value={editIncident ? editIncident.title : newTitle}
-                  onChange={(e) => editIncident ? setEditIncident({ ...editIncident, title: e.target.value }) : setNewTitle(e.target.value)}
-                  style={{ borderRadius: 0 }}
-                  placeholder="Incident title"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">Severity *</Label>
-                  <Select
-                    value={editIncident ? editIncident.severity : newSeverity}
-                    onValueChange={(v) => editIncident ? setEditIncident({ ...editIncident, severity: v as Incident['severity'] }) : setNewSeverity(v)}
-                  >
-                    <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                    <SelectContent style={{ borderRadius: 0 }}>
-                      {['critical', 'high', 'medium', 'low'].map(s => (
-                        <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Category *</Label>
-                  <Select
-                    value={editIncident ? editIncident.category : newCategory}
-                    onValueChange={(v) => editIncident ? setEditIncident({ ...editIncident, category: v }) : setNewCategory(v)}
-                  >
-                    <SelectTrigger style={{ borderRadius: 0 }}><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent style={{ borderRadius: 0 }}>
-                      {['Bias/Fairness', 'Performance', 'Security', 'AI Safety', 'Data Breach', 'Compliance'].map(c => (
-                        <SelectItem key={c} value={c}>{c}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Description *</Label>
-                <Textarea
-                  value={editIncident ? editIncident.description : newDescription}
-                  onChange={(e) => editIncident ? setEditIncident({ ...editIncident, description: e.target.value }) : setNewDescription(e.target.value)}
-                  style={{ borderRadius: 0 }}
-                  rows={3}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">Affected System</Label>
-                  <Input
-                    value={newAffectedSystem}
-                    onChange={(e) => setNewAffectedSystem(e.target.value)}
-                    style={{ borderRadius: 0 }}
-                    placeholder="e.g., MDL-001"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Assigned To *</Label>
-                  <Select
-                    value={editIncident ? editIncident.assignee : newAssignee}
-                    onValueChange={(v) => editIncident ? setEditIncident({ ...editIncident, assignee: v }) : setNewAssignee(v)}
-                  >
-                    <SelectTrigger style={{ borderRadius: 0 }}><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent style={{ borderRadius: 0 }}>
-                      {USERS.map(u => <SelectItem key={u.id} value={u.name}>{u.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Initial Actions</Label>
-                <Input
-                  value={newActions}
-                  onChange={(e) => setNewActions(e.target.value)}
-                  style={{ borderRadius: 0 }}
-                  placeholder="Initial response actions taken..."
-                />
-              </div>
-            </div>
-            <DialogFooter className="mt-4">
-              <Button variant="outline" onClick={() => { setAddOpen(false); setEditIncident(null); resetForm(); }} style={{ borderRadius: 0 }}>
-                Cancel
-              </Button>
-              <Button
-                onClick={editIncident ? async () => {
-                  try { await saveIncident({ ...editIncident }); } catch {}
-                  setAddOpen(false);
-                  setEditIncident(null);
-                } : handleAdd}
-                disabled={editIncident ? !editIncident.title : (!newTitle || !newCategory || !newAssignee || !newDescription)}
-                style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
-              >
-                {editIncident ? 'Save Changes' : 'Report Incident'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
-    </TooltipProvider>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

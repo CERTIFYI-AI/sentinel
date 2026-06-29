@@ -1,381 +1,199 @@
-import { useState, useMemo } from 'react';
-import {
-  Eye, Warning, Info, ArrowUp, ArrowRight, ArrowDown, FloppyDisk, User,
-} from '@phosphor-icons/react';
-import { Card, CardContent } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
-import { Button } from '../components/ui/button';
-import {
-  Sheet, SheetContent, SheetHeader, SheetTitle,
-} from '../components/ui/sheet';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
-import {
-  RISKS, Risk, severityColor, statusColor, formatDate,
-} from '../data/seed';
-import { useSettingsStore } from '../stores/settingsStore';
+import { useState } from "react";
+import { AlertTriangle, Filter, Plus, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 
-// ── Risk Score Color ──────────────────────────────────────────────────────────
-function riskScoreStyle(score: number): { bg: string; text: string; bold: boolean } {
-  if (score >= 17) return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', bold: true };
-  if (score >= 10) return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', bold: false };
-  if (score >= 5) return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))', bold: false };
-  return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', bold: false };
+interface Risk {
+  id: string;
+  title: string;
+  category: string;
+  likelihood: 1 | 2 | 3 | 4 | 5;
+  impact: 1 | 2 | 3 | 4 | 5;
+  status: "open" | "mitigating" | "accepted" | "closed";
+  owner: string;
+  model?: string;
+  trend: "increasing" | "stable" | "decreasing";
+  lastUpdated: string;
+  description: string;
 }
 
-function cellColor(score: number): string {
-  if (score >= 17) return 'hsl(0 72% 51% / 0.22)';
-  if (score >= 10) return 'hsl(25 95% 53% / 0.22)';
-  if (score >= 5) return 'hsl(45 93% 47% / 0.18)';
-  return 'hsl(142 71% 45% / 0.15)';
+const RISKS: Risk[] = [
+  { id: "RSK-001", title: "PII leakage through model outputs", category: "Data Privacy", likelihood: 3, impact: 5, status: "mitigating", owner: "Security Team", model: "GPT-4o", trend: "decreasing", lastUpdated: "2025-01-15", description: "Model may expose personal data in generated responses despite PII filters" },
+  { id: "RSK-002", title: "Algorithmic bias in hiring decisions", category: "Fairness & Bias", likelihood: 4, impact: 5, status: "open", owner: "Ethics Board", model: "Internal Classifier", trend: "stable", lastUpdated: "2025-01-14", description: "Gender and age bias detected in candidate scoring model" },
+  { id: "RSK-003", title: "Model hallucination in legal advice", category: "Accuracy", likelihood: 3, impact: 4, status: "mitigating", owner: "Legal Tech", model: "Claude 3.5", trend: "decreasing", lastUpdated: "2025-01-13", description: "LLM generates fabricated case citations in legal research responses" },
+  { id: "RSK-004", title: "Third-party model provider outage", category: "Availability", likelihood: 2, impact: 4, status: "accepted", owner: "Platform Team", trend: "stable", lastUpdated: "2025-01-12", description: "Dependency on external API availability for critical services" },
+  { id: "RSK-005", title: "Training data copyright infringement", category: "Legal & IP", likelihood: 3, impact: 3, status: "open", owner: "Legal", model: "DALL-E 3", trend: "increasing", lastUpdated: "2025-01-11", description: "Generated images may infringe on copyrighted training data" },
+  { id: "RSK-006", title: "Model drift in production", category: "Performance", likelihood: 4, impact: 3, status: "mitigating", owner: "ML Platform", model: "GPT-4o-mini", trend: "stable", lastUpdated: "2025-01-10", description: "Model performance degradation over time as data distribution shifts" },
+  { id: "RSK-007", title: "Adversarial prompt injection", category: "Security", likelihood: 4, impact: 4, status: "mitigating", owner: "Security Team", trend: "increasing", lastUpdated: "2025-01-15", description: "Attackers may manipulate model behavior through crafted prompts" },
+  { id: "RSK-008", title: "Non-compliance with EU AI Act", category: "Regulatory", likelihood: 2, impact: 5, status: "mitigating", owner: "Compliance", trend: "decreasing", lastUpdated: "2025-01-14", description: "Failure to meet mandatory AI governance requirements before deadline" },
+];
+
+const likelihoodLabels = ["", "Rare", "Unlikely", "Possible", "Likely", "Almost Certain"];
+const impactLabels = ["", "Negligible", "Minor", "Moderate", "Major", "Severe"];
+const trendIcons = { increasing: TrendingUp, stable: Minus, decreasing: TrendingDown };
+const trendColors = { increasing: "text-red-500", stable: "text-slate-400", decreasing: "text-green-500" };
+const statusColors: Record<string, string> = {
+  open: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400",
+  mitigating: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400",
+  accepted: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400",
+  closed: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400",
+};
+
+function getHeatmapColor(likelihood: number, impact: number): string {
+  const score = likelihood * impact;
+  if (score >= 16) return "bg-red-500 text-white";
+  if (score >= 10) return "bg-orange-400 text-white";
+  if (score >= 6) return "bg-amber-400 text-white";
+  if (score >= 3) return "bg-yellow-300 text-slate-800";
+  return "bg-green-300 text-slate-800";
 }
 
-function TrendIcon({ trend }: { trend: Risk['trending'] }) {
-  if (trend === 'up') return <ArrowUp size={12} weight="bold" style={{ color: 'hsl(var(--s-er-tx))' }} />;
-  if (trend === 'down') return <ArrowDown size={12} weight="bold" style={{ color: 'hsl(var(--s-ok-tx))' }} />;
-  return <ArrowRight size={12} weight="bold" style={{ color: 'hsl(var(--text-4))' }} />;
-}
-
-// ── MetricTile ────────────────────────────────────────────────────────────────
-function MetricTile({ label, value, variant }: {
-  label: string; value: string | number; variant: 'default' | 'error' | 'warn' | 'ok';
-}) {
-  const colors = {
-    default: { bg: 'hsl(var(--bg-surface))', text: 'hsl(var(--text-1))', border: 'hsl(var(--border))' },
-    error: { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))' },
-    warn: { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))', border: 'hsl(var(--s-wn-br))' },
-    ok: { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))' },
-  };
-  const c = colors[variant];
-  return (
-    <Card style={{ borderRadius: 0, background: c.bg, border: `1px solid ${c.border}` }}>
-      <CardContent className="px-4 py-3">
-        <p className="text-xs font-medium mb-1" style={{ color: 'hsl(var(--text-4))' }}>{label}</p>
-        <p className="text-2xl font-bold" style={{ color: c.text }}>{value}</p>
-      </CardContent>
-    </Card>
-  );
-}
-
-// ═════════════════════════════════════════════════════════════════════════════
-// MAIN COMPONENT
-// ═════════════════════════════════════════════════════════════════════════════
 export default function RiskMatrix() {
-  const { orgName } = useSettingsStore();
-  const risks = RISKS; // Consistent 12 risks from seed
+  const [view, setView] = useState<"matrix" | "register">("matrix");
+  const [categoryFilter, setCategoryFilter] = useState("all");
 
-  // Cell sheet state
-  const [cellSheetOpen, setCellSheetOpen] = useState(false);
-  const [cellRisks, setCellRisks] = useState<Risk[]>([]);
-  const [cellLabel, setCellLabel] = useState('');
+  const filtered = categoryFilter === "all" ? RISKS : RISKS.filter(r => r.category === categoryFilter);
+  const categories = [...new Set(RISKS.map(r => r.category))];
 
-  // Detail sheet state
-  const [detailSheetOpen, setDetailSheetOpen] = useState(false);
-  const [selectedRisk, setSelectedRisk] = useState<Risk | null>(null);
-
-  // ── Metrics — Consistent with /risk page ──────────────────────────────────
-  const totalRisks = risks.length;
-  const criticalCount = risks.filter(r => r.severity === 'critical').length;
-  const highCount = risks.filter(r => r.severity === 'high').length;
-  const openCount = risks.filter(r => r.status === 'open').length;
-
-  // ── Build matrix data ─────────────────────────────────────────────────────
-  const matrix = useMemo(() => {
-    const m: Record<string, Risk[]> = {};
-    risks.forEach(r => {
-      const key = `${r.likelihood}-${r.impact}`;
-      if (!m[key]) m[key] = [];
-      m[key].push(r);
-    });
-    return m;
-  }, [risks]);
-
-  const openCellSheet = (l: number, i: number, cellRiskList: Risk[]) => {
-    setCellRisks(cellRiskList);
-    setCellLabel(`Likelihood ${l} × Impact ${i} (Score: ${l * i})`);
-    setCellSheetOpen(true);
-  };
-
-  const openRiskDetail = (risk: Risk) => {
-    setSelectedRisk(risk);
-    setCellSheetOpen(false);
-    setDetailSheetOpen(true);
+  const stats = {
+    critical: RISKS.filter(r => r.likelihood * r.impact >= 16).length,
+    high: RISKS.filter(r => { const s = r.likelihood * r.impact; return s >= 10 && s < 16; }).length,
+    mitigating: RISKS.filter(r => r.status === "mitigating").length,
+    open: RISKS.filter(r => r.status === "open").length,
   };
 
   return (
-    <TooltipProvider>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-red-100 dark:bg-red-950 rounded-lg"><AlertTriangle size={20} className="text-red-600 dark:text-red-400" /></div>
           <div>
-            <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Risk Matrix</h1>
-            <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>
-              {orgName} · 5×5 risk heat map — {totalRisks} risks plotted
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" style={{ borderRadius: 0 }}>
-                  <FloppyDisk size={14} className="mr-1.5" />Save View
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent style={{ borderRadius: 0 }}>Save current matrix view and filters as a preset</TooltipContent>
-            </Tooltip>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Risk Matrix</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">AI risk assessment aligned to ISO 31000 and NIST AI RMF</p>
           </div>
         </div>
-
-        {/* Metrics — Consistent with /risk */}
-        <div className="grid grid-cols-4 gap-4">
-          <MetricTile label="Total Risks" value={totalRisks} variant="default" />
-          <MetricTile label="Critical" value={criticalCount} variant="error" />
-          <MetricTile label="High" value={highCount} variant="warn" />
-          <MetricTile label="Open" value={openCount} variant="warn" />
+        <div className="flex items-center gap-3">
+          <div className="flex border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+            {(["matrix", "register"] as const).map(v => (
+              <button key={v} onClick={() => setView(v)} className={`px-3 py-1.5 text-xs font-medium capitalize transition-colors ${v === view ? "bg-green-600 text-white" : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300"}`}>{v}</button>
+            ))}
+          </div>
+          <button className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+            <Plus size={14} /> Log Risk
+          </button>
         </div>
+      </div>
 
-        {/* Matrix Grid */}
-        <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-          <CardContent className="p-6">
-            <div className="flex items-end gap-0">
-              {/* Y-axis label */}
-              <div className="flex flex-col items-center justify-center pr-3" style={{ height: 400 }}>
-                <span
-                  className="text-xs font-semibold"
-                  style={{ color: 'hsl(var(--text-4))', writingMode: 'vertical-rl', transform: 'rotate(180deg)', letterSpacing: 1 }}
-                >
-                  LIKELIHOOD →
-                </span>
-              </div>
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: "Critical Risks", value: stats.critical, color: "text-red-600 dark:text-red-400" },
+          { label: "High Risks", value: stats.high, color: "text-orange-600 dark:text-orange-400" },
+          { label: "Being Mitigated", value: stats.mitigating, color: "text-amber-600 dark:text-amber-400" },
+          { label: "Open / Unaddressed", value: stats.open, color: "text-red-600 dark:text-red-400" },
+        ].map((s, i) => (
+          <Card key={i} className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+            <CardContent className="p-4">
+              <p className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-medium">{s.label}</p>
+              <p className={`text-2xl font-bold font-mono mt-1 ${s.color}`}>{s.value}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
-              {/* Y-axis numbers */}
-              <div className="flex flex-col gap-1 pr-2" style={{ paddingBottom: 28 }}>
-                {[5, 4, 3, 2, 1].map(l => (
-                  <div key={l} className="flex items-center justify-center" style={{ height: 76 }}>
-                    <span className="text-xs font-mono font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{l}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Grid */}
-              <div className="flex-1">
-                <div className="grid grid-cols-5 gap-1">
-                  {[5, 4, 3, 2, 1].map(l =>
-                    [1, 2, 3, 4, 5].map(i => {
-                      const score = l * i;
-                      const bg = cellColor(score);
-                      const cr = matrix[`${l}-${i}`] || [];
-                      const visible = cr.slice(0, 2);
-                      const overflow = cr.length - 2;
-
-                      return (
-                        <div
-                          key={`${l}-${i}`}
-                          className="flex flex-col items-center justify-center gap-1 cursor-pointer hover:brightness-110 transition-all relative"
-                          style={{
-                            height: 76,
-                            background: bg,
-                            border: '1px solid hsl(var(--border))',
-                            borderRadius: 0,
-                          }}
-                          onClick={() => {
-                            if (cr.length === 1) openRiskDetail(cr[0]);
-                            else if (cr.length > 1) openCellSheet(l, i, cr);
-                          }}
-                        >
-                          {/* Score label */}
-                          <span className="absolute top-1 right-1.5 text-[9px] font-mono" style={{ color: 'hsl(var(--text-4))' }}>
-                            {score}
-                          </span>
-
-                          {visible.map(r => (
-                            <span
-                              key={r.id}
-                              className="font-mono text-xs font-medium cursor-pointer hover:underline"
-                              style={{ color: 'hsl(var(--text-1))' }}
-                              onClick={(e) => { e.stopPropagation(); openRiskDetail(r); }}
-                            >
-                              {r.id}
-                            </span>
-                          ))}
-                          {overflow > 0 && (
-                            <Badge
-                              className="text-[9px] px-1 py-0 cursor-pointer"
-                              style={{ background: 'hsl(var(--bg-surface))', color: 'hsl(var(--text-1))', borderRadius: 0, border: '1px solid hsl(var(--border))' }}
-                              onClick={(e) => { e.stopPropagation(); openCellSheet(l, i, cr); }}
-                            >
-                              +{overflow} more
-                            </Badge>
-                          )}
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-
-                {/* X-axis numbers */}
-                <div className="grid grid-cols-5 gap-1 mt-1">
-                  {[1, 2, 3, 4, 5].map(i => (
-                    <div key={i} className="text-center">
-                      <span className="text-xs font-mono font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{i}</span>
+      {view === "matrix" ? (
+        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Risk Heatmap — Likelihood vs Impact</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <div className="min-w-[500px]">
+                <div className="flex">
+                  <div className="w-24" />
+                  {[1, 2, 3, 4, 5].map(impact => (
+                    <div key={impact} className="flex-1 text-center text-[10px] font-medium text-slate-500 dark:text-slate-400 pb-2">
+                      {impactLabels[impact]}
                     </div>
                   ))}
                 </div>
-
-                {/* X-axis label */}
-                <div className="text-center mt-2">
-                  <span className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))', letterSpacing: 1 }}>
-                    IMPACT →
-                  </span>
+                {[5, 4, 3, 2, 1].map(likelihood => (
+                  <div key={likelihood} className="flex items-stretch">
+                    <div className="w-24 flex items-center text-[10px] font-medium text-slate-500 dark:text-slate-400 pr-2 justify-end">
+                      {likelihoodLabels[likelihood]}
+                    </div>
+                    {[1, 2, 3, 4, 5].map(impact => {
+                      const risksInCell = RISKS.filter(r => r.likelihood === likelihood && r.impact === impact);
+                      return (
+                        <div key={impact} className={`flex-1 m-0.5 min-h-[60px] rounded-lg flex flex-col items-center justify-center p-1 ${getHeatmapColor(likelihood, impact)} ${risksInCell.length > 0 ? "ring-2 ring-white dark:ring-slate-900" : "opacity-60"}`}>
+                          {risksInCell.length > 0 ? (
+                            <div className="text-center">
+                              <span className="text-lg font-bold">{risksInCell.length}</span>
+                              <div className="text-[9px] leading-tight mt-0.5">
+                                {risksInCell.map(r => r.id).join(", ")}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-xs opacity-50">{likelihood * impact}</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+                <div className="flex mt-2">
+                  <div className="w-24" />
+                  <div className="flex-1 text-center text-[10px] text-slate-400 dark:text-slate-500 font-medium">Impact &rarr;</div>
                 </div>
               </div>
             </div>
-
-            {/* Legend */}
-            <div className="flex items-center gap-6 mt-6 pt-4" style={{ borderTop: '1px solid hsl(var(--border))' }}>
-              {[
-                { label: '1–4 Low', bg: 'hsl(142 71% 45% / 0.3)' },
-                { label: '5–9 Medium', bg: 'hsl(45 93% 47% / 0.3)' },
-                { label: '10–16 High', bg: 'hsl(25 95% 53% / 0.3)' },
-                { label: '17–25 Critical', bg: 'hsl(0 72% 51% / 0.3)' },
-              ].map(l => (
-                <div key={l.label} className="flex items-center gap-2">
-                  <div style={{ width: 16, height: 16, background: l.bg, borderRadius: 0, border: '1px solid hsl(var(--border))' }} />
-                  <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-4))' }}>{l.label}</span>
-                </div>
-              ))}
-            </div>
           </CardContent>
         </Card>
-
-        {/* ── Cell Detail Sheet ─────────────────────────────────────────────── */}
-        <Sheet open={cellSheetOpen} onOpenChange={setCellSheetOpen}>
-          <SheetContent side="right" className="w-[480px] sm:max-w-[480px] overflow-y-auto" style={{ borderRadius: 0 }}>
-            <SheetHeader>
-              <SheetTitle style={{ color: 'hsl(var(--text-1))' }}>
-                {cellLabel}
-              </SheetTitle>
-              <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
-                {cellRisks.length} risk{cellRisks.length !== 1 ? 's' : ''} in this cell
-              </p>
-            </SheetHeader>
-            <div className="space-y-3 mt-4">
-              {cellRisks.map(r => {
-                const sevColor = severityColor(r.severity);
-                const statColor = statusColor(r.status);
-                return (
-                  <div
-                    key={r.id}
-                    className="p-3 space-y-2 cursor-pointer hover:bg-muted/30 transition-colors"
-                    style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}
-                    onClick={() => openRiskDetail(r)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs font-bold" style={{ color: 'hsl(var(--brand))' }}>{r.id}</span>
-                        <Badge style={{ background: sevColor.bg, color: sevColor.text, borderRadius: 0, fontSize: 10 }}>{r.severity}</Badge>
-                      </div>
-                      <Badge style={{ background: statColor.bg, color: statColor.text, borderRadius: 0, fontSize: 10 }}>{r.status}</Badge>
-                    </div>
-                    <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{r.title}</p>
-                    <div className="flex items-center gap-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>
-                      <span className="flex items-center gap-1"><User size={11} />{r.owner}</span>
-                      <span>Score: {r.score}</span>
-                      <TrendIcon trend={r.trending} />
-                    </div>
-                    <Button variant="ghost" size="sm" className="h-6 text-xs px-2" style={{ borderRadius: 0 }}>
-                      <Eye size={12} className="mr-1" />View Details
-                    </Button>
-                  </div>
-                );
-              })}
-            </div>
-          </SheetContent>
-        </Sheet>
-
-        {/* ── Risk Detail Sheet ─────────────────────────────────────────────── */}
-        <Sheet open={detailSheetOpen} onOpenChange={setDetailSheetOpen}>
-          <SheetContent side="right" className="w-[480px] sm:max-w-[480px] overflow-y-auto" style={{ borderRadius: 0 }}>
-            {selectedRisk && (
-              <>
-                <SheetHeader>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold" style={{ color: 'hsl(var(--brand))' }}>{selectedRisk.id}</span>
-                    <Badge style={{ background: severityColor(selectedRisk.severity).bg, color: severityColor(selectedRisk.severity).text, borderRadius: 0, fontSize: 11 }}>
-                      {selectedRisk.severity}
-                    </Badge>
-                    <TrendIcon trend={selectedRisk.trending} />
-                  </div>
-                  <SheetTitle style={{ color: 'hsl(var(--text-1))' }}>{selectedRisk.title}</SheetTitle>
-                </SheetHeader>
-
-                <div className="mt-4 space-y-4">
-                  {/* Score */}
-                  <div className="flex items-center gap-4">
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Score</p>
-                      {(() => {
-                        const ss = riskScoreStyle(selectedRisk.score);
-                        return (
-                          <Badge style={{ background: ss.bg, color: ss.text, borderRadius: 0, fontWeight: ss.bold ? 800 : 600, fontSize: 14 }}>
-                            {selectedRisk.score} / 25
-                          </Badge>
-                        );
-                      })()}
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Status</p>
-                      <Badge style={{ background: statusColor(selectedRisk.status).bg, color: statusColor(selectedRisk.status).text, borderRadius: 0 }}>
-                        {selectedRisk.status}
-                      </Badge>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>L × I</p>
-                      <span className="text-sm font-mono" style={{ color: 'hsl(var(--text-1))' }}>
-                        {selectedRisk.likelihood} × {selectedRisk.impact}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Details */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Owner</p>
-                      <div className="flex items-center gap-1">
-                        <User size={12} style={{ color: 'hsl(var(--text-4))' }} />
-                        <span className="text-sm" style={{ color: 'hsl(var(--text-1))' }}>{selectedRisk.owner}</span>
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Category</p>
-                      <span className="text-sm" style={{ color: 'hsl(var(--text-1))' }}>{selectedRisk.category}</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Description</p>
-                    <p className="text-sm" style={{ color: 'hsl(var(--text-1))' }}>{selectedRisk.description}</p>
-                  </div>
-
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Mitigations</p>
-                    <div className="space-y-1">
-                      {selectedRisk.mitigations.map((m, i) => (
-                        <div key={i} className="text-xs px-2 py-1" style={{ background: 'hsl(var(--s-ok-bg))', borderLeft: '2px solid hsl(var(--s-ok-br))', borderRadius: 0, color: 'hsl(var(--text-1))' }}>
-                          {m}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>
-                    <span>Created: {formatDate(selectedRisk.createdDate)}</span>
-                    <span>Updated: {formatDate(selectedRisk.lastUpdated)}</span>
-                  </div>
-                </div>
-              </>
-            )}
-          </SheetContent>
-        </Sheet>
-      </div>
-    </TooltipProvider>
+      ) : (
+        <>
+          <div className="flex items-center gap-2">
+            <Filter size={14} className="text-slate-400" />
+            <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="text-sm border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300">
+              <option value="all">All Categories</option>
+              {categories.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+            <CardContent className="p-0">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                    {["ID", "Risk", "Category", "L x I", "Score", "Status", "Owner", "Trend", "Updated"].map(h => (
+                      <th key={h} className="px-4 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {filtered.map(r => {
+                    const score = r.likelihood * r.impact;
+                    const TrendIcon = trendIcons[r.trend];
+                    return (
+                      <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td className="px-4 py-3 font-mono text-xs text-slate-500 dark:text-slate-400">{r.id}</td>
+                        <td className="px-4 py-3">
+                          <p className="font-medium text-slate-900 dark:text-white text-xs">{r.title}</p>
+                          <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">{r.description}</p>
+                        </td>
+                        <td className="px-4 py-3 text-xs text-slate-600 dark:text-slate-300">{r.category}</td>
+                        <td className="px-4 py-3 text-xs font-mono text-slate-500">{r.likelihood} x {r.impact}</td>
+                        <td className="px-4 py-3"><span className={`text-xs font-bold px-2 py-0.5 rounded ${getHeatmapColor(r.likelihood, r.impact)}`}>{score}</span></td>
+                        <td className="px-4 py-3"><span className={`text-[10px] font-medium px-2 py-0.5 rounded capitalize ${statusColors[r.status]}`}>{r.status}</span></td>
+                        <td className="px-4 py-3 text-xs text-slate-600 dark:text-slate-300">{r.owner}</td>
+                        <td className="px-4 py-3"><TrendIcon size={14} className={trendColors[r.trend]} /></td>
+                        <td className="px-4 py-3 text-xs text-slate-400">{r.lastUpdated}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+        </>
+      )}
+    </div>
   );
 }
