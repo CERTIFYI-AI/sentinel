@@ -1,3 +1,7 @@
+## 1.9.0 (2026-06-30)
+
+* feat(ui): remove double page padding, tighten section rhythm (density) ([ca0662e](https://github.com/CERTIFYI-AI/sentinel/commit/ca0662e))
+
 ## 1.8.0 (2026-06-30)
 
 * feat(ui): tighten global density foundation (enterprise console spacing) ([aac9c3b](https://github.com/CERTIFYI-AI/sentinel/commit/aac9c3b))
