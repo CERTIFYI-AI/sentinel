@@ -26,7 +26,34 @@ import {
 import {
   MODELS, Model, severityColor, statusColor, formatDate,
 } from '../../data/seed';
+import type { ModelRecord } from '../../services/modelService';
 import { useSettingsStore } from '../../stores/settingsStore';
+
+// Map a Supabase `ai_models` record onto the rich view `Model` (type-safe; the
+// nested analytics fields the registry table doesn't store default to empty so
+// the detail panels render gracefully rather than crashing). Replaces an `as any`.
+const RISK_TIERS = ['high', 'limited', 'minimal', 'unacceptable'] as const;
+const LIFECYCLE_TO_STATUS: Record<string, Model['status']> = {
+  production: 'production', prod: 'production', monitor: 'production', monitoring: 'production',
+  staging: 'staging', stage: 'staging', testing: 'staging', test: 'staging', review: 'staging',
+  dev: 'development', development: 'development',
+  deprecated: 'retired', retired: 'retired',
+};
+function recordToModel(r: ModelRecord): Model {
+  const tier = (r.risk_tier ?? '').toLowerCase();
+  const stage = (r.lifecycle_stage ?? '').toLowerCase();
+  return {
+    id: r.id, name: r.name, version: r.version ?? '—', type: r.model_type ?? '—',
+    owner: r.business_owner ?? r.technical_owner ?? '—',
+    status: LIFECYCLE_TO_STATUS[stage] ?? 'production',
+    riskTier: (RISK_TIERS as readonly string[]).includes(tier) ? (tier as Model['riskTier']) : 'limited',
+    fairnessScore: 0, driftStatus: 'stable', lastValidated: (r.updated_at ?? r.created_at ?? '').slice(0, 10),
+    framework: r.framework ?? '—', department: '—', description: r.description ?? '',
+    accuracy: 0, latencyMs: 0, monthlyInferences: '—', euAiActArticle: '—',
+    biasMetrics: [], performanceHistory: [], guardrails: [], complianceMapping: [], incidents: [],
+    lifecyclePhase: r.lifecycle_stage ?? '—', daysInPhase: 0, lifecycleProgress: 0,
+  };
+}
 import { useChartTheme } from '../../hooks/useChartTheme';
 
 
@@ -157,7 +184,7 @@ export default function ModelInventoryPage() {
 
   const [models, setModels] = useState<Model[]>(MODELS);
   const { models: supabaseModels, isLoading: isLoadingModels } = useModelsData();
-  useEffect(() => { if (supabaseModels.length > 0) setModels(supabaseModels as any); }, [supabaseModels]);
+  useEffect(() => { if (supabaseModels.length > 0) setModels(supabaseModels.map(recordToModel)); }, [supabaseModels]);
   const [search, setSearch] = useState('');
   const [riskFilter, setRiskFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
