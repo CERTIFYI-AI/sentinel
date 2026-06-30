@@ -1,3 +1,7 @@
+## <small>1.11.1 (2026-06-30)</small>
+
+* fix(models): remove `as any` in Model Registry with a type-safe record mapper ([8a68fd6](https://github.com/CERTIFYI-AI/sentinel/commit/8a68fd6))
+
 ## 1.11.0 (2026-06-30)
 
 * feat(models): consistent headers/breadcrumbs for Model DNA & Prompt Registry ([d53c7ec](https://github.com/CERTIFYI-AI/sentinel/commit/d53c7ec))
