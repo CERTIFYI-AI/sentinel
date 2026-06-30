@@ -1,3 +1,7 @@
+## 1.5.0 (2026-06-30)
+
+* feat(ui): tokenize Model Registry page + adopt PageHeader (Phase 2 #1) ([dec0426](https://github.com/CERTIFYI-AI/sentinel/commit/dec0426)), closes [#1](https://github.com/CERTIFYI-AI/sentinel/issues/1)
+
 ## 1.4.0 (2026-06-30)
 
 * feat(ui): unify breadcrumb system across all pages (Phase 1) ([a6aee35](https://github.com/CERTIFYI-AI/sentinel/commit/a6aee35))
