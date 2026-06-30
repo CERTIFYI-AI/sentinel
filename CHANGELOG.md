@@ -1,3 +1,7 @@
+## 1.6.0 (2026-06-30)
+
+* feat(ui): tokenize Risk Matrix, Incident Log, Datasets pages (Phase 2) ([fced47b](https://github.com/CERTIFYI-AI/sentinel/commit/fced47b))
+
 ## 1.5.0 (2026-06-30)
 
 * feat(ui): tokenize Model Registry page + adopt PageHeader (Phase 2 #1) ([dec0426](https://github.com/CERTIFYI-AI/sentinel/commit/dec0426)), closes [#1](https://github.com/CERTIFYI-AI/sentinel/issues/1)
