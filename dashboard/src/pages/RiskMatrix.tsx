@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { AlertTriangle, Filter, Plus, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Button } from "@/components/ui/button";
 
 interface Risk {
   id: string;
@@ -62,26 +64,22 @@ export default function RiskMatrix() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-[hsl(var(--s-er-bg))] rounded-lg"><AlertTriangle size={20} className="text-[hsl(var(--s-er-tx))]" /></div>
-          <div>
-            <h1 className="text-xl font-bold text-[hsl(var(--text-1))]">Risk Matrix</h1>
-            <p className="text-sm text-[hsl(var(--text-3))]">AI risk assessment aligned to ISO 31000 and NIST AI RMF</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex border border-[hsl(var(--border))] rounded-lg overflow-hidden">
-            {(["matrix", "register"] as const).map(v => (
-              <button key={v} onClick={() => setView(v)} className={`px-3 py-1.5 text-xs font-medium capitalize transition-colors ${v === view ? "bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))]" : "bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-2))]"}`}>{v}</button>
-            ))}
-          </div>
-          <button className="flex items-center gap-2 bg-[hsl(var(--s-ok-tx))] hover:bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))] px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-            <Plus size={14} /> Log Risk
-          </button>
-        </div>
-      </div>
+    <div className="p-6 space-y-5">
+      <PageHeader
+        title="Risk Matrix"
+        subtitle="AI risk assessment aligned to ISO 31000 and NIST AI RMF"
+        icon={AlertTriangle}
+        actions={
+          <>
+            <div className="flex border border-[hsl(var(--border))] overflow-hidden">
+              {(["matrix", "register"] as const).map(v => (
+                <button key={v} onClick={() => setView(v)} className={`px-3 py-1.5 text-xs font-medium capitalize transition-colors ${v === view ? "bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))]" : "bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-2))]"}`}>{v}</button>
+              ))}
+            </div>
+            <Button size="sm" leftIcon={<Plus size={14} />}>Log Risk</Button>
+          </>
+        }
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

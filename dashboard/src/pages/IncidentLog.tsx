@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { AlertTriangle, Plus, Search, Filter } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Button } from "@/components/ui/button";
 
 const SEVERITIES = ["CRITICAL", "HIGH", "MEDIUM", "LOW"] as const;
 const TEAMS = ["Security Team", "ML Team", "Ethics Board", "DevOps", "Release Eng", "Compliance"] as const;
@@ -65,19 +67,13 @@ export default function IncidentLog() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-[hsl(var(--s-er-bg))] rounded-lg"><AlertTriangle size={20} className="text-[hsl(var(--s-er-tx))]" /></div>
-          <div>
-            <h1 className="text-xl font-bold text-[hsl(var(--text-1))]">Incident Log</h1>
-            <p className="text-sm text-[hsl(var(--text-3))]">Track and manage AI safety incidents — {stats.active} active, {stats.critical} critical</p>
-          </div>
-        </div>
-        <button onClick={() => setShowForm(true)} className="flex items-center gap-2 bg-[hsl(var(--s-ok-tx))] hover:bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))] px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-          <Plus size={14} /> Report Incident
-        </button>
-      </div>
+    <div className="p-6 space-y-5">
+      <PageHeader
+        title="Incident Log"
+        subtitle={`Track and manage AI safety incidents — ${stats.active} active, ${stats.critical} critical`}
+        icon={AlertTriangle}
+        actions={<Button size="sm" leftIcon={<Plus size={14} />} onClick={() => setShowForm(true)}>Report Incident</Button>}
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
