@@ -124,7 +124,13 @@ Key fields to look at:
 
 ## Step 5: Open the Dashboard (1 minute)
 
-Open http://localhost:3000 in your browser.
+The React dashboard is a separate app (not part of `docker-compose`). Start it and open it at **http://localhost:5000**:
+
+```bash
+cd dashboard && npm install && npm run dev
+```
+
+> Note: `http://localhost:3000` in the compose stack is **Grafana** (infra metrics), not the Sentinel dashboard.
 
 You will see:
 - The request you just sent in the audit log

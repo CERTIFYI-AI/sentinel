@@ -275,7 +275,7 @@ npm install
 npm run dev
 ```
 
-The dashboard runs at `http://localhost:5173` by default.
+The dashboard runs at `http://localhost:5000` by default (configured via `vite --port 5000` in `dashboard/package.json`).
 
 ### Production Build
 
