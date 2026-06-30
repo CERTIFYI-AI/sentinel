@@ -265,7 +265,7 @@ function ProtectedLayout() {
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <TopHeader />
-        <div className="flex-1 overflow-auto bg-sentinel-background p-6 lg:p-8">
+        <div className="flex-1 overflow-auto bg-sentinel-background p-4 lg:p-5">
         <ErrorBoundary>
           <Suspense fallback={<PageSkeleton />}>
             <Outlet />

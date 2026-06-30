@@ -64,7 +64,7 @@ export function PageHeader({
   return (
     <header
       className={cn(
-        'flex flex-col gap-1 pb-4 border-b border-[hsl(var(--border))] mb-6',
+        'flex flex-col gap-1 pb-3 border-b border-[hsl(var(--border))] mb-4',
         className,
       )}
       aria-labelledby="page-title"

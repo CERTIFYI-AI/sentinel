@@ -114,12 +114,12 @@ export function DataTable<T extends Record<string, any>>({
               <tr key={i} onClick={() => onRowClick?.(row)}
                 className={cn("group border-b border-[hsl(var(--border))] hover:bg-raised transition-colors", onRowClick && "cursor-pointer", getRowClassName?.(row))}>
                 {columns.map(col => (
-                  <td key={col.key} className={cn("px-4 py-3 text-[hsl(var(--text-2))]", col.className)}>
+                  <td key={col.key} className={cn("px-3 py-2 text-[hsl(var(--text-2))]", col.className)}>
                     {col.render ? col.render(row) : String(row[col.key] ?? "")}
                   </td>
                 ))}
                 {hasActions && (
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-3 py-2 text-right">
                     <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       {actions ? actions(row) : (<>
                         {onView && <button onClick={e => { e.stopPropagation(); onView(row) }} className="p-1.5 hover:bg-surface text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))] transition-colors" title="View"><Eye size={16} weight="duotone"/></button>}
