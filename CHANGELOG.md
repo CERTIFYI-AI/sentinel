@@ -1,3 +1,7 @@
+## 1.4.0 (2026-06-30)
+
+* feat(ui): unify breadcrumb system across all pages (Phase 1) ([a6aee35](https://github.com/CERTIFYI-AI/sentinel/commit/a6aee35))
+
 ## 1.3.0 (2026-06-30)
 
 * feat(models): wire Model Inventory (/models) to Supabase ai_models ([2778f7e](https://github.com/CERTIFYI-AI/sentinel/commit/2778f7e))
