@@ -1,3 +1,7 @@
+## <small>1.2.2 (2026-06-30)</small>
+
+* fix(ui): eliminate '.bg' crash with safe color lookups + enterprise error boundary ([bcab82e](https://github.com/CERTIFYI-AI/sentinel/commit/bcab82e))
+
 ## <small>1.2.1 (2026-06-30)</small>
 
 * fix(ui): consistent icon–text spacing and alignment across all buttons ([19bbf72](https://github.com/CERTIFYI-AI/sentinel/commit/19bbf72))
