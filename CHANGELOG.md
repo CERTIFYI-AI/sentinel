@@ -1,3 +1,8 @@
+## 1.3.0 (2026-06-30)
+
+* feat(models): wire Model Inventory (/models) to Supabase ai_models ([2778f7e](https://github.com/CERTIFYI-AI/sentinel/commit/2778f7e))
+* chore: document supabase env contract ([c6b8546](https://github.com/CERTIFYI-AI/sentinel/commit/c6b8546))
+
 ## <small>1.2.4 (2026-06-30)</small>
 
 * fix: harden task status rendering against unknown/partial rows ([81a4f52](https://github.com/CERTIFYI-AI/sentinel/commit/81a4f52))
