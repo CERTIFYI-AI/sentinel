@@ -35,8 +35,8 @@ audit:
 	cd dashboard && npx tsc --noEmit
 	cd dashboard && npx eslint src/ --ext .ts,.tsx
 	cd dashboard && npx vitest run --coverage 2>/dev/null || true
-	ruff check server/ 2>/dev/null || true
-	bandit -r server/ -ll 2>/dev/null || true
+	ruff check sentinel/ 2>/dev/null || true
+	bandit -r sentinel/ -ll 2>/dev/null || true
 	@echo "=== Checking for service_role leaks ==="
 	@! grep -rE "service_role|SERVICE_ROLE" dashboard/src/ --include="*.ts" --include="*.tsx" || (echo "LEAK DETECTED" && exit 1)
 	@echo "=== All checks passed ==="

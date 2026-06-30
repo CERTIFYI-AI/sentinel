@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://img.shields.io/badge/SENTINEL--AI%20GRC-6d28d9?style=for-the-badge&labelColor=1a1a2e&color=6d28d9&logoColor=white" alt="Sentinel AI GRC" height="40"/>
+<img src="https://img.shields.io/badge/SENTINEL--AI%20GRC-368F4D?style=for-the-badge&labelColor=1a1a2e&color=368F4D&logoColor=white" alt="Sentinel AI GRC" height="40"/>
 
 # Sentinel AI GRC
 
@@ -25,7 +25,7 @@ Sentinel AI GRC is an **open-source AI governance, risk, and compliance platform
 
 Unlike traditional GRC tools that awkwardly bolt AI onto legacy risk frameworks, Sentinel is **AI-native from the ground up**. Every model, agent, and decision chain is treated as a first-class governance object, complete with mandatory audit trails, continuous policy enforcement, and observable autonomous oversight.
 
-> **Open-Core Model:** The core governance engine is completely open-source under the Apache-2.0 license. Advanced enterprise modules (SSO, custom agent policies, managed SaaS) are available commercially. See [`OPEN_SOURCE.md`](./OPEN_SOURCE.md) for details.
+> **Open-Core Model:** The core governance engine is open-source under the Apache-2.0 license (see [`LICENSE`](./LICENSE)). Advanced enterprise modules (SSO/SAML, custom agent policies, managed SaaS) are available commercially.
 
 ---
 
@@ -122,11 +122,11 @@ cd sentinel
 
 ### 2. Install Dependencies
 ```bash
-# Frontend
-cd frontend && npm install
+# Frontend (React dashboard)
+cd dashboard && npm install
 
-# Backend
-cd ../backend && pip install -r requirements.txt
+# Backend (Python `sentinel` package + CLI)
+cd .. && make install        # == pip install -e .   (use `make dev` for dev extras)
 ```
 
 ### 3. Configure the Environment
@@ -157,16 +157,16 @@ supabase db reset
 
 ### 5. Run the Platform
 ```bash
-# Terminal 1 — Frontend
-cd frontend && npm run dev
+# Terminal 1 — Frontend (Vite dev server on :5000)
+cd dashboard && npm run dev
 
-# Terminal 2 — Backend
-cd backend && uvicorn main:app --reload
+# Terminal 2 — Backend (FastAPI via the sentinel CLI)
+make serve                   # == sentinel serve --reload
 
-# Terminal 3 — Workers (Local Dev)
+# Terminal 3 — Edge Workers (local dev)
 cd workers && wrangler dev
 ```
-Navigate to [http://localhost:5173](http://localhost:5173) in your browser.
+Navigate to [http://localhost:5000](http://localhost:5000) in your browser.
 
 **Demo Credentials:**
 | Role | Email | Password |
@@ -184,26 +184,27 @@ Navigate to [http://localhost:5173](http://localhost:5173) in your browser.
 
 ```text
 sentinel/
-├── frontend/                    # React/TypeScript application
-│   ├── src/
-│   │   ├── pages/               # 25+ GRC module pages
-│   │   ├── components/          # Shared enterprise UI components
-│   │   ├── hooks/               # Data fetching hooks
-│   │   └── lib/                 # Core utilities (Supabase, EventBus)
-├── backend/                     # FastAPI application
-│   ├── api/                     # Route handlers & controllers
-│   ├── agents/                  # Autonomous governance agents
-│   └── core/                    # Policy engine and risk scoring logic
-├── workers/                     # Cloudflare Workers
-│   └── audit-log/               # Immutable audit log ingestion
-├── supabase/
-│   ├── migrations/              # Database schema migrations
-│   ├── seed/                    # Seed scripts & raw SQL
-│   └── policies/                # Row Level Security (RLS) definitions
-├── docs/                        # Architecture & Operational runbooks
-├── scripts/                     # Tooling (e.g., load testing)
-└── OPEN_SOURCE.md               # Licensing boundary details
+├── dashboard/                   # React 18 + TypeScript + Vite SPA (the frontend)
+│   └── src/
+│       ├── pages/               # 300+ GRC module pages (incl. subdirectories)
+│       ├── components/          # Shared enterprise UI library (Button, DataTable, …)
+│       ├── hooks/               # TanStack Query data hooks
+│       ├── styles/tokens.css    # Design tokens — single source of truth for colour
+│       └── lib/                 # Core utilities (Supabase client, EventBus, logger)
+├── sentinel/                    # Canonical Python backend (FastAPI + `sentinel` CLI)
+├── workers/                     # Cloudflare Workers — immutable audit-log ingestion
+├── supabase/                    # Supabase project config
+├── migrations/                  # Database schema migrations
+├── openapi/                     # Published OpenAPI specification
+├── frameworks/                  # Compliance framework control definitions
+├── packages/                    # Shared internal packages
+├── k8s/ · docker/               # Kubernetes manifests & container build context
+├── docs/                        # Architecture, runbooks, module & API reference
+├── tests/                       # Backend test suite (pytest)
+└── scripts/                     # Tooling and automation
 ```
+
+> The legacy `server/` directory is **deprecated** (superseded by `sentinel/`) and slated for removal — do not build on it.
 
 ---
 
@@ -258,10 +259,10 @@ Sentinel operates 10 always-on governance agents running on a shared event bus:
 We welcome contributions! Please review our [`CONTRIBUTING.md`](./CONTRIBUTING.md) before submitting a PR.
 
 **Current Priorities:**
-- [ ] Fix failing CI (see [CI Runbook](./docs/runbooks/ci.md))
 - [ ] Complete ISO/IEC 42001 control mapping
 - [ ] Multi-tenant enterprise module development
 - [ ] Agent plugin API for custom governance agents
+- [ ] Expand E2E (Playwright) coverage across high-risk modules
 
 *Looking for a place to start? Check out our [`good first issue`](https://github.com/CERTIFYI-AI/sentinel/labels/good%20first%20issue) label.*
 
@@ -269,21 +270,23 @@ We welcome contributions! Please review our [`CONTRIBUTING.md`](./CONTRIBUTING.m
 
 ## Roadmap
 
-### v1.0 — Fundable Demo (Current Sprint)
-- [x] Core GRC module pages (25+)
+### v1.0 — General Availability ✅ Shipped
+- [x] Core GRC module pages (300+)
 - [x] 10 autonomous governance agents
 - [x] Append-only audit log (Cloudflare Workers)
 - [x] RBAC with 6 roles
-- [ ] Fix CI pipeline
-- [ ] Complete live data wiring for all pages
-- [ ] Agent observability panel
-- [ ] Canonical seed data (Sentinel Financial Corp)
+- [x] Full Supabase live-data wiring (no mock data)
+- [x] Agent observability panel
+- [x] Canonical seed data (Sentinel Financial Corp)
 
-### v1.1 — Community Release
+### v1.1 — Community Release ✅ Shipped
+- [x] Design-token system (single source of truth for colour)
+- [x] Enterprise error boundary with diagnostics
+- [x] Command palette (⌘K) + keyboard navigation
+- [x] OpenAPI spec published (`openapi/`)
 - [ ] ISO/IEC 42001 full coverage
 - [ ] Public agent plugin API
 - [ ] Docker Compose single-command setup
-- [ ] OpenAPI spec published
 
 ### v2.0 — Enterprise
 - [ ] Multi-tenant architecture
@@ -309,7 +312,7 @@ You may not use this file except in compliance with the License.
 See LICENSE for the full text.
 ```
 
-The **core platform** is licensed under Apache-2.0. Enterprise modules are proprietary. See [`OPEN_SOURCE.md`](./OPEN_SOURCE.md) for the exact boundary.
+The **core platform** is licensed under Apache-2.0 (see [`LICENSE`](./LICENSE)). Enterprise modules (SSO/SAML, custom agent policies, managed SaaS) are proprietary.
 
 ---
 

@@ -3,7 +3,8 @@
 
 * @8h45k4r
 dashboard/ @8h45k4r
-server/ @8h45k4r
+sentinel/ @8h45k4r
+workers/ @8h45k4r
 supabase/ @8h45k4r
 .github/ @8h45k4r
 configs/ @8h45k4r
