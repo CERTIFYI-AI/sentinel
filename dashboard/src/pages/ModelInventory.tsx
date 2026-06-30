@@ -1,6 +1,12 @@
 import { useState } from "react";
 import { Package, Search, Filter, Plus, ExternalLink, AlertTriangle, CheckCircle2, Clock, XCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { useModelsData } from "@/hooks/useModelsData";
+import type { ModelRecord } from "@/services/modelService";
+import { isSupabaseConfigured } from "@/lib/supabase";
+import { PageSkeleton } from "@/components/ui/PageSkeleton";
+import ErrorState from "@/components/ui/ErrorState";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 interface Model {
   id: string;
@@ -29,6 +35,38 @@ const MODELS: Model[] = [
   { id: "MDL-008", name: "DALL-E 3", provider: "OpenAI", version: "3.0", type: "Image Generation", riskTier: "limited", status: "deprecated", trustScore: 0.7102, lastAudit: "2024-12-20", owner: "Marketing", useCase: "Marketing asset generation", dataClassification: "Public", requests24h: 0 },
 ];
 
+// Map the Supabase `ai_models` record (snake_case) to this page's view model.
+// Type-safe, with explicit fallbacks — never assumes a column is present.
+const RISK_TIERS = new Set<Model["riskTier"]>(["high", "limited", "minimal", "unacceptable"]);
+const LIFECYCLE_TO_STATUS: Record<string, Model["status"]> = {
+  production: "production", prod: "production", monitor: "production", monitoring: "production",
+  staging: "staging", stage: "staging", test: "staging", dev: "staging", development: "staging",
+  deprecated: "deprecated", retired: "deprecated",
+  review: "review", pending: "review",
+};
+function mapRecordToModel(r: ModelRecord): Model {
+  const meta = (r.metadata ?? {}) as Record<string, unknown>;
+  const tier = (r.risk_tier ?? "").toLowerCase();
+  const stage = (r.lifecycle_stage ?? "").toLowerCase();
+  const requests = typeof meta.requests_24h === "number" ? meta.requests_24h : 0;
+  const classification = typeof meta.data_classification === "string" ? meta.data_classification : "Internal";
+  return {
+    id: r.id,
+    name: r.name,
+    provider: r.provider ?? "—",
+    version: r.version ?? "—",
+    type: r.model_type ?? "—",
+    riskTier: RISK_TIERS.has(tier as Model["riskTier"]) ? (tier as Model["riskTier"]) : "limited",
+    status: LIFECYCLE_TO_STATUS[stage] ?? "review",
+    trustScore: typeof r.trust_score === "number" ? r.trust_score : 0,
+    lastAudit: (r.updated_at ?? r.created_at ?? "").slice(0, 10) || "—",
+    owner: r.business_owner ?? r.technical_owner ?? "—",
+    useCase: r.use_case ?? "—",
+    dataClassification: classification,
+    requests24h: requests,
+  };
+}
+
 const riskColors: Record<string, string> = {
   unacceptable: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400 border border-red-200 dark:border-red-800",
   high: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400 border border-orange-200 dark:border-orange-800",
@@ -51,7 +89,12 @@ export default function ModelInventory() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selected, setSelected] = useState<Model | null>(null);
 
-  const filtered = MODELS.filter(m => {
+  // Real mode → Supabase (`ai_models`); demo mode (no env) → deterministic seed.
+  const live = isSupabaseConfigured();
+  const { models: records, isLoading, error } = useModelsData();
+  const data: Model[] = live ? records.map(mapRecordToModel) : MODELS;
+
+  const filtered = data.filter(m => {
     if (search && !m.name.toLowerCase().includes(search.toLowerCase()) && !m.provider.toLowerCase().includes(search.toLowerCase())) return false;
     if (riskFilter !== "all" && m.riskTier !== riskFilter) return false;
     if (statusFilter !== "all" && m.status !== statusFilter) return false;
@@ -59,11 +102,15 @@ export default function ModelInventory() {
   });
 
   const stats = {
-    total: MODELS.length,
-    production: MODELS.filter(m => m.status === "production").length,
-    highRisk: MODELS.filter(m => m.riskTier === "high" || m.riskTier === "unacceptable").length,
-    avgTrust: (MODELS.reduce((s, m) => s + m.trustScore, 0) / MODELS.length),
+    total: data.length,
+    production: data.filter(m => m.status === "production").length,
+    highRisk: data.filter(m => m.riskTier === "high" || m.riskTier === "unacceptable").length,
+    avgTrust: data.length ? (data.reduce((s, m) => s + m.trustScore, 0) / data.length) : 0,
   };
+
+  // Loading / error states only apply in real (Supabase) mode.
+  if (live && isLoading) return <PageSkeleton />;
+  if (live && error) return <div className="p-6"><ErrorState title="Could not load models" error={error} onRetry={() => window.location.reload()} /></div>;
 
   return (
     <div className="p-6 space-y-6">
@@ -136,7 +183,7 @@ export default function ModelInventory() {
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {filtered.map(m => {
-                  const sc = statusConfig[m.status];
+                  const sc = statusConfig[m.status] ?? statusConfig.review;
                   const Icon = sc.icon;
                   return (
                     <tr key={m.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors" onClick={() => setSelected(selected?.id === m.id ? null : m)}>
@@ -155,12 +202,25 @@ export default function ModelInventory() {
                     </tr>
                   );
                 })}
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={9} className="px-4 py-10">
+                      <EmptyState
+                        icon={<Package size={28} />}
+                        title={data.length === 0 ? "No models registered yet" : "No models match your filters"}
+                        description={data.length === 0
+                          ? (live ? "Register a model or run the seed migration to populate the AI model registry." : "Demo data is unavailable.")
+                          : "Adjust the search or filters to see results."}
+                      />
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
           <div className="flex items-center justify-between px-4 py-3 text-xs text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-700">
-            <span>Showing {filtered.length} of {MODELS.length} models</span>
-            <span>{MODELS.filter(m => m.requests24h > 0).reduce((s, m) => s + m.requests24h, 0).toLocaleString()} total requests (24h)</span>
+            <span>Showing {filtered.length} of {data.length} models</span>
+            <span>{data.filter(m => m.requests24h > 0).reduce((s, m) => s + m.requests24h, 0).toLocaleString()} total requests (24h)</span>
           </div>
         </CardContent>
       </Card>
