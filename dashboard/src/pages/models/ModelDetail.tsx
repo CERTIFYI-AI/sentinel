@@ -21,7 +21,6 @@ import {
 } from '../../data/seed';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useChartTheme } from '../../hooks/useChartTheme';
-import Breadcrumbs from '../../components/Breadcrumbs';
 
 const TABS = [
   'Model Card',
@@ -277,9 +276,7 @@ export default function ModelDetail() {
 
   return (
     <div>
-      <Breadcrumbs />
-
-      <PageHeader 
+      <PageHeader
         title={model.name}
         description={model.description}
         icon={Brain}

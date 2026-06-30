@@ -7,11 +7,10 @@
 import React from 'react'
 import { cn } from '@/lib/utils'
 import { ChevronRight } from 'lucide-react'
+import Breadcrumbs from '@/components/Breadcrumbs'
+import type { Crumb } from '@/lib/breadcrumbs'
 
-export interface BreadcrumbItem {
-  label: string
-  href?: string
-}
+export type BreadcrumbItem = Crumb
 
 export interface PageHeaderAction {
   label: string
@@ -33,6 +32,8 @@ export interface PageHeaderProps {
   icon?: any
   /** Render a back-navigation affordance */
   onBack?: () => void
+  /** Opt out of the route-aware breadcrumb row (rare). */
+  hideBreadcrumbs?: boolean
 }
 
 /**
@@ -58,6 +59,7 @@ export function PageHeader({
   className,
   icon: Icon,
   onBack,
+  hideBreadcrumbs,
 }: PageHeaderProps) {
   return (
     <header
@@ -67,7 +69,10 @@ export function PageHeader({
       )}
       aria-labelledby="page-title"
     >
-      {/* Breadcrumbs removed as per user request */}
+      {/* Unified breadcrumbs: explicit trail if provided, else route-aware. */}
+      {!hideBreadcrumbs && (
+        <Breadcrumbs trail={breadcrumbs} className="mb-2" />
+      )}
 
       {/* Title row */}
       <div className="flex items-center justify-between gap-4">
