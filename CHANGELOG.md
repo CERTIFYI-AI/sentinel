@@ -1,3 +1,7 @@
+## 1.10.0 (2026-06-30)
+
+* feat(models): enterprise Model Lifecycle — PageHeader, tokens, gate actions ([834bd3f](https://github.com/CERTIFYI-AI/sentinel/commit/834bd3f))
+
 ## 1.9.0 (2026-06-30)
 
 * feat(ui): remove double page padding, tighten section rhythm (density) ([ca0662e](https://github.com/CERTIFYI-AI/sentinel/commit/ca0662e))
