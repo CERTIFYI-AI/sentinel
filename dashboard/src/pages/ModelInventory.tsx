@@ -7,6 +7,8 @@ import { isSupabaseConfigured } from "@/lib/supabase";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import ErrorState from "@/components/ui/ErrorState";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Button } from "@/components/ui/button";
 
 interface Model {
   id: string;
@@ -67,21 +69,22 @@ function mapRecordToModel(r: ModelRecord): Model {
   };
 }
 
+// EU AI Act risk tiers → design tokens (critical/high/medium/low scales).
 const riskColors: Record<string, string> = {
-  unacceptable: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400 border border-red-200 dark:border-red-800",
-  high: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400 border border-orange-200 dark:border-orange-800",
-  limited: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400 border border-amber-200 dark:border-amber-800",
-  minimal: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400 border border-green-200 dark:border-green-800",
+  unacceptable: "bg-[hsl(var(--r-cr-bg))] text-[hsl(var(--r-cr-tx))] border border-[hsl(var(--r-cr-br))]",
+  high:         "bg-[hsl(var(--r-hi-bg))] text-[hsl(var(--r-hi-tx))] border border-[hsl(var(--r-hi-br))]",
+  limited:      "bg-[hsl(var(--r-md-bg))] text-[hsl(var(--r-md-tx))] border border-[hsl(var(--r-md-br))]",
+  minimal:      "bg-[hsl(var(--r-lo-bg))] text-[hsl(var(--r-lo-tx))] border border-[hsl(var(--r-lo-br))]",
 };
 
 const statusConfig: Record<string, { color: string; icon: typeof CheckCircle2 }> = {
-  production: { color: "text-green-600 dark:text-green-400", icon: CheckCircle2 },
-  staging: { color: "text-blue-600 dark:text-blue-400", icon: Clock },
-  deprecated: { color: "text-slate-400 dark:text-slate-500", icon: XCircle },
-  review: { color: "text-amber-600 dark:text-amber-400", icon: AlertTriangle },
+  production: { color: "text-[hsl(var(--s-ok-tx))]", icon: CheckCircle2 },
+  staging:    { color: "text-[hsl(var(--s-in-tx))]", icon: Clock },
+  deprecated: { color: "text-[hsl(var(--text-4))]",  icon: XCircle },
+  review:     { color: "text-[hsl(var(--s-wn-tx))]", icon: AlertTriangle },
 };
 
-const trustColor = (s: number) => s >= 0.85 ? "text-green-600 dark:text-green-400" : s >= 0.7 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400";
+const trustColor = (s: number) => s >= 0.85 ? "text-[hsl(var(--s-ok-tx))]" : s >= 0.7 ? "text-[hsl(var(--s-wn-tx))]" : "text-[hsl(var(--s-er-tx))]";
 
 export default function ModelInventory() {
   const [search, setSearch] = useState("");
@@ -113,33 +116,29 @@ export default function ModelInventory() {
   if (live && error) return <div className="p-6"><ErrorState title="Could not load models" error={error} onRetry={() => window.location.reload()} /></div>;
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-100 dark:bg-blue-950 rounded-lg"><Package size={20} className="text-blue-600 dark:text-blue-400" /></div>
-          <div>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Model Inventory</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">AI/ML model registry with EU AI Act risk classification</p>
-          </div>
-        </div>
-        <button className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-          <Plus size={14} /> Register Model
-        </button>
-      </div>
+    <div className="p-6 space-y-5">
+      <PageHeader
+        title="Model Inventory"
+        subtitle="AI/ML model registry with EU AI Act risk classification"
+        icon={Package}
+        actions={
+          <Button size="sm" leftIcon={<Plus size={14} />}>Register Model</Button>
+        }
+      />
 
       {/* Summary Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: "Total Models", value: stats.total, sub: "Registered in inventory" },
-          { label: "In Production", value: stats.production, sub: `${Math.round(stats.production / stats.total * 100)}% of inventory` },
+          { label: "In Production", value: stats.production, sub: stats.total ? `${Math.round(stats.production / stats.total * 100)}% of inventory` : "—" },
           { label: "High Risk (EU AI Act)", value: stats.highRisk, sub: "Require enhanced oversight" },
           { label: "Avg Trust Score", value: stats.avgTrust.toFixed(4), sub: "Across all models" },
         ].map((s, i) => (
-          <Card key={i} className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+          <Card key={i} className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
             <CardContent className="p-4">
-              <p className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-medium">{s.label}</p>
-              <p className="text-2xl font-bold font-mono mt-1 text-slate-900 dark:text-white">{s.value}</p>
-              <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">{s.sub}</p>
+              <p className="text-[10px] uppercase tracking-wider text-[hsl(var(--text-4))] font-medium">{s.label}</p>
+              <p className="text-2xl font-bold font-mono mt-1 text-[hsl(var(--text-1))]">{s.value}</p>
+              <p className="text-[11px] text-[hsl(var(--text-4))] mt-1">{s.sub}</p>
             </CardContent>
           </Card>
         ))}
@@ -148,18 +147,18 @@ export default function ModelInventory() {
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 max-w-sm">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search models or providers..." className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none" />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search models or providers..." className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:ring-2 focus:ring-[hsl(var(--brand))] focus:border-[hsl(var(--brand))] outline-none" />
         </div>
         <div className="flex items-center gap-2">
-          <Filter size={14} className="text-slate-400" />
-          <select value={riskFilter} onChange={e => setRiskFilter(e.target.value)} className="text-sm border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300">
+          <Filter size={14} className="text-[hsl(var(--text-4))]" />
+          <select value={riskFilter} onChange={e => setRiskFilter(e.target.value)} className="text-sm border border-[hsl(var(--border))] px-3 py-2 bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-2))]">
             <option value="all">All Risk Tiers</option>
             <option value="high">High Risk</option>
             <option value="limited">Limited Risk</option>
             <option value="minimal">Minimal Risk</option>
           </select>
-          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="text-sm border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300">
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="text-sm border border-[hsl(var(--border))] px-3 py-2 bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-2))]">
             <option value="all">All Statuses</option>
             <option value="production">Production</option>
             <option value="staging">Staging</option>
@@ -170,35 +169,35 @@ export default function ModelInventory() {
       </div>
 
       {/* Model Table */}
-      <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+      <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-muted))]">
                   {["Model", "Provider", "Risk Tier", "Status", "Trust Score", "Data Class.", "24h Requests", "Last Audit", ""].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">{h}</th>
+                    <th key={h} className="px-4 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-[hsl(var(--text-3))]">{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-[hsl(var(--border))]">
                 {filtered.map(m => {
                   const sc = statusConfig[m.status] ?? statusConfig.review;
                   const Icon = sc.icon;
                   return (
-                    <tr key={m.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors" onClick={() => setSelected(selected?.id === m.id ? null : m)}>
+                    <tr key={m.id} className="hover:bg-[hsl(var(--bg-raised))] cursor-pointer transition-colors" onClick={() => setSelected(selected?.id === m.id ? null : m)}>
                       <td className="px-4 py-3">
-                        <div className="font-medium text-slate-900 dark:text-white">{m.name}</div>
-                        <div className="text-[11px] text-slate-400 font-mono">{m.id} · {m.version}</div>
+                        <div className="font-medium text-[hsl(var(--text-1))]">{m.name}</div>
+                        <div className="text-[11px] text-[hsl(var(--text-4))] font-mono">{m.id} · {m.version}</div>
                       </td>
-                      <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{m.provider}</td>
+                      <td className="px-4 py-3 text-[hsl(var(--text-2))]">{m.provider}</td>
                       <td className="px-4 py-3"><span className={`text-[10px] font-medium px-2 py-0.5 rounded ${riskColors[m.riskTier]}`}>{m.riskTier.toUpperCase()}</span></td>
                       <td className="px-4 py-3"><span className={`flex items-center gap-1.5 text-xs font-medium ${sc.color}`}><Icon size={12} />{m.status}</span></td>
                       <td className={`px-4 py-3 font-mono font-bold text-xs ${trustColor(m.trustScore)}`}>{m.trustScore.toFixed(4)}</td>
-                      <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">{m.dataClassification}</td>
-                      <td className="px-4 py-3 text-xs font-mono text-slate-600 dark:text-slate-300">{m.requests24h > 0 ? m.requests24h.toLocaleString() : "—"}</td>
-                      <td className="px-4 py-3 text-xs text-slate-400">{m.lastAudit}</td>
-                      <td className="px-4 py-3"><ExternalLink size={12} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" /></td>
+                      <td className="px-4 py-3 text-xs text-[hsl(var(--text-3))]">{m.dataClassification}</td>
+                      <td className="px-4 py-3 text-xs font-mono text-[hsl(var(--text-2))]">{m.requests24h > 0 ? m.requests24h.toLocaleString() : "—"}</td>
+                      <td className="px-4 py-3 text-xs text-[hsl(var(--text-4))]">{m.lastAudit}</td>
+                      <td className="px-4 py-3"><ExternalLink size={12} className="text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-2))]" /></td>
                     </tr>
                   );
                 })}
@@ -218,7 +217,7 @@ export default function ModelInventory() {
               </tbody>
             </table>
           </div>
-          <div className="flex items-center justify-between px-4 py-3 text-xs text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-700">
+          <div className="flex items-center justify-between px-4 py-3 text-xs text-[hsl(var(--text-3))] border-t border-[hsl(var(--border))]">
             <span>Showing {filtered.length} of {data.length} models</span>
             <span>{data.filter(m => m.requests24h > 0).reduce((s, m) => s + m.requests24h, 0).toLocaleString()} total requests (24h)</span>
           </div>
@@ -227,10 +226,10 @@ export default function ModelInventory() {
 
       {/* Detail Panel */}
       {selected && (
-        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+        <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Package size={14} className="text-blue-500" />
+              <Package size={14} className="text-[hsl(var(--s-in-tx))]" />
               {selected.name} — Detail View
             </CardTitle>
           </CardHeader>
@@ -247,8 +246,8 @@ export default function ModelInventory() {
                 { label: "Version", value: selected.version },
               ].map((d, i) => (
                 <div key={i}>
-                  <p className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-medium">{d.label}</p>
-                  <p className="text-sm font-medium text-slate-800 dark:text-slate-200 mt-0.5">{d.value}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-[hsl(var(--text-4))] font-medium">{d.label}</p>
+                  <p className="text-sm font-medium text-[hsl(var(--text-1))] mt-0.5">{d.value}</p>
                 </div>
               ))}
             </div>
