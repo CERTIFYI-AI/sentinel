@@ -9,6 +9,7 @@ import {
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
+import Breadcrumbs from '../components/Breadcrumbs';
 import { Input } from '../components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/sheet';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
@@ -689,7 +690,8 @@ export default function PromptRegistry() {
   return (
     <div className="flex flex-col h-full bg-[hsl(var(--bg-page))]">
       {/* Page Header */}
-      <div className="px-6 py-4 border-b border-[hsl(var(--border))] bg-surface flex-shrink-0">
+      <div className="px-6 py-3 border-b border-[hsl(var(--border))] bg-surface flex-shrink-0">
+        <Breadcrumbs className="mb-2" />
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-[hsl(var(--brand-subtle))] flex items-center justify-center">

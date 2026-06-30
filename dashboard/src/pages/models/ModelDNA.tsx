@@ -13,7 +13,7 @@ import {
 } from '@phosphor-icons/react';
 import { MODELS } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
-import Breadcrumbs from '../../components/Breadcrumbs';
+import { PageHeader } from '../../components/ui/PageHeader';
 
 /* ─── Extend seed MODELS with DNA data ────────────────────────────────── */
 const DNA_EXTRA: Record<string, {
@@ -191,48 +191,37 @@ export default function ModelDNA() {
   }, [model]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <Breadcrumbs />
-
-      {/* ── Header ── */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: 'hsl(var(--text-1))', margin: 0 }}>Model DNA & Provenance Chain</h1>
-            <Badge style={{ borderRadius: 0, fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', border: '1px solid hsl(var(--s-ok-br))' }}>
-              ✓ CRYPTOGRAPHIC INTEGRITY
-            </Badge>
-          </div>
-          <p style={{ fontSize: 13, color: 'hsl(var(--text-4))', margin: 0 }}>
-            {orgName} · Immutable fingerprinting, training lineage provenance, and tamper-evident audit chain
-          </p>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          <Select value={selectedModelId} onValueChange={setSelectedModelId}>
-            <SelectTrigger style={{ width: 220, borderRadius: 0 }}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent style={{ borderRadius: 0 }}>
-              {MODEL_DNA_LIST.map(m => (
-                <SelectItem key={m.id} value={m.id}>
-                  <span style={{ fontFamily: 'monospace', fontSize: 11 }}>{m.id}</span>
-                  {' — '}
-                  <span style={{ fontSize: 12 }}>{m.name}</span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button
-            variant="outline"
-            size="sm"
-            style={{ borderRadius: 0 }}
-            onClick={() => toast.success(`Integrity certificate for ${model.name} downloaded`)}
-          >
-            <DownloadSimple size={13} style={{ marginRight: 4 }} />
-            Export Certificate
-          </Button>
-        </div>
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <PageHeader
+        title="Model DNA & Provenance Chain"
+        subtitle={`${orgName} · Immutable fingerprinting, training lineage provenance, and tamper-evident audit chain`}
+        badge={
+          <Badge style={{ borderRadius: 0, fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', border: '1px solid hsl(var(--s-ok-br))' }}>
+            ✓ CRYPTOGRAPHIC INTEGRITY
+          </Badge>
+        }
+        actions={
+          <>
+            <Select value={selectedModelId} onValueChange={setSelectedModelId}>
+              <SelectTrigger style={{ width: 220, borderRadius: 0 }}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent style={{ borderRadius: 0 }}>
+                {MODEL_DNA_LIST.map(m => (
+                  <SelectItem key={m.id} value={m.id}>
+                    <span style={{ fontFamily: 'monospace', fontSize: 11 }}>{m.id}</span>
+                    {' — '}
+                    <span style={{ fontSize: 12 }}>{m.name}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="sm" leftIcon={<DownloadSimple size={13} />} onClick={() => toast.success(`Integrity certificate for ${model.name} downloaded`)}>
+              Export Certificate
+            </Button>
+          </>
+        }
+      />
 
       {/* ── KPI Tiles ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
