@@ -1,3 +1,8 @@
+## <small>1.2.4 (2026-06-30)</small>
+
+* fix: harden task status rendering against unknown/partial rows ([81a4f52](https://github.com/CERTIFYI-AI/sentinel/commit/81a4f52))
+* chore(dashboard): point .env.example at the production Supabase project ([150b20e](https://github.com/CERTIFYI-AI/sentinel/commit/150b20e))
+
 ## <small>1.2.3 (2026-06-30)</small>
 
 * fix(tasks): stop /tasks crash on unknown task status (ERR-ED673D root cause) ([7e531cb](https://github.com/CERTIFYI-AI/sentinel/commit/7e531cb))
