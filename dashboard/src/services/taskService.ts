@@ -2,6 +2,20 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
 const TENANT_ID = 'default'
 
+// Canonical task statuses the UI knows how to render. Anything the DB returns
+// that falls outside this set is normalised so a stray/legacy value can never
+// reach a status→style lookup and crash a render.
+const KNOWN_TASK_STATUSES = new Set(['todo', 'in_progress', 'review', 'done', 'overdue', 'blocked'])
+function normalizeStatus(raw: unknown): string {
+  if (typeof raw !== 'string' || !raw) return 'todo'
+  const s = raw.trim().toLowerCase().replace(/[\s-]+/g, '_') // "In Progress"/"in-progress" → "in_progress"
+  if (KNOWN_TASK_STATUSES.has(s)) return s
+  if (s === 'completed' || s === 'complete' || s === 'closed') return 'done'
+  if (s === 'in_review' || s === 'reviewing') return 'review'
+  if (s === 'pending' || s === 'new' || s === 'open') return 'todo'
+  return 'todo'
+}
+
 export async function fetchAllTasks(filters: Record<string,any> = {}): Promise<any[]> {
   if (!isSupabaseConfigured() || !supabase) return []
   try {
@@ -21,7 +35,7 @@ export async function fetchAllTasks(filters: Record<string,any> = {}): Promise<a
       description: row.description ?? '',
       source: row.source ?? '',
       dueDate: row.due_date ?? row.dueDate ?? '',
-      status: row.status ?? 'todo',
+      status: normalizeStatus(row.status),
       priority: row.priority ?? 'medium',
     }))
   } catch (e) { return [] }

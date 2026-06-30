@@ -329,7 +329,7 @@ function SortableCard({
 }
 
 function StatusBadge({ status }: { status: TaskStatus }) {
-  const c = statusConfig[status];
+  const c = statusCfg(status);
   return (
     <Badge style={{ background: c.bg, color: c.text, border: `1px solid ${c.border}`, borderRadius: 0, fontSize: 10, fontWeight: 600 }}>
       {c.label}
