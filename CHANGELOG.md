@@ -1,3 +1,9 @@
+## <small>1.2.3 (2026-06-30)</small>
+
+* fix(tasks): stop /tasks crash on unknown task status (ERR-ED673D root cause) ([7e531cb](https://github.com/CERTIFYI-AI/sentinel/commit/7e531cb))
+* docs: correct README to match real repo + remove dead/deprecated files ([5a11f3a](https://github.com/CERTIFYI-AI/sentinel/commit/5a11f3a)), closes [#368F4D](https://github.com/CERTIFYI-AI/sentinel/issues/368F4D) [#6d28d9](https://github.com/CERTIFYI-AI/sentinel/issues/6d28d9)
+* docs: fix factual errors found while reviewing the docs tree ([8c72f76](https://github.com/CERTIFYI-AI/sentinel/commit/8c72f76))
+
 ## <small>1.2.2 (2026-06-30)</small>
 
 * fix(ui): eliminate '.bg' crash with safe color lookups + enterprise error boundary ([bcab82e](https://github.com/CERTIFYI-AI/sentinel/commit/bcab82e))
