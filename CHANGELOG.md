@@ -1,3 +1,7 @@
+## <small>1.2.1 (2026-06-30)</small>
+
+* fix(ui): consistent icon–text spacing and alignment across all buttons ([19bbf72](https://github.com/CERTIFYI-AI/sentinel/commit/19bbf72))
+
 ## 1.2.0 (2026-06-30)
 
 * feat(ui): Phase 2/3 — replace hardcoded hex colors with design tokens across 127 pages ([bf67b49](https://github.com/CERTIFYI-AI/sentinel/commit/bf67b49)), closes [#ef4444](https://github.com/CERTIFYI-AI/sentinel/issues/ef4444) [#f97316](https://github.com/CERTIFYI-AI/sentinel/issues/f97316) [#10b981](https://github.com/CERTIFYI-AI/sentinel/issues/10b981) [#22c55e](https://github.com/CERTIFYI-AI/sentinel/issues/22c55e) [#3b82f6](https://github.com/CERTIFYI-AI/sentinel/issues/3b82f6)
