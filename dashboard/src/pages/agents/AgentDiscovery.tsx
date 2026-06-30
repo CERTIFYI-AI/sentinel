@@ -152,13 +152,13 @@ export default function AgentDiscovery() {
           <Button variant="outline" onClick={handleScan} disabled={scanning}
             style={{ borderRadius: 0 }}>
             {scanning ? (
-              <><CircleNotch className="h-4 w-4 mr-2 animate-spin" />Scanning...</>
+              <><CircleNotch className="h-4 w-4 animate-spin" />Scanning...</>
             ) : (
-              <><Scan className="h-4 w-4 mr-2" />Scan Network</>
+              <><Scan className="h-4 w-4" />Scan Network</>
             )}
           </Button>
           <Button onClick={() => setRegisterOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-            <Plus className="h-4 w-4 mr-2" />Register Agent
+            <Plus className="h-4 w-4" />Register Agent
           </Button>
         </div>
       </div>
@@ -272,20 +272,20 @@ export default function AgentDiscovery() {
                                   <>
                                     <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-destructive"
                                       onClick={() => setQuarantineTarget(a)}>
-                                      <Prohibit size={12} className="mr-1" />Quarantine
+                                      <Prohibit size={12} />Quarantine
                                     </Button>
                                     <Button variant="ghost" size="sm" className="h-7 px-2 text-xs"
                                       style={{ color: 'hsl(var(--s-wn-tx))' }}
                                       onClick={() => handleRaiseIncident(a)}>
-                                      <Siren size={12} className="mr-1" />Incident
+                                      <Siren size={12} />Incident
                                     </Button>
                                     <Button variant="ghost" size="sm" className="h-7 px-2 text-xs"
                                       onClick={() => handleRequestOwnership(a)}>
-                                      <Lightning size={12} className="mr-1" />Ownership
+                                      <Lightning size={12} />Ownership
                                     </Button>
                                     <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-green-600 dark:text-green-400"
                                       onClick={() => handleWhitelist(a)}>
-                                      <CheckCircle size={12} className="mr-1" />Whitelist
+                                      <CheckCircle size={12} />Whitelist
                                     </Button>
                                   </>
                                 ) : (
@@ -562,7 +562,7 @@ function RegisterAgentForm({ onSubmit, nextId }: { onSubmit: (a: Agent) => void;
       <div className="flex justify-end gap-2 pt-2">
         <Button disabled={!canSubmit} onClick={handleSubmit}
           style={{ borderRadius: 0, background: canSubmit ? 'hsl(var(--brand))' : undefined, color: canSubmit ? 'hsl(var(--bg-surface))' : undefined }}>
-          <Plus size={14} className="mr-1" />Register Agent
+          <Plus size={14} />Register Agent
         </Button>
       </div>
     </div>

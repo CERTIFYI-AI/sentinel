@@ -182,7 +182,7 @@ export default function DPIAPage() {
           <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>GDPR Article 35 — required for high-risk AI processing of personal data</p>
         </div>
         <Button onClick={() => { resetWizard(); setWizardOpen(true); }} style={{ borderRadius: 0 }}>
-          <Plus size={15} className="mr-1.5" /> Start DPIA
+          <Plus size={15} /> Start DPIA
         </Button>
       </div>
 
@@ -549,7 +549,7 @@ export default function DPIAPage() {
               {step > 1 ? 'Back' : 'Cancel'}
             </Button>
             {step < 5 ? (
-              <Button style={{ borderRadius: 0 }} onClick={() => setStep(s => s + 1)}>Next <ArrowRight size={14} className="ml-1" /></Button>
+              <Button style={{ borderRadius: 0 }} onClick={() => setStep(s => s + 1)}>Next <ArrowRight size={14} /></Button>
             ) : (
               <Button style={{ borderRadius: 0 }} onClick={submitWizard}>Submit DPIA</Button>
             )}

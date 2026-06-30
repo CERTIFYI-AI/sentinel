@@ -185,7 +185,7 @@ export default function ConformityAssessment() {
           <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>ISO 42001 Clause 9 and EU AI Act Annex IV assessment management</p>
         </div>
         <Button onClick={handleStartNew} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-          <Plus size={14} className="mr-2" />Start New Assessment
+          <Plus size={14} />Start New Assessment
         </Button>
       </div>
 
@@ -266,7 +266,7 @@ export default function ConformityAssessment() {
                   style={{ borderRadius: 0, background: ca.status === 'Complete' ? 'transparent' : 'hsl(var(--brand))', color: ca.status === 'Complete' ? 'hsl(var(--brand))' : 'hsl(var(--bg-surface))', border: ca.status === 'Complete' ? '1px solid hsl(var(--brand))' : 'none' }}
                 >
                   {ca.status === 'Complete' ? 'View Report' : 'Continue Assessment'}
-                  <ArrowRight size={12} className="ml-1" />
+                  <ArrowRight size={12} />
                 </Button>
               </CardContent>
             </Card>
@@ -398,17 +398,17 @@ export default function ConformityAssessment() {
                         onClick={() => setActiveStep(prev => Math.max(0, prev - 1))}
                         style={{ borderRadius: 0 }}
                       >
-                        <ArrowLeft size={12} className="mr-1" />Previous Step
+                        <ArrowLeft size={12} />Previous Step
                       </Button>
                       <div className="flex items-center gap-2">
                         {!step.complete && (
                           <Button onClick={() => handleMarkComplete(step.id)} style={{ borderRadius: 0, background: 'hsl(var(--s-ok-tx))', color: 'hsl(var(--bg-surface))' }}>
-                            <Check size={12} className="mr-1" />Mark Complete
+                            <Check size={12} />Mark Complete
                           </Button>
                         )}
                         {activeStep < selectedCA.steps.length - 1 ? (
                           <Button onClick={() => setActiveStep(prev => Math.min(selectedCA.steps.length - 1, prev + 1))} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-                            Next Step<ArrowRight size={12} className="ml-1" />
+                            Next Step<ArrowRight size={12} />
                           </Button>
                         ) : null}
                       </div>
@@ -420,7 +420,7 @@ export default function ConformityAssessment() {
               {/* Generate PDF */}
               <div className="mt-6 pt-4" style={{ borderTop: '1px solid hsl(var(--border))' }}>
                 <Button onClick={handleGeneratePDF} className="w-full" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-                  <FileText size={14} className="mr-2" />Generate Conformity Declaration PDF
+                  <FileText size={14} />Generate Conformity Declaration PDF
                 </Button>
               </div>
             </>

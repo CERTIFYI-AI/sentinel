@@ -75,7 +75,7 @@ export default function UseCaseDetail() {
           <RiskBadge riskClass={uc.riskClass} />
           <div className="ml-auto flex gap-2">
             <Button variant="outline" size="sm" style={{ borderRadius: 0 }}>
-              <DownloadSimple size={14} className="mr-2" /> Export PDF
+              <DownloadSimple size={14} /> Export PDF
             </Button>
             <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
               Submit for Review
@@ -244,7 +244,7 @@ export default function UseCaseDetail() {
             <div className="bg-surface border border-[hsl(var(--border))]">
               <div className="p-4 border-b border-[hsl(var(--border))] flex justify-between items-center">
                 <h3 className="font-semibold">Risk Register</h3>
-                <Button size="sm" style={{ borderRadius: 0 }}><Plus size={14} className="mr-2" /> Log Risk</Button>
+                <Button size="sm" style={{ borderRadius: 0 }}><Plus size={14} /> Log Risk</Button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -287,7 +287,7 @@ export default function UseCaseDetail() {
             <div className="bg-surface border border-[hsl(var(--border))]">
               <div className="p-4 border-b border-[hsl(var(--border))] flex justify-between items-center">
                 <h3 className="font-semibold">Linked Models ({linkedModels.length})</h3>
-                <Button size="sm" variant="outline" style={{ borderRadius: 0 }}><Briefcase size={14} className="mr-2" /> Link Existing Model</Button>
+                <Button size="sm" variant="outline" style={{ borderRadius: 0 }}><Briefcase size={14} /> Link Existing Model</Button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">

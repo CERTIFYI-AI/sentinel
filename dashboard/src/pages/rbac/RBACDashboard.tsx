@@ -141,7 +141,7 @@ export default function RBACDashboard() {
           <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} · RBAC management, roles, users &amp; audit log</p>
         </div>
         <Button onClick={() => setAddUserOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-          <UserPlus className="h-4 w-4 mr-2" weight="bold" />Add User
+          <UserPlus className="h-4 w-4" weight="bold" />Add User
         </Button>
       </div>
 
@@ -183,7 +183,7 @@ export default function RBACDashboard() {
               style={{ borderRadius: 0, background: 'hsl(0 72% 51%)', color: 'hsl(var(--bg-surface))', flexShrink: 0 }}
               onClick={() => setMfaDialogOpen(true)}
             >
-              <Warning size={13} className="mr-1" weight="bold" />
+              <Warning size={13} weight="bold" />
               Enforce MFA for All Users
             </Button>
           </div>
@@ -255,7 +255,7 @@ export default function RBACDashboard() {
                       </td>
                       <td className="px-4 py-3">
                         <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => { setSelectedRole(r); setRoleSheetOpen(true); }}>
-                          <Eye size={13} className="mr-1" />View
+                          <Eye size={13} />View
                         </Button>
                       </td>
                     </tr>

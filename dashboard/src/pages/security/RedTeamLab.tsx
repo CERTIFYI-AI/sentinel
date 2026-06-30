@@ -248,10 +248,10 @@ export default function RedTeamLab() {
         actions={
           <>
             <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => { setFormEx({ ...EMPTY_EXERCISE }); setCreateOpen(true); }}>
-              <Plus size={14} className="mr-2" />Create Exercise
+              <Plus size={14} />Create Exercise
             </Button>
             <Button style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: 'hsl(var(--bg-surface))' }}>
-              <Lightning size={14} className="mr-2" />Launch Campaign
+              <Lightning size={14} />Launch Campaign
             </Button>
           </>
         }
@@ -271,7 +271,7 @@ export default function RedTeamLab() {
           icon={<Sword size={32} weight="duotone" />}
           title="No Red Team campaigns yet"
           description="Create your first test to track adversarial evaluations, jailbreak tests, and attack scenarios."
-          action={<Button onClick={() => setCreateOpen(true)}><Plus size={14} className="mr-2" />Create Exercise</Button>}
+          action={<Button onClick={() => setCreateOpen(true)}><Plus size={14} />Create Exercise</Button>}
         />
       ) : (
       <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
@@ -401,7 +401,7 @@ export default function RedTeamLab() {
               onClick={handleCreate}
               disabled={!formEx.name.trim()}
             >
-              <Plus size={14} className="mr-2" />Create Exercise
+              <Plus size={14} />Create Exercise
             </Button>
           </DialogFooter>
         </DialogContent>

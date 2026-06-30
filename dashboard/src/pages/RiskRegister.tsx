@@ -538,7 +538,7 @@ export default function RiskRegister() {
                   onClick={() => toggleView('list')}
                   style={{ borderRadius: 0, height: 32 }}
                 >
-                  <ListBullets size={14} className="mr-1" />List
+                  <ListBullets size={14} />List
                 </Button>
                 <Button
                   variant={viewMode === 'matrix' ? 'default' : 'ghost'}
@@ -546,14 +546,14 @@ export default function RiskRegister() {
                   onClick={() => toggleView('matrix')}
                   style={{ borderRadius: 0, height: 32 }}
                 >
-                  <GridFour size={14} className="mr-1" />Matrix
+                  <GridFour size={14} />Matrix
                 </Button>
               </div>
               <Button variant="outline" onClick={() => exportCsv(risks, 'risks.csv')} style={{ borderRadius: 0 }}>
                 Export CSV
               </Button>
               <Button onClick={() => setAddOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-                <Plus size={14} className="mr-1" />Add Risk
+                <Plus size={14} />Add Risk
               </Button>
             </div>
           }
@@ -1051,7 +1051,7 @@ export default function RiskRegister() {
                         style={{ borderRadius: 0 }}
                         onClick={() => { setPendingCtrlId(''); setAddMappingOpen(true); }}
                       >
-                        <Plus size={12} className="mr-1" />Add Mapping
+                        <Plus size={12} />Add Mapping
                       </Button>
                     </div>
                     {/* Control table */}
@@ -1093,7 +1093,7 @@ export default function RiskRegister() {
                           style={{ borderRadius: 0 }}
                           onClick={() => { setPendingCtrlId(''); setAddMappingOpen(true); }}
                         >
-                          <Plus size={12} className="mr-1" />Add Mapping
+                          <Plus size={12} />Add Mapping
                         </Button>
                       </div>
                     )}

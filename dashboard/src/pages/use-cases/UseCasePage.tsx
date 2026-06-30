@@ -172,13 +172,13 @@ export default function UseCasePage() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => toast('Exported to CSV', 'success')}>
-            <DownloadSimple size={14} className="mr-2" />Export
+            <DownloadSimple size={14} />Export
           </Button>
           <Button variant="outline" style={{ borderRadius: 0 }}>
-            <Upload size={14} className="mr-2" />Import
+            <Upload size={14} />Import
           </Button>
           <Button onClick={() => navigate('/use-cases/new')} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-            <Plus size={14} className="mr-2" />New Use Case
+            <Plus size={14} />New Use Case
           </Button>
         </div>
       </div>
@@ -240,7 +240,7 @@ export default function UseCasePage() {
           </SelectContent>
         </Select>
         <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => toast('Column visibility updated', 'info')}>
-          <SquaresFour size={14} className="mr-2" /> Columns
+          <SquaresFour size={14} /> Columns
         </Button>
       </div>
 
@@ -275,7 +275,7 @@ export default function UseCasePage() {
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/use-cases/${uc.id}`); }} style={{ padding: '4px 8px', height: 'auto' }}>
-                          <Eye size={14} className="mr-1" /> View
+                          <Eye size={14} /> View
                         </Button>
                         <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setDeleteTarget(uc); }} style={{ padding: '4px 8px', height: 'auto', color: 'hsl(var(--s-er-tx))' }}>
                           <Trash size={14} />

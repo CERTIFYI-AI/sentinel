@@ -120,7 +120,7 @@ export default function System() {
 
       <Card><CardContent className="p-0">
         {sp.paged.length === 0 ? (
-          <EmptyState icon={<Gear size={32} className="text-[hsl(var(--brand))]" />} title="No integrations configured" description="Add an integration to connect external systems." action={<Button size="sm" onClick={() => { setForm(EMPTY); setModal("create"); }}><Plus size={14} className="mr-1" />Add Integration</Button>} />
+          <EmptyState icon={<Gear size={32} className="text-[hsl(var(--brand))]" />} title="No integrations configured" description="Add an integration to connect external systems." action={<Button size="sm" onClick={() => { setForm(EMPTY); setModal("create"); }}><Plus size={14} />Add Integration</Button>} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

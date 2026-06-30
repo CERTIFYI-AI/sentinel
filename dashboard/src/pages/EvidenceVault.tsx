@@ -236,10 +236,10 @@ export default function EvidenceVault() {
         actions={
           <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={handleExportPackage} style={{ borderRadius: 0 }}>
-              <Export size={14} className="mr-1" /> Export Package
+              <Export size={14} /> Export Package
             </Button>
             <Button size="sm" onClick={() => { setFormData(EMPTY_EVIDENCE); setUploadOpen(true); }} style={{ borderRadius: 0 }}>
-              <UploadSimple size={14} className="mr-1" /> Upload Evidence
+              <UploadSimple size={14} /> Upload Evidence
             </Button>
           </div>
         }
@@ -308,11 +308,11 @@ export default function EvidenceVault() {
               </div>
             )}
             <Button size="sm" onClick={handleVerifyChain} disabled={verifying} style={{ borderRadius: 0 }}>
-              {verifying ? <Spinner size={14} className="mr-1 animate-spin" /> : <ArrowsClockwise size={14} className="mr-1" />}
+              {verifying ? <Spinner size={14} className="animate-spin" /> : <ArrowsClockwise size={14} />}
               {verifying ? 'Verifying…' : 'Run Integrity Verification'}
             </Button>
             <Button size="sm" variant="outline" style={{ borderRadius: 0 }}>
-              <Certificate size={14} className="mr-1" /> Generate Audit Certificate
+              <Certificate size={14} /> Generate Audit Certificate
             </Button>
           </div>
         </div>
@@ -375,7 +375,7 @@ export default function EvidenceVault() {
                       <span className="font-mono">SHA-256 signed</span>
                     </div>
                     <div className="flex items-center gap-2 pt-3 mt-2" style={{ borderTop: '1px solid hsl(var(--border))' }} onClick={ev => ev.stopPropagation()}>
-                      <Button size="sm" variant="ghost" style={{ padding: '3px 8px', fontSize: 11, borderRadius: 0 }}><Download size={12} className="mr-1" /> Download</Button>
+                      <Button size="sm" variant="ghost" style={{ padding: '3px 8px', fontSize: 11, borderRadius: 0 }}><Download size={12} /> Download</Button>
                       <Button size="sm" variant="ghost" style={{ padding: '3px 8px', fontSize: 11, borderRadius: 0, color: 'hsl(var(--s-er-tx))' }} onClick={() => setDeleteItem(e)}><Trash size={12} /></Button>
                     </div>
                   </CardContent>
@@ -477,7 +477,7 @@ export default function EvidenceVault() {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" style={{ borderRadius: 0 }}><Download size={14} className="mr-1" /> Download</Button>
+            <Button variant="outline" style={{ borderRadius: 0 }}><Download size={14} /> Download</Button>
             <Button variant="outline" onClick={() => setViewItem(null)} style={{ borderRadius: 0 }}>Close</Button>
           </DialogFooter>
         </DialogContent>
@@ -512,7 +512,7 @@ export default function EvidenceVault() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setUploadOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
             <Button onClick={handleUpload} disabled={!formData.title} style={{ borderRadius: 0 }}>
-              <UploadSimple size={14} className="mr-1" /> Upload & Sign
+              <UploadSimple size={14} /> Upload & Sign
             </Button>
           </DialogFooter>
         </DialogContent>

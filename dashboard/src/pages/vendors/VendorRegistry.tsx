@@ -227,13 +227,13 @@ export default function VendorRegistry() {
         actions={
           <div className="flex gap-2">
             <Button variant="outline" onClick={handleExport} style={{ borderRadius: 0 }}>
-              <Export className="h-4 w-4 mr-2" />Export CSV
+              <Export className="h-4 w-4" />Export CSV
             </Button>
             <Button
               onClick={() => setAddOpen(true)}
               style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
             >
-              <Plus className="h-4 w-4 mr-2" />Add Vendor
+              <Plus className="h-4 w-4" />Add Vendor
             </Button>
           </div>
         }
@@ -579,10 +579,10 @@ export default function VendorRegistry() {
                       <div className="flex gap-2">
                         <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
                           onClick={() => toast('DPA request sent to ' + selectedVendor.contact, 'info')}>
-                          <Handshake size={14} className="mr-1" />Request DPA
+                          <Handshake size={14} />Request DPA
                         </Button>
                         <Button size="sm" variant="outline" style={{ borderRadius: 0 }}>
-                          <CloudArrowUp size={14} className="mr-1" />Upload Document
+                          <CloudArrowUp size={14} />Upload Document
                         </Button>
                       </div>
                     </>
@@ -769,7 +769,7 @@ function AddVendorForm({ onSubmit, nextId }: { onSubmit: (v: Vendor) => void; ne
           onClick={handleSubmit}
           style={{ borderRadius: 0, background: canSubmit ? 'hsl(var(--brand))' : undefined, color: canSubmit ? 'hsl(var(--bg-surface))' : undefined }}
         >
-          <Plus size={14} className="mr-1" />Add Vendor
+          <Plus size={14} />Add Vendor
         </Button>
       </div>
     </div>

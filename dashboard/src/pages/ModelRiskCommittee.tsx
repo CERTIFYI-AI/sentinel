@@ -201,7 +201,7 @@ export default function ModelRiskCommittee() {
                 SR 11-7 COMPLIANT
               </Badge>
               <Button className="rounded-none bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-hover))]" onClick={() => setScheduleOpen(true)}>
-                <Calendar size={16} className="mr-2" />Schedule MRC Meeting
+                <Calendar size={16} />Schedule MRC Meeting
               </Button>
             </div>
           }
@@ -301,7 +301,7 @@ export default function ModelRiskCommittee() {
                       {item.status === 'pending' && (
                         <Button size="sm" className="rounded-none bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-hover))]"
                           onClick={() => { setVoteDialog(item); setVote('approve'); }}>
-                          <Gavel size={16} className="mr-2" />Cast Vote
+                          <Gavel size={16} />Cast Vote
                         </Button>
                       )}
                     </div>
@@ -569,7 +569,7 @@ export default function ModelRiskCommittee() {
               vote === 'reject' ? 'bg-red-600 hover:bg-red-700' :
               'bg-yellow-600 hover:bg-yellow-700'
             }`} onClick={castVote}>
-              <Gavel size={16} className="mr-2" />Submit Vote
+              <Gavel size={16} />Submit Vote
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -620,7 +620,7 @@ export default function ModelRiskCommittee() {
               toast.success(`MRC ${mtgType} scheduled for ${mtgDate} at ${mtgTime} — calendar invites sending to ${MRC_MEMBERS.filter(m => m.quorum).length} quorum members`);
               setScheduleOpen(false);
             }}>
-              <Calendar size={16} className="mr-2" />Schedule Meeting
+              <Calendar size={16} />Schedule Meeting
             </Button>
           </DialogFooter>
         </DialogContent>

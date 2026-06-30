@@ -89,7 +89,7 @@ export default function CisoDashboard() {
           </p>
         </div>
         <Button size="sm" onClick={() => navigate('/ciso/report')} style={{ borderRadius: 0 }}>
-          <ChartBar size={14} className="mr-1" /> Board Report
+          <ChartBar size={14} /> Board Report
         </Button>
       </div>
 

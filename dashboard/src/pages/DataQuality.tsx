@@ -186,7 +186,7 @@ export default function DataQuality() {
           <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>EU AI Act Article 10 — validate training data for high-risk AI systems</p>
         </div>
         <Button onClick={() => setCreateOpen(true)} style={{ borderRadius: 0 }}>
-          <Plus size={15} className="mr-1.5" /> Run Assessment
+          <Plus size={15} /> Run Assessment
         </Button>
       </div>
 

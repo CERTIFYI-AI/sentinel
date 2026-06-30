@@ -119,7 +119,7 @@ export default function TrustEngine() {
 
       <Card><CardContent className="p-0">
         {sp.paged.length === 0 ? (
-          <EmptyState icon={<Certificate size={32} className="text-[hsl(var(--brand))]" />} title="No trust evaluations" description="Run a trust evaluation to assess your AI system's trustworthiness." action={<Button size="sm" onClick={() => { setForm(EMPTY); setModal("create"); }}><Plus size={14} className="mr-1" />New Evaluation</Button>} />
+          <EmptyState icon={<Certificate size={32} className="text-[hsl(var(--brand))]" />} title="No trust evaluations" description="Run a trust evaluation to assess your AI system's trustworthiness." action={<Button size="sm" onClick={() => { setForm(EMPTY); setModal("create"); }}><Plus size={14} />New Evaluation</Button>} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

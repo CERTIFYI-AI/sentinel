@@ -222,10 +222,10 @@ export default function ThreatFeed() {
         actions={
           <div className="flex items-center gap-3">
             <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setImportOpen(true)}>
-              <Upload size={14} className="mr-2" />Import Threat Feed
+              <Upload size={14} />Import Threat Feed
             </Button>
             <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={() => setAddOpen(true)}>
-              <Plus size={14} className="mr-2" />Add Threat
+              <Plus size={14} />Add Threat
             </Button>
           </div>
         }
@@ -541,7 +541,7 @@ export default function ThreatFeed() {
               toast(`Importing ${importFormat} feed from ${importUrl.slice(0, 40)}…`, 'info');
               setImportOpen(false); setImportUrl('');
             }}>
-              <Upload size={14} className="mr-2" />Start Import
+              <Upload size={14} />Start Import
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -608,7 +608,7 @@ export default function ThreatFeed() {
               setAddOpen(false);
               setAddForm({ name: '', category: 'Adversarial ML', severity: 'high', description: '', source: '' });
             }}>
-              <Plus size={14} className="mr-2" />Add Threat
+              <Plus size={14} />Add Threat
             </Button>
           </DialogFooter>
         </DialogContent>

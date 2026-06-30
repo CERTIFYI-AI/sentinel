@@ -63,7 +63,7 @@ export default function BiasAuditResults() {
         <Warning size={48} style={{ color: 'hsl(var(--r-hi-tx))' }} />
         <p className="mt-4 text-lg font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Bias audit not found</p>
         <Button className="mt-4" onClick={() => navigate('/bias-audits')} style={{ borderRadius: 0 }}>
-          <ArrowLeft size={14} className="mr-1" /> Back to Bias Audits
+          <ArrowLeft size={14} /> Back to Bias Audits
         </Button>
       </div>
     );
@@ -77,7 +77,7 @@ export default function BiasAuditResults() {
   return (
     <div className="space-y-6">
       <Button variant="ghost" size="sm" onClick={() => navigate('/bias-audits')} style={{ padding: '4px 8px' }}>
-        <ArrowLeft size={14} className="mr-1" /> Back to Bias Audits
+        <ArrowLeft size={14} /> Back to Bias Audits
       </Button>
 
       {/* Failed Banner */}
@@ -91,7 +91,7 @@ export default function BiasAuditResults() {
             </p>
           </div>
           <Button size="sm" style={{ background: 'hsl(var(--s-er-tx))', color: 'white', borderRadius: 0, flexShrink: 0 }}>
-            <Plus size={14} className="mr-1" /> Create Remediation Task
+            <Plus size={14} /> Create Remediation Task
           </Button>
         </div>
       )}

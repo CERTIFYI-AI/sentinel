@@ -90,7 +90,7 @@ export default function Reporting() {
           <p className="text-muted-foreground">Generate compliance reports, audit packs, and executive summaries</p>
         </div>
         <Button onClick={() => setShowBuilder(true)} className="bg-teal-600 hover:bg-teal-700">
-          <Plus className="h-4 w-4 mr-2" /> Create Custom Report
+          <Plus className="h-4 w-4" /> Create Custom Report
         </Button>
       </div>
 
@@ -200,10 +200,10 @@ export default function Reporting() {
                   </div>
                   <div className="flex gap-2 pt-2">
                     <Button size="sm" className="flex-1 bg-teal-600 hover:bg-teal-700" onClick={() => handleGenerate(report)}>
-                      <Download className="h-3 w-3 mr-1" /> Generate
+                      <Download className="h-3 w-3" /> Generate
                     </Button>
                     <Button size="sm" variant="outline" className="flex-1" onClick={() => { setSelectedReport(report); setShowPreview(true); }}>
-                      <Eye className="h-3 w-3 mr-1" /> Preview
+                      <Eye className="h-3 w-3" /> Preview
                     </Button>
                   </div>
                 </CardContent>
@@ -306,7 +306,7 @@ export default function Reporting() {
               </div>
               <div className="flex gap-2 pt-2">
                 <Button className="flex-1 bg-teal-600 hover:bg-teal-700" onClick={() => { handleGenerate(selectedReport); setShowPreview(false); }}>
-                  <Download className="h-4 w-4 mr-2" /> Generate Now
+                  <Download className="h-4 w-4" /> Generate Now
                 </Button>
                 <Button variant="outline" className="flex-1" onClick={() => setShowPreview(false)}>Close</Button>
               </div>

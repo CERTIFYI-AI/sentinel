@@ -123,7 +123,7 @@ export default function HITLDetail() {
       <div className="p-6">
         <Link to="/hitl">
           <Button variant="outline" size="sm" style={{ borderRadius: 0 }}>
-            <ArrowLeft size={14} className="mr-1" /> Back to HITL Reviews
+            <ArrowLeft size={14} /> Back to HITL Reviews
           </Button>
         </Link>
         <div className="flex flex-col items-center justify-center py-24">
@@ -145,7 +145,7 @@ export default function HITLDetail() {
       {/* Back */}
       <Link to="/hitl">
         <Button variant="outline" size="sm" style={{ borderRadius: 0 }}>
-          <ArrowLeft size={14} className="mr-1" /> Back to HITL Reviews
+          <ArrowLeft size={14} /> Back to HITL Reviews
         </Button>
       </Link>
 

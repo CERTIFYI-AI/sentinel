@@ -127,7 +127,7 @@ export default function HitQueue() {
 
       <Card><CardContent className="p-0">
         {sp.paged.length === 0 ? (
-          <EmptyState icon={<Queue size={32} className="text-[hsl(var(--brand))]" />} title="Queue is empty" description="No items pending human review." action={<Button size="sm" onClick={() => { setForm(EMPTY); setModal("create"); }}><Plus size={14} className="mr-1" />Add to Queue</Button>} />
+          <EmptyState icon={<Queue size={32} className="text-[hsl(var(--brand))]" />} title="Queue is empty" description="No items pending human review." action={<Button size="sm" onClick={() => { setForm(EMPTY); setModal("create"); }}><Plus size={14} />Add to Queue</Button>} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

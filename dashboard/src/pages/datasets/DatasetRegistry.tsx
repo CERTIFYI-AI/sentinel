@@ -118,7 +118,7 @@ export default function DatasetRegistry() {
           <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} · AI training data governance & compliance</p>
         </div>
         <Button onClick={() => setAddOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-          <Plus className="h-4 w-4 mr-2" />Add Dataset
+          <Plus className="h-4 w-4" />Add Dataset
         </Button>
       </div>
 
@@ -610,7 +610,7 @@ function AddDatasetForm({ onSubmit, nextId }: { onSubmit: (d: Dataset) => void; 
       <div className="flex justify-end gap-2 pt-2">
         <Button disabled={!canSubmit} onClick={handleSubmit}
           style={{ borderRadius: 0, background: canSubmit ? 'hsl(var(--brand))' : undefined, color: canSubmit ? 'hsl(var(--bg-surface))' : undefined }}>
-          <Plus size={14} className="mr-1" />Add Dataset
+          <Plus size={14} />Add Dataset
         </Button>
       </div>
     </div>

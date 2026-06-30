@@ -168,7 +168,7 @@ export default function BiasAudits() {
 
       <Card><CardContent className="p-0">
         {sp.paged.length === 0 ? (
-          <EmptyState icon={<Flask size={32} className="text-[hsl(var(--brand))]" />} title="No bias audits found" description="Create your first audit to track fairness metrics." action={<Button size="sm" onClick={() => { setForm(EMPTY); setModal("create"); }}><Plus size={14} className="mr-1" />New Audit</Button>} />
+          <EmptyState icon={<Flask size={32} className="text-[hsl(var(--brand))]" />} title="No bias audits found" description="Create your first audit to track fairness metrics." action={<Button size="sm" onClick={() => { setForm(EMPTY); setModal("create"); }}><Plus size={14} />New Audit</Button>} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

@@ -114,7 +114,7 @@ export default function HitlReviews() {
 
       <Card><CardContent className="p-0">
         {sp.paged.length === 0 ? (
-          <EmptyState icon={<UserCheck size={32} className="text-[hsl(var(--brand))]" />} title="No reviews found" description="Human review records will appear here once decisions are made." action={<Button size="sm" onClick={() => { setForm(EMPTY); setModal("create"); }}><Plus size={14} className="mr-1" />New Review</Button>} />
+          <EmptyState icon={<UserCheck size={32} className="text-[hsl(var(--brand))]" />} title="No reviews found" description="Human review records will appear here once decisions are made." action={<Button size="sm" onClick={() => { setForm(EMPTY); setModal("create"); }}><Plus size={14} />New Review</Button>} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

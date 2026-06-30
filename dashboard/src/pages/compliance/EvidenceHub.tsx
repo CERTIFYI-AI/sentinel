@@ -219,7 +219,7 @@ export default function EvidenceHub() {
             {syncingAll ? 'Syncing...' : 'Sync All'}
           </Button>
           <Button size="sm" onClick={() => { setFormData(EMPTY_EVIDENCE); setCreateOpen(true); }} style={{ borderRadius: 0 }}>
-            <UploadSimple size={14} className="mr-1" /> Upload Evidence
+            <UploadSimple size={14} /> Upload Evidence
           </Button>
         </div>
       </div>
@@ -436,10 +436,10 @@ export default function EvidenceHub() {
                   </div>
                   <div className="flex gap-2 mt-6">
                     <Button size="sm" onClick={() => handleSyncItem(viewItem.id)} variant="outline" style={{ borderRadius: 0 }}>
-                      <ArrowsClockwise size={14} className="mr-1" /> Re-sync
+                      <ArrowsClockwise size={14} /> Re-sync
                     </Button>
                     <Button size="sm" onClick={() => { setEditItem({ ...viewItem }); setViewItem(null); }} style={{ borderRadius: 0 }}>
-                      <PencilSimple size={14} className="mr-1" /> Edit
+                      <PencilSimple size={14} /> Edit
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => setViewItem(null)} style={{ borderRadius: 0 }}>Close</Button>
                   </div>

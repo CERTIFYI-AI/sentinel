@@ -362,9 +362,9 @@ export default function BIA() {
             <p className="text-sm text-[hsl(var(--text-2))]">{viewItem.continuityStrategy}</p>
           </FormSection>
           <div className="flex gap-2 pt-2">
-            <Button onClick={() => openEdit(viewItem)} variant="outline" size="sm"><PencilSimple size={14} className="mr-1" />Edit</Button>
+            <Button onClick={() => openEdit(viewItem)} variant="outline" size="sm"><PencilSimple size={14} />Edit</Button>
             <Button onClick={() => toast.success("BIA report generated")} variant="outline" size="sm">Generate Report</Button>
-            <Button onClick={() => { setModal(null); setDeleteTarget(viewItem); }} variant="destructive" size="sm"><Trash size={14} className="mr-1" />Delete</Button>
+            <Button onClick={() => { setModal(null); setDeleteTarget(viewItem); }} variant="destructive" size="sm"><Trash size={14} />Delete</Button>
           </div>
         </>}
       </CrudSlideOver>

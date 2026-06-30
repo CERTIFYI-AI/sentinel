@@ -147,7 +147,7 @@ export default function KnowledgeGraph() {
             </p>
           </div>
           <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-            <ChartBar size={13} className="mr-1" />Export Graph
+            <ChartBar size={13} />Export Graph
           </Button>
         </div>
 

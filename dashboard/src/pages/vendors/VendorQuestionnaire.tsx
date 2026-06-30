@@ -189,7 +189,7 @@ export default function VendorQuestionnaire() {
         <Warning size={48} style={{ color: 'hsl(var(--r-hi-tx))' }} />
         <p className="mt-4 text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Vendor not found</p>
         <Button className="mt-4" onClick={() => navigate('/vendors')} style={{ borderRadius: 0 }}>
-          <ArrowLeft size={14} className="mr-1" /> Back
+          <ArrowLeft size={14} /> Back
         </Button>
       </div>
     );
@@ -200,7 +200,7 @@ export default function VendorQuestionnaire() {
     return (
       <div className="space-y-6">
         <Button variant="ghost" size="sm" onClick={() => navigate(`/vendors/${id}`)} style={{ padding: '4px 8px' }}>
-          <ArrowLeft size={14} className="mr-1" /> Back to Vendor
+          <ArrowLeft size={14} /> Back to Vendor
         </Button>
         <Card style={{ background: 'hsl(var(--bg-surface))', border: `2px solid ${color}` }}>
           <CardContent className="p-8 flex flex-col items-center text-center">
@@ -246,7 +246,7 @@ export default function VendorQuestionnaire() {
   return (
     <div className="space-y-6">
       <Button variant="ghost" size="sm" onClick={() => navigate(`/vendors/${id}`)} style={{ padding: '4px 8px' }}>
-        <ArrowLeft size={14} className="mr-1" /> Back to {vendor.name}
+        <ArrowLeft size={14} /> Back to {vendor.name}
       </Button>
 
       {/* Header */}
@@ -377,7 +377,7 @@ export default function VendorQuestionnaire() {
             disabled={answeredCount < QUESTIONS.length}
             style={{ borderRadius: 0 }}
           >
-            <PaperPlaneTilt size={14} className="mr-1" /> Submit Questionnaire
+            <PaperPlaneTilt size={14} /> Submit Questionnaire
           </Button>
         </CardContent>
       </Card>

@@ -94,7 +94,7 @@ export default function RegulatoryVelocity() {
           </div>
           <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
             onClick={() => toast.success('Regulatory scan triggered — results in 30s')}>
-            <Lightning size={13} className="mr-1" />Run Regulatory Scan
+            <Lightning size={13} />Run Regulatory Scan
           </Button>
         </div>
 
@@ -271,12 +271,12 @@ export default function RegulatoryVelocity() {
                         <div className="flex gap-1.5 ml-4">
                           <Button size="sm" variant="outline" className="h-7 text-[10px] px-2" style={{ borderRadius: 0 }}
                             onClick={() => toast.success('Compliance task created for this article')}>
-                            <CheckCircle size={10} className="mr-1" />Create Task
+                            <CheckCircle size={10} />Create Task
                           </Button>
                           {!change.autoMapped && (
                             <Button size="sm" className="h-7 text-[10px] px-2" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
                               onClick={() => toast.success('Auto-mapping models to this regulation…')}>
-                              <Brain size={10} className="mr-1" />Auto-Map
+                              <Brain size={10} />Auto-Map
                             </Button>
                           )}
                         </div>

@@ -158,7 +158,7 @@ export default function FallbackLog() {
             <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} — Model failover chain events and recovery tracking</p>
           </div>
           <Button variant="outline" size="sm" onClick={handleExport} style={{ borderRadius: 0 }}>
-            <Export size={14} className="mr-2" />Export
+            <Export size={14} />Export
           </Button>
         </div>
 
@@ -243,7 +243,7 @@ export default function FallbackLog() {
                         ) : entry.status === 'failed' ? (
                           <Button variant="outline" size="sm" className="h-6 text-xs px-2" style={{ borderRadius: 0, fontSize: 10 }}
                             onClick={() => handleCreateHITL(entry.id)}>
-                            <UserCircleGear size={12} className="mr-1" />Create HITL Review
+                            <UserCircleGear size={12} />Create HITL Review
                           </Button>
                         ) : (
                           <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>--</span>
@@ -358,7 +358,7 @@ export default function FallbackLog() {
                         ) : (
                           <Button size="sm" variant="outline" style={{ borderRadius: 0 }}
                             onClick={() => handleCreateHITL(selectedEntry.id)}>
-                            <UserCircleGear size={14} className="mr-1" />Create HITL Review
+                            <UserCircleGear size={14} />Create HITL Review
                           </Button>
                         )}
                       </div>

@@ -253,10 +253,10 @@ export default function AIImpactAssessments() {
         />
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => toast.success('Exported')} className="rounded-none border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:text-[hsl(var(--text-1))]">
-            <Export size={16} className="mr-2" /> Export
+            <Export size={16} /> Export
           </Button>
           <Button onClick={openCreate} className="rounded-none bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-hover))]">
-            <Plus size={16} className="mr-2" /> New Assessment
+            <Plus size={16} /> New Assessment
           </Button>
         </div>
       </div>
@@ -352,11 +352,11 @@ export default function AIImpactAssessments() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => openEdit(selected)} className="rounded-none border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:text-[hsl(var(--text-1))]"><PencilSimple size={16} className="mr-2" /> Edit</Button>
+                <Button variant="outline" size="sm" onClick={() => openEdit(selected)} className="rounded-none border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:text-[hsl(var(--text-1))]"><PencilSimple size={16} /> Edit</Button>
                 {selected.status === 'Draft' || selected.status === 'In Progress' ? (
-                  <Button size="sm" onClick={() => submitForReview(selected)} className="rounded-none bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-hover))]"><ArrowRight size={16} className="mr-2" /> Submit for Review</Button>
+                  <Button size="sm" onClick={() => submitForReview(selected)} className="rounded-none bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-hover))]"><ArrowRight size={16} /> Submit for Review</Button>
                 ) : selected.status === 'Pending Review' ? (
-                  <Button size="sm" onClick={() => approveAssessment(selected)} className="rounded-none bg-emerald-600 hover:bg-emerald-700 text-white"><CheckCircle size={16} className="mr-2" /> Approve</Button>
+                  <Button size="sm" onClick={() => approveAssessment(selected)} className="rounded-none bg-emerald-600 hover:bg-emerald-700 text-white"><CheckCircle size={16} /> Approve</Button>
                 ) : null}
                 <Button variant="ghost" size="sm" onClick={() => setSelected(null)} className="h-8 w-8 p-0 rounded-none"><X size={20} className="text-[hsl(var(--text-3))]" /></Button>
               </div>

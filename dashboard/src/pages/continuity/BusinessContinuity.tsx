@@ -556,10 +556,10 @@ export default function BusinessContinuity() {
         </div>
         <div className="flex items-center gap-2">
           <Button onClick={exportCSV} variant="outline" style={{ borderRadius: 0 }}>
-            <Export size={14} className="mr-1.5" />Export CSV
+            <Export size={14} />Export CSV
           </Button>
           <Button onClick={() => setCreateOpen(true)} style={{ borderRadius: 0 }}>
-            <Plus size={14} className="mr-1.5" />New BCP Plan
+            <Plus size={14} />New BCP Plan
           </Button>
         </div>
       </div>

@@ -311,7 +311,7 @@ export default function ToolCallMonitor() {
           <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} · Agent tool invocation tracking & authorization</p>
         </div>
         <Button variant="outline" onClick={handleExport} style={{ borderRadius: 0 }}>
-          <Export className="h-4 w-4 mr-2" />Export CSV
+          <Export className="h-4 w-4" />Export CSV
         </Button>
       </div>
 
@@ -449,13 +449,13 @@ export default function ToolCallMonitor() {
                               {(c.result === 'error' || c.result === 'timeout') && IDEMPOTENT_TOOLS.includes(c.tool) && (
                                 <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-green-600 dark:text-green-400"
                                   onClick={() => handleRetry(c)}>
-                                  <ArrowCounterClockwise size={12} className="mr-1" />Retry
+                                  <ArrowCounterClockwise size={12} />Retry
                                 </Button>
                               )}
                               {(c.result === 'blocked' || c.result === 'error') && (
                                 <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-destructive"
                                   onClick={() => handleEscalate(c)}>
-                                  <Lightning size={12} className="mr-1" />Escalate
+                                  <Lightning size={12} />Escalate
                                 </Button>
                               )}
                             </div>
@@ -581,13 +581,13 @@ export default function ToolCallMonitor() {
                 {(viewItem.result === 'error' || viewItem.result === 'timeout') && IDEMPOTENT_TOOLS.includes(viewItem.tool) && (
                   <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--s-ok-tx))', color: 'hsl(var(--bg-surface))' }}
                     onClick={() => { handleRetry(viewItem); setViewItem(null); }}>
-                    <ArrowCounterClockwise size={14} className="mr-1" />Retry
+                    <ArrowCounterClockwise size={14} />Retry
                   </Button>
                 )}
                 {(viewItem.result === 'blocked' || viewItem.result === 'error') && (
                   <Button size="sm" variant="outline" style={{ borderRadius: 0, color: 'hsl(var(--destructive))' }}
                     onClick={() => { handleEscalate(viewItem); setViewItem(null); }}>
-                    <Lightning size={14} className="mr-1" />Escalate to Incident
+                    <Lightning size={14} />Escalate to Incident
                   </Button>
                 )}
               </div>

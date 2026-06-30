@@ -179,7 +179,7 @@ export default function VendorDetail() {
         <p className="mt-4 text-lg font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Vendor not found</p>
         <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>Vendor ID &ldquo;{id}&rdquo; does not exist in the registry.</p>
         <Button className="mt-4" onClick={() => navigate('/vendors')} style={{ borderRadius: 0 }}>
-          <ArrowLeft size={14} className="mr-1" /> Back to Vendors
+          <ArrowLeft size={14} /> Back to Vendors
         </Button>
       </div>
     );
@@ -217,7 +217,7 @@ export default function VendorDetail() {
       {/* Back + Alert Banners */}
       <div>
         <Button variant="ghost" size="sm" onClick={() => navigate('/vendors')} style={{ marginBottom: 12, padding: '4px 8px' }}>
-          <ArrowLeft size={14} className="mr-1" /> Back to Vendors
+          <ArrowLeft size={14} /> Back to Vendors
         </Button>
 
         {vendor.dpaStatus === 'not_signed' && (
@@ -398,7 +398,7 @@ export default function VendorDetail() {
               {assessments.length} assessment{assessments.length !== 1 ? 's' : ''} on record for {vendor.name}
             </p>
             <Button size="sm" style={{ borderRadius: 0 }} onClick={() => toast.success('New assessment draft created')}>
-              <ClipboardText size={14} className="mr-1" /> New Assessment
+              <ClipboardText size={14} /> New Assessment
             </Button>
           </div>
 
@@ -460,7 +460,7 @@ export default function VendorDetail() {
                           </td>
                           <td className="p-3">
                             <Button size="sm" variant="ghost" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => toast.info(`Viewing assessment ${a.id}`)}>
-                              <Eye size={12} className="mr-1" /> View
+                              <Eye size={12} /> View
                             </Button>
                           </td>
                         </tr>
@@ -480,7 +480,7 @@ export default function VendorDetail() {
               {slas.length} SLA obligation{slas.length !== 1 ? 's' : ''} tracked for {vendor.name}
             </p>
             <Button size="sm" style={{ borderRadius: 0 }} onClick={() => navigate('/vendors/sla')}>
-              <ArrowSquareOut size={14} className="mr-1" /> SLA Monitor
+              <ArrowSquareOut size={14} /> SLA Monitor
             </Button>
           </div>
 
@@ -538,7 +538,7 @@ export default function VendorDetail() {
                             </td>
                             <td className="p-3">
                               <Button size="sm" variant="ghost" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => toast.info(`Viewing SLA ${s.id}`)}>
-                                <Eye size={12} className="mr-1" /> View
+                                <Eye size={12} /> View
                               </Button>
                             </td>
                           </tr>
@@ -559,7 +559,7 @@ export default function VendorDetail() {
               {openIssues.length} open · {issues.filter(i => i.status === 'mitigated' || i.status === 'closed').length} resolved
             </p>
             <Button size="sm" style={{ borderRadius: 0 }} onClick={() => toast.success('New TPRM issue created')}>
-              <Warning size={14} className="mr-1" /> Raise Issue
+              <Warning size={14} /> Raise Issue
             </Button>
           </div>
 
@@ -610,7 +610,7 @@ export default function VendorDetail() {
                           </td>
                           <td className="p-3">
                             <Button size="sm" variant="ghost" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => toast.info(`Viewing issue ${i.id}`)}>
-                              <Eye size={12} className="mr-1" /> View
+                              <Eye size={12} /> View
                             </Button>
                           </td>
                         </tr>
@@ -630,7 +630,7 @@ export default function VendorDetail() {
               {documents.filter(d => d.status === 'valid').length} valid · {missingDocs.length} gaps requiring attention
             </p>
             <Button size="sm" style={{ borderRadius: 0 }} onClick={() => { setUploadedDoc(true); toast.success('Document uploaded'); }}>
-              <UploadSimple size={14} className="mr-1" /> Upload Document
+              <UploadSimple size={14} /> Upload Document
             </Button>
           </div>
 
@@ -678,11 +678,11 @@ export default function VendorDetail() {
                         <td className="p-3">
                           {doc.status === 'valid' || doc.status === 'expiring_soon' ? (
                             <Button size="sm" variant="ghost" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => toast.success(`Downloading ${doc.type}`)}>
-                              <Download size={12} className="mr-1" /> Download
+                              <Download size={12} /> Download
                             </Button>
                           ) : (
                             <Button size="sm" variant="ghost" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => toast.info(`Request sent for ${doc.type}`)}>
-                              <UploadSimple size={12} className="mr-1" /> Request
+                              <UploadSimple size={12} /> Request
                             </Button>
                           )}
                         </td>
@@ -704,7 +704,7 @@ export default function VendorDetail() {
                       <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>—</td>
                       <td className="p-3">
                         <Button size="sm" variant="ghost" style={{ padding: '4px 8px', fontSize: 11 }}>
-                          <Download size={12} className="mr-1" /> Download
+                          <Download size={12} /> Download
                         </Button>
                       </td>
                     </tr>
@@ -720,7 +720,7 @@ export default function VendorDetail() {
           <div className="flex items-center justify-between">
             <p className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>Immutable audit trail of all vendor-related activity</p>
             <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={() => toast.info('Activity log exported')}>
-              <Download size={14} className="mr-1" /> Export Log
+              <Download size={14} /> Export Log
             </Button>
           </div>
 

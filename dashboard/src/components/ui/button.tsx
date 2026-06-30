@@ -11,6 +11,10 @@ interface ButtonProps {
   disabled?: boolean;
   loading?: boolean;
   fullWidth?: boolean;
+  /** Convenience icon slot, positioned per `iconPosition` (default "left"). */
+  icon?: React.ReactNode;
+  iconPosition?: "left" | "right";
+  /** Explicit icon slots — take precedence over `icon`. */
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
   iconOnly?: boolean;
@@ -42,10 +46,36 @@ const sizes: Record<Size, string> = {
   icon: "h-9 w-9 p-0",
 };
 
+// Per-size gap between icon and label, plus a consistent icon size.
+// The `[&>svg]` selector normalizes any icon (Phosphor/Lucide render an <svg>
+// root) so icons line up regardless of the explicit `size` prop at the call site.
+const gaps: Record<Size, string> = {
+  xs: "gap-1",
+  sm: "gap-1.5",
+  md: "gap-1.5",
+  lg: "gap-2",
+  xl: "gap-2",
+  icon: "gap-1.5",
+};
+
+const iconSizes: Record<Size, string> = {
+  xs: "[&>svg]:h-3 [&>svg]:w-3",
+  sm: "[&>svg]:h-3.5 [&>svg]:w-3.5",
+  md: "[&>svg]:h-4 [&>svg]:w-4",
+  lg: "[&>svg]:h-4 [&>svg]:w-4",
+  xl: "[&>svg]:h-5 [&>svg]:w-5",
+  icon: "[&>svg]:h-4 [&>svg]:w-4",
+};
+
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>((
-  { variant="primary", size="md", disabled, loading, fullWidth, leftIcon, rightIcon, iconOnly, children, onClick, type="button", className, style, title, "aria-label": ariaLabel },
+  { variant="primary", size="md", disabled, loading, fullWidth, icon, iconPosition="left", leftIcon, rightIcon, iconOnly, children, onClick, type="button", className, style, title, "aria-label": ariaLabel },
   ref
 ) => {
+  // Resolve the convenience `icon` prop into a side; explicit slots win.
+  const leftNode = leftIcon ?? (icon && iconPosition !== "right" ? icon : undefined);
+  const rightNode = rightIcon ?? (icon && iconPosition === "right" ? icon : undefined);
+  const hasChildren = !iconOnly && children !== undefined && children !== null && children !== false;
+
   return (
     <button
       ref={ref}
@@ -56,7 +86,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>((
       onClick={disabled || loading ? undefined : onClick}
       style={style}
       className={clsx(
-        "inline-flex items-center justify-center gap-2 font-medium transition-all duration-150 focus:outline-none select-none",
+        "inline-flex items-center justify-center font-medium leading-none transition-all duration-150 focus:outline-none select-none whitespace-nowrap",
+        gaps[size],
         variants[variant],
         sizes[size],
         fullWidth && "w-full",
@@ -66,12 +97,21 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>((
       )}
     >
       {loading ? (
-        <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin flex-shrink-0" />
-      ) : leftIcon ? (
-        <span className="flex-shrink-0">{leftIcon}</span>
+        <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin shrink-0" />
+      ) : leftNode ? (
+        <span className={clsx("inline-flex shrink-0 items-center justify-center", iconSizes[size])}>{leftNode}</span>
       ) : null}
-      {!iconOnly && <span className={loading ? "invisible" : ""}>{children}</span>}
-      {!loading && rightIcon && <span className="flex-shrink-0">{rightIcon}</span>}
+      {hasChildren && (
+        // Children commonly arrive as `<Icon/> Label` — wrap them in an
+        // inline-flex span so the gap + vertical centering apply between the
+        // icon and the text, with controlled line-height for clean alignment.
+        <span className={clsx("inline-flex items-center justify-center leading-none [&>svg]:shrink-0", gaps[size], iconSizes[size], loading && "invisible")}>
+          {children}
+        </span>
+      )}
+      {!loading && rightNode && (
+        <span className={clsx("inline-flex shrink-0 items-center justify-center", iconSizes[size])}>{rightNode}</span>
+      )}
     </button>
   );
 });

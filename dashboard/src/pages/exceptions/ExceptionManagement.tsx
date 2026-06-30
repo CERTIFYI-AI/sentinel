@@ -689,10 +689,10 @@ export default function ExceptionManagement() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" style={{ borderRadius: 0 }} onClick={() => exportCsv(filtered)}>
-            <Export size={14} className="mr-1.5" />Export CSV
+            <Export size={14} />Export CSV
           </Button>
           <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={() => setCreateOpen(true)}>
-            <Plus size={14} className="mr-1.5" />Request Exception
+            <Plus size={14} />Request Exception
           </Button>
         </div>
       </div>
@@ -879,23 +879,23 @@ export default function ExceptionManagement() {
                   <>
                     <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--s-ok-tx))', color: 'hsl(var(--bg-surface))', height: 30 }}
                       onClick={() => openDecision(selected, 'Approved')}>
-                      <CheckCircle size={12} className="mr-1.5" />Approve
+                      <CheckCircle size={12} />Approve
                     </Button>
                     <Button size="sm" variant="outline" style={{ borderRadius: 0, color: 'hsl(var(--s-er-tx))', borderColor: 'hsl(var(--s-er-tx))', height: 30 }}
                       onClick={() => openDecision(selected, 'Denied')}>
-                      <Prohibit size={12} className="mr-1.5" />Deny
+                      <Prohibit size={12} />Deny
                     </Button>
                   </>
                 )}
                 {selected.status === 'Expired' && (
                   <Button size="sm" variant="outline" style={{ borderRadius: 0, height: 30 }}
                     onClick={() => { setRenewalDate(''); setRenewalNotes(''); setRenewalOpen(true); }}>
-                    <ArrowsClockwise size={12} className="mr-1.5" />Request Renewal
+                    <ArrowsClockwise size={12} />Request Renewal
                   </Button>
                 )}
                 <Button size="sm" variant="outline" style={{ borderRadius: 0, height: 30 }}
                   onClick={() => setDeleteTarget(selected)}>
-                  <Trash size={12} className="mr-1.5" />Delete
+                  <Trash size={12} />Delete
                 </Button>
               </div>
 

@@ -122,7 +122,7 @@ export default function PolicyManagement() {
 
       <Card><CardContent className="p-0">
         {sp.paged.length === 0 ? (
-          <EmptyState icon={<FileText size={32} className="text-[hsl(var(--brand))]" />} title="No policies found" description="Create your first policy to start governing AI usage." action={<Button size="sm" onClick={() => { setForm(EMPTY); setModal("create"); }}><Plus size={14} className="mr-1" />New Policy</Button>} />
+          <EmptyState icon={<FileText size={32} className="text-[hsl(var(--brand))]" />} title="No policies found" description="Create your first policy to start governing AI usage." action={<Button size="sm" onClick={() => { setForm(EMPTY); setModal("create"); }}><Plus size={14} />New Policy</Button>} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

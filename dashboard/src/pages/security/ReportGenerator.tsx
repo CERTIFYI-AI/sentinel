@@ -175,9 +175,9 @@ export default function ReportGenerator() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm"><CalendarBlank size={14} className="mr-1" /> Schedule</Button>
+          <Button variant="outline" size="sm"><CalendarBlank size={14} /> Schedule</Button>
           <Button size="sm" onClick={() => { setFormData(EMPTY_TEMPLATE); setCreateOpen(true); }}>
-            <Plus size={14} className="mr-1" /> New Template
+            <Plus size={14} /> New Template
           </Button>
         </div>
       </div>
@@ -283,7 +283,7 @@ export default function ReportGenerator() {
                         </p>
                         <div className="flex items-center gap-1">
                           <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={() => setGenerateItem(t)}>
-                            <Play size={12} className="mr-1" /> Generate
+                            <Play size={12} /> Generate
                           </Button>
                           <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setViewItem(t)}>
                             <Eye size={14} />
@@ -413,10 +413,10 @@ export default function ReportGenerator() {
               </Tabs>
               <div className="flex gap-2 mt-6">
                 <Button size="sm" onClick={() => { setGenerateItem(viewItem); setViewItem(null); }}>
-                  <Play size={14} className="mr-1" /> Generate
+                  <Play size={14} /> Generate
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => { setEditItem({ ...viewItem }); setViewItem(null); }}>
-                  <PencilSimple size={14} className="mr-1" /> Edit
+                  <PencilSimple size={14} /> Edit
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => setViewItem(null)}>Close</Button>
               </div>

@@ -478,7 +478,7 @@ export default function SecurityHome() {
               onClick={() => { downloadSBOM(); toast.success('AIBOM exported as CycloneDX JSON'); }}
               style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
             >
-              <DownloadSimple size={14} className="mr-1.5" />Generate AIBOM
+              <DownloadSimple size={14} />Generate AIBOM
             </Button>
           </div>
 

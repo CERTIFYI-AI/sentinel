@@ -340,17 +340,17 @@ export default function IGA() {
                   <div className="text-xs text-[hsl(var(--text-3))]">Granted: {ent.granted} by {ent.grantedBy}</div>
                   <div className="text-xs text-[hsl(var(--text-2))] mt-0.5">{ent.justification}</div>
                   <div className="flex gap-2 mt-2">
-                    <Button size="sm" variant="outline" className="h-6 text-xs text-green-600" onClick={() => toast.success("Access approved")}><CheckCircle size={10} className="mr-1" />Approve</Button>
-                    <Button size="sm" variant="outline" className="h-6 text-xs text-red-600" onClick={() => toast.success("Access revoked")}><XCircle size={10} className="mr-1" />Revoke</Button>
+                    <Button size="sm" variant="outline" className="h-6 text-xs text-green-600" onClick={() => toast.success("Access approved")}><CheckCircle size={10} />Approve</Button>
+                    <Button size="sm" variant="outline" className="h-6 text-xs text-red-600" onClick={() => toast.success("Access revoked")}><XCircle size={10} />Revoke</Button>
                   </div>
                 </div>
               ))}
             </div>
           </FormSection>
           <div className="flex gap-2 pt-2">
-            <Button onClick={() => openEdit(viewItem)} variant="outline" size="sm"><PencilSimple size={14} className="mr-1" />Edit</Button>
+            <Button onClick={() => openEdit(viewItem)} variant="outline" size="sm"><PencilSimple size={14} />Edit</Button>
             <Button onClick={() => { toast.success("Access review triggered"); setItems(p => p.map(i => i.id === viewItem.id ? { ...i, reviewStatus:"Due" } : i)); setModal(null); }} variant="outline" size="sm">Trigger Review</Button>
-            <Button onClick={() => { setModal(null); setDeleteTarget(viewItem); }} variant="destructive" size="sm"><Trash size={14} className="mr-1" />Delete</Button>
+            <Button onClick={() => { setModal(null); setDeleteTarget(viewItem); }} variant="destructive" size="sm"><Trash size={14} />Delete</Button>
           </div>
         </>}
       </CrudSlideOver>

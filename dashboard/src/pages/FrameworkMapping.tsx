@@ -192,13 +192,13 @@ export default function FrameworkMappingPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setGapPanelOpen(true)}>
-            <Warning size={14} className="mr-1.5" /> Gap Analysis
+            <Warning size={14} /> Gap Analysis
           </Button>
           <Button variant="outline" style={{ borderRadius: 0 }} onClick={runAutoMap} disabled={autoMapping}>
-            <Sparkle size={14} className="mr-1.5" /> {autoMapping ? 'Analyzing...' : 'Auto-Map'}
+            <Sparkle size={14} /> {autoMapping ? 'Analyzing...' : 'Auto-Map'}
           </Button>
           <Button onClick={() => setAddOpen(true)} style={{ borderRadius: 0 }}>
-            <Plus size={15} className="mr-1.5" /> Add Mapping
+            <Plus size={15} /> Add Mapping
           </Button>
         </div>
       </div>
@@ -311,7 +311,7 @@ export default function FrameworkMappingPage() {
         })}
         <div className="flex-1" />
         <Button variant="outline" size="sm" style={{ borderRadius: 0 }}>
-          <DownloadSimple size={13} className="mr-1.5" /> Export as CSV
+          <DownloadSimple size={13} /> Export as CSV
         </Button>
       </div>
 

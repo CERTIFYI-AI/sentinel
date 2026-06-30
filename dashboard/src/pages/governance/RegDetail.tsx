@@ -67,7 +67,7 @@ export default function RegDetail() {
         <Warning size={48} style={{ color: 'hsl(var(--r-hi-tx))' }} />
         <p className="mt-4 text-lg font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Regulation not found</p>
         <Button className="mt-4" onClick={() => navigate('/reg-radar')} style={{ borderRadius: 0 }}>
-          <ArrowLeft size={14} className="mr-1" /> Back to Reg Radar
+          <ArrowLeft size={14} /> Back to Reg Radar
         </Button>
       </div>
     );
@@ -100,7 +100,7 @@ export default function RegDetail() {
   return (
     <div className="space-y-6">
       <Button variant="ghost" size="sm" onClick={() => navigate('/reg-radar')} style={{ padding: '4px 8px' }}>
-        <ArrowLeft size={14} className="mr-1" /> Back to Reg Radar
+        <ArrowLeft size={14} /> Back to Reg Radar
       </Button>
 
       {/* Overdue Alert */}

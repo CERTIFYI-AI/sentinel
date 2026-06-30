@@ -625,7 +625,7 @@ export default function RiskRegisterNew() {
             style={{ borderRadius: 0 }}
             onClick={exportCSV}
           >
-            <Export size={14} className="mr-1" />
+            <Export size={14} />
             Export CSV
           </Button>
           <Button
@@ -633,7 +633,7 @@ export default function RiskRegisterNew() {
             style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
             onClick={() => setAddOpen(true)}
           >
-            <Plus size={14} className="mr-1" />
+            <Plus size={14} />
             Add Risk
           </Button>
         </div>
@@ -1136,7 +1136,7 @@ export default function RiskRegisterNew() {
               Cancel
             </Button>
             <Button onClick={handleAddRisk} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-              <Plus size={14} className="mr-1" />Register Risk
+              <Plus size={14} />Register Risk
             </Button>
           </DialogFooter>
         </DialogContent>

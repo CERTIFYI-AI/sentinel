@@ -441,10 +441,10 @@ export default function TrainingAwareness() {
         </div>
         <div className="flex items-center gap-2">
           <Button onClick={exportCSV} variant="outline" style={{ borderRadius: 0 }}>
-            <Export size={14} className="mr-1" />Export CSV
+            <Export size={14} />Export CSV
           </Button>
           <Button onClick={() => setCreateOpen(true)} style={{ borderRadius: 0 }}>
-            <Plus size={14} className="mr-1" />New Course
+            <Plus size={14} />New Course
           </Button>
         </div>
       </div>

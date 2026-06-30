@@ -110,8 +110,8 @@ export default function Controls() {
           <p className="text-sm text-muted-foreground">Acme Financial Corp - Security & AI Controls</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm"><Export className="h-4 w-4 mr-1" />Export</Button>
-          <Button size="sm"><Plus className="h-4 w-4 mr-1" />Add Control</Button>
+          <Button variant="outline" size="sm"><Export className="h-4 w-4" />Export</Button>
+          <Button size="sm"><Plus className="h-4 w-4" />Add Control</Button>
         </div>
       </div>
 

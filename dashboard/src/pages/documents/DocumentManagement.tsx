@@ -161,8 +161,8 @@ export default function DocumentManagement() {
           <p className="text-sm mt-1" style={{color:'hsl(var(--text-4))'}}>{orgName} &middot; Policy library and document lifecycle management</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => exportCSV(filtered)} style={{borderRadius:0}}><Export size={14} className="mr-1" />Export CSV</Button>
-          <Button size="sm" onClick={openCreate} style={{borderRadius:0,background:'hsl(var(--brand))',color:'hsl(var(--bg-surface))'}}><Plus size={14} className="mr-1" />New Document</Button>
+          <Button variant="outline" size="sm" onClick={() => exportCSV(filtered)} style={{borderRadius:0}}><Export size={14} />Export CSV</Button>
+          <Button size="sm" onClick={openCreate} style={{borderRadius:0,background:'hsl(var(--brand))',color:'hsl(var(--bg-surface))'}}><Plus size={14} />New Document</Button>
         </div>
       </div>
       {/* KPIs */}
@@ -181,7 +181,7 @@ export default function DocumentManagement() {
       {/* Table */}
       <Card style={{borderRadius:0,background:'hsl(var(--bg-surface))',border:'1px solid hsl(var(--border))'}}><CardContent className="p-0">
         {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16" style={{color:'hsl(var(--text-4))'}}><FileText size={40} /><p className="mt-3 text-sm font-medium">No documents match your filters</p><Button size="sm" className="mt-3" onClick={openCreate}><Plus size={14} className="mr-1" />Add New Policy</Button></div>
+          <div className="flex flex-col items-center justify-center py-16" style={{color:'hsl(var(--text-4))'}}><FileText size={40} /><p className="mt-3 text-sm font-medium">No documents match your filters</p><Button size="sm" className="mt-3" onClick={openCreate}><Plus size={14} />Add New Policy</Button></div>
         ) : (
           <div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr style={{borderBottom:'1px solid hsl(var(--border))',background:'hsl(var(--bg-muted))'}}>
             {['Doc ID','Title','Type','Version','Owner','Status','Last Updated','Next Review','Frameworks',''].map(h => <th key={h} className="px-3 py-3 text-left text-xs font-semibold" style={{color:'hsl(var(--text-4))'}}>{h}</th>)}
@@ -325,8 +325,8 @@ export default function DocumentManagement() {
                 <SheetTitle style={{color:'hsl(var(--text-1))'}}>{selectedDoc.title}</SheetTitle>
               </SheetHeader>
               <div className="flex items-center gap-2 mt-3">
-                <Button variant="outline" size="sm" style={{borderRadius:0}} onClick={()=>{setSheetOpen(false);openEdit(selectedDoc);}}><PencilSimple size={12} className="mr-1" />Edit</Button>
-                <Button variant="outline" size="sm" style={{borderRadius:0}} onClick={()=>{setSheetOpen(false);setDeleteTarget(selectedDoc);}}><Trash size={12} className="mr-1" />Delete</Button>
+                <Button variant="outline" size="sm" style={{borderRadius:0}} onClick={()=>{setSheetOpen(false);openEdit(selectedDoc);}}><PencilSimple size={12} />Edit</Button>
+                <Button variant="outline" size="sm" style={{borderRadius:0}} onClick={()=>{setSheetOpen(false);setDeleteTarget(selectedDoc);}}><Trash size={12} />Delete</Button>
               </div>
               <Tabs value={drawerTab} onValueChange={setDrawerTab} className="mt-4">
                 <TabsList className="w-full" style={{borderRadius:0,background:'hsl(var(--bg-muted))'}}>

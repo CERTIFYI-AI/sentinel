@@ -213,7 +213,7 @@ export default function BiasAuditWizard() {
             </p>
           </div>
           <Button onClick={() => setWizardOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-            <Plus size={14} className="mr-1" />New Bias Audit
+            <Plus size={14} />New Bias Audit
           </Button>
         </div>
 
@@ -1048,7 +1048,7 @@ export default function BiasAuditWizard() {
                       </div>
                     </div>
                     <Button onClick={runWizardAudit} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))', width: '100%' }}>
-                      <Play size={14} className="mr-1.5" />Run Bias Audit
+                      <Play size={14} />Run Bias Audit
                     </Button>
                   </>
                 )}
@@ -1115,7 +1115,7 @@ export default function BiasAuditWizard() {
                   disabled={wizardStep === 1}
                   style={{}}
                 >
-                  <ArrowLeft size={14} className="mr-1" />Back
+                  <ArrowLeft size={14} />Back
                 </Button>
                 <Button
                   onClick={() => setWizardStep(s => Math.min(4, s + 1))}
@@ -1127,7 +1127,7 @@ export default function BiasAuditWizard() {
                   }
                   style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
                 >
-                  Next<ArrowRight size={14} className="ml-1" />
+                  Next<ArrowRight size={14} />
                 </Button>
               </div>
             )}

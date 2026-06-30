@@ -162,9 +162,9 @@ export default function ModelArena() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm"><Download size={14} className="mr-1" /> Export</Button>
+          <Button variant="outline" size="sm"><Download size={14} /> Export</Button>
           <Button size="sm" onClick={() => { setFormData(EMPTY_MODEL); setCreateOpen(true); }}>
-            <Plus size={14} className="mr-1" /> Add Model
+            <Plus size={14} /> Add Model
           </Button>
         </div>
       </div>
@@ -382,7 +382,7 @@ export default function ModelArena() {
               </Tabs>
               <div className="flex gap-2 mt-6">
                 <Button size="sm" onClick={() => { setEditItem({ ...viewItem }); setViewItem(null); }}>
-                  <PencilSimple size={14} className="mr-1" /> Edit
+                  <PencilSimple size={14} /> Edit
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => setViewItem(null)}>Close</Button>
               </div>

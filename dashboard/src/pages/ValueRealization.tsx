@@ -175,7 +175,7 @@ function CalcTab({ orgName }: { orgName: string }) {
 
           <Button className="w-full mt-3 h-8 text-xs" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
             onClick={() => toast.success('Custom ROI report emailing to CFO — includes methodology and assumptions')}>
-            <Calculator size={12} className="mr-1.5" />Email Custom ROI Report to CFO
+            <Calculator size={12} />Email Custom ROI Report to CFO
           </Button>
         </CardContent>
       </Card>
@@ -205,7 +205,7 @@ export default function ValueRealization() {
           </div>
           <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
             onClick={() => toast.success('CFO ROI report generating — 12-page PDF with methodology')}>
-            <FileText size={13} className="mr-1.5" />Export CFO Report
+            <FileText size={13} />Export CFO Report
           </Button>
         </div>
 

@@ -207,9 +207,9 @@ export default function NarrativeEngine() {
                     <Button className="w-full" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
                       onClick={handleGenerate} disabled={generating}>
                       {generating ? (
-                        <><ClockCounterClockwise size={13} className="mr-2 animate-spin" />Generating…</>
+                        <><ClockCounterClockwise size={13} className="animate-spin" />Generating…</>
                       ) : (
-                        <><Sparkle size={13} className="mr-2" />Generate Narrative</>
+                        <><Sparkle size={13} />Generate Narrative</>
                       )}
                     </Button>
                   </CardContent>
@@ -240,15 +240,15 @@ export default function NarrativeEngine() {
                         <div className="flex items-center gap-1.5">
                           <Button variant="ghost" size="sm" className="h-7 text-xs px-2" style={{ borderRadius: 0 }}
                             onClick={() => setEditing(!editing)}>
-                            <Pencil size={11} className="mr-1" />{editing ? 'Lock' : 'Edit'}
+                            <Pencil size={11} />{editing ? 'Lock' : 'Edit'}
                           </Button>
                           <Button variant="outline" size="sm" className="h-7 text-xs px-2" style={{ borderRadius: 0 }}
                             onClick={() => { toast.success('Narrative approved and added to calibration corpus'); }}>
-                            <CheckCircle size={11} className="mr-1" />Approve
+                            <CheckCircle size={11} />Approve
                           </Button>
                           <Button variant="outline" size="sm" className="h-7 text-xs px-2" style={{ borderRadius: 0 }}
                             onClick={() => { toast.success('Downloading narrative PDF'); }}>
-                            <Download size={11} className="mr-1" />Export
+                            <Download size={11} />Export
                           </Button>
                         </div>
                       </div>
@@ -305,7 +305,7 @@ export default function NarrativeEngine() {
                         <td className="px-4 py-2.5" style={{ color: 'hsl(var(--text-3))' }}>{n.approvedBy}</td>
                         <td className="px-4 py-2.5">
                           <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" style={{ borderRadius: 0 }}>
-                            <Eye size={10} className="mr-1" />View
+                            <Eye size={10} />View
                           </Button>
                         </td>
                       </tr>

@@ -210,10 +210,10 @@ export default function VendorAssessments() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleExport} style={{ borderRadius: 0 }}>
-            <Export className="h-4 w-4 mr-2" />Export CSV
+            <Export className="h-4 w-4" />Export CSV
           </Button>
           <Button onClick={() => setCreateOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-            <Plus className="h-4 w-4 mr-2" />New Assessment
+            <Plus className="h-4 w-4" />New Assessment
           </Button>
         </div>
       </div>
@@ -444,7 +444,7 @@ export default function VendorAssessments() {
                 {/* Actions */}
                 <div className="flex gap-2 pt-2 flex-wrap">
                   <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={() => navigate(`/vendors/${selected.vendorId}`)}>
-                    <Buildings size={13} className="mr-1" />View Vendor
+                    <Buildings size={13} />View Vendor
                   </Button>
                   {['draft', 'in_progress', 'submitted', 'under_review'].includes(selected.status) && (
                     <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={() => advanceStatus(selected)}>
@@ -452,7 +452,7 @@ export default function VendorAssessments() {
                     </Button>
                   )}
                   <Button size="sm" variant="outline" style={{ borderRadius: 0, color: 'hsl(var(--destructive))' }} onClick={() => setDeleteTarget(selected)}>
-                    <Trash size={13} className="mr-1" />Delete
+                    <Trash size={13} />Delete
                   </Button>
                 </div>
               </div>

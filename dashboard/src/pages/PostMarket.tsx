@@ -172,7 +172,7 @@ export default function PostMarket() {
           <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>Continuous monitoring of deployed AI systems per EU AI Act Article 72</p>
         </div>
         <Button onClick={() => setWizardOpen(true)} style={{ borderRadius: 0 }}>
-          <Plus size={15} className="mr-1.5" /> Add Surveillance Plan
+          <Plus size={15} /> Add Surveillance Plan
         </Button>
       </div>
 
@@ -275,7 +275,7 @@ export default function PostMarket() {
                       {ev.severity === 'error' && (
                         <Button size="sm" variant="outline" style={{ borderRadius: 0, fontSize: 11, height: 24 }}
                           className="mt-1 text-[hsl(var(--s-er-tx))] border-[hsl(var(--s-er-br))]">
-                          <ArrowsClockwise size={11} className="mr-1" /> Trigger Review
+                          <ArrowsClockwise size={11} /> Trigger Review
                         </Button>
                       )}
                     </div>
@@ -406,7 +406,7 @@ export default function PostMarket() {
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-3))' }}>Serious Incident Reports — EU AI Act Art.73</p>
                     <Button size="sm" style={{ borderRadius: 0, fontSize: 11, height: 26 }}>
-                      <Warning size={12} className="mr-1" /> File Incident
+                      <Warning size={12} /> File Incident
                     </Button>
                   </div>
                   {selected.status === 'Critical' ? (

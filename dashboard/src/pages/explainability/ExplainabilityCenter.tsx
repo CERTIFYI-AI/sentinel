@@ -191,7 +191,7 @@ export default function ExplainabilityCenter() {
           <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>Per-model explanations required by GDPR Art. 22 and EU AI Act Art. 13</p>
         </div>
         <Button onClick={handleGenerate} disabled={generating} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-          {generating ? <><Clock size={14} className="mr-2 animate-spin" />Generating...</> : <><Plus size={14} className="mr-2" />Generate Explanation</>}
+          {generating ? <><Clock size={14} className="animate-spin" />Generating...</> : <><Plus size={14} />Generate Explanation</>}
         </Button>
       </div>
 
@@ -320,7 +320,7 @@ export default function ExplainabilityCenter() {
                       </td>
                       <td className="px-4 py-3">
                         <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setSelectedDecision(d); setDecisionSheetOpen(true); }} style={{ borderRadius: 0 }}>
-                          View Full Explanation <ArrowRight size={10} className="ml-1" />
+                          View Full Explanation <ArrowRight size={10} />
                         </Button>
                       </td>
                     </tr>
@@ -370,7 +370,7 @@ export default function ExplainabilityCenter() {
                           <Eye size={14} style={{ color: 'hsl(var(--brand))' }} />
                         </Button>
                         <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={handleGenerate} style={{ borderRadius: 0 }}>
-                          <Lightning size={12} className="mr-1" />Generate
+                          <Lightning size={12} />Generate
                         </Button>
                         <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setDeleteTarget(r)}>
                           <Trash size={14} style={{ color: 'hsl(var(--destructive))' }} />
@@ -718,7 +718,7 @@ export default function ExplainabilityCenter() {
                       <div><span style={{ color: 'hsl(var(--text-4))' }}>Framework:</span> <span style={{ color: 'hsl(var(--text-1))' }}>{selectedReport.framework}</span></div>
                     </div>
                     <Button variant="outline" className="mt-3 text-xs" style={{ borderRadius: 0 }} onClick={() => window.open(`/models/inventory/${selectedReport.modelId}`, '_blank')}>
-                      View Full Model Detail <ArrowRight size={10} className="ml-1" />
+                      View Full Model Detail <ArrowRight size={10} />
                     </Button>
                   </div>
                 </TabsContent>

@@ -236,7 +236,7 @@ export default function AIRiskTiering() {
         breadcrumbs={[{ label: 'Dashboard', href: '/' }, { label: 'AI Risk Tiering' }]}
         actions={
           <Button onClick={() => { resetWizard(); setWizardOpen(true); }} style={{ borderRadius: 0 }}>
-            <Plus size={15} className="mr-1.5" /> Classify System
+            <Plus size={15} /> Classify System
           </Button>
         }
       />
@@ -484,10 +484,10 @@ export default function AIRiskTiering() {
 
                     <div className="flex gap-3">
                       <Button className="flex-1 rounded-none bg-raised text-[hsl(var(--text-1))] border border-[hsl(var(--border))] hover:bg-sunken">
-                        <ShieldCheck size={16} className="mr-2 text-[hsl(var(--brand))]" /> View Full Model Record
+                        <ShieldCheck size={16} className="text-[hsl(var(--brand))]" /> View Full Model Record
                       </Button>
                       <Button className="flex-1 rounded-none bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-hover))]">
-                        <ArrowRight size={16} className="mr-2" /> Open Obligations
+                        <ArrowRight size={16} /> Open Obligations
                       </Button>
                     </div>
                   </TabsContent>
@@ -632,7 +632,7 @@ export default function AIRiskTiering() {
               {step > 1 ? 'Back' : 'Cancel'}
             </Button>
             {step < 3 ? (
-              <Button className="rounded-none bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-hover))]" onClick={() => setStep(s => s + 1)}>Next <ArrowRight size={16} className="ml-2" /></Button>
+              <Button className="rounded-none bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-hover))]" onClick={() => setStep(s => s + 1)}>Next <ArrowRight size={16} /></Button>
             ) : (
               <Button className="rounded-none bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-hover))]" onClick={submitWizard}>Confirm Classification</Button>
             )}

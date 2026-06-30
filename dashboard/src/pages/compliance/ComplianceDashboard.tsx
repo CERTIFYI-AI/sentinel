@@ -66,7 +66,7 @@ export default function ComplianceDashboardPage() {
       <div className="flex items-center justify-between">
         <h1>Compliance Dashboard</h1>
         <Button variant="outline" onClick={() => nav("/compliance/controls")}>
-          Control Library <ChevronRight className="ml-2 h-4 w-4" />
+          Control Library <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
 

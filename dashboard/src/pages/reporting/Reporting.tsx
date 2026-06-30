@@ -284,7 +284,7 @@ export default function Reporting() {
                             style={{ borderRadius: 0 }}
                             onClick={() => { setPreviewReport(report); setPreviewOpen(true); }}
                           >
-                            <Eye size={12} className="mr-1" />Preview
+                            <Eye size={12} />Preview
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent style={{ borderRadius: 0 }}>Preview report with live data</TooltipContent>
@@ -298,7 +298,7 @@ export default function Reporting() {
                             style={{ borderRadius: 0 }}
                             onClick={() => { setGenerateReport(report); setGenerateOpen(true); setGenerated(false); }}
                           >
-                            <DownloadSimple size={12} className="mr-1" />Generate
+                            <DownloadSimple size={12} />Generate
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent style={{ borderRadius: 0 }}>Generate PDF/XLSX report</TooltipContent>
@@ -312,7 +312,7 @@ export default function Reporting() {
                             style={{ borderRadius: 0 }}
                             onClick={() => { setScheduleReport(report); setScheduleOpen(true); }}
                           >
-                            <Clock size={12} className="mr-1" />Schedule
+                            <Clock size={12} />Schedule
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent style={{ borderRadius: 0 }}>Schedule recurring generation</TooltipContent>
@@ -544,7 +544,7 @@ export default function Reporting() {
                     </div>
                     <Button className="w-full" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
                       onClick={() => {}}>
-                      <FilePdf size={14} className="mr-2" />Generate Custom Report
+                      <FilePdf size={14} />Generate Custom Report
                     </Button>
                   </div>
                 </div>
@@ -563,7 +563,7 @@ export default function Reporting() {
                   </div>
                   <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
                     onClick={() => {}}>
-                    <Plus size={14} className="mr-1" />New Approval Request
+                    <Plus size={14} />New Approval Request
                   </Button>
                 </div>
                 <table className="w-full text-xs mb-4">
@@ -829,7 +829,7 @@ export default function Reporting() {
                     <p className="text-sm font-semibold" style={{ color: 'hsl(var(--s-ok-tx))' }}>Report Generated Successfully</p>
                     <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{generateReport.name}.{generateFormat} — ready for download</p>
                     <Button variant="outline" style={{ borderRadius: 0 }}>
-                      <DownloadSimple size={14} className="mr-1" />Download {generateFormat.toUpperCase()}
+                      <DownloadSimple size={14} />Download {generateFormat.toUpperCase()}
                     </Button>
                   </div>
                 )}
@@ -837,7 +837,7 @@ export default function Reporting() {
                   <DialogFooter className="mt-4">
                     <Button variant="outline" onClick={() => setGenerateOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
                     <Button onClick={handleGenerate} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-                      <DownloadSimple size={14} className="mr-1" />Generate Report
+                      <DownloadSimple size={14} />Generate Report
                     </Button>
                   </DialogFooter>
                 )}
@@ -914,7 +914,7 @@ export default function Reporting() {
                     }}
                     style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
                   >
-                    <Calendar size={14} className="mr-1" />Create Schedule
+                    <Calendar size={14} />Create Schedule
                   </Button>
                 </DialogFooter>
               </>

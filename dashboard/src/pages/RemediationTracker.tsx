@@ -119,14 +119,14 @@ export default function RemediationTracker() {
             variant={view === 'gantt' ? 'default' : 'outline'}
             onClick={() => setView('gantt')}
           >
-            <ChartBar size={14} className="mr-1" /> Gantt
+            <ChartBar size={14} /> Gantt
           </Button>
           <Button
             size="sm"
             variant={view === 'list' ? 'default' : 'outline'}
             onClick={() => setView('list')}
           >
-            <List size={14} className="mr-1" /> List
+            <List size={14} /> List
           </Button>
         </div>
       </div>

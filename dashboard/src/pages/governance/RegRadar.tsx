@@ -128,7 +128,7 @@ export default function RegRadar() {
           </p>
         </div>
         <Button size="sm" onClick={() => { setFormData(EMPTY_REG); setCreateOpen(true); }}>
-          <Plus size={14} className="mr-1" /> Add Regulation
+          <Plus size={14} /> Add Regulation
         </Button>
       </div>
 
@@ -397,7 +397,7 @@ export default function RegRadar() {
 
               <div className="flex gap-2 mt-6">
                 <Button size="sm" onClick={() => { setEditItem({ ...viewItem }); setViewItem(null); }}>
-                  <PencilSimple size={14} className="mr-1" /> Edit
+                  <PencilSimple size={14} /> Edit
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => setViewItem(null)}>Close</Button>
               </div>

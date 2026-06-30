@@ -177,7 +177,7 @@ export default function EvalTechniques() {
           </p>
         </div>
         <Button size="sm" onClick={() => setCreateOpen(true)}>
-          <Plus size={14} className="mr-1" /> Configure Technique
+          <Plus size={14} /> Configure Technique
         </Button>
       </div>
 
@@ -291,7 +291,7 @@ export default function EvalTechniques() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setViewItem(null)} style={{ borderRadius: 0 }}>Close</Button>
             <Button onClick={() => { setEditItem(viewItem ? { ...viewItem } : null); setViewItem(null); }} style={{ borderRadius: 0 }}>
-              <PencilSimple size={14} className="mr-1" /> Edit
+              <PencilSimple size={14} /> Edit
             </Button>
           </DialogFooter>
         </DialogContent>

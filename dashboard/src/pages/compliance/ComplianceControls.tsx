@@ -113,7 +113,7 @@ export default function ComplianceControls() {
           </p>
         </div>
         <Button size="sm" onClick={() => { setFormData(EMPTY_CONTROL); setCreateOpen(true); }}>
-          <Plus size={14} className="mr-1" /> Add Control
+          <Plus size={14} /> Add Control
         </Button>
       </div>
 
@@ -292,7 +292,7 @@ export default function ComplianceControls() {
               </div>
               <div className="flex gap-2 mt-6">
                 <Button size="sm" onClick={() => { setEditItem({ ...viewItem }); setViewItem(null); }}>
-                  <PencilSimple size={14} className="mr-1" /> Edit
+                  <PencilSimple size={14} /> Edit
                 </Button>
                 <Link to={`/controls/${viewItem.id}`} onClick={() => setViewItem(null)}>
                   <Button size="sm" variant="outline">View Detail</Button>

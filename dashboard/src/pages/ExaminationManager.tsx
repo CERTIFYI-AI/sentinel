@@ -182,7 +182,7 @@ export default function ExaminationManager() {
           </div>
           <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
             onClick={() => toast.success('New examination registered')}>
-            <Plus size={13} className="mr-1.5" />Register Examination
+            <Plus size={13} />Register Examination
           </Button>
         </div>
 
@@ -317,7 +317,7 @@ export default function ExaminationManager() {
                             {(dr.status === 'open' || dr.status === 'in_progress') && (
                               <Button size="sm" variant="outline" className="h-6 text-[9px] px-2" style={{ borderRadius: 0 }}
                                 onClick={() => setResponseDialog(dr)}>
-                                <Upload size={9} className="mr-1" />Submit
+                                <Upload size={9} />Submit
                               </Button>
                             )}
                             {dr.status === 'accepted' && <CheckCircle size={14} style={{ color: 'hsl(var(--s-ok-tx))' }} />}
@@ -361,7 +361,7 @@ export default function ExaminationManager() {
                       </Button>
                       <Button size="sm" className="h-7 text-[10px] px-2" style={{ borderRadius: 0, background: 'hsl(var(--s-ok-tx))', color: 'hsl(var(--bg-surface))' }}
                         onClick={() => toast.success(`Finding ${finding.id} marked resolved`)}>
-                        <CheckCircle size={10} className="mr-1" />Mark Resolved
+                        <CheckCircle size={10} />Mark Resolved
                       </Button>
                     </div>
                   </div>
@@ -476,13 +476,13 @@ export default function ExaminationManager() {
               <Textarea value={responseText} onChange={e => setResponseText(e.target.value)} placeholder="Describe what documents are being submitted, any caveats or limitations…" className="text-xs" style={{ borderRadius: 0, minHeight: 80 }} />
             </div>
             <Button variant="outline" className="w-full h-16 border-dashed text-xs" style={{ borderRadius: 0 }} onClick={() => toast.info('File upload — connect to document management system')}>
-              <Upload size={16} className="mr-2" style={{ color: 'hsl(var(--brand))' }} />Click to attach documents (PDF, XLSX, DOCX)
+              <Upload size={16} style={{ color: 'hsl(var(--brand))' }} />Click to attach documents (PDF, XLSX, DOCX)
             </Button>
           </div>
           <DialogFooter>
             <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setResponseDialog(null)}>Cancel</Button>
             <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={submitResponse}>
-              <Upload size={12} className="mr-1.5" />Submit to Regulator
+              <Upload size={12} />Submit to Regulator
             </Button>
           </DialogFooter>
         </DialogContent>

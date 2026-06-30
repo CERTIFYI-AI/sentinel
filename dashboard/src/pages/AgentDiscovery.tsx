@@ -123,7 +123,7 @@ export default function AgentDiscovery() {
 
       <Card><CardContent className="p-0">
         {sp.paged.length === 0 ? (
-          <EmptyState icon={<Robot size={32} className="text-[hsl(var(--brand))]" />} title="No agents found" description="Register an agent or run a scan to discover AI agents in your environment." action={<Button size="sm" onClick={() => { setForm(EMPTY); setModal("create"); }}><Plus size={14} className="mr-1" />Register Agent</Button>} />
+          <EmptyState icon={<Robot size={32} className="text-[hsl(var(--brand))]" />} title="No agents found" description="Register an agent or run a scan to discover AI agents in your environment." action={<Button size="sm" onClick={() => { setForm(EMPTY); setModal("create"); }}><Plus size={14} />Register Agent</Button>} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

@@ -122,7 +122,7 @@ export default function ConformityAssessment() {
 
       <Card><CardContent className="p-0">
         {sp.paged.length === 0 ? (
-          <EmptyState icon={<ClipboardText size={32} className="text-[hsl(var(--brand))]" />} title="No assessments found" description="Create a conformity assessment to start tracking certification readiness." action={<Button size="sm" onClick={() => { setForm(EMPTY); setModal("create"); }}><Plus size={14} className="mr-1" />New Assessment</Button>} />
+          <EmptyState icon={<ClipboardText size={32} className="text-[hsl(var(--brand))]" />} title="No assessments found" description="Create a conformity assessment to start tracking certification readiness." action={<Button size="sm" onClick={() => { setForm(EMPTY); setModal("create"); }}><Plus size={14} />New Assessment</Button>} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

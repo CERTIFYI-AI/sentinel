@@ -189,7 +189,7 @@ export default function ComplianceFrameworks() {
             description="Add a compliance framework to begin mapping controls."
             action={
               <Button size="sm" onClick={() => { setForm(EMPTY); setModal("create"); }}>
-                <Plus size={14} className="mr-1" />Add Framework
+                <Plus size={14} />Add Framework
               </Button>
             }
           />

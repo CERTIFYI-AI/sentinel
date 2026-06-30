@@ -299,10 +299,10 @@ export default function GuardrailActivity() {
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={handleExport} style={{ borderRadius: 0 }}>
-              <Export size={14} className="mr-2" />Export
+              <Export size={14} />Export
             </Button>
             <Button variant="outline" size="sm" onClick={() => setTemplatePickerOpen(true)} style={{ borderRadius: 0 }}>
-              <Plus size={14} className="mr-2" />Add Guardrail Rule
+              <Plus size={14} />Add Guardrail Rule
             </Button>
           </div>
         </div>
@@ -395,7 +395,7 @@ export default function GuardrailActivity() {
                   toast(`Rule "${newRule.name}" created and activated`, 'success');
                   setRuleBuilderOpen(true);
                 }}>
-                <Plus size={12} className="mr-1" /> Save Rule
+                <Plus size={12} /> Save Rule
               </Button>
               <CaretDown size={14} style={{ color: 'hsl(var(--text-3))', transform: ruleBuilderOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
             </div>
@@ -458,7 +458,7 @@ export default function GuardrailActivity() {
                   ))}
                   <Button size="sm" variant="ghost" style={{ height: 28, fontSize: 11, marginTop: 2 }}
                     onClick={() => setNewRule(r => ({ ...r, conditions: [...r.conditions, { field: 'output', operator: 'contains', value: '' }] }))}>
-                    <Plus size={12} className="mr-1" /> Add Condition
+                    <Plus size={12} /> Add Condition
                   </Button>
                 </div>
 
@@ -727,7 +727,7 @@ export default function GuardrailActivity() {
             <DialogFooter className="mt-4">
               <Button variant="outline" onClick={() => setEscalateTarget(null)} style={{ borderRadius: 0 }}>Cancel</Button>
               <Button onClick={handleEscalateConfirm} style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: 'hsl(var(--bg-surface))' }}>
-                <Siren size={14} weight="fill" className="mr-2" />Create Incident
+                <Siren size={14} weight="fill" />Create Incident
               </Button>
             </DialogFooter>
           </DialogContent>

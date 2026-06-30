@@ -372,10 +372,10 @@ export default function AuditManagement() {
         </div>
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={handleExport} style={{ borderRadius: 0 }}>
-            <Export size={14} className="mr-1" /> Export CSV
+            <Export size={14} /> Export CSV
           </Button>
           <Button size="sm" onClick={() => setAddOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-            <Plus size={14} className="mr-1" /> Start Audit
+            <Plus size={14} /> Start Audit
           </Button>
         </div>
       </div>

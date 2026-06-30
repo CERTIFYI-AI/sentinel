@@ -108,7 +108,7 @@ export default function RegRadar() {
 
       <Card><CardContent className="p-0">
         {sp.paged.length === 0 ? (
-          <EmptyState icon={<Broadcast size={32} className="text-[hsl(var(--brand))]" />} title="No regulations tracked" description="Add regulations to your radar to track their impact." action={<Button size="sm" onClick={() => { setForm(EMPTY); setModal("create"); }}><Plus size={14} className="mr-1" />Track Regulation</Button>} />
+          <EmptyState icon={<Broadcast size={32} className="text-[hsl(var(--brand))]" />} title="No regulations tracked" description="Add regulations to your radar to track their impact." action={<Button size="sm" onClick={() => { setForm(EMPTY); setModal("create"); }}><Plus size={14} />Track Regulation</Button>} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

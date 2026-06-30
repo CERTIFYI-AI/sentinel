@@ -157,7 +157,7 @@ export default function GenAIRisks() {
         breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'GenAI Risks' }]}
         actions={
           <Button onClick={() => setCreateOpen(true)} style={{ borderRadius: 0 }}>
-            <Plus size={15} className="mr-1.5" /> Create Risk Profile
+            <Plus size={15} /> Create Risk Profile
           </Button>
         }
       />

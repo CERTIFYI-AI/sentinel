@@ -224,7 +224,7 @@ export default function Playground() {
                 className={`rounded-none h-8 text-xs ${viewMode === 'chat' ? 'bg-[hsl(var(--brand))] text-white' : 'text-[hsl(var(--text-2))]'}`}
                 onClick={() => setViewMode('chat')}
               >
-                <ChatCircle size={14} className="mr-2"/> Chat View
+                <ChatCircle size={14}/> Chat View
               </Button>
               <Button 
                 variant={viewMode === 'trace' ? 'default' : 'outline'} 
@@ -232,7 +232,7 @@ export default function Playground() {
                 className={`rounded-none h-8 text-xs ${viewMode === 'trace' ? 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600' : 'text-[hsl(var(--text-2))]'}`}
                 onClick={() => setViewMode('trace')}
               >
-                <CodeBlock size={14} className="mr-2"/> Trace Logs
+                <CodeBlock size={14}/> Trace Logs
               </Button>
             </div>
             <div className="flex gap-3">

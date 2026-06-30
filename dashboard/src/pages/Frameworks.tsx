@@ -147,7 +147,7 @@ export default function Frameworks() {
           </p>
         </div>
         <Button size="sm" onClick={() => { setFormData(EMPTY_FRAMEWORK); setCreateOpen(true); }}>
-          <Plus size={14} className="mr-1" /> Add Framework
+          <Plus size={14} /> Add Framework
         </Button>
       </div>
 
@@ -263,7 +263,7 @@ export default function Frameworks() {
                     style={{ borderRadius: 0, fontSize: 11 }}
                     onClick={() => navigate(`/compliance/controls?framework=${encodeURIComponent(fw.name)}`)}
                   >
-                    <Eye size={12} className="mr-1" /> View Controls <ArrowRight size={10} className="ml-auto" />
+                    <Eye size={12} /> View Controls <ArrowRight size={10} className="ml-auto" />
                   </Button>
                 </div>
               </CardContent>
@@ -493,7 +493,7 @@ export default function Frameworks() {
 
               <div className="flex gap-2 mt-6">
                 <Button size="sm" onClick={() => { setEditItem({ ...viewItem }); setViewItem(null); }}>
-                  <PencilSimple size={14} className="mr-1" /> Edit
+                  <PencilSimple size={14} /> Edit
                 </Button>
                 <Button
                   size="sm"
@@ -504,7 +504,7 @@ export default function Frameworks() {
                   }}
                   style={{ borderRadius: 0 }}
                 >
-                  <Eye size={12} className="mr-1" /> View Controls
+                  <Eye size={12} /> View Controls
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => setViewItem(null)}>Close</Button>
               </div>

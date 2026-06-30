@@ -552,7 +552,7 @@ export default function Overview() {
                 onClick={() => navigate('/risk')}
                 style={{ borderRadius: 0, background: 'hsl(var(--s-er-tx))', color: 'hsl(var(--bg-surface))' }}
               >
-                View All Issues <ArrowRight size={12} className="ml-1" />
+                View All Issues <ArrowRight size={12} />
               </Button>
             </div>
           </div>
@@ -877,7 +877,7 @@ export default function Overview() {
           </CardTitle>
           <Link to="/risk/incidents">
             <Button variant="ghost" size="sm" style={{ fontSize: 11, padding: '2px 8px' }}>
-              View All <ArrowRight size={12} className="ml-1" />
+              View All <ArrowRight size={12} />
             </Button>
           </Link>
         </CardHeader>
@@ -928,7 +928,7 @@ export default function Overview() {
             </CardTitle>
             <Link to="/audit-log">
               <Button variant="ghost" size="sm" style={{ fontSize: 11, padding: '2px 8px' }}>
-                View All <ArrowRight size={12} className="ml-1" />
+                View All <ArrowRight size={12} />
               </Button>
             </Link>
           </CardHeader>
@@ -967,7 +967,7 @@ export default function Overview() {
             </CardTitle>
             <Link to="/compliance/gap-analysis">
               <Button variant="ghost" size="sm" style={{ fontSize: 11, padding: '2px 8px' }}>
-                View All <ArrowRight size={12} className="ml-1" />
+                View All <ArrowRight size={12} />
               </Button>
             </Link>
           </CardHeader>
@@ -1015,7 +1015,7 @@ export default function Overview() {
           </CardTitle>
           <Link to="/risk/remediation">
             <Button variant="ghost" size="sm" style={{ fontSize: 11, padding: '2px 8px' }}>
-              View All <ArrowRight size={12} className="ml-1" />
+              View All <ArrowRight size={12} />
             </Button>
           </Link>
         </CardHeader>
@@ -1145,7 +1145,7 @@ export default function Overview() {
           </CardTitle>
           <Link to="/risk">
             <Button variant="ghost" size="sm" style={{ fontSize: 11, padding: '2px 8px' }}>
-              View All <ArrowRight size={12} className="ml-1" />
+              View All <ArrowRight size={12} />
             </Button>
           </Link>
         </CardHeader>
@@ -1200,7 +1200,7 @@ export default function Overview() {
             </CardTitle>
             <Link to="/models/inventory">
               <Button variant="ghost" size="sm" style={{ fontSize: 11, padding: '2px 8px' }}>
-                View All <ArrowRight size={12} className="ml-1" />
+                View All <ArrowRight size={12} />
               </Button>
             </Link>
           </CardHeader>
@@ -1290,7 +1290,7 @@ export default function Overview() {
           </CardTitle>
           <Link to="/compliance/frameworks">
             <Button variant="ghost" size="sm" style={{ fontSize: 11, padding: '2px 8px' }}>
-              Full Calendar <ArrowRight size={12} className="ml-1" />
+              Full Calendar <ArrowRight size={12} />
             </Button>
           </Link>
         </CardHeader>
@@ -1326,7 +1326,7 @@ export default function Overview() {
           </CardTitle>
           <Link to="/governance-framework">
             <Button variant="ghost" size="sm" style={{ fontSize: 11, padding: '2px 8px' }}>
-              Manage Mesh <ArrowRight size={12} className="ml-1" />
+              Manage Mesh <ArrowRight size={12} />
             </Button>
           </Link>
         </CardHeader>

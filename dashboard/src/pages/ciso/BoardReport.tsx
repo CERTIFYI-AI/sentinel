@@ -78,21 +78,21 @@ export default function BoardReport() {
               toast.loading('Generating PDF report…', { id: 'pdf' });
               setTimeout(() => toast.success('Board Report PDF ready — download started', { id: 'pdf' }), 1800);
             }}>
-            <FilePdf size={14} className="mr-1" /> Generate PDF
+            <FilePdf size={14} /> Generate PDF
           </Button>
           <Button variant="outline" size="sm" style={{ borderRadius: 0 }}
             onClick={() => {
               toast.loading('Generating PowerPoint deck…', { id: 'pptx' });
               setTimeout(() => toast.success('Board Report PPTX ready — download started', { id: 'pptx' }), 2200);
             }}>
-            <FileDoc size={14} className="mr-1" /> Generate PPTX
+            <FileDoc size={14} /> Generate PPTX
           </Button>
           <Button
             size="sm"
             style={{ borderRadius: 0 }}
             onClick={() => { setShareClicked(true); setTimeout(() => setShareClicked(false), 2000); }}
           >
-            <ShareNetwork size={14} className="mr-1" />
+            <ShareNetwork size={14} />
             {shareClicked ? 'Link Copied!' : 'Share Report'}
           </Button>
         </div>
@@ -359,14 +359,14 @@ export default function BoardReport() {
         </p>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" disabled style={{ borderRadius: 0, opacity: 0.6 }}>
-            <Download size={13} className="mr-1" /> Export PDF
+            <Download size={13} /> Export PDF
           </Button>
           <Button
             size="sm"
             style={{ borderRadius: 0 }}
             onClick={() => { setShareClicked(true); setTimeout(() => setShareClicked(false), 2000); }}
           >
-            <ShareNetwork size={13} className="mr-1" />
+            <ShareNetwork size={13} />
             {shareClicked ? 'Copied!' : 'Share'}
           </Button>
         </div>

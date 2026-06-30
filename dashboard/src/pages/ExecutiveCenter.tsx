@@ -238,10 +238,10 @@ export default function ExecutiveCenter() {
           actions={
             <div className="flex gap-2">
               <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => toast.success('Board pack PDF generating…')}>
-                <FileText size={13} className="mr-1.5" />Export Board Pack
+                <FileText size={13} />Export Board Pack
               </Button>
               <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={() => navigate('/reporting')}>
-                <PresentationChart size={13} className="mr-1.5" />Full Report
+                <PresentationChart size={13} />Full Report
               </Button>
             </div>
           }
@@ -353,7 +353,7 @@ export default function ExecutiveCenter() {
                       </div>
                       <Button size="sm" variant="outline" className="h-7 text-[10px] px-3 flex-shrink-0" style={{ borderRadius: 0 }}
                         onClick={() => navigate(action.link)}>
-                        Resolve <ArrowRight size={10} className="ml-1" />
+                        Resolve <ArrowRight size={10} />
                       </Button>
                     </div>
                   </div>
@@ -391,7 +391,7 @@ export default function ExecutiveCenter() {
                 </p>
                 <Button size="sm" className="mt-2 h-6 text-[10px] px-2" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
                   onClick={() => navigate('/roi')}>
-                  View Full Fine Avoidance Analysis <ArrowRight size={9} className="ml-1" />
+                  View Full Fine Avoidance Analysis <ArrowRight size={9} />
                 </Button>
               </div>
             </div>

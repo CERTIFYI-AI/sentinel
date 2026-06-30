@@ -202,10 +202,10 @@ export default function EvidenceSyncEngine() {
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => setSyncAllOpen(true)} style={{ borderRadius: 0 }}>
-              <ArrowsClockwise size={14} className="mr-1" />Sync All
+              <ArrowsClockwise size={14} />Sync All
             </Button>
             <Button onClick={() => setAddOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-              <Upload size={14} className="mr-1" />Upload Evidence
+              <Upload size={14} />Upload Evidence
             </Button>
           </div>
         </div>
@@ -508,7 +508,7 @@ export default function EvidenceSyncEngine() {
                           <p className="text-[10px] italic" style={{ color: 'hsl(var(--text-4))' }}>PDF preview would render in iframe in production</p>
                         </div>
                         <Button variant="outline" size="sm" style={{ borderRadius: 0 }}>
-                          <Download size={12} className="mr-1" />Download PDF
+                          <Download size={12} />Download PDF
                         </Button>
                       </div>
                     ) : selectedEvidence.type === 'Log' ? (
@@ -523,7 +523,7 @@ export default function EvidenceSyncEngine() {
                         <FileText size={48} style={{ color: 'hsl(var(--text-4))' }} />
                         <p className="text-sm" style={{ color: 'hsl(var(--text-1))' }}>{selectedEvidence.title}</p>
                         <Button variant="outline" size="sm" style={{ borderRadius: 0 }}>
-                          <Download size={12} className="mr-1" />Download
+                          <Download size={12} />Download
                         </Button>
                       </div>
                     )}
@@ -652,7 +652,7 @@ export default function EvidenceSyncEngine() {
                     onClick={() => setNewUploadMode('upload')}
                     style={{ borderRadius: 0 }}
                   >
-                    <Upload size={12} className="mr-1" />File Upload
+                    <Upload size={12} />File Upload
                   </Button>
                   <Button
                     variant={newUploadMode === 'url' ? 'default' : 'outline'}
@@ -660,7 +660,7 @@ export default function EvidenceSyncEngine() {
                     onClick={() => setNewUploadMode('url')}
                     style={{ borderRadius: 0 }}
                   >
-                    <LinkIcon size={12} className="mr-1" />URL
+                    <LinkIcon size={12} />URL
                   </Button>
                 </div>
                 {newUploadMode === 'upload' ? (
@@ -685,7 +685,7 @@ export default function EvidenceSyncEngine() {
                 disabled={!newTitle || !newType || !newSource}
                 style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
               >
-                <Upload size={14} className="mr-1" />Add Evidence
+                <Upload size={14} />Add Evidence
               </Button>
             </DialogFooter>
           </DialogContent>

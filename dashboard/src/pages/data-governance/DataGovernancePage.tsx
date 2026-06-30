@@ -225,13 +225,13 @@ export default function DataGovernancePage() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={() => exportCsv(dataAssets, 'data-governance.csv')} style={{ borderRadius: 0 }}>
-            <Export size={14} className="mr-2" />Export CSV
+            <Export size={14} />Export CSV
           </Button>
           <Button variant="outline" onClick={() => setDsarFormOpen(true)} style={{ borderRadius: 0 }}>
-            <UserCircle size={14} className="mr-2" />New DSAR
+            <UserCircle size={14} />New DSAR
           </Button>
           <Button onClick={() => setRegisterOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-            <Plus size={14} className="mr-2" />Register Data Asset
+            <Plus size={14} />Register Data Asset
           </Button>
         </div>
       </div>

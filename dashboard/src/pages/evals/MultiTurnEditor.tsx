@@ -41,10 +41,10 @@ export default function MultiTurnEditor() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" style={{ borderRadius: 0 }}>
-            <Play size={16} className="mr-2" /> Test Scenario
+            <Play size={16} /> Test Scenario
           </Button>
           <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-            <FloppyDisk size={16} className="mr-2" /> Save Scenario
+            <FloppyDisk size={16} /> Save Scenario
           </Button>
         </div>
       </div>
@@ -86,10 +86,10 @@ export default function MultiTurnEditor() {
 
           <div className="flex items-center justify-center pt-4 gap-3">
             <Button variant="outline" size="sm" style={{ borderRadius: 0, borderStyle: 'dashed' }}>
-              <Plus size={14} className="mr-2" /> Add User Turn
+              <Plus size={14} /> Add User Turn
             </Button>
             <Button variant="outline" size="sm" style={{ borderRadius: 0, borderStyle: 'dashed' }}>
-              <Plus size={14} className="mr-2" /> Add Assistant Turn
+              <Plus size={14} /> Add Assistant Turn
             </Button>
           </div>
 

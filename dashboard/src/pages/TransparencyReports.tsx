@@ -168,7 +168,7 @@ export default function TransparencyReports() {
           <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>Public transparency disclosures per EU AI Act Articles 13 and 52</p>
         </div>
         <Button onClick={() => setWizardOpen(true)} style={{ borderRadius: 0 }}>
-          <Plus size={15} className="mr-1.5" /> Generate Report
+          <Plus size={15} /> Generate Report
         </Button>
       </div>
 
@@ -316,10 +316,10 @@ export default function TransparencyReports() {
                   </div>
                   <div className="flex gap-2 mt-3">
                     <Button size="sm" style={{ borderRadius: 0 }} className="flex-1">
-                      <DownloadSimple size={13} className="mr-1.5" /> Download PDF
+                      <DownloadSimple size={13} /> Download PDF
                     </Button>
                     <Button size="sm" variant="outline" style={{ borderRadius: 0 }} className="flex-1">
-                      <Globe size={13} className="mr-1.5" /> Submit to EU AI Office
+                      <Globe size={13} /> Submit to EU AI Office
                     </Button>
                   </div>
                 </TabsContent>

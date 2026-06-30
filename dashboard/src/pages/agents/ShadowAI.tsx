@@ -203,20 +203,20 @@ export default function ShadowAI() {
                         <div className="flex items-center gap-1 flex-wrap">
                           <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-destructive"
                             onClick={() => setQuarantineTarget(a)}>
-                            <Prohibit size={12} className="mr-1" />Quarantine
+                            <Prohibit size={12} />Quarantine
                           </Button>
                           <Button variant="ghost" size="sm" className="h-7 px-2 text-xs"
                             onClick={() => setInvestigateAgent(a)}>
-                            <Eye size={12} className="mr-1" />Investigate
+                            <Eye size={12} />Investigate
                           </Button>
                           <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-green-600 dark:text-green-400"
                             onClick={() => handleWhitelist(a)}>
-                            <CheckCircle size={12} className="mr-1" />Whitelist
+                            <CheckCircle size={12} />Whitelist
                           </Button>
                           <Button variant="ghost" size="sm" className="h-7 px-2 text-xs"
                             style={{ color: 'hsl(var(--s-wn-tx))' }}
                             onClick={() => handleRaiseIncident(a)}>
-                            <Siren size={12} className="mr-1" />Incident
+                            <Siren size={12} />Incident
                           </Button>
                         </div>
                       </td>
@@ -323,11 +323,11 @@ export default function ShadowAI() {
               <div className="flex gap-2 pt-2">
                 <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
                   onClick={() => { toast('Remediation plan created', 'info'); setInvestigateAgent(null); }}>
-                  <Lightning size={14} className="mr-1" />Create Remediation Plan
+                  <Lightning size={14} />Create Remediation Plan
                 </Button>
                 <Button size="sm" variant="outline" style={{ borderRadius: 0, color: 'hsl(var(--destructive))' }}
                   onClick={() => { setInvestigateAgent(null); setQuarantineTarget(investigateAgent); }}>
-                  <Prohibit size={14} className="mr-1" />Quarantine Now
+                  <Prohibit size={14} />Quarantine Now
                 </Button>
               </div>
             </div>

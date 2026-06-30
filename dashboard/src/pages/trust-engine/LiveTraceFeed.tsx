@@ -320,14 +320,14 @@ export default function LiveTraceFeed() {
               onClick={() => setPaused(!paused)}
               style={{ borderRadius: 0 }}
             >
-              {paused ? <Play size={14} className="mr-2" weight="fill" /> : <Pause size={14} className="mr-2" weight="fill" />}
+              {paused ? <Play size={14} weight="fill" /> : <Pause size={14} weight="fill" />}
               {paused ? 'Resume' : 'Pause'}
             </Button>
             <Button variant="outline" size="sm" onClick={handleExport} style={{ borderRadius: 0 }}>
-              <Export size={14} className="mr-2" />Export
+              <Export size={14} />Export
             </Button>
             <Button variant="outline" size="sm" onClick={() => setClearConfirm(true)} style={{ borderRadius: 0, color: 'hsl(var(--destructive))' }}>
-              <Archive size={14} className="mr-2" />Archive All
+              <Archive size={14} />Archive All
             </Button>
           </div>
         </div>

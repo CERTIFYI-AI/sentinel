@@ -29,7 +29,7 @@ export default function DatasetPreviewDrawer() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" style={{ borderRadius: 0 }}>
-            <DownloadSimple size={16} className="mr-2" /> Export
+            <DownloadSimple size={16} /> Export
           </Button>
           <Button size="icon" variant="ghost" style={{ borderRadius: 0 }}>
             <DotsThree size={20} />
@@ -51,11 +51,11 @@ export default function DatasetPreviewDrawer() {
             />
           </div>
           <Button variant="ghost" size="sm" className="h-8 text-xs" style={{ borderRadius: 0 }}>
-            <Funnel size={14} className="mr-2" /> Filter
+            <Funnel size={14} /> Filter
           </Button>
         </div>
         <Button variant="ghost" size="sm" className="h-8 text-xs" style={{ borderRadius: 0 }}>
-          <Columns size={14} className="mr-2" /> Columns
+          <Columns size={14} /> Columns
         </Button>
       </div>
 

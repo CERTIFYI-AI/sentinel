@@ -297,9 +297,9 @@ export default function RegulatorFilings() {
             </FormSection>
           )}
           <div className="flex gap-2 pt-2">
-            <Button onClick={() => openEdit(viewItem)} variant="outline" size="sm"><PencilSimple size={14} className="mr-1" />Edit</Button>
+            <Button onClick={() => openEdit(viewItem)} variant="outline" size="sm"><PencilSimple size={14} />Edit</Button>
             <Button onClick={() => { toast.success("Marked as Filed"); setItems(p => p.map(i => i.id === viewItem.id ? { ...i, status:"Filed", filedAt: new Date().toISOString() } : i)); setModal(null); }} variant="default" size="sm">Mark as Filed</Button>
-            <Button onClick={() => { setModal(null); setDeleteTarget(viewItem); }} variant="destructive" size="sm"><Trash size={14} className="mr-1" />Delete</Button>
+            <Button onClick={() => { setModal(null); setDeleteTarget(viewItem); }} variant="destructive" size="sm"><Trash size={14} />Delete</Button>
           </div>
         </>}
       </CrudSlideOver>

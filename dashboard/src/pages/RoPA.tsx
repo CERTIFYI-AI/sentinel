@@ -281,8 +281,8 @@ export default function RoPA() {
             { date: viewItem.updatedAt, label:"Last Updated", user: viewItem.createdBy },
           ]} />
           <div className="flex gap-2 pt-2">
-            <Button onClick={() => { setModal("edit"); openEdit(viewItem); }} variant="outline" size="sm"><PencilSimple size={14} className="mr-1" />Edit</Button>
-            <Button onClick={() => { setModal(null); setDeleteTarget(viewItem); }} variant="destructive" size="sm"><Trash size={14} className="mr-1" />Delete</Button>
+            <Button onClick={() => { setModal("edit"); openEdit(viewItem); }} variant="outline" size="sm"><PencilSimple size={14} />Edit</Button>
+            <Button onClick={() => { setModal(null); setDeleteTarget(viewItem); }} variant="destructive" size="sm"><Trash size={14} />Delete</Button>
           </div>
         </>}
       </CrudSlideOver>

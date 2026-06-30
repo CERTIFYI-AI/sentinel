@@ -172,14 +172,14 @@ export default function BenchmarkingMaturity() {
             style={{ borderRadius: 0 }}
             onClick={() => exportCsv(DIMENSIONS, 'maturity-dimensions.csv')}
           >
-            <Export size={14} className="mr-1" /> Export Report
+            <Export size={14} /> Export Report
           </Button>
           <Button
             size="sm"
             style={{ borderRadius: 0 }}
             onClick={() => { setShowAssessment(true); setAssessStep(0); setAnswers({}); setAssessDone(false); }}
           >
-            <ChartBar size={14} className="mr-1" /> Run Assessment
+            <ChartBar size={14} /> Run Assessment
           </Button>
         </div>
       </div>

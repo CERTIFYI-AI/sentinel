@@ -166,10 +166,10 @@ export default function CostTokenDashboard() {
             </SelectContent>
           </Select>
           <Button variant="outline" size="sm" onClick={() => setBudgetDialogOpen(true)} style={{ borderRadius: 0 }}>
-            <Bell size={14} className="mr-2" />Set Budget Alert
+            <Bell size={14} />Set Budget Alert
           </Button>
           <Button variant="outline" size="sm" onClick={handleExportCSV} style={{ borderRadius: 0 }}>
-            <Export size={14} className="mr-2" />Export CSV
+            <Export size={14} />Export CSV
           </Button>
         </div>
       </div>

@@ -192,10 +192,10 @@ export default function EthicsReporting() {
             Export CSV
           </Button>
           <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => window.open('/ethics-reporting/submit', '_blank')}>
-            <ArrowSquareOut size={14} className="mr-1.5" /> Public Form
+            <ArrowSquareOut size={14} /> Public Form
           </Button>
           <Button onClick={() => setCreateOpen(true)} style={{ borderRadius: 0 }}>
-            <UserCircleCheck size={15} className="mr-1.5" /> Log Report
+            <UserCircleCheck size={15} /> Log Report
           </Button>
         </div>
       </div>
@@ -321,7 +321,7 @@ export default function EthicsReporting() {
                   ))}
                   {selected.source === 'Named (hidden)' && (
                     <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={() => setViewIdentityOpen(true)}>
-                      <Eye size={13} className="mr-1.5" /> View Reporter Identity
+                      <Eye size={13} /> View Reporter Identity
                     </Button>
                   )}
                 </TabsContent>
@@ -336,10 +336,10 @@ export default function EthicsReporting() {
                   </div>
                   <div className="flex gap-2">
                     <Button size="sm" style={{ borderRadius: 0 }} className="flex-1">
-                      <UserCircleCheck size={13} className="mr-1.5" /> Assign Investigator
+                      <UserCircleCheck size={13} /> Assign Investigator
                     </Button>
                     <Button size="sm" variant="outline" style={{ borderRadius: 0 }} className="flex-1">
-                      <ShieldWarning size={13} className="mr-1.5" /> Escalate to Board
+                      <ShieldWarning size={13} /> Escalate to Board
                     </Button>
                   </div>
                 </TabsContent>
@@ -366,10 +366,10 @@ export default function EthicsReporting() {
                   )}
                   <div className="flex gap-2">
                     <Button size="sm" variant="outline" style={{ borderRadius: 0 }}>
-                      <Link size={13} className="mr-1.5" /> Link to Risk
+                      <Link size={13} /> Link to Risk
                     </Button>
                     <Button size="sm" variant="outline" style={{ borderRadius: 0 }}>
-                      <Link size={13} className="mr-1.5" /> Link to Incident
+                      <Link size={13} /> Link to Incident
                     </Button>
                   </div>
                 </TabsContent>

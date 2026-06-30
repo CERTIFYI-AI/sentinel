@@ -209,7 +209,7 @@ export default function IncidentPlaybooks() {
             </div>
             <Button size="sm" variant="outline" className="rounded-none border-[hsl(var(--destructive))] text-[hsl(var(--destructive))]"
               onClick={() => { setActiveIncident(ACTIVE_INCIDENTS[0]); setSelected(PLAYBOOKS.find(p => p.id === ACTIVE_INCIDENTS[0].playbookId) || null); setTab('steps'); }}>
-              Open War Room <ArrowRight size={13} className="ml-1" />
+              Open War Room <ArrowRight size={13} />
             </Button>
           </div>
           <div className="flex items-center gap-1 mt-3">

@@ -66,7 +66,7 @@ export default function ControlDetail() {
         <p className="mt-4 text-lg font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Control not found</p>
         <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>Control ID "{id}" does not exist.</p>
         <Button className="mt-4" onClick={() => navigate('/compliance/controls')} style={{ borderRadius: 0 }}>
-          <ArrowLeft size={14} className="mr-1" /> Back to Controls
+          <ArrowLeft size={14} /> Back to Controls
         </Button>
       </div>
     );
@@ -91,7 +91,7 @@ export default function ControlDetail() {
   return (
     <div className="space-y-6">
       <Button variant="ghost" size="sm" onClick={() => navigate('/compliance/controls')} style={{ padding: '4px 8px' }}>
-        <ArrowLeft size={14} className="mr-1" /> Back to Controls
+        <ArrowLeft size={14} /> Back to Controls
       </Button>
 
       {/* Header */}
@@ -195,7 +195,7 @@ export default function ControlDetail() {
                       <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-3))' }}>{ev.source} · {ev.size} · {formatDate(ev.date)}</p>
                     </div>
                     <Button size="sm" variant="outline" style={{ borderRadius: 0 }}>
-                      <FileText size={13} className="mr-1" /> View
+                      <FileText size={13} /> View
                     </Button>
                   </CardContent>
                 </Card>

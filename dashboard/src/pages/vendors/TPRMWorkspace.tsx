@@ -102,13 +102,13 @@ export default function TPRMWorkspace() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => navigate('/vendors')} style={{ borderRadius: 0 }}>
-            <Buildings size={14} className="mr-2" />All Vendors
+            <Buildings size={14} />All Vendors
           </Button>
           <Button variant="outline" onClick={() => navigate('/vendors/assessments')} style={{ borderRadius: 0 }}>
-            <ClipboardText size={14} className="mr-2" />Assessments
+            <ClipboardText size={14} />Assessments
           </Button>
           <Button variant="outline" onClick={() => navigate('/vendors/sla')} style={{ borderRadius: 0 }}>
-            <Gauge size={14} className="mr-2" />SLA Monitor
+            <Gauge size={14} />SLA Monitor
           </Button>
         </div>
       </div>
@@ -376,7 +376,7 @@ export default function TPRMWorkspace() {
                     <td className="px-4 py-2.5">
                       <Button variant="ghost" size="sm" className="h-7 px-2" style={{ borderRadius: 0 }}
                         onClick={() => navigate(`/vendors/${issue.vendorId}`)}>
-                        <Eye size={13} className="mr-1" />View
+                        <Eye size={13} />View
                       </Button>
                     </td>
                   </tr>

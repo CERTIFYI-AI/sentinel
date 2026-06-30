@@ -181,10 +181,10 @@ export default function AttackSurface() {
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" style={{ borderRadius: 0 }}>
-            <Scan size={14} className="mr-2" />Run Scan
+            <Scan size={14} />Run Scan
           </Button>
           <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={() => { setFormAsset({ ...EMPTY_ASSET }); setRegisterOpen(true); }}>
-            <Plus size={14} className="mr-2" />Register Asset
+            <Plus size={14} />Register Asset
           </Button>
         </div>
       </div>
@@ -684,7 +684,7 @@ export default function AttackSurface() {
               onClick={handleRegister}
               disabled={!formAsset.name.trim()}
             >
-              <Plus size={14} className="mr-2" />Register Asset
+              <Plus size={14} />Register Asset
             </Button>
           </DialogFooter>
         </DialogContent>

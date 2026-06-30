@@ -236,7 +236,7 @@ export default function ModelInventoryPage() {
         breadcrumbs={[{ label: 'Home', href: '/overview' }, { label: 'Models' }]}
         actions={
           <Button onClick={() => setRegisterOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-            <Plus className="h-4 w-4 mr-2" />Register Model
+            <Plus className="h-4 w-4" />Register Model
           </Button>
         }
       />
@@ -504,7 +504,7 @@ export default function ModelInventoryPage() {
                   <div className="flex gap-2 pt-2">
                     <Button size="sm" variant="outline" style={{ borderRadius: 0 }}
                       onClick={() => toast('Model card exported as PDF', 'info')}>
-                      <FilePdf size={14} className="mr-1" />Export as PDF
+                      <FilePdf size={14} />Export as PDF
                     </Button>
                   </div>
                 </TabsContent>
@@ -900,7 +900,7 @@ function RegisterModelForm({ onSubmit, nextId }: { onSubmit: (m: Model) => void;
       <div className="flex justify-end gap-2 pt-2">
         <Button disabled={!canSubmit} onClick={handleSubmit}
           style={{ borderRadius: 0, background: canSubmit ? 'hsl(var(--brand))' : undefined, color: canSubmit ? 'hsl(var(--bg-surface))' : undefined }}>
-          <Plus size={14} className="mr-1" />Register Model
+          <Plus size={14} />Register Model
         </Button>
       </div>
     </div>

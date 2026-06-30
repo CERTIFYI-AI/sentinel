@@ -381,7 +381,7 @@ export default function CommitteeManagement() {
                           <p className="text-xs text-[hsl(var(--text-3))] mt-0.5">Attendees: {m.attendees.join(', ')}</p>
                         </div>
                         <Button variant="ghost" size="sm" className="rounded-none h-7 text-xs" onClick={() => toast.success('Minutes exported')}>
-                          <Export size={12} className="mr-1" /> Export
+                          <Export size={12} /> Export
                         </Button>
                       </div>
                       <div>

@@ -108,7 +108,7 @@ export default function EvidenceSync() {
 
       <Card><CardContent className="p-0">
         {sp.paged.length === 0 ? (
-          <EmptyState icon={<FileMagnifyingGlass size={32} className="text-[hsl(var(--brand))]" />} title="No evidence found" description="Upload evidence artifacts to link to compliance controls." action={<Button size="sm" onClick={() => { setForm(EMPTY); setModal("create"); }}><Plus size={14} className="mr-1" />Upload Evidence</Button>} />
+          <EmptyState icon={<FileMagnifyingGlass size={32} className="text-[hsl(var(--brand))]" />} title="No evidence found" description="Upload evidence artifacts to link to compliance controls." action={<Button size="sm" onClick={() => { setForm(EMPTY); setModal("create"); }}><Plus size={14} />Upload Evidence</Button>} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

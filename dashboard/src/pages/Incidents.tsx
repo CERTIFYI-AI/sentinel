@@ -144,7 +144,7 @@ export default function Incidents() {
 
       <Card><CardContent className="p-0">
         {sp.paged.length === 0 ? (
-          <EmptyState icon={<Warning size={32} className="text-[hsl(var(--brand))]" />} title="No incidents found" description="Report an incident to start tracking." action={<Button size="sm" onClick={() => { setForm(EMPTY); setModal("create"); }}><Plus size={14} className="mr-1" />Report Incident</Button>} />
+          <EmptyState icon={<Warning size={32} className="text-[hsl(var(--brand))]" />} title="No incidents found" description="Report an incident to start tracking." action={<Button size="sm" onClick={() => { setForm(EMPTY); setModal("create"); }}><Plus size={14} />Report Incident</Button>} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

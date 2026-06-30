@@ -150,9 +150,9 @@ export default function PolicyFirewall() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm"><Download size={14} className="mr-1" /> Export</Button>
+          <Button variant="outline" size="sm"><Download size={14} /> Export</Button>
           <Button size="sm" onClick={() => { setFormData(EMPTY_RULE); setCreateOpen(true); }}>
-            <Plus size={14} className="mr-1" /> Add Rule
+            <Plus size={14} /> Add Rule
           </Button>
         </div>
       </div>
@@ -347,7 +347,7 @@ export default function PolicyFirewall() {
                   {viewItem.enabled ? 'Disable' : 'Enable'} Rule
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => { setEditItem({ ...viewItem }); setViewItem(null); }}>
-                  <PencilSimple size={14} className="mr-1" /> Edit
+                  <PencilSimple size={14} /> Edit
                 </Button>
               </div>
             </>

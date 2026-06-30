@@ -746,7 +746,7 @@ export default function PromptRegistry() {
           </Select>
           <Button variant="ghost" size="sm" className="h-9 text-xs"
             onClick={() => { setSearch(''); setFilterStatus('all'); setFilterCategory('all'); }}>
-            <ArrowsClockwise size={12} className="mr-1" />Reset
+            <ArrowsClockwise size={12} />Reset
           </Button>
         </div>
 

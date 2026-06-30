@@ -253,7 +253,7 @@ export default function UseCaseCreate() {
         <div className="flex justify-end gap-3">
           <Button type="button" variant="outline" onClick={() => navigate('/use-cases')} style={{ borderRadius: 0 }}>Cancel</Button>
           <Button type="submit" style={{ borderRadius: 0 }}>
-            <CheckCircle size={16} className="mr-2" />
+            <CheckCircle size={16} />
             Create Use Case
           </Button>
         </div>

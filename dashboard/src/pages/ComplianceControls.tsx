@@ -224,7 +224,7 @@ export default function ComplianceControls() {
             description="Add compliance controls to start tracking your implementation."
             action={
               <Button size="sm" onClick={() => { setForm(EMPTY); setModal("create"); }}>
-                <Plus size={14} className="mr-1" />New Control
+                <Plus size={14} />New Control
               </Button>
             }
           />

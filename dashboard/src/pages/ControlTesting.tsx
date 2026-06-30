@@ -133,10 +133,10 @@ export default function ControlTesting() {
           </div>
           <div className="flex gap-2">
             <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => toast.success('Schedule view — all test runs in calendar')}>
-              <CalendarBlank size={13} className="mr-1.5" />View Schedule
+              <CalendarBlank size={13} />View Schedule
             </Button>
             <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={runAllTests} disabled={runningAll}>
-              <Play size={13} className="mr-1.5" />{runningAll ? 'Running…' : 'Run All Now'}
+              <Play size={13} />{runningAll ? 'Running…' : 'Run All Now'}
             </Button>
           </div>
         </div>
@@ -219,7 +219,7 @@ export default function ControlTesting() {
                         <div className="flex gap-1 mt-1.5 justify-end">
                           <Button size="sm" variant="outline" className="h-6 text-[9px] px-2" style={{ borderRadius: 0 }}
                             onClick={() => toast.success(`Running ${test.id}…`)}>
-                            <Play size={8} className="mr-0.5" />Run
+                            <Play size={8} />Run
                           </Button>
                           {test.status === 'failed' && (
                             <Button size="sm" className="h-6 text-[9px] px-2" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}

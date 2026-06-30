@@ -183,7 +183,7 @@ export default function VulnTracker() {
         breadcrumbs={[{ label: 'Dashboard', href: '/' }, { label: 'Security', href: '/security' }, { label: 'Vulnerabilities' }]}
         actions={
           <Button variant="outline" style={{ borderRadius: 0 }}>
-            <Upload size={14} className="mr-2" />Import Scan Results
+            <Upload size={14} />Import Scan Results
           </Button>
         }
       />

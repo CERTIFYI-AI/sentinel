@@ -105,10 +105,10 @@ export default function PolicyManagement() {
         </div>
         <div className="flex gap-2 relative">
           <div className="relative">
-            <Button variant="outline" className="border-[hsl(var(--border-mid))] text-[hsl(var(--text-2))]" onClick={() => setExportMenu(!exportMenu)}><Download className="w-4 h-4 mr-2"/>Export</Button>
+            <Button variant="outline" className="border-[hsl(var(--border-mid))] text-[hsl(var(--text-2))]" onClick={() => setExportMenu(!exportMenu)}><Download className="w-4 h-4"/>Export</Button>
             {exportMenu && <div className="absolute right-0 top-10 z-50 bg-surface border border-[hsl(var(--border-mid))] rounded-lg shadow-xl py-1 w-32">{["csv","pdf","json"].map(f=><button key={f} className="w-full text-left px-3 py-2 text-sm text-[hsl(var(--text-2))] hover:bg-muted" onClick={()=>doExport(f)}>{f.toUpperCase()}</button>)}</div>}
           </div>
-          <Button className="bg-[hsl(var(--brand))] hover:bg-primary/90 text-foreground" onClick={openCreate}><Plus className="w-4 h-4 mr-2"/>New Policy</Button>
+          <Button className="bg-[hsl(var(--brand))] hover:bg-primary/90 text-foreground" onClick={openCreate}><Plus className="w-4 h-4"/>New Policy</Button>
         </div>
       </div>
 
@@ -209,7 +209,7 @@ export default function PolicyManagement() {
               <SheetTitle className="text-foreground">{sel?.name}</SheetTitle>
               {sel && (
                 <Button size="sm" variant="outline" className="border-[hsl(var(--border-mid))] text-[hsl(var(--text-2))] h-7 text-xs" onClick={()=>exportPDF(sel)}>
-                  <FilePdf className="w-3 h-3 mr-1"/>Export PDF
+                  <FilePdf className="w-3 h-3"/>Export PDF
                 </Button>
               )}
             </div>
@@ -280,7 +280,7 @@ export default function PolicyManagement() {
                 ))}
                 {sel.versions.length > 1 && (
                   <Button variant="outline" className="border-[hsl(var(--border-mid))] text-[hsl(var(--text-2))] w-full mt-2" onClick={()=>setDiffOpen(true)}>
-                    <GitBranch className="w-3 h-3 mr-2"/>Compare Versions
+                    <GitBranch className="w-3 h-3"/>Compare Versions
                   </Button>
                 )}
               </TabsContent>
@@ -292,7 +292,7 @@ export default function PolicyManagement() {
                     {c.score>0&&<div className="mt-2"><div className="flex justify-between text-xs text-[hsl(var(--text-3))] mb-1"><span>Effectiveness</span><span>{c.score}%</span></div><div className="w-full bg-muted rounded-full h-1.5"><div className="h-1.5 rounded-full bg-[hsl(var(--brand))]" style={{width:`${c.score}%`}}/></div></div>}
                   </div>
                 ))}
-                <Button variant="outline" className="border-[hsl(var(--border-mid))] text-[hsl(var(--text-2))] w-full mt-2"><Shield className="w-4 h-4 mr-2"/>Link Control</Button>
+                <Button variant="outline" className="border-[hsl(var(--border-mid))] text-[hsl(var(--text-2))] w-full mt-2"><Shield className="w-4 h-4"/>Link Control</Button>
               </TabsContent>
             </Tabs>
           </>

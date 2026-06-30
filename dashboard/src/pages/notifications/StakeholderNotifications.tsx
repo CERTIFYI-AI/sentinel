@@ -193,7 +193,7 @@ export default function StakeholderNotifications() {
           <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>Regulatory incident notifications for DORA, NIS2, EU AI Act Art. 73</p>
         </div>
         <Button variant="outline" style={{ borderRadius: 0 }}>
-          <Gear size={14} className="mr-2" />Configure Recipients
+          <Gear size={14} />Configure Recipients
         </Button>
       </div>
 
@@ -253,7 +253,7 @@ export default function StakeholderNotifications() {
                         </td>
                         <td className="px-4 py-3">
                           <Button size="sm" className="h-7 text-xs" onClick={() => openWorkflow(inc)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-                            <PaperPlaneTilt size={12} className="mr-1" />Notify Regulator
+                            <PaperPlaneTilt size={12} />Notify Regulator
                           </Button>
                         </td>
                       </tr>
@@ -288,14 +288,14 @@ export default function StakeholderNotifications() {
 
                   <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" className="text-xs" onClick={() => openEditTemplate(tmpl)} style={{ borderRadius: 0 }}>
-                      <PencilSimple size={12} className="mr-1" />Edit Template
+                      <PencilSimple size={12} />Edit Template
                     </Button>
                     <Button size="sm" className="text-xs" onClick={() => {
                       const inc = INCIDENT_NOTIFICATIONS.find(i => i.regulation === tmpl.regulation);
                       if (inc) openWorkflow(inc);
                       else toast('No active incident for this regulation', 'info');
                     }} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-                      <PaperPlaneTilt size={12} className="mr-1" />Send Notification
+                      <PaperPlaneTilt size={12} />Send Notification
                     </Button>
                   </div>
 
@@ -510,11 +510,11 @@ export default function StakeholderNotifications() {
             )}
             {workflowStep < 5 ? (
               <Button onClick={() => setWorkflowStep(s => s + 1)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-                Next <ArrowRight size={12} className="ml-1" />
+                Next <ArrowRight size={12} />
               </Button>
             ) : (
               <Button onClick={handleSendNotification} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-                <PaperPlaneTilt size={14} className="mr-2" />Send Notification
+                <PaperPlaneTilt size={14} />Send Notification
               </Button>
             )}
           </DialogFooter>

@@ -178,10 +178,10 @@ export default function VendorSLA() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleExport} style={{ borderRadius: 0 }}>
-            <Export className="h-4 w-4 mr-2" />Export CSV
+            <Export className="h-4 w-4" />Export CSV
           </Button>
           <Button onClick={() => setCreateOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-            <Plus className="h-4 w-4 mr-2" />Add SLA
+            <Plus className="h-4 w-4" />Add SLA
           </Button>
         </div>
       </div>
@@ -414,10 +414,10 @@ export default function VendorSLA() {
 
                 <div className="flex gap-2 pt-2">
                   <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={() => navigate(`/vendors/${selected.vendorId}`)}>
-                    <Buildings size={13} className="mr-1" />View Vendor
+                    <Buildings size={13} />View Vendor
                   </Button>
                   <Button size="sm" variant="outline" style={{ borderRadius: 0, color: 'hsl(var(--destructive))' }} onClick={() => { setDeleteTarget(selected); setSelected(null); }}>
-                    <Trash size={13} className="mr-1" />Delete SLA
+                    <Trash size={13} />Delete SLA
                   </Button>
                 </div>
               </div>

@@ -297,10 +297,10 @@ export default function TrustEngineDashboard() {
         actions={
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => setAlertConfigOpen(true)} style={{ borderRadius: 0 }}>
-              <Bell size={14} className="mr-2" />Alert Config
+              <Bell size={14} />Alert Config
             </Button>
             <Button onClick={() => setCreateOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-              <Plus size={14} className="mr-2" />Create Rule
+              <Plus size={14} />Create Rule
             </Button>
           </div>
         }

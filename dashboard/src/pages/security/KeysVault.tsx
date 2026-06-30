@@ -166,7 +166,7 @@ export default function KeysVault() {
         </div>
         <div className="flex gap-2">
           <Button size="sm" onClick={() => { setFormData(EMPTY_KEY); setCreateOpen(true); }}>
-            <Plus size={14} className="mr-1" /> Add Key
+            <Plus size={14} /> Add Key
           </Button>
         </div>
       </div>
@@ -369,11 +369,11 @@ export default function KeysVault() {
               <div className="flex gap-2 mt-6">
                 {viewItem.status === 'active' && (
                   <Button size="sm" onClick={() => { setRotateItem(viewItem); setViewItem(null); }}>
-                    <ArrowsClockwise size={14} className="mr-1" /> Rotate
+                    <ArrowsClockwise size={14} /> Rotate
                   </Button>
                 )}
                 <Button size="sm" variant="outline" onClick={() => { setEditItem({ ...viewItem }); setViewItem(null); }}>
-                  <PencilSimple size={14} className="mr-1" /> Edit
+                  <PencilSimple size={14} /> Edit
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => setViewItem(null)}>Close</Button>
               </div>

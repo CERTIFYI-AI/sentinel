@@ -246,18 +246,18 @@ export default function TrustConfig() {
           <div className="flex items-center gap-3">
             {dirty && <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: 'hsl(var(--s-wn-tx))' }}><Warning size={14} />Unsaved changes</span>}
             <Button variant="outline" onClick={() => setShowAuditLog(s => !s)} style={{ borderRadius: 0 }}>
-              <Clock className="h-4 w-4 mr-2" />Audit Log ({auditLog.length})
+              <Clock className="h-4 w-4" />Audit Log ({auditLog.length})
             </Button>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="outline" onClick={handleReset} disabled={!dirty} style={{ borderRadius: 0 }}>
-                  <ArrowCounterClockwise className="h-4 w-4 mr-2" />Reset to Last Saved
+                  <ArrowCounterClockwise className="h-4 w-4" />Reset to Last Saved
                 </Button>
               </TooltipTrigger>
               <TooltipContent style={{ borderRadius: 0, maxWidth: 260 }}>Reverts all changes to the last successfully saved state.</TooltipContent>
             </Tooltip>
             <Button onClick={handleSave} disabled={!dirty} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-              <FloppyDisk className="h-4 w-4 mr-2" />Save Configuration
+              <FloppyDisk className="h-4 w-4" />Save Configuration
             </Button>
           </div>
         </div>
@@ -396,7 +396,7 @@ export default function TrustConfig() {
                     <ShieldCheck size={16} style={{ color: 'hsl(var(--brand))' }} />
                     <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Default Guardrails</CardTitle>
                   </div>
-                  <Button size="sm" variant="outline" onClick={addGuardrail} style={{ borderRadius: 0, height: 28 }}><Plus size={13} className="mr-1" />Add Row</Button>
+                  <Button size="sm" variant="outline" onClick={addGuardrail} style={{ borderRadius: 0, height: 28 }}><Plus size={13} />Add Row</Button>
                 </div>
               </CardHeader>
               <CardContent className="p-0">
@@ -638,7 +638,7 @@ export default function TrustConfig() {
                         </div>
                       )}
                       <Button variant="outline" size="sm" onClick={() => handleTestConnection(int.id)} style={{ borderRadius: 0 }}>
-                        <TestTube size={14} className="mr-2" />Test Connection
+                        <TestTube size={14} />Test Connection
                       </Button>
                     </div>
                   )}

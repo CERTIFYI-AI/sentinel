@@ -103,7 +103,7 @@ export default function AuditLog() {
         breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Audit Log' }]}
         actions={
           <Button variant="outline" onClick={handleExport} style={{ borderRadius: 0 }}>
-            <Export className="h-4 w-4 mr-2" />Export
+            <Export className="h-4 w-4" />Export
           </Button>
         }
       />

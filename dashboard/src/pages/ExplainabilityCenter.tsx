@@ -180,7 +180,7 @@ export default function ExplainabilityCenter() {
 
       <Card><CardContent className="p-0">
         {sp.paged.length === 0 ? (
-          <EmptyState icon={<Brain size={32} className="text-[hsl(var(--brand))]" />} title="No explanation runs found" description="Create an explanation run to start analyzing model decisions." action={<Button size="sm" onClick={() => { setForm(EMPTY); setModal("create"); }}><Plus size={14} className="mr-1" />New Run</Button>} />
+          <EmptyState icon={<Brain size={32} className="text-[hsl(var(--brand))]" />} title="No explanation runs found" description="Create an explanation run to start analyzing model decisions." action={<Button size="sm" onClick={() => { setForm(EMPTY); setModal("create"); }}><Plus size={14} />New Run</Button>} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
