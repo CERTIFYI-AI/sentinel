@@ -1,3 +1,7 @@
+## 1.11.0 (2026-06-30)
+
+* feat(models): consistent headers/breadcrumbs for Model DNA & Prompt Registry ([d53c7ec](https://github.com/CERTIFYI-AI/sentinel/commit/d53c7ec))
+
 ## 1.10.0 (2026-06-30)
 
 * feat(models): enterprise Model Lifecycle — PageHeader, tokens, gate actions ([834bd3f](https://github.com/CERTIFYI-AI/sentinel/commit/834bd3f))
