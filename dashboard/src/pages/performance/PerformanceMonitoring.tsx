@@ -111,6 +111,8 @@ const STATUS_COLORS: Record<string, { bg: string; color: string; dot: string }> 
   degraded: { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(var(--s-wn-tx))', dot: 'hsl(var(--s-wn-tx))' },
   down: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))', dot: 'hsl(var(--s-er-tx))' },
 };
+const STATUS_COLOR_FALLBACK = { bg: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))', dot: 'hsl(var(--text-4))' };
+const statusColors = (k: string) => STATUS_COLORS[k] ?? STATUS_COLOR_FALLBACK;
 
 const ALERT_COLORS: Record<AlertSeverity, { bg: string; color: string }> = {
   critical: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
@@ -231,7 +233,7 @@ export default function PerformanceMonitoring() {
           const sloOk = ep.sloActual >= ep.slo;
           const sloColor = sloOk ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))';
           return (
-            <Card key={ep.modelId} style={{ borderRadius: 0, cursor: 'pointer', borderLeft: `3px solid ${STATUS_COLORS[ep.status].dot}` }}
+            <Card key={ep.modelId} style={{ borderRadius: 0, cursor: 'pointer', borderLeft: `3px solid ${statusColors(ep.status).dot}` }}
               onClick={() => { setSelected(ep); setTab('overview'); }}
               className="hover:border-[hsl(var(--brand))] transition-colors">
               <CardContent className="p-4 space-y-3">
@@ -240,7 +242,7 @@ export default function PerformanceMonitoring() {
                     <p className="font-medium text-sm text-[hsl(var(--text-1))]">{ep.modelName}</p>
                     <p className="text-xs font-mono text-[hsl(var(--text-4))] mt-0.5">{ep.endpoint}</p>
                   </div>
-                  <Badge style={{ ...STATUS_COLORS[ep.status], borderRadius: 0, fontSize: 10, textTransform: 'capitalize' }}>{ep.status}</Badge>
+                  <Badge style={{ ...statusColors(ep.status), borderRadius: 0, fontSize: 10, textTransform: 'capitalize' }}>{ep.status}</Badge>
                 </div>
 
                 <div className="grid grid-cols-4 gap-2 text-center">
@@ -332,7 +334,7 @@ export default function PerformanceMonitoring() {
                     <SheetTitle className="text-base">{selected.modelName}</SheetTitle>
                     <p className="text-xs font-mono text-[hsl(var(--text-3))] mt-1">{selected.endpoint}</p>
                   </div>
-                  <Badge style={{ ...STATUS_COLORS[selected.status], borderRadius: 0, textTransform: 'capitalize', fontSize: 10 }}>{selected.status}</Badge>
+                  <Badge style={{ ...statusColors(selected.status), borderRadius: 0, textTransform: 'capitalize', fontSize: 10 }}>{selected.status}</Badge>
                 </div>
               </SheetHeader>
 

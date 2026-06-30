@@ -82,6 +82,12 @@ const WORKFLOW: Record<IncidentStatus, WorkflowState> = {
   },
 };
 
+const WORKFLOW_FALLBACK: WorkflowState = {
+  label: 'Unknown', description: 'Status not recognized',
+  color: 'hsl(var(--text-3))', bgColor: 'hsl(var(--bg-muted))', nextStates: [], slaHours: 0,
+};
+const workflowState = (s: string): WorkflowState => WORKFLOW[s as IncidentStatus] ?? WORKFLOW_FALLBACK;
+
 type LocalIncident = typeof INCIDENTS[0] & {
   status2: IncidentStatus;
   createdDate: string;
@@ -277,7 +283,7 @@ export default function IncidentWorkflow() {
       const slaHours = ws.slaHours ?? inc.slaHours;
       return { ...inc, status2: nextStatus, slaHours, resolved: nextStatus === 'resolved' || nextStatus === 'post_mortem' };
     }));
-    toast.success(`Incident moved to ${WORKFLOW[nextStatus as IncidentStatus].label}`);
+    toast.success(`Incident moved to ${workflowState(nextStatus).label}`);
   }
 
   const filtered = filterStatus === 'all' ? incidents : incidents.filter(i => i.status2 === filterStatus);
@@ -348,7 +354,7 @@ export default function IncidentWorkflow() {
               >
                 <option value="all">All Statuses</option>
                 {(Object.keys(WORKFLOW) as IncidentStatus[]).map(s => (
-                  <option key={s} value={s}>{WORKFLOW[s].label}</option>
+                  <option key={s} value={s}>{workflowState(s).label}</option>
                 ))}
               </select>
             </div>
@@ -422,7 +428,7 @@ export default function IncidentWorkflow() {
               <div style={{ marginBottom: 14 }}>
                 <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'hsl(var(--text-4))', marginBottom: 8 }}>Workflow Transitions</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {WORKFLOW[selected.status2 as IncidentStatus].nextStates.map((nextStatus: any) => {
+                  {workflowState(selected.status2).nextStates.map((nextStatus: any) => {
                     const ws = WORKFLOW[nextStatus as IncidentStatus];
                     return (
                       <button
@@ -438,7 +444,7 @@ export default function IncidentWorkflow() {
                       </button>
                     );
                   })}
-                  {WORKFLOW[selected.status2 as IncidentStatus].nextStates.length === 0 && (
+                  {workflowState(selected.status2).nextStates.length === 0 && (
                     <div style={{ padding: '8px 12px', background: 'hsl(var(--s-ok-bg))', border: '1px solid hsl(var(--s-ok-br))' }}>
                       <p style={{ fontSize: 12, color: 'hsl(var(--s-ok-tx))', display: 'flex', alignItems: 'center', gap: 6 }}>
                         <CheckCircle size={14} /> Workflow complete
@@ -451,7 +457,7 @@ export default function IncidentWorkflow() {
               <div style={{ borderTop: '1px solid hsl(var(--border))', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {[
                   { label: 'Severity', value: selected.severity, color: severityColor(selected.severity).text },
-                  { label: 'Status', value: WORKFLOW[selected.status2 as IncidentStatus].label, color: WORKFLOW[selected.status2 as IncidentStatus].color },
+                  { label: 'Status', value: workflowState(selected.status2).label, color: workflowState(selected.status2).color },
                   { label: 'Assignee', value: selected.assignee, color: 'hsl(var(--text-1))' },
                   { label: 'Date Opened', value: formatDate(selected.date), color: 'hsl(var(--text-1))' },
                   { label: 'Model Affected', value: selected.model || 'N/A', color: 'hsl(var(--text-1))' },

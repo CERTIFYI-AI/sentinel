@@ -306,6 +306,8 @@ const EFFECTIVENESS_COLOR: Record<string, { bg: string; text: string }> = {
   Medium: { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))' },
   Low: { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))' },
 };
+const EFFECTIVENESS_FALLBACK = { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))' };
+const effectivenessColor = (k: string) => EFFECTIVENESS_COLOR[k] ?? EFFECTIVENESS_FALLBACK;
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function fmt(d: string) {
@@ -1019,7 +1021,7 @@ export default function ExceptionManagement() {
                         <div className="flex items-center justify-between gap-2">
                           <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{ctrl.control}</p>
                           <span className="text-[10px] px-2 py-0.5 font-semibold"
-                            style={{ background: EFFECTIVENESS_COLOR[ctrl.effectiveness].bg, color: EFFECTIVENESS_COLOR[ctrl.effectiveness].text }}>
+                            style={{ background: effectivenessColor(ctrl.effectiveness).bg, color: effectivenessColor(ctrl.effectiveness).text }}>
                             {ctrl.effectiveness} Effectiveness
                           </span>
                         </div>

@@ -292,6 +292,8 @@ const OUTCOME_STYLES: Record<OutcomeType, { bg: string; text: string; icon: Reac
   Partial: { bg: 'bg-amber-500/15', text: 'text-amber-400', icon: ArrowsClockwise },
   Pending: { bg: 'bg-blue-500/15', text: 'text-blue-400', icon: ArrowsClockwise },
 };
+const OUTCOME_FALLBACK = { bg: 'bg-zinc-500/15', text: 'text-zinc-400', icon: ArrowsClockwise } as const;
+const outcomeStyle = (o: string) => OUTCOME_STYLES[o as OutcomeType] ?? OUTCOME_FALLBACK;
 
 const CATEGORY_ICON: Record<CategoryType, React.ElementType> = {
   model: Robot,
@@ -479,7 +481,7 @@ export default function AuditTrail() {
               </thead>
               <tbody>
                 {paginated.map((e) => {
-                  const OutcomeIcon = OUTCOME_STYLES[e.outcome].icon;
+                  const OutcomeIcon = outcomeStyle(e.outcome).icon;
                   return (
                     <tr
                       key={e.id}
@@ -498,7 +500,7 @@ export default function AuditTrail() {
                         <Badge className={`text-xs ${CATEGORY_STYLES[e.category]}`}>{e.category.replace('_', ' ')}</Badge>
                       </td>
                       <td className="py-3 pr-4">
-                        <span className={`flex items-center gap-1 text-xs font-medium ${OUTCOME_STYLES[e.outcome].text}`}>
+                        <span className={`flex items-center gap-1 text-xs font-medium ${outcomeStyle(e.outcome).text}`}>
                           <OutcomeIcon className="w-3.5 h-3.5" />
                           {e.outcome}
                         </span>

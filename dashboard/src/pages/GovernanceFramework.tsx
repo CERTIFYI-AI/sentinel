@@ -19,6 +19,8 @@ const MATURITY_COLORS: Record<MaturityLevel, { bg: string; color: string; dot: s
 const MATURITY_WEIGHT: Record<MaturityLevel, number> = {
   'Not Started': 0, 'Planned': 0.25, 'In Progress': 0.6, 'Implemented': 1,
 };
+const MATURITY_FALLBACK = { bg: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-4))', dot: 'hsl(var(--text-4))' };
+const maturityColor = (lvl: MaturityLevel | undefined) => MATURITY_COLORS[lvl as MaturityLevel] ?? MATURITY_FALLBACK;
 
 const PILLARS = [
   {
@@ -183,9 +185,9 @@ export default function GovernanceFramework() {
                       className="text-xs px-2 py-1 transition-all"
                       style={{
                         borderRadius: 0,
-                        border: `1px solid ${level === lvl ? MATURITY_COLORS[lvl].dot : 'hsl(var(--border))'}`,
-                        background: level === lvl ? MATURITY_COLORS[lvl].bg : 'transparent',
-                        color: level === lvl ? MATURITY_COLORS[lvl].color : 'hsl(var(--text-4))',
+                        border: `1px solid ${level === lvl ? maturityColor(lvl).dot : 'hsl(var(--border))'}`,
+                        background: level === lvl ? maturityColor(lvl).bg : 'transparent',
+                        color: level === lvl ? maturityColor(lvl).color : 'hsl(var(--text-4))',
                         fontWeight: level === lvl ? 600 : 400,
                         cursor: 'pointer',
                       }}
@@ -224,8 +226,8 @@ export default function GovernanceFramework() {
                   <h3 className="text-sm font-bold" style={{ color: 'hsl(var(--text-1))' }}>{p.title}</h3>
                   <div className="flex items-center gap-1 mt-0.5">
                     <span className="text-[10px] px-1.5 py-0.5" style={{
-                      background: MATURITY_COLORS[maturity[p.id]].bg,
-                      color: MATURITY_COLORS[maturity[p.id]].color,
+                      background: maturityColor(maturity[p.id]).bg,
+                      color: maturityColor(maturity[p.id]).color,
                     }}>
                       {maturity[p.id]}
                     </span>

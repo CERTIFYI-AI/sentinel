@@ -3,7 +3,7 @@ import { Badge } from '../../components/ui/badge';
 import {
   CalendarBlank, Warning, CheckCircle, Clock, Kanban, Plus, X,
 } from '@phosphor-icons/react';
-import { TASKS, TASK_STATUS_CONFIG, type Task, type TaskStatus } from './taskData';
+import { TASKS, TASK_STATUS_CONFIG, taskStatusConfig, type Task, type TaskStatus } from './taskData';
 import { severityColor, formatDate } from '../../data/seed';
 import type { Severity } from '../../data/seed';
 
@@ -197,12 +197,12 @@ export default function TaskBoard({ onSelectTask }: { onSelectTask?: (task: Task
               <span style={{ fontSize: 11, fontFamily: 'monospace', color: 'hsl(var(--text-3))' }}>{selectedTask.id}</span>
               <PriorityBadge priority={selectedTask.priority} />
               <Badge style={{
-                background: TASK_STATUS_CONFIG[selectedTask.status].bg,
-                color: TASK_STATUS_CONFIG[selectedTask.status].text,
-                border: `1px solid ${TASK_STATUS_CONFIG[selectedTask.status].border}`,
+                background: taskStatusConfig(selectedTask.status).bg,
+                color: taskStatusConfig(selectedTask.status).text,
+                border: `1px solid ${taskStatusConfig(selectedTask.status).border}`,
                 borderRadius: 0, fontSize: 10,
               }}>
-                {TASK_STATUS_CONFIG[selectedTask.status].label}
+                {taskStatusConfig(selectedTask.status).label}
               </Badge>
             </div>
             <button onClick={() => setSelectedTask(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'hsl(var(--text-3))' }}>

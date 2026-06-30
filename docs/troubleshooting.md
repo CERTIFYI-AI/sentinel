@@ -193,3 +193,61 @@ curl http://localhost:8080/v1/chat/completions \
 # Check golden source count
 python -c "from sentinel.storage.vector_store import VectorStore; import asyncio; print(asyncio.run(VectorStore().count('default')))"
 ```
+
+---
+
+## Dashboard (Frontend) Issues
+
+### `Cannot read properties of undefined (reading 'bg')` (or `'text'`, `'label'`, `'color'`)
+
+**Cause.** A page indexed a status/category → style map with a key that wasn't in
+the map (commonly a status string coming from live Supabase data that doesn't
+match the hard-coded keys), e.g. `STATUS_COLORS[row.status].bg` where
+`row.status` is an unexpected value. `STATUS_COLORS[badKey]` is `undefined`, so
+reading `.bg` throws.
+
+**What you'll now see.** Instead of a blank screen with a generic
+"Application Error", the routed page renders an **enterprise error panel**
+([`src/components/ErrorBoundary.tsx`](../dashboard/src/components/ErrorBoundary.tsx))
+that shows: the verbatim error message, the route it occurred on, a correlation
+`Error ID`, **Retry render / Hard reload / Back to Overview** actions, a
+**Copy diagnostics** button (message + stack + component stack + route +
+timestamp), and a dev-only stack trace. The app shell (sidebar/header) stays
+mounted, and the boundary auto-clears when you navigate to another route.
+
+**The fix (for contributors).** Never index a style map directly with
+data-driven keys. Add a fallback object and a safe accessor next to the map:
+
+```ts
+const STATUS_COLORS: Record<string, { bg: string; color: string; dot: string }> = { /* … */ };
+const STATUS_FALLBACK = { bg: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))', dot: 'hsl(var(--text-4))' };
+const statusColors = (k: string) => STATUS_COLORS[k] ?? STATUS_FALLBACK;
+
+// usage — never throws on an unknown key:
+<span style={{ background: statusColors(row.status).bg }} />
+```
+
+This pattern is already applied in `AuditTrail`, `IncidentWorkflow`,
+`PerformanceMonitoring`, `GovernanceFramework`, `exceptions/ExceptionManagement`,
+and the `tasks/*` board (see `taskStatusConfig`).
+
+### Phased-plan / agent route aliases
+
+The canonical agent paths redirect to their module pages
+([`src/App.tsx`](../dashboard/src/App.tsx)):
+
+| Path           | Redirects to   | Module                    |
+| -------------- | -------------- | ------------------------- |
+| `/dashboard`   | `/overview`    | Executive Dashboard       |
+| `/audit`       | `/audit-trail` | Audit Agent (audit trail) |
+| `/containment` | `/kill-switch` | Containment / kill-switch |
+| `/regulatory`  | `/reg-radar`   | Regulator intelligence    |
+
+Other agent modules resolve directly: `/risks`, `/hitl`, `/dsr`, `/compliance`,
+`/vendors`, `/data-governance`.
+
+### Command palette / keyboard
+
+Press **⌘K** (macOS) or **Ctrl+K** to open the command palette
+([`src/components/CommandPalette.tsx`](../dashboard/src/components/CommandPalette.tsx));
+`/` focuses search from anywhere outside an input.

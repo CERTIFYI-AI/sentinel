@@ -321,6 +321,11 @@ export default function App() {
           <Route path="/evals/results" element={<Suspense fallback={<Loading />}><EvalResultsViewer /></Suspense>} />
           <Route path="/evals/benchmark" element={<Benchmark />} />
           <Route path="/evals/datasets" element={<Datasets />} />
+          {/* Phased-plan path aliases — canonical agent routes redirect to their module pages */}
+          <Route path="/dashboard" element={<Navigate to="/overview" replace />} />
+          <Route path="/audit" element={<Navigate to="/audit-trail" replace />} />
+          <Route path="/containment" element={<Navigate to="/kill-switch" replace />} />
+          <Route path="/regulatory" element={<Navigate to="/reg-radar" replace />} />
           <Route path="/compliance" element={<ComplianceDashboard />} />
           <Route path="/compliance/controls" element={<ComplianceControls />} />
           <Route path="/compliance/frameworks" element={<Suspense fallback={<Loading />}><FrameworkCatalog /></Suspense>} />

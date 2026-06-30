@@ -262,6 +262,8 @@ const statusConfig: Record<TaskStatus, { label: string; bg: string; text: string
   overdue:     { label: 'Overdue',     bg: 'hsl(var(--s-er-bg))',  text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))' },
   blocked:     { label: 'Blocked',     bg: 'hsl(var(--r-hi-bg))',  text: 'hsl(var(--r-hi-tx))', border: 'hsl(var(--r-hi-br))' },
 };
+const STATUS_FALLBACK = { label: 'Unknown', bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))', border: 'hsl(var(--border))' };
+const statusCfg = (s: string) => statusConfig[s as TaskStatus] ?? STATUS_FALLBACK;
 
 const KANBAN_COLUMNS: TaskStatus[] = ['todo', 'in_progress', 'review', 'done', 'blocked'];
 
@@ -449,12 +451,12 @@ export default function Tasks() {
     const overId = String(over.id);
     if (KANBAN_COLUMNS.includes(overId as TaskStatus)) {
       setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: overId as TaskStatus } : t));
-      toast.success(`Task moved to ${statusConfig[overId as TaskStatus].label}`);
+      toast.success(`Task moved to ${statusCfg(overId).label}`);
     } else {
       const overTask = tasks.find(t => t.id === overId);
       if (overTask && overTask.status !== tasks.find(t => t.id === taskId)?.status) {
         setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: overTask.status } : t));
-        toast.success(`Task moved to ${statusConfig[overTask.status].label}`);
+        toast.success(`Task moved to ${statusCfg(overTask.status).label}`);
       }
     }
   }

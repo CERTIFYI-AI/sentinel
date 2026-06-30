@@ -24,6 +24,10 @@ export const TASK_STATUS_CONFIG: Record<TaskStatus, { label: string; bg: string;
   overdue:     { label: 'Overdue',     bg: 'hsl(var(--s-er-bg))',  text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))' },
 };
 
+const TASK_STATUS_FALLBACK = { label: 'Unknown', bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))', border: 'hsl(var(--border))' };
+/** Safe accessor — never throws on an unrecognized status key. */
+export const taskStatusConfig = (s: string) => TASK_STATUS_CONFIG[s as TaskStatus] ?? TASK_STATUS_FALLBACK;
+
 export const TASKS: Task[] = [
   {
     id: 'TSK-001',
