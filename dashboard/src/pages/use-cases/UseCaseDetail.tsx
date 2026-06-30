@@ -429,7 +429,7 @@ export default function UseCaseDetail() {
               <div className="p-4 border-b border-[hsl(var(--border))]">
                 <h3 className="font-semibold text-[hsl(var(--s-er-tx))]">Danger Zone</h3>
               </div>
-              <div className="p-6 space-y-4">
+              <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="text-sm font-bold">Transfer Ownership</h4>

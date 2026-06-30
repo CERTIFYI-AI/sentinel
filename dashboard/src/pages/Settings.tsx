@@ -41,7 +41,7 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<Tab>("general");
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-5">
       <div className="flex items-center gap-3">
         <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg"><SettingsIcon size={20} className="text-slate-600 dark:text-slate-400" /></div>
         <div>

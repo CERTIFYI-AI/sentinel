@@ -81,7 +81,7 @@ export default function GapAnalysis() {
   const criticalGaps = FRAMEWORKS.reduce((s, f) => s + f.controls.filter(c => c.status !== "met" && c.priority === "critical").length, 0);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-orange-100 dark:bg-orange-950 rounded-lg"><Target size={20} className="text-orange-600 dark:text-orange-400" /></div>

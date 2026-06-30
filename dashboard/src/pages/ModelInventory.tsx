@@ -116,7 +116,7 @@ export default function ModelInventory() {
   if (live && error) return <div className="p-6"><ErrorState title="Could not load models" error={error} onRetry={() => window.location.reload()} /></div>;
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="space-y-4">
       <PageHeader
         title="Model Inventory"
         subtitle="AI/ML model registry with EU AI Act risk classification"

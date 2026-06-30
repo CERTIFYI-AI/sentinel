@@ -54,7 +54,7 @@ export default function Datasets() {
   const totalSamples = DATASETS.reduce((s, d) => s + d.samples, 0);
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="space-y-4">
       <PageHeader
         title="Dataset Hub"
         subtitle={`${DATASETS.length} evaluation datasets · ${totalSamples.toLocaleString()} total samples`}

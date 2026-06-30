@@ -56,7 +56,7 @@ export default function Remediation() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-amber-100 dark:bg-amber-950 rounded-lg"><Wrench size={20} className="text-amber-600 dark:text-amber-400" /></div>

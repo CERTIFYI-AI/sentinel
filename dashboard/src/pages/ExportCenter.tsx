@@ -63,7 +63,7 @@ export default function ExportCenter() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-teal-100 dark:bg-teal-950 rounded-lg"><Download size={20} className="text-teal-600 dark:text-teal-400" /></div>

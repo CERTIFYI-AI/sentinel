@@ -64,7 +64,7 @@ export default function RiskMatrix() {
   };
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="space-y-4">
       <PageHeader
         title="Risk Matrix"
         subtitle="AI risk assessment aligned to ISO 31000 and NIST AI RMF"

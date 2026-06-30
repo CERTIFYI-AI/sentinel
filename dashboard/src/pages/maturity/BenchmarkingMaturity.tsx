@@ -532,7 +532,7 @@ export default function BenchmarkingMaturity() {
                 <div className="h-1 bg-raised">
                   <div className="h-1 bg-[hsl(var(--brand))] transition-all" style={{ width: `${((assessStep + 1) / ASSESSMENT_QUESTIONS.length) * 100}%` }} />
                 </div>
-                <div className="p-6 space-y-5">
+                <div className="space-y-4">
                   <div>
                     <p className="text-[10px] font-semibold text-[hsl(var(--brand))] uppercase tracking-wider mb-1">{ASSESSMENT_QUESTIONS[assessStep].dimension}</p>
                     <p className="text-sm font-medium text-[hsl(var(--text-1))]">{ASSESSMENT_QUESTIONS[assessStep].question}</p>
@@ -583,7 +583,7 @@ export default function BenchmarkingMaturity() {
               </>
             ) : (
               <>
-                <div className="p-6 space-y-4">
+                <div className="space-y-4">
                   <div className="text-center py-4">
                     <CheckCircle size={48} className="text-[hsl(var(--s-ok-tx))] mx-auto mb-3" weight="duotone" />
                     <h3 className="text-base font-semibold text-[hsl(var(--text-1))]">Assessment Complete</h3>

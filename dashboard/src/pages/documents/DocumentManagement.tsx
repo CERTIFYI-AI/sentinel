@@ -216,7 +216,7 @@ export default function DocumentManagement() {
             <SheetTitle className="text-lg font-bold" style={{color:'hsl(var(--text-1))'}}>{editId ? 'Edit Policy Document' : 'Add New Policy'}</SheetTitle>
             <p className="text-xs mt-1" style={{color:'hsl(var(--text-4))'}}>Fill in the details below to {editId ? 'update' : 'add a new'} policy document.</p>
           </div>
-          <div className="p-6 space-y-5">
+          <div className="space-y-4">
             {/* Section: Basic Info */}
             <div className="space-y-4">
               <h3 className="text-xs font-bold uppercase tracking-wider" style={{color:'hsl(var(--text-4))'}}>Policy Information</h3>

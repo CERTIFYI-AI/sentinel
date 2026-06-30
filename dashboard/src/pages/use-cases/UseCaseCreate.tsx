@@ -64,7 +64,7 @@ export default function UseCaseCreate() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <Card style={{ borderRadius: 0 }}>
-          <CardContent className="p-6 space-y-6">
+          <CardContent className="space-y-5">
             <div>
               <h3 className="text-sm font-bold uppercase tracking-widest text-[hsl(var(--text-3))] mb-4">Required Details</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

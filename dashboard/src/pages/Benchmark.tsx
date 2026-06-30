@@ -88,7 +88,7 @@ export default function Benchmark() {
   const bench = BENCHMARKS[selectedModel];
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-indigo-100 dark:bg-indigo-950 rounded-lg"><BarChart3 size={20} className="text-indigo-600 dark:text-indigo-400" /></div>

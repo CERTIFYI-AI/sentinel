@@ -83,7 +83,7 @@ export default function ModelLifecycle() {
   const currentStageIdx = STAGES.indexOf(model.stage);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-blue-100 dark:bg-blue-950 rounded-lg"><GitBranch size={20} className="text-blue-600 dark:text-blue-400" /></div>
