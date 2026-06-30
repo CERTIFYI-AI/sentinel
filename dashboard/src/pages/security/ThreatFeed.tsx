@@ -209,7 +209,7 @@ export default function ThreatFeed() {
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
             background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
-            color: '#fff', borderRadius: 0, minWidth: 300,
+            color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 300,
           }}>{t.text}</div>
         ))}
       </div>
@@ -224,7 +224,7 @@ export default function ThreatFeed() {
             <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setImportOpen(true)}>
               <Upload size={14} className="mr-2" />Import Threat Feed
             </Button>
-            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }} onClick={() => setAddOpen(true)}>
+            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={() => setAddOpen(true)}>
               <Plus size={14} className="mr-2" />Add Threat
             </Button>
           </div>
@@ -468,7 +468,7 @@ export default function ThreatFeed() {
                 <TabsContent value="remediation" className="space-y-3 mt-4">
                   {selectedThreat.remediation.map((step, i) => (
                     <div key={i} className="flex items-start gap-3 p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                      <div className="flex items-center justify-center w-5 h-5 text-xs font-bold" style={{ background: 'hsl(var(--brand))', color: '#fff', borderRadius: 0, minWidth: 20 }}>
+                      <div className="flex items-center justify-center w-5 h-5 text-xs font-bold" style={{ background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 20 }}>
                         {i + 1}
                       </div>
                       <span className="text-sm" style={{ color: 'hsl(var(--text-1))' }}>{step}</span>
@@ -536,7 +536,7 @@ export default function ThreatFeed() {
           </div>
           <DialogFooter>
             <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setImportOpen(false)}>Cancel</Button>
-            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }} onClick={() => {
+            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={() => {
               if (!importUrl.trim()) { toast('Enter a valid feed URL', 'error'); return; }
               toast(`Importing ${importFormat} feed from ${importUrl.slice(0, 40)}…`, 'info');
               setImportOpen(false); setImportUrl('');
@@ -589,7 +589,7 @@ export default function ThreatFeed() {
           </div>
           <DialogFooter>
             <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setAddOpen(false)}>Cancel</Button>
-            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }} onClick={() => {
+            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={() => {
               if (!addForm.name.trim()) { toast('Threat name is required', 'error'); return; }
               const newThreat: ExtThreat = {
                 id: `THR-${String(threats.length + 1).padStart(3, '0')}`,

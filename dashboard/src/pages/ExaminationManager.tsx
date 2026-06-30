@@ -140,7 +140,7 @@ function docStatusStyle(s: DocRequest['status']) {
   const map: Record<DocRequest['status'], { bg: string; tx: string }> = {
     open: { bg: 'hsl(var(--s-nt-bg))', tx: 'hsl(var(--text-3))' },
     in_progress: { bg: 'hsl(var(--brand) / 0.1)', tx: 'hsl(var(--brand))' },
-    submitted: { bg: 'hsl(45 90% 50% / 0.1)', tx: '#d97706' },
+    submitted: { bg: 'hsl(45 90% 50% / 0.1)', tx: 'hsl(var(--s-wn-tx))' },
     accepted: { bg: 'hsl(var(--s-ok-bg))', tx: 'hsl(var(--s-ok-tx))' },
     rejected: { bg: 'hsl(var(--s-er-bg))', tx: 'hsl(var(--s-er-tx))' },
   };
@@ -180,7 +180,7 @@ export default function ExaminationManager() {
               {orgName} · Fed, OCC, FCA, FFIEC examination tracking · Document request workflows · Findings management
             </p>
           </div>
-          <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+          <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
             onClick={() => toast.success('New examination registered')}>
             <Plus size={13} className="mr-1.5" />Register Examination
           </Button>
@@ -207,11 +207,11 @@ export default function ExaminationManager() {
             <TabsTrigger value="examinations" style={{ borderRadius: 0 }}>Examinations</TabsTrigger>
             <TabsTrigger value="requests" style={{ borderRadius: 0 }}>
               Document Requests
-              {openDocRequests > 0 && <span className="ml-1.5 text-[9px] px-1 py-0.5 font-bold" style={{ background: 'hsl(var(--brand))', color: '#fff' }}>{openDocRequests}</span>}
+              {openDocRequests > 0 && <span className="ml-1.5 text-[9px] px-1 py-0.5 font-bold" style={{ background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>{openDocRequests}</span>}
             </TabsTrigger>
             <TabsTrigger value="findings" style={{ borderRadius: 0 }}>
               Findings
-              {openFindings > 0 && <span className="ml-1.5 text-[9px] px-1 py-0.5 font-bold" style={{ background: 'hsl(var(--destructive))', color: '#fff' }}>{openFindings}</span>}
+              {openFindings > 0 && <span className="ml-1.5 text-[9px] px-1 py-0.5 font-bold" style={{ background: 'hsl(var(--destructive))', color: 'hsl(var(--bg-surface))' }}>{openFindings}</span>}
             </TabsTrigger>
             <TabsTrigger value="readiness" style={{ borderRadius: 0 }}>Pre-Exam Readiness</TabsTrigger>
           </TabsList>
@@ -359,7 +359,7 @@ export default function ExaminationManager() {
                         onClick={() => toast.success('Remediation plan updated')}>
                         Update Remediation
                       </Button>
-                      <Button size="sm" className="h-7 text-[10px] px-2" style={{ borderRadius: 0, background: 'hsl(var(--s-ok-tx))', color: '#fff' }}
+                      <Button size="sm" className="h-7 text-[10px] px-2" style={{ borderRadius: 0, background: 'hsl(var(--s-ok-tx))', color: 'hsl(var(--bg-surface))' }}
                         onClick={() => toast.success(`Finding ${finding.id} marked resolved`)}>
                         <CheckCircle size={10} className="mr-1" />Mark Resolved
                       </Button>
@@ -415,7 +415,7 @@ export default function ExaminationManager() {
                         <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{section.category}</p>
                         <div className="flex items-center gap-2">
                           <div className="h-1.5 w-24 overflow-hidden" style={{ background: 'hsl(var(--border))' }}>
-                            <div style={{ width: `${pct}%`, height: '100%', background: pct === 100 ? 'hsl(var(--s-ok-tx))' : pct >= 50 ? 'hsl(var(--brand))' : '#f59e0b' }} />
+                            <div style={{ width: `${pct}%`, height: '100%', background: pct === 100 ? 'hsl(var(--s-ok-tx))' : pct >= 50 ? 'hsl(var(--brand))' : 'hsl(var(--s-wn-tx))' }} />
                           </div>
                           <span className="text-xs font-bold" style={{ color: pct === 100 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-3))' }}>{done}/{section.items.length}</span>
                         </div>
@@ -429,13 +429,13 @@ export default function ExaminationManager() {
                                 ? <CheckCircle size={13} weight="fill" style={{ color: 'hsl(var(--s-ok-tx))' }} />
                                 : item.status === 'in_progress'
                                 ? <Clock size={13} style={{ color: 'hsl(var(--brand))' }} />
-                                : <Warning size={13} weight="fill" style={{ color: item.critical ? 'hsl(var(--destructive))' : '#f59e0b' }} />}
+                                : <Warning size={13} weight="fill" style={{ color: item.critical ? 'hsl(var(--destructive))' : 'hsl(var(--s-wn-tx))' }} />}
                             </div>
                             <div className="flex-1">
                               <div className="flex items-start justify-between gap-2">
                                 <p className="text-xs" style={{ color: item.status === 'done' ? 'hsl(var(--text-3))' : 'hsl(var(--text-1))', textDecoration: item.status === 'done' ? 'line-through' : 'none' }}>{item.task}</p>
                                 <div className="flex items-center gap-1.5 flex-shrink-0">
-                                  {item.critical && item.status !== 'done' && <span className="text-[8px] px-1 py-0.5 font-bold" style={{ background: 'hsl(var(--destructive))', color: '#fff' }}>CRITICAL</span>}
+                                  {item.critical && item.status !== 'done' && <span className="text-[8px] px-1 py-0.5 font-bold" style={{ background: 'hsl(var(--destructive))', color: 'hsl(var(--bg-surface))' }}>CRITICAL</span>}
                                   <span className="text-[9px] px-1.5 py-0.5" style={{ background: item.status === 'done' ? 'hsl(var(--s-ok-bg))' : item.status === 'in_progress' ? 'hsl(var(--brand) / 0.1)' : 'hsl(var(--s-nt-bg))', color: item.status === 'done' ? 'hsl(var(--s-ok-tx))' : item.status === 'in_progress' ? 'hsl(var(--brand))' : 'hsl(var(--text-3))' }}>
                                     {item.status.replace('_', ' ').toUpperCase()}
                                   </span>
@@ -481,7 +481,7 @@ export default function ExaminationManager() {
           </div>
           <DialogFooter>
             <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setResponseDialog(null)}>Cancel</Button>
-            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }} onClick={submitResponse}>
+            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={submitResponse}>
               <Upload size={12} className="mr-1.5" />Submit to Regulator
             </Button>
           </DialogFooter>

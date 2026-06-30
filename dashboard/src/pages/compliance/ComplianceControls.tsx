@@ -27,9 +27,9 @@ const EMPTY_CONTROL: Omit<Control, 'id'> = {
 };
 
 function statusIcon(status: ControlStatus) {
-  if (status === 'implemented') return <CheckCircle size={14} style={{ color: '#10b981' }} />;
-  if (status === 'partial') return <Warning size={14} style={{ color: '#f97316' }} />;
-  if (status === 'planned') return <Clock size={14} style={{ color: '#6b7280' }} />;
+  if (status === 'implemented') return <CheckCircle size={14} style={{ color: 'hsl(var(--s-ok-tx))' }} />;
+  if (status === 'partial') return <Warning size={14} style={{ color: 'hsl(var(--r-hi-tx))' }} />;
+  if (status === 'planned') return <Clock size={14} style={{ color: 'hsl(var(--text-3))' }} />;
   return <XCircle size={14} style={{ color: '#9ca3af' }} />;
 }
 
@@ -65,9 +65,9 @@ export default function ComplianceControls() {
   const evidenceTotal = controls.reduce((sum, c) => sum + c.evidenceCount, 0);
 
   const stats = [
-    { label: 'Control Coverage', value: coverage + '%', icon: ShieldCheck, color: '#10b981' },
-    { label: 'Total Controls', value: totalControls, icon: ClipboardText, color: '#6366f1' },
-    { label: 'Open Gaps', value: openGaps, icon: Warning, color: '#f97316' },
+    { label: 'Control Coverage', value: coverage + '%', icon: ShieldCheck, color: 'hsl(var(--s-ok-tx))' },
+    { label: 'Total Controls', value: totalControls, icon: ClipboardText, color: 'hsl(var(--brand))' },
+    { label: 'Open Gaps', value: openGaps, icon: Warning, color: 'hsl(var(--r-hi-tx))' },
     { label: 'Evidence Items', value: evidenceTotal, icon: CheckCircle, color: '#3b82f6' },
   ];
 
@@ -206,7 +206,7 @@ export default function ComplianceControls() {
                             <div style={{
                               width: c.score + '%',
                               height: '100%',
-                              background: c.score >= 80 ? '#10b981' : c.score >= 60 ? '#f97316' : '#ef4444',
+                              background: c.score >= 80 ? 'hsl(var(--s-ok-tx))' : c.score >= 60 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-er-tx))',
                             }} />
                           </div>
                           <span className="text-xs font-bold" style={{ color: 'hsl(var(--text-1))' }}>{c.score}%</span>
@@ -222,7 +222,7 @@ export default function ComplianceControls() {
                           <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setEditItem({ ...c })}>
                             <PencilSimple size={14} />
                           </Button>
-                          <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: '#ef4444' }} onClick={() => setDeleteItem(c)}>
+                          <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: 'hsl(var(--s-er-tx))' }} onClick={() => setDeleteItem(c)}>
                             <Trash size={14} />
                           </Button>
                         </div>
@@ -264,7 +264,7 @@ export default function ComplianceControls() {
                 ].map(r => (
                   <div key={r.label} className="flex justify-between py-2" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
                     <span className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>{r.label}</span>
-                    <span className="text-sm font-medium" style={{ color: r.label === 'Test Result' && viewItem.testResult === 'fail' ? '#ef4444' : viewItem.testResult === 'pass' ? '#10b981' : 'hsl(var(--text-1))' }}>
+                    <span className="text-sm font-medium" style={{ color: r.label === 'Test Result' && viewItem.testResult === 'fail' ? 'hsl(var(--s-er-tx))' : viewItem.testResult === 'pass' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-1))' }}>
                       {r.value}
                     </span>
                   </div>
@@ -280,7 +280,7 @@ export default function ComplianceControls() {
                   return (
                     <div className="pt-2 p-3" style={{ background: 'hsl(var(--bg-muted))' }}>
                       <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-2))' }}>Gap Delta vs Target (80%)</p>
-                      <span className="text-sm font-bold" style={{ color: delta >= 0 ? '#10b981' : '#ef4444' }}>
+                      <span className="text-sm font-bold" style={{ color: delta >= 0 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))' }}>
                         {delta >= 0 ? '+' : ''}{delta}%
                       </span>
                       <span className="text-xs ml-2" style={{ color: 'hsl(var(--text-3))' }}>
@@ -400,7 +400,7 @@ export default function ComplianceControls() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} style={{ background: '#ef4444', borderRadius: 0 }}>Delete</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} style={{ background: 'hsl(var(--s-er-tx))', borderRadius: 0 }}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

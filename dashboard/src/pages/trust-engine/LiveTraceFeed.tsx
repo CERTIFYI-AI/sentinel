@@ -292,7 +292,7 @@ export default function LiveTraceFeed() {
           {toasts.map(t => (
             <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
               background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
-              color: '#fff', borderRadius: 0, minWidth: 300,
+              color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 300,
             }}>{t.text}</div>
           ))}
         </div>

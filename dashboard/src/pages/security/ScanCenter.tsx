@@ -46,19 +46,19 @@ interface SecurityScan {
 
 function statusStyle(status: string) {
   switch (status) {
-    case 'completed': return { bg: '#10b98120', text: '#10b981', border: '#10b98140' };
+    case 'completed': return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))' };
     case 'running': return { bg: '#3b82f620', text: '#3b82f6', border: '#3b82f640' };
-    case 'scheduled': return { bg: '#6366f120', text: '#6366f1', border: '#6366f140' };
-    case 'failed': return { bg: '#ef444420', text: '#ef4444', border: '#ef444440' };
-    default: return { bg: '#6b728020', text: '#6b7280', border: '#6b728040' };
+    case 'scheduled': return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--brand))', border: 'hsl(var(--s-ok-br))' };
+    case 'failed': return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))' };
+    default: return { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))', border: 'hsl(var(--border))' };
   }
 }
 
 function statusIcon(status: string) {
-  if (status === 'completed') return <CheckCircle size={14} style={{ color: '#10b981' }} />;
+  if (status === 'completed') return <CheckCircle size={14} style={{ color: 'hsl(var(--s-ok-tx))' }} />;
   if (status === 'running') return <Play size={14} style={{ color: '#3b82f6' }} />;
-  if (status === 'scheduled') return <CalendarBlank size={14} style={{ color: '#6366f1' }} />;
-  return <XCircle size={14} style={{ color: '#ef4444' }} />;
+  if (status === 'scheduled') return <CalendarBlank size={14} style={{ color: 'hsl(var(--brand))' }} />;
+  return <XCircle size={14} style={{ color: 'hsl(var(--s-er-tx))' }} />;
 }
 
 const EMPTY_SCAN: Omit<SecurityScan, 'id'> = {
@@ -416,7 +416,7 @@ export default function ScanCenter() {
                             </Badge>
                           ) : <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>—</span>}
                         </td>
-                        <td className="p-3 text-sm" style={{ color: s.findings > 0 ? '#f97316' : 'hsl(var(--text-2))' }}>
+                        <td className="p-3 text-sm" style={{ color: s.findings > 0 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--text-2))' }}>
                           {s.status === 'completed' ? `${s.findings} (${s.criticalFindings} crit)` : '—'}
                         </td>
                         <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{s.schedule}</td>
@@ -424,10 +424,10 @@ export default function ScanCenter() {
                           <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                             <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setViewItem(s)}><Eye size={14} /></Button>
                             {s.status !== 'running' && (
-                              <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: '#10b981' }} onClick={() => handleRun(s.id)}><Play size={14} /></Button>
+                              <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: 'hsl(var(--s-ok-tx))' }} onClick={() => handleRun(s.id)}><Play size={14} /></Button>
                             )}
                             <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setEditItem({ ...s })}><PencilSimple size={14} /></Button>
-                            <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: '#ef4444' }} onClick={() => setDeleteItem(s)}><Trash size={14} /></Button>
+                            <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: 'hsl(var(--s-er-tx))' }} onClick={() => setDeleteItem(s)}><Trash size={14} /></Button>
                           </div>
                         </td>
                       </tr>
@@ -482,7 +482,7 @@ export default function ScanCenter() {
                           <p className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>Total Findings</p>
                         </div>
                         <div className="text-center p-4" style={{ border: '1px solid hsl(var(--border))' }}>
-                          <p className="text-4xl font-bold" style={{ color: '#ef4444' }}>{viewItem.criticalFindings}</p>
+                          <p className="text-4xl font-bold" style={{ color: 'hsl(var(--s-er-tx))' }}>{viewItem.criticalFindings}</p>
                           <p className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>Critical</p>
                         </div>
                       </div>
@@ -596,7 +596,7 @@ export default function ScanCenter() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} style={{ background: '#ef4444', borderRadius: 0 }}>Delete</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} style={{ background: 'hsl(var(--s-er-tx))', borderRadius: 0 }}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

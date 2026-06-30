@@ -901,7 +901,7 @@ export default function BusinessContinuity() {
                           className="flex items-center justify-center w-6 h-6 flex-shrink-0 text-xs font-bold"
                           style={{
                             background: step.status === 'Complete' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--bg-muted))',
-                            color: step.status === 'Complete' ? '#fff' : 'hsl(var(--text-4))',
+                            color: step.status === 'Complete' ? 'hsl(var(--bg-surface))' : 'hsl(var(--text-4))',
                             borderRadius: '50%',
                           }}
                         >
@@ -1055,7 +1055,7 @@ export default function BusinessContinuity() {
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{contact.name}</span>
                             {contact.primary && (
-                              <Badge style={{ background: 'hsl(var(--brand))', color: '#fff', borderRadius: 0, fontSize: 9 }}>
+                              <Badge style={{ background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))', borderRadius: 0, fontSize: 9 }}>
                                 PRIMARY
                               </Badge>
                             )}

@@ -585,7 +585,7 @@ export default function AutomationStudio() {
           </button>
           <button onClick={() => setNewOpen(true)}
             className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium hover:opacity-90"
-            style={{ background: 'hsl(var(--brand))', color: '#fff' }}>
+            style={{ background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
             <Plus size={14} /> New Workflow
           </button>
         </div>
@@ -744,7 +744,7 @@ export default function AutomationStudio() {
                       </span>
                       : <button onClick={() => showToast(`${int.name} integration initiated — follow OAuth flow`)}
                         className="text-[11px] px-2 py-1 hover:opacity-90 font-medium"
-                        style={{ background: 'hsl(var(--brand))', color: '#fff' }}>
+                        style={{ background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
                         Connect
                       </button>
                     }
@@ -945,7 +945,7 @@ export default function AutomationStudio() {
               </button>
               <button onClick={() => cloneWorkflow(selected)}
                 className="flex-1 py-2 text-sm font-medium hover:opacity-90"
-                style={{ background: 'hsl(var(--brand))', color: '#fff' }}>
+                style={{ background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
                 Clone & Edit
               </button>
             </div>
@@ -1039,7 +1039,7 @@ export default function AutomationStudio() {
 
           <DialogFooter>
             <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setNewOpen(false)}>Cancel</Button>
-            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }} onClick={handleCreateWorkflow}>
+            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={handleCreateWorkflow}>
               Create Workflow
             </Button>
           </DialogFooter>
@@ -1071,7 +1071,7 @@ export default function AutomationStudio() {
           </div>
           <DialogFooter>
             <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setYamlOpen(false)}>Cancel</Button>
-            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }} onClick={handleYamlImport}>
+            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={handleYamlImport}>
               Import & Review
             </Button>
           </DialogFooter>
@@ -1090,7 +1090,7 @@ export default function AutomationStudio() {
           <AlertDialogFooter>
             <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: '#fff' }}
+              style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: 'hsl(var(--bg-surface))' }}
               onClick={() => deleteTarget && deleteWorkflow(deleteTarget)}>
               Delete Workflow
             </AlertDialogAction>

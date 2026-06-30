@@ -235,7 +235,7 @@ export default function RedTeamLab() {
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
             background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
-            color: '#fff', borderRadius: 0, minWidth: 300,
+            color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 300,
           }}>{t.text}</div>
         ))}
       </div>
@@ -250,7 +250,7 @@ export default function RedTeamLab() {
             <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => { setFormEx({ ...EMPTY_EXERCISE }); setCreateOpen(true); }}>
               <Plus size={14} className="mr-2" />Create Exercise
             </Button>
-            <Button style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: '#fff' }}>
+            <Button style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: 'hsl(var(--bg-surface))' }}>
               <Lightning size={14} className="mr-2" />Launch Campaign
             </Button>
           </>
@@ -397,7 +397,7 @@ export default function RedTeamLab() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
             <Button
-              style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: '#fff' }}
+              style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: 'hsl(var(--bg-surface))' }}
               onClick={handleCreate}
               disabled={!formEx.name.trim()}
             >
@@ -522,7 +522,7 @@ export default function RedTeamLab() {
                 <TabsContent value="recommendations" className="space-y-3 mt-4">
                   {selected.recommendations.map((rec, i) => (
                     <div key={i} className="flex items-start gap-3 p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                      <div className="flex items-center justify-center w-5 h-5 text-xs font-bold" style={{ background: 'hsl(var(--brand))', color: '#fff', borderRadius: 0, minWidth: 20 }}>
+                      <div className="flex items-center justify-center w-5 h-5 text-xs font-bold" style={{ background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 20 }}>
                         {i + 1}
                       </div>
                       <span className="text-sm" style={{ color: 'hsl(var(--text-1))' }}>{rec}</span>

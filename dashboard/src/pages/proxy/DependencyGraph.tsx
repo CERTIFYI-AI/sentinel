@@ -26,23 +26,23 @@ const DEPENDENCIES: Dependency[] = [
 // ── helpers ────────────────────────────────────────────────────────────────
 
 const riskColors: Record<string, string> = {
-  critical: '#ef4444',
-  high: '#f97316',
-  medium: '#f59e0b',
-  low: '#10b981',
+  critical: 'hsl(var(--s-er-tx))',
+  high: 'hsl(var(--r-hi-tx))',
+  medium: 'hsl(var(--s-wn-tx))',
+  low: 'hsl(var(--s-ok-tx))',
 };
 
 const sensitivityColors: Record<string, string> = {
-  PII: '#ef4444',
-  confidential: '#f97316',
-  internal: '#f59e0b',
+  PII: 'hsl(var(--s-er-tx))',
+  confidential: 'hsl(var(--r-hi-tx))',
+  internal: 'hsl(var(--s-wn-tx))',
 };
 
 function ModelCard({ modelId, selected, onClick }: { modelId: string; selected: boolean; onClick: () => void }) {
   const model = MODELS.find(m => m.id === modelId);
   if (!model) return null;
-  const driftColor = model.driftStatus === 'critical' ? '#ef4444' : model.driftStatus === 'warning' ? '#f97316' : '#10b981';
-  const tierColors: Record<string, string> = { high: '#ef4444', limited: '#f97316', minimal: '#10b981', unacceptable: '#dc2626' };
+  const driftColor = model.driftStatus === 'critical' ? 'hsl(var(--s-er-tx))' : model.driftStatus === 'warning' ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-ok-tx))';
+  const tierColors: Record<string, string> = { high: 'hsl(var(--s-er-tx))', limited: 'hsl(var(--r-hi-tx))', minimal: 'hsl(var(--s-ok-tx))', unacceptable: 'hsl(var(--s-er-tx))' };
   return (
     <div
       onClick={onClick}
@@ -79,7 +79,7 @@ function ModelCard({ modelId, selected, onClick }: { modelId: string; selected: 
           drift: {model.driftStatus}
         </span>
         <span style={{ fontSize: 10, color: 'hsl(var(--text-4))' }}>·</span>
-        <span style={{ fontSize: 10, color: model.fairnessScore >= 85 ? '#10b981' : '#ef4444' }}>
+        <span style={{ fontSize: 10, color: model.fairnessScore >= 85 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))' }}>
           fairness: {model.fairnessScore}%
         </span>
       </div>
@@ -92,13 +92,13 @@ function AgentCard({ agentId }: { agentId: string }) {
   if (!agent) {
     return (
       <div style={{ padding: '8px 12px', background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-br))' }}>
-        <span style={{ fontSize: 11, color: '#ef4444', fontFamily: 'monospace' }}>{agentId}</span>
-        <span style={{ fontSize: 10, color: '#ef4444', marginLeft: 6 }}>Shadow / Unregistered</span>
+        <span style={{ fontSize: 11, color: 'hsl(var(--s-er-tx))', fontFamily: 'monospace' }}>{agentId}</span>
+        <span style={{ fontSize: 10, color: 'hsl(var(--s-er-tx))', marginLeft: 6 }}>Shadow / Unregistered</span>
       </div>
     );
   }
-  const agentStatus = agent.status === 'shadow' ? { bg: 'hsl(var(--s-er-bg))', text: '#ef4444', border: 'hsl(var(--s-er-br))' }
-    : agent.status === 'quarantined' ? { bg: 'hsl(var(--s-er-bg))', text: '#ef4444', border: 'hsl(var(--s-er-br))' }
+  const agentStatus = agent.status === 'shadow' ? { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))' }
+    : agent.status === 'quarantined' ? { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))' }
     : agent.status === 'confirmed' ? { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))' }
     : { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))', border: 'hsl(var(--border))' };
 
@@ -141,7 +141,7 @@ function DatasetCard({ datasetId }: { datasetId: string }) {
       border: '1px solid hsl(var(--border))',
       display: 'flex', alignItems: 'center', gap: 8,
     }}>
-      <Database size={12} style={{ color: '#06b6d4', flexShrink: 0 }} />
+      <Database size={12} style={{ color: 'hsl(var(--s-in-tx))', flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 11, fontWeight: 600, color: 'hsl(var(--text-1))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {dataset.name}
@@ -197,9 +197,9 @@ export default function DependencyGraph() {
       {/* Legend */}
       <div style={{ display: 'flex', gap: 16, marginBottom: 16, padding: '8px 14px', background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))' }}>
         {[
-          { icon: Robot, label: 'Model', color: '#6366f1' },
-          { icon: Robot, label: 'Agent', color: '#10b981' },
-          { icon: Database, label: 'Dataset', color: '#06b6d4' },
+          { icon: Robot, label: 'Model', color: 'hsl(var(--brand))' },
+          { icon: Robot, label: 'Agent', color: 'hsl(var(--s-ok-tx))' },
+          { icon: Database, label: 'Dataset', color: 'hsl(var(--s-in-tx))' },
           { icon: ArrowRight, label: 'Depends on', color: 'hsl(var(--text-3))' },
         ].map(item => (
           <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -232,8 +232,8 @@ export default function DependencyGraph() {
                 {/* Model column */}
                 <div style={{ padding: 14 }}>
                   <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'hsl(var(--text-4))', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Robot size={10} style={{ color: '#6366f1' }} /> Model
-                    {hasRisk && <Warning size={10} style={{ color: '#f97316', marginLeft: 'auto' }} />}
+                    <Robot size={10} style={{ color: 'hsl(var(--brand))' }} /> Model
+                    {hasRisk && <Warning size={10} style={{ color: 'hsl(var(--r-hi-tx))', marginLeft: 'auto' }} />}
                   </div>
                   <ModelCard modelId={dep.modelId} selected={isSelected} onClick={() => setSelectedModelId(isSelected ? null : dep.modelId)} />
                 </div>
@@ -248,9 +248,9 @@ export default function DependencyGraph() {
                 {/* Agents column */}
                 <div style={{ padding: '14px 14px 14px 0' }}>
                   <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'hsl(var(--text-4))', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Robot size={10} style={{ color: '#10b981' }} /> Agents ({dep.agentIds.length})
+                    <Robot size={10} style={{ color: 'hsl(var(--s-ok-tx))' }} /> Agents ({dep.agentIds.length})
                     {connectedAgents.some(a => a.status === 'shadow' || a.status === 'quarantined') && (
-                      <Lock size={10} style={{ color: '#ef4444', marginLeft: 4 }} />
+                      <Lock size={10} style={{ color: 'hsl(var(--s-er-tx))', marginLeft: 4 }} />
                     )}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -268,7 +268,7 @@ export default function DependencyGraph() {
                 {/* Datasets column */}
                 <div style={{ padding: '14px 14px 14px 0' }}>
                   <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'hsl(var(--text-4))', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Database size={10} style={{ color: '#06b6d4' }} /> Datasets ({dep.datasetIds.length})
+                    <Database size={10} style={{ color: 'hsl(var(--s-in-tx))' }} /> Datasets ({dep.datasetIds.length})
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {dep.datasetIds.map(did => (
@@ -286,8 +286,8 @@ export default function DependencyGraph() {
                   </div>
                   <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 12, color: 'hsl(var(--text-3))' }}>
                     <span>EU AI Act: <strong style={{ color: 'hsl(var(--text-2))' }}>{model.euAiActArticle.split(' — ')[0]}</strong></span>
-                    <span>Fairness: <strong style={{ color: model.fairnessScore >= 85 ? '#10b981' : '#ef4444' }}>{model.fairnessScore}%</strong></span>
-                    <span>Drift: <strong style={{ color: model.driftStatus === 'stable' ? '#10b981' : model.driftStatus === 'warning' ? '#f97316' : '#ef4444' }}>{model.driftStatus}</strong></span>
+                    <span>Fairness: <strong style={{ color: model.fairnessScore >= 85 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))' }}>{model.fairnessScore}%</strong></span>
+                    <span>Drift: <strong style={{ color: model.driftStatus === 'stable' ? 'hsl(var(--s-ok-tx))' : model.driftStatus === 'warning' ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-er-tx))' }}>{model.driftStatus}</strong></span>
                     <span>Framework: <strong style={{ color: 'hsl(var(--text-2))' }}>{model.framework}</strong></span>
                     <span>Accuracy: <strong style={{ color: 'hsl(var(--text-2))' }}>{model.accuracy}%</strong></span>
                     <span>Monthly Inferences: <strong style={{ color: 'hsl(var(--text-2))' }}>{model.monthlyInferences}</strong></span>

@@ -94,7 +94,7 @@ const DEFAULT_ACTIVITY = [
 
 function RiskHeatCell({ likelihood, impact }: { likelihood: number; impact: number }) {
   const score = likelihood * impact;
-  const color = score >= 15 ? '#ef4444' : score >= 8 ? '#f97316' : score >= 4 ? '#eab308' : '#10b981';
+  const color = score >= 15 ? 'hsl(var(--s-er-tx))' : score >= 8 ? 'hsl(var(--r-hi-tx))' : score >= 4 ? '#eab308' : 'hsl(var(--s-ok-tx))';
   return (
     <div style={{ display: 'flex', gap: 4, flexDirection: 'column', alignItems: 'center' }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 28px)', gap: 3 }}>
@@ -102,7 +102,7 @@ function RiskHeatCell({ likelihood, impact }: { likelihood: number; impact: numb
           const row = 4 - Math.floor(i / 5);
           const col = i % 5;
           const cellScore = (row + 1) * (col + 1);
-          const cellColor = cellScore >= 15 ? '#ef444440' : cellScore >= 8 ? '#f9731640' : cellScore >= 4 ? '#eab30840' : '#10b98140';
+          const cellColor = cellScore >= 15 ? 'hsl(var(--s-er-br))' : cellScore >= 8 ? 'hsl(var(--r-hi-br))' : cellScore >= 4 ? '#eab30840' : 'hsl(var(--s-ok-br))';
           const isActive = row < likelihood && col < impact;
           const isHighlight = row === likelihood - 1 && col === impact - 1;
           return (
@@ -124,7 +124,7 @@ function RiskHeatCell({ likelihood, impact }: { likelihood: number; impact: numb
 function MitigationItem({ text, index, total }: { text: string; index: number; total: number }) {
   const done = index < Math.floor(total * 0.4);
   const inProg = !done && index < Math.floor(total * 0.65);
-  const color = done ? '#10b981' : inProg ? '#f97316' : '#6b7280';
+  const color = done ? 'hsl(var(--s-ok-tx))' : inProg ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--text-3))';
   const label = done ? 'Done' : inProg ? 'In Progress' : 'Pending';
   const Icon = done ? CheckCircle : inProg ? ArrowsClockwise : Clock;
   return (
@@ -150,7 +150,7 @@ export default function RiskDetail() {
   if (!risk) {
     return (
       <div style={{ padding: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, }}>
-        <Warning size={48} style={{ color: '#f97316' }} />
+        <Warning size={48} style={{ color: 'hsl(var(--r-hi-tx))' }} />
         <p style={{ marginTop: 16, fontSize: 16, fontWeight: 600, color: 'hsl(var(--text-1))' }}>Risk not found</p>
         <p style={{ fontSize: 13, color: 'hsl(var(--text-3))', marginTop: 4 }}>Risk ID "{id}" does not exist in the register.</p>
         <Button style={{ marginTop: 16, borderRadius: 0 }} onClick={() => navigate('/risk')}>
@@ -162,7 +162,7 @@ export default function RiskDetail() {
 
   const sc = severityColor(risk.severity);
   const stc = statusColor(risk.status);
-  const scoreColor = risk.score >= 15 ? '#ef4444' : risk.score >= 8 ? '#f97316' : risk.score >= 4 ? '#eab308' : '#10b981';
+  const scoreColor = risk.score >= 15 ? 'hsl(var(--s-er-tx))' : risk.score >= 8 ? 'hsl(var(--r-hi-tx))' : risk.score >= 4 ? '#eab308' : 'hsl(var(--s-ok-tx))';
   const linkedModel = risk.linkedModel ? MODELS.find(m => m.id === risk.linkedModel) : null;
 
   const relatedIncidents = INCIDENTS.filter(i =>
@@ -187,7 +187,7 @@ export default function RiskDetail() {
   ).slice(0, 5);
 
   const TrendIcon = risk.trending === 'up' ? TrendUp : risk.trending === 'down' ? TrendDown : Minus;
-  const trendColor = risk.trending === 'up' ? '#ef4444' : risk.trending === 'down' ? '#10b981' : '#6b7280';
+  const trendColor = risk.trending === 'up' ? 'hsl(var(--s-er-tx))' : risk.trending === 'down' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-3))';
 
   function openEdit() {
     setEditData({ ...risk });
@@ -223,7 +223,7 @@ export default function RiskDetail() {
           { label: 'Likelihood', value: `${risk.likelihood}/5`, sub: 'Probability of occurrence', color: scoreColor },
           { label: 'Impact', value: `${risk.impact}/5`, sub: 'Business impact severity', color: scoreColor },
           { label: 'Risk Score', value: risk.score, sub: 'Likelihood × Impact', color: scoreColor },
-          { label: 'Treatment', value: treatment.approach, sub: `${treatment.progress}% progress`, color: '#6366f1' },
+          { label: 'Treatment', value: treatment.approach, sub: `${treatment.progress}% progress`, color: 'hsl(var(--brand))' },
         ].map(kpi => (
           <Card key={kpi.label} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
             <CardContent style={{ padding: '14px 16px' }}>
@@ -297,9 +297,9 @@ export default function RiskDetail() {
                         <p style={{ fontSize: 11, color: 'hsl(var(--text-3))', margin: '2px 0 0 0' }}>{linkedModel.id} · {linkedModel.type} · {linkedModel.owner}</p>
                       </div>
                       <Badge style={{
-                        background: linkedModel.status === 'production' ? '#10b98115' : 'hsl(var(--bg-muted))',
-                        color: linkedModel.status === 'production' ? '#10b981' : 'hsl(var(--text-3))',
-                        border: `1px solid ${linkedModel.status === 'production' ? '#10b98130' : 'hsl(var(--border))'}`,
+                        background: linkedModel.status === 'production' ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--bg-muted))',
+                        color: linkedModel.status === 'production' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-3))',
+                        border: `1px solid ${linkedModel.status === 'production' ? 'hsl(var(--s-ok-br))' : 'hsl(var(--border))'}`,
                         borderRadius: 0, fontSize: 10,
                       }}>
                         {linkedModel.status}
@@ -327,10 +327,10 @@ export default function RiskDetail() {
                 <CardContent style={{ padding: '0 16px 16px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                     <span style={{ fontSize: 13, color: 'hsl(var(--text-2))' }}>{treatment.approach} — {treatment.assignee}</span>
-                    <span style={{ fontSize: 15, fontWeight: 700, color: '#6366f1' }}>{treatment.progress}%</span>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: 'hsl(var(--brand))' }}>{treatment.progress}%</span>
                   </div>
                   <div style={{ height: 8, background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))' }}>
-                    <div style={{ width: `${treatment.progress}%`, height: '100%', background: treatment.progress >= 80 ? '#10b981' : treatment.progress >= 50 ? '#6366f1' : '#f97316' }} />
+                    <div style={{ width: `${treatment.progress}%`, height: '100%', background: treatment.progress >= 80 ? 'hsl(var(--s-ok-tx))' : treatment.progress >= 50 ? 'hsl(var(--brand))' : 'hsl(var(--r-hi-tx))' }} />
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
                     <span style={{ fontSize: 11, color: 'hsl(var(--text-4))' }}>Target: {formatDate(treatment.targetDate)}</span>
@@ -348,7 +348,7 @@ export default function RiskDetail() {
                   </CardHeader>
                   <CardContent style={{ padding: '0 16px 16px' }}>
                     {relatedBiasAudits.map(ba => {
-                      const bc = ba.result === 'passed' ? '#10b981' : ba.result === 'failed' ? '#ef4444' : '#f97316';
+                      const bc = ba.result === 'passed' ? 'hsl(var(--s-ok-tx))' : ba.result === 'failed' ? 'hsl(var(--s-er-tx))' : 'hsl(var(--r-hi-tx))';
                       return (
                         <div key={ba.id} style={{ padding: '8px 12px', border: `1px solid ${bc}30`, background: `${bc}08`, marginBottom: 6 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -407,7 +407,7 @@ export default function RiskDetail() {
                   ))}
                   <div style={{ marginTop: 12 }}>
                     <div style={{ height: 6, background: 'hsl(var(--bg-muted))' }}>
-                      <div style={{ width: `${treatment.progress}%`, height: '100%', background: treatment.progress >= 80 ? '#10b981' : treatment.progress >= 50 ? '#6366f1' : '#f97316' }} />
+                      <div style={{ width: `${treatment.progress}%`, height: '100%', background: treatment.progress >= 80 ? 'hsl(var(--s-ok-tx))' : treatment.progress >= 50 ? 'hsl(var(--brand))' : 'hsl(var(--r-hi-tx))' }} />
                     </div>
                   </div>
                 </CardContent>
@@ -424,9 +424,9 @@ export default function RiskDetail() {
                     const pending = risk.mitigations.length - done - inProg;
                     return [
                       { label: 'Total Actions', value: risk.mitigations.length, color: 'hsl(var(--text-1))' },
-                      { label: 'Completed', value: done, color: '#10b981' },
-                      { label: 'In Progress', value: inProg, color: '#f97316' },
-                      { label: 'Pending', value: pending, color: '#6b7280' },
+                      { label: 'Completed', value: done, color: 'hsl(var(--s-ok-tx))' },
+                      { label: 'In Progress', value: inProg, color: 'hsl(var(--r-hi-tx))' },
+                      { label: 'Pending', value: pending, color: 'hsl(var(--text-3))' },
                     ].map(({ label, value, color }) => (
                       <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid hsl(var(--border))' }}>
                         <span style={{ fontSize: 12, color: 'hsl(var(--text-3))' }}>{label}</span>
@@ -492,7 +492,7 @@ export default function RiskDetail() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {relatedControls.map(ctrl => {
                 const csc = statusColor(ctrl.status);
-                const scoreC = ctrl.score >= 85 ? '#10b981' : ctrl.score >= 65 ? '#f97316' : '#ef4444';
+                const scoreC = ctrl.score >= 85 ? 'hsl(var(--s-ok-tx))' : ctrl.score >= 65 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-er-tx))';
                 return (
                   <Card
                     key={ctrl.id}
@@ -564,7 +564,7 @@ export default function RiskDetail() {
             </CardHeader>
             <CardContent style={{ padding: '0 16px 16px' }}>
               {activity.map((evt, i) => {
-                const evtColor = evt.type === 'error' ? '#ef4444' : evt.type === 'warning' ? '#f97316' : evt.type === 'success' ? '#10b981' : 'hsl(var(--brand))';
+                const evtColor = evt.type === 'error' ? 'hsl(var(--s-er-tx))' : evt.type === 'warning' ? 'hsl(var(--r-hi-tx))' : evt.type === 'success' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--brand))';
                 return (
                   <div key={i} style={{ display: 'flex', gap: 12, paddingBottom: 16 }}>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

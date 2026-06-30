@@ -117,7 +117,7 @@ function KillSwitchModal({ agent, onClose }: { agent: NonNullable<typeof AGENTS[
               <div style={{ display: 'flex', gap: 10 }}>
                 <button onClick={onClose} style={{ flex: 1, padding: 8, background: 'none', border: '1px solid hsl(var(--border))', cursor: 'pointer', color: 'hsl(var(--text-2))', fontSize: 13 }}>Cancel</button>
                 <button onClick={() => setStep(2)} disabled={reason.trim().length < 10}
-                  style={{ flex: 1, padding: 8, background: reason.trim().length < 10 ? 'hsl(var(--bg-muted))' : 'hsl(var(--s-er-tx))', border: 'none', cursor: reason.trim().length < 10 ? 'not-allowed' : 'pointer', color: reason.trim().length < 10 ? 'hsl(var(--text-4))' : '#fff', fontSize: 13, fontWeight: 600 }}>
+                  style={{ flex: 1, padding: 8, background: reason.trim().length < 10 ? 'hsl(var(--bg-muted))' : 'hsl(var(--s-er-tx))', border: 'none', cursor: reason.trim().length < 10 ? 'not-allowed' : 'pointer', color: reason.trim().length < 10 ? 'hsl(var(--text-4))' : 'hsl(var(--bg-surface))', fontSize: 13, fontWeight: 600 }}>
                   Continue → Step 2
                 </button>
               </div>
@@ -141,7 +141,7 @@ function KillSwitchModal({ agent, onClose }: { agent: NonNullable<typeof AGENTS[
               <div style={{ display: 'flex', gap: 10 }}>
                 <button onClick={() => setStep(1)} style={{ flex: 1, padding: 8, background: 'none', border: '1px solid hsl(var(--border))', cursor: 'pointer', color: 'hsl(var(--text-2))', fontSize: 13 }}>← Back</button>
                 <button onClick={handleConfirm} disabled={confirmText !== expected}
-                  style={{ flex: 1, padding: 8, background: confirmText !== expected ? 'hsl(var(--bg-muted))' : 'hsl(var(--s-er-tx))', border: 'none', cursor: confirmText !== expected ? 'not-allowed' : 'pointer', color: confirmText !== expected ? 'hsl(var(--text-4))' : '#fff', fontSize: 13, fontWeight: 700 }}>
+                  style={{ flex: 1, padding: 8, background: confirmText !== expected ? 'hsl(var(--bg-muted))' : 'hsl(var(--s-er-tx))', border: 'none', cursor: confirmText !== expected ? 'not-allowed' : 'pointer', color: confirmText !== expected ? 'hsl(var(--text-4))' : 'hsl(var(--bg-surface))', fontSize: 13, fontWeight: 700 }}>
                   KILL AGENT NOW
                 </button>
               </div>
@@ -160,14 +160,14 @@ function AgentTopology({ agent }: { agent: typeof AGENTS[0] }) {
     { id: 'user', label: 'End Users', x: 80, y: 120, color: 'hsl(var(--text-3))' },
     { id: 'api', label: 'API Gateway', x: 220, y: 120, color: 'hsl(var(--brand))' },
     { id: 'agent', label: agent?.name?.split(' ')[0] ?? 'Agent', x: 380, y: 120, color: agent?.status === 'shadow' ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-ok-tx))' },
-    { id: 'model', label: agent?.model ?? 'LLM', x: 540, y: 60, color: '#8b5cf6' },
+    { id: 'model', label: agent?.model ?? 'LLM', x: 540, y: 60, color: 'hsl(var(--tag-purple))' },
     { id: 'data', label: 'Data Store', x: 540, y: 180, color: 'hsl(var(--s-wn-tx))' },
     { id: 'ext', label: 'External API', x: 680, y: 120, color: agent?.status === 'shadow' ? 'hsl(var(--s-er-tx))' : 'hsl(var(--text-4))' },
   ];
   const edges = [
     { from: nodes[0], to: nodes[1], color: 'hsl(var(--border))' },
     { from: nodes[1], to: nodes[2], color: 'hsl(var(--brand))' },
-    { from: nodes[2], to: nodes[3], color: '#8b5cf6' },
+    { from: nodes[2], to: nodes[3], color: 'hsl(var(--tag-purple))' },
     { from: nodes[2], to: nodes[4], color: 'hsl(var(--s-wn-tx))' },
     { from: nodes[2], to: nodes[5], color: agent?.status === 'shadow' ? 'hsl(var(--s-er-tx))' : 'hsl(var(--border))', dashed: agent?.status !== 'shadow' },
   ];

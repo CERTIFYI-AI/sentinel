@@ -131,14 +131,14 @@ const FAILURE_CASES: FailureCase[] = [
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function severityColor(s: string) {
-  const m: Record<string, string> = { critical: '#ef4444', high: '#f97316', medium: '#eab308', low: '#6b7280' };
-  return m[s] || '#6b7280';
+  const m: Record<string, string> = { critical: 'hsl(var(--s-er-tx))', high: 'hsl(var(--r-hi-tx))', medium: '#eab308', low: 'hsl(var(--text-3))' };
+  return m[s] || 'hsl(var(--text-3))';
 }
 
 function scoreColor(v: number) {
-  if (v >= 90) return '#10b981';
-  if (v >= 80) return '#f97316';
-  return '#ef4444';
+  if (v >= 90) return 'hsl(var(--s-ok-tx))';
+  if (v >= 80) return 'hsl(var(--r-hi-tx))';
+  return 'hsl(var(--s-er-tx))';
 }
 
 function deltaChip(delta: number) {
@@ -147,9 +147,9 @@ function deltaChip(delta: number) {
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 2,
       fontSize: 10, fontWeight: 600,
-      color: pos ? '#10b981' : '#ef4444',
+      color: pos ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))',
       padding: '1px 5px',
-      background: pos ? '#10b98120' : '#ef444420',
+      background: pos ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-er-bg))',
     }}>
       {pos ? <TrendUp size={10} /> : <TrendDown size={10} />}
       {pos ? '+' : ''}{delta.toFixed(1)}
@@ -225,9 +225,9 @@ export default function EvalResultsViewer() {
       <div className="grid grid-cols-5 gap-4">
         {[
           { label: 'Overall Score', value: `${selectedRun.overallScore}%`, color: scoreColor(selectedRun.overallScore) },
-          { label: 'Pass Rate', value: `${passRate}%`, color: passRate >= 90 ? '#10b981' : passRate >= 80 ? '#f97316' : '#ef4444' },
-          { label: 'Passed Cases', value: selectedRun.passed.toString(), color: '#10b981' },
-          { label: 'Failed Cases', value: selectedRun.failed.toString(), color: '#ef4444' },
+          { label: 'Pass Rate', value: `${passRate}%`, color: passRate >= 90 ? 'hsl(var(--s-ok-tx))' : passRate >= 80 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-er-tx))' },
+          { label: 'Passed Cases', value: selectedRun.passed.toString(), color: 'hsl(var(--s-ok-tx))' },
+          { label: 'Failed Cases', value: selectedRun.failed.toString(), color: 'hsl(var(--s-er-tx))' },
           { label: 'Total Cases', value: selectedRun.totalCases.toString(), color: 'hsl(var(--text-1))' },
         ].map(m => (
           <div key={m.label} className="border p-4" style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-surface))' }}>
@@ -244,7 +244,7 @@ export default function EvalResultsViewer() {
           <TabsTrigger value="failures" style={{ borderRadius: 0 }}>
             Failure Analysis
             {runFailures.length > 0 && (
-              <span style={{ marginLeft: 6, background: '#ef4444', color: '#fff', padding: '1px 6px', fontSize: 10, fontWeight: 700, borderRadius: 0 }}>
+              <span style={{ marginLeft: 6, background: 'hsl(var(--s-er-tx))', color: 'hsl(var(--bg-surface))', padding: '1px 6px', fontSize: 10, fontWeight: 700, borderRadius: 0 }}>
                 {runFailures.length}
               </span>
             )}
@@ -303,18 +303,18 @@ export default function EvalResultsViewer() {
             <h3 className="text-sm font-semibold mb-3" style={{ color: 'hsl(var(--text-1))' }}>Pass / Fail Breakdown</h3>
             <div className="flex items-center gap-4">
               <div style={{ flex: 1, height: 20, background: 'hsl(var(--border))', position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${passRate}%`, background: '#10b981' }} />
+                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${passRate}%`, background: 'hsl(var(--s-ok-tx))' }} />
               </div>
-              <span className="text-sm font-semibold" style={{ color: '#10b981' }}>{passRate}% pass</span>
-              <span className="text-sm font-semibold" style={{ color: '#ef4444' }}>{100 - passRate}% fail</span>
+              <span className="text-sm font-semibold" style={{ color: 'hsl(var(--s-ok-tx))' }}>{passRate}% pass</span>
+              <span className="text-sm font-semibold" style={{ color: 'hsl(var(--s-er-tx))' }}>{100 - passRate}% fail</span>
             </div>
             <div className="flex items-center gap-6 mt-3">
               <div className="flex items-center gap-2">
-                <CheckCircle size={14} weight="fill" style={{ color: '#10b981' }} />
+                <CheckCircle size={14} weight="fill" style={{ color: 'hsl(var(--s-ok-tx))' }} />
                 <span className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>{selectedRun.passed} passed</span>
               </div>
               <div className="flex items-center gap-2">
-                <X size={14} style={{ color: '#ef4444' }} />
+                <X size={14} style={{ color: 'hsl(var(--s-er-tx))' }} />
                 <span className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>{selectedRun.failed} failed</span>
               </div>
               <div className="flex items-center gap-2">
@@ -372,7 +372,7 @@ export default function EvalResultsViewer() {
                   style={{
                     padding: '3px 10px', fontSize: 11, fontWeight: 500, cursor: 'pointer',
                     background: failureSeverity === s ? (s === 'all' ? 'hsl(var(--brand))' : severityColor(s)) : 'transparent',
-                    color: failureSeverity === s ? '#fff' : 'hsl(var(--text-3))',
+                    color: failureSeverity === s ? 'hsl(var(--bg-surface))' : 'hsl(var(--text-3))',
                     border: `1px solid ${failureSeverity === s ? 'transparent' : 'hsl(var(--border))'}`,
                   }}>
                   {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
@@ -386,7 +386,7 @@ export default function EvalResultsViewer() {
 
           {filteredFailures.length === 0 && (
             <div className="py-12 text-center" style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-surface))' }}>
-              <CheckCircle size={28} weight="fill" style={{ color: '#10b981', margin: '0 auto 8px' }} />
+              <CheckCircle size={28} weight="fill" style={{ color: 'hsl(var(--s-ok-tx))', margin: '0 auto 8px' }} />
               <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>No failures match your filter</p>
               <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>Try adjusting your severity filter or search query</p>
             </div>
@@ -403,7 +403,7 @@ export default function EvalResultsViewer() {
                   {fc.severity}
                 </Badge>
                 <span className="text-xs font-semibold" style={{ color: 'hsl(var(--brand))' }}>{fc.metric}</span>
-                <span className="text-xs font-bold ml-auto" style={{ color: '#ef4444' }}>
+                <span className="text-xs font-bold ml-auto" style={{ color: 'hsl(var(--s-er-tx))' }}>
                   Judge score: {(fc.judgeScore * 100).toFixed(0)}%
                 </span>
                 <Eye size={14} style={{ color: 'hsl(var(--text-4))' }} />
@@ -416,7 +416,7 @@ export default function EvalResultsViewer() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-wide mb-1" style={{ color: '#ef4444' }}>Judge Rationale</p>
+                  <p className="text-[10px] uppercase tracking-wide mb-1" style={{ color: 'hsl(var(--s-er-tx))' }}>Judge Rationale</p>
                   <p className="text-xs" style={{ color: 'hsl(var(--text-2))', lineHeight: 1.5 }}>
                     {fc.judgeRationale.length > 100 ? fc.judgeRationale.slice(0, 100) + '…' : fc.judgeRationale}
                   </p>
@@ -458,7 +458,7 @@ export default function EvalResultsViewer() {
                 </div>
                 <div className="p-3" style={{ background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))' }}>
                   <p className="text-[10px] uppercase mb-1" style={{ color: 'hsl(var(--text-4))' }}>Judge Score</p>
-                  <p className="text-sm font-bold" style={{ color: '#ef4444' }}>{(selectedCase.judgeScore * 100).toFixed(0)} / 100</p>
+                  <p className="text-sm font-bold" style={{ color: 'hsl(var(--s-er-tx))' }}>{(selectedCase.judgeScore * 100).toFixed(0)} / 100</p>
                 </div>
               </div>
 
@@ -467,13 +467,13 @@ export default function EvalResultsViewer() {
                 <p className="text-xs leading-relaxed" style={{ color: 'hsl(var(--text-1))' }}>{selectedCase.prompt}</p>
               </div>
 
-              <div style={{ border: '1px solid #ef444440', background: '#ef444408', padding: 12 }}>
-                <p className="text-[10px] uppercase tracking-wide mb-2" style={{ color: '#ef4444' }}>Model Output</p>
+              <div style={{ border: '1px solid hsl(var(--s-er-br))', background: 'hsl(var(--s-er-bg))', padding: 12 }}>
+                <p className="text-[10px] uppercase tracking-wide mb-2" style={{ color: 'hsl(var(--s-er-tx))' }}>Model Output</p>
                 <p className="text-xs leading-relaxed" style={{ color: 'hsl(var(--text-1))' }}>{selectedCase.output}</p>
               </div>
 
-              <div style={{ border: '1px solid #10b98140', background: '#10b98108', padding: 12 }}>
-                <p className="text-[10px] uppercase tracking-wide mb-2" style={{ color: '#10b981' }}>Expected Answer</p>
+              <div style={{ border: '1px solid hsl(var(--s-ok-br))', background: 'hsl(var(--s-ok-bg))', padding: 12 }}>
+                <p className="text-[10px] uppercase tracking-wide mb-2" style={{ color: 'hsl(var(--s-ok-tx))' }}>Expected Answer</p>
                 <p className="text-xs leading-relaxed" style={{ color: 'hsl(var(--text-1))' }}>{selectedCase.expected}</p>
               </div>
 

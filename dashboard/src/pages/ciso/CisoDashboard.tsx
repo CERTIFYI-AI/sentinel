@@ -25,8 +25,8 @@ const RISK_TREND = [
 ];
 
 const INCIDENT_SEVERITY = [
-  { name: 'Critical', value: 2, color: '#ef4444' },
-  { name: 'High', value: 2, color: '#f97316' },
+  { name: 'Critical', value: 2, color: 'hsl(var(--s-er-tx))' },
+  { name: 'High', value: 2, color: 'hsl(var(--r-hi-tx))' },
   { name: 'Medium', value: 1, color: '#eab308' },
 ];
 
@@ -38,11 +38,11 @@ const COMPLIANCE_DATA = FRAMEWORKS.map(f => ({
 
 const QUICK_NAV = [
   { label: 'Model Inventory', path: '/models', icon: Brain, count: `${MODELS.length} models`, color: '#3b82f6' },
-  { label: 'Risk Register', path: '/risk', icon: Warning, count: `${RISKS.filter(r => r.status === 'open').length} open risks`, color: '#ef4444' },
-  { label: 'Compliance', path: '/compliance', icon: Shield, count: `${Math.round(FRAMEWORKS.reduce((s, f) => s + f.complianceScore, 0) / FRAMEWORKS.length)}% avg score`, color: '#10b981' },
-  { label: 'Incidents', path: '/incidents', icon: Fire, count: `${INCIDENTS.filter(i => i.status !== 'resolved').length} active`, color: '#f97316' },
-  { label: 'Bias Audits', path: '/bias-audits', icon: Gauge, count: '5 audits', color: '#8b5cf6' },
-  { label: 'Vendors', path: '/vendors', icon: Buildings, count: '7 vendors', color: '#06b6d4' },
+  { label: 'Risk Register', path: '/risk', icon: Warning, count: `${RISKS.filter(r => r.status === 'open').length} open risks`, color: 'hsl(var(--s-er-tx))' },
+  { label: 'Compliance', path: '/compliance', icon: Shield, count: `${Math.round(FRAMEWORKS.reduce((s, f) => s + f.complianceScore, 0) / FRAMEWORKS.length)}% avg score`, color: 'hsl(var(--s-ok-tx))' },
+  { label: 'Incidents', path: '/incidents', icon: Fire, count: `${INCIDENTS.filter(i => i.status !== 'resolved').length} active`, color: 'hsl(var(--r-hi-tx))' },
+  { label: 'Bias Audits', path: '/bias-audits', icon: Gauge, count: '5 audits', color: 'hsl(var(--tag-purple))' },
+  { label: 'Vendors', path: '/vendors', icon: Buildings, count: '7 vendors', color: 'hsl(var(--s-in-tx))' },
 ];
 
 const CRITICAL_ALERTS = [
@@ -64,12 +64,12 @@ export default function CisoDashboard() {
   const complianceScore = Math.round(FRAMEWORKS.reduce((s, f) => s + f.complianceScore, 0) / FRAMEWORKS.length);
 
   const topStats = [
-    { label: 'Overall Risk Score', value: '14.2', unit: '/25', icon: Gauge, color: '#ef4444', trend: 'down' },
-    { label: 'Compliance Score', value: `${complianceScore}%`, unit: '', icon: Shield, color: '#10b981', trend: 'up' },
-    { label: 'Open Critical Risks', value: openCriticalRisks, unit: '', icon: Warning, color: '#ef4444', trend: 'stable' },
-    { label: 'Active Incidents', value: activeIncidents, unit: '', icon: Fire, color: '#f97316', trend: 'up' },
+    { label: 'Overall Risk Score', value: '14.2', unit: '/25', icon: Gauge, color: 'hsl(var(--s-er-tx))', trend: 'down' },
+    { label: 'Compliance Score', value: `${complianceScore}%`, unit: '', icon: Shield, color: 'hsl(var(--s-ok-tx))', trend: 'up' },
+    { label: 'Open Critical Risks', value: openCriticalRisks, unit: '', icon: Warning, color: 'hsl(var(--s-er-tx))', trend: 'stable' },
+    { label: 'Active Incidents', value: activeIncidents, unit: '', icon: Fire, color: 'hsl(var(--r-hi-tx))', trend: 'up' },
     { label: 'Models in Production', value: productionModels, unit: '', icon: Robot, color: '#3b82f6', trend: 'stable' },
-    { label: 'MFA Adoption', value: '63%', unit: '', icon: Users, color: '#f97316', trend: 'up' },
+    { label: 'MFA Adoption', value: '63%', unit: '', icon: Users, color: 'hsl(var(--r-hi-tx))', trend: 'up' },
   ];
 
   function trendIcon(trend: string, color: string) {
@@ -195,7 +195,7 @@ export default function CisoDashboard() {
               />
               <Bar dataKey="score" name="Score" radius={0}>
                 {COMPLIANCE_DATA.map((entry, i) => (
-                  <Cell key={i} fill={entry.score >= 80 ? '#10b981' : entry.score >= 65 ? '#f97316' : '#ef4444'} />
+                  <Cell key={i} fill={entry.score >= 80 ? 'hsl(var(--s-ok-tx))' : entry.score >= 65 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-er-tx))'} />
                 ))}
               </Bar>
             </BarChart>
@@ -241,7 +241,7 @@ export default function CisoDashboard() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Critical Alert Feed</CardTitle>
-              <Badge style={{ background: '#ef444420', color: '#ef4444', border: '1px solid #ef4444', borderRadius: 0, fontSize: 11 }}>
+              <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))', border: '1px solid hsl(var(--s-er-tx))', borderRadius: 0, fontSize: 11 }}>
                 {CRITICAL_ALERTS.filter(a => a.severity === 'critical').length} critical
               </Badge>
             </div>

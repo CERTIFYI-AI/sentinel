@@ -96,8 +96,8 @@ export default function KillSwitchEvents() {
         <div className="grid grid-cols-3 gap-3">
           {[
             { label: 'Agents Affected', value: '4 active', color: 'hsl(var(--destructive))' },
-            { label: 'Est. Users Impacted', value: '12,500+', color: '#f97316' },
-            { label: 'Downstream Services', value: '6', color: '#f59e0b' },
+            { label: 'Est. Users Impacted', value: '12,500+', color: 'hsl(var(--r-hi-tx))' },
+            { label: 'Downstream Services', value: '6', color: 'hsl(var(--s-wn-tx))' },
           ].map(s => (
             <div key={s.label} className="p-3 border border-[hsl(var(--border))] text-center">
               <p className="text-[10px] text-[hsl(var(--text-4))] uppercase mb-1">{s.label}</p>
@@ -226,8 +226,8 @@ export default function KillSwitchEvents() {
                   <div className="grid grid-cols-3 gap-2 text-center">
                     {[
                       { label: 'Agents Suspended', value: '4', color: 'hsl(var(--destructive))' },
-                      { label: 'Users Impacted', value: '12,500+', color: '#f97316' },
-                      { label: 'Services Offline', value: '6', color: '#f59e0b' },
+                      { label: 'Users Impacted', value: '12,500+', color: 'hsl(var(--r-hi-tx))' },
+                      { label: 'Services Offline', value: '6', color: 'hsl(var(--s-wn-tx))' },
                     ].map(s => (
                       <div key={s.label} className="p-2 border border-[hsl(var(--border))]">
                         <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{s.label}</p>

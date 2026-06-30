@@ -247,8 +247,8 @@ export default function CommitteeManagement() {
         {[
           { label: 'Committees', value: committees.length, color: 'hsl(var(--brand))' },
           { label: 'Total Members', value: totalMembers, color: '#3b82f6' },
-          { label: 'Open Action Items', value: totalOpenActions, color: '#f59e0b' },
-          { label: 'Overdue Actions', value: overdueActions, color: overdueActions > 0 ? '#ef4444' : '#10b981' },
+          { label: 'Open Action Items', value: totalOpenActions, color: 'hsl(var(--s-wn-tx))' },
+          { label: 'Overdue Actions', value: overdueActions, color: overdueActions > 0 ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-ok-tx))' },
         ].map(s => (
           <Card key={s.label} style={{ borderRadius: 0 }}>
             <CardContent className="px-4 py-3">

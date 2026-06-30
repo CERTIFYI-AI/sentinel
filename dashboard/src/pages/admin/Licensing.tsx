@@ -48,9 +48,9 @@ const USAGE = {
 type Plan = 'open_core' | 'trial' | 'enterprise';
 
 function UsageBar({ used, limit }: { used: number; limit: number }) {
-  if (limit < 0) return <span className="text-xs" style={{ color: '#10b981' }}>Unlimited</span>;
+  if (limit < 0) return <span className="text-xs" style={{ color: 'hsl(var(--s-ok-tx))' }}>Unlimited</span>;
   const pct = Math.min(100, (used / limit) * 100);
-  const color = pct > 90 ? '#ef4444' : pct > 70 ? '#f97316' : '#10b981';
+  const color = pct > 90 ? 'hsl(var(--s-er-tx))' : pct > 70 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-ok-tx))';
   return (
     <div className="flex items-center gap-2">
       <div className="flex-1 h-1.5" style={{ background: 'hsl(var(--bg-muted))' }}>
@@ -96,10 +96,10 @@ export default function Licensing() {
             </div>
           )}
           {plan === 'trial' && (
-            <div className="flex items-center gap-2 px-3 py-2" style={{ background: '#f9731610', border: '2px solid #f9731630' }}>
-              <CalendarCheck size={18} style={{ color: '#f97316' }} />
+            <div className="flex items-center gap-2 px-3 py-2" style={{ background: 'hsl(var(--r-hi-bg))', border: '2px solid hsl(var(--r-hi-br))' }}>
+              <CalendarCheck size={18} style={{ color: 'hsl(var(--r-hi-tx))' }} />
               <div>
-                <p className="text-xs font-bold" style={{ color: '#f97316' }}>ENTERPRISE TRIAL</p>
+                <p className="text-xs font-bold" style={{ color: 'hsl(var(--r-hi-tx))' }}>ENTERPRISE TRIAL</p>
                 <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{trialDays} days remaining</p>
               </div>
             </div>
@@ -126,20 +126,20 @@ export default function Licensing() {
 
       {/* ── Trial countdown ── */}
       {plan === 'trial' && (
-        <div style={{ background: '#f9731610', border: '1px solid #f9731630', padding: '12px 16px' }}>
+        <div style={{ background: 'hsl(var(--r-hi-bg))', border: '1px solid hsl(var(--r-hi-br))', padding: '12px 16px' }}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Warning size={16} style={{ color: '#f97316' }} />
-              <p className="text-sm font-medium" style={{ color: '#f97316' }}>
+              <Warning size={16} style={{ color: 'hsl(var(--r-hi-tx))' }} />
+              <p className="text-sm font-medium" style={{ color: 'hsl(var(--r-hi-tx))' }}>
                 {trialDays} days remaining in your Enterprise trial
               </p>
             </div>
-            <button onClick={() => toast.info('Opening upgrade flow')} className="text-xs px-3 py-1.5" style={{ background: '#f97316', color: 'white' }}>
+            <button onClick={() => toast.info('Opening upgrade flow')} className="text-xs px-3 py-1.5" style={{ background: 'hsl(var(--r-hi-tx))', color: 'white' }}>
               Upgrade Now
             </button>
           </div>
-          <div className="mt-2 h-1.5" style={{ background: '#f9731620' }}>
-            <div className="h-full" style={{ width: `${(trialDays / 30) * 100}%`, background: '#f97316' }} />
+          <div className="mt-2 h-1.5" style={{ background: 'hsl(var(--r-hi-bg))' }}>
+            <div className="h-full" style={{ width: `${(trialDays / 30) * 100}%`, background: 'hsl(var(--r-hi-tx))' }} />
           </div>
         </div>
       )}
@@ -183,7 +183,7 @@ export default function Licensing() {
           <div className="divide-y" style={{ borderColor: 'hsl(var(--border))' }}>
             {OPEN_CORE_FEATURES.map(f => (
               <div key={f.key} className="flex items-start gap-3 px-5 py-3">
-                <CheckCircle size={15} style={{ color: '#10b981', flexShrink: 0, marginTop: 2 }} />
+                <CheckCircle size={15} style={{ color: 'hsl(var(--s-ok-tx))', flexShrink: 0, marginTop: 2 }} />
                 <div>
                   <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{f.name}</p>
                   <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-3))' }}>{f.desc}</p>
@@ -231,7 +231,7 @@ export default function Licensing() {
                     </div>
                     <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-3))' }}>{f.desc}</p>
                     {!locked && f.roi && (
-                      <p className="text-xs mt-0.5 font-medium" style={{ color: '#10b981' }}>↗ {f.roi}</p>
+                      <p className="text-xs mt-0.5 font-medium" style={{ color: 'hsl(var(--s-ok-tx))' }}>↗ {f.roi}</p>
                     )}
                   </div>
                 </div>
@@ -255,9 +255,9 @@ export default function Licensing() {
               </p>
               <div className="grid grid-cols-3 gap-3 mb-4">
                 {[
-                  { value: `${totalROI}h`, label: 'hours/month saved', color: '#10b981' },
+                  { value: `${totalROI}h`, label: 'hours/month saved', color: 'hsl(var(--s-ok-tx))' },
                   { value: '$2,400', label: 'per org / year', color: 'hsl(var(--brand))' },
-                  { value: '847', label: 'compliance days carried over', color: '#6366f1' },
+                  { value: '847', label: 'compliance days carried over', color: 'hsl(var(--brand))' },
                 ].map(s => (
                   <div key={s.label} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', padding: '12px', textAlign: 'center' }}>
                     <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
@@ -282,8 +282,8 @@ export default function Licensing() {
       {plan === 'enterprise' && (
         <div style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', padding: '20px' }}>
           <div className="flex items-center gap-3">
-            <div style={{ background: '#10b98110', border: '2px solid #10b98130', padding: '12px' }}>
-              <ShieldCheck size={32} style={{ color: '#10b981' }} />
+            <div style={{ background: 'hsl(var(--s-ok-bg))', border: '2px solid hsl(var(--s-ok-br))', padding: '12px' }}>
+              <ShieldCheck size={32} style={{ color: 'hsl(var(--s-ok-tx))' }} />
             </div>
             <div className="flex-1">
               <h2 className="text-sm font-semibold mb-0.5" style={{ color: 'hsl(var(--text-1))' }}>Sentinel-Certified Organization</h2>
@@ -294,7 +294,7 @@ export default function Licensing() {
                 sentinel.ai/verify/{orgName.toLowerCase().replace(/\s/g, '-')}-iso42001
               </p>
             </div>
-            <button onClick={() => toast.success('Badge URL copied to clipboard')} className="text-xs px-3 py-2 border" style={{ border: '1px solid #10b98140', color: '#10b981' }}>
+            <button onClick={() => toast.success('Badge URL copied to clipboard')} className="text-xs px-3 py-2 border" style={{ border: '1px solid hsl(var(--s-ok-br))', color: 'hsl(var(--s-ok-tx))' }}>
               Copy Badge URL
             </button>
           </div>

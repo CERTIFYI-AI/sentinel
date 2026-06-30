@@ -412,8 +412,8 @@ export default function TrainingAwareness() {
 
   // ── Status badge helpers ───────────────────────────────────────────────────
   const statusBadge = (status: string) => {
-    if (status === 'Completed') return { bg: 'hsl(var(--s-ok-tx))', text: '#fff' };
-    return { bg: 'hsl(var(--brand))', text: '#fff' };
+    if (status === 'Completed') return { bg: 'hsl(var(--s-ok-tx))', text: 'hsl(var(--bg-surface))' };
+    return { bg: 'hsl(var(--brand))', text: 'hsl(var(--bg-surface))' };
   };
 
   const categoryBadge = (category: string) => {
@@ -687,7 +687,7 @@ export default function TrainingAwareness() {
                     >
                       <div
                         className="flex items-center justify-center w-7 h-7 text-xs font-bold"
-                        style={{ background: 'hsl(var(--brand))', color: '#fff', borderRadius: 0, minWidth: 28 }}
+                        style={{ background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 28 }}
                       >
                         {i + 1}
                       </div>
@@ -737,11 +737,11 @@ export default function TrainingAwareness() {
                             </td>
                             <td className="px-2 py-2">
                               {a.completed ? (
-                                <Badge style={{ background: 'hsl(var(--s-ok-tx))', color: '#fff', borderRadius: 0, fontSize: 10 }}>
+                                <Badge style={{ background: 'hsl(var(--s-ok-tx))', color: 'hsl(var(--bg-surface))', borderRadius: 0, fontSize: 10 }}>
                                   Completed
                                 </Badge>
                               ) : (
-                                <Badge style={{ background: 'hsl(var(--s-wn-tx))', color: '#fff', borderRadius: 0, fontSize: 10 }}>
+                                <Badge style={{ background: 'hsl(var(--s-wn-tx))', color: 'hsl(var(--bg-surface))', borderRadius: 0, fontSize: 10 }}>
                                   In Progress
                                 </Badge>
                               )}
@@ -880,11 +880,11 @@ export default function TrainingAwareness() {
                                 </div>
                               </div>
                               {isExpired ? (
-                                <Badge style={{ background: 'hsl(var(--destructive))', color: '#fff', borderRadius: 0, fontSize: 10 }}>Expired</Badge>
+                                <Badge style={{ background: 'hsl(var(--destructive))', color: 'hsl(var(--bg-surface))', borderRadius: 0, fontSize: 10 }}>Expired</Badge>
                               ) : isExpiring ? (
-                                <Badge style={{ background: 'hsl(var(--s-wn-tx))', color: '#fff', borderRadius: 0, fontSize: 10 }}>Expiring Soon</Badge>
+                                <Badge style={{ background: 'hsl(var(--s-wn-tx))', color: 'hsl(var(--bg-surface))', borderRadius: 0, fontSize: 10 }}>Expiring Soon</Badge>
                               ) : (
-                                <Badge style={{ background: 'hsl(var(--s-ok-tx))', color: '#fff', borderRadius: 0, fontSize: 10 }}>Valid</Badge>
+                                <Badge style={{ background: 'hsl(var(--s-ok-tx))', color: 'hsl(var(--bg-surface))', borderRadius: 0, fontSize: 10 }}>Valid</Badge>
                               )}
                             </div>
                             <div className="grid grid-cols-2 gap-2 mt-2">

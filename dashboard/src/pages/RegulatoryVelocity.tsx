@@ -92,7 +92,7 @@ export default function RegulatoryVelocity() {
               {orgName} · AI-powered regulatory change velocity scoring with automatic model impact mapping and deadline intelligence
             </p>
           </div>
-          <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+          <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
             onClick={() => toast.success('Regulatory scan triggered — results in 30s')}>
             <Lightning size={13} className="mr-1" />Run Regulatory Scan
           </Button>
@@ -274,7 +274,7 @@ export default function RegulatoryVelocity() {
                             <CheckCircle size={10} className="mr-1" />Create Task
                           </Button>
                           {!change.autoMapped && (
-                            <Button size="sm" className="h-7 text-[10px] px-2" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+                            <Button size="sm" className="h-7 text-[10px] px-2" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
                               onClick={() => toast.success('Auto-mapping models to this regulation…')}>
                               <Brain size={10} className="mr-1" />Auto-Map
                             </Button>

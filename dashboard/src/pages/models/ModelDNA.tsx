@@ -591,7 +591,7 @@ export default function ModelDNA() {
                     Copy JSON
                   </Button>
                   <Button
-                    style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+                    style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
                     onClick={() => toast.success(`Downloading signed PDF certificate for ${model.name}…`)}
                   >
                     <DownloadSimple size={13} style={{ marginRight: 5 }} />

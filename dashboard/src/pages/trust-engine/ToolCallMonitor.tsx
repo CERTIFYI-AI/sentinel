@@ -299,7 +299,7 @@ export default function ToolCallMonitor() {
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
             background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
-            color: '#fff', borderRadius: 0, minWidth: 300
+            color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 300
           }}>{t.text}</div>
         ))}
       </div>
@@ -579,7 +579,7 @@ export default function ToolCallMonitor() {
 
               <div className="flex gap-2 pt-2 flex-wrap">
                 {(viewItem.result === 'error' || viewItem.result === 'timeout') && IDEMPOTENT_TOOLS.includes(viewItem.tool) && (
-                  <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--s-ok-tx))', color: '#fff' }}
+                  <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--s-ok-tx))', color: 'hsl(var(--bg-surface))' }}
                     onClick={() => { handleRetry(viewItem); setViewItem(null); }}>
                     <ArrowCounterClockwise size={14} className="mr-1" />Retry
                   </Button>

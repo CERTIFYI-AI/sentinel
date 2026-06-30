@@ -410,7 +410,7 @@ export default function GenAIRisks() {
                           );
                         })}
                       </div>
-                      <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>Apply Recommended Guardrail</Button>
+                      <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>Apply Recommended Guardrail</Button>
                     </>
                   )}
                 </TabsContent>
@@ -436,7 +436,7 @@ export default function GenAIRisks() {
                     <div className="p-4 text-center" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-br))', borderRadius: 0 }}>
                       <p className="text-sm font-semibold" style={{ color: 'hsl(var(--s-er-tx))' }}>No guardrails configured</p>
                       <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>This risk has no active controls. Immediate action recommended.</p>
-                      <Button size="sm" className="mt-3" style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: '#fff' }}>Assign Guardrail</Button>
+                      <Button size="sm" className="mt-3" style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: 'hsl(var(--bg-surface))' }}>Assign Guardrail</Button>
                     </div>
                   )}
                   <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>

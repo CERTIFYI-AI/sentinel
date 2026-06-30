@@ -22,18 +22,18 @@ import { useSettingsStore } from '../../stores/settingsStore';
 import { useChartTheme } from '../../hooks/useChartTheme';
 
 
-const ACCENT_COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f97316', '#ec4899', '#06b6d4'];
+const ACCENT_COLORS = ['#3b82f6', 'hsl(var(--tag-purple))', 'hsl(var(--s-ok-tx))', 'hsl(var(--r-hi-tx))', '#ec4899', 'hsl(var(--s-in-tx))'];
 
 function driftIcon(status: string) {
-  if (status === 'stable') return <CheckCircle size={14} style={{ color: '#10b981' }} />;
-  if (status === 'warning') return <Warning size={14} style={{ color: '#f97316' }} />;
-  return <Warning size={14} style={{ color: '#ef4444' }} />;
+  if (status === 'stable') return <CheckCircle size={14} style={{ color: 'hsl(var(--s-ok-tx))' }} />;
+  if (status === 'warning') return <Warning size={14} style={{ color: 'hsl(var(--r-hi-tx))' }} />;
+  return <Warning size={14} style={{ color: 'hsl(var(--s-er-tx))' }} />;
 }
 
 function driftColor(status: string) {
-  if (status === 'stable') return '#10b981';
-  if (status === 'warning') return '#f97316';
-  return '#ef4444';
+  if (status === 'stable') return 'hsl(var(--s-ok-tx))';
+  if (status === 'warning') return 'hsl(var(--r-hi-tx))';
+  return 'hsl(var(--s-er-tx))';
 }
 
 const EMPTY_FORM = {
@@ -196,7 +196,7 @@ export default function QualityMetrics() {
                 />
                 <Bar dataKey="fairness" name="Fairness" radius={0}>
                   {fairnessData.map((entry, i) => (
-                    <Cell key={i} fill={entry.fairness >= 85 ? '#10b981' : entry.fairness >= 70 ? '#f97316' : '#ef4444'} />
+                    <Cell key={i} fill={entry.fairness >= 85 ? 'hsl(var(--s-ok-tx))' : entry.fairness >= 70 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-er-tx))'} />
                   ))}
                 </Bar>
               </BarChart>
@@ -248,13 +248,13 @@ export default function QualityMetrics() {
                   <td className="p-3 text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{m.name}</td>
                   <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{m.type}</td>
                   <td className="p-3">
-                    <span className="text-sm font-semibold" style={{ color: m.accuracy >= 90 ? '#10b981' : '#f97316' }}>{m.accuracy}%</span>
+                    <span className="text-sm font-semibold" style={{ color: m.accuracy >= 90 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--r-hi-tx))' }}>{m.accuracy}%</span>
                   </td>
                   <td className="p-3 text-sm" style={{ color: 'hsl(var(--text-2))' }}>{m.latencyMs}ms</td>
                   <td className="p-3">
                     <div className="flex items-center gap-2">
                       <div style={{ width: 60, height: 6, background: 'hsl(var(--bg-muted))', borderRadius: 0 }}>
-                        <div style={{ width: `${m.fairnessScore}%`, height: '100%', background: m.fairnessScore >= 85 ? '#10b981' : '#f97316' }} />
+                        <div style={{ width: `${m.fairnessScore}%`, height: '100%', background: m.fairnessScore >= 85 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--r-hi-tx))' }} />
                       </div>
                       <span className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>{m.fairnessScore}</span>
                     </div>
@@ -274,7 +274,7 @@ export default function QualityMetrics() {
                       <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setEditItem({ ...m })}>
                         <PencilSimple size={14} />
                       </Button>
-                      <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: '#ef4444' }} onClick={() => setDeleteItem(m)}>
+                      <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: 'hsl(var(--s-er-tx))' }} onClick={() => setDeleteItem(m)}>
                         <Trash size={14} />
                       </Button>
                     </div>
@@ -295,7 +295,7 @@ export default function QualityMetrics() {
                 <SheetTitle style={{ color: 'hsl(var(--text-1))' }}>{viewItem.name}</SheetTitle>
                 <div className="flex gap-2 flex-wrap">
                   <Badge variant="outline" style={{ borderRadius: 0 }}>{viewItem.type}</Badge>
-                  <Badge style={{ background: viewItem.driftStatus === 'stable' ? '#10b98120' : '#ef444420', color: viewItem.driftStatus === 'stable' ? '#10b981' : '#ef4444', border: `1px solid ${viewItem.driftStatus === 'stable' ? '#10b981' : '#ef4444'}`, borderRadius: 0 }}>
+                  <Badge style={{ background: viewItem.driftStatus === 'stable' ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-er-bg))', color: viewItem.driftStatus === 'stable' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))', border: `1px solid ${viewItem.driftStatus === 'stable' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))'}`, borderRadius: 0 }}>
                     drift: {viewItem.driftStatus}
                   </Badge>
                 </div>
@@ -460,7 +460,7 @@ export default function QualityMetrics() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} style={{ background: '#ef4444', borderRadius: 0 }}>Remove</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} style={{ background: 'hsl(var(--s-er-tx))', borderRadius: 0 }}>Remove</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

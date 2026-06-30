@@ -145,12 +145,12 @@ const STATUS_STYLE: Record<WFStatus, { bg: string; color: string }> = {
 const TYPE_COLOR: Record<WFType, string> = {
   'Model Release': 'hsl(var(--brand))',
   'Policy Update': '#a855f7',
-  Vendor: '#f97316',
-  Exception: '#ef4444',
-  'Access Control': '#06b6d4',
-  Incident: '#ef4444',
+  Vendor: 'hsl(var(--r-hi-tx))',
+  Exception: 'hsl(var(--s-er-tx))',
+  'Access Control': 'hsl(var(--s-in-tx))',
+  Incident: 'hsl(var(--s-er-tx))',
   'Audit Finding': '#eab308',
-  'Risk Acceptance': '#f97316',
+  'Risk Acceptance': 'hsl(var(--r-hi-tx))',
 }
 
 export default function ApprovalWorkflows() {

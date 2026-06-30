@@ -174,7 +174,7 @@ function DriftAlertModal({ model, onClose }: { model: typeof MODELS[0]; onClose:
           </div>
           <div style={{ display: 'flex', gap: 8, paddingTop: 8, borderTop: '1px solid hsl(var(--border))' }}>
             <button onClick={onClose} style={{ flex: 1, padding: '8px', background: 'none', border: '1px solid hsl(var(--border))', cursor: 'pointer', color: 'hsl(var(--text-2))', fontSize: 13 }}>Cancel</button>
-            <button onClick={() => { toast.success('Alert configuration saved'); onClose(); }} style={{ flex: 1, padding: '8px', background: 'hsl(var(--brand))', border: 'none', cursor: 'pointer', color: '#fff', fontSize: 13, fontWeight: 600 }}>
+            <button onClick={() => { toast.success('Alert configuration saved'); onClose(); }} style={{ flex: 1, padding: '8px', background: 'hsl(var(--brand))', border: 'none', cursor: 'pointer', color: 'hsl(var(--bg-surface))', fontSize: 13, fontWeight: 600 }}>
               Save Configuration
             </button>
           </div>
@@ -304,7 +304,7 @@ export default function ModelDetail() {
               <Button
                 size="sm"
                 onClick={() => toast.success('Model Card PDF generated')}
-                style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+                style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
               >
                 <Export size={14} style={{ marginRight: 6 }} /> Export
               </Button>
@@ -571,7 +571,7 @@ export default function ModelDetail() {
                 </p>
                 <button
                   onClick={() => toast.success('Bias audit scheduled — you will be notified when complete')}
-                  style={{ padding: '9px 20px', background: 'hsl(var(--brand))', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
+                  style={{ padding: '9px 20px', background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
                 >
                   <CalendarCheck size={14} style={{ display: 'inline', marginRight: 6 }} />
                   Schedule Bias Audit
@@ -761,7 +761,7 @@ export default function ModelDetail() {
                 </div>
                 <button
                   onClick={() => toast.success('Next bias audit scheduled')}
-                  style={{ padding: '8px 16px', background: 'hsl(var(--brand))', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' }}
+                  style={{ padding: '8px 16px', background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' }}
                 >
                   Schedule Next Audit
                 </button>

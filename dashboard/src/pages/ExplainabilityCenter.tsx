@@ -87,7 +87,7 @@ export default function ExplainabilityCenter() {
     if (score === null || score === "") return <span className="text-xs text-[hsl(var(--text-4))]">—</span>;
     const numScore = typeof score === 'string' ? parseFloat(score) : (score as number);
     const pct = Math.round(numScore * 100);
-    const color = pct >= 85 ? "#22c55e" : pct >= 70 ? "#f59e0b" : "#ef4444";
+    const color = pct >= 85 ? "#22c55e" : pct >= 70 ? "hsl(var(--s-wn-tx))" : "hsl(var(--s-er-tx))";
     return (
       <div className="flex items-center gap-2">
         <div className="w-12 h-1.5 bg-[hsl(var(--border))]"><div style={{ width:`${pct}%`, background:color, height:"100%" }} /></div>

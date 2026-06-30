@@ -14,11 +14,11 @@ import { useSettingsStore } from '../stores/settingsStore';
 
 const ENTITY_COLORS: Record<string, string> = {
   Model: 'hsl(var(--brand))',
-  Regulation: '#8b5cf6',
-  Control: '#10b981',
-  Incident: '#ef4444',
-  Vendor: '#f59e0b',
-  Dataset: '#06b6d4',
+  Regulation: 'hsl(var(--tag-purple))',
+  Control: 'hsl(var(--s-ok-tx))',
+  Incident: 'hsl(var(--s-er-tx))',
+  Vendor: 'hsl(var(--s-wn-tx))',
+  Dataset: 'hsl(var(--s-in-tx))',
   Policy: '#ec4899',
 };
 
@@ -146,7 +146,7 @@ export default function KnowledgeGraph() {
               {orgName} · Semantic graph connecting all AI models, regulations, controls, incidents, vendors, and policies with causal inference
             </p>
           </div>
-          <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+          <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
             <ChartBar size={13} className="mr-1" />Export Graph
           </Button>
         </div>
@@ -200,7 +200,7 @@ export default function KnowledgeGraph() {
                         className="text-[9px] px-1.5 py-0.5"
                         style={{
                           background: filter === f ? 'hsl(var(--brand))' : 'hsl(var(--bg-raised))',
-                          color: filter === f ? '#fff' : 'hsl(var(--text-4))',
+                          color: filter === f ? 'hsl(var(--bg-surface))' : 'hsl(var(--text-4))',
                           border: '1px solid hsl(var(--border))',
                         }}
                       >{f === 'all' ? 'All' : f}</button>

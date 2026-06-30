@@ -99,7 +99,7 @@ export default function EvidenceUploadDrawer({ onClose, onUpload }: EvidenceUplo
       width: '100%',
       padding: '7px 10px',
       background: 'hsl(var(--bg-raised))',
-      border: `1px solid ${hasError ? '#ef4444' : 'hsl(var(--border))'}`,
+      border: `1px solid ${hasError ? 'hsl(var(--s-er-tx))' : 'hsl(var(--border))'}`,
       color: 'hsl(var(--text-1))',
       fontSize: 13,
       outline: 'none',
@@ -175,7 +175,7 @@ export default function EvidenceUploadDrawer({ onClose, onUpload }: EvidenceUplo
             </Badge>
             <button
               onClick={onClose}
-              style={{ padding: '8px 20px', background: 'hsl(var(--brand))', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}
+              style={{ padding: '8px 20px', background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}
             >
               Done
             </button>
@@ -184,14 +184,14 @@ export default function EvidenceUploadDrawer({ onClose, onUpload }: EvidenceUplo
           <div style={{ flex: 1, padding: 20, display: 'flex', flexDirection: 'column', gap: 18 }}>
             {/* Drop zone */}
             <div>
-              <label style={labelStyle()}>Files {errors.files && <span style={{ color: '#ef4444', marginLeft: 4 }}>— {errors.files}</span>}</label>
+              <label style={labelStyle()}>Files {errors.files && <span style={{ color: 'hsl(var(--s-er-tx))', marginLeft: 4 }}>— {errors.files}</span>}</label>
               <div
                 onDragOver={e => { e.preventDefault(); setDragging(true); }}
                 onDragLeave={() => setDragging(false)}
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current?.click()}
                 style={{
-                  border: `2px dashed ${dragging ? 'hsl(var(--brand))' : errors.files ? '#ef4444' : 'hsl(var(--border-mid))'}`,
+                  border: `2px dashed ${dragging ? 'hsl(var(--brand))' : errors.files ? 'hsl(var(--s-er-tx))' : 'hsl(var(--border-mid))'}`,
                   padding: '32px 20px',
                   textAlign: 'center',
                   cursor: 'pointer',
@@ -233,7 +233,7 @@ export default function EvidenceUploadDrawer({ onClose, onUpload }: EvidenceUplo
                       <span style={{ fontSize: 11, color: 'hsl(var(--text-4))', flexShrink: 0 }}>
                         {formatSize(f.size)}
                       </span>
-                      <button onClick={() => removeFile(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 2, flexShrink: 0 }}>
+                      <button onClick={() => removeFile(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'hsl(var(--s-er-tx))', padding: 2, flexShrink: 0 }}>
                         <Trash size={13} />
                       </button>
                     </div>
@@ -244,20 +244,20 @@ export default function EvidenceUploadDrawer({ onClose, onUpload }: EvidenceUplo
 
             {/* Title */}
             <div>
-              <label style={labelStyle()}>Evidence Title {errors.title && <span style={{ color: '#ef4444' }}>*</span>}</label>
+              <label style={labelStyle()}>Evidence Title {errors.title && <span style={{ color: 'hsl(var(--s-er-tx))' }}>*</span>}</label>
               <input
                 value={form.title}
                 onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
                 placeholder="e.g. Bias Monitoring Report — Q1 2026"
                 style={fieldStyle(!!errors.title)}
               />
-              {errors.title && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 3 }}>{errors.title}</p>}
+              {errors.title && <p style={{ fontSize: 11, color: 'hsl(var(--s-er-tx))', marginTop: 3 }}>{errors.title}</p>}
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               {/* Framework */}
               <div>
-                <label style={labelStyle()}>Framework {errors.framework && <span style={{ color: '#ef4444' }}>*</span>}</label>
+                <label style={labelStyle()}>Framework {errors.framework && <span style={{ color: 'hsl(var(--s-er-tx))' }}>*</span>}</label>
                 <select
                   value={form.framework}
                   onChange={e => setForm(f => ({ ...f, framework: e.target.value }))}
@@ -266,19 +266,19 @@ export default function EvidenceUploadDrawer({ onClose, onUpload }: EvidenceUplo
                   <option value="">Select framework…</option>
                   {FRAMEWORKS_LIST.map(fw => <option key={fw} value={fw}>{fw}</option>)}
                 </select>
-                {errors.framework && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 3 }}>{errors.framework}</p>}
+                {errors.framework && <p style={{ fontSize: 11, color: 'hsl(var(--s-er-tx))', marginTop: 3 }}>{errors.framework}</p>}
               </div>
 
               {/* Control ref */}
               <div>
-                <label style={labelStyle()}>Control Reference {errors.controlRef && <span style={{ color: '#ef4444' }}>*</span>}</label>
+                <label style={labelStyle()}>Control Reference {errors.controlRef && <span style={{ color: 'hsl(var(--s-er-tx))' }}>*</span>}</label>
                 <input
                   value={form.controlRef}
                   onChange={e => setForm(f => ({ ...f, controlRef: e.target.value }))}
                   placeholder="e.g. Art. 10, CC6.1"
                   style={fieldStyle(!!errors.controlRef)}
                 />
-                {errors.controlRef && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 3 }}>{errors.controlRef}</p>}
+                {errors.controlRef && <p style={{ fontSize: 11, color: 'hsl(var(--s-er-tx))', marginTop: 3 }}>{errors.controlRef}</p>}
               </div>
             </div>
 
@@ -340,7 +340,7 @@ export default function EvidenceUploadDrawer({ onClose, onUpload }: EvidenceUplo
                 display: 'flex', alignItems: 'center', gap: 6,
                 padding: '7px 18px',
                 background: uploading ? 'hsl(var(--bg-muted))' : 'hsl(var(--brand))',
-                color: uploading ? 'hsl(var(--text-3))' : '#fff',
+                color: uploading ? 'hsl(var(--text-3))' : 'hsl(var(--bg-surface))',
                 border: 'none', cursor: uploading ? 'wait' : 'pointer',
                 fontSize: 13, fontWeight: 500,
               }}

@@ -32,10 +32,10 @@ function ProgressBar({ value, color }: { value: number; color: string }) {
 }
 
 function progressColor(progress: number): string {
-  if (progress < 25) return '#ef4444';
-  if (progress < 60) return '#f97316';
-  if (progress < 85) return '#f59e0b';
-  return '#10b981';
+  if (progress < 25) return 'hsl(var(--s-er-tx))';
+  if (progress < 60) return 'hsl(var(--r-hi-tx))';
+  if (progress < 85) return 'hsl(var(--s-wn-tx))';
+  return 'hsl(var(--s-ok-tx))';
 }
 
 interface GapAnalysisModalProps {
@@ -207,20 +207,20 @@ export default function GapAnalysisModal({ gap: propGap, gapId, onClose, onCreat
             </div>
             <ProgressBar value={gap.progress} color={color} />
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, fontSize: 10, color: 'hsl(var(--text-4))' }}>
-              <span style={{ color: '#ef4444' }}>Critical (&lt;25%)</span>
-              <span style={{ color: '#f97316' }}>Partial (25–60%)</span>
-              <span style={{ color: '#f59e0b' }}>Progressing (60–85%)</span>
-              <span style={{ color: '#10b981' }}>Near-complete (&gt;85%)</span>
+              <span style={{ color: 'hsl(var(--s-er-tx))' }}>Critical (&lt;25%)</span>
+              <span style={{ color: 'hsl(var(--r-hi-tx))' }}>Partial (25–60%)</span>
+              <span style={{ color: 'hsl(var(--s-wn-tx))' }}>Progressing (60–85%)</span>
+              <span style={{ color: 'hsl(var(--s-ok-tx))' }}>Near-complete (&gt;85%)</span>
             </div>
           </div>
 
           {/* Meta grid */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
             {[
-              { label: 'Framework', value: gap.framework, icon: ShieldCheck, color: '#06b6d4' },
-              { label: 'Control Reference', value: gap.controlRef, icon: ClipboardText, color: '#6366f1', mono: true },
+              { label: 'Framework', value: gap.framework, icon: ShieldCheck, color: 'hsl(var(--s-in-tx))' },
+              { label: 'Control Reference', value: gap.controlRef, icon: ClipboardText, color: 'hsl(var(--brand))', mono: true },
               { label: 'Severity', value: gap.severity, icon: Warning, color: severityColor(gap.severity).text },
-              { label: 'Owner', value: gap.owner, icon: User, color: '#f97316' },
+              { label: 'Owner', value: gap.owner, icon: User, color: 'hsl(var(--r-hi-tx))' },
               { label: 'Due Date', value: formatDate(gap.dueDate), icon: CalendarBlank, color: 'hsl(var(--text-3))' },
               { label: 'Gap ID', value: gap.id, icon: TrendUp, color: 'hsl(var(--text-3))', mono: true },
             ].map(item => (
@@ -285,8 +285,8 @@ export default function GapAnalysisModal({ gap: propGap, gapId, onClose, onCreat
         }}>
           {taskCreated ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <CheckCircle size={16} style={{ color: '#10b981' }} />
-              <span style={{ fontSize: 12, color: '#10b981', fontWeight: 500 }}>Task created successfully</span>
+              <CheckCircle size={16} style={{ color: 'hsl(var(--s-ok-tx))' }} />
+              <span style={{ fontSize: 12, color: 'hsl(var(--s-ok-tx))', fontWeight: 500 }}>Task created successfully</span>
             </div>
           ) : (
             <button
@@ -295,7 +295,7 @@ export default function GapAnalysisModal({ gap: propGap, gapId, onClose, onCreat
                 display: 'flex', alignItems: 'center', gap: 6,
                 padding: '7px 16px',
                 background: 'hsl(var(--brand))',
-                color: '#fff',
+                color: 'hsl(var(--bg-surface))',
                 border: 'none', cursor: 'pointer',
                 fontSize: 13, fontWeight: 500,
               }}

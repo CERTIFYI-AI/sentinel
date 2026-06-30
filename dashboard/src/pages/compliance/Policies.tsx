@@ -13,7 +13,7 @@ import { useChartTheme } from "../../hooks/useChartTheme";
 import { FileText, CheckCircle, Clock, XCircle, MagnifyingGlass as Search, Plus, DownloadSimple as Download, CaretLeft as ChevronLeft, CaretRight as ChevronRight, PencilSimple as Edit, CopySimple as Copy, Archive, Trash as Trash2, Eye, DotsThreeVertical as MoreVertical, Shield, GitBranch, FilePdf } from "@phosphor-icons/react";
 
 
-const COLORS = ["#10b981","#3b82f6","#f59e0b","#ef4444","#8b5cf6","#ec4899"];
+const COLORS = ["hsl(var(--s-ok-tx))","#3b82f6","hsl(var(--s-wn-tx))","hsl(var(--s-er-tx))","hsl(var(--tag-purple))","#ec4899"];
 // Status normalization — always Title Case display
 function normalizeStatus(s: string): string {
   const map: Record<string,string> = { active: 'Published', review: 'In Review', expired: 'Archived', draft: 'Draft', archived: 'Archived' };

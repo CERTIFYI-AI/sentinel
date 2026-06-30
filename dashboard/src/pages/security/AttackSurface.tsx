@@ -165,7 +165,7 @@ export default function AttackSurface() {
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
             background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
-            color: '#fff', borderRadius: 0, minWidth: 300,
+            color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 300,
           }}>{t.text}</div>
         ))}
       </div>
@@ -183,7 +183,7 @@ export default function AttackSurface() {
           <Button variant="outline" style={{ borderRadius: 0 }}>
             <Scan size={14} className="mr-2" />Run Scan
           </Button>
-          <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }} onClick={() => { setFormAsset({ ...EMPTY_ASSET }); setRegisterOpen(true); }}>
+          <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={() => { setFormAsset({ ...EMPTY_ASSET }); setRegisterOpen(true); }}>
             <Plus size={14} className="mr-2" />Register Asset
           </Button>
         </div>
@@ -259,10 +259,10 @@ export default function AttackSurface() {
         });
 
         const nodeColor = (a: AttackSurfaceAsset) => {
-          if (a.risk === 'critical') return '#ef4444';
-          if (a.risk === 'high') return '#f97316';
+          if (a.risk === 'critical') return 'hsl(var(--s-er-tx))';
+          if (a.risk === 'high') return 'hsl(var(--r-hi-tx))';
           if (a.risk === 'medium') return '#eab308';
-          return '#10b981';
+          return 'hsl(var(--s-ok-tx))';
         };
 
         return (
@@ -468,10 +468,10 @@ export default function AttackSurface() {
                 {/* Legend */}
                 <div className="flex items-center gap-4 px-2 pb-1 flex-wrap">
                   {[
-                    { color: '#ef4444', label: 'Critical' },
-                    { color: '#f97316', label: 'High' },
+                    { color: 'hsl(var(--s-er-tx))', label: 'Critical' },
+                    { color: 'hsl(var(--r-hi-tx))', label: 'High' },
                     { color: '#eab308', label: 'Medium' },
-                    { color: '#10b981', label: 'Low' },
+                    { color: 'hsl(var(--s-ok-tx))', label: 'Low' },
                   ].map(({ color, label }) => (
                     <div key={label} className="flex items-center gap-1.5">
                       <div style={{ width: 10, height: 10, background: color, borderRadius: 0 }} />
@@ -680,7 +680,7 @@ export default function AttackSurface() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setRegisterOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
             <Button
-              style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+              style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
               onClick={handleRegister}
               disabled={!formAsset.name.trim()}
             >

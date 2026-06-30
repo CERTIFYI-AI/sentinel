@@ -416,7 +416,7 @@ export default function AibomRegistry() {
             <div className="flex px-5 py-2 gap-1 border-b border-[hsl(var(--border))]">
               {[1, 2, 3, 4].map(s => (
                 <div key={s} className="flex items-center gap-1 flex-1">
-                  <div className="flex items-center justify-center w-5 h-5 text-[10px] font-bold" style={{ background: s <= wizardStep ? 'hsl(var(--brand))' : 'hsl(var(--border))', color: s <= wizardStep ? '#fff' : 'hsl(var(--text-4))' }}>{s < wizardStep ? '✓' : s}</div>
+                  <div className="flex items-center justify-center w-5 h-5 text-[10px] font-bold" style={{ background: s <= wizardStep ? 'hsl(var(--brand))' : 'hsl(var(--border))', color: s <= wizardStep ? 'hsl(var(--bg-surface))' : 'hsl(var(--text-4))' }}>{s < wizardStep ? '✓' : s}</div>
                   {s < 4 && <div className="flex-1 h-px" style={{ background: s < wizardStep ? 'hsl(var(--brand))' : 'hsl(var(--border))' }} />}
                 </div>
               ))}

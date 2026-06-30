@@ -61,18 +61,18 @@ const RADAR_KEYS = [
 
 function statusStyle(status: string) {
   switch (status) {
-    case 'production': return { bg: '#10b98120', text: '#10b981', border: '#10b98140' };
+    case 'production': return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))' };
     case 'staging': return { bg: '#3b82f620', text: '#3b82f6', border: '#3b82f640' };
-    case 'evaluation': return { bg: '#8b5cf620', text: '#8b5cf6', border: '#8b5cf640' };
-    case 'deprecated': return { bg: '#6b728020', text: '#6b7280', border: '#6b728040' };
-    default: return { bg: '#6b728020', text: '#6b7280', border: '#6b728040' };
+    case 'evaluation': return { bg: 'hsl(var(--tag-purple-bg))', text: 'hsl(var(--tag-purple))', border: 'hsl(var(--tag-purple-border))' };
+    case 'deprecated': return { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))', border: 'hsl(var(--border))' };
+    default: return { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))', border: 'hsl(var(--border))' };
   }
 }
 
 function scoreColor(score: number) {
-  if (score >= 85) return '#10b981';
+  if (score >= 85) return 'hsl(var(--s-ok-tx))';
   if (score >= 70) return '#eab308';
-  return '#ef4444';
+  return 'hsl(var(--s-er-tx))';
 }
 
 function modelToRadar(m: ModelBenchmark) {
@@ -86,7 +86,7 @@ function modelToRadar(m: ModelBenchmark) {
   ];
 }
 
-const COLORS = ['#3b82f6', '#10b981', '#8b5cf6', '#f97316', '#ec4899', '#06b6d4'];
+const COLORS = ['#3b82f6', 'hsl(var(--s-ok-tx))', 'hsl(var(--tag-purple))', 'hsl(var(--r-hi-tx))', '#ec4899', 'hsl(var(--s-in-tx))'];
 
 const EMPTY_MODEL: Omit<ModelBenchmark, 'id'> = {
   name: '', provider: 'OpenAI', version: '', status: 'evaluation',
@@ -296,7 +296,7 @@ export default function ModelArena() {
                     ))}
                     {[m.piiLeakage, m.hallucinationRate, m.biasScore].map((val, i) => (
                       <td key={i} className="p-3">
-                        <span className="text-sm font-bold" style={{ color: val > 15 ? '#ef4444' : val > 8 ? '#f97316' : '#10b981' }}>{val}%</span>
+                        <span className="text-sm font-bold" style={{ color: val > 15 ? 'hsl(var(--s-er-tx))' : val > 8 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-ok-tx))' }}>{val}%</span>
                       </td>
                     ))}
                     <td className="p-3">
@@ -311,7 +311,7 @@ export default function ModelArena() {
                       <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                         <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setViewItem(m)}><Eye size={14} /></Button>
                         <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setEditItem({ ...m })}><PencilSimple size={14} /></Button>
-                        <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: '#ef4444' }} onClick={() => setDeleteItem(m)}><Trash size={14} /></Button>
+                        <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: 'hsl(var(--s-er-tx))' }} onClick={() => setDeleteItem(m)}><Trash size={14} /></Button>
                       </div>
                     </td>
                   </tr>
@@ -357,9 +357,9 @@ export default function ModelArena() {
                       <div key={b.label} className="flex items-center gap-3 py-2" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
                         <span className="text-xs w-44" style={{ color: 'hsl(var(--text-2))' }}>{b.label}</span>
                         <div style={{ flex: 1, height: 8, background: 'hsl(var(--bg-muted))', borderRadius: 0 }}>
-                          <div style={{ width: `${b.value}%`, height: '100%', background: b.higher ? scoreColor(b.value) : (b.value > 15 ? '#ef4444' : b.value > 8 ? '#f97316' : '#10b981'), borderRadius: 0 }} />
+                          <div style={{ width: `${b.value}%`, height: '100%', background: b.higher ? scoreColor(b.value) : (b.value > 15 ? 'hsl(var(--s-er-tx))' : b.value > 8 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-ok-tx))'), borderRadius: 0 }} />
                         </div>
-                        <span className="text-xs font-bold w-10 text-right" style={{ color: b.higher ? scoreColor(b.value) : (b.value > 15 ? '#ef4444' : '#10b981') }}>
+                        <span className="text-xs font-bold w-10 text-right" style={{ color: b.higher ? scoreColor(b.value) : (b.value > 15 ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-ok-tx))') }}>
                           {b.value}%
                         </span>
                       </div>
@@ -486,7 +486,7 @@ export default function ModelArena() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} style={{ background: '#ef4444', borderRadius: 0 }}>Remove</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} style={{ background: 'hsl(var(--s-er-tx))', borderRadius: 0 }}>Remove</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

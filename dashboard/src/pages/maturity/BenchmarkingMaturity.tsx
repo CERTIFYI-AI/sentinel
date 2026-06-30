@@ -242,8 +242,8 @@ export default function BenchmarkingMaturity() {
                 <Radar
                   name="Current Level"
                   dataKey="current"
-                  stroke="#10b981"
-                  fill="#10b981"
+                  stroke="hsl(var(--s-ok-tx))"
+                  fill="hsl(var(--s-ok-tx))"
                   fillOpacity={0.25}
                   strokeWidth={2}
                 />
@@ -297,7 +297,7 @@ export default function BenchmarkingMaturity() {
                       borderRadius: 0,
                     }}
                   >
-                    <p className="text-sm font-bold" style={{ color: level === overallCurrent ? '#fff' : 'hsl(var(--text-1))' }}>
+                    <p className="text-sm font-bold" style={{ color: level === overallCurrent ? 'hsl(var(--bg-surface))' : 'hsl(var(--text-1))' }}>
                       {level}
                     </p>
                     <p className="text-[10px] mt-0.5" style={{ color: level === overallCurrent ? 'rgba(255,255,255,0.8)' : 'hsl(var(--text-4))' }}>

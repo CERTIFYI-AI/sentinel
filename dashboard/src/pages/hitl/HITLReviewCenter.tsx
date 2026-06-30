@@ -217,7 +217,7 @@ export default function HITLReviewCenter() {
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
             background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
-            color: '#fff', borderRadius: 0, minWidth: 300
+            color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 300
           }}>{t.text}</div>
         ))}
       </div>
@@ -228,7 +228,7 @@ export default function HITLReviewCenter() {
           <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>HITL Review Center</h1>
           <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} · Human-in-the-Loop review queue for AI decisions</p>
         </div>
-        <Button onClick={() => setAddDialogOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+        <Button onClick={() => setAddDialogOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
           <Plus className="h-4 w-4 mr-2" />Queue Review
         </Button>
       </div>
@@ -498,7 +498,7 @@ export default function HITLReviewCenter() {
                       size="sm"
                       disabled={reviewRemarks.length < 10}
                       onClick={() => handleApprove(selectedItem)}
-                      style={{ borderRadius: 0, background: reviewRemarks.length >= 10 ? 'hsl(var(--s-ok-tx))' : undefined, color: reviewRemarks.length >= 10 ? '#fff' : undefined }}
+                      style={{ borderRadius: 0, background: reviewRemarks.length >= 10 ? 'hsl(var(--s-ok-tx))' : undefined, color: reviewRemarks.length >= 10 ? 'hsl(var(--bg-surface))' : undefined }}
                     >
                       <CheckCircle size={14} className="mr-1" />Approve
                     </Button>
@@ -597,7 +597,7 @@ export default function HITLReviewCenter() {
             <Button
               disabled={rejectReason.length < 20}
               onClick={handleReject}
-              style={{ borderRadius: 0, background: rejectReason.length >= 20 ? 'hsl(var(--destructive))' : undefined, color: rejectReason.length >= 20 ? '#fff' : undefined }}
+              style={{ borderRadius: 0, background: rejectReason.length >= 20 ? 'hsl(var(--destructive))' : undefined, color: rejectReason.length >= 20 ? 'hsl(var(--bg-surface))' : undefined }}
             >
               <XCircle size={14} className="mr-1" />Reject
             </Button>
@@ -710,7 +710,7 @@ function AddReviewForm({ onSubmit, nextId }: { onSubmit: (item: HITLItem) => voi
         </Select>
       </div>
       <div className="flex justify-end gap-2 pt-2">
-        <Button disabled={!canSubmit} onClick={handleSubmit} style={{ borderRadius: 0, background: canSubmit ? 'hsl(var(--brand))' : undefined, color: canSubmit ? '#fff' : undefined }}>
+        <Button disabled={!canSubmit} onClick={handleSubmit} style={{ borderRadius: 0, background: canSubmit ? 'hsl(var(--brand))' : undefined, color: canSubmit ? 'hsl(var(--bg-surface))' : undefined }}>
           <Plus size={14} className="mr-1" />Queue Review
         </Button>
       </div>

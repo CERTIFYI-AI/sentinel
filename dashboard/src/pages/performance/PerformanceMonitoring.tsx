@@ -107,9 +107,9 @@ const ENDPOINTS: ModelEndpoint[] = [
 ];
 
 const STATUS_COLORS: Record<string, { bg: string; color: string; dot: string }> = {
-  healthy: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))', dot: '#10b981' },
-  degraded: { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(var(--s-wn-tx))', dot: '#f59e0b' },
-  down: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))', dot: '#ef4444' },
+  healthy: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))', dot: 'hsl(var(--s-ok-tx))' },
+  degraded: { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(var(--s-wn-tx))', dot: 'hsl(var(--s-wn-tx))' },
+  down: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))', dot: 'hsl(var(--s-er-tx))' },
 };
 
 const ALERT_COLORS: Record<AlertSeverity, { bg: string; color: string }> = {
@@ -156,7 +156,7 @@ export default function PerformanceMonitoring() {
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 rounded text-sm text-white shadow-lg"
-            style={{ background: t.type === 'success' ? '#10b981' : t.type === 'error' ? '#ef4444' : '#3b82f6' }}>
+            style={{ background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--s-er-tx))' : '#3b82f6' }}>
             {t.text}
           </div>
         ))}
@@ -187,11 +187,11 @@ export default function PerformanceMonitoring() {
       {/* Status summary */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
-          { label: 'Healthy', value: healthy, color: '#10b981' },
-          { label: 'Degraded', value: degraded, color: '#f59e0b' },
-          { label: 'Down', value: down, color: '#ef4444' },
-          { label: 'Active Alerts', value: totalAlerts, color: totalAlerts > 0 ? '#f59e0b' : '#10b981' },
-          { label: 'Critical', value: criticalAlerts, color: criticalAlerts > 0 ? '#ef4444' : '#10b981' },
+          { label: 'Healthy', value: healthy, color: 'hsl(var(--s-ok-tx))' },
+          { label: 'Degraded', value: degraded, color: 'hsl(var(--s-wn-tx))' },
+          { label: 'Down', value: down, color: 'hsl(var(--s-er-tx))' },
+          { label: 'Active Alerts', value: totalAlerts, color: totalAlerts > 0 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))' },
+          { label: 'Critical', value: criticalAlerts, color: criticalAlerts > 0 ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-ok-tx))' },
         ].map(s => (
           <Card key={s.label} style={{ borderRadius: 0 }}>
             <CardContent className="px-4 py-3">
@@ -229,7 +229,7 @@ export default function PerformanceMonitoring() {
       <div className="grid md:grid-cols-2 gap-4">
         {filtered.map(ep => {
           const sloOk = ep.sloActual >= ep.slo;
-          const sloColor = sloOk ? '#10b981' : '#ef4444';
+          const sloColor = sloOk ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))';
           return (
             <Card key={ep.modelId} style={{ borderRadius: 0, cursor: 'pointer', borderLeft: `3px solid ${STATUS_COLORS[ep.status].dot}` }}
               onClick={() => { setSelected(ep); setTab('overview'); }}
@@ -252,7 +252,7 @@ export default function PerformanceMonitoring() {
                   ].map(m => (
                     <div key={m.label} className="bg-surface p-2">
                       <p className="text-xs text-[hsl(var(--text-4))]">{m.label}</p>
-                      <p className="text-sm font-semibold mt-0.5" style={{ color: m.ok ? 'hsl(var(--text-1))' : '#ef4444' }}>{m.value}</p>
+                      <p className="text-sm font-semibold mt-0.5" style={{ color: m.ok ? 'hsl(var(--text-1))' : 'hsl(var(--s-er-tx))' }}>{m.value}</p>
                     </div>
                   ))}
                 </div>
@@ -357,7 +357,7 @@ export default function PerformanceMonitoring() {
                     ].map(m => (
                       <div key={m.label} className="p-3 border border-[hsl(var(--border))]">
                         <p className="text-xs text-[hsl(var(--text-4))]">{m.label}</p>
-                        <p className="text-xl font-bold mt-1" style={{ color: m.ok === false ? '#ef4444' : m.ok === true ? '#10b981' : 'hsl(var(--text-1))' }}>{m.value}</p>
+                        <p className="text-xl font-bold mt-1" style={{ color: m.ok === false ? 'hsl(var(--s-er-tx))' : m.ok === true ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-1))' }}>{m.value}</p>
                       </div>
                     ))}
                   </div>
@@ -384,7 +384,7 @@ export default function PerformanceMonitoring() {
                       <YAxis tick={{ fill: ct.text, fontSize: 10 }} unit="ms" />
                       <RTooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.text, borderRadius: 0 }} />
                       <Legend />
-                      <ReferenceLine y={120} stroke="#ef4444" strokeDasharray="4 2" label={{ value: 'SLA', fill: '#ef4444', fontSize: 10 }} />
+                      <ReferenceLine y={120} stroke="#ef4444" strokeDasharray="4 2" label={{ value: 'SLA', fill: 'hsl(var(--s-er-tx))', fontSize: 10 }} />
                       <Line type="monotone" dataKey="p50" stroke="#6366f1" strokeWidth={2} dot={false} name="p50" />
                       <Line type="monotone" dataKey="p99" stroke="#ef4444" strokeWidth={2} dot={false} name="p99" />
                     </LineChart>
@@ -399,7 +399,7 @@ export default function PerformanceMonitoring() {
                       <XAxis dataKey="time" tick={{ fill: ct.text, fontSize: 9 }} interval={3} />
                       <YAxis tick={{ fill: ct.text, fontSize: 10 }} />
                       <RTooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.text, borderRadius: 0 }} />
-                      <ReferenceLine y={selected.throughputCapacity} stroke="#f59e0b" strokeDasharray="4 2" label={{ value: 'Cap', fill: '#f59e0b', fontSize: 10 }} />
+                      <ReferenceLine y={selected.throughputCapacity} stroke="#f59e0b" strokeDasharray="4 2" label={{ value: 'Cap', fill: 'hsl(var(--s-wn-tx))', fontSize: 10 }} />
                       <Area type="monotone" dataKey="rpm" stroke="#10b981" fill="#10b981" fillOpacity={0.15} strokeWidth={2} name="RPM" />
                     </AreaChart>
                   </ResponsiveContainer>
@@ -414,7 +414,7 @@ export default function PerformanceMonitoring() {
                     ].map(m => (
                       <div key={m.label} className="p-3 border border-[hsl(var(--border))] text-center">
                         <p className="text-xs text-[hsl(var(--text-4))]">{m.label}</p>
-                        <p className="text-xl font-bold mt-1" style={{ color: m.ok ? '#10b981' : '#ef4444' }}>{m.value}</p>
+                        <p className="text-xl font-bold mt-1" style={{ color: m.ok ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))' }}>{m.value}</p>
                       </div>
                     ))}
                   </div>
@@ -428,7 +428,7 @@ export default function PerformanceMonitoring() {
                       <div key={q.name}>
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-xs text-[hsl(var(--text-2))]">{q.name}</span>
-                          <span className="text-xs font-medium" style={{ color: q.value >= q.threshold ? '#10b981' : '#ef4444' }}>{q.value}%</span>
+                          <span className="text-xs font-medium" style={{ color: q.value >= q.threshold ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))' }}>{q.value}%</span>
                         </div>
                         <Progress value={q.value} className="h-1.5 rounded-none" />
                       </div>

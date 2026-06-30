@@ -20,12 +20,12 @@ interface EvalTechnique {
 }
 
 const TECHNIQUES: EvalTechnique[] = [
-  { id: 'bias_fairness', name: 'Bias & Fairness Audit', category: 'Compliance', description: 'Evaluate protected attribute disparate impact across gender, race, age, geography.', duration: '~30 min', icon: ShieldCheck, color: '#6366f1' },
-  { id: 'hallucination', name: 'Hallucination Detection', category: 'Safety', description: 'Test LLM outputs for factual accuracy and citation validity against ground truth.', duration: '~45 min', icon: Warning, color: '#ef4444' },
-  { id: 'toxicity', name: 'Toxicity & Content Filter', category: 'Safety', description: 'Screen model outputs for harmful, offensive, or policy-violating content.', duration: '~20 min', icon: Lightning, color: '#f97316' },
-  { id: 'performance', name: 'Performance Benchmark', category: 'Quality', description: 'Measure accuracy, precision, recall, F1, AUC-ROC across validation datasets.', duration: '~15 min', icon: Brain, color: '#10b981' },
-  { id: 'drift', name: 'Distribution Drift Analysis', category: 'Monitoring', description: 'Compare current input distributions to training baseline using PSI and KS tests.', duration: '~25 min', icon: ArrowRight, color: '#06b6d4' },
-  { id: 'prompt_injection', name: 'Prompt Injection Testing', category: 'Security', description: 'Execute OWASP LLM Top 10 prompt injection attack vectors against LLM endpoints.', duration: '~60 min', icon: Robot, color: '#dc2626' },
+  { id: 'bias_fairness', name: 'Bias & Fairness Audit', category: 'Compliance', description: 'Evaluate protected attribute disparate impact across gender, race, age, geography.', duration: '~30 min', icon: ShieldCheck, color: 'hsl(var(--brand))' },
+  { id: 'hallucination', name: 'Hallucination Detection', category: 'Safety', description: 'Test LLM outputs for factual accuracy and citation validity against ground truth.', duration: '~45 min', icon: Warning, color: 'hsl(var(--s-er-tx))' },
+  { id: 'toxicity', name: 'Toxicity & Content Filter', category: 'Safety', description: 'Screen model outputs for harmful, offensive, or policy-violating content.', duration: '~20 min', icon: Lightning, color: 'hsl(var(--r-hi-tx))' },
+  { id: 'performance', name: 'Performance Benchmark', category: 'Quality', description: 'Measure accuracy, precision, recall, F1, AUC-ROC across validation datasets.', duration: '~15 min', icon: Brain, color: 'hsl(var(--s-ok-tx))' },
+  { id: 'drift', name: 'Distribution Drift Analysis', category: 'Monitoring', description: 'Compare current input distributions to training baseline using PSI and KS tests.', duration: '~25 min', icon: ArrowRight, color: 'hsl(var(--s-in-tx))' },
+  { id: 'prompt_injection', name: 'Prompt Injection Testing', category: 'Security', description: 'Execute OWASP LLM Top 10 prompt injection attack vectors against LLM endpoints.', duration: '~60 min', icon: Robot, color: 'hsl(var(--s-er-tx))' },
 ];
 
 interface WizardState {
@@ -139,10 +139,10 @@ export default function EvalRunWizard({ onClose, onRun }: EvalRunWizardProps) {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <div style={{
                       width: 24, height: 24, borderRadius: '50%',
-                      background: isPast ? '#10b981' : isCurrent ? 'hsl(var(--brand))' : 'hsl(var(--bg-muted))',
-                      border: `1px solid ${isPast ? '#10b981' : isCurrent ? 'hsl(var(--brand))' : 'hsl(var(--border))'}`,
+                      background: isPast ? 'hsl(var(--s-ok-tx))' : isCurrent ? 'hsl(var(--brand))' : 'hsl(var(--bg-muted))',
+                      border: `1px solid ${isPast ? 'hsl(var(--s-ok-tx))' : isCurrent ? 'hsl(var(--brand))' : 'hsl(var(--border))'}`,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 10, fontWeight: 700, color: isPast || isCurrent ? '#fff' : 'hsl(var(--text-3))',
+                      fontSize: 10, fontWeight: 700, color: isPast || isCurrent ? 'hsl(var(--bg-surface))' : 'hsl(var(--text-3))',
                     }}>
                       {isPast ? <CheckCircle size={13} weight="fill" /> : n}
                     </div>
@@ -150,7 +150,7 @@ export default function EvalRunWizard({ onClose, onRun }: EvalRunWizardProps) {
                       {label}
                     </span>
                   </div>
-                  {idx < 3 && <div style={{ flex: 1, height: 1, background: isPast ? '#10b981' : 'hsl(var(--border))', margin: '0 8px' }} />}
+                  {idx < 3 && <div style={{ flex: 1, height: 1, background: isPast ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--border))', margin: '0 8px' }} />}
                 </div>
               );
             })}
@@ -181,12 +181,12 @@ export default function EvalRunWizard({ onClose, onRun }: EvalRunWizardProps) {
                         cursor: 'pointer', textAlign: 'left',
                       }}
                     >
-                      <div style={{ width: 10, height: 10, borderRadius: '50%', background: model.status === 'production' ? '#10b981' : model.status === 'staging' ? '#f97316' : '#6366f1', flexShrink: 0 }} />
+                      <div style={{ width: 10, height: 10, borderRadius: '50%', background: model.status === 'production' ? 'hsl(var(--s-ok-tx))' : model.status === 'staging' ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--brand))', flexShrink: 0 }} />
                       <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 3 }}>
                           <span style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--text-1))' }}>{model.name}</span>
                           <span style={{ fontSize: 10, fontFamily: 'monospace', color: 'hsl(var(--text-4))' }}>{model.id}</span>
-                          {hasIssues && <Warning size={12} style={{ color: '#f97316', marginLeft: 4 }} />}
+                          {hasIssues && <Warning size={12} style={{ color: 'hsl(var(--r-hi-tx))', marginLeft: 4 }} />}
                         </div>
                         <div style={{ display: 'flex', gap: 10, fontSize: 11, color: 'hsl(var(--text-3))' }}>
                           <span>{model.version}</span>
@@ -195,7 +195,7 @@ export default function EvalRunWizard({ onClose, onRun }: EvalRunWizardProps) {
                           <span>·</span>
                           <span>{model.department}</span>
                           <span>·</span>
-                          <span style={{ color: model.riskTier === 'high' ? '#ef4444' : model.riskTier === 'limited' ? '#f97316' : '#10b981' }}>
+                          <span style={{ color: model.riskTier === 'high' ? 'hsl(var(--s-er-tx))' : model.riskTier === 'limited' ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-ok-tx))' }}>
                             {model.riskTier} risk
                           </span>
                         </div>
@@ -377,7 +377,7 @@ export default function EvalRunWizard({ onClose, onRun }: EvalRunWizardProps) {
               <Badge style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', border: '1px solid hsl(var(--s-in-br))', borderRadius: 0, fontSize: 11 }}>
                 Running — results will appear in Eval Results Viewer
               </Badge>
-              <button onClick={onClose} style={{ padding: '8px 20px', background: 'hsl(var(--brand))', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>
+              <button onClick={onClose} style={{ padding: '8px 20px', background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>
                 Done
               </button>
             </div>
@@ -404,7 +404,7 @@ export default function EvalRunWizard({ onClose, onRun }: EvalRunWizardProps) {
                   display: 'flex', alignItems: 'center', gap: 6,
                   padding: '7px 18px',
                   background: canNext() ? 'hsl(var(--brand))' : 'hsl(var(--bg-muted))',
-                  color: canNext() ? '#fff' : 'hsl(var(--text-4))',
+                  color: canNext() ? 'hsl(var(--bg-surface))' : 'hsl(var(--text-4))',
                   border: 'none', cursor: canNext() ? 'pointer' : 'default',
                   fontSize: 13, fontWeight: 500,
                 }}
@@ -414,7 +414,7 @@ export default function EvalRunWizard({ onClose, onRun }: EvalRunWizardProps) {
             ) : (
               <button
                 onClick={handleLaunch}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 18px', background: '#10b981', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 18px', background: 'hsl(var(--s-ok-tx))', color: 'hsl(var(--bg-surface))', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}
               >
                 <Play size={14} weight="fill" /> Launch Evaluation
               </button>

@@ -476,7 +476,7 @@ export default function SecurityHome() {
             <Button
               size="sm"
               onClick={() => { downloadSBOM(); toast.success('AIBOM exported as CycloneDX JSON'); }}
-              style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+              style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
             >
               <DownloadSimple size={14} className="mr-1.5" />Generate AIBOM
             </Button>
@@ -491,7 +491,7 @@ export default function SecurityHome() {
                 style={{
                   padding: '3px 10px', fontSize: 11, borderRadius: 0, cursor: 'pointer',
                   background: sbomFilter === t ? 'hsl(var(--brand))' : 'hsl(var(--bg-surface))',
-                  color: sbomFilter === t ? '#fff' : 'hsl(var(--text-4))',
+                  color: sbomFilter === t ? 'hsl(var(--bg-surface))' : 'hsl(var(--text-4))',
                   border: sbomFilter === t ? '1px solid hsl(var(--brand))' : '1px solid hsl(var(--border))',
                   fontWeight: sbomFilter === t ? 600 : 400,
                 }}

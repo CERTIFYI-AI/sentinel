@@ -33,7 +33,7 @@ const POLICY_REVIEW_TREND = [
   { month: 'Mar', reviews: 3 },
 ];
 
-const CATEGORY_COLORS = ['#3b82f6', '#8b5cf6', '#f97316', '#10b981', '#ec4899', '#06b6d4', '#f59e0b'];
+const CATEGORY_COLORS = ['#3b82f6', 'hsl(var(--tag-purple))', 'hsl(var(--r-hi-tx))', 'hsl(var(--s-ok-tx))', '#ec4899', 'hsl(var(--s-in-tx))', 'hsl(var(--s-wn-tx))'];
 
 const EMPTY_POLICY: Omit<Policy, 'id'> = {
   title: '', category: 'AI Usage', status: 'draft', version: 'v1.0',
@@ -73,10 +73,10 @@ export default function Policies() {
   ).map(([name, value]) => ({ name, value }));
 
   const stats = [
-    { label: 'Total Policies', value: policies.length, icon: FileText, color: '#6366f1' },
-    { label: 'Published', value: policies.filter(p => p.status === 'published').length, icon: CheckCircle, color: '#10b981' },
-    { label: 'In Review', value: policies.filter(p => p.status === 'in_review').length, icon: Clock, color: '#f97316' },
-    { label: 'Draft', value: policies.filter(p => p.status === 'draft').length, icon: NotePencil, color: '#8b5cf6' },
+    { label: 'Total Policies', value: policies.length, icon: FileText, color: 'hsl(var(--brand))' },
+    { label: 'Published', value: policies.filter(p => p.status === 'published').length, icon: CheckCircle, color: 'hsl(var(--s-ok-tx))' },
+    { label: 'In Review', value: policies.filter(p => p.status === 'in_review').length, icon: Clock, color: 'hsl(var(--r-hi-tx))' },
+    { label: 'Draft', value: policies.filter(p => p.status === 'draft').length, icon: NotePencil, color: 'hsl(var(--tag-purple))' },
   ];
 
   function handleCreate() {
@@ -243,7 +243,7 @@ export default function Policies() {
                         <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setEditItem({ ...p })}>
                           <PencilSimple size={14} />
                         </Button>
-                        <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: '#ef4444' }} onClick={() => setDeleteItem(p)}>
+                        <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: 'hsl(var(--s-er-tx))' }} onClick={() => setDeleteItem(p)}>
                           <Trash size={14} />
                         </Button>
                       </div>
@@ -401,7 +401,7 @@ export default function Policies() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} style={{ background: '#ef4444', borderRadius: 0 }}>Delete</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} style={{ background: 'hsl(var(--s-er-tx))', borderRadius: 0 }}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

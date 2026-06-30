@@ -36,7 +36,7 @@ const EMPTY: any = { name:"", model:"", date:"", attributes:[], methodology:"", 
 function ScoreBar({ score }: { score: number | null }) {
   if (score === null) return <span className="text-xs text-[hsl(var(--text-4))]">—</span>;
   const pct = Math.round(score * 100);
-  const color = pct >= 90 ? "#22c55e" : pct >= 75 ? "#f59e0b" : "#ef4444";
+  const color = pct >= 90 ? "#22c55e" : pct >= 75 ? "hsl(var(--s-wn-tx))" : "hsl(var(--s-er-tx))";
   return (
     <div className="flex items-center gap-2">
       <div className="w-16 h-1.5 bg-[hsl(var(--border))] rounded-full overflow-hidden">

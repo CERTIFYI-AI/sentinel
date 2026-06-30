@@ -169,24 +169,24 @@ const TIMELINE: TimelineEntry[] = [
 const statusStyles: Record<string, { bg: string; text: string; border: string; icon: React.ComponentType<any>; label: string }> = {
   success: { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))', icon: CheckCircle, label: 'Success' },
   error:   { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))', icon: Warning, label: 'Error' },
-  blocked: { bg: 'hsl(var(--s-er-bg))', text: '#ef4444', border: '#ef444440', icon: Lock, label: 'Blocked' },
+  blocked: { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))', icon: Lock, label: 'Blocked' },
   warning: { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))', border: 'hsl(var(--s-wn-br))', icon: Warning, label: 'Warning' },
 };
 
 const categoryConfig: Record<string, { color: string; icon: React.ComponentType<any> }> = {
-  inference:   { color: '#6366f1', icon: Robot },
-  data_access: { color: '#06b6d4', icon: Database },
-  auth:        { color: '#f59e0b', icon: Shield },
-  guardrail:   { color: '#ef4444', icon: Lock },
-  admin:       { color: '#10b981', icon: Eye },
+  inference:   { color: 'hsl(var(--brand))', icon: Robot },
+  data_access: { color: 'hsl(var(--s-in-tx))', icon: Database },
+  auth:        { color: 'hsl(var(--s-wn-tx))', icon: Shield },
+  guardrail:   { color: 'hsl(var(--s-er-tx))', icon: Lock },
+  admin:       { color: 'hsl(var(--s-ok-tx))', icon: Eye },
 };
 
 const methodColors: Record<string, string> = {
-  GET: '#10b981',
-  POST: '#6366f1',
-  PUT: '#f97316',
-  DELETE: '#ef4444',
-  PATCH: '#f59e0b',
+  GET: 'hsl(var(--s-ok-tx))',
+  POST: 'hsl(var(--brand))',
+  PUT: 'hsl(var(--r-hi-tx))',
+  DELETE: 'hsl(var(--s-er-tx))',
+  PATCH: 'hsl(var(--s-wn-tx))',
 };
 
 // ── component ──────────────────────────────────────────────────────────────
@@ -206,9 +206,9 @@ export default function ActivityTimeline() {
 
   const stats = [
     { label: 'Total Calls', value: TIMELINE.length, color: 'hsl(var(--text-2))' },
-    { label: 'Success', value: TIMELINE.filter(e => e.status === 'success').length, color: '#10b981' },
-    { label: 'Errors', value: TIMELINE.filter(e => e.status === 'error').length, color: '#ef4444' },
-    { label: 'Blocked', value: TIMELINE.filter(e => e.status === 'blocked').length, color: '#dc2626' },
+    { label: 'Success', value: TIMELINE.filter(e => e.status === 'success').length, color: 'hsl(var(--s-ok-tx))' },
+    { label: 'Errors', value: TIMELINE.filter(e => e.status === 'error').length, color: 'hsl(var(--s-er-tx))' },
+    { label: 'Blocked', value: TIMELINE.filter(e => e.status === 'blocked').length, color: 'hsl(var(--s-er-tx))' },
   ];
 
   return (
@@ -321,7 +321,7 @@ export default function ActivityTimeline() {
                     </Badge>
 
                     {/* Latency */}
-                    <span style={{ fontSize: 10, color: entry.latencyMs > 1000 ? '#f97316' : 'hsl(var(--text-4))', fontFamily: 'monospace', flexShrink: 0 }}>
+                    <span style={{ fontSize: 10, color: entry.latencyMs > 1000 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--text-4))', fontFamily: 'monospace', flexShrink: 0 }}>
                       {entry.latencyMs}ms
                     </span>
                   </div>
@@ -343,7 +343,7 @@ export default function ActivityTimeline() {
                       {entry.endpoint}
                     </code>
                     {entry.tokensUsed !== undefined && entry.tokensUsed > 0 && (
-                      <span style={{ marginLeft: 'auto', fontSize: 10, color: '#6366f1', fontFamily: 'monospace' }}>
+                      <span style={{ marginLeft: 'auto', fontSize: 10, color: 'hsl(var(--brand))', fontFamily: 'monospace' }}>
                         {entry.tokensUsed} tokens
                       </span>
                     )}

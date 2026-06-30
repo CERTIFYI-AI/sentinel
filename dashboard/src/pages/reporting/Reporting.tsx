@@ -542,7 +542,7 @@ export default function Reporting() {
                         </div>
                       ))}
                     </div>
-                    <Button className="w-full" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+                    <Button className="w-full" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
                       onClick={() => {}}>
                       <FilePdf size={14} className="mr-2" />Generate Custom Report
                     </Button>
@@ -561,7 +561,7 @@ export default function Reporting() {
                     <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Report Approval & Digital Signature Workflow</p>
                     <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>Ensure reports are reviewed, signed, and locked before distribution. All signatures are timestamped and audit-logged.</p>
                   </div>
-                  <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+                  <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
                     onClick={() => {}}>
                     <Plus size={14} className="mr-1" />New Approval Request
                   </Button>
@@ -606,7 +606,7 @@ export default function Reporting() {
                         <td className="px-3 py-2">
                           <div className="flex gap-1">
                             {item.status !== 'Approved' && (
-                              <Button size="sm" className="h-6 text-[10px] px-2" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+                              <Button size="sm" className="h-6 text-[10px] px-2" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
                                 onClick={() => {}}>Sign</Button>
                             )}
                             {item.status === 'Approved' && (
@@ -836,7 +836,7 @@ export default function Reporting() {
                 {!generating && !generated && (
                   <DialogFooter className="mt-4">
                     <Button variant="outline" onClick={() => setGenerateOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
-                    <Button onClick={handleGenerate} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+                    <Button onClick={handleGenerate} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
                       <DownloadSimple size={14} className="mr-1" />Generate Report
                     </Button>
                   </DialogFooter>
@@ -912,7 +912,7 @@ export default function Reporting() {
                       setScheduledReports(prev => [...prev, newSch]);
                       setScheduleOpen(false);
                     }}
-                    style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+                    style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
                   >
                     <Calendar size={14} className="mr-1" />Create Schedule
                   </Button>

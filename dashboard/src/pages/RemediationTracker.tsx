@@ -46,9 +46,9 @@ function barWidth(start: string, end: string): number {
 }
 
 function statusBarColor(status: string) {
-  if (status === 'completed') return '#10b981';
-  if (status === 'overdue') return '#ef4444';
-  return '#f97316';
+  if (status === 'completed') return 'hsl(var(--s-ok-tx))';
+  if (status === 'overdue') return 'hsl(var(--s-er-tx))';
+  return 'hsl(var(--r-hi-tx))';
 }
 
 const MONTH_LABELS = ['Feb', 'Mar', 'Apr', 'May', 'Jun'];
@@ -104,9 +104,9 @@ export default function RemediationTracker() {
           {/* Legend */}
           <div className="flex items-center gap-4 mr-4">
             {[
-              { color: '#10b981', label: 'Completed' },
-              { color: '#f97316', label: 'In Progress' },
-              { color: '#ef4444', label: 'Overdue' },
+              { color: 'hsl(var(--s-ok-tx))', label: 'Completed' },
+              { color: 'hsl(var(--r-hi-tx))', label: 'In Progress' },
+              { color: 'hsl(var(--s-er-tx))', label: 'Overdue' },
             ].map(l => (
               <div key={l.label} className="flex items-center gap-1.5">
                 <div style={{ width: 10, height: 10, background: l.color }} />
@@ -290,7 +290,7 @@ export default function RemediationTracker() {
                         </div>
                       </td>
                       <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{item.startDate}</td>
-                      <td className="p-3 text-xs" style={{ color: item.status === 'overdue' ? '#ef4444' : 'hsl(var(--text-3))' }}>{item.dueDate}</td>
+                      <td className="p-3 text-xs" style={{ color: item.status === 'overdue' ? 'hsl(var(--s-er-tx))' : 'hsl(var(--text-3))' }}>{item.dueDate}</td>
                       <td className="p-3">
                         <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0, fontSize: 11 }}>
                           {item.status.replace('_', ' ')}
@@ -309,9 +309,9 @@ export default function RemediationTracker() {
       <div className="grid grid-cols-4 gap-4">
         {[
           { label: 'Total Plans', value: TRACKER_ITEMS.length, icon: CalendarBlank, color: 'hsl(var(--brand))' },
-          { label: 'In Progress', value: TRACKER_ITEMS.filter(i => i.status === 'in_progress').length, icon: Clock, color: '#f97316' },
-          { label: 'Overdue', value: TRACKER_ITEMS.filter(i => i.status === 'overdue').length, icon: Warning, color: '#ef4444' },
-          { label: 'Completed', value: TRACKER_ITEMS.filter(i => i.status === 'completed').length, icon: CheckCircle, color: '#10b981' },
+          { label: 'In Progress', value: TRACKER_ITEMS.filter(i => i.status === 'in_progress').length, icon: Clock, color: 'hsl(var(--r-hi-tx))' },
+          { label: 'Overdue', value: TRACKER_ITEMS.filter(i => i.status === 'overdue').length, icon: Warning, color: 'hsl(var(--s-er-tx))' },
+          { label: 'Completed', value: TRACKER_ITEMS.filter(i => i.status === 'completed').length, icon: CheckCircle, color: 'hsl(var(--s-ok-tx))' },
         ].map(s => (
           <Card key={s.label} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
             <CardContent className="p-4 flex items-center justify-between">

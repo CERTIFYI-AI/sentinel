@@ -103,7 +103,7 @@ export default function PeerIntelligence() {
               <Lock size={11} />
               <span>All peer data fully anonymized · Zero PII shared</span>
             </div>
-            <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+            <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
               Export Benchmarks
             </Button>
           </div>

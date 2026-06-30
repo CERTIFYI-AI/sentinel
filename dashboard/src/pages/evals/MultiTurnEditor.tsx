@@ -43,7 +43,7 @@ export default function MultiTurnEditor() {
           <Button variant="outline" size="sm" style={{ borderRadius: 0 }}>
             <Play size={16} className="mr-2" /> Test Scenario
           </Button>
-          <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+          <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
             <FloppyDisk size={16} className="mr-2" /> Save Scenario
           </Button>
         </div>

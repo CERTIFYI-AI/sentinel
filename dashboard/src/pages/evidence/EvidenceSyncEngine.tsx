@@ -204,7 +204,7 @@ export default function EvidenceSyncEngine() {
             <Button variant="outline" onClick={() => setSyncAllOpen(true)} style={{ borderRadius: 0 }}>
               <ArrowsClockwise size={14} className="mr-1" />Sync All
             </Button>
-            <Button onClick={() => setAddOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+            <Button onClick={() => setAddOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
               <Upload size={14} className="mr-1" />Upload Evidence
             </Button>
           </div>
@@ -683,7 +683,7 @@ export default function EvidenceSyncEngine() {
               <Button
                 onClick={handleAdd}
                 disabled={!newTitle || !newType || !newSource}
-                style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+                style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
               >
                 <Upload size={14} className="mr-1" />Add Evidence
               </Button>

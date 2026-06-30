@@ -43,7 +43,7 @@ const MOCK_TEST_HISTORY = [
 ];
 
 function ScoreCircle({ score, size = 80 }: { score: number; size?: number }) {
-  const color = score >= 85 ? '#10b981' : score >= 65 ? '#f97316' : '#ef4444';
+  const color = score >= 85 ? 'hsl(var(--s-ok-tx))' : score >= 65 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-er-tx))';
   return (
     <div style={{ width: size, height: size, borderRadius: '50%', background: `${color}15`, border: `4px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
       <span style={{ fontSize: size * 0.28, fontWeight: 700, color }}>{score}</span>
@@ -62,7 +62,7 @@ export default function ControlDetail() {
   if (!control) {
     return (
       <div className="p-6 flex flex-col items-center justify-center" style={{ minHeight: 400 }}>
-        <Warning size={48} style={{ color: '#f97316' }} />
+        <Warning size={48} style={{ color: 'hsl(var(--r-hi-tx))' }} />
         <p className="mt-4 text-lg font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Control not found</p>
         <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>Control ID "{id}" does not exist.</p>
         <Button className="mt-4" onClick={() => navigate('/compliance/controls')} style={{ borderRadius: 0 }}>
@@ -73,8 +73,8 @@ export default function ControlDetail() {
   }
 
   const sc = statusColor(control.status);
-  const trColor = control.testResult === 'pass' ? '#10b981' : control.testResult === 'fail' ? '#ef4444' : '#f97316';
-  const scoreColor = control.score >= 85 ? '#10b981' : control.score >= 65 ? '#f97316' : '#ef4444';
+  const trColor = control.testResult === 'pass' ? 'hsl(var(--s-ok-tx))' : control.testResult === 'fail' ? 'hsl(var(--s-er-tx))' : 'hsl(var(--r-hi-tx))';
+  const scoreColor = control.score >= 85 ? 'hsl(var(--s-ok-tx))' : control.score >= 65 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-er-tx))';
 
   // Linked evidence (same framework)
   const linkedEvidence = EVIDENCE.filter(e => e.framework === control.framework).slice(0, 3);
@@ -208,7 +208,7 @@ export default function ControlDetail() {
         <TabsContent value="testing" className="mt-4">
           <div className="space-y-3">
             {MOCK_TEST_HISTORY.map(test => {
-              const color = test.result === 'pass' ? '#10b981' : '#ef4444';
+              const color = test.result === 'pass' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))';
               return (
                 <Card key={test.id} style={{ background: 'hsl(var(--bg-surface))', border: `1px solid ${color}40` }}>
                   <CardContent className="p-4">

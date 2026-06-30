@@ -97,7 +97,7 @@ export default function MetricStudio() {
             <Button variant="outline" size="sm" style={{ borderRadius: 0, fontSize: 12 }}>
               <TestTube size={14} className="mr-1.5" /> Validate
             </Button>
-            <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff', fontSize: 12 }}>
+            <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))', fontSize: 12 }}>
               <FloppyDisk size={14} className="mr-1.5" /> Save Metric
             </Button>
             <Button variant="ghost" size="icon" style={{ borderRadius: 0 }}>

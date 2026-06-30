@@ -137,7 +137,7 @@ function CalcTab({ orgName }: { orgName: string }) {
             {[
               { label: 'Compliance Automation Savings', value: fteSavings, desc: `${fte} FTE × ${automationRate}% automation × 40% effort redirect`, color: 'hsl(var(--brand))' },
               { label: 'Regulatory Fine Avoidance', value: fineAvoidance, desc: `$${fineRisk}M exposure × 82% risk reduction from controls`, color: 'hsl(var(--s-ok-tx))' },
-              { label: 'Audit Efficiency Gains', value: auditSavings, desc: `${auditWeeks}→${Math.round(auditWeeks * 0.28)} weeks saved × team cost`, color: '#8b5cf6' },
+              { label: 'Audit Efficiency Gains', value: auditSavings, desc: `${auditWeeks}→${Math.round(auditWeeks * 0.28)} weeks saved × team cost`, color: 'hsl(var(--tag-purple))' },
             ].map((row, i) => (
               <div key={i} className="p-3" style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-raised))' }}>
                 <div className="flex justify-between text-xs mb-1">
@@ -173,7 +173,7 @@ function CalcTab({ orgName }: { orgName: string }) {
             </div>
           </div>
 
-          <Button className="w-full mt-3 h-8 text-xs" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+          <Button className="w-full mt-3 h-8 text-xs" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
             onClick={() => toast.success('Custom ROI report emailing to CFO — includes methodology and assumptions')}>
             <Calculator size={12} className="mr-1.5" />Email Custom ROI Report to CFO
           </Button>
@@ -203,7 +203,7 @@ export default function ValueRealization() {
               {orgName} · Quantified business value: fine avoidance, automation savings, audit efficiency, and 3-year TCO vs. alternatives
             </p>
           </div>
-          <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+          <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
             onClick={() => toast.success('CFO ROI report generating — 12-page PDF with methodology')}>
             <FileText size={13} className="mr-1.5" />Export CFO Report
           </Button>
@@ -269,8 +269,8 @@ export default function ValueRealization() {
                     {[
                       { label: 'Fine & Penalty Avoidance', value: totalFineAvoidance, total: totalROI, color: 'hsl(var(--s-ok-tx))' },
                       { label: 'Compliance Automation (3yr)', value: totalAutomationValue * 3, total: totalROI, color: 'hsl(var(--brand))' },
-                      { label: 'Audit Prep Efficiency (3yr)', value: 1_200_000, total: totalROI, color: '#f59e0b' },
-                      { label: 'Incident Reduction Value', value: 480_000, total: totalROI, color: '#8b5cf6' },
+                      { label: 'Audit Prep Efficiency (3yr)', value: 1_200_000, total: totalROI, color: 'hsl(var(--s-wn-tx))' },
+                      { label: 'Incident Reduction Value', value: 480_000, total: totalROI, color: 'hsl(var(--tag-purple))' },
                     ].map((row, i) => (
                       <div key={i}>
                         <div className="flex justify-between text-xs mb-1">
@@ -316,14 +316,14 @@ export default function ValueRealization() {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <div className="h-1.5 w-20 overflow-hidden" style={{ background: 'hsl(var(--border))' }}>
-                              <div style={{ width: `${f.riskReduction * 100}%`, height: '100%', background: f.status === 'green' ? 'hsl(var(--s-ok-tx))' : f.status === 'amber' ? '#f59e0b' : 'hsl(var(--destructive))' }} />
+                              <div style={{ width: `${f.riskReduction * 100}%`, height: '100%', background: f.status === 'green' ? 'hsl(var(--s-ok-tx))' : f.status === 'amber' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))' }} />
                             </div>
                             <span style={{ color: 'hsl(var(--text-3))' }}>{Math.round(f.riskReduction * 100)}%</span>
                           </div>
                         </td>
                         <td className="px-4 py-3 font-bold text-sm" style={{ color: 'hsl(var(--s-ok-tx))' }}>{fmt$(f.avoided)}</td>
                         <td className="px-4 py-3">
-                          <div className="w-2.5 h-2.5 rounded-full" style={{ background: f.status === 'green' ? 'hsl(var(--s-ok-tx))' : f.status === 'amber' ? '#f59e0b' : 'hsl(var(--destructive))' }} />
+                          <div className="w-2.5 h-2.5 rounded-full" style={{ background: f.status === 'green' ? 'hsl(var(--s-ok-tx))' : f.status === 'amber' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))' }} />
                         </td>
                       </tr>
                     ))}

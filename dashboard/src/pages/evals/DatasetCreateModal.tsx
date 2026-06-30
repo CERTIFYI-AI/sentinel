@@ -35,11 +35,11 @@ export default function DatasetCreateModal() {
           </div>
           <Button variant="ghost" size="sm" style={{ borderRadius: 0 }}>Cancel</Button>
           {step < 3 ? (
-            <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }} onClick={() => setStep(step + 1)}>
+            <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={() => setStep(step + 1)}>
               Next Step
             </Button>
           ) : (
-            <Button size="sm" style={{ borderRadius: 0, background: 'hsl(142 71% 45%)', color: '#fff' }}>
+            <Button size="sm" style={{ borderRadius: 0, background: 'hsl(142 71% 45%)', color: 'hsl(var(--bg-surface))' }}>
               Create Dataset
             </Button>
           )}

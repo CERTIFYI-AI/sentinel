@@ -107,12 +107,12 @@ const VENDORS: MarketplaceVendor[] = [
 
 function typeStyle(t: AttestationType) {
   switch (t) {
-    case 'SOC2': return { bg: '#10b98115', color: '#10b981' };
-    case 'ISO27001': return { bg: '#3b82f615', color: '#60a5fa' };
-    case 'ISO42001': return { bg: '#6366f115', color: '#a5b4fc' };
-    case 'PenTest': return { bg: '#ef444415', color: '#f87171' };
-    case 'DPA': return { bg: '#f9731615', color: '#fb923c' };
-    case 'ModelCard': return { bg: '#8b5cf615', color: '#c4b5fd' };
+    case 'SOC2': return { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' };
+    case 'ISO27001': return { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' };
+    case 'ISO42001': return { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' };
+    case 'PenTest': return { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))' };
+    case 'DPA': return { bg: 'hsl(var(--r-hi-bg))', color: 'hsl(var(--r-hi-tx))' };
+    case 'ModelCard': return { bg: 'hsl(var(--tag-purple-bg))', color: 'hsl(var(--tag-purple))' };
     default: return { bg: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))' };
   }
 }
@@ -226,7 +226,7 @@ export default function Marketplace() {
             <div className="flex gap-1 ml-auto">
               {(['All', ...ALL_CATEGORIES] as const).map(c => (
                 <button key={c} onClick={() => setCatFilter(c as any)} className="px-2 py-1 text-xs"
-                  style={catFilter === c ? { background: '#6366f1', color: 'white', border: '1px solid #6366f1' } : { border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-3))' }}>
+                  style={catFilter === c ? { background: 'hsl(var(--brand))', color: 'white', border: '1px solid hsl(var(--brand))' } : { border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-3))' }}>
                   {c}
                 </button>
               ))}
@@ -246,7 +246,7 @@ export default function Marketplace() {
                   </div>
                   <div className="flex flex-col gap-1 items-end">
                     {v.verified && (
-                      <span className="flex items-center gap-1 text-xs px-1.5 py-0.5" style={{ background: '#10b98115', color: '#10b981', border: '1px solid #10b98130' }}>
+                      <span className="flex items-center gap-1 text-xs px-1.5 py-0.5" style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', border: '1px solid hsl(var(--s-ok-br))' }}>
                         <CheckCircle size={10} /> Verified
                       </span>
                     )}
@@ -293,9 +293,9 @@ export default function Marketplace() {
             </div>
           ) : (
             <>
-              <div className="p-3 flex items-center gap-2" style={{ background: '#f9731610', border: '1px solid #f9731630' }}>
-                <Warning size={14} style={{ color: '#f97316' }} />
-                <p className="text-xs" style={{ color: '#f97316' }}>3 attestations expire in 30 days — review and renew</p>
+              <div className="p-3 flex items-center gap-2" style={{ background: 'hsl(var(--r-hi-bg))', border: '1px solid hsl(var(--r-hi-br))' }}>
+                <Warning size={14} style={{ color: 'hsl(var(--r-hi-tx))' }} />
+                <p className="text-xs" style={{ color: 'hsl(var(--r-hi-tx))' }}>3 attestations expire in 30 days — review and renew</p>
               </div>
               {subscribed.map(v => (
                 <div key={v.id} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', padding: '16px' }}>
@@ -402,7 +402,7 @@ export default function Marketplace() {
                 <div>
                   <div className="flex items-center gap-2">
                     <h2 className="text-base font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{selectedVendor.name}</h2>
-                    {selectedVendor.verified && <CheckCircle size={14} style={{ color: '#10b981' }} />}
+                    {selectedVendor.verified && <CheckCircle size={14} style={{ color: 'hsl(var(--s-ok-tx))' }} />}
                   </div>
                   <p className="text-xs" style={{ color: 'hsl(var(--brand))' }}>{selectedVendor.category}</p>
                 </div>

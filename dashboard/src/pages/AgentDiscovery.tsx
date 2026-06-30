@@ -85,7 +85,7 @@ export default function AgentDiscovery() {
   };
 
   function HealthDot({ status }: { status: string }) {
-    const color = status === "Confirmed" || status === "Monitored" ? "#22c55e" : status === "Under Review" || status === "Discovered" ? "#f59e0b" : "#ef4444";
+    const color = status === "Confirmed" || status === "Monitored" ? "#22c55e" : status === "Under Review" || status === "Discovered" ? "hsl(var(--s-wn-tx))" : "hsl(var(--s-er-tx))";
     return <span className="inline-flex items-center gap-1.5"><span style={{ width:8, height:8, borderRadius:"50%", background:color, display:"inline-block" }} /><span className="text-xs" style={{ color }}>{status}</span></span>;
   }
 

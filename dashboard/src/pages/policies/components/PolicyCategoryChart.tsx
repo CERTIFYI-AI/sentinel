@@ -1,7 +1,7 @@
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Policy } from '../../../types/policy.types';
 
-const COLORS = ['#10b981','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#f97316','#84cc16','#a855f7'];
+const COLORS = ['hsl(var(--s-ok-tx))','#3b82f6','hsl(var(--s-wn-tx))','hsl(var(--s-er-tx))','hsl(var(--tag-purple))','#ec4899','hsl(var(--s-in-tx))','hsl(var(--r-hi-tx))','#84cc16','#a855f7'];
 
 interface Props { policies: Policy[]; }
 

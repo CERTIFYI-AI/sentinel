@@ -247,7 +247,7 @@ export default function EvalTechniques() {
                     <Button size="sm" variant="ghost" style={{ padding: '2px 6px' }} onClick={() => setEditItem({ ...t })}>
                       <PencilSimple size={13} />
                     </Button>
-                    <Button size="sm" variant="ghost" style={{ padding: '2px 6px', color: '#ef4444' }} onClick={() => setDeleteItem(t)}>
+                    <Button size="sm" variant="ghost" style={{ padding: '2px 6px', color: 'hsl(var(--s-er-tx))' }} onClick={() => setDeleteItem(t)}>
                       <Trash size={13} />
                     </Button>
                   </div>
@@ -408,7 +408,7 @@ export default function EvalTechniques() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} style={{ background: '#ef4444', borderRadius: 0 }}>Remove</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} style={{ background: 'hsl(var(--s-er-tx))', borderRadius: 0 }}>Remove</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

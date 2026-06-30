@@ -57,10 +57,10 @@ const DEPARTMENTS = [
 ];
 
 const RISK_TIERS = [
-  { value: 'high', label: 'High Risk', description: 'EU AI Act Annex III — requires full documentation and oversight', color: '#ef4444' },
-  { value: 'limited', label: 'Limited Risk', description: 'Transparency obligations apply (Art. 52)', color: '#f97316' },
-  { value: 'minimal', label: 'Minimal Risk', description: 'No specific obligations beyond general law', color: '#10b981' },
-  { value: 'unacceptable', label: 'Unacceptable Risk', description: 'Prohibited under EU AI Act — cannot be deployed', color: '#dc2626' },
+  { value: 'high', label: 'High Risk', description: 'EU AI Act Annex III — requires full documentation and oversight', color: 'hsl(var(--s-er-tx))' },
+  { value: 'limited', label: 'Limited Risk', description: 'Transparency obligations apply (Art. 52)', color: 'hsl(var(--r-hi-tx))' },
+  { value: 'minimal', label: 'Minimal Risk', description: 'No specific obligations beyond general law', color: 'hsl(var(--s-ok-tx))' },
+  { value: 'unacceptable', label: 'Unacceptable Risk', description: 'Prohibited under EU AI Act — cannot be deployed', color: 'hsl(var(--s-er-tx))' },
 ];
 
 const FRAMEWORKS = [
@@ -156,7 +156,7 @@ export default function ModelRegistrationDrawer({ onClose, onRegister }: ModelRe
       width: '100%',
       padding: '7px 10px',
       background: 'hsl(var(--bg-raised))',
-      border: `1px solid ${hasError ? '#ef4444' : 'hsl(var(--border))'}`,
+      border: `1px solid ${hasError ? 'hsl(var(--s-er-tx))' : 'hsl(var(--border))'}`,
       color: 'hsl(var(--text-1))',
       fontSize: 13,
       outline: 'none',
@@ -220,10 +220,10 @@ export default function ModelRegistrationDrawer({ onClose, onRegister }: ModelRe
                     background: step >= n ? 'hsl(var(--brand))' : 'hsl(var(--bg-muted))',
                     border: `1px solid ${step >= n ? 'hsl(var(--brand))' : 'hsl(var(--border))'}`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 10, fontWeight: 700, color: step >= n ? '#fff' : 'hsl(var(--text-3))',
+                    fontSize: 10, fontWeight: 700, color: step >= n ? 'hsl(var(--bg-surface))' : 'hsl(var(--text-3))',
                     transition: 'all 0.2s',
                   }}>
-                    {step > n ? <CheckCircle size={13} weight="fill" style={{ color: '#fff' }} /> : n}
+                    {step > n ? <CheckCircle size={13} weight="fill" style={{ color: 'hsl(var(--bg-surface))' }} /> : n}
                   </div>
                   <span style={{ fontSize: 12, fontWeight: step === n ? 600 : 400, color: step === n ? 'hsl(var(--text-1))' : 'hsl(var(--text-3))' }}>
                     {label}
@@ -255,7 +255,7 @@ export default function ModelRegistrationDrawer({ onClose, onRegister }: ModelRe
                 Development Phase
               </Badge>
             </div>
-            <button onClick={onClose} style={{ padding: '8px 20px', background: 'hsl(var(--brand))', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>
+            <button onClick={onClose} style={{ padding: '8px 20px', background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>
               Done
             </button>
           </div>
@@ -265,57 +265,57 @@ export default function ModelRegistrationDrawer({ onClose, onRegister }: ModelRe
               <>
                 {/* Model name */}
                 <div>
-                  <label style={labelStyle()}>Model Name {errors.name && <span style={{ color: '#ef4444' }}>*</span>}</label>
+                  <label style={labelStyle()}>Model Name {errors.name && <span style={{ color: 'hsl(var(--s-er-tx))' }}>*</span>}</label>
                   <input
                     value={form.name}
                     onChange={e => update('name', e.target.value)}
                     placeholder="e.g. Customer Churn Predictor v2"
                     style={fieldStyle(!!errors.name)}
                   />
-                  {errors.name && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 3 }}>{errors.name}</p>}
+                  {errors.name && <p style={{ fontSize: 11, color: 'hsl(var(--s-er-tx))', marginTop: 3 }}>{errors.name}</p>}
                 </div>
 
                 {/* Version */}
                 <div>
-                  <label style={labelStyle()}>Version {errors.version && <span style={{ color: '#ef4444' }}>*</span>}</label>
+                  <label style={labelStyle()}>Version {errors.version && <span style={{ color: 'hsl(var(--s-er-tx))' }}>*</span>}</label>
                   <input
                     value={form.version}
                     onChange={e => update('version', e.target.value)}
                     placeholder="e.g. v1.0.0, GPT-4o"
                     style={fieldStyle(!!errors.version)}
                   />
-                  {errors.version && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 3 }}>{errors.version}</p>}
+                  {errors.version && <p style={{ fontSize: 11, color: 'hsl(var(--s-er-tx))', marginTop: 3 }}>{errors.version}</p>}
                 </div>
 
                 {/* Type */}
                 <div>
-                  <label style={labelStyle()}>Model Type {errors.type && <span style={{ color: '#ef4444' }}>*</span>}</label>
+                  <label style={labelStyle()}>Model Type {errors.type && <span style={{ color: 'hsl(var(--s-er-tx))' }}>*</span>}</label>
                   <select value={form.type} onChange={e => update('type', e.target.value)} style={fieldStyle(!!errors.type)}>
                     <option value="">Select type…</option>
                     {MODEL_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
-                  {errors.type && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 3 }}>{errors.type}</p>}
+                  {errors.type && <p style={{ fontSize: 11, color: 'hsl(var(--s-er-tx))', marginTop: 3 }}>{errors.type}</p>}
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   {/* Owner */}
                   <div>
-                    <label style={labelStyle()}>Owner {errors.owner && <span style={{ color: '#ef4444' }}>*</span>}</label>
+                    <label style={labelStyle()}>Owner {errors.owner && <span style={{ color: 'hsl(var(--s-er-tx))' }}>*</span>}</label>
                     <select value={form.owner} onChange={e => update('owner', e.target.value)} style={fieldStyle(!!errors.owner)}>
                       <option value="">Select owner…</option>
                       {USERS.map(u => <option key={u.id} value={u.name}>{u.name} — {u.role}</option>)}
                     </select>
-                    {errors.owner && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 3 }}>{errors.owner}</p>}
+                    {errors.owner && <p style={{ fontSize: 11, color: 'hsl(var(--s-er-tx))', marginTop: 3 }}>{errors.owner}</p>}
                   </div>
 
                   {/* Department */}
                   <div>
-                    <label style={labelStyle()}>Department {errors.department && <span style={{ color: '#ef4444' }}>*</span>}</label>
+                    <label style={labelStyle()}>Department {errors.department && <span style={{ color: 'hsl(var(--s-er-tx))' }}>*</span>}</label>
                     <select value={form.department} onChange={e => update('department', e.target.value)} style={fieldStyle(!!errors.department)}>
                       <option value="">Select dept…</option>
                       {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
                     </select>
-                    {errors.department && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 3 }}>{errors.department}</p>}
+                    {errors.department && <p style={{ fontSize: 11, color: 'hsl(var(--s-er-tx))', marginTop: 3 }}>{errors.department}</p>}
                   </div>
                 </div>
 
@@ -337,7 +337,7 @@ export default function ModelRegistrationDrawer({ onClose, onRegister }: ModelRe
               <>
                 {/* Risk tier */}
                 <div>
-                  <label style={labelStyle()}>Risk Tier (EU AI Act) {errors.riskTier && <span style={{ color: '#ef4444' }}>*</span>}</label>
+                  <label style={labelStyle()}>Risk Tier (EU AI Act) {errors.riskTier && <span style={{ color: 'hsl(var(--s-er-tx))' }}>*</span>}</label>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
                     {RISK_TIERS.map(tier => (
                       <button
@@ -362,17 +362,17 @@ export default function ModelRegistrationDrawer({ onClose, onRegister }: ModelRe
                       </button>
                     ))}
                   </div>
-                  {errors.riskTier && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{errors.riskTier}</p>}
+                  {errors.riskTier && <p style={{ fontSize: 11, color: 'hsl(var(--s-er-tx))', marginTop: 4 }}>{errors.riskTier}</p>}
                 </div>
 
                 {/* Framework */}
                 <div>
-                  <label style={labelStyle()}>Primary Compliance Framework {errors.framework && <span style={{ color: '#ef4444' }}>*</span>}</label>
+                  <label style={labelStyle()}>Primary Compliance Framework {errors.framework && <span style={{ color: 'hsl(var(--s-er-tx))' }}>*</span>}</label>
                   <select value={form.framework} onChange={e => update('framework', e.target.value)} style={fieldStyle(!!errors.framework)}>
                     <option value="">Select framework…</option>
                     {FRAMEWORKS.map(f => <option key={f} value={f}>{f}</option>)}
                   </select>
-                  {errors.framework && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 3 }}>{errors.framework}</p>}
+                  {errors.framework && <p style={{ fontSize: 11, color: 'hsl(var(--s-er-tx))', marginTop: 3 }}>{errors.framework}</p>}
                 </div>
 
                 {/* Summary review */}
@@ -424,14 +424,14 @@ export default function ModelRegistrationDrawer({ onClose, onRegister }: ModelRe
             {step === 1 ? (
               <button
                 onClick={handleNext}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 18px', background: 'hsl(var(--brand))', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 18px', background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}
               >
                 Next →
               </button>
             ) : (
               <button
                 onClick={handleRegister}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 18px', background: 'hsl(var(--brand))', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 18px', background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}
               >
                 <Plus size={14} /> Register Model
               </button>

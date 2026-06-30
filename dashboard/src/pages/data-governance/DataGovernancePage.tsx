@@ -209,7 +209,7 @@ export default function DataGovernancePage() {
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
             background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
-            color: '#fff', borderRadius: 0, minWidth: 300,
+            color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 300,
           }}>{t.text}</div>
         ))}
       </div>
@@ -230,7 +230,7 @@ export default function DataGovernancePage() {
           <Button variant="outline" onClick={() => setDsarFormOpen(true)} style={{ borderRadius: 0 }}>
             <UserCircle size={14} className="mr-2" />New DSAR
           </Button>
-          <Button onClick={() => setRegisterOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+          <Button onClick={() => setRegisterOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
             <Plus size={14} className="mr-2" />Register Data Asset
           </Button>
         </div>
@@ -549,7 +549,7 @@ export default function DataGovernancePage() {
           </div>
           <DialogFooter className="mt-4">
             <Button variant="outline" onClick={() => setDsarFormOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
-            <Button onClick={handleCreateDSAR} disabled={!newDSAR.requester} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>Create DSAR</Button>
+            <Button onClick={handleCreateDSAR} disabled={!newDSAR.requester} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>Create DSAR</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -593,7 +593,7 @@ export default function DataGovernancePage() {
           </div>
           <DialogFooter className="mt-4">
             <Button variant="outline" onClick={() => setRegisterOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
-            <Button onClick={() => { setRegisterOpen(false); toast('Data asset registered'); }} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>Register</Button>
+            <Button onClick={() => { setRegisterOpen(false); toast('Data asset registered'); }} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>Register</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

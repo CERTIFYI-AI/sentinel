@@ -135,11 +135,11 @@ const ACTIVE_INCIDENTS: ActiveIncident[] = [
 const PHASE_ORDER: IncidentPhase[] = ['Detection', 'Containment', 'Eradication', 'Recovery', 'Post-Incident'];
 
 const PHASE_COLORS: Record<IncidentPhase, string> = {
-  Detection: '#6366f1',
-  Containment: '#f59e0b',
-  Eradication: '#ef4444',
-  Recovery: '#10b981',
-  'Post-Incident': '#8b5cf6',
+  Detection: 'hsl(var(--brand))',
+  Containment: 'hsl(var(--s-wn-tx))',
+  Eradication: 'hsl(var(--s-er-tx))',
+  Recovery: 'hsl(var(--s-ok-tx))',
+  'Post-Incident': 'hsl(var(--tag-purple))',
 };
 
 interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info' }
@@ -169,7 +169,7 @@ export default function IncidentPlaybooks() {
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 rounded text-sm text-white shadow-lg"
-            style={{ background: t.type === 'success' ? '#10b981' : t.type === 'error' ? '#ef4444' : '#3b82f6' }}>
+            style={{ background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--s-er-tx))' : '#3b82f6' }}>
             {t.text}
           </div>
         ))}
@@ -219,9 +219,9 @@ export default function IncidentPlaybooks() {
               return (
                 <div key={phase} className="flex items-center gap-1">
                   <div className="flex items-center gap-1 px-2 py-1 text-xs"
-                    style={{ background: isCurrent ? PHASE_COLORS[phase] + '20' : isComplete ? '#10b981' + '20' : 'transparent',
-                      color: isCurrent ? PHASE_COLORS[phase] : isComplete ? '#10b981' : 'hsl(var(--text-4))',
-                      border: `1px solid ${isCurrent ? PHASE_COLORS[phase] : isComplete ? '#10b981' : 'hsl(var(--border))'}` }}>
+                    style={{ background: isCurrent ? PHASE_COLORS[phase] + '20' : isComplete ? 'hsl(var(--s-ok-tx))' + '20' : 'transparent',
+                      color: isCurrent ? PHASE_COLORS[phase] : isComplete ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-4))',
+                      border: `1px solid ${isCurrent ? PHASE_COLORS[phase] : isComplete ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--border))'}` }}>
                     {isComplete && <CheckCircle size={10} className="mr-1" />}
                     {phase}
                   </div>
@@ -237,9 +237,9 @@ export default function IncidentPlaybooks() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           { label: 'Playbooks', value: PLAYBOOKS.length, color: 'hsl(var(--brand))' },
-          { label: 'Active Incidents', value: ACTIVE_INCIDENTS.length, color: ACTIVE_INCIDENTS.length > 0 ? '#ef4444' : '#10b981' },
-          { label: 'Last Tested', value: '32d ago', color: '#f59e0b' },
-          { label: 'Avg Contain SLA', value: `${Math.round(PLAYBOOKS.reduce((s, p) => s + p.timeToContainSLA, 0) / PLAYBOOKS.length)}m`, color: '#6366f1' },
+          { label: 'Active Incidents', value: ACTIVE_INCIDENTS.length, color: ACTIVE_INCIDENTS.length > 0 ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-ok-tx))' },
+          { label: 'Last Tested', value: '32d ago', color: 'hsl(var(--s-wn-tx))' },
+          { label: 'Avg Contain SLA', value: `${Math.round(PLAYBOOKS.reduce((s, p) => s + p.timeToContainSLA, 0) / PLAYBOOKS.length)}m`, color: 'hsl(var(--brand))' },
         ].map(s => (
           <Card key={s.label} style={{ borderRadius: 0 }}>
             <CardContent className="px-4 py-3">
@@ -363,7 +363,7 @@ export default function IncidentPlaybooks() {
                           {step.checkboxes.map((cb, j) => (
                             <div key={j} className="flex items-start gap-2 text-xs text-[hsl(var(--text-2))]">
                               <div className="w-3 h-3 border border-[hsl(var(--border))] flex-shrink-0 mt-0.5"
-                                style={{ background: isCompleted ? '#10b981' : 'transparent' }} />
+                                style={{ background: isCompleted ? 'hsl(var(--s-ok-tx))' : 'transparent' }} />
                               <span>{cb}</span>
                             </div>
                           ))}

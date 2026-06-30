@@ -47,9 +47,9 @@ interface CalendarEvent {
 
 const typeColors: Record<EventType, string> = {
   audit: '#3b82f6',
-  review: '#10b981',
-  deadline: '#ef4444',
-  certification: '#8b5cf6',
+  review: 'hsl(var(--s-ok-tx))',
+  deadline: 'hsl(var(--s-er-tx))',
+  certification: 'hsl(var(--tag-purple))',
 };
 
 const typeLabels: Record<EventType, string> = {
@@ -416,7 +416,7 @@ export default function ComplianceCalendar() {
               style={{
                 padding: '6px 12px',
                 background: view === 'list' ? 'hsl(var(--brand))' : 'hsl(var(--bg-surface))',
-                color: view === 'list' ? '#fff' : 'hsl(var(--text-3))',
+                color: view === 'list' ? 'hsl(var(--bg-surface))' : 'hsl(var(--text-3))',
                 border: 'none',
                 borderRadius: 0,
                 cursor: 'pointer',
@@ -433,7 +433,7 @@ export default function ComplianceCalendar() {
               style={{
                 padding: '6px 12px',
                 background: view === 'calendar' ? 'hsl(var(--brand))' : 'hsl(var(--bg-surface))',
-                color: view === 'calendar' ? '#fff' : 'hsl(var(--text-3))',
+                color: view === 'calendar' ? 'hsl(var(--bg-surface))' : 'hsl(var(--text-3))',
                 border: 'none',
                 borderRadius: 0,
                 cursor: 'pointer',
@@ -466,7 +466,7 @@ export default function ComplianceCalendar() {
           </button>
           <Button
             size="sm"
-            style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff', gap: 6 }}
+            style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))', gap: 6 }}
             onClick={() => setCreateOpen(true)}
           >
             <Plus size={14} weight="bold" /> Schedule Event
@@ -1240,7 +1240,7 @@ export default function ComplianceCalendar() {
           </div>
           <DialogFooter style={{ marginTop: 8 }}>
             <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setCreateOpen(false)}>Cancel</Button>
-            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }} onClick={handleCreate}>Schedule Event</Button>
+            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={handleCreate}>Schedule Event</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

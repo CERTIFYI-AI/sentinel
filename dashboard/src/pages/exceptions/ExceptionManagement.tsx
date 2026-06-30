@@ -691,7 +691,7 @@ export default function ExceptionManagement() {
           <Button variant="outline" size="sm" style={{ borderRadius: 0 }} onClick={() => exportCsv(filtered)}>
             <Export size={14} className="mr-1.5" />Export CSV
           </Button>
-          <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }} onClick={() => setCreateOpen(true)}>
+          <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={() => setCreateOpen(true)}>
             <Plus size={14} className="mr-1.5" />Request Exception
           </Button>
         </div>
@@ -877,7 +877,7 @@ export default function ExceptionManagement() {
               <div className="px-6 py-3 border-b flex items-center gap-2 flex-wrap" style={{ borderColor: 'hsl(var(--border))' }}>
                 {canDecide(selected) && (
                   <>
-                    <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--s-ok-tx))', color: '#fff', height: 30 }}
+                    <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--s-ok-tx))', color: 'hsl(var(--bg-surface))', height: 30 }}
                       onClick={() => openDecision(selected, 'Approved')}>
                       <CheckCircle size={12} className="mr-1.5" />Approve
                     </Button>
@@ -1270,7 +1270,7 @@ export default function ExceptionManagement() {
 
           <DialogFooter>
             <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setCreateOpen(false)}>Cancel</Button>
-            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }} onClick={handleCreate}>
+            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={handleCreate}>
               Submit Exception Request
             </Button>
           </DialogFooter>
@@ -1318,7 +1318,7 @@ export default function ExceptionManagement() {
               style={{
                 borderRadius: 0,
                 background: decision === 'Approved' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))',
-                color: '#fff',
+                color: 'hsl(var(--bg-surface))',
               }}
               onClick={handleDecision}
               disabled={!decisionNotes.trim()}>
@@ -1348,7 +1348,7 @@ export default function ExceptionManagement() {
           </div>
           <DialogFooter>
             <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setRenewalOpen(false)}>Cancel</Button>
-            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }} onClick={handleRenewal}>
+            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={handleRenewal}>
               Submit Renewal Request
             </Button>
           </DialogFooter>
@@ -1366,7 +1366,7 @@ export default function ExceptionManagement() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: '#fff' }}
+            <AlertDialogAction style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: 'hsl(var(--bg-surface))' }}
               onClick={() => deleteTarget && handleDelete(deleteTarget)}>
               Delete
             </AlertDialogAction>

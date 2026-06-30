@@ -27,10 +27,10 @@ const EMPTY_EVIDENCE: Omit<Evidence, 'id'> = {
 };
 
 function syncIcon(status: EvidenceStatus) {
-  if (status === 'synced') return <CheckCircle size={14} style={{ color: '#10b981' }} />;
-  if (status === 'pending') return <Clock size={14} style={{ color: '#f97316' }} />;
-  if (status === 'expired') return <Warning size={14} style={{ color: '#ef4444' }} />;
-  return <XCircle size={14} style={{ color: '#ef4444' }} />;
+  if (status === 'synced') return <CheckCircle size={14} style={{ color: 'hsl(var(--s-ok-tx))' }} />;
+  if (status === 'pending') return <Clock size={14} style={{ color: 'hsl(var(--r-hi-tx))' }} />;
+  if (status === 'expired') return <Warning size={14} style={{ color: 'hsl(var(--s-er-tx))' }} />;
+  return <XCircle size={14} style={{ color: 'hsl(var(--s-er-tx))' }} />;
 }
 
 function daysSince(dateStr: string): number {
@@ -131,11 +131,11 @@ export default function EvidenceHub() {
   const stale = evidence.filter(e => daysSince(e.lastSync) > 90 && e.status !== 'expired').length;
 
   const stats = [
-    { label: 'Total', value: evidence.length, icon: ClipboardText, color: '#6366f1' },
-    { label: 'Synced', value: synced, icon: CheckCircle, color: '#10b981' },
-    { label: 'Pending', value: pending, icon: Clock, color: '#f97316' },
-    { label: 'Expired', value: expired, icon: Warning, color: '#ef4444' },
-    { label: 'Stale (>90d)', value: stale, icon: ClockCounterClockwise, color: '#8b5cf6' },
+    { label: 'Total', value: evidence.length, icon: ClipboardText, color: 'hsl(var(--brand))' },
+    { label: 'Synced', value: synced, icon: CheckCircle, color: 'hsl(var(--s-ok-tx))' },
+    { label: 'Pending', value: pending, icon: Clock, color: 'hsl(var(--r-hi-tx))' },
+    { label: 'Expired', value: expired, icon: Warning, color: 'hsl(var(--s-er-tx))' },
+    { label: 'Stale (>90d)', value: stale, icon: ClockCounterClockwise, color: 'hsl(var(--tag-purple))' },
   ];
 
   function handleSyncAll() {
@@ -249,12 +249,12 @@ export default function EvidenceHub() {
 
       {/* Staleness banner */}
       {stale > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', background: 'hsl(263 30% 14%)', border: '1px solid #8b5cf6' }}>
-          <ClockCounterClockwise size={16} style={{ color: '#8b5cf6', flexShrink: 0 }} />
-          <p className="text-xs flex-1" style={{ color: '#8b5cf6' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', background: 'hsl(263 30% 14%)', border: '1px solid hsl(var(--tag-purple))' }}>
+          <ClockCounterClockwise size={16} style={{ color: 'hsl(var(--tag-purple))', flexShrink: 0 }} />
+          <p className="text-xs flex-1" style={{ color: 'hsl(var(--tag-purple))' }}>
             <strong>{stale} evidence item{stale !== 1 ? 's' : ''}</strong> have not been updated in over 90 days — consider refreshing or re-syncing to maintain audit readiness.
           </p>
-          <Button size="sm" variant="outline" onClick={() => setTab('stale')} style={{ borderRadius: 0, fontSize: 11, height: 28, borderColor: '#8b5cf6', color: '#8b5cf6' }}>
+          <Button size="sm" variant="outline" onClick={() => setTab('stale')} style={{ borderRadius: 0, fontSize: 11, height: 28, borderColor: 'hsl(var(--tag-purple))', color: 'hsl(var(--tag-purple))' }}>
             View Stale
           </Button>
         </div>
@@ -284,7 +284,7 @@ export default function EvidenceHub() {
           <TabsTrigger value="expired" style={{ borderRadius: 0 }}>Expired ({expired})</TabsTrigger>
           <TabsTrigger value="stale" style={{ borderRadius: 0 }}>
             Stale ({stale})
-            {stale > 0 && <span style={{ marginLeft: 4, width: 6, height: 6, borderRadius: '50%', background: '#8b5cf6', display: 'inline-block' }} />}
+            {stale > 0 && <span style={{ marginLeft: 4, width: 6, height: 6, borderRadius: '50%', background: 'hsl(var(--tag-purple))', display: 'inline-block' }} />}
           </TabsTrigger>
         </TabsList>
       </Tabs>
@@ -346,7 +346,7 @@ export default function EvidenceHub() {
                       </td>
                       <td className="p-3">
                         {isStale ? (
-                          <Badge style={{ background: '#8b5cf620', color: '#8b5cf6', border: '1px solid #8b5cf6', borderRadius: 0, fontSize: 10 }}>
+                          <Badge style={{ background: 'hsl(var(--tag-purple-bg))', color: 'hsl(var(--tag-purple))', border: '1px solid hsl(var(--tag-purple))', borderRadius: 0, fontSize: 10 }}>
                             Stale {age}d
                           </Badge>
                         ) : (
@@ -370,7 +370,7 @@ export default function EvidenceHub() {
                           <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setEditItem({ ...e })}>
                             <PencilSimple size={14} />
                           </Button>
-                          <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: '#ef4444' }} onClick={() => setDeleteItem(e)}>
+                          <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: 'hsl(var(--s-er-tx))' }} onClick={() => setDeleteItem(e)}>
                             <Trash size={14} />
                           </Button>
                         </div>
@@ -399,7 +399,7 @@ export default function EvidenceHub() {
                   ); })()}
                   <Badge variant="outline" style={{ borderRadius: 0 }}>{viewItem.type}</Badge>
                   {daysSince(viewItem.lastSync) > 90 && viewItem.status !== 'expired' && (
-                    <Badge style={{ background: '#8b5cf620', color: '#8b5cf6', border: '1px solid #8b5cf6', borderRadius: 0 }}>
+                    <Badge style={{ background: 'hsl(var(--tag-purple-bg))', color: 'hsl(var(--tag-purple))', border: '1px solid hsl(var(--tag-purple))', borderRadius: 0 }}>
                       Stale {daysSince(viewItem.lastSync)}d
                     </Badge>
                   )}
@@ -580,7 +580,7 @@ export default function EvidenceHub() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} style={{ background: '#ef4444', borderRadius: 0 }}>Delete</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} style={{ background: 'hsl(var(--s-er-tx))', borderRadius: 0 }}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

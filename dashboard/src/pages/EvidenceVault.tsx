@@ -64,10 +64,10 @@ const CHAIN_ENTRIES: ChainEntry[] = [
 ];
 
 const FRAMEWORK_CYCLES = [
-  { name: 'EU AI Act', status: 'Cycle 2 of 3', progress: 68, color: '#6366f1' },
-  { name: 'ISO 42001', status: 'Certified', progress: 100, color: '#10b981' },
-  { name: 'SOC 2 Type II', status: 'Active', progress: 83, color: '#3b82f6' },
-  { name: 'NIST AI RMF', status: 'In Progress', progress: 54, color: '#f97316' },
+  { name: 'EU AI Act', status: 'Cycle 2 of 3', progress: 68, color: 'hsl(var(--brand))' },
+  { name: 'ISO 42001', status: 'Certified', progress: 100, color: 'hsl(var(--s-ok-tx))' },
+  { name: 'SOC 2 Type II', status: 'Active', progress: 83, color: 'hsl(var(--s-in-tx))' },
+  { name: 'NIST AI RMF', status: 'In Progress', progress: 54, color: 'hsl(var(--r-hi-tx))' },
 ];
 
 const EMPTY_EVIDENCE: Omit<Evidence, 'id'> = {
@@ -77,27 +77,27 @@ const EMPTY_EVIDENCE: Omit<Evidence, 'id'> = {
 };
 
 function fileIcon(type: string) {
-  if (type === 'Report' || type === 'Validation') return <FilePdf size={28} style={{ color: '#ef4444' }} />;
-  if (type === 'Agreement' || type === 'Log') return <FileDoc size={28} style={{ color: '#3b82f6' }} />;
-  if (type === 'Certificate') return <FileXls size={28} style={{ color: '#10b981' }} />;
-  return <File size={28} style={{ color: '#6b7280' }} />;
+  if (type === 'Report' || type === 'Validation') return <FilePdf size={28} style={{ color: 'hsl(var(--s-er-tx))' }} />;
+  if (type === 'Agreement' || type === 'Log') return <FileDoc size={28} style={{ color: 'hsl(var(--s-in-tx))' }} />;
+  if (type === 'Certificate') return <FileXls size={28} style={{ color: 'hsl(var(--s-ok-tx))' }} />;
+  return <File size={28} style={{ color: 'hsl(var(--text-3))' }} />;
 }
 
 function syncStatusDot(status: EvidenceStatus) {
-  if (status === 'synced') return { color: '#10b981', label: 'Synced' };
-  if (status === 'pending') return { color: '#f97316', label: 'Pending' };
-  if (status === 'expired') return { color: '#ef4444', label: 'Expired' };
-  return { color: '#ef4444', label: 'Failed' };
+  if (status === 'synced') return { color: 'hsl(var(--s-ok-tx))', label: 'Synced' };
+  if (status === 'pending') return { color: 'hsl(var(--r-hi-tx))', label: 'Pending' };
+  if (status === 'expired') return { color: 'hsl(var(--s-er-tx))', label: 'Expired' };
+  return { color: 'hsl(var(--s-er-tx))', label: 'Failed' };
 }
 
 function actionBadgeStyle(action: string) {
   switch (action) {
-    case 'approve': return { bg: '#10b98120', color: '#10b981' };
-    case 'sign': return { bg: '#6366f120', color: '#a5b4fc' };
-    case 'create': return { bg: '#3b82f620', color: '#60a5fa' };
-    case 'verify': return { bg: '#8b5cf620', color: '#c4b5fd' };
-    case 'reject': return { bg: '#ef444420', color: '#f87171' };
-    case 'update': return { bg: '#f9731620', color: '#fb923c' };
+    case 'approve': return { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' };
+    case 'sign': return { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' };
+    case 'create': return { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' };
+    case 'verify': return { bg: 'hsl(var(--tag-purple-bg))', color: 'hsl(var(--tag-purple))' };
+    case 'reject': return { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))' };
+    case 'update': return { bg: 'hsl(var(--r-hi-bg))', color: 'hsl(var(--r-hi-tx))' };
     default: return { bg: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))' };
   }
 }
@@ -136,10 +136,10 @@ export default function EvidenceVault() {
   const totalChain = chain.length > 0 ? chain[0].seq : 0;
 
   const stats = [
-    { label: 'Chain Length', value: totalChain, icon: LinkIcon, color: '#6366f1', sub: 'entries' },
-    { label: 'Audit Cycles', value: '3', icon: CalendarCheck, color: '#10b981', sub: 'complete' },
-    { label: 'Days Active', value: '847', icon: Clock, color: '#3b82f6', sub: 'days' },
-    { label: 'Integrity', value: '100%', icon: SealCheck, color: '#10b981', sub: 'verified' },
+    { label: 'Chain Length', value: totalChain, icon: LinkIcon, color: 'hsl(var(--brand))', sub: 'entries' },
+    { label: 'Audit Cycles', value: '3', icon: CalendarCheck, color: 'hsl(var(--s-ok-tx))', sub: 'complete' },
+    { label: 'Days Active', value: '847', icon: Clock, color: 'hsl(var(--s-in-tx))', sub: 'days' },
+    { label: 'Integrity', value: '100%', icon: SealCheck, color: 'hsl(var(--s-ok-tx))', sub: 'verified' },
   ];
 
   const handleUpload = useCallback(async () => {
@@ -188,7 +188,7 @@ export default function EvidenceVault() {
     {
       label: 'Chain Length',
       value: String(totalChain),
-      icon: <LinkIcon size={18} style={{ color: '#6366f1' }} />,
+      icon: <LinkIcon size={18} style={{ color: 'hsl(var(--brand))' }} />,
       delta: 'Append-only entries',
       deltaDir: 'up' as const,
       isPositiveUp: true,
@@ -204,7 +204,7 @@ export default function EvidenceVault() {
     {
       label: 'Days Active',
       value: '847',
-      icon: <Clock size={18} style={{ color: '#3b82f6' }} />,
+      icon: <Clock size={18} style={{ color: 'hsl(var(--s-in-tx))' }} />,
       delta: '3 audit cycles',
       deltaDir: 'up' as const,
       isPositiveUp: true,
@@ -212,7 +212,7 @@ export default function EvidenceVault() {
     {
       label: 'Chain Integrity',
       value: '100%',
-      icon: <SealCheck size={18} style={{ color: '#10b981' }} />,
+      icon: <SealCheck size={18} style={{ color: 'hsl(var(--s-ok-tx))' }} />,
       delta: 'SHA-256 verified',
       deltaDir: 'up' as const,
       isPositiveUp: true,
@@ -229,7 +229,7 @@ export default function EvidenceVault() {
         subtitle="Immutable audit evidence collection and custody"
         breadcrumbs={[{ label: 'Dashboard', href: '/' }, { label: 'Evidence Vault' }]}
         badge={
-          <span className="px-2 py-0.5 text-xs font-bold" style={{ background: '#10b98120', color: '#10b981', border: '1px solid #10b98140' }}>
+          <span className="px-2 py-0.5 text-xs font-bold" style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', border: '1px solid hsl(var(--s-ok-br))' }}>
             ENTERPRISE
           </span>
         }
@@ -291,18 +291,18 @@ export default function EvidenceVault() {
           </div>
           <div className="ml-6 text-right flex flex-col items-end gap-3">
             {verifyResult ? (
-              <div className="flex items-center gap-2 px-3 py-2" style={{ background: '#10b98110', border: '1px solid #10b98140' }}>
-                <SealCheck size={18} style={{ color: '#10b981' }} />
+              <div className="flex items-center gap-2 px-3 py-2" style={{ background: 'hsl(var(--s-ok-bg))', border: '1px solid hsl(var(--s-ok-br))' }}>
+                <SealCheck size={18} style={{ color: 'hsl(var(--s-ok-tx))' }} />
                 <div className="text-left">
-                  <p className="text-xs font-bold" style={{ color: '#10b981' }}>INTEGRITY: VERIFIED ✓</p>
+                  <p className="text-xs font-bold" style={{ color: 'hsl(var(--s-ok-tx))' }}>INTEGRITY: VERIFIED ✓</p>
                   <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{verifyResult.entries} entries validated</p>
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-2 px-3 py-2" style={{ background: '#6366f110', border: '1px solid #6366f140' }}>
-                <ShieldCheck size={18} style={{ color: '#6366f1' }} />
+              <div className="flex items-center gap-2 px-3 py-2" style={{ background: 'hsl(var(--s-in-bg))', border: '1px solid hsl(var(--s-in-br))' }}>
+                <ShieldCheck size={18} style={{ color: 'hsl(var(--brand))' }} />
                 <div className="text-left">
-                  <p className="text-xs font-bold" style={{ color: '#6366f1' }}>CHAIN: INTACT</p>
+                  <p className="text-xs font-bold" style={{ color: 'hsl(var(--brand))' }}>CHAIN: INTACT</p>
                   <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Last verified: Today</p>
                 </div>
               </div>
@@ -376,7 +376,7 @@ export default function EvidenceVault() {
                     </div>
                     <div className="flex items-center gap-2 pt-3 mt-2" style={{ borderTop: '1px solid hsl(var(--border))' }} onClick={ev => ev.stopPropagation()}>
                       <Button size="sm" variant="ghost" style={{ padding: '3px 8px', fontSize: 11, borderRadius: 0 }}><Download size={12} className="mr-1" /> Download</Button>
-                      <Button size="sm" variant="ghost" style={{ padding: '3px 8px', fontSize: 11, borderRadius: 0, color: '#ef4444' }} onClick={() => setDeleteItem(e)}><Trash size={12} /></Button>
+                      <Button size="sm" variant="ghost" style={{ padding: '3px 8px', fontSize: 11, borderRadius: 0, color: 'hsl(var(--s-er-tx))' }} onClick={() => setDeleteItem(e)}><Trash size={12} /></Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -403,7 +403,7 @@ export default function EvidenceVault() {
                 SHA-256 tamper-evident ledger — each entry includes the hash of the previous
               </p>
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 text-xs" style={{ background: '#10b98110', border: '1px solid #10b98130', color: '#10b981' }}>
+            <div className="flex items-center gap-2 px-3 py-1.5 text-xs" style={{ background: 'hsl(var(--s-ok-bg))', border: '1px solid hsl(var(--s-ok-br))', color: 'hsl(var(--s-ok-tx))' }}>
               <Lock size={12} />
               Append-only — no DELETE or UPDATE permitted
             </div>
@@ -433,7 +433,7 @@ export default function EvidenceVault() {
                   onClick={() => handleVerifyRow(entry.seq)}
                   disabled={verifyingRow === entry.seq}
                   className="flex items-center gap-1 px-2 py-1 text-xs hover:opacity-80 transition-opacity"
-                  style={{ background: entry.verified ? '#10b98115' : 'hsl(var(--bg-muted))', color: entry.verified ? '#10b981' : 'hsl(var(--text-3))', border: `1px solid ${entry.verified ? '#10b98130' : 'hsl(var(--border))'}`, borderRadius: 0 }}>
+                  style={{ background: entry.verified ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--bg-muted))', color: entry.verified ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-3))', border: `1px solid ${entry.verified ? 'hsl(var(--s-ok-br))' : 'hsl(var(--border))'}`, borderRadius: 0 }}>
                   {verifyingRow === entry.seq ? <Spinner size={10} className="animate-spin" /> : entry.verified ? <CheckCircle size={10} /> : <Eye size={10} />}
                   {verifyingRow === entry.seq ? 'Checking…' : entry.verified ? 'Verified' : 'Verify'}
                 </button>
@@ -529,7 +529,7 @@ export default function EvidenceVault() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} style={{ background: '#ef4444', borderRadius: 0 }}>Delete</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} style={{ background: 'hsl(var(--s-er-tx))', borderRadius: 0 }}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

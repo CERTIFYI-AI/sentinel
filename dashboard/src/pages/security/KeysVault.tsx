@@ -53,19 +53,19 @@ const MOCK_KEYS: ApiKey[] = [
 
 function statusStyle(status: string) {
   switch (status) {
-    case 'active': return { bg: '#10b98120', text: '#10b981', border: '#10b98140' };
+    case 'active': return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))' };
     case 'rotated': return { bg: '#3b82f620', text: '#3b82f6', border: '#3b82f640' };
     case 'expired': return { bg: '#eab30820', text: '#eab308', border: '#eab30840' };
-    case 'revoked': return { bg: '#ef444420', text: '#ef4444', border: '#ef444440' };
-    default: return { bg: '#6b728020', text: '#6b7280', border: '#6b728040' };
+    case 'revoked': return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))' };
+    default: return { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))', border: 'hsl(var(--border))' };
   }
 }
 
 function statusIcon(status: string) {
-  if (status === 'active') return <CheckCircle size={14} style={{ color: '#10b981' }} />;
+  if (status === 'active') return <CheckCircle size={14} style={{ color: 'hsl(var(--s-ok-tx))' }} />;
   if (status === 'rotated') return <ArrowsClockwise size={14} style={{ color: '#3b82f6' }} />;
   if (status === 'expired') return <Warning size={14} style={{ color: '#eab308' }} />;
-  return <X size={14} style={{ color: '#ef4444' }} />;
+  return <X size={14} style={{ color: 'hsl(var(--s-er-tx))' }} />;
 }
 
 const EMPTY_KEY: Omit<ApiKey, 'id'> = {
@@ -287,7 +287,7 @@ export default function KeysVault() {
                     </td>
                     <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{k.owner}</td>
                     <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{formatDate(k.lastUsed)}</td>
-                    <td className="p-3 text-xs" style={{ color: new Date(k.expiresAt) < new Date() ? '#ef4444' : 'hsl(var(--text-3))' }}>
+                    <td className="p-3 text-xs" style={{ color: new Date(k.expiresAt) < new Date() ? 'hsl(var(--s-er-tx))' : 'hsl(var(--text-3))' }}>
                       {formatDate(k.expiresAt)}
                     </td>
                     <td className="p-3">
@@ -300,11 +300,11 @@ export default function KeysVault() {
                         )}
                         <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setEditItem({ ...k })}><PencilSimple size={14} /></Button>
                         {k.status === 'active' && (
-                          <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: '#f97316' }} onClick={() => setRevokeItem(k)}>
+                          <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: 'hsl(var(--r-hi-tx))' }} onClick={() => setRevokeItem(k)}>
                             <X size={14} />
                           </Button>
                         )}
-                        <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: '#ef4444' }} onClick={() => setDeleteItem(k)}><Trash size={14} /></Button>
+                        <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: 'hsl(var(--s-er-tx))' }} onClick={() => setDeleteItem(k)}><Trash size={14} /></Button>
                       </div>
                     </td>
                   </tr>
@@ -469,7 +469,7 @@ export default function KeysVault() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleRevoke} style={{ background: '#f97316', borderRadius: 0 }}>Revoke Key</AlertDialogAction>
+            <AlertDialogAction onClick={handleRevoke} style={{ background: 'hsl(var(--r-hi-tx))', borderRadius: 0 }}>Revoke Key</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -485,7 +485,7 @@ export default function KeysVault() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} style={{ background: '#ef4444', borderRadius: 0 }}>Delete</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} style={{ background: 'hsl(var(--s-er-tx))', borderRadius: 0 }}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

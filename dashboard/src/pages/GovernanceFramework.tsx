@@ -22,21 +22,21 @@ const MATURITY_WEIGHT: Record<MaturityLevel, number> = {
 
 const PILLARS = [
   {
-    id: 1, title: 'AI Governance', icon: Scales, color: '#6366f1',
+    id: 1, title: 'AI Governance', icon: Scales, color: 'hsl(var(--brand))',
     description: 'Establish clear accountability, ownership, and decision-making structures for AI systems across the organization.',
     euAiAct: ['Art. 5 — Prohibited AI Practices', 'Art. 9 — Risk Management System', 'Art. 14 — Human Oversight'],
     iso42001: ['Clause 5.1 — Leadership', 'Clause 6.1 — Risk Planning', 'Clause 7.3 — Awareness'],
     relatedRoute: '/overview', relatedLabel: 'Dashboard',
   },
   {
-    id: 2, title: 'Risk Management', icon: Warning, color: '#f97316',
+    id: 2, title: 'Risk Management', icon: Warning, color: 'hsl(var(--r-hi-tx))',
     description: 'Identify, assess, treat, and monitor risks from AI systems throughout their lifecycle.',
     euAiAct: ['Art. 9 — Risk Management', 'Art. 10 — Data Governance', 'Art. 17 — Quality Management'],
     iso42001: ['Clause 6.1 — Risk Assessment', 'Clause 8.3 — Risk Treatment', 'Clause 10.1 — Nonconformity'],
     relatedRoute: '/risk-register', relatedLabel: 'Risk Register',
   },
   {
-    id: 3, title: 'Compliance', icon: CheckCircle, color: '#10b981',
+    id: 3, title: 'Compliance', icon: CheckCircle, color: 'hsl(var(--s-ok-tx))',
     description: 'Demonstrate conformity with EU AI Act, ISO 42001, NIST AI RMF, GDPR, and sector-specific regulations.',
     euAiAct: ['Art. 40 — Harmonized Standards', 'Art. 43 — Conformity Assessment', 'Art. 49 — Registration'],
     iso42001: ['Clause 9.2 — Internal Audit', 'Clause 9.3 — Management Review', 'Annex A — Controls'],
@@ -50,7 +50,7 @@ const PILLARS = [
     relatedRoute: '/bias-audits', relatedLabel: 'Bias Audits',
   },
   {
-    id: 5, title: 'Security', icon: Lock, color: '#ef4444',
+    id: 5, title: 'Security', icon: Lock, color: 'hsl(var(--s-er-tx))',
     description: 'Protect AI systems from adversarial attacks, data poisoning, prompt injection, and unauthorized access.',
     euAiAct: ['Art. 15 — Accuracy, Robustness & Cybersecurity', 'Art. 9 — Security Risk Management'],
     iso42001: ['Clause 8.2 — AI System Requirements', 'Clause 8.3 — AI System Design'],
@@ -154,7 +154,7 @@ export default function GovernanceFramework() {
           </div>
         </div>
         <div className="mb-4" style={{ background: 'hsl(var(--bg-muted))', height: 8 }}>
-          <div style={{ width: `${score}%`, height: '100%', background: score >= 70 ? '#22c55e' : score >= 40 ? '#eab308' : '#ef4444', transition: 'width 0.4s ease' }} />
+          <div style={{ width: `${score}%`, height: '100%', background: score >= 70 ? '#22c55e' : score >= 40 ? '#eab308' : 'hsl(var(--s-er-tx))', transition: 'width 0.4s ease' }} />
         </div>
         <div className="flex items-center gap-4 mb-6 text-xs" style={{ color: 'hsl(var(--text-4))' }}>
           <span style={{ color: '#22c55e' }}>● {implementedCount} Implemented</span>
@@ -235,13 +235,13 @@ export default function GovernanceFramework() {
               <p className="text-xs mb-4 leading-relaxed" style={{ color: 'hsl(var(--text-3))' }}>{p.description}</p>
               <div className="space-y-2">
                 <div>
-                  <p className="text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: '#6366f1' }}>EU AI Act</p>
+                  <p className="text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: 'hsl(var(--brand))' }}>EU AI Act</p>
                   {p.euAiAct.map(a => (
                     <p key={a} className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>· {a}</p>
                   ))}
                 </div>
                 <div>
-                  <p className="text-xs font-semibold mb-1 mt-2 uppercase tracking-wide" style={{ color: '#10b981' }}>ISO 42001</p>
+                  <p className="text-xs font-semibold mb-1 mt-2 uppercase tracking-wide" style={{ color: 'hsl(var(--s-ok-tx))' }}>ISO 42001</p>
                   {p.iso42001.map(a => (
                     <p key={a} className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>· {a}</p>
                   ))}
@@ -271,12 +271,12 @@ export default function GovernanceFramework() {
                 </div>
               </div>
               <div className="flex items-center gap-2 mb-3">
-                <Certificate size={14} style={{ color: '#10b981' }} />
-                <span className="text-xs font-medium" style={{ color: '#10b981' }}>{org.framework}</span>
+                <Certificate size={14} style={{ color: 'hsl(var(--s-ok-tx))' }} />
+                <span className="text-xs font-medium" style={{ color: 'hsl(var(--s-ok-tx))' }}>{org.framework}</span>
               </div>
-              <div className="flex items-center gap-1.5 text-xs p-2" style={{ background: '#10b98108', border: '1px solid #10b98120' }}>
-                <ShieldCheck size={12} style={{ color: '#10b981' }} />
-                <span style={{ color: '#10b981' }}>ISO 42001 Certified · Powered by Sentinel AI GRC</span>
+              <div className="flex items-center gap-1.5 text-xs p-2" style={{ background: 'hsl(var(--s-ok-bg))', border: '1px solid hsl(var(--s-ok-br))' }}>
+                <ShieldCheck size={12} style={{ color: 'hsl(var(--s-ok-tx))' }} />
+                <span style={{ color: 'hsl(var(--s-ok-tx))' }}>ISO 42001 Certified · Powered by Sentinel AI GRC</span>
               </div>
               <p className="text-xs mt-2" style={{ color: 'hsl(var(--text-4))' }}>
                 sentinel.ai/verify/{org.name.toLowerCase().replace(/\s/g, '-')}

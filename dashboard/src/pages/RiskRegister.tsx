@@ -552,7 +552,7 @@ export default function RiskRegister() {
               <Button variant="outline" onClick={() => exportCsv(risks, 'risks.csv')} style={{ borderRadius: 0 }}>
                 Export CSV
               </Button>
-              <Button onClick={() => setAddOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+              <Button onClick={() => setAddOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
                 <Plus size={14} className="mr-1" />Add Risk
               </Button>
             </div>
@@ -1254,7 +1254,7 @@ export default function RiskRegister() {
                   setEditRisk(null);
                 } : handleAddRisk}
                 disabled={editRisk ? !editRisk.title : !newTitle || !newOwner}
-                style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+                style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
               >
                 {editRisk ? 'Save Changes' : 'Create Risk'}
               </Button>
@@ -1297,7 +1297,7 @@ export default function RiskRegister() {
                   setAddMappingOpen(false);
                   setPendingCtrlId('');
                 }}
-                style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+                style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
               >
                 Add Mapping
               </Button>

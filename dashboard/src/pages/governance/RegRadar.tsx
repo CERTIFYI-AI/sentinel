@@ -30,10 +30,10 @@ const EMPTY_REG: Omit<Regulation, 'id'> = {
 };
 
 function getDaysLabel(days: number): { label: string; color: string } {
-  if (days < 0) return { label: `${Math.abs(days)} days overdue`, color: '#ef4444' };
-  if (days === 0) return { label: 'Effective today', color: '#ef4444' };
-  if (days <= 30) return { label: `${days} days remaining`, color: '#f97316' };
-  return { label: `${days} days remaining`, color: '#10b981' };
+  if (days < 0) return { label: `${Math.abs(days)} days overdue`, color: 'hsl(var(--s-er-tx))' };
+  if (days === 0) return { label: 'Effective today', color: 'hsl(var(--s-er-tx))' };
+  if (days <= 30) return { label: `${days} days remaining`, color: 'hsl(var(--r-hi-tx))' };
+  return { label: `${days} days remaining`, color: 'hsl(var(--s-ok-tx))' };
 }
 
 function statusBadge(status: string) {
@@ -70,9 +70,9 @@ export default function RegRadar() {
   });
 
   const stats = [
-    { label: 'Total Regulations', value: regulations.length, icon: Target, color: '#6366f1' },
-    { label: 'Critical Impact', value: criticalImpact, icon: Warning, color: '#ef4444' },
-    { label: 'Overdue Actions', value: overdueActions, icon: Clock, color: '#f97316' },
+    { label: 'Total Regulations', value: regulations.length, icon: Target, color: 'hsl(var(--brand))' },
+    { label: 'Critical Impact', value: criticalImpact, icon: Warning, color: 'hsl(var(--s-er-tx))' },
+    { label: 'Overdue Actions', value: overdueActions, icon: Clock, color: 'hsl(var(--r-hi-tx))' },
     { label: 'Jurisdictions', value: jurisdictions.length, icon: Globe, color: '#3b82f6' },
   ];
 
@@ -267,7 +267,7 @@ export default function RegRadar() {
                   key={reg.id}
                   className="flex items-start gap-4 p-4 cursor-pointer"
                   style={{
-                    border: `1px solid ${isOverdue ? '#ef444444' : 'hsl(var(--border))'}`,
+                    border: `1px solid ${isOverdue ? 'hsl(var(--s-er-br))' : 'hsl(var(--border))'}`,
                     background: isOverdue ? 'hsl(var(--s-er-bg))' : 'hsl(var(--bg-muted))',
                     transition: 'opacity 0.15s',
                   }}
@@ -311,7 +311,7 @@ export default function RegRadar() {
                     <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setEditItem({ ...reg })}>
                       <PencilSimple size={14} />
                     </Button>
-                    <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: '#ef4444' }} onClick={() => setDeleteItem(reg)}>
+                    <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: 'hsl(var(--s-er-tx))' }} onClick={() => setDeleteItem(reg)}>
                       <Trash size={14} />
                     </Button>
                   </div>
@@ -494,7 +494,7 @@ export default function RegRadar() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} style={{ background: '#ef4444', borderRadius: 0 }}>Delete</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} style={{ background: 'hsl(var(--s-er-tx))', borderRadius: 0 }}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -53,20 +53,20 @@ const MOCK_RULES: FirewallRule[] = [
 
 function actionStyle(action: string) {
   switch (action) {
-    case 'block': return { bg: '#ef444420', text: '#ef4444', border: '#ef444440' };
-    case 'warn': return { bg: '#f9731620', text: '#f97316', border: '#f9731640' };
+    case 'block': return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))' };
+    case 'warn': return { bg: 'hsl(var(--r-hi-bg))', text: 'hsl(var(--r-hi-tx))', border: 'hsl(var(--r-hi-br))' };
     case 'flag': return { bg: '#eab30820', text: '#eab308', border: '#eab30840' };
-    case 'allow': return { bg: '#10b98120', text: '#10b981', border: '#10b98140' };
-    default: return { bg: '#6b728020', text: '#6b7280', border: '#6b728040' };
+    case 'allow': return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))' };
+    default: return { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))', border: 'hsl(var(--border))' };
   }
 }
 
 function typeIcon(type: string) {
-  if (type === 'Privacy' || type === 'Security') return <Lock size={14} style={{ color: '#ef4444' }} />;
-  if (type === 'Safety') return <ShieldCheck size={14} style={{ color: '#10b981' }} />;
-  if (type === 'Rate Limiting') return <Lightning size={14} style={{ color: '#f97316' }} />;
+  if (type === 'Privacy' || type === 'Security') return <Lock size={14} style={{ color: 'hsl(var(--s-er-tx))' }} />;
+  if (type === 'Safety') return <ShieldCheck size={14} style={{ color: 'hsl(var(--s-ok-tx))' }} />;
+  if (type === 'Rate Limiting') return <Lightning size={14} style={{ color: 'hsl(var(--r-hi-tx))' }} />;
   if (type === 'Accuracy') return <Warning size={14} style={{ color: '#eab308' }} />;
-  return <Clock size={14} style={{ color: '#6b7280' }} />;
+  return <Clock size={14} style={{ color: 'hsl(var(--text-3))' }} />;
 }
 
 const EMPTY_RULE: Omit<FirewallRule, 'id'> = {
@@ -254,22 +254,22 @@ export default function PolicyFirewall() {
                     </td>
                     <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{r.target}</td>
                     <td className="p-3 text-sm" style={{ color: 'hsl(var(--text-2))' }}>{r.evaluations.toLocaleString()}</td>
-                    <td className="p-3 text-sm font-bold" style={{ color: r.blocked > 0 ? '#ef4444' : 'hsl(var(--text-2))' }}>{r.blocked}</td>
+                    <td className="p-3 text-sm font-bold" style={{ color: r.blocked > 0 ? 'hsl(var(--s-er-tx))' : 'hsl(var(--text-2))' }}>{r.blocked}</td>
                     <td className="p-3">
                       <button
                         onClick={e => { e.stopPropagation(); toggleEnabled(r.id); }}
                         style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}
                       >
                         {r.enabled
-                          ? <ToggleRight size={26} style={{ color: '#10b981' }} />
-                          : <ToggleLeft size={26} style={{ color: '#6b7280' }} />}
+                          ? <ToggleRight size={26} style={{ color: 'hsl(var(--s-ok-tx))' }} />
+                          : <ToggleLeft size={26} style={{ color: 'hsl(var(--text-3))' }} />}
                       </button>
                     </td>
                     <td className="p-3">
                       <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                         <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setViewItem(r)}><Eye size={14} /></Button>
                         <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setEditItem({ ...r })}><PencilSimple size={14} /></Button>
-                        <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: '#ef4444' }} onClick={() => setDeleteItem(r)}><Trash size={14} /></Button>
+                        <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: 'hsl(var(--s-er-tx))' }} onClick={() => setDeleteItem(r)}><Trash size={14} /></Button>
                       </div>
                     </td>
                   </tr>
@@ -292,7 +292,7 @@ export default function PolicyFirewall() {
                     {viewItem.action}
                   </Badge>
                   <Badge variant="outline" style={{ borderRadius: 0 }}>{viewItem.type}</Badge>
-                  <Badge style={{ background: viewItem.enabled ? '#10b98120' : '#6b728020', color: viewItem.enabled ? '#10b981' : '#6b7280', border: `1px solid ${viewItem.enabled ? '#10b98140' : '#6b728040'}`, borderRadius: 0 }}>
+                  <Badge style={{ background: viewItem.enabled ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--bg-muted))', color: viewItem.enabled ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-3))', border: `1px solid ${viewItem.enabled ? 'hsl(var(--s-ok-br))' : 'hsl(var(--border))'}`, borderRadius: 0 }}>
                     {viewItem.enabled ? 'Enabled' : 'Disabled'}
                   </Badge>
                 </div>
@@ -320,7 +320,7 @@ export default function PolicyFirewall() {
                   </div>
                   <div className="p-3 mt-2" style={{ background: 'hsl(var(--bg-muted))' }}>
                     <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-2))' }}>Detection Pattern</p>
-                    <code className="text-xs" style={{ color: '#8b5cf6' }}>{viewItem.pattern}</code>
+                    <code className="text-xs" style={{ color: 'hsl(var(--tag-purple))' }}>{viewItem.pattern}</code>
                   </div>
                 </TabsContent>
                 <TabsContent value="stats" className="mt-4">
@@ -330,13 +330,13 @@ export default function PolicyFirewall() {
                       <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Evaluations</p>
                     </div>
                     <div className="text-center p-4" style={{ border: '1px solid hsl(var(--border))' }}>
-                      <p className="text-3xl font-bold" style={{ color: '#ef4444' }}>{viewItem.blocked}</p>
+                      <p className="text-3xl font-bold" style={{ color: 'hsl(var(--s-er-tx))' }}>{viewItem.blocked}</p>
                       <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Blocked/Flagged</p>
                     </div>
                   </div>
                   <div className="mt-4 p-3" style={{ background: 'hsl(var(--bg-muted))' }}>
                     <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-2))' }}>Block Rate</p>
-                    <p className="text-2xl font-bold" style={{ color: '#f97316' }}>
+                    <p className="text-2xl font-bold" style={{ color: 'hsl(var(--r-hi-tx))' }}>
                       {viewItem.evaluations > 0 ? ((viewItem.blocked / viewItem.evaluations) * 100).toFixed(2) : '0.00'}%
                     </p>
                   </div>
@@ -442,7 +442,7 @@ export default function PolicyFirewall() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} style={{ background: '#ef4444', borderRadius: 0 }}>Delete Rule</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} style={{ background: 'hsl(var(--s-er-tx))', borderRadius: 0 }}>Delete Rule</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

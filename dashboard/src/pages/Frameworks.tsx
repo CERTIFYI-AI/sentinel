@@ -31,24 +31,24 @@ function complianceBadge(score: number) {
 }
 
 function scoreBarColor(score: number): string {
-  if (score >= 85) return '#10b981';
-  if (score >= 65) return '#f97316';
-  return '#ef4444';
+  if (score >= 85) return 'hsl(var(--s-ok-tx))';
+  if (score >= 65) return 'hsl(var(--r-hi-tx))';
+  return 'hsl(var(--s-er-tx))';
 }
 
 function ragBorderColor(score: number): string {
-  if (score >= 85) return '#10b981';
-  if (score >= 65) return '#f97316';
-  return '#ef4444';
+  if (score >= 85) return 'hsl(var(--s-ok-tx))';
+  if (score >= 65) return 'hsl(var(--r-hi-tx))';
+  return 'hsl(var(--s-er-tx))';
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  'AI Governance': '#8b5cf6',
-  'Security': '#3b82f6',
-  'Trust': '#06b6d4',
-  'AI Regulation': '#f97316',
-  'Risk Management': '#f59e0b',
-  'LLM Security': '#ef4444',
+  'AI Governance': 'hsl(var(--tag-purple))',
+  'Security': 'hsl(var(--s-in-tx))',
+  'Trust': 'hsl(var(--s-in-tx))',
+  'AI Regulation': 'hsl(var(--r-hi-tx))',
+  'Risk Management': 'hsl(var(--s-wn-tx))',
+  'LLM Security': 'hsl(var(--s-er-tx))',
 };
 
 // Audit date helpers
@@ -67,9 +67,9 @@ function AuditDateDisplay({ dateStr }: { dateStr: string }) {
   if (status === 'overdue') {
     return (
       <div className="flex items-center gap-1">
-        <CalendarCheck size={12} style={{ color: '#ef4444' }} />
-        <span className="text-xs font-medium" style={{ color: '#ef4444' }}>{formatDate(dateStr)}</span>
-        <Badge style={{ background: '#ef444420', color: '#ef4444', border: '1px solid #ef444440', borderRadius: 0, fontSize: 9, padding: '0 4px' }}>
+        <CalendarCheck size={12} style={{ color: 'hsl(var(--s-er-tx))' }} />
+        <span className="text-xs font-medium" style={{ color: 'hsl(var(--s-er-tx))' }}>{formatDate(dateStr)}</span>
+        <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))', border: '1px solid hsl(var(--s-er-br))', borderRadius: 0, fontSize: 9, padding: '0 4px' }}>
           OVERDUE
         </Badge>
       </div>
@@ -78,9 +78,9 @@ function AuditDateDisplay({ dateStr }: { dateStr: string }) {
   if (status === 'due-soon') {
     return (
       <div className="flex items-center gap-1">
-        <CalendarCheck size={12} style={{ color: '#f97316' }} />
-        <span className="text-xs font-medium" style={{ color: '#f97316' }}>{formatDate(dateStr)}</span>
-        <Badge style={{ background: '#f9731620', color: '#f97316', border: '1px solid #f9731640', borderRadius: 0, fontSize: 9, padding: '0 4px' }}>
+        <CalendarCheck size={12} style={{ color: 'hsl(var(--s-wn-tx))' }} />
+        <span className="text-xs font-medium" style={{ color: 'hsl(var(--s-wn-tx))' }}>{formatDate(dateStr)}</span>
+        <Badge style={{ background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', border: '1px solid hsl(var(--s-wn-br))', borderRadius: 0, fontSize: 9, padding: '0 4px' }}>
           Due Soon
         </Badge>
       </div>
@@ -155,9 +155,9 @@ export default function Frameworks() {
       <div className="flex items-center gap-6 p-3" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))' }}>
         <span className="text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>Score thresholds:</span>
         {[
-          { label: '≥85% — Compliant', color: '#10b981' },
-          { label: '65–84% — Partial', color: '#f97316' },
-          { label: '<65% — Non-Compliant', color: '#ef4444' },
+          { label: '≥85% — Compliant', color: 'hsl(var(--s-ok-tx))' },
+          { label: '65–84% — Partial', color: 'hsl(var(--r-hi-tx))' },
+          { label: '<65% — Non-Compliant', color: 'hsl(var(--s-er-tx))' },
         ].map(t => (
           <div key={t.label} className="flex items-center gap-1.5">
             <div className="w-3 h-3" style={{ background: t.color }} />
@@ -203,14 +203,14 @@ export default function Frameworks() {
                       {fw.category}
                     </Badge>
                     {isNonCompliant && (
-                      <Warning size={16} style={{ color: '#ef4444' }} weight="fill" />
+                      <Warning size={16} style={{ color: 'hsl(var(--s-er-tx))' }} weight="fill" />
                     )}
                   </div>
                   <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                     <Button size="sm" variant="ghost" style={{ padding: '2px 6px' }} onClick={() => setEditItem({ ...fw } as any)}>
                       <PencilSimple size={12} />
                     </Button>
-                    <Button size="sm" variant="ghost" style={{ padding: '2px 6px', color: '#ef4444' }} onClick={() => setDeleteItem(fw as any)}>
+                    <Button size="sm" variant="ghost" style={{ padding: '2px 6px', color: 'hsl(var(--destructive))' }} onClick={() => setDeleteItem(fw as any)}>
                       <Trash size={12} />
                     </Button>
                   </div>
@@ -292,16 +292,16 @@ export default function Frameworks() {
                 <tr style={{ borderBottom: '2px solid hsl(var(--border))', background: 'hsl(var(--bg-muted))' }}>
                   <th className="px-4 py-3 text-left font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Control Domain</th>
                   <th className="px-4 py-3 text-left font-semibold" style={{ color: 'hsl(var(--text-4))' }}>
-                    <Badge style={{ background: '#3b82f622', color: '#3b82f6', border: '1px solid #3b82f644', borderRadius: 0, fontSize: 10 }}>ISO 27001</Badge>
+                    <Badge style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', border: '1px solid hsl(var(--s-in-br))', borderRadius: 0, fontSize: 10 }}>ISO 27001</Badge>
                   </th>
                   <th className="px-4 py-3 text-left font-semibold" style={{ color: 'hsl(var(--text-4))' }}>
-                    <Badge style={{ background: '#06b6d422', color: '#06b6d4', border: '1px solid #06b6d444', borderRadius: 0, fontSize: 10 }}>SOC 2</Badge>
+                    <Badge style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', border: '1px solid hsl(var(--s-in-br))', borderRadius: 0, fontSize: 10 }}>SOC 2</Badge>
                   </th>
                   <th className="px-4 py-3 text-left font-semibold" style={{ color: 'hsl(var(--text-4))' }}>
-                    <Badge style={{ background: '#f59e0b22', color: '#f59e0b', border: '1px solid #f59e0b44', borderRadius: 0, fontSize: 10 }}>NIST AI RMF</Badge>
+                    <Badge style={{ background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', border: '1px solid hsl(var(--s-wn-br))', borderRadius: 0, fontSize: 10 }}>NIST AI RMF</Badge>
                   </th>
                   <th className="px-4 py-3 text-left font-semibold" style={{ color: 'hsl(var(--text-4))' }}>
-                    <Badge style={{ background: '#f9731622', color: '#f97316', border: '1px solid #f9731644', borderRadius: 0, fontSize: 10 }}>EU AI Act</Badge>
+                    <Badge style={{ background: 'hsl(var(--r-hi-bg))', color: 'hsl(var(--r-hi-tx))', border: '1px solid hsl(var(--r-hi-br))', borderRadius: 0, fontSize: 10 }}>EU AI Act</Badge>
                   </th>
                 </tr>
               </thead>
@@ -452,9 +452,9 @@ export default function Frameworks() {
                     <div className="space-y-2">
                       {CONTROLS.filter(c => c.framework === viewItem.name).map(c => {
                         const sc_c = (() => {
-                          if (c.status === 'implemented') return { color: '#10b981', label: 'Implemented' };
-                          if (c.status === 'partial') return { color: '#f97316', label: 'Partial' };
-                          return { color: '#6b7280', label: c.status };
+                          if (c.status === 'implemented') return { color: 'hsl(var(--s-ok-tx))', label: 'Implemented' };
+                          if (c.status === 'partial') return { color: 'hsl(var(--r-hi-tx))', label: 'Partial' };
+                          return { color: 'hsl(var(--text-3))', label: c.status };
                         })();
                         return (
                           <div
@@ -593,7 +593,7 @@ export default function Frameworks() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} style={{ background: '#ef4444', borderRadius: 0 }}>Delete</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} style={{ background: 'hsl(var(--destructive))', borderRadius: 0 }}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -14,7 +14,7 @@ import { useBiasAudits } from '../../hooks/queries/useBiasAudits'
 
 
 function ScoreGauge({ score, size = 120 }: { score: number; size?: number }) {
-  const color = score >= 0.85 ? '#10b981' : score >= 0.70 ? '#f97316' : '#ef4444';
+  const color = score >= 0.85 ? 'hsl(var(--s-ok-tx))' : score >= 0.70 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-er-tx))';
   const pct = score * 100;
   const radius = (size / 2) - 10;
   const circumference = Math.PI * radius;
@@ -60,7 +60,7 @@ export default function BiasAuditResults() {
   if (!audit) {
     return (
       <div className="p-6 flex flex-col items-center justify-center" style={{ minHeight: 400 }}>
-        <Warning size={48} style={{ color: '#f97316' }} />
+        <Warning size={48} style={{ color: 'hsl(var(--r-hi-tx))' }} />
         <p className="mt-4 text-lg font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Bias audit not found</p>
         <Button className="mt-4" onClick={() => navigate('/bias-audits')} style={{ borderRadius: 0 }}>
           <ArrowLeft size={14} className="mr-1" /> Back to Bias Audits
@@ -69,7 +69,7 @@ export default function BiasAuditResults() {
     );
   }
 
-  const resultColor = audit.result === 'passed' ? '#10b981' : '#ef4444';
+  const resultColor = audit.result === 'passed' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))';
   const sc = severityColor(audit.severity);
   const passCount = audit.dimensions.filter(d => d.pass).length;
   const failCount = audit.dimensions.filter(d => !d.pass).length;
@@ -82,15 +82,15 @@ export default function BiasAuditResults() {
 
       {/* Failed Banner */}
       {audit.result === 'failed' && (
-        <div style={{ background: '#ef444415', border: '1px solid #ef4444', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <XCircle size={20} style={{ color: '#ef4444', flexShrink: 0 }} />
+        <div style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-tx))', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <XCircle size={20} style={{ color: 'hsl(var(--s-er-tx))', flexShrink: 0 }} />
           <div className="flex-1">
-            <p className="text-sm font-bold" style={{ color: '#ef4444' }}>Bias Audit FAILED — Remediation Required</p>
-            <p className="text-xs mt-0.5" style={{ color: '#ef4444', opacity: 0.85 }}>
+            <p className="text-sm font-bold" style={{ color: 'hsl(var(--s-er-tx))' }}>Bias Audit FAILED — Remediation Required</p>
+            <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--s-er-tx))', opacity: 0.85 }}>
               {failCount} dimension{failCount > 1 ? 's' : ''} below threshold. This model must not be used for high-stakes decisions until remediated.
             </p>
           </div>
-          <Button size="sm" style={{ background: '#ef4444', color: 'white', borderRadius: 0, flexShrink: 0 }}>
+          <Button size="sm" style={{ background: 'hsl(var(--s-er-tx))', color: 'white', borderRadius: 0, flexShrink: 0 }}>
             <Plus size={14} className="mr-1" /> Create Remediation Task
           </Button>
         </div>
@@ -153,12 +153,12 @@ export default function BiasAuditResults() {
             <ScoreGauge score={audit.overallScore} size={160} />
             <div className="mt-3 flex gap-3 text-center">
               <div>
-                <p className="text-2xl font-bold" style={{ color: '#10b981' }}>{passCount}</p>
+                <p className="text-2xl font-bold" style={{ color: 'hsl(var(--s-ok-tx))' }}>{passCount}</p>
                 <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Passed</p>
               </div>
               <div style={{ width: 1, background: 'hsl(var(--border))' }} />
               <div>
-                <p className="text-2xl font-bold" style={{ color: '#ef4444' }}>{failCount}</p>
+                <p className="text-2xl font-bold" style={{ color: 'hsl(var(--s-er-tx))' }}>{failCount}</p>
                 <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Failed</p>
               </div>
             </div>
@@ -181,7 +181,7 @@ export default function BiasAuditResults() {
               </thead>
               <tbody>
                 {audit.dimensions.map(d => {
-                  const color = d.pass ? '#10b981' : '#ef4444';
+                  const color = d.pass ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))';
                   const gap = (d.score - d.threshold) * 100;
                   return (
                     <tr key={d.attribute} style={{ borderTop: '1px solid hsl(var(--border))' }}>
@@ -211,7 +211,7 @@ export default function BiasAuditResults() {
                           {d.pass ? 'PASS' : 'FAIL'}
                         </Badge>
                       </td>
-                      <td className="p-3 text-xs font-semibold" style={{ color: gap < 0 ? '#ef4444' : '#10b981' }}>
+                      <td className="p-3 text-xs font-semibold" style={{ color: gap < 0 ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-ok-tx))' }}>
                         {gap >= 0 ? '+' : ''}{gap.toFixed(1)}%
                       </td>
                     </tr>

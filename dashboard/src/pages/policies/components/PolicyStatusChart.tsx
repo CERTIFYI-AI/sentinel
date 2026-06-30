@@ -3,7 +3,7 @@ import { Policy } from '../../../types/policy.types';
 import { useChartTheme } from '../../../hooks/useChartTheme';
 
 const STATUS_COLORS: Record<string, string> = {
-  "Published": "#10b981", "In Review": "#f59e0b", "Draft": "#3b82f6", "Approved": "#8b5cf6", "Archived": "#6b7280", "Expired": "#ef4444"
+  "Published": "hsl(var(--s-ok-tx))", "In Review": "hsl(var(--s-wn-tx))", "Draft": "#3b82f6", "Approved": "hsl(var(--tag-purple))", "Archived": "hsl(var(--text-3))", "Expired": "hsl(var(--s-er-tx))"
 };
 
 interface Props { policies: Policy[]; }

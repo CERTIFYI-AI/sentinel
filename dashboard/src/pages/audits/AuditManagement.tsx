@@ -358,7 +358,7 @@ export default function AuditManagement() {
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto"
-            style={{ background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))', color: '#fff', borderRadius: 0, minWidth: 300 }}>
+            style={{ background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))', color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 300 }}>
             {t.text}
           </div>
         ))}
@@ -374,7 +374,7 @@ export default function AuditManagement() {
           <Button size="sm" variant="outline" onClick={handleExport} style={{ borderRadius: 0 }}>
             <Export size={14} className="mr-1" /> Export CSV
           </Button>
-          <Button size="sm" onClick={() => setAddOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+          <Button size="sm" onClick={() => setAddOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
             <Plus size={14} className="mr-1" /> Start Audit
           </Button>
         </div>
@@ -510,7 +510,7 @@ export default function AuditManagement() {
           </div>
           <DialogFooter>
             <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => { setAddOpen(false); setEditTarget(null); }}>Cancel</Button>
-            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }} onClick={editTarget ? handleEdit : handleAdd}>
+            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={editTarget ? handleEdit : handleAdd}>
               {editTarget ? 'Save Changes' : 'Create Audit'}
             </Button>
           </DialogFooter>
@@ -526,7 +526,7 @@ export default function AuditManagement() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: '#fff' }} onClick={handleDelete}>Delete Audit</AlertDialogAction>
+            <AlertDialogAction style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: 'hsl(var(--bg-surface))' }} onClick={handleDelete}>Delete Audit</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -157,7 +157,7 @@ export default function UseCasePage() {
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
             background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
-            color: '#fff', borderRadius: 0, minWidth: 300,
+            color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 300,
           }}>{t.text}</div>
         ))}
       </div>
@@ -177,7 +177,7 @@ export default function UseCasePage() {
           <Button variant="outline" style={{ borderRadius: 0 }}>
             <Upload size={14} className="mr-2" />Import
           </Button>
-          <Button onClick={() => navigate('/use-cases/new')} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+          <Button onClick={() => navigate('/use-cases/new')} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
             <Plus size={14} className="mr-2" />New Use Case
           </Button>
         </div>

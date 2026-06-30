@@ -239,7 +239,7 @@ export default function ComplianceFrameworks() {
                     <td className="px-3 py-2.5">
                       <div className="flex items-center gap-2">
                         <div className="w-16 h-1.5 bg-[hsl(var(--border))]">
-                          <div style={{ width: `${item.coverage}%`, background: item.coverage >= 80 ? "#22c55e" : item.coverage >= 60 ? "#f59e0b" : "#ef4444", height: "100%" }} />
+                          <div style={{ width: `${item.coverage}%`, background: item.coverage >= 80 ? "#22c55e" : item.coverage >= 60 ? "hsl(var(--s-wn-tx))" : "hsl(var(--s-er-tx))", height: "100%" }} />
                         </div>
                         <span className="text-xs font-mono text-[hsl(var(--text-2))]">{item.coverage}%</span>
                       </div>

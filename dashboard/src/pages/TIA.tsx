@@ -27,7 +27,7 @@ const SEED: any[] = [
 
 const EMPTY: any = { name:"", exporter:"Acme Corp (EU)", importer:"", destCountry:"", adequacy:"No", transferTool:"SCCs — C2C", riskScore:"", status:"Not Started", assessor:"", dueDate:"", dataCategories:"", volume:"", frequency:"", ruleOfLawIndex:"", surveillanceLaw:"", justification:"", supplementaryMeasures:{ encryptionTransit:false, encryptionRest:false, pseudonymization:false, contractual:false, organizational:false, accessRestrictions:false } };
 
-const SCORE_COLOR = (s: number) => s >= 61 ? "#ef4444" : s >= 31 ? "#f59e0b" : "#22c55e";
+const SCORE_COLOR = (s: number) => s >= 61 ? "hsl(var(--s-er-tx))" : s >= 31 ? "hsl(var(--s-wn-tx))" : "#22c55e";
 
 export default function TIA() {
   const { data: items, setData: setItems } = useSupabaseTable('tia_table', SEED);
@@ -96,8 +96,8 @@ export default function TIA() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label:"Total Transfers Assessed", value: items.length, color:"hsl(var(--text-1))" },
-          { label:"High-Risk Transfers", value: highRisk, color:"#ef4444" },
-          { label:"Pending Assessments", value: pending, color:"#f59e0b" },
+          { label:"High-Risk Transfers", value: highRisk, color:"hsl(var(--s-er-tx))" },
+          { label:"Pending Assessments", value: pending, color:"hsl(var(--s-wn-tx))" },
           { label:"Avg Risk Score", value: avgScore, color: SCORE_COLOR(avgScore) },
         ].map(k => (
           <Card key={k.label}><CardContent className="p-4">

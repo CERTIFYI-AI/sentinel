@@ -116,9 +116,9 @@ export default function IGA() {
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {[
           { label:"Total Identities", value: items.length, color:"hsl(var(--text-1))" },
-          { label:"Privileged Accounts", value: privileged, color:"#f59e0b" },
-          { label:"Pending Access Reviews", value: pendingReviews, color:"#f97316" },
-          { label:"Orphaned Accounts", value: orphaned, color: orphaned > 0 ? "#ef4444" : "#22c55e" },
+          { label:"Privileged Accounts", value: privileged, color:"hsl(var(--s-wn-tx))" },
+          { label:"Pending Access Reviews", value: pendingReviews, color:"hsl(var(--r-hi-tx))" },
+          { label:"Orphaned Accounts", value: orphaned, color: orphaned > 0 ? "hsl(var(--s-er-tx))" : "#22c55e" },
           { label:"Avg Review Completion", value: `${avgReviewPct}%`, color:"hsl(var(--brand))" },
         ].map(k => (
           <Card key={k.label}><CardContent className="p-4">

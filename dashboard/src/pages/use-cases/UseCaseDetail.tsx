@@ -77,7 +77,7 @@ export default function UseCaseDetail() {
             <Button variant="outline" size="sm" style={{ borderRadius: 0 }}>
               <DownloadSimple size={14} className="mr-2" /> Export PDF
             </Button>
-            <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+            <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
               Submit for Review
             </Button>
           </div>
@@ -381,7 +381,7 @@ export default function UseCaseDetail() {
               <p className="text-[hsl(var(--text-3))] mb-6 max-w-lg mx-auto">
                 Generate the technical documentation and declaration of conformity required by the EU AI Act before deploying this high-risk use case.
               </p>
-              <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>Start Assessment Checklist</Button>
+              <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>Start Assessment Checklist</Button>
             </div>
           </TabsContent>
 

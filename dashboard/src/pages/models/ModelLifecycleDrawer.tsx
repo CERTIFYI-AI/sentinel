@@ -23,42 +23,42 @@ const LIFECYCLE_PHASES: Record<string, LifecyclePhase> = {
     name: 'Development',
     description: 'Model is actively being developed and trained.',
     requiredChecks: ['Bias testing', 'Data governance review'],
-    color: '#6366f1',
+    color: 'hsl(var(--brand))',
     bg: 'hsl(var(--s-in-bg))',
   },
   'Validation': {
     name: 'Validation',
     description: 'Model undergoing validation, fairness audit, and compliance review.',
     requiredChecks: ['Performance validation', 'Bias audit', 'Compliance mapping', 'Security scan'],
-    color: '#f59e0b',
+    color: 'hsl(var(--s-wn-tx))',
     bg: 'hsl(var(--s-wn-bg))',
   },
   'Staging': {
     name: 'Staging',
     description: 'Model deployed to staging environment for integration testing.',
     requiredChecks: ['Integration tests', 'Human oversight gate', 'Load testing'],
-    color: '#f97316',
+    color: 'hsl(var(--r-hi-tx))',
     bg: 'hsl(var(--s-wn-bg))',
   },
   'Production': {
     name: 'Production',
     description: 'Model serving live traffic with continuous monitoring.',
     requiredChecks: ['Drift monitoring active', 'Alerting configured', 'Rollback plan documented'],
-    color: '#10b981',
+    color: 'hsl(var(--s-ok-tx))',
     bg: 'hsl(var(--s-ok-bg))',
   },
   'Monitoring': {
     name: 'Monitoring',
     description: 'Model in enhanced monitoring phase post-production.',
     requiredChecks: ['Performance dashboards live', 'Bias monitoring cadence set'],
-    color: '#06b6d4',
+    color: 'hsl(var(--s-in-tx))',
     bg: 'hsl(var(--s-in-bg))',
   },
   'Deprecated': {
     name: 'Deprecated',
     description: 'Model scheduled for retirement. Traffic winding down.',
     requiredChecks: ['Migration plan approved', 'Successor model deployed'],
-    color: '#ef4444',
+    color: 'hsl(var(--s-er-tx))',
     bg: 'hsl(var(--s-er-bg))',
   },
 };
@@ -161,7 +161,7 @@ export default function ModelLifecycleDrawer({ model: propModel, modelId, onClos
                 {model.name} transition from <strong>{currentPhase}</strong> → <strong>{selectedTransition}</strong> submitted for review.
               </p>
             </div>
-            <button onClick={onClose} style={{ padding: '8px 20px', background: 'hsl(var(--brand))', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>
+            <button onClick={onClose} style={{ padding: '8px 20px', background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>
               Done
             </button>
           </div>
@@ -218,9 +218,9 @@ export default function ModelLifecycleDrawer({ model: propModel, modelId, onClos
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                         }}>
                           {isPast ? (
-                            <CheckCircle size={14} style={{ color: '#fff' }} weight="fill" />
+                            <CheckCircle size={14} style={{ color: 'hsl(var(--bg-surface))' }} weight="fill" />
                           ) : (
-                            <span style={{ fontSize: 9, fontWeight: 700, color: isCurrent ? '#fff' : 'hsl(var(--text-4))' }}>
+                            <span style={{ fontSize: 9, fontWeight: 700, color: isCurrent ? 'hsl(var(--bg-surface))' : 'hsl(var(--text-4))' }}>
                               {idx + 1}
                             </span>
                           )}
@@ -241,12 +241,12 @@ export default function ModelLifecycleDrawer({ model: propModel, modelId, onClos
             {/* Available transitions */}
             <div>
               <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'hsl(var(--text-3))', marginBottom: 10 }}>
-                Available Transitions {errors.transition && <span style={{ color: '#ef4444' }}>— required</span>}
+                Available Transitions {errors.transition && <span style={{ color: 'hsl(var(--s-er-tx))' }}>— required</span>}
               </p>
 
               {availableTransitions.length === 0 ? (
                 <div style={{ padding: '16px', background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', display: 'flex', gap: 10, alignItems: 'center' }}>
-                  <Warning size={16} style={{ color: '#f97316' }} />
+                  <Warning size={16} style={{ color: 'hsl(var(--r-hi-tx))' }} />
                   <p style={{ fontSize: 12, color: 'hsl(var(--text-3))' }}>No further transitions available from <strong>{currentPhase}</strong>.</p>
                 </div>
               ) : (
@@ -272,7 +272,7 @@ export default function ModelLifecycleDrawer({ model: propModel, modelId, onClos
                         <div style={{ flex: 1 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <span style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--text-1))' }}>{target}</span>
-                            {isSelected && <Badge style={{ background: info.color, color: '#fff', borderRadius: 0, fontSize: 9, border: 'none' }}>SELECTED</Badge>}
+                            {isSelected && <Badge style={{ background: info.color, color: 'hsl(var(--bg-surface))', borderRadius: 0, fontSize: 9, border: 'none' }}>SELECTED</Badge>}
                           </div>
                           <p style={{ fontSize: 11, color: 'hsl(var(--text-3))', marginTop: 2 }}>{info.description}</p>
                         </div>
@@ -291,7 +291,7 @@ export default function ModelLifecycleDrawer({ model: propModel, modelId, onClos
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {targetPhaseInfo.requiredChecks.map((check, i) => (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <CheckCircle size={12} style={{ color: '#10b981', flexShrink: 0 }} />
+                      <CheckCircle size={12} style={{ color: 'hsl(var(--s-ok-tx))', flexShrink: 0 }} />
                       <span style={{ fontSize: 12, color: 'hsl(var(--text-2))' }}>{check}</span>
                     </div>
                   ))}
@@ -305,7 +305,7 @@ export default function ModelLifecycleDrawer({ model: propModel, modelId, onClos
                 {/* Reason */}
                 <div>
                   <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'hsl(var(--text-3))', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    Transition Reason {errors.reason && <span style={{ color: '#ef4444' }}>*</span>}
+                    Transition Reason {errors.reason && <span style={{ color: 'hsl(var(--s-er-tx))' }}>*</span>}
                   </label>
                   <textarea
                     value={form.reason}
@@ -315,17 +315,17 @@ export default function ModelLifecycleDrawer({ model: propModel, modelId, onClos
                     style={{
                       width: '100%', padding: '7px 10px',
                       background: 'hsl(var(--bg-raised))',
-                      border: `1px solid ${errors.reason ? '#ef4444' : 'hsl(var(--border))'}`,
+                      border: `1px solid ${errors.reason ? 'hsl(var(--s-er-tx))' : 'hsl(var(--border))'}`,
                       color: 'hsl(var(--text-1))', fontSize: 13, resize: 'vertical',
                     }}
                   />
-                  {errors.reason && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 3 }}>{errors.reason}</p>}
+                  {errors.reason && <p style={{ fontSize: 11, color: 'hsl(var(--s-er-tx))', marginTop: 3 }}>{errors.reason}</p>}
                 </div>
 
                 {/* Reviewer */}
                 <div>
                   <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'hsl(var(--text-3))', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    Reviewer {errors.reviewer && <span style={{ color: '#ef4444' }}>*</span>}
+                    Reviewer {errors.reviewer && <span style={{ color: 'hsl(var(--s-er-tx))' }}>*</span>}
                   </label>
                   <select
                     value={form.reviewer}
@@ -333,14 +333,14 @@ export default function ModelLifecycleDrawer({ model: propModel, modelId, onClos
                     style={{
                       width: '100%', padding: '7px 10px',
                       background: 'hsl(var(--bg-raised))',
-                      border: `1px solid ${errors.reviewer ? '#ef4444' : 'hsl(var(--border))'}`,
+                      border: `1px solid ${errors.reviewer ? 'hsl(var(--s-er-tx))' : 'hsl(var(--border))'}`,
                       color: 'hsl(var(--text-1))', fontSize: 13,
                     }}
                   >
                     <option value="">Select reviewer…</option>
                     {USERS.map(u => <option key={u.id} value={u.name}>{u.name} — {u.role}</option>)}
                   </select>
-                  {errors.reviewer && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 3 }}>{errors.reviewer}</p>}
+                  {errors.reviewer && <p style={{ fontSize: 11, color: 'hsl(var(--s-er-tx))', marginTop: 3 }}>{errors.reviewer}</p>}
                 </div>
 
                 {/* Notes */}
@@ -378,7 +378,7 @@ export default function ModelLifecycleDrawer({ model: propModel, modelId, onClos
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 padding: '7px 18px',
-                background: 'hsl(var(--brand))', color: '#fff',
+                background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))',
                 border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500,
               }}
             >

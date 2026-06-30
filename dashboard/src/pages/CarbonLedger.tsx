@@ -15,9 +15,9 @@ function exportCsv(rows: any[], filename: string) {
 }
 
 function efficiencyColor(score: number) {
-  if (score >= 80) return '#10b981'
-  if (score >= 60) return '#f97316'
-  return '#ef4444'
+  if (score >= 80) return 'hsl(var(--s-ok-tx))'
+  if (score >= 60) return 'hsl(var(--r-hi-tx))'
+  return 'hsl(var(--s-er-tx))'
 }
 
 const BLANK_ENTRY = {
@@ -189,7 +189,7 @@ function CarbonLedgerInner({ entries: initialEntries, save, remove, chartTheme }
         border: `1px solid ${budgetPct >= 100 ? 'hsl(0 72% 51% / 0.4)' : budgetPct >= 80 ? 'hsl(45 93% 47% / 0.4)' : 'hsl(142 71% 45% / 0.3)'}`,
         display: 'flex', alignItems: 'center', gap: 12,
       }}>
-        <Warning size={16} style={{ color: budgetPct >= 100 ? '#ef4444' : budgetPct >= 80 ? '#f97316' : '#10b981', flexShrink: 0 }} />
+        <Warning size={16} style={{ color: budgetPct >= 100 ? 'hsl(var(--s-er-tx))' : budgetPct >= 80 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-ok-tx))', flexShrink: 0 }} />
         <div style={{ flex: 1 }}>
           <div className="flex items-center justify-between mb-1">
             <span className="text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
@@ -207,7 +207,7 @@ function CarbonLedgerInner({ entries: initialEntries, save, remove, chartTheme }
                 <button
                   onClick={() => { setBudgetThreshold(Number(budgetInput) || 100); setEditingBudget(false); toast.success(`Budget threshold set to ${budgetInput} tCO₂e`); }}
                   className="text-xs px-2 py-1"
-                  style={{ background: 'hsl(var(--brand))', color: '#fff' }}
+                  style={{ background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
                 >Save</button>
                 <button onClick={() => setEditingBudget(false)} className="text-xs px-2 py-1" style={{ background: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}>Cancel</button>
               </div>
@@ -222,7 +222,7 @@ function CarbonLedgerInner({ entries: initialEntries, save, remove, chartTheme }
             <div style={{
               width: `${Math.min(budgetPct, 100)}%`,
               height: '100%',
-              background: budgetPct >= 100 ? '#ef4444' : budgetPct >= 80 ? '#f97316' : '#10b981',
+              background: budgetPct >= 100 ? 'hsl(var(--s-er-tx))' : budgetPct >= 80 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-ok-tx))',
               transition: 'width 0.5s ease',
             }} />
           </div>
@@ -234,7 +234,7 @@ function CarbonLedgerInner({ entries: initialEntries, save, remove, chartTheme }
           { label: 'Net Emissions', value: `${totalNet.toFixed(1)} tCO₂e`, sub: 'After offsets', color: 'hsl(var(--s-ok-tx))' },
           { label: 'Total Offsets Applied', value: `${totalOffset} tCO₂e`, sub: 'Carbon credits', color: 'hsl(var(--brand))' },
           { label: 'Avg Renewable Energy', value: `${avgRenewable}%`, sub: 'Across all compute', color: 'hsl(var(--s-ok-tx))' },
-          { label: 'Budget Utilization', value: `${budgetPct}%`, sub: `${totalNet.toFixed(0)} / ${budgetThreshold} tCO₂e`, color: budgetPct >= 100 ? '#ef4444' : budgetPct >= 80 ? '#f97316' : '#10b981' },
+          { label: 'Budget Utilization', value: `${budgetPct}%`, sub: `${totalNet.toFixed(0)} / ${budgetThreshold} tCO₂e`, color: budgetPct >= 100 ? 'hsl(var(--s-er-tx))' : budgetPct >= 80 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-ok-tx))' },
           {
             label: 'Projected Monthly', value: `~${projectedMonthly} tCO₂e`,
             sub: `At current rate ${monthlyChange < 0 ? '▼' : '▲'} ${Math.abs(Math.round(monthlyChange))} vs prior`,
@@ -253,8 +253,8 @@ function CarbonLedgerInner({ entries: initialEntries, save, remove, chartTheme }
       {visibleRecs.length > 0 && (
         <div style={{ border: '1px solid hsl(142 71% 45% / 0.25)', background: 'hsl(142 71% 45% / 0.04)', padding: '12px 16px' }}>
           <div className="flex items-center gap-2 mb-3">
-            <Lightbulb size={14} style={{ color: '#10b981' }} />
-            <span className="text-xs font-semibold" style={{ color: '#10b981' }}>Carbon Reduction Recommendations</span>
+            <Lightbulb size={14} style={{ color: 'hsl(var(--s-ok-tx))' }} />
+            <span className="text-xs font-semibold" style={{ color: 'hsl(var(--s-ok-tx))' }}>Carbon Reduction Recommendations</span>
           </div>
           <div className="flex flex-wrap gap-2">
             {visibleRecs.map(rec => (
@@ -263,9 +263,9 @@ function CarbonLedgerInner({ entries: initialEntries, save, remove, chartTheme }
                 border: '1px solid hsl(142 71% 45% / 0.25)',
                 padding: '5px 10px',
               }}>
-                <rec.icon size={12} style={{ color: '#10b981', flexShrink: 0 }} />
+                <rec.icon size={12} style={{ color: 'hsl(var(--s-ok-tx))', flexShrink: 0 }} />
                 <span className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>{rec.label}</span>
-                <span className="text-xs font-bold" style={{ color: '#10b981' }}>{rec.impact}</span>
+                <span className="text-xs font-bold" style={{ color: 'hsl(var(--s-ok-tx))' }}>{rec.impact}</span>
                 <span className="text-xs px-1" style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-4))' }}>{rec.effort}</span>
                 <button
                   onClick={() => setDismissedRecs(prev => new Set([...prev, rec.id]))}
@@ -287,7 +287,7 @@ function CarbonLedgerInner({ entries: initialEntries, save, remove, chartTheme }
               <XAxis dataKey="period" tick={{ fontSize: 10, fill: chartTheme.tickColor }} />
               <YAxis tick={{ fontSize: 10, fill: chartTheme.tickColor }} />
               <Tooltip contentStyle={chartTheme.tooltipStyle} />
-              <ReferenceLine y={budgetThreshold} stroke="#ef4444" strokeDasharray="4 2" label={{ value: `Budget ${budgetThreshold}`, fill: '#ef4444', fontSize: 10 }} />
+              <ReferenceLine y={budgetThreshold} stroke="#ef4444" strokeDasharray="4 2" label={{ value: `Budget ${budgetThreshold}`, fill: 'hsl(var(--s-er-tx))', fontSize: 10 }} />
               <Area type="monotone" dataKey="emissions" stroke="hsl(var(--s-ok-tx))" fill="hsl(142 71% 45% / 0.15)" strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>

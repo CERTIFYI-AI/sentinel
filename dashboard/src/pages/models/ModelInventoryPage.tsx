@@ -115,10 +115,10 @@ function LifecycleStepper({ status }: { status: string }) {
                   transition: 'all 0.2s',
                 }}>
                   {isActive && (
-                    <div style={{ width: 8, height: 8, background: '#fff', borderRadius: 0 }} />
+                    <div style={{ width: 8, height: 8, background: 'hsl(var(--bg-surface))', borderRadius: 0 }} />
                   )}
                   {isPast && (
-                    <CheckCircle size={10} weight="bold" style={{ color: '#fff' }} />
+                    <CheckCircle size={10} weight="bold" style={{ color: 'hsl(var(--bg-surface))' }} />
                   )}
                 </div>
                 <span className="text-xs mt-1.5 text-center" style={{
@@ -225,7 +225,7 @@ export default function ModelInventoryPage() {
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
             background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
-            color: '#fff', borderRadius: 0, minWidth: 300
+            color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 300
           }}>{t.text}</div>
         ))}
       </div>
@@ -235,7 +235,7 @@ export default function ModelInventoryPage() {
         subtitle={`${orgName} · EU AI Act compliant AI model registry`}
         breadcrumbs={[{ label: 'Home', href: '/overview' }, { label: 'Models' }]}
         actions={
-          <Button onClick={() => setRegisterOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+          <Button onClick={() => setRegisterOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
             <Plus className="h-4 w-4 mr-2" />Register Model
           </Button>
         }
@@ -397,7 +397,7 @@ export default function ModelInventoryPage() {
                               <Trash size={14} />
                             </Button>
                             {isCritical && (
-                              <Button size="sm" className="h-7 px-2 text-xs" style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: '#fff' }}
+                              <Button size="sm" className="h-7 px-2 text-xs" style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: 'hsl(var(--bg-surface))' }}
                                 onClick={() => toast(`Review initiated for ${m.name}`, 'info')}>
                                 Initiate Review
                               </Button>
@@ -788,7 +788,7 @@ function EditModelForm({ model, onSave }: { model: Model; onSave: (m: Model) => 
           description: intendedUse,
           fairnessScore: Number(fairnessThreshold) || model.fairnessScore,
         })}
-          style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+          style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
           Save Changes
         </Button>
       </div>
@@ -899,7 +899,7 @@ function RegisterModelForm({ onSubmit, nextId }: { onSubmit: (m: Model) => void;
       </div>
       <div className="flex justify-end gap-2 pt-2">
         <Button disabled={!canSubmit} onClick={handleSubmit}
-          style={{ borderRadius: 0, background: canSubmit ? 'hsl(var(--brand))' : undefined, color: canSubmit ? '#fff' : undefined }}>
+          style={{ borderRadius: 0, background: canSubmit ? 'hsl(var(--brand))' : undefined, color: canSubmit ? 'hsl(var(--bg-surface))' : undefined }}>
           <Plus size={14} className="mr-1" />Register Model
         </Button>
       </div>

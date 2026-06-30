@@ -163,7 +163,7 @@ export default function ModelValidationLab() {
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 rounded text-sm text-white shadow-lg"
-            style={{ background: t.type === 'success' ? '#10b981' : t.type === 'error' ? '#ef4444' : '#3b82f6' }}>
+            style={{ background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--s-er-tx))' : '#3b82f6' }}>
             {t.text}
           </div>
         ))}
@@ -192,8 +192,8 @@ export default function ModelValidationLab() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           { label: 'Total Validations', value: SEED_REPORTS.length, color: 'hsl(var(--brand))' },
-          { label: 'Passed', value: passed, color: '#10b981' },
-          { label: 'Failed', value: failed, color: '#ef4444' },
+          { label: 'Passed', value: passed, color: 'hsl(var(--s-ok-tx))' },
+          { label: 'Failed', value: failed, color: 'hsl(var(--s-er-tx))' },
           { label: 'In Progress', value: inProgress, color: '#3b82f6' },
         ].map(s => (
           <Card key={s.label} style={{ borderRadius: 0 }}>
@@ -236,7 +236,7 @@ export default function ModelValidationLab() {
                   <td className="px-3 py-2">
                     {r.overallScore > 0 ? (
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold" style={{ color: r.overallScore >= 80 ? '#10b981' : r.overallScore >= 65 ? '#f59e0b' : '#ef4444' }}>{r.overallScore}</span>
+                        <span className="text-sm font-semibold" style={{ color: r.overallScore >= 80 ? 'hsl(var(--s-ok-tx))' : r.overallScore >= 65 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-er-tx))' }}>{r.overallScore}</span>
                         <Progress value={r.overallScore} className="h-1.5 w-16 rounded-none" />
                       </div>
                     ) : <span className="text-[hsl(var(--text-4))]">—</span>}
@@ -315,7 +315,7 @@ export default function ModelValidationLab() {
                       {t.score !== undefined && (
                         <div className="flex items-center gap-3">
                           <Progress value={t.score} className="h-1.5 flex-1 rounded-none" />
-                          <span className="text-xs font-medium whitespace-nowrap" style={{ color: t.score >= (t.threshold || 80) ? '#10b981' : '#ef4444' }}>
+                          <span className="text-xs font-medium whitespace-nowrap" style={{ color: t.score >= (t.threshold || 80) ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))' }}>
                             {t.score} / {t.threshold}
                           </span>
                         </div>
@@ -359,7 +359,7 @@ export default function ModelValidationLab() {
                                   <td className="px-2 py-2 font-medium text-[hsl(var(--text-1))]">{b.name}</td>
                                   <td className="px-2 py-2 text-[hsl(var(--text-2))]">{b.champion}</td>
                                   <td className="px-2 py-2 text-[hsl(var(--text-2))]">{b.challenger ?? '—'}</td>
-                                  <td className="px-2 py-2 font-semibold" style={{ color: better ? '#10b981' : '#ef4444' }}>
+                                  <td className="px-2 py-2 font-semibold" style={{ color: better ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))' }}>
                                     {delta > 0 ? '+' : ''}{delta.toFixed(3)}
                                   </td>
                                   <td className="px-2 py-2 text-[hsl(var(--text-4))]">{b.unit}</td>
@@ -397,7 +397,7 @@ export default function ModelValidationLab() {
                             <p className="text-xs text-[hsl(var(--text-3))]">Threshold: ≤{a.baseline}%</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-lg font-bold" style={{ color: a.successRate <= a.baseline ? '#10b981' : '#ef4444' }}>{a.successRate}%</p>
+                            <p className="text-lg font-bold" style={{ color: a.successRate <= a.baseline ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))' }}>{a.successRate}%</p>
                             <Badge style={{ ...(a.successRate <= a.baseline ? STATUS_COLORS.Passed : STATUS_COLORS.Failed), borderRadius: 0, fontSize: 10 }}>
                               {a.successRate <= a.baseline ? 'PASS' : 'FAIL'}
                             </Badge>

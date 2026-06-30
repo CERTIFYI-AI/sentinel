@@ -211,7 +211,7 @@ export default function VendorRegistry() {
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
             background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
-            color: '#fff', borderRadius: 0, minWidth: 300,
+            color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 300,
           }}>{t.text}</div>
         ))}
       </div>
@@ -231,7 +231,7 @@ export default function VendorRegistry() {
             </Button>
             <Button
               onClick={() => setAddOpen(true)}
-              style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+              style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
             >
               <Plus className="h-4 w-4 mr-2" />Add Vendor
             </Button>
@@ -577,7 +577,7 @@ export default function VendorRegistry() {
                         </p>
                       </div>
                       <div className="flex gap-2">
-                        <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+                        <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
                           onClick={() => toast('DPA request sent to ' + selectedVendor.contact, 'info')}>
                           <Handshake size={14} className="mr-1" />Request DPA
                         </Button>
@@ -667,7 +667,7 @@ function EditVendorForm({ vendor, onSave }: { vendor: Vendor; onSave: (v: Vendor
       <div className="flex justify-end gap-2 pt-2">
         <Button
           onClick={() => onSave({ ...vendor, name, category, status, contact })}
-          style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+          style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
         >
           Save Changes
         </Button>
@@ -767,7 +767,7 @@ function AddVendorForm({ onSubmit, nextId }: { onSubmit: (v: Vendor) => void; ne
         <Button
           disabled={!canSubmit}
           onClick={handleSubmit}
-          style={{ borderRadius: 0, background: canSubmit ? 'hsl(var(--brand))' : undefined, color: canSubmit ? '#fff' : undefined }}
+          style={{ borderRadius: 0, background: canSubmit ? 'hsl(var(--brand))' : undefined, color: canSubmit ? 'hsl(var(--bg-surface))' : undefined }}
         >
           <Plus size={14} className="mr-1" />Add Vendor
         </Button>

@@ -141,7 +141,7 @@ const MEETING_HISTORY = [
 
 const APPROVAL_STATS = [
   { name: 'Approved', value: 8, color: 'hsl(var(--s-ok-tx))' },
-  { name: 'Conditional', value: 3, color: '#f59e0b' },
+  { name: 'Conditional', value: 3, color: 'hsl(var(--s-wn-tx))' },
   { name: 'Pending', value: 2, color: 'hsl(var(--brand))' },
   { name: 'Rejected', value: 1, color: 'hsl(var(--destructive))' },
 ];
@@ -150,7 +150,7 @@ function statusStyle(s: VoteStatus) {
   const map: Record<VoteStatus, { bg: string; tx: string; label: string }> = {
     approved: { bg: 'hsl(var(--s-ok-bg))', tx: 'hsl(var(--s-ok-tx))', label: 'APPROVED' },
     rejected: { bg: 'hsl(var(--s-er-bg))', tx: 'hsl(var(--s-er-tx))', label: 'REJECTED' },
-    conditional: { bg: 'hsl(45 90% 50% / 0.1)', tx: '#d97706', label: 'APPROVED W/ CONDITIONS' },
+    conditional: { bg: 'hsl(45 90% 50% / 0.1)', tx: 'hsl(var(--s-wn-tx))', label: 'APPROVED W/ CONDITIONS' },
     deferred: { bg: 'hsl(var(--s-nt-bg))', tx: 'hsl(var(--text-3))', label: 'DEFERRED' },
     pending: { bg: 'hsl(var(--brand) / 0.1)', tx: 'hsl(var(--brand))', label: 'AWAITING VOTE' },
   };

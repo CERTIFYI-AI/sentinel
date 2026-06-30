@@ -204,7 +204,7 @@ export default function NarrativeEngine() {
                         ))}
                       </div>
                     </div>
-                    <Button className="w-full" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+                    <Button className="w-full" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
                       onClick={handleGenerate} disabled={generating}>
                       {generating ? (
                         <><ClockCounterClockwise size={13} className="mr-2 animate-spin" />Generating…</>

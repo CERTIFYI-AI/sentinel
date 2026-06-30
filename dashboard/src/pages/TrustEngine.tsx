@@ -29,7 +29,7 @@ const SEED: any[] = [
 const EMPTY: any = { systemName:"", version:"", overallScore:0, framework:"NIST AI RMF", evalMethod:"Internal Review", status:"Draft", validFrom:"", validUntil:"", owner:"", certBody:"", dimensionsEvaluated:[], notes:"" };
 
 function ScoreGauge({ score }: { score: number }) {
-  const color = score >= 80 ? "#22c55e" : score >= 65 ? "#f59e0b" : "#ef4444";
+  const color = score >= 80 ? "#22c55e" : score >= 65 ? "hsl(var(--s-wn-tx))" : "hsl(var(--s-er-tx))";
   return (
     <div className="flex items-center gap-2">
       <div className="relative w-8 h-8 flex-shrink-0">
@@ -225,7 +225,7 @@ export default function TrustEngine() {
                   <div className="grid grid-cols-2 gap-2">
                     {Object.entries(viewItem.dimensions).map(([dim, score]: any) => {
                       const s = Number(score);
-                      const color = s >= 80 ? "#22c55e" : s >= 65 ? "#f59e0b" : "#ef4444";
+                      const color = s >= 80 ? "#22c55e" : s >= 65 ? "hsl(var(--s-wn-tx))" : "hsl(var(--s-er-tx))";
                       return (
                         <div key={dim} className="flex items-center gap-3 p-2 bg-raised border border-[hsl(var(--border))]">
                           <div className="flex-1">

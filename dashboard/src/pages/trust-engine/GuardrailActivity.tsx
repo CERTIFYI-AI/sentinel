@@ -283,7 +283,7 @@ export default function GuardrailActivity() {
           {toasts.map(t => (
             <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
               background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
-              color: '#fff', borderRadius: 0, minWidth: 300,
+              color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 300,
             }}>{t.text}</div>
           ))}
         </div>
@@ -361,7 +361,7 @@ export default function GuardrailActivity() {
                 display: 'block',
                 width: 14,
                 height: 14,
-                background: '#fff',
+                background: 'hsl(var(--bg-surface))',
                 borderRadius: 0,
                 transform: autoEscalation ? 'translateX(18px)' : 'translateX(2px)',
                 transition: 'transform 0.2s',
@@ -450,7 +450,7 @@ export default function GuardrailActivity() {
                         placeholder="value…" className="flex-1 h-8 text-xs" style={{ borderRadius: 0 }} />
                       {ci > 0 && (
                         <button onClick={() => setNewRule(r => ({ ...r, conditions: r.conditions.filter((_, i) => i !== ci) }))}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '4px' }}>
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'hsl(var(--s-er-tx))', padding: '4px' }}>
                           <X size={14} />
                         </button>
                       )}
@@ -477,7 +477,7 @@ export default function GuardrailActivity() {
                 <div className="space-y-1">
                   {builtRules.map(rule => {
                     const sc = severityColor(rule.severity as any);
-                    const actionColors: Record<string, string> = { block: '#ef4444', warn: '#f97316', flag: '#3b82f6', allow: '#10b981', redact: '#8b5cf6' };
+                    const actionColors: Record<string, string> = { block: 'hsl(var(--s-er-tx))', warn: 'hsl(var(--r-hi-tx))', flag: '#3b82f6', allow: 'hsl(var(--s-ok-tx))', redact: 'hsl(var(--tag-purple))' };
                     return (
                       <div key={rule.id} className="flex items-center gap-3 px-3 py-2" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))' }}>
                         <span className="text-xs font-mono" style={{ color: 'hsl(var(--text-4))', minWidth: 52 }}>{rule.id}</span>
@@ -503,7 +503,7 @@ export default function GuardrailActivity() {
                         </button>
                         <button
                           onClick={() => { setBuiltRules(prev => prev.filter(r => r.id !== rule.id)); toast(`Rule "${rule.name}" deleted`, 'info'); }}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'hsl(var(--s-er-tx))' }}
                           title="Delete rule"
                         >
                           <Trash size={14} />
@@ -676,7 +676,7 @@ export default function GuardrailActivity() {
             </div>
             <DialogFooter className="mt-4">
               <Button variant="outline" onClick={() => setAckTarget(null)} style={{ borderRadius: 0 }}>Cancel</Button>
-              <Button onClick={handleAck} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>Acknowledge</Button>
+              <Button onClick={handleAck} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>Acknowledge</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -726,7 +726,7 @@ export default function GuardrailActivity() {
             )}
             <DialogFooter className="mt-4">
               <Button variant="outline" onClick={() => setEscalateTarget(null)} style={{ borderRadius: 0 }}>Cancel</Button>
-              <Button onClick={handleEscalateConfirm} style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: '#fff' }}>
+              <Button onClick={handleEscalateConfirm} style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: 'hsl(var(--bg-surface))' }}>
                 <Siren size={14} weight="fill" className="mr-2" />Create Incident
               </Button>
             </DialogFooter>

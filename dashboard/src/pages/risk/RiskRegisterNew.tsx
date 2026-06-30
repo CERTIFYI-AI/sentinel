@@ -391,7 +391,7 @@ function HeatMap({ risks, onCellClick }: { risks: RiskItem[]; onCellClick: (r: R
                               className="text-[8px] font-mono px-1"
                               style={{
                                 background: sc.text,
-                                color: '#fff',
+                                color: 'hsl(var(--bg-surface))',
                                 borderRadius: 0,
                                 cursor: 'pointer',
                               }}
@@ -600,7 +600,7 @@ export default function RiskRegisterNew() {
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto flex items-center gap-2" style={{
             background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
-            color: '#fff', borderRadius: 0, minWidth: 300,
+            color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 300,
           }}>
             {t.type === 'success' && <Check size={14} weight="bold" />}
             {t.type === 'error' && <X size={14} weight="bold" />}
@@ -630,7 +630,7 @@ export default function RiskRegisterNew() {
           </Button>
           <Button
             size="sm"
-            style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+            style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
             onClick={() => setAddOpen(true)}
           >
             <Plus size={14} className="mr-1" />
@@ -1135,7 +1135,7 @@ export default function RiskRegisterNew() {
             <Button variant="outline" onClick={() => setAddOpen(false)} style={{ borderRadius: 0 }}>
               Cancel
             </Button>
-            <Button onClick={handleAddRisk} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+            <Button onClick={handleAddRisk} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
               <Plus size={14} className="mr-1" />Register Risk
             </Button>
           </DialogFooter>

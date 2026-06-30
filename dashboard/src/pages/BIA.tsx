@@ -17,9 +17,9 @@ const STATUSES = ["Active","Under Review","Draft","Archived"];
 const OWNERS = ["Dr. Sarah Chen","Alex Kumar","James Wilson","Emma Rodriguez","Nina Patel","Mike Johnson","Lisa Park"];
 
 const CRIT_COLORS: Record<string,string> = {
-  "Mission Critical": "#ef4444",
-  "High": "#f97316",
-  "Medium": "#f59e0b",
+  "Mission Critical": "hsl(var(--s-er-tx))",
+  "High": "hsl(var(--r-hi-tx))",
+  "Medium": "hsl(var(--s-wn-tx))",
   "Low": "#22c55e",
 };
 
@@ -123,9 +123,9 @@ export default function BIA() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label:"Processes Assessed", value: items.length, color:"hsl(var(--text-1))" },
-          { label:"Mission Critical", value: criticalCount, color:"#ef4444" },
+          { label:"Mission Critical", value: criticalCount, color:"hsl(var(--s-er-tx))" },
           { label:"Avg RTO", value: `${avgRto}h`, color:"hsl(var(--brand))" },
-          { label:"Assessments Due", value: dueForAssessment, color: dueForAssessment > 0 ? "#f59e0b" : "#22c55e" },
+          { label:"Assessments Due", value: dueForAssessment, color: dueForAssessment > 0 ? "hsl(var(--s-wn-tx))" : "#22c55e" },
         ].map(k => (
           <Card key={k.label}><CardContent className="p-4">
             <p className="text-xs text-[hsl(var(--text-3))] mb-1">{k.label}</p>

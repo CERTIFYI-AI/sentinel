@@ -64,7 +64,7 @@ export default function RegDetail() {
   if (!regulation) {
     return (
       <div className="p-6 flex flex-col items-center justify-center" style={{ minHeight: 400 }}>
-        <Warning size={48} style={{ color: '#f97316' }} />
+        <Warning size={48} style={{ color: 'hsl(var(--r-hi-tx))' }} />
         <p className="mt-4 text-lg font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Regulation not found</p>
         <Button className="mt-4" onClick={() => navigate('/reg-radar')} style={{ borderRadius: 0 }}>
           <ArrowLeft size={14} className="mr-1" /> Back to Reg Radar
@@ -92,9 +92,9 @@ export default function RegDetail() {
   }
 
   function countdownColor() {
-    if (isOverdue) return '#ef4444';
-    if (isUrgent) return '#f97316';
-    return '#10b981';
+    if (isOverdue) return 'hsl(var(--s-er-tx))';
+    if (isUrgent) return 'hsl(var(--r-hi-tx))';
+    return 'hsl(var(--s-ok-tx))';
   }
 
   return (
@@ -105,18 +105,18 @@ export default function RegDetail() {
 
       {/* Overdue Alert */}
       {isOverdue && (
-        <div style={{ background: '#ef444415', border: '1px solid #ef4444', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Warning size={18} style={{ color: '#ef4444' }} />
-          <p className="text-sm font-semibold" style={{ color: '#ef4444' }}>
+        <div style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-tx))', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Warning size={18} style={{ color: 'hsl(var(--s-er-tx))' }} />
+          <p className="text-sm font-semibold" style={{ color: 'hsl(var(--s-er-tx))' }}>
             This regulation became effective {Math.abs(days)} days ago. Ensure compliance measures are fully implemented.
           </p>
         </div>
       )}
 
       {isUrgent && !isOverdue && (
-        <div style={{ background: '#f9731615', border: '1px solid #f97316', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Clock size={18} style={{ color: '#f97316' }} />
-          <p className="text-sm font-semibold" style={{ color: '#f97316' }}>
+        <div style={{ background: 'hsl(var(--r-hi-bg))', border: '1px solid hsl(var(--r-hi-tx))', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Clock size={18} style={{ color: 'hsl(var(--r-hi-tx))' }} />
+          <p className="text-sm font-semibold" style={{ color: 'hsl(var(--r-hi-tx))' }}>
             Effective in {days} days — escalate preparation immediately.
           </p>
         </div>
@@ -175,7 +175,7 @@ export default function RegDetail() {
             <p className="text-xs mb-2" style={{ color: 'hsl(var(--text-3))' }}>Action Items Progress</p>
             <p className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>{completedCount}/{totalItems}</p>
             <div style={{ marginTop: 8, height: 6, background: 'hsl(var(--bg-muted))' }}>
-              <div style={{ width: `${checklistProgress}%`, height: '100%', background: '#10b981' }} />
+              <div style={{ width: `${checklistProgress}%`, height: '100%', background: 'hsl(var(--s-ok-tx))' }} />
             </div>
             <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-3))' }}>{checklistProgress}% complete</p>
           </CardContent>
@@ -224,8 +224,8 @@ export default function RegDetail() {
                 className="flex items-start gap-3 cursor-pointer"
                 style={{
                   padding: '10px 12px',
-                  background: done ? '#10b98108' : 'transparent',
-                  border: `1px solid ${done ? '#10b981' : 'hsl(var(--border))'}`,
+                  background: done ? 'hsl(var(--s-ok-bg))' : 'transparent',
+                  border: `1px solid ${done ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--border))'}`,
                   transition: 'all 0.15s',
                 }}
               >
@@ -233,22 +233,22 @@ export default function RegDetail() {
                   type="checkbox"
                   checked={done}
                   onChange={() => toggleItem(idx)}
-                  style={{ accentColor: '#10b981', marginTop: 2, flexShrink: 0 }}
+                  style={{ accentColor: 'hsl(var(--s-ok-tx))', marginTop: 2, flexShrink: 0 }}
                 />
                 <div className="flex-1">
                   <p className="text-sm" style={{ color: done ? 'hsl(var(--text-3))' : 'hsl(var(--text-1))', textDecoration: done ? 'line-through' : 'none' }}>
                     {item}
                   </p>
                 </div>
-                {done && <CheckCircle size={16} style={{ color: '#10b981', flexShrink: 0 }} />}
+                {done && <CheckCircle size={16} style={{ color: 'hsl(var(--s-ok-tx))', flexShrink: 0 }} />}
               </label>
             );
           })}
 
           {completedCount === totalItems && (
-            <div style={{ marginTop: 12, padding: '12px 16px', background: '#10b98115', border: '1px solid #10b981', display: 'flex', alignItems: 'center', gap: 10 }}>
-              <CheckCircle size={18} style={{ color: '#10b981' }} />
-              <p className="text-sm font-semibold" style={{ color: '#10b981' }}>All action items completed — regulation compliance achieved!</p>
+            <div style={{ marginTop: 12, padding: '12px 16px', background: 'hsl(var(--s-ok-bg))', border: '1px solid hsl(var(--s-ok-tx))', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <CheckCircle size={18} style={{ color: 'hsl(var(--s-ok-tx))' }} />
+              <p className="text-sm font-semibold" style={{ color: 'hsl(var(--s-ok-tx))' }}>All action items completed — regulation compliance achieved!</p>
             </div>
           )}
         </CardContent>

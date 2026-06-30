@@ -173,9 +173,9 @@ export default function VendorQuestionnaire() {
   const scorePercent = Math.round((score / MAX_SCORE) * 100);
 
   function scoreColor(pct: number) {
-    if (pct >= 80) return '#10b981';
-    if (pct >= 60) return '#f97316';
-    return '#ef4444';
+    if (pct >= 80) return 'hsl(var(--s-ok-tx))';
+    if (pct >= 60) return 'hsl(var(--r-hi-tx))';
+    return 'hsl(var(--s-er-tx))';
   }
 
   function handleSubmit() {
@@ -186,7 +186,7 @@ export default function VendorQuestionnaire() {
   if (!vendor) {
     return (
       <div className="p-6 flex flex-col items-center justify-center" style={{ minHeight: 400 }}>
-        <Warning size={48} style={{ color: '#f97316' }} />
+        <Warning size={48} style={{ color: 'hsl(var(--r-hi-tx))' }} />
         <p className="mt-4 text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Vendor not found</p>
         <Button className="mt-4" onClick={() => navigate('/vendors')} style={{ borderRadius: 0 }}>
           <ArrowLeft size={14} className="mr-1" /> Back
@@ -223,7 +223,7 @@ export default function VendorQuestionnaire() {
                   return (
                     <div key={q.id} className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
                       <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{q.id}: {q.text.slice(0, 30)}</span>
-                      <span className="text-xs font-semibold" style={{ color: option && option.points === 10 ? '#10b981' : option && option.points > 0 ? '#f97316' : '#ef4444' }}>
+                      <span className="text-xs font-semibold" style={{ color: option && option.points === 10 ? 'hsl(var(--s-ok-tx))' : option && option.points > 0 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-er-tx))' }}>
                         {option?.points || 0}pts
                       </span>
                     </div>
@@ -298,7 +298,7 @@ export default function VendorQuestionnaire() {
                     </p>
                   </div>
                   {answered && (
-                    <CheckCircle size={18} style={{ color: selectedOption && selectedOption.points === 10 ? '#10b981' : '#f97316', flexShrink: 0 }} />
+                    <CheckCircle size={18} style={{ color: selectedOption && selectedOption.points === 10 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--r-hi-tx))', flexShrink: 0 }} />
                   )}
                 </div>
 
@@ -326,7 +326,7 @@ export default function VendorQuestionnaire() {
                         style={{ accentColor: 'hsl(var(--brand))' }}
                       />
                       <span className="text-sm flex-1" style={{ color: 'hsl(var(--text-1))' }}>{opt.label}</span>
-                      <span className="text-xs font-semibold" style={{ color: opt.points === 10 ? '#10b981' : opt.points > 0 ? '#f97316' : '#ef4444' }}>
+                      <span className="text-xs font-semibold" style={{ color: opt.points === 10 ? 'hsl(var(--s-ok-tx))' : opt.points > 0 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-er-tx))' }}>
                         +{opt.points}pts
                       </span>
                     </label>

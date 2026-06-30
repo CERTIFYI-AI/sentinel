@@ -68,19 +68,19 @@ const REPORT_HISTORY: ReportHistory[] = [
 
 function statusStyle(status: string) {
   switch (status) {
-    case 'active': return { bg: '#10b98120', text: '#10b981', border: '#10b98140' };
+    case 'active': return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))' };
     case 'draft': return { bg: '#eab30820', text: '#eab308', border: '#eab30840' };
-    case 'archived': return { bg: '#6b728020', text: '#6b7280', border: '#6b728040' };
-    case 'completed': return { bg: '#10b98120', text: '#10b981', border: '#10b98140' };
+    case 'archived': return { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))', border: 'hsl(var(--border))' };
+    case 'completed': return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))' };
     case 'generating': return { bg: '#3b82f620', text: '#3b82f6', border: '#3b82f640' };
-    case 'failed': return { bg: '#ef444420', text: '#ef4444', border: '#ef444440' };
-    default: return { bg: '#6b728020', text: '#6b7280', border: '#6b728040' };
+    case 'failed': return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))' };
+    default: return { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))', border: 'hsl(var(--border))' };
   }
 }
 
 function formatIcon(format: string) {
-  if (format === 'PDF') return <FilePdf size={14} style={{ color: '#ef4444' }} />;
-  if (format === 'XLSX') return <Table size={14} style={{ color: '#10b981' }} />;
+  if (format === 'PDF') return <FilePdf size={14} style={{ color: 'hsl(var(--s-er-tx))' }} />;
+  if (format === 'XLSX') return <Table size={14} style={{ color: 'hsl(var(--s-ok-tx))' }} />;
   if (format === 'DOCX') return <FileDoc size={14} style={{ color: '#3b82f6' }} />;
   return <FileText size={14} style={{ color: 'hsl(var(--text-3))' }} />;
 }
@@ -291,7 +291,7 @@ export default function ReportGenerator() {
                           <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setEditItem({ ...t })}>
                             <PencilSimple size={14} />
                           </Button>
-                          <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: '#ef4444' }} onClick={() => setDeleteItem(t)}>
+                          <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: 'hsl(var(--s-er-tx))' }} onClick={() => setDeleteItem(t)}>
                             <Trash size={14} />
                           </Button>
                         </div>
@@ -540,7 +540,7 @@ export default function ReportGenerator() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} style={{ background: '#ef4444', borderRadius: 0 }}>Delete</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} style={{ background: 'hsl(var(--s-er-tx))', borderRadius: 0 }}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

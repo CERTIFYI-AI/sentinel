@@ -316,7 +316,7 @@ function SortableCard({
         {task.title}
       </p>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <span style={{ width: 18, height: 18, borderRadius: '50%', background: sc.text, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 700, color: '#fff' }}>
+        <span style={{ width: 18, height: 18, borderRadius: '50%', background: sc.text, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 700, color: 'hsl(var(--bg-surface))' }}>
           {(task.assignee ?? '').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
         </span>
         <span style={{ fontSize: 10, color: 'hsl(var(--text-3))', flex: 1 }}>{(task.assignee ?? '').split(' ')[0] || '–'}</span>
@@ -347,14 +347,14 @@ function PriorityBadge({ priority }: { priority: Severity }) {
 function AvatarInitials({ name }: { name?: string | null }) {
   const safeName = name ?? '';
   const initials = safeName.split(' ').filter(Boolean).map(w => w[0]).join('').toUpperCase().slice(0, 2) || '?';
-  const colors = ['#6366f1', '#f97316', '#10b981', '#06b6d4', '#a855f7', '#f59e0b'];
+  const colors = ['hsl(var(--brand))', 'hsl(var(--r-hi-tx))', 'hsl(var(--s-ok-tx))', 'hsl(var(--s-in-tx))', '#a855f7', 'hsl(var(--s-wn-tx))'];
   const idx = safeName.charCodeAt(0) % colors.length;
   return (
     <div title={safeName} style={{
       width: 22, height: 22, borderRadius: '50%',
       background: colors[idx],
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: 9, fontWeight: 700, color: '#fff', flexShrink: 0,
+      fontSize: 9, fontWeight: 700, color: 'hsl(var(--bg-surface))', flexShrink: 0,
     }}>
       {initials}
     </div>
@@ -508,7 +508,7 @@ export default function Tasks() {
                 style={{
                   padding: '6px 12px',
                   background: view === 'table' ? 'hsl(var(--brand))' : 'hsl(var(--bg-surface))',
-                  color: view === 'table' ? '#fff' : 'hsl(var(--text-2))',
+                  color: view === 'table' ? 'hsl(var(--bg-surface))' : 'hsl(var(--text-2))',
                   border: 'none',
                   cursor: 'pointer',
                   display: 'flex', alignItems: 'center', gap: 5,
@@ -522,7 +522,7 @@ export default function Tasks() {
                 style={{
                   padding: '6px 12px',
                   background: view === 'kanban' ? 'hsl(var(--brand))' : 'hsl(var(--bg-surface))',
-                  color: view === 'kanban' ? '#fff' : 'hsl(var(--text-2))',
+                  color: view === 'kanban' ? 'hsl(var(--bg-surface))' : 'hsl(var(--text-2))',
                   border: 'none',
                   cursor: 'pointer',
                   display: 'flex', alignItems: 'center', gap: 5,
@@ -538,7 +538,7 @@ export default function Tasks() {
                 display: 'flex', alignItems: 'center', gap: 6,
                 padding: '7px 14px',
                 background: 'hsl(var(--brand))',
-                color: '#fff',
+                color: 'hsl(var(--bg-surface))',
                 border: 'none',
                 cursor: 'pointer',
                 fontSize: 13,
@@ -730,7 +730,7 @@ export default function Tasks() {
                         </button>
                         <button
                           onClick={() => deleteTask(t.id)}
-                          style={{ background: 'none', border: '1px solid hsl(var(--border))', cursor: 'pointer', color: '#ef4444', padding: '3px 6px' }}
+                          style={{ background: 'none', border: '1px solid hsl(var(--border))', cursor: 'pointer', color: 'hsl(var(--s-er-tx))', padding: '3px 6px' }}
                           title="Delete"
                         >
                           <Trash size={13} />
@@ -926,7 +926,7 @@ export default function Tasks() {
                       outline: 'none',
                     }}
                   />
-                  <button style={{ marginTop: 6, padding: '6px 14px', background: 'hsl(var(--brand))', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 12 }}>
+                  <button style={{ marginTop: 6, padding: '6px 14px', background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))', border: 'none', cursor: 'pointer', fontSize: 12 }}>
                     Add Comment
                   </button>
                 </div>
@@ -1013,7 +1013,7 @@ export default function Tasks() {
               <button onClick={() => setShowAdd(false)} style={{ padding: '6px 14px', background: 'transparent', border: '1px solid hsl(var(--border-mid))', color: 'hsl(var(--text-2))', cursor: 'pointer', fontSize: 13 }}>
                 Cancel
               </button>
-              <button onClick={saveTask} style={{ padding: '6px 16px', background: 'hsl(var(--brand))', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>
+              <button onClick={saveTask} style={{ padding: '6px 16px', background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>
                 {editTask ? 'Save Changes' : 'Create Task'}
               </button>
             </div>

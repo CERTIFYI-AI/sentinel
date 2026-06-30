@@ -135,7 +135,7 @@ export default function ControlTesting() {
             <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => toast.success('Schedule view — all test runs in calendar')}>
               <CalendarBlank size={13} className="mr-1.5" />View Schedule
             </Button>
-            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }} onClick={runAllTests} disabled={runningAll}>
+            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={runAllTests} disabled={runningAll}>
               <Play size={13} className="mr-1.5" />{runningAll ? 'Running…' : 'Run All Now'}
             </Button>
           </div>
@@ -152,7 +152,7 @@ export default function ControlTesting() {
           ].map((tile, i) => (
             <div key={i} className="p-3" style={{ border: `1px solid ${tile.alert ? 'hsl(var(--destructive) / 0.4)' : tile.ok === false ? 'hsl(var(--s-wn-br))' : 'hsl(var(--border))'}`, background: tile.alert ? 'hsl(var(--s-er-bg) / 0.5)' : 'hsl(var(--bg-surface))' }}>
               <p className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{tile.label}</p>
-              <p className="text-xl font-bold mt-0.5" style={{ color: tile.alert ? 'hsl(var(--destructive))' : tile.ok === false ? '#f59e0b' : 'hsl(var(--text-1))' }}>{tile.value}</p>
+              <p className="text-xl font-bold mt-0.5" style={{ color: tile.alert ? 'hsl(var(--destructive))' : tile.ok === false ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-1))' }}>{tile.value}</p>
               <p className="text-[10px] mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>{tile.sub}</p>
             </div>
           ))}
@@ -163,7 +163,7 @@ export default function ControlTesting() {
             <TabsTrigger value="tests" style={{ borderRadius: 0 }}>All Tests</TabsTrigger>
             <TabsTrigger value="failures" style={{ borderRadius: 0 }}>
               Failures & Issues
-              {(failed + overdue) > 0 && <span className="ml-1.5 text-[9px] px-1 py-0.5 font-bold" style={{ background: 'hsl(var(--destructive))', color: '#fff' }}>{failed + overdue}</span>}
+              {(failed + overdue) > 0 && <span className="ml-1.5 text-[9px] px-1 py-0.5 font-bold" style={{ background: 'hsl(var(--destructive))', color: 'hsl(var(--bg-surface))' }}>{failed + overdue}</span>}
             </TabsTrigger>
             <TabsTrigger value="analytics" style={{ borderRadius: 0 }}>Trend Analytics</TabsTrigger>
             <TabsTrigger value="schedule" style={{ borderRadius: 0 }}>Test Schedule</TabsTrigger>
@@ -174,7 +174,7 @@ export default function ControlTesting() {
             <div className="flex items-center gap-2 mb-3">
               {(['all', 'passed', 'failed', 'running', 'scheduled', 'not_tested'] as const).map(f => (
                 <button key={f} className="text-[10px] px-2.5 py-1 font-medium"
-                  style={{ background: filter === f ? 'hsl(var(--brand))' : 'hsl(var(--bg-surface))', color: filter === f ? '#fff' : 'hsl(var(--text-3))', border: `1px solid ${filter === f ? 'hsl(var(--brand))' : 'hsl(var(--border))'}` }}
+                  style={{ background: filter === f ? 'hsl(var(--brand))' : 'hsl(var(--bg-surface))', color: filter === f ? 'hsl(var(--bg-surface))' : 'hsl(var(--text-3))', border: `1px solid ${filter === f ? 'hsl(var(--brand))' : 'hsl(var(--border))'}` }}
                   onClick={() => setFilter(f)}>
                   {f === 'not_tested' ? 'overdue' : f}{f === 'all' && ` (${CONTROL_TESTS.length})`}
                   {f === 'failed' && ` (${failed})`}{f === 'not_tested' && ` (${overdue})`}
@@ -213,7 +213,7 @@ export default function ControlTesting() {
                       </div>
                       <div className="text-right ml-4 flex-shrink-0">
                         <div className="text-[9px] mb-1" style={{ color: 'hsl(var(--text-4))' }}>30-day pass rate</div>
-                        <div className="text-base font-bold" style={{ color: test.passRate30d >= 90 ? 'hsl(var(--s-ok-tx))' : test.passRate30d >= 70 ? '#f59e0b' : 'hsl(var(--destructive))' }}>
+                        <div className="text-base font-bold" style={{ color: test.passRate30d >= 90 ? 'hsl(var(--s-ok-tx))' : test.passRate30d >= 70 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))' }}>
                           {test.passRate30d}%
                         </div>
                         <div className="flex gap-1 mt-1.5 justify-end">
@@ -222,7 +222,7 @@ export default function ControlTesting() {
                             <Play size={8} className="mr-0.5" />Run
                           </Button>
                           {test.status === 'failed' && (
-                            <Button size="sm" className="h-6 text-[9px] px-2" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+                            <Button size="sm" className="h-6 text-[9px] px-2" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
                               onClick={() => toast.success('Remediation task created')}>
                               Fix
                             </Button>
@@ -247,7 +247,7 @@ export default function ControlTesting() {
                       <div className="flex items-start justify-between">
                         <div>
                           <div className="flex items-center gap-2 mb-1">
-                            {test.status === 'failed' ? <XCircle size={14} weight="fill" style={{ color: 'hsl(var(--destructive))' }} /> : <Warning size={14} weight="fill" style={{ color: '#f59e0b' }} />}
+                            {test.status === 'failed' ? <XCircle size={14} weight="fill" style={{ color: 'hsl(var(--destructive))' }} /> : <Warning size={14} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />}
                             <span className="text-[9px] px-1.5 py-0.5 font-semibold" style={{ background: ss.bg, color: ss.tx }}>{ss.label}</span>
                             <span className="text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{test.control}</span>
                           </div>
@@ -264,7 +264,7 @@ export default function ControlTesting() {
                           ))}
                         </div>
                         <div className="flex flex-col gap-2 ml-4">
-                          <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: '#fff' }} className="h-7 text-[10px] px-3"
+                          <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: 'hsl(var(--bg-surface))' }} className="h-7 text-[10px] px-3"
                             onClick={() => toast.success('Remediation task created and assigned')}>
                             Create Remediation Task
                           </Button>
@@ -311,7 +311,7 @@ export default function ControlTesting() {
                       <RTooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, borderRadius: 0, color: ct.tooltipText, fontSize: 11 }} />
                       <Bar dataKey="pass" name="Pass Rate %" radius={0}>
                         {FAMILY_HEALTH.map((entry, i) => (
-                          <Cell key={i} fill={entry.pass >= 90 ? 'hsl(var(--s-ok-tx))' : entry.pass >= 70 ? '#f59e0b' : 'hsl(var(--destructive))'} />
+                          <Cell key={i} fill={entry.pass >= 90 ? 'hsl(var(--s-ok-tx))' : entry.pass >= 70 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))'} />
                         ))}
                       </Bar>
                     </BarChart>
@@ -396,10 +396,10 @@ export default function ControlTesting() {
                       <div key={i} className="mb-2">
                         <div className="flex justify-between text-[9px] mb-0.5">
                           <span style={{ color: 'hsl(var(--text-4))' }}>{s.label}</span>
-                          <span className="font-bold" style={{ color: s.met >= 95 ? 'hsl(var(--s-ok-tx))' : '#f59e0b' }}>{s.met}%</span>
+                          <span className="font-bold" style={{ color: s.met >= 95 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))' }}>{s.met}%</span>
                         </div>
                         <div className="h-1 w-full overflow-hidden" style={{ background: 'hsl(var(--border))' }}>
-                          <div style={{ width: `${s.met}%`, height: '100%', background: s.met >= 95 ? 'hsl(var(--s-ok-tx))' : '#f59e0b' }} />
+                          <div style={{ width: `${s.met}%`, height: '100%', background: s.met >= 95 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))' }} />
                         </div>
                       </div>
                     ))}

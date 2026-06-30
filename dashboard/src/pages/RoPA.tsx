@@ -32,7 +32,7 @@ const SEED: any[] = [
 
 const EMPTY: any = { name:"", purpose:"", legalBasis:"Art.6(1)(b) Contract", dataSubjects:[], dataCategories:[], recipients:"", internationalTransfer:false, transferDest:"", transferMechanism:"SCCs", retentionPeriod:"", riskLevel:"Low", status:"Draft", owner:"", lastReviewed:"", dpiaRequired:false, dpoReviewed:false, encryption:false, accessControls:false, pseudonymization:false };
 
-const RISK_COLOR: Record<string,string> = { Critical:"#ef4444", High:"#f97316", Medium:"#f59e0b", Low:"#22c55e" };
+const RISK_COLOR: Record<string,string> = { Critical:"hsl(var(--s-er-tx))", High:"hsl(var(--r-hi-tx))", Medium:"hsl(var(--s-wn-tx))", Low:"#22c55e" };
 
 export default function RoPA() {
   const { data: items, setData: setItems } = useSupabaseTable('ropa_table', SEED);
@@ -103,8 +103,8 @@ export default function RoPA() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label:"Total Activities", value: items.length, color:"hsl(var(--text-1))" },
-          { label:"High-Risk Activities", value: highRisk, color:"#ef4444" },
-          { label:"Pending DPO Review", value: pendingDpo, color:"#f59e0b" },
+          { label:"High-Risk Activities", value: highRisk, color:"hsl(var(--s-er-tx))" },
+          { label:"Pending DPO Review", value: pendingDpo, color:"hsl(var(--s-wn-tx))" },
           { label:"Intl. Transfers", value: transfers, color:"hsl(var(--brand))" },
         ].map(k => (
           <Card key={k.label}><CardContent className="p-4">

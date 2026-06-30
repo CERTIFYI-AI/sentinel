@@ -27,7 +27,7 @@ const Activity = Clock;
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 function ScoreGauge({ score, size = 120 }: { score: number; size?: number }) {
-  const color = score >= 80 ? '#10b981' : score >= 60 ? '#f97316' : '#ef4444';
+  const color = score >= 80 ? 'hsl(var(--s-ok-tx))' : score >= 60 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-er-tx))';
   const radius = (size / 2) - 10;
   const circumference = Math.PI * radius;
   const progress = (score / 100) * circumference;
@@ -46,9 +46,9 @@ function ScoreGauge({ score, size = 120 }: { score: number; size?: number }) {
 }
 
 function dimColor(v: number) {
-  if (v >= 80) return '#10b981';
-  if (v >= 60) return '#f97316';
-  return '#ef4444';
+  if (v >= 80) return 'hsl(var(--s-ok-tx))';
+  if (v >= 60) return 'hsl(var(--r-hi-tx))';
+  return 'hsl(var(--s-er-tx))';
 }
 
 function daysToExpiry(dateStr: string): number {
@@ -57,13 +57,13 @@ function daysToExpiry(dateStr: string): number {
 
 function assessmentStatusBadge(status: VendorAssessment['status']) {
   const map: Record<VendorAssessment['status'], { bg: string; text: string; label: string }> = {
-    draft:                    { bg: '#6366f120', text: '#6366f1', label: 'Draft' },
-    in_progress:              { bg: '#f9731620', text: '#f97316', label: 'In Progress' },
+    draft:                    { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--brand))', label: 'Draft' },
+    in_progress:              { bg: 'hsl(var(--r-hi-bg))', text: 'hsl(var(--r-hi-tx))', label: 'In Progress' },
     submitted:                { bg: '#3b82f620', text: '#3b82f6', label: 'Submitted' },
     under_review:             { bg: '#eab30820', text: '#eab308', label: 'Under Review' },
-    approved:                 { bg: '#10b98120', text: '#10b981', label: 'Approved' },
+    approved:                 { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', label: 'Approved' },
     approved_with_conditions: { bg: '#84cc1620', text: '#65a30d', label: 'Approved w/ Conditions' },
-    rejected:                 { bg: '#ef444420', text: '#ef4444', label: 'Rejected' },
+    rejected:                 { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', label: 'Rejected' },
     expired:                  { bg: '#94a3b820', text: '#64748b', label: 'Expired' },
   };
   return map[status] ?? { bg: '#94a3b820', text: '#64748b', label: status };
@@ -71,10 +71,10 @@ function assessmentStatusBadge(status: VendorAssessment['status']) {
 
 function slaStatusBadge(status: VendorSLA['status']) {
   const map: Record<VendorSLA['status'], { bg: string; text: string; label: string }> = {
-    healthy:  { bg: '#10b98120', text: '#10b981', label: 'Healthy' },
-    at_risk:  { bg: '#f9731620', text: '#f97316', label: 'At Risk' },
-    breached: { bg: '#ef444420', text: '#ef4444', label: 'Breached' },
-    waived:   { bg: '#6366f120', text: '#6366f1', label: 'Waived' },
+    healthy:  { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', label: 'Healthy' },
+    at_risk:  { bg: 'hsl(var(--r-hi-bg))', text: 'hsl(var(--r-hi-tx))', label: 'At Risk' },
+    breached: { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', label: 'Breached' },
+    waived:   { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--brand))', label: 'Waived' },
     retired:  { bg: '#94a3b820', text: '#64748b', label: 'Retired' },
   };
   return map[status] ?? { bg: '#94a3b820', text: '#64748b', label: status };
@@ -82,10 +82,10 @@ function slaStatusBadge(status: VendorSLA['status']) {
 
 function issueStatusBadge(status: TPRMIssue['status']) {
   const map: Record<TPRMIssue['status'], { bg: string; text: string; label: string }> = {
-    open:        { bg: '#ef444420', text: '#ef4444', label: 'Open' },
-    in_progress: { bg: '#f9731620', text: '#f97316', label: 'In Progress' },
-    mitigated:   { bg: '#10b98120', text: '#10b981', label: 'Mitigated' },
-    accepted:    { bg: '#6366f120', text: '#6366f1', label: 'Accepted' },
+    open:        { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', label: 'Open' },
+    in_progress: { bg: 'hsl(var(--r-hi-bg))', text: 'hsl(var(--r-hi-tx))', label: 'In Progress' },
+    mitigated:   { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', label: 'Mitigated' },
+    accepted:    { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--brand))', label: 'Accepted' },
     closed:      { bg: '#94a3b820', text: '#64748b', label: 'Closed' },
   };
   return map[status] ?? { bg: '#94a3b820', text: '#64748b', label: status };
@@ -93,20 +93,20 @@ function issueStatusBadge(status: TPRMIssue['status']) {
 
 function docStatusBadge(status: VendorDocument['status']) {
   const map: Record<VendorDocument['status'], { bg: string; text: string; label: string }> = {
-    valid:          { bg: '#10b98120', text: '#10b981', label: 'Valid' },
-    expiring_soon:  { bg: '#f9731620', text: '#f97316', label: 'Expiring Soon' },
-    expired:        { bg: '#ef444420', text: '#ef4444', label: 'Expired' },
+    valid:          { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', label: 'Valid' },
+    expiring_soon:  { bg: 'hsl(var(--r-hi-bg))', text: 'hsl(var(--r-hi-tx))', label: 'Expiring Soon' },
+    expired:        { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', label: 'Expired' },
     requested:      { bg: '#3b82f620', text: '#3b82f6', label: 'Requested' },
-    missing:        { bg: '#ef444420', text: '#ef4444', label: 'Missing' },
+    missing:        { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', label: 'Missing' },
   };
   return map[status] ?? { bg: '#94a3b820', text: '#64748b', label: status };
 }
 
 function severityBadge(sev: string) {
-  if (sev === 'critical') return { bg: '#ef444420', text: '#ef4444', label: 'Critical' };
-  if (sev === 'high')     return { bg: '#f9731620', text: '#f97316', label: 'High' };
+  if (sev === 'critical') return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', label: 'Critical' };
+  if (sev === 'high')     return { bg: 'hsl(var(--r-hi-bg))', text: 'hsl(var(--r-hi-tx))', label: 'High' };
   if (sev === 'medium')   return { bg: '#eab30820', text: '#eab308', label: 'Medium' };
-  return { bg: '#10b98120', text: '#10b981', label: 'Low' };
+  return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', label: 'Low' };
 }
 
 // ── static activity data ──────────────────────────────────────────────────────
@@ -138,8 +138,8 @@ function buildActivity(vendorId: string): ActivityEvent[] {
 
 function activityTypeColor(type: ActivityEvent['type']) {
   const map: Record<ActivityEvent['type'], string> = {
-    assessment: '#6366f1', sla: '#f97316', issue: '#ef4444',
-    document: '#3b82f6', review: '#10b981', contract: '#eab308', risk: '#f97316',
+    assessment: 'hsl(var(--brand))', sla: 'hsl(var(--r-hi-tx))', issue: 'hsl(var(--s-er-tx))',
+    document: '#3b82f6', review: 'hsl(var(--s-ok-tx))', contract: '#eab308', risk: 'hsl(var(--r-hi-tx))',
   };
   return map[type];
 }
@@ -157,9 +157,9 @@ function subProcessors(): SubProcessor[] {
 }
 
 function spRiskColor(risk: 'low' | 'medium' | 'high') {
-  if (risk === 'low')    return { bg: '#10b98120', text: '#10b981', border: '#10b98140' };
-  if (risk === 'medium') return { bg: '#f9731620', text: '#f97316', border: '#f9731640' };
-  return { bg: '#ef444420', text: '#ef4444', border: '#ef444440' };
+  if (risk === 'low')    return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))' };
+  if (risk === 'medium') return { bg: 'hsl(var(--r-hi-bg))', text: 'hsl(var(--r-hi-tx))', border: 'hsl(var(--r-hi-br))' };
+  return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))' };
 }
 
 // ── component ─────────────────────────────────────────────────────────────────
@@ -175,7 +175,7 @@ export default function VendorDetail() {
   if (!vendor) {
     return (
       <div className="p-6 flex flex-col items-center justify-center" style={{ minHeight: 400 }}>
-        <Warning size={48} style={{ color: '#f97316' }} />
+        <Warning size={48} style={{ color: 'hsl(var(--r-hi-tx))' }} />
         <p className="mt-4 text-lg font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Vendor not found</p>
         <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>Vendor ID &ldquo;{id}&rdquo; does not exist in the registry.</p>
         <Button className="mt-4" onClick={() => navigate('/vendors')} style={{ borderRadius: 0 }}>
@@ -195,7 +195,7 @@ export default function VendorDetail() {
 
   const sc          = statusColor(vendor.status);
   const rc          = severityColor(vendor.risk);
-  const scoreColor  = vendor.score >= 80 ? '#10b981' : vendor.score >= 60 ? '#f97316' : '#ef4444';
+  const scoreColor  = vendor.score >= 80 ? 'hsl(var(--s-ok-tx))' : vendor.score >= 60 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-er-tx))';
   const contractExpiry = '2026-12-31';
   const dte = daysToExpiry(contractExpiry);
 
@@ -221,36 +221,36 @@ export default function VendorDetail() {
         </Button>
 
         {vendor.dpaStatus === 'not_signed' && (
-          <div style={{ background: '#ef444415', border: '1px solid #ef4444', padding: '10px 16px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Warning size={18} style={{ color: '#ef4444', flexShrink: 0 }} />
+          <div style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-tx))', padding: '10px 16px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Warning size={18} style={{ color: 'hsl(var(--s-er-tx))', flexShrink: 0 }} />
             <div>
-              <p className="text-sm font-semibold" style={{ color: '#ef4444' }}>DPA Not Signed — Immediate Action Required</p>
-              <p className="text-xs" style={{ color: '#ef4444', opacity: 0.8 }}>GDPR Art. 28 compliance is at risk. Suspend data sharing until DPA is executed.</p>
+              <p className="text-sm font-semibold" style={{ color: 'hsl(var(--s-er-tx))' }}>DPA Not Signed — Immediate Action Required</p>
+              <p className="text-xs" style={{ color: 'hsl(var(--s-er-tx))', opacity: 0.8 }}>GDPR Art. 28 compliance is at risk. Suspend data sharing until DPA is executed.</p>
             </div>
-            <Button size="sm" style={{ marginLeft: 'auto', background: '#ef4444', color: 'white', borderRadius: 0, flexShrink: 0 }} onClick={() => toast.success('DPA initiation email sent to legal')}>Initiate DPA</Button>
+            <Button size="sm" style={{ marginLeft: 'auto', background: 'hsl(var(--s-er-tx))', color: 'white', borderRadius: 0, flexShrink: 0 }} onClick={() => toast.success('DPA initiation email sent to legal')}>Initiate DPA</Button>
           </div>
         )}
         {vendor.dpaStatus === 'pending' && (
-          <div style={{ background: '#f9731615', border: '1px solid #f97316', padding: '10px 16px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Clock size={18} style={{ color: '#f97316', flexShrink: 0 }} />
-            <p className="text-sm font-medium" style={{ color: '#f97316' }}>DPA Pending Signature — Follow up with vendor to expedite execution.</p>
+          <div style={{ background: 'hsl(var(--r-hi-bg))', border: '1px solid hsl(var(--r-hi-tx))', padding: '10px 16px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Clock size={18} style={{ color: 'hsl(var(--r-hi-tx))', flexShrink: 0 }} />
+            <p className="text-sm font-medium" style={{ color: 'hsl(var(--r-hi-tx))' }}>DPA Pending Signature — Follow up with vendor to expedite execution.</p>
           </div>
         )}
         {dte <= 90 && dte > 0 && (
-          <div style={{ background: '#f9731615', border: '1px solid #f97316', padding: '10px 16px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <CalendarBlank size={18} style={{ color: '#f97316', flexShrink: 0 }} />
-            <p className="text-sm font-medium" style={{ color: '#f97316' }}>
+          <div style={{ background: 'hsl(var(--r-hi-bg))', border: '1px solid hsl(var(--r-hi-tx))', padding: '10px 16px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <CalendarBlank size={18} style={{ color: 'hsl(var(--r-hi-tx))', flexShrink: 0 }} />
+            <p className="text-sm font-medium" style={{ color: 'hsl(var(--r-hi-tx))' }}>
               Master contract expires in <strong>{dte} days</strong> ({contractExpiry}) — initiate renewal to avoid disruption.
             </p>
-            <Button size="sm" variant="outline" style={{ marginLeft: 'auto', borderRadius: 0, borderColor: '#f97316', color: '#f97316', flexShrink: 0 }} onClick={() => toast.success('Renewal workflow initiated')}>
+            <Button size="sm" variant="outline" style={{ marginLeft: 'auto', borderRadius: 0, borderColor: 'hsl(var(--r-hi-tx))', color: 'hsl(var(--r-hi-tx))', flexShrink: 0 }} onClick={() => toast.success('Renewal workflow initiated')}>
               Start Renewal
             </Button>
           </div>
         )}
         {breachedSLAs.length > 0 && (
-          <div style={{ background: '#ef444415', border: '1px solid #ef4444', padding: '10px 16px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Warning size={18} style={{ color: '#ef4444', flexShrink: 0 }} />
-            <p className="text-sm font-medium" style={{ color: '#ef4444' }}>
+          <div style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-tx))', padding: '10px 16px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Warning size={18} style={{ color: 'hsl(var(--s-er-tx))', flexShrink: 0 }} />
+            <p className="text-sm font-medium" style={{ color: 'hsl(var(--s-er-tx))' }}>
               <strong>{breachedSLAs.length} SLA{breachedSLAs.length > 1 ? 's' : ''} currently breached</strong> — immediate escalation required.
             </p>
           </div>
@@ -265,7 +265,7 @@ export default function VendorDetail() {
               <Badge style={{ background: rc.bg, color: rc.text, border: `1px solid ${rc.border}`, borderRadius: 0 }}>{vendor.risk} risk</Badge>
               <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0 }}>{vendor.status}</Badge>
               <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={() => toast.info('Edit vendor form opened')}>Edit</Button>
-              <Button size="sm" variant="outline" style={{ borderRadius: 0, borderColor: '#ef4444', color: '#ef4444' }} onClick={() => toast.warning('Archive workflow initiated')}>Archive</Button>
+              <Button size="sm" variant="outline" style={{ borderRadius: 0, borderColor: 'hsl(var(--s-er-tx))', color: 'hsl(var(--s-er-tx))' }} onClick={() => toast.warning('Archive workflow initiated')}>Archive</Button>
             </div>
           }
         />
@@ -275,10 +275,10 @@ export default function VendorDetail() {
       <div className="grid grid-cols-5 gap-3">
         {[
           { label: 'Vendor Score',       value: `${vendor.score}/100`, color: scoreColor },
-          { label: 'Open Issues',        value: openIssues.length,     color: openIssues.length > 0 ? '#f97316' : '#10b981' },
-          { label: 'Critical Findings',  value: criticalIssues.length, color: criticalIssues.length > 0 ? '#ef4444' : '#10b981' },
-          { label: 'Breached SLAs',      value: breachedSLAs.length,   color: breachedSLAs.length > 0 ? '#ef4444' : '#10b981' },
-          { label: 'Doc Gaps',           value: missingDocs.length,    color: missingDocs.length > 0 ? '#ef4444' : '#10b981' },
+          { label: 'Open Issues',        value: openIssues.length,     color: openIssues.length > 0 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-ok-tx))' },
+          { label: 'Critical Findings',  value: criticalIssues.length, color: criticalIssues.length > 0 ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-ok-tx))' },
+          { label: 'Breached SLAs',      value: breachedSLAs.length,   color: breachedSLAs.length > 0 ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-ok-tx))' },
+          { label: 'Doc Gaps',           value: missingDocs.length,    color: missingDocs.length > 0 ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-ok-tx))' },
         ].map(k => (
           <Card key={k.label} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
             <CardContent className="p-4">
@@ -437,11 +437,11 @@ export default function VendorDetail() {
                           </td>
                           <td className="p-3">
                             {a.score !== null ? (
-                              <span className="text-sm font-bold" style={{ color: a.score >= 80 ? '#10b981' : a.score >= 60 ? '#f97316' : '#ef4444' }}>{a.score}</span>
+                              <span className="text-sm font-bold" style={{ color: a.score >= 80 ? 'hsl(var(--s-ok-tx))' : a.score >= 60 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-er-tx))' }}>{a.score}</span>
                             ) : <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>—</span>}
                           </td>
                           <td className="p-3">
-                            <span className="text-xs" style={{ color: cf ? '#ef4444' : 'hsl(var(--text-2))' }}>
+                            <span className="text-xs" style={{ color: cf ? 'hsl(var(--s-er-tx))' : 'hsl(var(--text-2))' }}>
                               {a.riskFindingsCount} total{cf ? `, ${a.criticalFindingsCount} critical` : ''}
                             </span>
                           </td>
@@ -452,8 +452,8 @@ export default function VendorDetail() {
                           <td className="p-3">
                             {a.recommendation ? (
                               <Badge style={{
-                                background: a.recommendation === 'Approve' ? '#10b98120' : a.recommendation === 'Reject' ? '#ef444420' : '#f9731620',
-                                color: a.recommendation === 'Approve' ? '#10b981' : a.recommendation === 'Reject' ? '#ef4444' : '#f97316',
+                                background: a.recommendation === 'Approve' ? 'hsl(var(--s-ok-bg))' : a.recommendation === 'Reject' ? 'hsl(var(--s-er-bg))' : 'hsl(var(--r-hi-bg))',
+                                color: a.recommendation === 'Approve' ? 'hsl(var(--s-ok-tx))' : a.recommendation === 'Reject' ? 'hsl(var(--s-er-tx))' : 'hsl(var(--r-hi-tx))',
                                 borderRadius: 0, fontSize: 10
                               }}>{a.recommendation}</Badge>
                             ) : <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Pending</span>}
@@ -494,9 +494,9 @@ export default function VendorDetail() {
           ) : (
             <>
               {breachedSLAs.length > 0 && (
-                <div style={{ background: '#ef444415', border: '1px solid #ef4444', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <Warning size={16} style={{ color: '#ef4444', flexShrink: 0 }} />
-                  <p className="text-sm font-semibold" style={{ color: '#ef4444' }}>
+                <div style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-tx))', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Warning size={16} style={{ color: 'hsl(var(--s-er-tx))', flexShrink: 0 }} />
+                  <p className="text-sm font-semibold" style={{ color: 'hsl(var(--s-er-tx))' }}>
                     {breachedSLAs.length} SLA{breachedSLAs.length > 1 ? 's' : ''} currently in breach: {breachedSLAs.map(s => s.serviceName).join(', ')}
                   </p>
                 </div>
@@ -516,7 +516,7 @@ export default function VendorDetail() {
                         const sb = slaStatusBadge(s.status);
                         const isBreached = s.status === 'breached';
                         return (
-                          <tr key={s.id} style={{ borderTop: '1px solid hsl(var(--border))', background: isBreached ? '#ef444408' : 'transparent' }}>
+                          <tr key={s.id} style={{ borderTop: '1px solid hsl(var(--border))', background: isBreached ? 'hsl(var(--s-er-bg))' : 'transparent' }}>
                             <td className="p-3">
                               <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{s.serviceName}</p>
                               <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{s.id}</p>
@@ -525,7 +525,7 @@ export default function VendorDetail() {
                               <Badge variant="outline" style={{ borderRadius: 0, fontSize: 10 }}>{s.slaType}</Badge>
                             </td>
                             <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--text-2))' }}>{s.target}</td>
-                            <td className="p-3 text-xs font-bold" style={{ color: isBreached ? '#ef4444' : s.status === 'at_risk' ? '#f97316' : '#10b981' }}>
+                            <td className="p-3 text-xs font-bold" style={{ color: isBreached ? 'hsl(var(--s-er-tx))' : s.status === 'at_risk' ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-ok-tx))' }}>
                               {s.currentPerformance}
                             </td>
                             <td className="p-3">
@@ -566,7 +566,7 @@ export default function VendorDetail() {
           {issues.length === 0 ? (
             <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
               <CardContent className="flex flex-col items-center justify-center py-16">
-                <CheckCircle size={36} style={{ color: '#10b981' }} />
+                <CheckCircle size={36} style={{ color: 'hsl(var(--s-ok-tx))' }} />
                 <p className="mt-3 text-sm font-medium" style={{ color: 'hsl(var(--text-2))' }}>No open issues</p>
               </CardContent>
             </Card>
@@ -587,7 +587,7 @@ export default function VendorDetail() {
                       const ist = issueStatusBadge(i.status);
                       const overdue = new Date(i.dueDate) < new Date() && (i.status === 'open' || i.status === 'in_progress');
                       return (
-                        <tr key={i.id} style={{ borderTop: '1px solid hsl(var(--border))', background: i.severity === 'critical' && i.status === 'open' ? '#ef444406' : 'transparent' }}>
+                        <tr key={i.id} style={{ borderTop: '1px solid hsl(var(--border))', background: i.severity === 'critical' && i.status === 'open' ? 'hsl(var(--s-er-bg))' : 'transparent' }}>
                           <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{i.id}</td>
                           <td className="p-3" style={{ maxWidth: 200 }}>
                             <p className="text-sm font-medium leading-tight" style={{ color: 'hsl(var(--text-1))' }}>{i.title}</p>
@@ -602,7 +602,7 @@ export default function VendorDetail() {
                             <Badge style={{ background: ist.bg, color: ist.text, borderRadius: 0, fontSize: 10 }}>{ist.label}</Badge>
                           </td>
                           <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{i.owner}</td>
-                          <td className="p-3 text-xs" style={{ color: overdue ? '#ef4444' : 'hsl(var(--text-3))' }}>
+                          <td className="p-3 text-xs" style={{ color: overdue ? 'hsl(var(--s-er-tx))' : 'hsl(var(--text-3))' }}>
                             {formatDate(i.dueDate)}{overdue ? ' ⚠' : ''}
                           </td>
                           <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -635,8 +635,8 @@ export default function VendorDetail() {
           </div>
 
           {missingDocs.length > 0 && (
-            <div style={{ background: '#ef444415', border: '1px solid #ef4444', padding: '10px 16px' }}>
-              <p className="text-sm font-semibold" style={{ color: '#ef4444' }}>
+            <div style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-tx))', padding: '10px 16px' }}>
+              <p className="text-sm font-semibold" style={{ color: 'hsl(var(--s-er-tx))' }}>
                 {missingDocs.length} document gap{missingDocs.length > 1 ? 's' : ''}: {missingDocs.map(d => d.type).join(', ')}
               </p>
             </div>
@@ -660,7 +660,7 @@ export default function VendorDetail() {
                       <tr key={doc.id} style={{ borderTop: '1px solid hsl(var(--border))', background: (idx % 2 === 1) ? 'hsl(var(--bg-muted) / 0.4)' : 'transparent' }}>
                         <td className="p-3">
                           <div className="flex items-center gap-2">
-                            <FilePdf size={16} style={{ color: isExpiring ? '#ef4444' : 'hsl(var(--text-3))', flexShrink: 0 }} />
+                            <FilePdf size={16} style={{ color: isExpiring ? 'hsl(var(--s-er-tx))' : 'hsl(var(--text-3))', flexShrink: 0 }} />
                             <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{doc.fileName}</span>
                           </div>
                         </td>
@@ -672,7 +672,7 @@ export default function VendorDetail() {
                         </td>
                         <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{doc.owner}</td>
                         <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{doc.uploadedAt ? formatDate(doc.uploadedAt) : '—'}</td>
-                        <td className="p-3 text-xs" style={{ color: isExpiring ? '#ef4444' : 'hsl(var(--text-3))' }}>
+                        <td className="p-3 text-xs" style={{ color: isExpiring ? 'hsl(var(--s-er-tx))' : 'hsl(var(--text-3))' }}>
                           {doc.expiresAt ? formatDate(doc.expiresAt) : '—'}
                         </td>
                         <td className="p-3">
@@ -693,12 +693,12 @@ export default function VendorDetail() {
                     <tr style={{ borderTop: '1px solid hsl(var(--border))' }}>
                       <td className="p-3">
                         <div className="flex items-center gap-2">
-                          <FileText size={16} style={{ color: '#10b981' }} />
+                          <FileText size={16} style={{ color: 'hsl(var(--s-ok-tx))' }} />
                           <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{vendor.name} — Uploaded Document</span>
                         </div>
                       </td>
                       <td className="p-3"><Badge variant="outline" style={{ borderRadius: 0, fontSize: 10 }}>Custom</Badge></td>
-                      <td className="p-3"><Badge style={{ background: '#10b98120', color: '#10b981', borderRadius: 0, fontSize: 10 }}>Valid</Badge></td>
+                      <td className="p-3"><Badge style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', borderRadius: 0, fontSize: 10 }}>Valid</Badge></td>
                       <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>You</td>
                       <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{new Date().toISOString().split('T')[0]}</td>
                       <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>—</td>
@@ -842,8 +842,8 @@ export default function VendorDetail() {
               <CardContent className="p-0">
                 {openIssues.length === 0 ? (
                   <div className="px-4 pb-4 flex items-center gap-2">
-                    <CheckCircle size={16} style={{ color: '#10b981' }} />
-                    <p className="text-xs" style={{ color: '#10b981' }}>No open issues — vendor is in good standing.</p>
+                    <CheckCircle size={16} style={{ color: 'hsl(var(--s-ok-tx))' }} />
+                    <p className="text-xs" style={{ color: 'hsl(var(--s-ok-tx))' }}>No open issues — vendor is in good standing.</p>
                   </div>
                 ) : openIssues.slice(0, 4).map((iss, i) => {
                   const sev = severityBadge(iss.severity);
@@ -875,10 +875,10 @@ export default function VendorDetail() {
               <CardContent>
                 <div className="grid grid-cols-4 gap-4">
                   {[
-                    { label: 'Linked Risks',     count: 2, icon: Warning,      color: '#f97316', route: '/risks' },
-                    { label: 'Linked Controls',  count: 4, icon: SealCheck,    color: '#6366f1', route: '/compliance/controls' },
+                    { label: 'Linked Risks',     count: 2, icon: Warning,      color: 'hsl(var(--r-hi-tx))', route: '/risks' },
+                    { label: 'Linked Controls',  count: 4, icon: SealCheck,    color: 'hsl(var(--brand))', route: '/compliance/controls' },
                     { label: 'Linked Policies',  count: 3, icon: ClipboardText,color: '#3b82f6', route: '/policies' },
-                    { label: 'Linked Incidents', count: 1, icon: XCircle,      color: '#ef4444', route: '/risk/incidents' },
+                    { label: 'Linked Incidents', count: 1, icon: XCircle,      color: 'hsl(var(--s-er-tx))', route: '/risk/incidents' },
                   ].map(obj => (
                     <button
                       key={obj.label}

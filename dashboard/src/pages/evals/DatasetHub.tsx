@@ -13,9 +13,9 @@ import { useChartTheme } from '../../hooks/useChartTheme';
 // ── helpers ────────────────────────────────────────────────────────────────
 
 const sensitivityColors: Record<string, { bg: string; text: string; border: string }> = {
-  PII:          { bg: '#ef444420', text: '#ef4444', border: '#ef444440' },
-  confidential: { bg: '#f9731620', text: '#f97316', border: '#f9731640' },
-  internal:     { bg: '#f59e0b20', text: '#f59e0b', border: '#f59e0b40' },
+  PII:          { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))' },
+  confidential: { bg: 'hsl(var(--r-hi-bg))', text: 'hsl(var(--r-hi-tx))', border: 'hsl(var(--r-hi-br))' },
+  internal:     { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))', border: 'hsl(var(--s-wn-br))' },
 };
 
 function SensitivityBadge({ sensitivity }: { sensitivity: string }) {
@@ -36,7 +36,7 @@ function DatasetDetailModal({ dataset, onClose }: { dataset: Dataset; onClose: (
       <div style={{ position: 'relative', width: 560, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', maxHeight: '85vh', overflowY: 'auto', }}>
         {/* Header */}
         <div style={{ padding: '16px 20px', borderBottom: '1px solid hsl(var(--border))', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Database size={16} style={{ color: '#06b6d4' }} />
+          <Database size={16} style={{ color: 'hsl(var(--s-in-tx))' }} />
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', gap: 6, marginBottom: 2 }}>
               <span style={{ fontSize: 10, fontFamily: 'monospace', color: 'hsl(var(--text-3))' }}>{dataset.id}</span>
@@ -102,10 +102,10 @@ export default function DatasetHub() {
   const totalRecords = DATASETS.reduce((sum, d) => sum + d.records, 0);
 
   const stats = [
-    { label: 'Total Datasets', value: DATASETS.length, color: '#06b6d4', icon: Database },
-    { label: 'PII Datasets', value: piiCount, color: '#ef4444', icon: Lock },
-    { label: 'Confidential', value: confCount, color: '#f97316', icon: ShieldCheck },
-    { label: 'Total Records', value: (totalRecords / 1000000).toFixed(1) + 'M', color: '#10b981', icon: CheckCircle },
+    { label: 'Total Datasets', value: DATASETS.length, color: 'hsl(var(--s-in-tx))', icon: Database },
+    { label: 'PII Datasets', value: piiCount, color: 'hsl(var(--s-er-tx))', icon: Lock },
+    { label: 'Confidential', value: confCount, color: 'hsl(var(--r-hi-tx))', icon: ShieldCheck },
+    { label: 'Total Records', value: (totalRecords / 1000000).toFixed(1) + 'M', color: 'hsl(var(--s-ok-tx))', icon: CheckCircle },
   ];
 
   return (
@@ -122,7 +122,7 @@ export default function DatasetHub() {
           <button style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-2))', cursor: 'pointer', fontSize: 13 }}>
             <DownloadSimple size={14} /> Export
           </button>
-          <button style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: 'hsl(var(--brand))', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>
+          <button style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>
             <Plus size={14} /> Register Dataset
           </button>
         </div>

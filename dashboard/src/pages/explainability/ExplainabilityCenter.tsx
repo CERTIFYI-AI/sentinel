@@ -176,7 +176,7 @@ export default function ExplainabilityCenter() {
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
             background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
-            color: '#fff', borderRadius: 0, minWidth: 300,
+            color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 300,
           }}>{t.text}</div>
         ))}
       </div>
@@ -190,7 +190,7 @@ export default function ExplainabilityCenter() {
           </div>
           <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>Per-model explanations required by GDPR Art. 22 and EU AI Act Art. 13</p>
         </div>
-        <Button onClick={handleGenerate} disabled={generating} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+        <Button onClick={handleGenerate} disabled={generating} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
           {generating ? <><Clock size={14} className="mr-2 animate-spin" />Generating...</> : <><Plus size={14} className="mr-2" />Generate Explanation</>}
         </Button>
       </div>
@@ -398,7 +398,7 @@ export default function ExplainabilityCenter() {
                 {['LIME', 'Anchors', 'Counterfactual'].map(m => (
                   <button key={m} className="px-3 py-1 text-xs font-medium border" style={{
                     background: currentReport.method === m || (m === 'LIME' && currentReport.method.includes('SHAP')) ? 'hsl(var(--brand))' : 'hsl(var(--bg-raised))',
-                    color: currentReport.method === m || (m === 'LIME' && currentReport.method.includes('SHAP')) ? '#fff' : 'hsl(var(--text-2))',
+                    color: currentReport.method === m || (m === 'LIME' && currentReport.method.includes('SHAP')) ? 'hsl(var(--bg-surface))' : 'hsl(var(--text-2))',
                     borderColor: 'hsl(var(--border))',
                   }}
                     onClick={() => toast(`${m} explanation generated`, 'info')}>

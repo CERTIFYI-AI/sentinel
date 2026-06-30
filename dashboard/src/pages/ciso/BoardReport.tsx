@@ -25,9 +25,9 @@ function StatBox({ label, value, sub, color = 'hsl(var(--text-1))' }: { label: s
 }
 
 function TrendBadge({ trend }: { trend: 'up' | 'down' | 'stable'; label?: string }) {
-  if (trend === 'up') return <TrendUp size={14} style={{ color: '#ef4444' }} />;
-  if (trend === 'down') return <TrendDown size={14} style={{ color: '#10b981' }} />;
-  return <Minus size={14} style={{ color: '#6b7280' }} />;
+  if (trend === 'up') return <TrendUp size={14} style={{ color: 'hsl(var(--s-er-tx))' }} />;
+  if (trend === 'down') return <TrendDown size={14} style={{ color: 'hsl(var(--s-ok-tx))' }} />;
+  return <Minus size={14} style={{ color: 'hsl(var(--text-3))' }} />;
 }
 
 export default function BoardReport() {
@@ -131,8 +131,8 @@ export default function BoardReport() {
           <p className="text-sm leading-relaxed" style={{ color: 'hsl(var(--text-2))' }}>
             {orgName}'s AI Governance posture in Q1 2026 reflects significant regulatory pressure from the approaching EU AI Act enforcement deadline (August 1, 2026) and critical bias findings in two high-risk models.
             The overall risk score has improved from 16.8 to <strong style={{ color: 'hsl(var(--text-1))' }}>14.2/25</strong>, driven by proactive remediation of the Fraud Model latency risk and quarantine of shadow AI agents.
-            However, <strong style={{ color: '#ef4444' }}>{openCriticalRisks} critical risks</strong> remain open, and the Loan Approval Assistant has been blocked from production use pending bias remediation.
-            Compliance score stands at <strong style={{ color: '#10b981' }}>{avgComplianceScore}%</strong> overall, with EU AI Act at 65% — requiring urgent attention before the August deadline.
+            However, <strong style={{ color: 'hsl(var(--s-er-tx))' }}>{openCriticalRisks} critical risks</strong> remain open, and the Loan Approval Assistant has been blocked from production use pending bias remediation.
+            Compliance score stands at <strong style={{ color: 'hsl(var(--s-ok-tx))' }}>{avgComplianceScore}%</strong> overall, with EU AI Act at 65% — requiring urgent attention before the August deadline.
           </p>
         </CardContent>
       </Card>
@@ -141,15 +141,15 @@ export default function BoardReport() {
       <Card id="risk-overview" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
         <CardHeader style={{ borderBottom: '1px solid hsl(var(--border))' }}>
           <CardTitle className="text-sm font-bold flex items-center gap-2" style={{ color: 'hsl(var(--text-1))' }}>
-            <Warning size={16} style={{ color: '#ef4444' }} /> Risk Overview
+            <Warning size={16} style={{ color: 'hsl(var(--s-er-tx))' }} /> Risk Overview
           </CardTitle>
         </CardHeader>
         <CardContent className="p-5 space-y-4">
           <div className="grid grid-cols-4 gap-3">
-            <StatBox label="Overall Risk Score" value="14.2" sub="Out of 25 (lower = better)" color="#ef4444" />
-            <StatBox label="Open Critical Risks" value={openCriticalRisks} sub="Require immediate action" color="#ef4444" />
-            <StatBox label="Open High Risks" value={openHighRisks} sub="Require near-term action" color="#f97316" />
-            <StatBox label="Risk Score Trend" value="↓ 2.6 pts" sub="vs Q4 2025 (improving)" color="#10b981" />
+            <StatBox label="Overall Risk Score" value="14.2" sub="Out of 25 (lower = better)" color="hsl(var(--s-er-tx))" />
+            <StatBox label="Open Critical Risks" value={openCriticalRisks} sub="Require immediate action" color="hsl(var(--s-er-tx))" />
+            <StatBox label="Open High Risks" value={openHighRisks} sub="Require near-term action" color="hsl(var(--r-hi-tx))" />
+            <StatBox label="Risk Score Trend" value="↓ 2.6 pts" sub="vs Q4 2025 (improving)" color="hsl(var(--s-ok-tx))" />
           </div>
 
           <div>
@@ -174,7 +174,7 @@ export default function BoardReport() {
                         <span className="text-sm font-bold" style={{ color: sc.text }}>{r.score}</span>
                       </td>
                       <td className="p-2">
-                        {r.trending === 'up' ? <TrendUp size={14} style={{ color: '#ef4444' }} /> : r.trending === 'down' ? <TrendDown size={14} style={{ color: '#10b981' }} /> : <Minus size={14} style={{ color: '#6b7280' }} />}
+                        {r.trending === 'up' ? <TrendUp size={14} style={{ color: 'hsl(var(--s-er-tx))' }} /> : r.trending === 'down' ? <TrendDown size={14} style={{ color: 'hsl(var(--s-ok-tx))' }} /> : <Minus size={14} style={{ color: 'hsl(var(--text-3))' }} />}
                       </td>
                       <td className="p-2">
                         <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0, fontSize: 10 }}>{r.severity}</Badge>
@@ -192,19 +192,19 @@ export default function BoardReport() {
       <Card id="compliance-status" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
         <CardHeader style={{ borderBottom: '1px solid hsl(var(--border))' }}>
           <CardTitle className="text-sm font-bold flex items-center gap-2" style={{ color: 'hsl(var(--text-1))' }}>
-            <Shield size={16} style={{ color: '#10b981' }} /> Compliance Status
+            <Shield size={16} style={{ color: 'hsl(var(--s-ok-tx))' }} /> Compliance Status
           </CardTitle>
         </CardHeader>
         <CardContent className="p-5 space-y-4">
           <div className="grid grid-cols-4 gap-3">
-            <StatBox label="Overall Compliance" value={`${avgComplianceScore}%`} sub="Across 6 frameworks" color="#10b981" />
+            <StatBox label="Overall Compliance" value={`${avgComplianceScore}%`} sub="Across 6 frameworks" color="hsl(var(--s-ok-tx))" />
             <StatBox label="Avg Control Score" value={`${avgControlScore}`} sub="Out of 100" color="#3b82f6" />
-            <StatBox label="Controls Failing" value={CONTROLS.filter(c => c.testResult === 'fail').length} sub="Require remediation" color="#ef4444" />
-            <StatBox label="Open Gaps" value={10} sub="Across all frameworks" color="#f97316" />
+            <StatBox label="Controls Failing" value={CONTROLS.filter(c => c.testResult === 'fail').length} sub="Require remediation" color="hsl(var(--s-er-tx))" />
+            <StatBox label="Open Gaps" value={10} sub="Across all frameworks" color="hsl(var(--r-hi-tx))" />
           </div>
           <div className="space-y-3">
             {FRAMEWORKS.map(f => {
-              const color = f.complianceScore >= 80 ? '#10b981' : f.complianceScore >= 65 ? '#f97316' : '#ef4444';
+              const color = f.complianceScore >= 80 ? 'hsl(var(--s-ok-tx))' : f.complianceScore >= 65 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-er-tx))';
               const sc = statusColor(f.status.toLowerCase());
               return (
                 <div key={f.id}>
@@ -232,15 +232,15 @@ export default function BoardReport() {
       <Card id="incident-summary" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
         <CardHeader style={{ borderBottom: '1px solid hsl(var(--border))' }}>
           <CardTitle className="text-sm font-bold flex items-center gap-2" style={{ color: 'hsl(var(--text-1))' }}>
-            <Fire size={16} style={{ color: '#f97316' }} /> Incident Summary
+            <Fire size={16} style={{ color: 'hsl(var(--r-hi-tx))' }} /> Incident Summary
           </CardTitle>
         </CardHeader>
         <CardContent className="p-5 space-y-4">
           <div className="grid grid-cols-4 gap-3">
             <StatBox label="Total Incidents Q1" value={INCIDENTS.length} sub="YTD 2026" />
-            <StatBox label="Active Incidents" value={activeIncidents} sub="Require attention" color="#f97316" />
-            <StatBox label="Resolved" value={resolvedIncidents} sub="Successfully closed" color="#10b981" />
-            <StatBox label="Critical Bias Audits Failed" value={failedAudits} sub="Require remediation" color="#ef4444" />
+            <StatBox label="Active Incidents" value={activeIncidents} sub="Require attention" color="hsl(var(--r-hi-tx))" />
+            <StatBox label="Resolved" value={resolvedIncidents} sub="Successfully closed" color="hsl(var(--s-ok-tx))" />
+            <StatBox label="Critical Bias Audits Failed" value={failedAudits} sub="Require remediation" color="hsl(var(--s-er-tx))" />
           </div>
           <table className="w-full">
             <thead style={{ background: 'hsl(var(--bg-muted))' }}>
@@ -284,8 +284,8 @@ export default function BoardReport() {
         <CardContent className="p-5 space-y-4">
           <div className="grid grid-cols-4 gap-3">
             <StatBox label="Total AI Models" value={MODELS.length} sub="Registered in inventory" />
-            <StatBox label="In Production" value={productionModels} sub="Live systems" color="#10b981" />
-            <StatBox label="High-Risk Models" value={MODELS.filter(m => m.riskTier === 'high').length} sub="EU AI Act Annex III" color="#ef4444" />
+            <StatBox label="In Production" value={productionModels} sub="Live systems" color="hsl(var(--s-ok-tx))" />
+            <StatBox label="High-Risk Models" value={MODELS.filter(m => m.riskTier === 'high').length} sub="EU AI Act Annex III" color="hsl(var(--s-er-tx))" />
             <StatBox label="Avg Accuracy" value={`${(MODELS.reduce((s, m) => s + m.accuracy, 0) / MODELS.length).toFixed(1)}%`} sub="Across all models" color="#3b82f6" />
           </div>
           <table className="w-full">
@@ -299,7 +299,7 @@ export default function BoardReport() {
             <tbody>
               {MODELS.map(m => {
                 const sc = statusColor(m.status);
-                const driftColor = m.driftStatus === 'stable' ? '#10b981' : m.driftStatus === 'warning' ? '#f97316' : '#ef4444';
+                const driftColor = m.driftStatus === 'stable' ? 'hsl(var(--s-ok-tx))' : m.driftStatus === 'warning' ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-er-tx))';
                 return (
                   <tr key={m.id} style={{ borderTop: '1px solid hsl(var(--border))' }}>
                     <td className="p-2 text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{m.id}</td>
@@ -308,8 +308,8 @@ export default function BoardReport() {
                       <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0, fontSize: 10 }}>{m.status}</Badge>
                     </td>
                     <td className="p-2 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{m.riskTier}</td>
-                    <td className="p-2 text-xs font-semibold" style={{ color: '#10b981' }}>{m.accuracy}%</td>
-                    <td className="p-2 text-xs" style={{ color: m.fairnessScore >= 85 ? '#10b981' : '#f97316' }}>{m.fairnessScore}</td>
+                    <td className="p-2 text-xs font-semibold" style={{ color: 'hsl(var(--s-ok-tx))' }}>{m.accuracy}%</td>
+                    <td className="p-2 text-xs" style={{ color: m.fairnessScore >= 85 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--r-hi-tx))' }}>{m.fairnessScore}</td>
                     <td className="p-2 text-xs" style={{ color: driftColor }}>{m.driftStatus}</td>
                     <td className="p-2 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{m.owner}</td>
                   </tr>
@@ -324,7 +324,7 @@ export default function BoardReport() {
       <Card id="key-recommendations" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
         <CardHeader style={{ borderBottom: '1px solid hsl(var(--border))' }}>
           <CardTitle className="text-sm font-bold flex items-center gap-2" style={{ color: 'hsl(var(--text-1))' }}>
-            <Lightbulb size={16} style={{ color: '#f59e0b' }} /> Key Recommendations
+            <Lightbulb size={16} style={{ color: 'hsl(var(--s-wn-tx))' }} /> Key Recommendations
           </CardTitle>
         </CardHeader>
         <CardContent className="p-5">

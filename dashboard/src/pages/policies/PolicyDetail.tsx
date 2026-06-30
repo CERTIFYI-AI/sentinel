@@ -76,18 +76,18 @@ const DEFAULT_APPROVALS = (p: Policy) => {
 
 function policyStatusColor(status: string) {
   switch (status) {
-    case 'published': return { bg: '#10b98115', text: '#10b981', border: '#10b98130' };
-    case 'in_review': return { bg: '#f9731615', text: '#f97316', border: '#f9731630' };
-    case 'draft': return { bg: '#6b728015', text: '#6b7280', border: '#6b728030' };
+    case 'published': return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))' };
+    case 'in_review': return { bg: 'hsl(var(--r-hi-bg))', text: 'hsl(var(--r-hi-tx))', border: 'hsl(var(--r-hi-br))' };
+    case 'draft': return { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))', border: 'hsl(var(--border))' };
     default: return { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))', border: 'hsl(var(--border))' };
   }
 }
 
 function approvalStatusColor(status: string) {
   switch (status) {
-    case 'approved': return { bg: '#10b98115', text: '#10b981', border: '#10b98130', icon: CheckCircle };
-    case 'in_review': return { bg: '#f9731615', text: '#f97316', border: '#f9731630', icon: MagnifyingGlass };
-    case 'pending': return { bg: '#6b728015', text: '#6b7280', border: '#6b728030', icon: Clock };
+    case 'approved': return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))', icon: CheckCircle };
+    case 'in_review': return { bg: 'hsl(var(--r-hi-bg))', text: 'hsl(var(--r-hi-tx))', border: 'hsl(var(--r-hi-br))', icon: MagnifyingGlass };
+    case 'pending': return { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))', border: 'hsl(var(--border))', icon: Clock };
     default: return { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))', border: 'hsl(var(--border))', icon: Clock };
   }
 }
@@ -106,7 +106,7 @@ export default function PolicyDetail() {
   if (!policy) {
     return (
       <div style={{ padding: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, }}>
-        <Warning size={48} style={{ color: '#f97316' }} />
+        <Warning size={48} style={{ color: 'hsl(var(--r-hi-tx))' }} />
         <p style={{ marginTop: 16, fontSize: 16, fontWeight: 600, color: 'hsl(var(--text-1))' }}>Policy not found</p>
         <p style={{ fontSize: 13, color: 'hsl(var(--text-3))', marginTop: 4 }}>Policy ID "{id}" does not exist.</p>
         <Button style={{ marginTop: 16, borderRadius: 0 }} onClick={() => navigate('/policies')}>
@@ -167,9 +167,9 @@ export default function PolicyDetail() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
         {[
           { label: 'Version', value: policy.version, sub: 'Current version', color: 'hsl(var(--text-1))' },
-          { label: 'Framework', value: policy.framework.split(' ')[0], sub: policy.framework, color: '#6366f1' },
-          { label: 'Next Review', value: policy.nextReview ? new Date(policy.nextReview).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'N/A', sub: 'Review due', color: policy.nextReview && new Date(policy.nextReview) < new Date() ? '#ef4444' : '#f97316' },
-          { label: 'Controls', value: linkedControls.length, sub: `${policy.framework} controls`, color: '#10b981' },
+          { label: 'Framework', value: policy.framework.split(' ')[0], sub: policy.framework, color: 'hsl(var(--brand))' },
+          { label: 'Next Review', value: policy.nextReview ? new Date(policy.nextReview).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'N/A', sub: 'Review due', color: policy.nextReview && new Date(policy.nextReview) < new Date() ? 'hsl(var(--s-er-tx))' : 'hsl(var(--r-hi-tx))' },
+          { label: 'Controls', value: linkedControls.length, sub: `${policy.framework} controls`, color: 'hsl(var(--s-ok-tx))' },
         ].map(kpi => (
           <Card key={kpi.label} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
             <CardContent style={{ padding: '14px 16px' }}>
@@ -241,10 +241,10 @@ export default function PolicyDetail() {
                     <div style={{ marginBottom: 12 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                         <span style={{ fontSize: 13, color: 'hsl(var(--text-2))' }}>{framework.name}</span>
-                        <span style={{ fontSize: 15, fontWeight: 700, color: framework.complianceScore >= 80 ? '#10b981' : framework.complianceScore >= 60 ? '#f97316' : '#ef4444' }}>{framework.complianceScore}%</span>
+                        <span style={{ fontSize: 15, fontWeight: 700, color: framework.complianceScore >= 80 ? 'hsl(var(--s-ok-tx))' : framework.complianceScore >= 60 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-er-tx))' }}>{framework.complianceScore}%</span>
                       </div>
                       <div style={{ height: 6, background: 'hsl(var(--bg-muted))' }}>
-                        <div style={{ width: `${framework.complianceScore}%`, height: '100%', background: framework.complianceScore >= 80 ? '#10b981' : framework.complianceScore >= 60 ? '#f97316' : '#ef4444' }} />
+                        <div style={{ width: `${framework.complianceScore}%`, height: '100%', background: framework.complianceScore >= 80 ? 'hsl(var(--s-ok-tx))' : framework.complianceScore >= 60 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-er-tx))' }} />
                       </div>
                     </div>
                     {[
@@ -268,7 +268,7 @@ export default function PolicyDetail() {
                   </CardHeader>
                   <CardContent style={{ padding: '0 16px 16px' }}>
                     {linkedGaps.map(gap => {
-                      const gc = gap.severity === 'critical' ? '#ef4444' : gap.severity === 'high' ? '#f97316' : '#eab308';
+                      const gc = gap.severity === 'critical' ? 'hsl(var(--s-er-tx))' : gap.severity === 'high' ? 'hsl(var(--r-hi-tx))' : '#eab308';
                       return (
                         <div key={gap.id} style={{ padding: '8px 12px', border: `1px solid ${gc}30`, background: `${gc}08`, marginBottom: 6 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -306,7 +306,7 @@ export default function PolicyDetail() {
                       border: `2px solid ${v.status === 'current' ? 'hsl(var(--brand))' : 'hsl(var(--border))'}`,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: v.status === 'current' ? '#fff' : 'hsl(var(--text-3))' }}>{v.version}</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: v.status === 'current' ? 'hsl(var(--bg-surface))' : 'hsl(var(--text-3))' }}>{v.version}</span>
                     </div>
                     {i < versions.length - 1 && <div style={{ width: 1, flex: 1, marginTop: 4, background: 'hsl(var(--border))' }} />}
                   </div>
@@ -314,7 +314,7 @@ export default function PolicyDetail() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                       <span style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--text-1))' }}>{v.version}</span>
                       {v.status === 'current' && (
-                        <Badge style={{ background: '#10b98115', color: '#10b981', border: '1px solid #10b98130', borderRadius: 0, fontSize: 10 }}>CURRENT</Badge>
+                        <Badge style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', border: '1px solid hsl(var(--s-ok-br))', borderRadius: 0, fontSize: 10 }}>CURRENT</Badge>
                       )}
                     </div>
                     <p style={{ fontSize: 12, color: 'hsl(var(--text-2))', margin: 0, lineHeight: 1.5 }}>{v.summary}</p>
@@ -375,9 +375,9 @@ export default function PolicyDetail() {
                     <>
                       {[
                         { label: 'Total Stages', value: approvals.length, color: 'hsl(var(--text-1))' },
-                        { label: 'Approved', value: approved, color: '#10b981' },
-                        { label: 'In Review', value: inReview, color: '#f97316' },
-                        { label: 'Pending', value: pending, color: '#6b7280' },
+                        { label: 'Approved', value: approved, color: 'hsl(var(--s-ok-tx))' },
+                        { label: 'In Review', value: inReview, color: 'hsl(var(--r-hi-tx))' },
+                        { label: 'Pending', value: pending, color: 'hsl(var(--text-3))' },
                       ].map(({ label, value, color }) => (
                         <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid hsl(var(--border))' }}>
                           <span style={{ fontSize: 12, color: 'hsl(var(--text-3))' }}>{label}</span>
@@ -386,7 +386,7 @@ export default function PolicyDetail() {
                       ))}
                       <div style={{ marginTop: 12 }}>
                         <div style={{ height: 6, background: 'hsl(var(--bg-muted))' }}>
-                          <div style={{ width: `${Math.round(approved / approvals.length * 100)}%`, height: '100%', background: approved === approvals.length ? '#10b981' : '#f97316' }} />
+                          <div style={{ width: `${Math.round(approved / approvals.length * 100)}%`, height: '100%', background: approved === approvals.length ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--r-hi-tx))' }} />
                         </div>
                         <p style={{ fontSize: 11, color: 'hsl(var(--text-4))', marginTop: 4 }}>{Math.round(approved / approvals.length * 100)}% approval completion</p>
                       </div>
@@ -411,7 +411,7 @@ export default function PolicyDetail() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {linkedControls.map(ctrl => {
                 const csc = statusColor(ctrl.status);
-                const scoreC = ctrl.score >= 85 ? '#10b981' : ctrl.score >= 65 ? '#f97316' : '#ef4444';
+                const scoreC = ctrl.score >= 85 ? 'hsl(var(--s-ok-tx))' : ctrl.score >= 65 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-er-tx))';
                 return (
                   <Card
                     key={ctrl.id}
@@ -454,7 +454,7 @@ export default function PolicyDetail() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {linkedEvidence.map(ev => {
-                const evColor = ev.status === 'synced' ? '#10b981' : ev.status === 'pending' ? '#f97316' : ev.status === 'expired' ? '#ef4444' : '#6b7280';
+                const evColor = ev.status === 'synced' ? 'hsl(var(--s-ok-tx))' : ev.status === 'pending' ? 'hsl(var(--r-hi-tx))' : ev.status === 'expired' ? 'hsl(var(--s-er-tx))' : 'hsl(var(--text-3))';
                 return (
                   <Card key={ev.id} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                     <CardContent style={{ padding: '14px 16px' }}>

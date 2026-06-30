@@ -150,121 +150,117 @@ export default function ComplianceAutopilot() {
             <TabsTrigger value="efficiency" style={{ borderRadius: 0 }}>Efficiency Analytics</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="agents" className="mt-4">
-            <div className="grid grid-cols-2 gap-4">
+          <TabsContent value="agents" className="mt-3">
+            <div className="grid grid-cols-2 gap-3">
               {agents.map(agent => (
-                <Card key={agent.id} style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: `1px solid ${agent.status === 'running' ? 'hsl(var(--brand) / 0.2)' : 'hsl(var(--border))'}` }}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-start gap-2.5">
-                        <div className="p-2 mt-0.5" style={{ background: 'hsl(var(--brand) / 0.08)' }}>
-                          <agent.icon size={16} style={{ color: 'hsl(var(--brand))' }} />
+                <div key={agent.id} className="border" style={{ background: 'hsl(var(--bg-surface))', borderColor: agent.status === 'running' ? 'hsl(var(--brand) / 0.2)' : 'hsl(var(--border))' }}>
+                  <div className="p-3">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-start gap-2">
+                        <div className="p-1.5 mt-0.5" style={{ background: 'hsl(var(--brand) / 0.08)' }}>
+                          <agent.icon size={14} style={{ color: 'hsl(var(--brand))' }} />
                         </div>
                         <div>
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{agent.name}</p>
-                            <span className="text-[9px] font-mono px-1" style={{ background: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--text-4))' }}>{agent.id}</span>
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{agent.name}</p>
+                            <span className="text-[8px] font-mono px-1 py-0.5" style={{ background: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--text-4))' }}>{agent.id}</span>
                           </div>
-                          <p className="text-xs mt-0.5 leading-relaxed" style={{ color: 'hsl(var(--text-4))' }}>{agent.description}</p>
+                          <p className="text-[10px] mt-0.5 leading-snug" style={{ color: 'hsl(var(--text-4))' }}>{agent.description}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 ml-2 shrink-0">
-                        <span className="text-[10px]" style={{ color: agent.status === 'running' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-4))' }}>
+                      <div className="flex items-center gap-1.5 ml-2 shrink-0">
+                        <span className="text-[9px] font-semibold uppercase" style={{ color: agent.status === 'running' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-4))' }}>
                           {agent.status === 'running' ? 'Active' : 'Paused'}
                         </span>
                         <Switch checked={agent.status === 'running'} onCheckedChange={() => toggleAgent(agent.id)} />
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 mb-3">
-                      <div className="p-2 text-center" style={{ background: 'hsl(var(--bg-raised))' }}>
-                        <p className="text-lg font-bold" style={{ color: 'hsl(var(--brand))' }}>{agent.actionsToday}</p>
-                        <p className="text-[9px]" style={{ color: 'hsl(var(--text-4))' }}>Actions today</p>
+                    <div className="grid grid-cols-2 gap-1.5 mb-2">
+                      <div className="p-1.5 text-center" style={{ background: 'hsl(var(--bg-raised))' }}>
+                        <p className="text-base font-bold font-mono" style={{ color: 'hsl(var(--brand))' }}>{agent.actionsToday}</p>
+                        <p className="text-[8px] uppercase tracking-wider" style={{ color: 'hsl(var(--text-4))' }}>Actions today</p>
                       </div>
-                      <div className="p-2 text-center" style={{ background: 'hsl(var(--bg-raised))' }}>
-                        <p className="text-lg font-bold" style={{ color: 'hsl(var(--s-ok-tx))' }}>{agent.hoursSaved}h</p>
-                        <p className="text-[9px]" style={{ color: 'hsl(var(--text-4))' }}>Hours saved/day</p>
+                      <div className="p-1.5 text-center" style={{ background: 'hsl(var(--bg-raised))' }}>
+                        <p className="text-base font-bold font-mono" style={{ color: 'hsl(var(--s-ok-tx))' }}>{agent.hoursSaved}h</p>
+                        <p className="text-[8px] uppercase tracking-wider" style={{ color: 'hsl(var(--text-4))' }}>Hrs saved/day</p>
                       </div>
                     </div>
-                    <div className="mb-2">
-                      <p className="text-[9px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'hsl(var(--text-4))' }}>Last Action</p>
-                      <p className="text-[10px]" style={{ color: 'hsl(var(--text-3))' }}>{agent.lastAction}</p>
+                    <div className="mb-1.5">
+                      <p className="text-[8px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: 'hsl(var(--text-4))' }}>Last Action</p>
+                      <p className="text-[10px] font-mono leading-snug" style={{ color: 'hsl(var(--text-3))' }}>{agent.lastAction}</p>
                     </div>
                     <div>
-                      <p className="text-[9px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'hsl(var(--text-4))' }}>Trigger Conditions</p>
+                      <p className="text-[8px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: 'hsl(var(--text-4))' }}>Triggers</p>
                       <div className="space-y-0.5">
                         {agent.triggers.map((t, i) => (
-                          <div key={i} className="flex items-start gap-1.5">
-                            <ArrowRight size={9} style={{ color: 'hsl(var(--brand))', marginTop: 2, flexShrink: 0 }} />
+                          <div key={i} className="flex items-start gap-1">
+                            <ArrowRight size={8} style={{ color: 'hsl(var(--brand))', marginTop: 2, flexShrink: 0 }} />
                             <span className="text-[10px]" style={{ color: 'hsl(var(--text-3))' }}>{t}</span>
                           </div>
                         ))}
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               ))}
             </div>
           </TabsContent>
 
-          <TabsContent value="log" className="mt-4">
-            <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-              <CardContent className="p-0">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                      {['Timestamp', 'Agent', 'Autonomous Action', 'Outcome'].map(h => (
-                        <th key={h} className="px-4 py-3 text-left font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {ACTION_LOG.map((entry, i) => {
-                      const sc = sevColor(entry.severity);
-                      return (
-                        <tr key={i} style={{ borderBottom: '1px solid hsl(var(--border))' }} className="hover:bg-muted/30">
-                          <td className="px-4 py-2.5 font-mono" style={{ color: 'hsl(var(--text-4))' }}>{entry.ts}</td>
-                          <td className="px-4 py-2.5">
-                            <span className="text-[10px] px-1.5 py-0.5 font-medium" style={{ background: 'hsl(var(--brand) / 0.08)', color: 'hsl(var(--brand))' }}>{entry.agent}</span>
-                          </td>
-                          <td className="px-4 py-2.5" style={{ color: 'hsl(var(--text-2))' }}>{entry.action}</td>
-                          <td className="px-4 py-2.5">
-                            <span className="text-[9px] px-1.5 py-0.5 font-semibold" style={{ background: sc.bg, color: sc.tx }}>{entry.outcome}</span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </CardContent>
-            </Card>
+          <TabsContent value="log" className="mt-3">
+            <div className="border overflow-hidden" style={{ background: 'hsl(var(--bg-surface))', borderColor: 'hsl(var(--border))' }}>
+              <table className="w-full text-xs">
+                <thead>
+                  <tr style={{ borderBottom: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-raised))' }}>
+                    {['Timestamp', 'Agent', 'Autonomous Action', 'Outcome'].map(h => (
+                      <th key={h} className="px-2.5 py-2 text-left text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {ACTION_LOG.map((entry, i) => {
+                    const sc = sevColor(entry.severity);
+                    return (
+                      <tr key={i} style={{ borderBottom: '1px solid hsl(var(--border))' }} className="hover:bg-[hsl(var(--bg-raised))]">
+                        <td className="px-2.5 py-1.5 font-mono text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>{entry.ts}</td>
+                        <td className="px-2.5 py-1.5">
+                          <span className="text-[9px] px-1 py-0.5 font-medium" style={{ background: 'hsl(var(--brand) / 0.08)', color: 'hsl(var(--brand))' }}>{entry.agent}</span>
+                        </td>
+                        <td className="px-2.5 py-1.5 text-[11px]" style={{ color: 'hsl(var(--text-2))' }}>{entry.action}</td>
+                        <td className="px-2.5 py-1.5">
+                          <span className="text-[9px] px-1 py-0.5 font-semibold uppercase tracking-wider" style={{ background: sc.bg, color: sc.tx }}>{entry.outcome}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </TabsContent>
 
-          <TabsContent value="efficiency" className="mt-4 space-y-4">
-            <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-              <CardContent className="p-4">
-                <p className="text-sm font-semibold mb-3" style={{ color: 'hsl(var(--text-1))' }}>Engineering Hours Saved & Autonomous Actions — 7 Months</p>
-                <ResponsiveContainer width="100%" height={250}>
-                  <AreaChart data={EFFICIENCY_TREND}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
-                    <XAxis dataKey="date" tick={{ fill: ct.axis, fontSize: 11 }} />
-                    <YAxis tick={{ fill: ct.axis, fontSize: 11 }} />
-                    <RTooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, borderRadius: 0, color: ct.tooltipText, fontSize: 12 }} />
-                    <Area type="monotone" dataKey="hours" stroke="hsl(var(--brand))" fill="hsl(var(--brand) / 0.15)" strokeWidth={2} name="Hours Saved" />
-                    <Area type="monotone" dataKey="actions" stroke="hsl(var(--s-ok-tx))" fill="hsl(var(--s-ok-tx) / 0.1)" strokeWidth={1.5} name="Autonomous Actions" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+          <TabsContent value="efficiency" className="mt-3 space-y-3">
+            <div className="border p-3" style={{ background: 'hsl(var(--bg-surface))', borderColor: 'hsl(var(--border))' }}>
+              <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-1))' }}>Hours Saved & Autonomous Actions — 7 Months</p>
+              <ResponsiveContainer width="100%" height={220}>
+                <AreaChart data={EFFICIENCY_TREND}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+                  <XAxis dataKey="date" tick={{ fill: ct.axis, fontSize: 10 }} />
+                  <YAxis tick={{ fill: ct.axis, fontSize: 10 }} />
+                  <RTooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, borderRadius: 0, color: ct.tooltipText, fontSize: 11 }} />
+                  <Area type="monotone" dataKey="hours" stroke="hsl(var(--brand))" fill="hsl(var(--brand) / 0.15)" strokeWidth={2} name="Hours Saved" />
+                  <Area type="monotone" dataKey="actions" stroke="hsl(var(--s-ok-tx))" fill="hsl(var(--s-ok-tx) / 0.1)" strokeWidth={1.5} name="Autonomous Actions" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
             <div className="grid grid-cols-3 gap-3">
               {[
                 { label: 'FTE Equivalent Automated', value: '2.4 FTE', note: 'Based on 34h/week autopilot throughput' },
                 { label: 'Annual Cost Avoidance', value: '$387K', note: 'Estimated compliance labor cost offset' },
                 { label: 'Audit Findings Prevented', value: '23', note: 'Auto-remediated before audit window' },
               ].map((kpi, i) => (
-                <div key={i} className="p-4" style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-surface))' }}>
-                  <p className="text-2xl font-bold" style={{ color: 'hsl(var(--brand))' }}>{kpi.value}</p>
-                  <p className="text-xs font-semibold mt-1" style={{ color: 'hsl(var(--text-1))' }}>{kpi.label}</p>
-                  <p className="text-[10px] mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>{kpi.note}</p>
+                <div key={i} className="p-3 border" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--bg-surface))' }}>
+                  <p className="text-xl font-bold font-mono" style={{ color: 'hsl(var(--brand))' }}>{kpi.value}</p>
+                  <p className="text-[10px] font-semibold mt-0.5 uppercase tracking-wider" style={{ color: 'hsl(var(--text-1))' }}>{kpi.label}</p>
+                  <p className="text-[9px] mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>{kpi.note}</p>
                 </div>
               ))}
             </div>

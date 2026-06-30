@@ -125,8 +125,8 @@ export default function RegulatorFilings() {
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {[
           { label:"Total Filings", value: items.length, color:"hsl(var(--text-1))" },
-          { label:"Open / In Progress", value: openFilings, color:"#f59e0b" },
-          { label:"Overdue", value: overdue, color:"#ef4444" },
+          { label:"Open / In Progress", value: openFilings, color:"hsl(var(--s-wn-tx))" },
+          { label:"Overdue", value: overdue, color:"hsl(var(--s-er-tx))" },
           { label:"Filed This Quarter", value: filedThisQ, color:"#22c55e" },
           { label:"Avg Time to File", value: "38h", color:"hsl(var(--brand))" },
         ].map(k => (

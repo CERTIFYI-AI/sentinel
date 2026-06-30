@@ -242,18 +242,18 @@ const frameworkGapsMap: Record<string, FrameworkGap[]> = {
 
 // ── Chart Data ──────────────────────────────────────────────────────────────────
 const barChartData = [
-  { name: "ISO 27001", score: 87, fill: "#10b981" },
+  { name: "ISO 27001", score: 87, fill: "hsl(var(--s-ok-tx))" },
   { name: "SOC 2", score: 82, fill: "#3b82f6" },
-  { name: "EU AI Act", score: 71, fill: "#8b5cf6" },
-  { name: "NIST AI RMF", score: 79, fill: "#f59e0b" },
-  { name: "OWASP LLM", score: 68, fill: "#06b6d4" },
-  { name: "GDPR", score: 91, fill: "#10b981" },
+  { name: "EU AI Act", score: 71, fill: "hsl(var(--tag-purple))" },
+  { name: "NIST AI RMF", score: 79, fill: "hsl(var(--s-wn-tx))" },
+  { name: "OWASP LLM", score: 68, fill: "hsl(var(--s-in-tx))" },
+  { name: "GDPR", score: 91, fill: "hsl(var(--s-ok-tx))" },
 ];
 
 const pieData = [
-  { name: "Compliant", value: frameworks.filter(f => f.status === "compliant").length, fill: "#10b981" },
-  { name: "Partial", value: frameworks.filter(f => f.status === "partial").length, fill: "#f59e0b" },
-  { name: "Non-Compliant", value: frameworks.filter(f => f.status === "non-compliant").length, fill: "#ef4444" },
+  { name: "Compliant", value: frameworks.filter(f => f.status === "compliant").length, fill: "hsl(var(--s-ok-tx))" },
+  { name: "Partial", value: frameworks.filter(f => f.status === "partial").length, fill: "hsl(var(--s-wn-tx))" },
+  { name: "Non-Compliant", value: frameworks.filter(f => f.status === "non-compliant").length, fill: "hsl(var(--s-er-tx))" },
 ].filter(d => d.value > 0);
 
 const tooltipStyle = {

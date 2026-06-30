@@ -36,18 +36,18 @@ interface GraphEdge {
 
 const NODE_COLORS: Record<NodeType, string> = {
   data_source: '#3b82f6',
-  dataset: '#f59e0b',
-  model: '#8b5cf6',
-  agent: '#f97316',
-  use_case: '#10b981',
-  output: '#06b6d4',
+  dataset: 'hsl(var(--s-wn-tx))',
+  model: 'hsl(var(--tag-purple))',
+  agent: 'hsl(var(--r-hi-tx))',
+  use_case: 'hsl(var(--s-ok-tx))',
+  output: 'hsl(var(--s-in-tx))',
 };
 
 const RISK_RING: Record<RiskLevel, string> = {
-  critical: '#ef4444',
-  high: '#f97316',
+  critical: 'hsl(var(--s-er-tx))',
+  high: 'hsl(var(--r-hi-tx))',
   medium: '#eab308',
-  low: '#10b981',
+  low: 'hsl(var(--s-ok-tx))',
 };
 
 const NODE_ICON: Record<NodeType, React.ElementType> = {
@@ -106,7 +106,7 @@ const NODE_H = 54;
 function getNodeColor(node: GraphNode, selected: string | null, impact: Set<string>) {
   if (selected === node.id) return NODE_COLORS[node.type];
   if (impact.size > 0) {
-    if (impact.has(node.id)) return '#ef4444';
+    if (impact.has(node.id)) return 'hsl(var(--s-er-tx))';
     return '#4b5563';
   }
   return NODE_COLORS[node.type];
@@ -192,7 +192,7 @@ export default function SupplyChainGraph() {
           <div className="flex items-center gap-2 mb-1">
             <TreeStructure size={22} style={{ color: 'hsl(var(--brand))' }} />
             <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>AI Supply Chain Graph</h1>
-            <span className="px-2 py-0.5 text-xs font-bold" style={{ background: '#6366f120', color: '#6366f1', border: '1px solid #6366f130' }}>ENTERPRISE</span>
+            <span className="px-2 py-0.5 text-xs font-bold" style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--brand))', border: '1px solid hsl(var(--s-ok-br))' }}>ENTERPRISE</span>
           </div>
           <p className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>
             {orgName} · Interactive provenance graph — Data Sources → Datasets → Models → Agents → Use Cases
@@ -211,10 +211,10 @@ export default function SupplyChainGraph() {
       {/* ── Metric tiles ── */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: 'Total Nodes', value: nodes.length, color: '#6366f1', icon: TreeStructure },
-          { label: 'Cross-Border Transfers', value: crossBorderEdges.length, color: '#f97316', icon: Globe, warn: true },
-          { label: 'High-Risk Nodes', value: nodes.filter(n => n.riskLevel === 'critical' || n.riskLevel === 'high').length, color: '#ef4444', icon: ShieldWarning, warn: true },
-          { label: 'Supply Chain Risk Score', value: `${riskScore}/100`, color: riskScore > 60 ? '#ef4444' : riskScore > 40 ? '#f97316' : '#10b981', icon: ChartLine },
+          { label: 'Total Nodes', value: nodes.length, color: 'hsl(var(--brand))', icon: TreeStructure },
+          { label: 'Cross-Border Transfers', value: crossBorderEdges.length, color: 'hsl(var(--r-hi-tx))', icon: Globe, warn: true },
+          { label: 'High-Risk Nodes', value: nodes.filter(n => n.riskLevel === 'critical' || n.riskLevel === 'high').length, color: 'hsl(var(--s-er-tx))', icon: ShieldWarning, warn: true },
+          { label: 'Supply Chain Risk Score', value: `${riskScore}/100`, color: riskScore > 60 ? 'hsl(var(--s-er-tx))' : riskScore > 40 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-ok-tx))', icon: ChartLine },
         ].map(s => (
           <div key={s.label} style={{ background: 'hsl(var(--bg-surface))', border: `1px solid ${s.warn ? `${s.color}30` : 'hsl(var(--border))'}`, padding: '14px' }}>
             <div className="flex items-center justify-between mb-2">
@@ -235,7 +235,7 @@ export default function SupplyChainGraph() {
         </button>
         <button onClick={() => setShowCrossBorder(!showCrossBorder)}
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm"
-          style={{ background: showCrossBorder ? '#f9731615' : 'hsl(var(--bg-surface))', color: showCrossBorder ? '#f97316' : 'hsl(var(--text-2))', border: `1px solid ${showCrossBorder ? '#f9731640' : 'hsl(var(--border))'}` }}>
+          style={{ background: showCrossBorder ? 'hsl(var(--r-hi-bg))' : 'hsl(var(--bg-surface))', color: showCrossBorder ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--text-2))', border: `1px solid ${showCrossBorder ? 'hsl(var(--r-hi-br))' : 'hsl(var(--border))'}` }}>
           <Globe size={14} /> Data Transfers {showCrossBorder ? '(ON)' : '(OFF)'}
         </button>
         <button onClick={() => setZoom(z => Math.min(2, z + 0.1))} className="px-3 py-1.5 text-sm border" style={{ border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-2))' }}>+ Zoom</button>
@@ -265,10 +265,10 @@ export default function SupplyChainGraph() {
         >
           <defs>
             <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
-              <path d="M0,0 L0,6 L8,3 z" fill="#6b7280" />
+              <path d="M0,0 L0,6 L8,3 z" fill="hsl(var(--text-3))" />
             </marker>
             <marker id="arrow-cb" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
-              <path d="M0,0 L0,6 L8,3 z" fill="#f97316" />
+              <path d="M0,0 L0,6 L8,3 z" fill="hsl(var(--r-hi-tx))" />
             </marker>
           </defs>
           <g transform={`translate(${pan.x},${pan.y}) scale(${zoom})`}>
@@ -289,14 +289,14 @@ export default function SupplyChainGraph() {
                   <path
                     d={`M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`}
                     fill="none"
-                    stroke={isCrossB ? '#f97316' : isSelected ? 'hsl(var(--brand))' : '#4b5563'}
+                    stroke={isCrossB ? 'hsl(var(--r-hi-tx))' : isSelected ? 'hsl(var(--brand))' : '#4b5563'}
                     strokeWidth={isSelected ? 2 : 1.5}
                     strokeDasharray={isCrossB ? '6 3' : 'none'}
                     strokeOpacity={impactNodes.size > 0 && !impactNodes.has(edge.source) ? 0.15 : 0.7}
                     markerEnd={isCrossB ? 'url(#arrow-cb)' : 'url(#arrow)'}
                   />
                   {isCrossB && (
-                    <text x={mx} y={(y1 + y2) / 2 - 6} textAnchor="middle" fontSize={9} fill="#f97316" fontFamily="Outfit">
+                    <text x={mx} y={(y1 + y2) / 2 - 6} textAnchor="middle" fontSize={9} fill="hsl(var(--r-hi-tx))" fontFamily="Outfit">
                       SCCs required
                     </text>
                   )}
@@ -336,7 +336,7 @@ export default function SupplyChainGraph() {
                   </text>
                   {/* Cross-border indicator */}
                   {node.metadata.crossBorder && showCrossBorder && (
-                    <text x={NODE_W - 8} y={12} fontSize={10} fill="#f97316" textAnchor="middle">🌐</text>
+                    <text x={NODE_W - 8} y={12} fontSize={10} fill="hsl(var(--r-hi-tx))" textAnchor="middle">🌐</text>
                   )}
                 </g>
               );
@@ -373,7 +373,7 @@ export default function SupplyChainGraph() {
             </div>
             <div className="flex gap-2 items-center">
               {impactNodes.size > 1 && (
-                <div className="text-xs px-2 py-1" style={{ background: '#ef444415', color: '#ef4444', border: '1px solid #ef444430' }}>
+                <div className="text-xs px-2 py-1" style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))', border: '1px solid hsl(var(--s-er-br))' }}>
                   Removing this node affects {impactNodes.size - 1} downstream nodes
                 </div>
               )}
@@ -392,7 +392,7 @@ export default function SupplyChainGraph() {
             ].map(f => (
               <div key={f.label} style={{ background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))', padding: '10px' }}>
                 <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{f.label}</p>
-                <p className="text-sm font-medium mt-0.5" style={{ color: f.label === 'Cross-Border' && selectedNode.metadata.crossBorder ? '#f97316' : 'hsl(var(--text-1))' }}>{f.value}</p>
+                <p className="text-sm font-medium mt-0.5" style={{ color: f.label === 'Cross-Border' && selectedNode.metadata.crossBorder ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--text-1))' }}>{f.value}</p>
               </div>
             ))}
           </div>
@@ -401,14 +401,14 @@ export default function SupplyChainGraph() {
           )}
           {impactNodes.size > 1 && (
             <div className="mt-3">
-              <p className="text-xs font-semibold mb-2" style={{ color: '#ef4444' }}>
+              <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--s-er-tx))' }}>
                 Downstream impact ({impactNodes.size - 1} affected nodes):
               </p>
               <div className="flex flex-wrap gap-2">
                 {[...impactNodes].filter(id => id !== selectedNode.id).map(id => {
                   const n = nodes.find(x => x.id === id);
                   return n ? (
-                    <span key={id} className="text-xs px-2 py-1" style={{ background: '#ef444410', color: '#ef4444', border: '1px solid #ef444430' }}>{n.label}</span>
+                    <span key={id} className="text-xs px-2 py-1" style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))', border: '1px solid hsl(var(--s-er-br))' }}>{n.label}</span>
                   ) : null;
                 })}
               </div>

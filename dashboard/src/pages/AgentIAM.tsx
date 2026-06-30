@@ -265,7 +265,7 @@ export default function AgentIAM() {
             { agent: 'LoanProcessorAgent', anomaly: 'API key IAM-002 used from new IP: 192.168.99.1', severity: 'high', time: '2026-04-09 14:55' },
             { agent: 'ComplianceMonitorAgent', anomaly: '3× usual report generation rate — possible data exfil', severity: 'low', time: '2026-04-08 11:30' },
           ].map(a => (
-            <div key={a.time} className="mb-2 p-2 border border-[hsl(var(--border))]" style={{ borderLeft: `3px solid ${a.severity === 'high' ? '#ef4444' : a.severity === 'medium' ? '#f59e0b' : '#6366f1'}` }}>
+            <div key={a.time} className="mb-2 p-2 border border-[hsl(var(--border))]" style={{ borderLeft: `3px solid ${a.severity === 'high' ? 'hsl(var(--s-er-tx))' : a.severity === 'medium' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--brand))'}` }}>
               <div className="flex items-center justify-between mb-0.5">
                 <p className="text-xs font-medium text-[hsl(var(--text-1))]">{a.agent}</p>
                 <span className="text-[10px] text-[hsl(var(--text-4))]">{(a.time ?? '').split(' ')[1] ?? ''}</span>

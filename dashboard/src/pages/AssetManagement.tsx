@@ -26,7 +26,7 @@ const CLASS_COLORS: Record<string, string> = {
   "Restricted": "bg-orange-100 text-orange-700",
   "Top Secret": "bg-red-100 text-red-700",
 };
-const RISK_COLORS: Record<string, string> = { Critical:"#ef4444", High:"#f97316", Medium:"#f59e0b", Low:"#22c55e" };
+const RISK_COLORS: Record<string, string> = { Critical:"hsl(var(--s-er-tx))", High:"hsl(var(--r-hi-tx))", Medium:"hsl(var(--s-wn-tx))", Low:"#22c55e" };
 
 const SEED: any[] = [
   { id:"AST-001", name:"GPT-4o Risk Scorer v2", type:"AI Model", classification:"Confidential", owner:"Dr. Sarah Chen", department:"Data Science", location:"AWS", linkedModels:["AST-001"], riskLevel:"Critical", status:"Active", lastAudited:"2026-02-10", description:"Production credit risk scoring model deployed in underwriting pipeline. High-risk AI system under EU AI Act.", controls:["Encryption at rest","Role-based access","Audit logging","Bias monitoring"], frameworks:["EU AI Act","ISO 42001","SOC 2"], auditHistory:[{ date:"2026-02-10", auditor:"James Wilson", result:"Pass — 2 minor findings" },{ date:"2025-08-01", auditor:"Emma Rodriguez", result:"Pass" }], createdAt:"2025-03-01", updatedAt:"2026-02-10", createdBy:"schen" },
@@ -121,9 +121,9 @@ export default function AssetManagement() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label:"Total Assets", value: items.length, color:"hsl(var(--text-1))" },
-          { label:"Unclassified Assets", value: unclassified, color:"#f59e0b" },
-          { label:"High-Value Assets", value: highValue, color:"#f97316" },
-          { label:"Assets Without Owner", value: noOwner, color: noOwner > 0 ? "#ef4444" : "#22c55e" },
+          { label:"Unclassified Assets", value: unclassified, color:"hsl(var(--s-wn-tx))" },
+          { label:"High-Value Assets", value: highValue, color:"hsl(var(--r-hi-tx))" },
+          { label:"Assets Without Owner", value: noOwner, color: noOwner > 0 ? "hsl(var(--s-er-tx))" : "#22c55e" },
         ].map(k => (
           <Card key={k.label}><CardContent className="p-4">
             <p className="text-xs text-[hsl(var(--text-3))] mb-1">{k.label}</p>

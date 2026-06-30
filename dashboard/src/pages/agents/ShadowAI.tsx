@@ -83,7 +83,7 @@ export default function ShadowAI() {
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
             background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
-            color: '#fff', borderRadius: 0, minWidth: 300
+            color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 300
           }}>{t.text}</div>
         ))}
       </div>
@@ -321,7 +321,7 @@ export default function ShadowAI() {
 
               {/* Action Buttons */}
               <div className="flex gap-2 pt-2">
-                <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+                <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
                   onClick={() => { toast('Remediation plan created', 'info'); setInvestigateAgent(null); }}>
                   <Lightning size={14} className="mr-1" />Create Remediation Plan
                 </Button>

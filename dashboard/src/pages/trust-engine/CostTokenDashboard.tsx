@@ -134,7 +134,7 @@ export default function CostTokenDashboard() {
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
             background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
-            color: '#fff', borderRadius: 0, minWidth: 300,
+            color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 300,
           }}>{t.text}</div>
         ))}
       </div>
@@ -347,7 +347,7 @@ export default function CostTokenDashboard() {
           </div>
           <DialogFooter className="mt-4">
             <Button variant="outline" onClick={() => setBudgetDialogOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
-            <Button onClick={handleSetBudget} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>Set Alert</Button>
+            <Button onClick={handleSetBudget} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>Set Alert</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

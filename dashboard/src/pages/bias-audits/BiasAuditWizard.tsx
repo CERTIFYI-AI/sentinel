@@ -212,7 +212,7 @@ export default function BiasAuditWizard() {
               {orgName} · Fairness & bias assessment across protected attributes
             </p>
           </div>
-          <Button onClick={() => setWizardOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+          <Button onClick={() => setWizardOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
             <Plus size={14} className="mr-1" />New Bias Audit
           </Button>
         </div>
@@ -523,7 +523,7 @@ export default function BiasAuditWizard() {
                 <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Counterfactual Fairness Testing</p>
                 <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>Would the decision change if only the protected attribute changed? Tested on Loan Approval Model v3.0</p>
               </div>
-              <Button size="sm" style={{ borderRadius: 0, background: cfDone ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--brand))', color: cfDone ? 'hsl(var(--s-ok-tx))' : '#fff', border: cfDone ? '1px solid hsl(var(--s-ok-br))' : 'none' }}
+              <Button size="sm" style={{ borderRadius: 0, background: cfDone ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--brand))', color: cfDone ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--bg-surface))', border: cfDone ? '1px solid hsl(var(--s-ok-br))' : 'none' }}
                 onClick={runCounterfactualTest} disabled={cfRunning}>
                 {cfRunning ? 'Running…' : cfDone ? '✓ Re-run Test' : 'Run Counterfactual Test'}
               </Button>
@@ -889,7 +889,7 @@ export default function BiasAuditWizard() {
                     className="flex items-center justify-center w-7 h-7 text-xs font-bold"
                     style={{
                       background: s <= wizardStep ? 'hsl(var(--brand))' : 'hsl(var(--bg-surface))',
-                      color: s <= wizardStep ? '#fff' : 'hsl(var(--text-4))',
+                      color: s <= wizardStep ? 'hsl(var(--bg-surface))' : 'hsl(var(--text-4))',
                       border: '1px solid hsl(var(--border))',
                       borderRadius: 0,
                     }}
@@ -1047,7 +1047,7 @@ export default function BiasAuditWizard() {
                         <span style={{ color: 'hsl(var(--text-1))' }}>≥ {parseFloat(threshold).toFixed(2)}</span>
                       </div>
                     </div>
-                    <Button onClick={runWizardAudit} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff', width: '100%' }}>
+                    <Button onClick={runWizardAudit} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))', width: '100%' }}>
                       <Play size={14} className="mr-1.5" />Run Bias Audit
                     </Button>
                   </>
@@ -1098,7 +1098,7 @@ export default function BiasAuditWizard() {
                         ))}
                       </tbody>
                     </table>
-                    <Button onClick={finalizeWizard} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff', width: '100%' }}>
+                    <Button onClick={finalizeWizard} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))', width: '100%' }}>
                       Save Audit Results
                     </Button>
                   </div>
@@ -1125,7 +1125,7 @@ export default function BiasAuditWizard() {
                     (wizardStep === 3 && (!selectedDataset || selectedDimensions.length === 0)) ||
                     wizardStep === 4
                   }
-                  style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}
+                  style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
                 >
                   Next<ArrowRight size={14} className="ml-1" />
                 </Button>

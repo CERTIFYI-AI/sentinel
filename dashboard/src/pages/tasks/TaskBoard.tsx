@@ -10,14 +10,14 @@ import type { Severity } from '../../data/seed';
 function AvatarInitials({ name }: { name?: string | null }) {
   const safeName = name ?? '';
   const initials = safeName.split(' ').filter(Boolean).map(w => w[0]).join('').toUpperCase().slice(0, 2) || '?';
-  const colors = ['#6366f1', '#f97316', '#10b981', '#06b6d4', '#a855f7', '#f59e0b'];
+  const colors = ['hsl(var(--brand))', 'hsl(var(--r-hi-tx))', 'hsl(var(--s-ok-tx))', 'hsl(var(--s-in-tx))', '#a855f7', 'hsl(var(--s-wn-tx))'];
   const idx = safeName.charCodeAt(0) % colors.length;
   return (
     <div title={safeName} style={{
       width: 22, height: 22, borderRadius: '50%',
       background: colors[idx],
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: 9, fontWeight: 700, color: '#fff', flexShrink: 0,
+      fontSize: 9, fontWeight: 700, color: 'hsl(var(--bg-surface))', flexShrink: 0,
     }}>
       {initials}
     </div>
@@ -117,8 +117,8 @@ export default function TaskBoard({ onSelectTask }: { onSelectTask?: (task: Task
                     {/* Left accent stripe */}
                     <div style={{
                       position: 'absolute', left: 0, top: 0, bottom: 0, width: 3,
-                      background: task.status === 'overdue' ? '#ef4444'
-                        : task.status === 'done' ? '#10b981'
+                      background: task.status === 'overdue' ? 'hsl(var(--s-er-tx))'
+                        : task.status === 'done' ? 'hsl(var(--s-ok-tx))'
                         : task.status === 'in_progress' ? 'hsl(var(--brand))'
                         : 'hsl(var(--border))',
                     }} />
@@ -161,7 +161,7 @@ export default function TaskBoard({ onSelectTask }: { onSelectTask?: (task: Task
                       <div style={{
                         display: 'flex', alignItems: 'center', gap: 3,
                         fontSize: 10,
-                        color: task.status === 'overdue' ? '#ef4444' : 'hsl(var(--text-4))',
+                        color: task.status === 'overdue' ? 'hsl(var(--s-er-tx))' : 'hsl(var(--text-4))',
                       }}>
                         <CalendarBlank size={10} />
                         {formatDate(task.dueDate)}

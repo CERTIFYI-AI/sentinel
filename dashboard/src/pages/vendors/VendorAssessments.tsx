@@ -197,7 +197,7 @@ export default function VendorAssessments() {
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
             background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
-            color: '#fff', borderRadius: 0, minWidth: 300,
+            color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 300,
           }}>{t.text}</div>
         ))}
       </div>
@@ -212,7 +212,7 @@ export default function VendorAssessments() {
           <Button variant="outline" onClick={handleExport} style={{ borderRadius: 0 }}>
             <Export className="h-4 w-4 mr-2" />Export CSV
           </Button>
-          <Button onClick={() => setCreateOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+          <Button onClick={() => setCreateOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
             <Plus className="h-4 w-4 mr-2" />New Assessment
           </Button>
         </div>
@@ -447,7 +447,7 @@ export default function VendorAssessments() {
                     <Buildings size={13} className="mr-1" />View Vendor
                   </Button>
                   {['draft', 'in_progress', 'submitted', 'under_review'].includes(selected.status) && (
-                    <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }} onClick={() => advanceStatus(selected)}>
+                    <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={() => advanceStatus(selected)}>
                       Advance Status
                     </Button>
                   )}
@@ -530,7 +530,7 @@ export default function VendorAssessments() {
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => { setCreateOpen(false); setForm(BLANK_FORM); setFormError(''); }} style={{ borderRadius: 0 }}>Cancel</Button>
-              <Button onClick={handleCreate} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>Create Assessment</Button>
+              <Button onClick={handleCreate} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>Create Assessment</Button>
             </div>
           </div>
         </DialogContent>

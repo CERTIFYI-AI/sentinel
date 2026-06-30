@@ -28,7 +28,7 @@ export default function OverdueAlertBanner({ tasks = TASKS, onViewOverdue }: Ove
       style={{
         background: 'hsl(var(--s-er-bg))',
         border: '1px solid hsl(var(--s-er-br))',
-        borderLeft: '4px solid #ef4444',
+        borderLeft: '4px solid hsl(var(--s-er-tx))',
         padding: '12px 16px',
         display: 'flex',
         alignItems: 'center',
@@ -38,12 +38,12 @@ export default function OverdueAlertBanner({ tasks = TASKS, onViewOverdue }: Ove
       {/* Icon */}
       <div style={{
         width: 32, height: 32, borderRadius: '50%',
-        background: '#ef444420',
-        border: '1px solid #ef444440',
+        background: 'hsl(var(--s-er-bg))',
+        border: '1px solid hsl(var(--s-er-br))',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         flexShrink: 0,
       }}>
-        <Warning size={16} style={{ color: '#ef4444' }} weight="fill" />
+        <Warning size={16} style={{ color: 'hsl(var(--s-er-tx))' }} weight="fill" />
       </div>
 
       {/* Text */}
@@ -64,8 +64,8 @@ export default function OverdueAlertBanner({ tasks = TASKS, onViewOverdue }: Ove
         style={{
           display: 'flex', alignItems: 'center', gap: 5,
           fontSize: 12, fontWeight: 600,
-          color: '#ef4444',
-          background: 'none', border: '1px solid #ef444440',
+          color: 'hsl(var(--s-er-tx))',
+          background: 'none', border: '1px solid hsl(var(--s-er-br))',
           padding: '4px 12px',
           cursor: 'pointer',
           flexShrink: 0,

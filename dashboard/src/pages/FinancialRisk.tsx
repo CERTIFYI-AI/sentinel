@@ -210,10 +210,10 @@ export default function FinancialRisk() {
         </div>
         <div className="grid grid-cols-4 gap-3 mb-4">
           {[
-            { label: 'P50 (Median)', value: '$3.8M', color: '#10b981' },
-            { label: 'P75', value: '$7.2M', color: '#f59e0b' },
-            { label: 'P90', value: '$12.4M', color: '#f97316' },
-            { label: 'P95 (Worst-Case)', value: formatCurrency(worstCase), color: '#ef4444' },
+            { label: 'P50 (Median)', value: '$3.8M', color: 'hsl(var(--s-ok-tx))' },
+            { label: 'P75', value: '$7.2M', color: 'hsl(var(--s-wn-tx))' },
+            { label: 'P90', value: '$12.4M', color: 'hsl(var(--r-hi-tx))' },
+            { label: 'P95 (Worst-Case)', value: formatCurrency(worstCase), color: 'hsl(var(--s-er-tx))' },
           ].map(s => (
             <div key={s.label} className="p-3 border border-[hsl(var(--border))] text-center">
               <p className="text-[10px] text-[hsl(var(--text-4))] uppercase mb-1">{s.label}</p>
@@ -229,7 +229,7 @@ export default function FinancialRisk() {
             <XAxis dataKey="loss" tick={{ fontSize: 10, fill: 'hsl(var(--text-4))' }} />
             <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--text-4))' }} unit="%" />
             <Tooltip formatter={(v: any) => [`${v}%`, 'Probability']} contentStyle={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }} />
-            <ReferenceLine x="$4-6M" stroke="#f59e0b" strokeDasharray="3 2" label={{ value: 'AEL', fill: '#f59e0b', fontSize: 10 }} />
+            <ReferenceLine x="$4-6M" stroke="#f59e0b" strokeDasharray="3 2" label={{ value: 'AEL', fill: 'hsl(var(--s-wn-tx))', fontSize: 10 }} />
             <Bar dataKey="freq" fill="hsl(var(--brand) / 0.7)" />
           </BarChart>
         </ResponsiveContainer>
@@ -282,7 +282,7 @@ export default function FinancialRisk() {
                 <div className="grid grid-cols-3 gap-2 mt-1 text-[10px]">
                   <div><p className="text-[hsl(var(--text-4))]">Investment</p><p className="font-semibold text-[hsl(var(--text-2))]">{formatCurrency(c.investment)}</p></div>
                   <div><p className="text-[hsl(var(--text-4))]">Risk Reduction</p><p className="font-semibold text-[hsl(var(--s-ok-tx))]">{formatCurrency(c.riskReduction)}</p></div>
-                  <div><p className="text-[hsl(var(--text-4))]">ROI</p><p className="font-semibold" style={{ color: '#10b981' }}>{c.roi}%</p></div>
+                  <div><p className="text-[hsl(var(--text-4))]">ROI</p><p className="font-semibold" style={{ color: 'hsl(var(--s-ok-tx))' }}>{c.roi}%</p></div>
                 </div>
               </div>
             ))}

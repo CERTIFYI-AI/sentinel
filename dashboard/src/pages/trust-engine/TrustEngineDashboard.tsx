@@ -284,7 +284,7 @@ export default function TrustEngineDashboard() {
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
             background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
-            color: '#fff', borderRadius: 0, minWidth: 300,
+            color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 300,
           }}>{t.text}</div>
         ))}
       </div>
@@ -299,7 +299,7 @@ export default function TrustEngineDashboard() {
             <Button variant="outline" onClick={() => setAlertConfigOpen(true)} style={{ borderRadius: 0 }}>
               <Bell size={14} className="mr-2" />Alert Config
             </Button>
-            <Button onClick={() => setCreateOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+            <Button onClick={() => setCreateOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
               <Plus size={14} className="mr-2" />Create Rule
             </Button>
           </div>
@@ -569,7 +569,7 @@ export default function TrustEngineDashboard() {
           </div>
           <DialogFooter className="mt-4">
             <Button variant="outline" onClick={() => setAlertConfigOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
-            <Button onClick={() => { setAlertConfigOpen(false); toast('Alert configuration saved', 'success'); }} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+            <Button onClick={() => { setAlertConfigOpen(false); toast('Alert configuration saved', 'success'); }} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
               Save Configuration
             </Button>
           </DialogFooter>
@@ -618,7 +618,7 @@ export default function TrustEngineDashboard() {
           </div>
           <DialogFooter className="mt-4">
             <Button variant="outline" onClick={() => setCreateOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
-            <Button onClick={handleCreate} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>Create Rule</Button>
+            <Button onClick={handleCreate} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>Create Rule</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

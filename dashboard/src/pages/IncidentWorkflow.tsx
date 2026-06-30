@@ -59,7 +59,7 @@ const WORKFLOW: Record<IncidentStatus, WorkflowState> = {
   mitigating: {
     label: 'Mitigating',
     description: 'Remediation controls being applied',
-    color: '#8b5cf6',
+    color: 'hsl(var(--tag-purple))',
     bgColor: 'hsl(263 30% 14%)',
     nextStates: ['resolved'],
     slaHours: 8,
@@ -244,7 +244,7 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (in
           <div style={{ display: 'flex', gap: 10, paddingTop: 6 }}>
             <button onClick={onClose} style={{ flex: 1, padding: 9, background: 'none', border: '1px solid hsl(var(--border))', cursor: 'pointer', color: 'hsl(var(--text-2))', fontSize: 13 }}>Cancel</button>
             <button onClick={handleCreate} disabled={!title.trim()}
-              style={{ flex: 1, padding: 9, background: !title.trim() ? 'hsl(var(--bg-muted))' : 'hsl(var(--brand))', border: 'none', cursor: !title.trim() ? 'not-allowed' : 'pointer', color: !title.trim() ? 'hsl(var(--text-4))' : '#fff', fontSize: 13, fontWeight: 600 }}>
+              style={{ flex: 1, padding: 9, background: !title.trim() ? 'hsl(var(--bg-muted))' : 'hsl(var(--brand))', border: 'none', cursor: !title.trim() ? 'not-allowed' : 'pointer', color: !title.trim() ? 'hsl(var(--text-4))' : 'hsl(var(--bg-surface))', fontSize: 13, fontWeight: 600 }}>
               Create Incident
             </button>
           </div>
@@ -299,7 +299,7 @@ export default function IncidentWorkflow() {
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'hsl(var(--brand))', border: 'none', cursor: 'pointer', color: '#fff', fontSize: 13, fontWeight: 600 }}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'hsl(var(--brand))', border: 'none', cursor: 'pointer', color: 'hsl(var(--bg-surface))', fontSize: 13, fontWeight: 600 }}
         >
           <Plus size={14} /> Report Incident
         </button>

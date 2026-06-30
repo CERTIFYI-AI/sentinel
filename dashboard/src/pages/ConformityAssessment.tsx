@@ -30,7 +30,7 @@ const SEED: any[] = [
 const EMPTY: any = { title:"", framework:"EU AI Act", assessmentType:"Self-Assessment", outcome:"Not Yet Assessed", systemScope:"All AI Systems", startDate:"", dueDate:"", completedDate:"", owner:"", auditor:"", completion:0, criticalFindings:0, majorFindings:0, minorFindings:0, status:"Planned", certificationRequired:false, nextAssessmentDate:"", description:"", summary:"", actionPlan:"" };
 
 function ProgressBar({ pct }: { pct: number }) {
-  const color = pct === 100 ? "#22c55e" : pct >= 60 ? "#3b82f6" : "#f59e0b";
+  const color = pct === 100 ? "#22c55e" : pct >= 60 ? "#3b82f6" : "hsl(var(--s-wn-tx))";
   return (
     <div className="flex items-center gap-2">
       <div className="w-16 h-1.5 bg-[hsl(var(--border))]"><div style={{ width:`${pct}%`, background:color, height:"100%" }} /></div>
@@ -83,7 +83,7 @@ export default function ConformityAssessment() {
 
   const uniqueFrameworks = [...new Set(items.map(i=>i.framework))];
 
-  const outcomeColors: Record<string, string> = { Conformant:"#22c55e","Non-Conformant":"#ef4444","Partially Conformant":"#f59e0b","Conditional":"#3b82f6","Under Review":"#8b5cf6","Not Yet Assessed":"#9ca3af" };
+  const outcomeColors: Record<string, string> = { Conformant:"#22c55e","Non-Conformant":"hsl(var(--s-er-tx))","Partially Conformant":"hsl(var(--s-wn-tx))","Conditional":"#3b82f6","Under Review":"hsl(var(--tag-purple))","Not Yet Assessed":"#9ca3af" };
 
   return (
     <div className="p-6 space-y-5 max-w-[1400px]">
@@ -244,7 +244,7 @@ export default function ConformityAssessment() {
                 <div className="w-full h-2 bg-[hsl(var(--border))]"><div style={{ width:`${viewItem.completion}%`, background:viewItem.completion===100?"#22c55e":"#3b82f6", height:"100%" }} /></div>
               </div>
               <div className="flex items-center gap-6">
-                {[["Critical",viewItem.criticalFindings,"#ef4444"],["Major",viewItem.majorFindings,"#f97316"],["Minor",viewItem.minorFindings,"#f59e0b"]].map(([k,v,c])=>(
+                {[["Critical",viewItem.criticalFindings,"hsl(var(--s-er-tx))"],["Major",viewItem.majorFindings,"hsl(var(--r-hi-tx))"],["Minor",viewItem.minorFindings,"hsl(var(--s-wn-tx))"]].map(([k,v,c])=>(
                   <div key={k} className="text-center">
                     <p className="text-2xl font-bold" style={{ color:c as string }}>{v}</p>
                     <p className="text-xs text-[hsl(var(--text-4))]">{k} Findings</p>

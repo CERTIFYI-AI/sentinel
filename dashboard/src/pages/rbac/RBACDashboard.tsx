@@ -59,10 +59,10 @@ const ACCESS_EVENTS: AccessEvent[] = [
   { id: 'AE-008', user: 'Emma Wilson', action: 'Downloaded Evidence', resource: 'EV-003', timestamp: '2026-03-28T14:10:00Z', result: 'granted' },
 ];
 
-const ROLE_DIST = ROLES.map(r => ({ name: r.name, value: r.userCount, color: ['#10b981', '#6366f1', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'][ROLES.indexOf(r)] }));
+const ROLE_DIST = ROLES.map(r => ({ name: r.name, value: r.userCount, color: ['hsl(var(--s-ok-tx))', 'hsl(var(--brand))', 'hsl(var(--s-wn-tx))', 'hsl(var(--tag-purple))', '#ec4899', '#14b8a6'][ROLES.indexOf(r)] }));
 const MFA_DATA = [
-  { name: 'MFA Enabled', value: 63, color: '#10b981' },
-  { name: 'No MFA', value: 37, color: '#f59e0b' },
+  { name: 'MFA Enabled', value: 63, color: 'hsl(var(--s-ok-tx))' },
+  { name: 'No MFA', value: 37, color: 'hsl(var(--s-wn-tx))' },
 ];
 
 export default function RBACDashboard() {
@@ -140,7 +140,7 @@ export default function RBACDashboard() {
           <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Access Control</h1>
           <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} · RBAC management, roles, users &amp; audit log</p>
         </div>
-        <Button onClick={() => setAddUserOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+        <Button onClick={() => setAddUserOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
           <UserPlus className="h-4 w-4 mr-2" weight="bold" />Add User
         </Button>
       </div>
@@ -180,7 +180,7 @@ export default function RBACDashboard() {
             </p>
             <Button
               size="sm"
-              style={{ borderRadius: 0, background: 'hsl(0 72% 51%)', color: '#fff', flexShrink: 0 }}
+              style={{ borderRadius: 0, background: 'hsl(0 72% 51%)', color: 'hsl(var(--bg-surface))', flexShrink: 0 }}
               onClick={() => setMfaDialogOpen(true)}
             >
               <Warning size={13} className="mr-1" weight="bold" />
@@ -523,7 +523,7 @@ export default function RBACDashboard() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddUserOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
-            <Button onClick={handleAddUser} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>Add User</Button>
+            <Button onClick={handleAddUser} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>Add User</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -546,7 +546,7 @@ export default function RBACDashboard() {
             <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={enforceMFA}
-              style={{ borderRadius: 0, background: 'hsl(0 72% 51%)', color: '#fff' }}
+              style={{ borderRadius: 0, background: 'hsl(0 72% 51%)', color: 'hsl(var(--bg-surface))' }}
             >
               Enforce MFA
             </AlertDialogAction>

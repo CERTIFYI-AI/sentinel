@@ -30,7 +30,7 @@ const SEED: any[] = [
 const EMPTY: any = { name:"", type:"AI Model API", environment:"Production", status:"Unconfigured", endpoint:"", authType:"API Key", enabled:false, owner:"Platform Engineering", description:"" };
 
 function HealthDot({ status }: { status: string }) {
-  const colorMap: Record<string, string> = { Healthy:"#22c55e", Degraded:"#f59e0b", Down:"#ef4444", Maintenance:"#3b82f6", Unconfigured:"#9ca3af" };
+  const colorMap: Record<string, string> = { Healthy:"#22c55e", Degraded:"hsl(var(--s-wn-tx))", Down:"hsl(var(--s-er-tx))", Maintenance:"#3b82f6", Unconfigured:"#9ca3af" };
   const color = colorMap[status] ?? "#9ca3af";
   return <span className="inline-flex items-center gap-1.5"><span style={{ width:8, height:8, borderRadius:"50%", background:color, display:"inline-block" }} /><span className="text-xs font-medium" style={{ color }}>{status}</span></span>;
 }

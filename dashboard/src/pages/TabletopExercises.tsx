@@ -26,7 +26,7 @@ const SEED: any[] = [
 
 const EMPTY: any = { name:"", scenarioType:"AI Model Breach", date:"", duration:"2h", participants:[], readinessScore:"", findings:0, status:"Planned", facilitator:"", objectives:"", narrative:"", injects:[], scoring:{ detection:0, communication:0, escalation:0, technicalResponse:0, regulatoryCompliance:0, recovery:0 } };
 
-const SCORE_COLOR = (s: number) => s >= 80 ? "#22c55e" : s >= 50 ? "#f59e0b" : s > 0 ? "#ef4444" : "#888";
+const SCORE_COLOR = (s: number) => s >= 80 ? "#22c55e" : s >= 50 ? "hsl(var(--s-wn-tx))" : s > 0 ? "hsl(var(--s-er-tx))" : "#888";
 
 export default function TabletopExercises() {
   const { data: items, setData: setItems } = useSupabaseTable('tabletopexercises_table', SEED);

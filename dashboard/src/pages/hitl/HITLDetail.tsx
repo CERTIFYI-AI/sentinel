@@ -22,18 +22,18 @@ import {
 // ── helpers ────────────────────────────────────────────────────────────────
 
 function riskBarColor(score: number): string {
-  if (score >= 80) return '#ef4444';
-  if (score >= 60) return '#f97316';
-  return '#10b981';
+  if (score >= 80) return 'hsl(var(--s-er-tx))';
+  if (score >= 60) return 'hsl(var(--r-hi-tx))';
+  return 'hsl(var(--s-ok-tx))';
 }
 
 function slaColor(sla: string): string {
   const l = sla.toLowerCase();
-  if (l === 'overdue') return '#ef4444';
-  if (l === 'completed') return '#10b981';
+  if (l === 'overdue') return 'hsl(var(--s-er-tx))';
+  if (l === 'completed') return 'hsl(var(--s-ok-tx))';
   const h = parseInt((sla.match(/(\d+)h/) || [])[1] || '99');
-  if (h <= 4) return '#ef4444';
-  if (h <= 12) return '#f97316';
+  if (h <= 4) return 'hsl(var(--s-er-tx))';
+  if (h <= 12) return 'hsl(var(--r-hi-tx))';
   return 'hsl(var(--text-2))';
 }
 
@@ -161,7 +161,7 @@ export default function HITLDetail() {
               {review.status.replace(/_/g, ' ').toUpperCase()}
             </Badge>
             {isOverdue && (
-              <Badge style={{ background: 'hsl(var(--s-er-bg))', color: '#ef4444', border: '1px solid #ef444440', borderRadius: 0, fontSize: 10 }}>
+              <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))', border: '1px solid hsl(var(--s-er-br))', borderRadius: 0, fontSize: 10 }}>
                 <Warning size={10} className="mr-0.5" /> OVERDUE
               </Badge>
             )}
@@ -190,7 +190,7 @@ export default function HITLDetail() {
             variant="outline"
             disabled={actionState !== 'idle'}
             onClick={() => setActionState('approved')}
-            style={{ borderRadius: 0, color: '#10b981', borderColor: '#10b98140', gap: 6 }}
+            style={{ borderRadius: 0, color: 'hsl(var(--s-ok-tx))', borderColor: 'hsl(var(--s-ok-br))', gap: 6 }}
           >
             <CheckCircle size={14} /> Approve
           </Button>
@@ -199,7 +199,7 @@ export default function HITLDetail() {
             variant="outline"
             disabled={actionState !== 'idle'}
             onClick={() => setActionState('rejected')}
-            style={{ borderRadius: 0, color: '#ef4444', borderColor: '#ef444440', gap: 6 }}
+            style={{ borderRadius: 0, color: 'hsl(var(--s-er-tx))', borderColor: 'hsl(var(--s-er-br))', gap: 6 }}
           >
             <X size={14} /> Reject
           </Button>
@@ -207,7 +207,7 @@ export default function HITLDetail() {
             size="sm"
             disabled={actionState !== 'idle'}
             onClick={() => setActionState('escalated')}
-            style={{ borderRadius: 0, background: '#f97316', color: '#fff', gap: 6 }}
+            style={{ borderRadius: 0, background: 'hsl(var(--r-hi-tx))', color: 'hsl(var(--bg-surface))', gap: 6 }}
           >
             <ArrowUp size={14} /> Escalate
           </Button>
@@ -217,7 +217,7 @@ export default function HITLDetail() {
       {/* SLA Banner */}
       <div className="p-3 flex items-center gap-3" style={{
         background: isOverdue ? 'hsl(var(--s-er-bg))' : 'hsl(var(--bg-muted))',
-        border: `1px solid ${isOverdue ? '#ef444440' : 'hsl(var(--border))'}`,
+        border: `1px solid ${isOverdue ? 'hsl(var(--s-er-br))' : 'hsl(var(--border))'}`,
       }}>
         <Clock size={16} style={{ color: slaColor(review.sla), flexShrink: 0 }} />
         <span className="text-sm font-semibold" style={{ color: slaColor(review.sla) }}>
@@ -239,8 +239,8 @@ export default function HITLDetail() {
         {[
           { label: 'Risk Score', value: review.riskScore, color: riskBarColor(review.riskScore), icon: Warning, suffix: '/100' },
           { label: 'Model ID', value: review.modelId, color: 'hsl(var(--brand))', icon: Brain, suffix: '' },
-          { label: 'Assignee', value: (review.assignee ?? '').split(' ')[0] || '—', color: '#6366f1', icon: User, suffix: '' },
-          { label: 'Review Type', value: (review.type ?? '').split(' ').filter(Boolean).map((w: string) => w[0]).join(''), color: '#06b6d4', icon: ListChecks, suffix: '' },
+          { label: 'Assignee', value: (review.assignee ?? '').split(' ')[0] || '—', color: 'hsl(var(--brand))', icon: User, suffix: '' },
+          { label: 'Review Type', value: (review.type ?? '').split(' ').filter(Boolean).map((w: string) => w[0]).join(''), color: 'hsl(var(--s-in-tx))', icon: ListChecks, suffix: '' },
         ].map(s => (
           <Card key={s.label} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
             <CardContent className="p-4">
@@ -306,7 +306,7 @@ export default function HITLDetail() {
               <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-semibold flex items-center gap-2" style={{ color: 'hsl(var(--text-1))' }}>
-                    <Brain size={14} style={{ color: '#6366f1' }} />
+                    <Brain size={14} style={{ color: 'hsl(var(--brand))' }} />
                     Linked Model — {model.id}
                   </CardTitle>
                 </CardHeader>
@@ -343,7 +343,7 @@ export default function HITLDetail() {
             <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-semibold flex items-center gap-2" style={{ color: 'hsl(var(--text-1))' }}>
-                  <TrendUp size={14} style={{ color: '#f97316' }} />
+                  <TrendUp size={14} style={{ color: 'hsl(var(--r-hi-tx))' }} />
                   Bias Metrics — {model.name}
                 </CardTitle>
               </CardHeader>
@@ -353,7 +353,7 @@ export default function HITLDetail() {
                     <div key={bm.metric}>
                       <div className="flex justify-between text-xs mb-1">
                         <span style={{ color: 'hsl(var(--text-2))' }}>{bm.metric}</span>
-                        <span style={{ color: bm.status === 'Pass' ? '#10b981' : '#ef4444', fontWeight: 600 }}>
+                        <span style={{ color: bm.status === 'Pass' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))', fontWeight: 600 }}>
                           {bm.value} {bm.status === 'Pass' ? '✓' : '✗'}
                         </span>
                       </div>
@@ -361,7 +361,7 @@ export default function HITLDetail() {
                         <div style={{
                           width: `${bm.value * 100}%`,
                           height: '100%',
-                          background: bm.status === 'Pass' ? '#10b981' : '#ef4444',
+                          background: bm.status === 'Pass' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))',
                           transition: 'width 0.3s',
                         }} />
                         {/* threshold line */}
@@ -454,7 +454,7 @@ export default function HITLDetail() {
                   <div className="flex items-start gap-4 py-4">
                     <div style={{
                       width: 10, height: 10, borderRadius: '50%', marginTop: 4, flexShrink: 0,
-                      background: actionState === 'approved' ? '#10b981' : actionState === 'rejected' ? '#ef4444' : '#f97316',
+                      background: actionState === 'approved' ? 'hsl(var(--s-ok-tx))' : actionState === 'rejected' ? 'hsl(var(--s-er-tx))' : 'hsl(var(--r-hi-tx))',
                     }} />
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
@@ -488,9 +488,9 @@ export default function HITLDetail() {
               <CardContent>
                 <RiskGauge score={review.riskScore} />
                 <div className="flex justify-between text-xs mt-4" style={{ color: 'hsl(var(--text-4))' }}>
-                  <span style={{ color: '#10b981' }}>Low (0–59)</span>
-                  <span style={{ color: '#f97316' }}>Medium (60–79)</span>
-                  <span style={{ color: '#ef4444' }}>High (80+)</span>
+                  <span style={{ color: 'hsl(var(--s-ok-tx))' }}>Low (0–59)</span>
+                  <span style={{ color: 'hsl(var(--r-hi-tx))' }}>Medium (60–79)</span>
+                  <span style={{ color: 'hsl(var(--s-er-tx))' }}>High (80+)</span>
                 </div>
 
                 {/* Risk factors */}
@@ -519,7 +519,7 @@ export default function HITLDetail() {
             <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-semibold flex items-center gap-2" style={{ color: 'hsl(var(--text-1))' }}>
-                  <Flag size={14} style={{ color: '#f97316' }} />
+                  <Flag size={14} style={{ color: 'hsl(var(--r-hi-tx))' }} />
                   Linked Risks
                   <Badge style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-2))', border: '1px solid hsl(var(--border))', borderRadius: 0, fontSize: 10, marginLeft: 'auto' }}>
                     {linkedRisks.length}
@@ -575,11 +575,11 @@ export default function HITLDetail() {
             <CardContent>
               <div className="space-y-0">
                 {[
-                  { ts: '2026-03-31T07:00:00Z', action: 'Bias threshold exceeded on gender dimension', actor: 'Automated Monitor', icon: Warning, color: '#ef4444' },
+                  { ts: '2026-03-31T07:00:00Z', action: 'Bias threshold exceeded on gender dimension', actor: 'Automated Monitor', icon: Warning, color: 'hsl(var(--s-er-tx))' },
                   { ts: '2026-03-31T07:01:00Z', action: `HITL review ${review.id} automatically created`, actor: 'Pipeline Orchestrator', icon: Robot, color: 'hsl(var(--text-3))' },
-                  { ts: '2026-03-31T07:05:00Z', action: `SLA set to ${review.sla} based on ${review.priority} priority`, actor: 'SLA Engine', icon: Clock, color: '#f97316' },
-                  { ts: '2026-03-31T07:06:00Z', action: `Review assigned to ${review.assignee}`, actor: 'Assignment Engine', icon: User, color: '#6366f1' },
-                  { ts: '2026-03-31T09:15:00Z', action: 'Bias evidence package attached (2.4 MB)', actor: 'Evidence Collector', icon: FileText, color: '#06b6d4' },
+                  { ts: '2026-03-31T07:05:00Z', action: `SLA set to ${review.sla} based on ${review.priority} priority`, actor: 'SLA Engine', icon: Clock, color: 'hsl(var(--r-hi-tx))' },
+                  { ts: '2026-03-31T07:06:00Z', action: `Review assigned to ${review.assignee}`, actor: 'Assignment Engine', icon: User, color: 'hsl(var(--brand))' },
+                  { ts: '2026-03-31T09:15:00Z', action: 'Bias evidence package attached (2.4 MB)', actor: 'Evidence Collector', icon: FileText, color: 'hsl(var(--s-in-tx))' },
                   { ts: '2026-03-31T10:30:00Z', action: 'Email notification sent to reviewer', actor: 'Notification Service', icon: ChatText, color: 'hsl(var(--text-3))' },
                   { ts: '2026-03-31T14:00:00Z', action: 'Reviewer opened evidence package', actor: review.assignee, icon: Eye, color: 'hsl(var(--brand))' },
                   { ts: '2026-03-31T14:45:00Z', action: 'Risk score recalculated: 91 → ' + review.riskScore, actor: 'Risk Engine', icon: TrendUp, color: riskBarColor(review.riskScore) },
@@ -588,7 +588,7 @@ export default function HITLDetail() {
                     action: `Review ${actionState} by current user`,
                     actor: 'You',
                     icon: actionState === 'approved' ? CheckCircle : actionState === 'rejected' ? X : ArrowUp,
-                    color: actionState === 'approved' ? '#10b981' : actionState === 'rejected' ? '#ef4444' : '#f97316',
+                    color: actionState === 'approved' ? 'hsl(var(--s-ok-tx))' : actionState === 'rejected' ? 'hsl(var(--s-er-tx))' : 'hsl(var(--r-hi-tx))',
                   }] : []),
                 ].map((a, i, arr) => (
                   <div key={i} className="flex items-start gap-3 py-3" style={{ borderBottom: i < arr.length - 1 ? '1px solid hsl(var(--border))' : 'none' }}>

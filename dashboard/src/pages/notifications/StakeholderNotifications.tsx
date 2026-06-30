@@ -178,7 +178,7 @@ export default function StakeholderNotifications() {
         {toasts.map(t => (
           <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
             background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
-            color: '#fff', borderRadius: 0, minWidth: 300,
+            color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 300,
           }}>{t.text}</div>
         ))}
       </div>
@@ -252,7 +252,7 @@ export default function StakeholderNotifications() {
                           }}>{inc.status}</Badge>
                         </td>
                         <td className="px-4 py-3">
-                          <Button size="sm" className="h-7 text-xs" onClick={() => openWorkflow(inc)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+                          <Button size="sm" className="h-7 text-xs" onClick={() => openWorkflow(inc)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
                             <PaperPlaneTilt size={12} className="mr-1" />Notify Regulator
                           </Button>
                         </td>
@@ -294,7 +294,7 @@ export default function StakeholderNotifications() {
                       const inc = INCIDENT_NOTIFICATIONS.find(i => i.regulation === tmpl.regulation);
                       if (inc) openWorkflow(inc);
                       else toast('No active incident for this regulation', 'info');
-                    }} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+                    }} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
                       <PaperPlaneTilt size={12} className="mr-1" />Send Notification
                     </Button>
                   </div>
@@ -371,7 +371,7 @@ export default function StakeholderNotifications() {
           </div>
           <DialogFooter className="mt-4">
             <Button variant="outline" onClick={() => setEditTemplateOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
-            <Button onClick={() => { setEditTemplateOpen(false); toast('Template saved'); }} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>Save Template</Button>
+            <Button onClick={() => { setEditTemplateOpen(false); toast('Template saved'); }} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>Save Template</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -392,7 +392,7 @@ export default function StakeholderNotifications() {
               <div key={s} className="flex items-center gap-1 flex-1">
                 <div className="w-6 h-6 flex items-center justify-center text-[10px] font-bold" style={{
                   background: workflowStep >= s ? 'hsl(var(--brand))' : 'hsl(var(--border))',
-                  color: workflowStep >= s ? '#fff' : 'hsl(var(--text-4))',
+                  color: workflowStep >= s ? 'hsl(var(--bg-surface))' : 'hsl(var(--text-4))',
                   borderRadius: 0,
                 }}>{s}</div>
                 {s < 5 && <div className="flex-1 h-px" style={{ background: workflowStep > s ? 'hsl(var(--brand))' : 'hsl(var(--border))' }} />}
@@ -509,11 +509,11 @@ export default function StakeholderNotifications() {
               <Button variant="outline" onClick={() => setWorkflowStep(s => s - 1)} style={{ borderRadius: 0 }}>Back</Button>
             )}
             {workflowStep < 5 ? (
-              <Button onClick={() => setWorkflowStep(s => s + 1)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+              <Button onClick={() => setWorkflowStep(s => s + 1)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
                 Next <ArrowRight size={12} className="ml-1" />
               </Button>
             ) : (
-              <Button onClick={handleSendNotification} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: '#fff' }}>
+              <Button onClick={handleSendNotification} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
                 <PaperPlaneTilt size={14} className="mr-2" />Send Notification
               </Button>
             )}

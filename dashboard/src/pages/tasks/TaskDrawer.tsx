@@ -16,14 +16,14 @@ import { useTasks } from '../../hooks/queries/useTasks'
 function AvatarInitials({ name, size = 28 }: { name?: string | null; size?: number }) {
   const safeName = name ?? '';
   const initials = safeName.split(' ').filter(Boolean).map(w => w[0]).join('').toUpperCase().slice(0, 2) || '?';
-  const colors = ['#6366f1', '#f97316', '#10b981', '#06b6d4', '#a855f7', '#f59e0b'];
+  const colors = ['hsl(var(--brand))', 'hsl(var(--r-hi-tx))', 'hsl(var(--s-ok-tx))', 'hsl(var(--s-in-tx))', '#a855f7', 'hsl(var(--s-wn-tx))'];
   const idx = safeName.charCodeAt(0) % colors.length;
   return (
     <div title={safeName} style={{
       width: size, height: size, borderRadius: '50%',
       background: colors[idx],
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: size * 0.34, fontWeight: 700, color: '#fff', flexShrink: 0,
+      fontSize: size * 0.34, fontWeight: 700, color: 'hsl(var(--bg-surface))', flexShrink: 0,
     }}>
       {initials}
     </div>
@@ -149,7 +149,7 @@ export default function TaskDrawer({ task, onClose, onSave }: TaskDrawerProps) {
               <>
                 <button
                   onClick={saveEdit}
-                  style={{ padding: '5px 12px', background: 'hsl(var(--brand))', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}
+                  style={{ padding: '5px 12px', background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}
                 >
                   <Check size={13} /> Save
                 </button>
@@ -264,7 +264,7 @@ export default function TaskDrawer({ task, onClose, onSave }: TaskDrawerProps) {
                         style={{ padding: '4px 8px', background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', fontSize: 12 }}
                       />
                     ) : (
-                      <span style={{ fontSize: 13, color: task.status === 'overdue' ? '#ef4444' : 'hsl(var(--text-1))' }}>
+                      <span style={{ fontSize: 13, color: task.status === 'overdue' ? 'hsl(var(--s-er-tx))' : 'hsl(var(--text-1))' }}>
                         {formatDate(task.dueDate)}
                       </span>
                     ),
@@ -371,7 +371,7 @@ export default function TaskDrawer({ task, onClose, onSave }: TaskDrawerProps) {
                       style={{
                         padding: '5px 14px',
                         background: commentText.trim() ? 'hsl(var(--brand))' : 'hsl(var(--bg-muted))',
-                        color: commentText.trim() ? '#fff' : 'hsl(var(--text-4))',
+                        color: commentText.trim() ? 'hsl(var(--bg-surface))' : 'hsl(var(--text-4))',
                         border: 'none', cursor: commentText.trim() ? 'pointer' : 'default',
                         fontSize: 12, fontWeight: 500,
                       }}

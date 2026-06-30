@@ -31,7 +31,7 @@ const SEED: any[] = [
 
 const EMPTY: any = { title:"", type:"Model Failure", severity:"P3 Medium", aiSystem:"", businessImpact:"Unknown", dateOccurred:"", reportedBy:"", status:"Open", description:"", immediateActions:"", rootCause:"", cvssScore:"", regulatoryNotification:false, affectedUsers:"", dataBreachInvolved:false, mttr:"" };
 
-const SEV_COLORS: Record<string, string> = { "P1 Critical":"#ef4444","P2 High":"#f97316","P3 Medium":"#f59e0b","P4 Low":"#22c55e" };
+const SEV_COLORS: Record<string, string> = { "P1 Critical":"hsl(var(--s-er-tx))","P2 High":"hsl(var(--r-hi-tx))","P3 Medium":"hsl(var(--s-wn-tx))","P4 Low":"#22c55e" };
 
 export default function Incidents() {
   const { data: items, setData: setItems } = useSupabaseTable('incidents_table', SEED);
