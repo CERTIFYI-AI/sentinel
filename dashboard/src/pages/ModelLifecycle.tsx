@@ -1,16 +1,18 @@
 import { useState } from "react";
-import { GitBranch, ChevronRight, Clock, CheckCircle2, AlertTriangle, XCircle, PlayCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { GitBranch, ChevronRight, Clock, CheckCircle2, AlertTriangle, XCircle, PlayCircle, ArrowRight, Check, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
+type Stage = "development" | "testing" | "staging" | "production" | "monitoring" | "deprecated" | "retired";
+type GateStatus = "approved" | "pending" | "rejected";
+
+interface Approval { stage: string; approver: string; date: string; status: GateStatus }
 interface LifecycleModel {
-  id: string;
-  name: string;
-  provider: string;
-  stage: "development" | "testing" | "staging" | "production" | "monitoring" | "deprecated" | "retired";
-  approvals: { stage: string; approver: string; date: string; status: "approved" | "pending" | "rejected" }[];
-  lastTransition: string;
-  nextReview: string;
-  owner: string;
+  id: string; name: string; provider: string; stage: Stage;
+  approvals: Approval[]; lastTransition: string; nextReview: string; owner: string;
 }
 
 const LIFECYCLE_MODELS: LifecycleModel[] = [
@@ -55,85 +57,129 @@ const LIFECYCLE_MODELS: LifecycleModel[] = [
   },
 ];
 
-const STAGES = ["development", "testing", "staging", "production", "monitoring", "deprecated", "retired"];
+const STAGES: Stage[] = ["development", "testing", "staging", "production", "monitoring", "deprecated", "retired"];
 
-const stageColors: Record<string, string> = {
-  development: "bg-blue-500",
-  testing: "bg-indigo-500",
-  staging: "bg-amber-500",
-  production: "bg-green-500",
-  monitoring: "bg-emerald-500",
-  deprecated: "bg-slate-400",
-  retired: "bg-slate-300",
+// Stage → solid indicator colour (design tokens, no raw Tailwind).
+const stageColor: Record<Stage, string> = {
+  development: "hsl(var(--s-in-tx))",
+  testing:     "hsl(var(--tag-purple))",
+  staging:     "hsl(var(--s-wn-tx))",
+  production:  "hsl(var(--s-ok-tx))",
+  monitoring:  "hsl(var(--s-ok-tx))",
+  deprecated:  "hsl(var(--text-4))",
+  retired:     "hsl(var(--text-4))",
 };
 
-const stageIcons: Record<string, typeof GitBranch> = {
-  development: GitBranch,
-  testing: PlayCircle,
-  staging: Clock,
-  production: CheckCircle2,
-  monitoring: CheckCircle2,
-  deprecated: AlertTriangle,
-  retired: XCircle,
+const stageIcons: Record<Stage, typeof GitBranch> = {
+  development: GitBranch, testing: PlayCircle, staging: Clock,
+  production: CheckCircle2, monitoring: CheckCircle2, deprecated: AlertTriangle, retired: XCircle,
 };
+
+const GATE_STYLE: Record<GateStatus, { bg: string; tx: string; icon: typeof CheckCircle2 }> = {
+  approved: { bg: "hsl(var(--s-ok-bg))", tx: "hsl(var(--s-ok-tx))", icon: CheckCircle2 },
+  pending:  { bg: "hsl(var(--s-wn-bg))", tx: "hsl(var(--s-wn-tx))", icon: Clock },
+  rejected: { bg: "hsl(var(--s-er-bg))", tx: "hsl(var(--s-er-tx))", icon: XCircle },
+};
+
+const today = () => new Date().toISOString().slice(0, 10);
 
 export default function ModelLifecycle() {
-  const [selectedModel, setSelectedModel] = useState<string>(LIFECYCLE_MODELS[0].id);
-  const model = LIFECYCLE_MODELS.find(m => m.id === selectedModel)!;
+  const navigate = useNavigate();
+  const [models, setModels] = useState<LifecycleModel[]>(LIFECYCLE_MODELS);
+  const [selectedId, setSelectedId] = useState<string>(LIFECYCLE_MODELS[0].id);
+  const model = models.find(m => m.id === selectedId)!;
   const currentStageIdx = STAGES.indexOf(model.stage);
+  const nextStage = STAGES[currentStageIdx + 1];
+  const hasPendingGate = model.approvals.some(a => a.status === "pending");
+
+  const update = (fn: (m: LifecycleModel) => LifecycleModel) =>
+    setModels(prev => prev.map(m => (m.id === selectedId ? fn(m) : m)));
+
+  const advanceStage = () => {
+    if (!nextStage) return;
+    update(m => ({
+      ...m,
+      stage: nextStage,
+      lastTransition: today(),
+      approvals: [...m.approvals, { stage: nextStage.charAt(0).toUpperCase() + nextStage.slice(1), approver: "Pending assignment", date: today(), status: "pending" }],
+    }));
+    toast.success(`Transition requested → ${nextStage} (gate pending approval)`);
+  };
+
+  const setGate = (idx: number, status: GateStatus) => {
+    update(m => ({ ...m, approvals: m.approvals.map((a, i) => (i === idx ? { ...a, status, date: today() } : a)) }));
+    toast.success(status === "approved" ? "Gate approved" : "Gate rejected");
+  };
+
+  const counts = {
+    production: models.filter(m => m.stage === "production" || m.stage === "monitoring").length,
+    pending: models.reduce((n, m) => n + m.approvals.filter(a => a.status === "pending").length, 0),
+    deprecated: models.filter(m => m.stage === "deprecated" || m.stage === "retired").length,
+  };
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-100 dark:bg-blue-950 rounded-lg"><GitBranch size={20} className="text-blue-600 dark:text-blue-400" /></div>
-          <div>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Model Lifecycle</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Track model progression from development to retirement with approval gates</p>
-          </div>
-        </div>
-      </div>
+    <div className="space-y-4">
+      <PageHeader
+        title="Model Lifecycle"
+        subtitle={`${models.length} models tracked · ${counts.production} in production · ${counts.pending} gate(s) pending`}
+        icon={GitBranch}
+        actions={
+          <Button
+            size="sm"
+            leftIcon={<ArrowRight size={14} />}
+            disabled={!nextStage || hasPendingGate}
+            title={hasPendingGate ? "Resolve the pending gate first" : !nextStage ? "Already at final stage" : `Advance to ${nextStage}`}
+            onClick={advanceStage}
+          >
+            Advance Stage
+          </Button>
+        }
+      />
 
       {/* Model Selector */}
-      <div className="flex gap-3 overflow-x-auto pb-1">
-        {LIFECYCLE_MODELS.map(m => (
-          <button key={m.id} onClick={() => setSelectedModel(m.id)}
-            className={`flex-shrink-0 px-4 py-2.5 rounded-lg text-sm font-medium border transition-all ${
-              selectedModel === m.id
-                ? "bg-green-50 dark:bg-green-950 border-green-300 dark:border-green-700 text-green-700 dark:text-green-400"
-                : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-300"
-            }`}>
-            <span className={`inline-block w-2 h-2 rounded-full mr-2 ${stageColors[m.stage]}`} />
-            {m.name}
-            <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-2 capitalize">{m.stage}</span>
-          </button>
-        ))}
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {models.map(m => {
+          const active = selectedId === m.id;
+          return (
+            <button key={m.id} onClick={() => setSelectedId(m.id)}
+              className="flex-shrink-0 inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium border transition-colors"
+              style={{
+                background: active ? "hsl(var(--bg-muted))" : "hsl(var(--bg-surface))",
+                borderColor: active ? "hsl(var(--brand))" : "hsl(var(--border))",
+                color: active ? "hsl(var(--text-1))" : "hsl(var(--text-2))",
+              }}>
+              <span className="inline-block w-2 h-2 rounded-full" style={{ background: stageColor[m.stage] }} />
+              {m.name}
+              <span className="text-[10px] capitalize" style={{ color: "hsl(var(--text-4))" }}>{m.stage}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Stage Pipeline */}
-      <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+      <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium">Lifecycle Pipeline — {model.name}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-1 overflow-x-auto py-2">
+          <div className="flex items-center gap-1 overflow-x-auto py-1">
             {STAGES.map((stage, i) => {
               const Icon = stageIcons[stage];
               const isPast = i < currentStageIdx;
               const isCurrent = i === currentStageIdx;
-              const isFuture = i > currentStageIdx;
               return (
                 <div key={stage} className="flex items-center">
-                  <div className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-medium transition-all ${
-                    isCurrent ? `${stageColors[stage]} text-white shadow-sm` :
-                    isPast ? "bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400" :
-                    "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500"
-                  }`}>
+                  <div className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium whitespace-nowrap"
+                    style={
+                      isCurrent ? { background: stageColor[stage], color: "hsl(var(--bg-surface))" } :
+                      isPast ? { background: "hsl(var(--s-ok-bg))", color: "hsl(var(--s-ok-tx))" } :
+                      { background: "hsl(var(--bg-muted))", color: "hsl(var(--text-4))" }
+                    }>
                     <Icon size={14} />
-                    <span className="capitalize whitespace-nowrap">{stage}</span>
+                    <span className="capitalize">{stage}</span>
                   </div>
                   {i < STAGES.length - 1 && (
-                    <ChevronRight size={16} className={`mx-1 flex-shrink-0 ${isPast ? "text-green-400" : "text-slate-300 dark:text-slate-600"}`} />
+                    <ChevronRight size={15} className="mx-0.5 flex-shrink-0" style={{ color: isPast ? "hsl(var(--s-ok-tx))" : "hsl(var(--border-mid))" }} />
                   )}
                 </div>
               );
@@ -142,70 +188,80 @@ export default function ModelLifecycle() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Approval History */}
         <div className="lg:col-span-2">
-          <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+          <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">Approval Gate History</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {model.approvals.map((a, i) => (
-                  <div key={i} className="flex items-start gap-4">
-                    <div className="flex flex-col items-center">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                        a.status === "approved" ? "bg-green-100 dark:bg-green-950 text-green-600 dark:text-green-400" :
-                        a.status === "pending" ? "bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400" :
-                        "bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400"
-                      }`}>
-                        {a.status === "approved" ? <CheckCircle2 size={16} /> : a.status === "pending" ? <Clock size={16} /> : <XCircle size={16} />}
+              <div className="space-y-3">
+                {model.approvals.map((a, i) => {
+                  const g = GATE_STYLE[a.status];
+                  const GIcon = g.icon;
+                  return (
+                    <div key={i} className="flex items-start gap-3">
+                      <div className="flex flex-col items-center">
+                        <div className="w-7 h-7 flex items-center justify-center" style={{ background: g.bg, color: g.tx }}>
+                          <GIcon size={15} />
+                        </div>
+                        {i < model.approvals.length - 1 && <div className="w-px h-7 mt-1" style={{ background: "hsl(var(--border))" }} />}
                       </div>
-                      {i < model.approvals.length - 1 && <div className="w-px h-8 bg-slate-200 dark:bg-slate-700 mt-1" />}
-                    </div>
-                    <div className="flex-1 pb-2">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{a.stage}</p>
-                        <span className={`text-[10px] font-medium px-2 py-0.5 rounded ${
-                          a.status === "approved" ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400" :
-                          a.status === "pending" ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400" :
-                          "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400"
-                        }`}>{a.status}</span>
+                      <div className="flex-1 pb-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-medium" style={{ color: "hsl(var(--text-1))" }}>{a.stage}</p>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5" style={{ background: g.bg, color: g.tx }}>{a.status}</span>
+                            {a.status === "pending" && (
+                              <>
+                                <button onClick={() => setGate(i, "approved")} title="Approve gate"
+                                  className="inline-flex items-center justify-center w-5 h-5" style={{ color: "hsl(var(--s-ok-tx))", border: "1px solid hsl(var(--s-ok-br))" }}>
+                                  <Check size={12} />
+                                </button>
+                                <button onClick={() => setGate(i, "rejected")} title="Reject gate"
+                                  className="inline-flex items-center justify-center w-5 h-5" style={{ color: "hsl(var(--s-er-tx))", border: "1px solid hsl(var(--s-er-br))" }}>
+                                  <X size={12} />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <p className="text-xs mt-0.5" style={{ color: "hsl(var(--text-3))" }}>
+                          {a.status === "approved" ? "Approved" : a.status === "rejected" ? "Rejected" : "Awaiting"} by <span className="font-medium" style={{ color: "hsl(var(--text-2))" }}>{a.approver}</span> · {a.date}
+                        </p>
                       </div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                        Approved by <span className="font-medium text-slate-700 dark:text-slate-300">{a.approver}</span> on {a.date}
-                      </p>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Model Details */}
-        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+        <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Model Details</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-2.5">
             {[
-              { label: "Model ID", value: model.id },
+              { label: "Model ID", value: model.id, mono: true },
               { label: "Provider", value: model.provider },
               { label: "Owner", value: model.owner },
               { label: "Current Stage", value: model.stage.charAt(0).toUpperCase() + model.stage.slice(1) },
-              { label: "Last Transition", value: model.lastTransition },
-              { label: "Next Review", value: model.nextReview },
+              { label: "Last Transition", value: model.lastTransition, mono: true },
+              { label: "Next Review", value: model.nextReview, mono: true },
             ].map((d, i) => (
-              <div key={i} className="flex justify-between items-center">
-                <span className="text-xs text-slate-500 dark:text-slate-400">{d.label}</span>
-                <span className="text-xs font-medium text-slate-800 dark:text-slate-200">{d.value}</span>
+              <div key={i} className="flex justify-between items-center gap-3">
+                <span className="text-xs" style={{ color: "hsl(var(--text-4))" }}>{d.label}</span>
+                <span className={`text-xs font-medium ${d.mono ? "font-mono" : ""}`} style={{ color: "hsl(var(--text-1))" }}>{d.value}</span>
               </div>
             ))}
-            <div className="border-t border-slate-200 dark:border-slate-700 pt-3">
-              <button className="w-full text-center text-xs text-green-600 dark:text-green-400 hover:underline font-medium">
+            <div className="pt-2.5" style={{ borderTop: "1px solid hsl(var(--border))" }}>
+              <Button variant="outline" size="sm" fullWidth onClick={() => navigate(`/models/inventory/${model.id}`)}>
                 View Full Model Card
-              </button>
+              </Button>
             </div>
           </CardContent>
         </Card>
