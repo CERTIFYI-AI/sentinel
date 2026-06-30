@@ -27,16 +27,16 @@ const DATASETS: Dataset[] = [
 ];
 
 const typeColors: Record<string, string> = {
-  safety: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400",
-  accuracy: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400",
-  fairness: "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-400",
-  custom: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
+  safety: "bg-[hsl(var(--s-er-bg))] text-[hsl(var(--s-er-tx))]",
+  accuracy: "bg-[hsl(var(--s-in-bg))] text-[hsl(var(--s-in-tx))]",
+  fairness: "bg-[hsl(var(--tag-purple-bg))] text-[hsl(var(--tag-purple))]",
+  custom: "bg-[hsl(var(--bg-muted))] text-[hsl(var(--text-2))]",
 };
 
 const formatColors: Record<string, string> = {
-  JSONL: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400",
-  CSV: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400",
-  Parquet: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400",
+  JSONL: "bg-[hsl(var(--s-in-bg))] text-[hsl(var(--s-in-tx))]",
+  CSV: "bg-[hsl(var(--s-ok-bg))] text-[hsl(var(--s-ok-tx))]",
+  Parquet: "bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))]",
 };
 
 export default function Datasets() {
@@ -55,13 +55,13 @@ export default function Datasets() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-cyan-100 dark:bg-cyan-950 rounded-lg"><Database size={20} className="text-cyan-600 dark:text-cyan-400" /></div>
+          <div className="p-2 bg-[hsl(var(--s-in-bg))] rounded-lg"><Database size={20} className="text-[hsl(var(--s-in-tx))]" /></div>
           <div>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Dataset Hub</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">{DATASETS.length} evaluation datasets · {totalSamples.toLocaleString()} total samples</p>
+            <h1 className="text-xl font-bold text-[hsl(var(--text-1))]">Dataset Hub</h1>
+            <p className="text-sm text-[hsl(var(--text-3))]">{DATASETS.length} evaluation datasets · {totalSamples.toLocaleString()} total samples</p>
           </div>
         </div>
-        <button className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+        <button className="flex items-center gap-2 bg-[hsl(var(--s-ok-tx))] hover:bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))] px-4 py-2 rounded-lg text-sm font-medium transition-colors">
           <Plus size={14} /> Create Dataset
         </button>
       </div>
@@ -69,13 +69,13 @@ export default function Datasets() {
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 max-w-sm">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search datasets or tags..." className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none" />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search datasets or tags..." className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] rounded-lg bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:ring-2 focus:ring-green-500 focus:border-[hsl(var(--s-ok-br))] outline-none" />
         </div>
         <div className="flex gap-2">
           {["all", "safety", "accuracy", "fairness", "custom"].map(f => (
             <button key={f} onClick={() => setTypeFilter(f)} className={`px-3 py-1.5 text-xs rounded-lg capitalize font-medium transition-colors ${
-              typeFilter === f ? "bg-green-600 text-white" : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300"
+              typeFilter === f ? "bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))]" : "bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] text-[hsl(var(--text-2))]"
             }`}>{f}</button>
           ))}
         </div>
@@ -84,31 +84,31 @@ export default function Datasets() {
       {/* Dataset Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {filtered.map(d => (
-          <Card key={d.id} className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:shadow-sm transition-shadow">
+          <Card key={d.id} className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] hover:shadow-sm transition-shadow">
             <CardContent className="p-4">
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <FileText size={14} className="text-slate-400 flex-shrink-0" />
-                  <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{d.name}</h3>
+                  <FileText size={14} className="text-[hsl(var(--text-4))] flex-shrink-0" />
+                  <h3 className="text-sm font-semibold text-[hsl(var(--text-1))]">{d.name}</h3>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className={`text-[10px] font-medium px-2 py-0.5 rounded capitalize ${typeColors[d.type]}`}>{d.type}</span>
                   <span className={`text-[10px] font-medium px-2 py-0.5 rounded ${formatColors[d.format]}`}>{d.format}</span>
                 </div>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">{d.description}</p>
+              <p className="text-xs text-[hsl(var(--text-3))] mb-3">{d.description}</p>
               <div className="flex flex-wrap gap-1 mb-3">
                 {d.tags.map(t => (
-                  <span key={t} className="text-[9px] px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">{t}</span>
+                  <span key={t} className="text-[9px] px-1.5 py-0.5 rounded-full bg-[hsl(var(--bg-muted))] text-[hsl(var(--text-3))]">{t}</span>
                 ))}
               </div>
-              <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-4 text-[11px] text-slate-500 dark:text-slate-400">
-                  <span className="font-mono font-medium text-slate-700 dark:text-slate-300">{d.samples.toLocaleString()} samples</span>
+              <div className="flex items-center justify-between pt-3 border-t border-[hsl(var(--border))]">
+                <div className="flex items-center gap-4 text-[11px] text-[hsl(var(--text-3))]">
+                  <span className="font-mono font-medium text-[hsl(var(--text-2))]">{d.samples.toLocaleString()} samples</span>
                   <span className="flex items-center gap-1"><Clock size={10} /> {d.lastUsed}</span>
                   <span>{d.createdBy}</span>
                 </div>
-                <button className="text-xs text-green-600 dark:text-green-400 hover:underline font-medium flex items-center gap-1">
+                <button className="text-xs text-[hsl(var(--s-ok-tx))] hover:underline font-medium flex items-center gap-1">
                   Preview <ArrowUpRight size={10} />
                 </button>
               </div>
