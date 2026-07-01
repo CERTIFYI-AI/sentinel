@@ -1,3 +1,7 @@
+## 1.20.0 (2026-07-01)
+
+* feat(compliance): tokenize Gap Analysis, PageHeader on Testing, fix dup route ([b6f2054](https://github.com/CERTIFYI-AI/sentinel/commit/b6f2054))
+
 ## 1.19.0 (2026-07-01)
 
 * feat(compliance): backend control seed (92) + real asyncpg drift adapter ([68c5512](https://github.com/CERTIFYI-AI/sentinel/commit/68c5512))
