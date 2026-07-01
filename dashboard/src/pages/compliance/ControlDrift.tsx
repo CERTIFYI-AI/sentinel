@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { CONTROLS, FRAMEWORKS, FRAMEWORK_NAME, frameworksImpactedBy, type ControlDef, type Severity } from '@/data/complianceLibrary';
 import { Pulse, MagnifyingGlass, CaretRight, ShieldCheck, Warning, TrendDown } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { useControlDriftAlerts } from '@/hooks/useControlDriftAlerts';
 
 type DriftSeverity = 'NONE' | 'WATCH' | 'WARNING' | 'CRITICAL';
 type EvalStatus = 'PASS' | 'FAIL' | 'MANUAL';
@@ -99,6 +100,7 @@ export default function ControlDrift() {
   const [fw, setFw] = useState('all');
   const [sev, setSev] = useState('all');
   const [expanded, setExpanded] = useState<string | null>(null);
+  useControlDriftAlerts(); // live drift/regulatory alerts via Supabase Realtime
 
   const rows = useMemo(() => CONTROLS.map(computeDrift).sort((a, b) => DRIFT_ORDER[a.drift] - DRIFT_ORDER[b.drift]), []);
   const filtered = rows.filter(r => {
@@ -208,7 +210,8 @@ export default function ControlDrift() {
                             <span key={f} className="text-[10px] px-1.5 py-0.5" style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))', border: '1px solid hsl(var(--border))' }}>{FRAMEWORK_NAME[f] ?? f}</span>
                           ))}
                         </div>
-                        {r.trend.length > 0 && <p className="text-[10px] font-mono mb-2" style={{ color: 'hsl(var(--text-4))' }}>Trend: {r.trend.map(v => v.toFixed(2)).join(' → ')} · threshold {THRESHOLD}</p>}
+                        {r.trend.length > 0 && <p className="text-[10px] font-mono mb-1" style={{ color: 'hsl(var(--text-4))' }}>Trend: {r.trend.map(v => v.toFixed(2)).join(' → ')} · threshold {THRESHOLD}</p>}
+                        <p className="text-[10px] font-mono mb-2" style={{ color: 'hsl(var(--text-4))' }}>{r.ctrl.evalType === 'AUTO' && r.ctrl.policyRuleKey ? <>Rule: <span style={{ color: 'hsl(var(--s-in-tx))' }}>{r.ctrl.policyRuleKey}()</span> · deterministic</> : 'Manual attestation'}</p>
                         <div className="flex gap-2">
                           <Button size="xs" variant="outline" onClick={() => act('Acknowledged', r.ctrl.code)}>Acknowledge</Button>
                           <Button size="xs" variant="outline" onClick={() => act('Non-conformity raised', r.ctrl.code)}>Raise NC</Button>

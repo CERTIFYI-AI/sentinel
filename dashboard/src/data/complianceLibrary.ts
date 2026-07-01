@@ -18,7 +18,24 @@ export interface FrameworkDef {
 export interface ControlDef {
   framework: string; code: string; name: string; clause: string;
   severity: Severity; evalType: EvalType; description: string;
+  policyRuleKey?: string; // links an AUTO control to a deterministic backend rule
 }
+
+// Control code → deterministic policy rule key (matches sentinel/compliance/policy_rules.py).
+// Only AUTO controls with telemetry-backed checks are mapped; the rest are MANUAL attestation.
+export const POLICY_RULE_KEYS: Record<string, string> = {
+  'EU-003': 'check_human_oversight', 'EU-005': 'check_hallucination_rate', 'EU-006': 'check_drift',
+  'EU-008': 'check_accuracy', 'EU-009': 'check_bias',
+  'GDPR-001': 'check_pii_leakage', 'GDPR-005': 'check_human_oversight',
+  'ISO42-005': 'check_bias', 'ISO42-008': 'check_accuracy',
+  'MITRE-001': 'check_injection_rate',
+  'NIST-005': 'check_bias', 'NIST-006': 'check_trust_score', 'NIST-007': 'check_drift',
+  'OECD-002': 'check_human_oversight', 'OECD-004': 'check_trust_score',
+  'OWASP-LLM01': 'check_injection_rate', 'OWASP-LLM02': 'check_pii_leakage', 'OWASP-LLM09': 'check_hallucination_rate',
+  'SG-005': 'check_drift', 'SG-006': 'check_trust_score', 'SG-007': 'check_injection_rate',
+  'UNESCO-003': 'check_pii_leakage', 'UNESCO-007': 'check_human_oversight', 'UNESCO-008': 'check_bias',
+  'IN-005': 'check_bias', 'IN-007': 'check_drift',
+};
 
 export const FRAMEWORKS: FrameworkDef[] = [
   { code: 'EU_AI_ACT', name: 'EU AI Act', shortCode: 'EU_AI_ACT', version: '2024/1689', region: 'EU', category: 'AI Regulation', effectiveDate: '2024-08-01', description: 'EU regulation on artificial intelligence systems' },
@@ -155,6 +172,9 @@ export const CROSSWALK_GROUPS: CrosswalkGroup[] = [
   { concept: 'governance_accountability', label: 'Governance / Accountability', controls: ['NIST-001', 'ISO42-003', 'OECD-005', 'UNESCO-005', 'SG-001', 'IN-003'] },
   { concept: 'security_robustness', label: 'Security / Robustness', controls: ['EU-008', 'MITRE-006', 'MITRE-009', 'OWASP-LLM03', 'SAIF-001', 'SG-007', 'UNESCO-002'] },
 ];
+
+// Attach policy-rule keys to their controls (single source of truth for the map).
+for (const c of CONTROLS) { if (POLICY_RULE_KEYS[c.code]) c.policyRuleKey = POLICY_RULE_KEYS[c.code]; }
 
 // For a control code, the distinct frameworks it impacts via crosswalks (plus its own).
 export function frameworksImpactedBy(code: string): string[] {
