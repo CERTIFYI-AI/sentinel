@@ -1,3 +1,7 @@
+## 1.15.0 (2026-07-01)
+
+* feat(compliance): atomic control library + real-time Control Drift view ([5925708](https://github.com/CERTIFYI-AI/sentinel/commit/5925708))
+
 ## 1.14.0 (2026-07-01)
 
 * feat(models): Prompt Registry — working prompt playground (Test tab) ([0f7eb30](https://github.com/CERTIFYI-AI/sentinel/commit/0f7eb30))
