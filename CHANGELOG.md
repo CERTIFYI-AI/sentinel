@@ -1,3 +1,7 @@
+## 1.13.0 (2026-07-01)
+
+* feat(models): complete Model Registry CRUD — GRC fields + Technical Docs linking ([bb4e972](https://github.com/CERTIFYI-AI/sentinel/commit/bb4e972)), closes [Hi#Risk](https://github.com/Hi/issues/Risk) [Hi#Risk](https://github.com/Hi/issues/Risk)
+
 ## 1.12.0 (2026-07-01)
 
 * feat(models): GRC-grade lifecycle transition workflow with mandatory remarks ([57621d9](https://github.com/CERTIFYI-AI/sentinel/commit/57621d9))
