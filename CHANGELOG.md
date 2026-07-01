@@ -1,3 +1,7 @@
+## 1.19.0 (2026-07-01)
+
+* feat(compliance): backend control seed (92) + real asyncpg drift adapter ([68c5512](https://github.com/CERTIFYI-AI/sentinel/commit/68c5512))
+
 ## 1.18.0 (2026-07-01)
 
 * feat(compliance): rewrite Compliance Overview as AI-framework command view ([acccc69](https://github.com/CERTIFYI-AI/sentinel/commit/acccc69))
