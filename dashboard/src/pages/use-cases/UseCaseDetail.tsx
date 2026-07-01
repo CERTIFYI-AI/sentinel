@@ -5,6 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/ta
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { USE_CASES, MODELS, RISKS, formatDate } from '../../data/seed';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { toast } from 'sonner';
 import {
   Briefcase, Warning, ShieldCheck, ListChecks, Clock,
   ChartLineUp, Gear, Plus, DownloadSimple, User, GlobeHemisphereWest,
@@ -39,8 +41,19 @@ export default function UseCaseDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const uc = useMemo(() => USE_CASES.find(u => u.id === id), [id]);
+
+  const handleDelete = () => {
+    setConfirmDelete(false);
+    toast.success(`Use case ${id} deleted`);
+    navigate('/use-cases');
+  };
+  const handleTransfer = () => {
+    const owner = window.prompt('Transfer ownership to (name or email):');
+    if (owner && owner.trim()) toast.success(`Ownership transferred to ${owner.trim()}`);
+  };
 
   if (!uc) {
     return (
@@ -74,10 +87,10 @@ export default function UseCaseDetail() {
           <StatusBadge status={uc.status} />
           <RiskBadge riskClass={uc.riskClass} />
           <div className="ml-auto flex gap-2">
-            <Button variant="outline" size="sm" style={{ borderRadius: 0 }}>
+            <Button variant="outline" size="sm" style={{ borderRadius: 0 }} onClick={() => toast.success('Use case dossier exported (PDF)')}>
               <DownloadSimple size={14} /> Export PDF
             </Button>
-            <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
+            <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={() => toast.success('Submitted for Model Risk Committee review')}>
               Submit for Review
             </Button>
           </div>
@@ -244,7 +257,7 @@ export default function UseCaseDetail() {
             <div className="bg-surface border border-[hsl(var(--border))]">
               <div className="p-4 border-b border-[hsl(var(--border))] flex justify-between items-center">
                 <h3 className="font-semibold">Risk Register</h3>
-                <Button size="sm" style={{ borderRadius: 0 }}><Plus size={14} /> Log Risk</Button>
+                <Button size="sm" style={{ borderRadius: 0 }} onClick={() => toast.success('Risk logging form opened for ' + uc.id)}><Plus size={14} /> Log Risk</Button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -287,7 +300,7 @@ export default function UseCaseDetail() {
             <div className="bg-surface border border-[hsl(var(--border))]">
               <div className="p-4 border-b border-[hsl(var(--border))] flex justify-between items-center">
                 <h3 className="font-semibold">Linked Models ({linkedModels.length})</h3>
-                <Button size="sm" variant="outline" style={{ borderRadius: 0 }}><Briefcase size={14} /> Link Existing Model</Button>
+                <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={() => toast.success('Model linking dialog opened')}><Briefcase size={14} /> Link Existing Model</Button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -366,7 +379,7 @@ export default function UseCaseDetail() {
                   <div className="border border-[hsl(var(--border))] text-center p-8 text-[hsl(var(--text-3))]">
                     <ListChecks size={32} className="mx-auto mb-3 opacity-50" />
                     <p className="text-sm font-medium">No assessments started yet.</p>
-                    <Button variant="outline" size="sm" className="mt-4" style={{ borderRadius: 0 }}>Start Questionnaire</Button>
+                    <Button variant="outline" size="sm" className="mt-4" style={{ borderRadius: 0 }} onClick={() => toast.success('Conformity questionnaire started')}>Start Questionnaire</Button>
                   </div>
                 </TabsContent>
               </Tabs>
@@ -381,7 +394,7 @@ export default function UseCaseDetail() {
               <p className="text-[hsl(var(--text-3))] mb-6 max-w-lg mx-auto">
                 Generate the technical documentation and declaration of conformity required by the EU AI Act before deploying this high-risk use case.
               </p>
-              <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>Start Assessment Checklist</Button>
+              <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={() => toast.success('CE marking conformity checklist started')}>Start Assessment Checklist</Button>
             </div>
           </TabsContent>
 
@@ -435,7 +448,7 @@ export default function UseCaseDetail() {
                     <h4 className="text-sm font-bold">Transfer Ownership</h4>
                     <p className="text-xs text-[hsl(var(--text-4))] mt-1">Assign this use case to another user.</p>
                   </div>
-                  <Button variant="outline" size="sm" style={{ borderRadius: 0 }}>Transfer</Button>
+                  <Button variant="outline" size="sm" style={{ borderRadius: 0 }} onClick={handleTransfer}>Transfer</Button>
                 </div>
                 <hr className="border-[hsl(var(--border))]" />
                 <div className="flex items-center justify-between">
@@ -443,7 +456,7 @@ export default function UseCaseDetail() {
                     <h4 className="text-sm font-bold text-[hsl(var(--s-er-tx))]">Delete Use Case</h4>
                     <p className="text-xs text-[hsl(var(--text-4))] mt-1">Permanently delete this use case and all assessments.</p>
                   </div>
-                  <Button variant="outline" size="sm" style={{ borderRadius: 0, color: 'hsl(var(--s-er-tx))', borderColor: 'hsl(var(--s-er-br))' }}>Delete</Button>
+                  <Button variant="outline" size="sm" style={{ borderRadius: 0, color: 'hsl(var(--s-er-tx))', borderColor: 'hsl(var(--s-er-br))' }} onClick={() => setConfirmDelete(true)}>Delete</Button>
                 </div>
               </div>
              </div>
@@ -451,6 +464,16 @@ export default function UseCaseDetail() {
 
         </div>
       </Tabs>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        title="Delete use case?"
+        description={`This permanently deletes ${uc.title} (${uc.id}) and all its assessments. This cannot be undone.`}
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }
