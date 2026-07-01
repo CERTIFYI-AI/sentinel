@@ -1,3 +1,7 @@
+## <small>1.26.1 (2026-07-01)</small>
+
+* fix(use-cases): align Create Use Case form with app layout ([42410f1](https://github.com/CERTIFYI-AI/sentinel/commit/42410f1))
+
 ## 1.26.0 (2026-07-01)
 
 * feat(mrc): Committee Members — add from Organization + IAM link, fix badge ([a523db7](https://github.com/CERTIFYI-AI/sentinel/commit/a523db7))
