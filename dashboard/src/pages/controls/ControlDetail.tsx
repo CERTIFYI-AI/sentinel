@@ -7,7 +7,8 @@ import {
   ArrowLeft, Warning, CheckCircle, XCircle, Clock, Shield,
   FileText, User, CalendarBlank, TestTube, Link as LinkIcon, Paperclip,
 } from '@phosphor-icons/react';
-import { CONTROLS, RISKS, EVIDENCE, severityColor, statusColor, formatDate } from '../../data/seed';
+import { RISKS, EVIDENCE, severityColor, statusColor, formatDate } from '../../data/seed';
+import { findControl } from '../../data/controlRegistry';
 import { useSettingsStore } from '../../stores/settingsStore';
 
 import { useControls } from '../../hooks/queries/useControls'
@@ -57,7 +58,7 @@ export default function ControlDetail() {
   const navigate = useNavigate();
   const { orgName } = useSettingsStore();
 
-  const control = CONTROLS.find(c => c.id === id);
+  const control = findControl(id);
 
   if (!control) {
     return (

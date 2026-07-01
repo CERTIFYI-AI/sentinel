@@ -16,27 +16,13 @@ import {
   CheckCircle, XCircle, Clock, Warning, ClipboardText,
 } from '@phosphor-icons/react';
 import { CONTROLS, FRAMEWORKS, GAPS, EVIDENCE, Control, ControlStatus, statusColor, severityColor, formatDate } from '../../data/seed';
-import { CONTROLS as LIB_CONTROLS, FRAMEWORK_NAME } from '../../data/complianceLibrary';
+import { REGISTRY_CONTROLS } from '../../data/controlRegistry';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useChartTheme } from '../../hooks/useChartTheme';
 
-// The full atomic-control library (92 controls · 11 frameworks) mapped into the
-// registry shape. Deterministic demo status (from the code) while the Supabase
-// `controls` table is empty; real rows replace this once seeded.
-function hashCode(s: string): number { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; }
 const SEV_TX: Record<string, string> = { CRITICAL: 'hsl(var(--r-cr-tx))', HIGH: 'hsl(var(--r-hi-tx))', MEDIUM: 'hsl(var(--s-wn-tx))', LOW: 'hsl(var(--text-3))' };
-const LIBRARY_CONTROLS: Control[] = LIB_CONTROLS.map(c => {
-  const h = hashCode(c.code); const m = h % 10;
-  const status: ControlStatus = m < 6 ? 'implemented' : m < 8 ? 'partial' : 'planned';
-  const score = status === 'implemented' ? 80 + (h % 20) : status === 'partial' ? 50 + (h % 30) : 10 + (h % 30);
-  return {
-    id: c.code, code: c.code, title: c.name, framework: FRAMEWORK_NAME[c.framework] ?? c.framework,
-    clause: c.clause, status, score, owner: '', evidenceCount: h % 6, lastTested: status === 'implemented' ? '2026-06-01' : '',
-    description: c.description, testResult: status === 'implemented' ? 'pass' : status === 'partial' ? 'pending' : 'not_tested',
-    severity: c.severity, evalType: c.evalType,
-  };
-});
+const LIBRARY_CONTROLS: Control[] = REGISTRY_CONTROLS;
 
 
 const EMPTY_CONTROL: Omit<Control, 'id'> = {
