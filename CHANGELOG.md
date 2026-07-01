@@ -1,3 +1,7 @@
+## 1.12.0 (2026-07-01)
+
+* feat(models): GRC-grade lifecycle transition workflow with mandatory remarks ([57621d9](https://github.com/CERTIFYI-AI/sentinel/commit/57621d9))
+
 ## <small>1.11.1 (2026-06-30)</small>
 
 * fix(models): remove `as any` in Model Registry with a type-safe record mapper ([8a68fd6](https://github.com/CERTIFYI-AI/sentinel/commit/8a68fd6))
