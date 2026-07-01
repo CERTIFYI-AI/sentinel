@@ -1,3 +1,7 @@
+## 1.25.0 (2026-07-01)
+
+* feat(use-cases): make all detail tabs functional (real CRUD + data) ([8c9431d](https://github.com/CERTIFYI-AI/sentinel/commit/8c9431d))
+
 ## <small>1.24.1 (2026-07-01)</small>
 
 * fix(risk): AI Risk Tiering unreadable tier cards (contrast bug) ([29e5030](https://github.com/CERTIFYI-AI/sentinel/commit/29e5030))
