@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -10,7 +11,7 @@ import { toast } from 'sonner';
 import {
   Users, CheckCircle, XCircle, Warning, Clock, FileText, ChartBar,
   ArrowRight, Robot, ShieldCheck, Gavel, User, Calendar, Sparkle,
-  CheckSquare, ArrowUp, Buildings, Star, Scales, Minus,
+  CheckSquare, ArrowUp, Buildings, Star, Scales, Minus, Trash,
 } from '@phosphor-icons/react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip,
@@ -166,6 +167,7 @@ function tierStyle(t: string) {
 export default function ModelRiskCommittee() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
+  const navigate = useNavigate();
   const [tab, setTab] = useState('agenda');
   const [voteDialog, setVoteDialog] = useState<AgendaItem | null>(null);
   const [vote, setVote] = useState<'approve' | 'reject' | 'abstain'>('approve');
@@ -177,9 +179,25 @@ export default function ModelRiskCommittee() {
   const [mtgType, setMtgType] = useState('Quarterly Review');
   const [mtgAttendees, setMtgAttendees] = useState(MRC_MEMBERS.filter(m => m.quorum).map(m => m.name).join(', '));
   const [mtgAgenda, setMtgAgenda] = useState('');
+  const [members, setMembers] = useState(MRC_MEMBERS);
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [newMemberId, setNewMemberId] = useState('');
+  const [newMemberRole, setNewMemberRole] = useState('Committee Member');
+  const [newMemberQuorum, setNewMemberQuorum] = useState(true);
+
+  const addMember = () => {
+    const user = USERS.find(u => u.id === newMemberId);
+    if (!user) { toast.error('Select a user from the organization'); return; }
+    if (members.some(m => m.name === user.name)) { toast.error(`${user.name} is already on the committee`); return; }
+    setMembers(prev => [...prev, { id: `M${prev.length + 1}`, name: user.name, role: newMemberRole, department: user.department ?? '—', chair: false, quorum: newMemberQuorum }]);
+    toast.success(`${user.name} added to the committee`);
+    setNewMemberId(''); setNewMemberRole('Committee Member'); setNewMemberQuorum(true); setShowAddMember(false);
+  };
+  const removeMember = (mid: string, name: string) => { setMembers(prev => prev.filter(m => m.id !== mid)); toast.success(`${name} removed from the committee`); };
+  const availableUsers = USERS.filter(u => !members.some(m => m.name === u.name));
 
   const pendingItems = AGENDA_ITEMS.filter(a => a.status === 'pending');
-  const quorumMet = MRC_MEMBERS.filter(m => m.quorum).length >= Math.ceil(MRC_MEMBERS.length * 0.6);
+  const quorumMet = members.filter(m => m.quorum).length >= Math.ceil(members.length * 0.6);
 
   function castVote() {
     if (!rationale.trim()) { toast.error('Rationale is required'); return; }
@@ -406,9 +424,19 @@ export default function ModelRiskCommittee() {
           </TabsContent>
 
           <TabsContent value="committee" className="mt-4">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-sm font-semibold text-[hsl(var(--text-1))]">Committee Members ({members.length})</h3>
+                <p className="text-xs text-[hsl(var(--text-4))]">Members are drawn from the Organization directory. Roles &amp; permissions are governed in Access Control.</p>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={() => navigate('/access-control')}>Manage in IAM &amp; Roles</Button>
+                <Button size="sm" style={{ borderRadius: 0 }} onClick={() => setShowAddMember(true)}>Add Member</Button>
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {MRC_MEMBERS.map(m => (
-                <div key={m.id} className={`p-5 flex items-start gap-4 border rounded-none ${m.chair ? 'bg-[hsl(var(--brand-subtle))] border-[hsl(var(--brand)/40)]' : 'bg-surface border-[hsl(var(--border))]'}`}>
+              {members.map(m => (
+                <div key={m.id} className={`p-5 flex items-start gap-4 border rounded-none group relative ${m.chair ? 'bg-[hsl(var(--brand-subtle))] border-[hsl(var(--brand)/40)]' : 'bg-surface border-[hsl(var(--border))]'}`}>
                   <div className="w-12 h-12 flex items-center justify-center text-sm font-bold flex-shrink-0 bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))]">
                     {m.name.split(' ').map(n => n[0]).join('')}
                   </div>
@@ -420,18 +448,24 @@ export default function ModelRiskCommittee() {
                     <p className="text-xs text-[hsl(var(--text-3))] mb-0.5">{m.role}</p>
                     <p className="text-[10px] text-[hsl(var(--text-4))] uppercase tracking-wider">{m.department}</p>
                     <div className="flex items-center gap-2 mt-3">
-                      {m.chair && <Badge className="bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))] border-0 rounded-none uppercase text-[9px]">CHAIR</Badge>}
-                      <Badge className={`border-0 rounded-none uppercase text-[9px] ${m.quorum ? 'bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--s-ok-tx))]' : 'bg-sunken text-[hsl(var(--text-3))]'}`}>
+                      {m.chair && <Badge className="border-0 rounded-none uppercase text-[9px]" style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))' }}>CHAIR</Badge>}
+                      <Badge className="border-0 rounded-none uppercase text-[9px]" style={{ background: m.quorum ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--bg-sunken))', color: m.quorum ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-3))' }}>
                         {m.quorum ? 'QUORUM MEMBER' : 'NON-QUORUM'}
                       </Badge>
                     </div>
                   </div>
+                  {!m.chair && (
+                    <button onClick={() => removeMember(m.id, m.name)} title="Remove from committee"
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1" style={{ color: 'hsl(var(--s-er-tx))' }}>
+                      <Trash size={13} />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
             <div className="mt-4 p-4 text-sm border border-[hsl(var(--border))] bg-raised rounded-none">
               <p className="text-[hsl(var(--text-2))]">
-                <strong className="text-[hsl(var(--text-1))]">Quorum requirement:</strong> {Math.ceil(MRC_MEMBERS.length * 0.6)} of {MRC_MEMBERS.length} members must be present ({quorumMet ? <span className="text-[hsl(var(--s-ok-tx))] font-medium">Currently met</span> : <span className="text-[hsl(var(--s-er-tx))] font-medium">Not met</span>}).
+                <strong className="text-[hsl(var(--text-1))]">Quorum requirement:</strong> {Math.ceil(members.length * 0.6)} of {members.length} members must be present ({quorumMet ? <span className="text-[hsl(var(--s-ok-tx))] font-medium">Currently met</span> : <span className="text-[hsl(var(--s-er-tx))] font-medium">Not met</span>}).
                 Per SR 11-7 guidance, model approval decisions require documented quorum and dissenting votes must be recorded.
               </p>
             </div>
@@ -622,6 +656,43 @@ export default function ModelRiskCommittee() {
             }}>
               <Calendar size={16} />Schedule Meeting
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Committee Member — from the Organization directory */}
+      <Dialog open={showAddMember} onOpenChange={setShowAddMember}>
+        <DialogContent style={{ borderRadius: 0, maxWidth: 460 }}>
+          <DialogHeader><DialogTitle>Add Committee Member</DialogTitle></DialogHeader>
+          <div className="space-y-3 py-1">
+            <p className="text-[11px] px-2 py-1.5" style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))' }}>
+              Members are selected from the Organization directory. Assign the committee role here; account permissions remain governed in <button className="underline" onClick={() => navigate('/access-control')}>Access Control (IAM &amp; Roles)</button>.
+            </p>
+            <div>
+              <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Organization user *</label>
+              <select value={newMemberId} onChange={e => setNewMemberId(e.target.value)} className="mt-1 w-full h-9 px-2 text-sm" style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))' }}>
+                <option value="">Select a user…</option>
+                {availableUsers.map(u => <option key={u.id} value={u.id}>{u.name} — {u.role} · {u.department}</option>)}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Committee role</label>
+                <select value={newMemberRole} onChange={e => setNewMemberRole(e.target.value)} className="mt-1 w-full h-9 px-2 text-sm" style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))' }}>
+                  {['Committee Member', 'Model Risk Manager', 'Risk Analyst', 'Internal Auditor', 'Voting Member', 'Observer', 'Secretary'].map(r => <option key={r}>{r}</option>)}
+                </select>
+              </div>
+              <div className="flex items-end pb-1.5">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={newMemberQuorum} onChange={e => setNewMemberQuorum(e.target.checked)} className="h-4 w-4" style={{ borderRadius: 0 }} />
+                  <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>Counts toward quorum</span>
+                </label>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setShowAddMember(false)}>Cancel</Button>
+            <Button size="sm" disabled={!newMemberId} onClick={addMember}>Add Member</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
