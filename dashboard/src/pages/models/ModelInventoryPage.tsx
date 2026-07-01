@@ -835,20 +835,30 @@ function RegisterModelForm({ onSubmit, nextId }: { onSubmit: (m: Model) => void;
   const [limitations, setLimitations] = useState('');
   const [trainingData, setTrainingData] = useState('');
   const [fairnessThreshold, setFairnessThreshold] = useState('85');
-  const [owner, setOwner] = useState('');
+  const [businessOwner, setBusinessOwner] = useState('');
+  const [technicalOwner, setTechnicalOwner] = useState('');
+  const [department, setDepartment] = useState('');
+  const [dataClass, setDataClass] = useState('Internal');
+  const [deploymentEnv, setDeploymentEnv] = useState('Cloud (SaaS)');
+  const [humanOversight, setHumanOversight] = useState(true);
   const [isHighRisk, setIsHighRisk] = useState(false);
 
-  const canSubmit = name && version && riskTier && owner;
+  // High-risk AI systems (Annex III) legally require human oversight (Art. 14).
+  const oversight = isHighRisk ? true : humanOversight;
+  const canSubmit = Boolean(name && version && riskTier && businessOwner);
 
   const handleSubmit = () => {
     if (!canSubmit) return;
     const newModel: Model = {
-      id: nextId, name, version, type: modelType, owner, status: 'development',
+      id: nextId, name, version, type: modelType, owner: businessOwner, status: 'development',
       riskTier: isHighRisk ? 'high' : riskTier, fairnessScore: 0, driftStatus: 'stable',
-      lastValidated: '', framework: 'EU AI Act', department: '', description: intendedUse || name,
+      lastValidated: '', framework: 'EU AI Act', department, description: intendedUse || name,
       accuracy: 0, latencyMs: 0, monthlyInferences: '0', euAiActArticle: isHighRisk ? 'Annex III' : 'Art. 52',
       biasMetrics: [], performanceHistory: [], guardrails: [], complianceMapping: [],
       incidents: [], lifecyclePhase: 'Registration', daysInPhase: 0, lifecycleProgress: 5,
+      provider, businessOwner, technicalOwner, dataClassification: dataClass,
+      deploymentEnv, humanOversight: oversight, intendedPurpose: intendedUse,
+      knownLimitations: limitations, trainingDataSources: trainingData, technicalDocs: [],
     };
     onSubmit(newModel);
   };
@@ -909,20 +919,58 @@ function RegisterModelForm({ onSubmit, nextId }: { onSubmit: (m: Model) => void;
         <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Training Data Sources</label>
         <Input value={trainingData} onChange={e => setTrainingData(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} placeholder="e.g. DS-001, DS-002" />
       </div>
+      {/* Accountability — business + technical owner + BU */}
       <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Business Owner *</label>
+          <Input value={businessOwner} onChange={e => setBusinessOwner(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} placeholder="Accountable owner" />
+        </div>
+        <div>
+          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Technical Owner</label>
+          <Input value={technicalOwner} onChange={e => setTechnicalOwner(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} placeholder="ML/eng lead" />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Department / Business Unit</label>
+          <Input value={department} onChange={e => setDepartment(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} placeholder="e.g. Lending, Fraud" />
+        </div>
         <div>
           <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Fairness Threshold (%)</label>
           <Input type="number" value={fairnessThreshold} onChange={e => setFairnessThreshold(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} />
         </div>
+      </div>
+      {/* Classification — data sensitivity + deployment surface */}
+      <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Owner *</label>
-          <Input value={owner} onChange={e => setOwner(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} placeholder="Owner name" />
+          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Data Classification</label>
+          <Select value={dataClass} onValueChange={setDataClass}>
+            <SelectTrigger className="mt-1 h-9" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+            <SelectContent style={{ borderRadius: 0 }}>
+              {['Public', 'Internal', 'Confidential', 'Restricted', 'PII / Special Category'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Deployment Environment</label>
+          <Select value={deploymentEnv} onValueChange={setDeploymentEnv}>
+            <SelectTrigger className="mt-1 h-9" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+            <SelectContent style={{ borderRadius: 0 }}>
+              {['Cloud (SaaS)', 'Cloud (Self-hosted)', 'On-Premise', 'Hybrid', 'Edge / Device'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
       </div>
-      <div className="flex items-center gap-2 py-1">
-        <input type="checkbox" checked={isHighRisk} onChange={e => setIsHighRisk(e.target.checked)}
-          className="h-4 w-4" style={{ borderRadius: 0 }} />
-        <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>EU AI Act High-Risk AI System (Annex III)</label>
+      {/* Governance flags */}
+      <div className="space-y-1.5 py-1">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" checked={isHighRisk} onChange={e => setIsHighRisk(e.target.checked)} className="h-4 w-4" style={{ borderRadius: 0 }} />
+          <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>EU AI Act High-Risk AI System (Annex III)</span>
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer" title={isHighRisk ? 'Mandatory for high-risk systems (Art. 14)' : undefined}>
+          <input type="checkbox" checked={oversight} disabled={isHighRisk} onChange={e => setHumanOversight(e.target.checked)} className="h-4 w-4" style={{ borderRadius: 0 }} />
+          <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>Human oversight in place (Art. 14){isHighRisk && <span className="ml-1 text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>— required for high-risk</span>}</span>
+        </label>
       </div>
       <div className="flex justify-end gap-2 pt-2">
         <Button disabled={!canSubmit} onClick={handleSubmit}

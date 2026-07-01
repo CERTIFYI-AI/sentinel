@@ -54,6 +54,11 @@ export interface Model {
   complianceMapping: { framework: string; clause: string; status: string }[];
   incidents: { id: string; date: string; type: string; severity: Severity; resolved: boolean }[];
   lifecyclePhase: string; daysInPhase: number; lifecycleProgress: number;
+  // Optional governance metadata captured at registration (backward-compatible).
+  provider?: string; businessOwner?: string; technicalOwner?: string;
+  dataClassification?: string; deploymentEnv?: string; humanOversight?: boolean;
+  intendedPurpose?: string; knownLimitations?: string; trainingDataSources?: string;
+  technicalDocs?: { id: string; title: string; type: string; url: string; addedBy: string; addedDate: string }[];
 }
 export const MODELS: Model[] = [
   {

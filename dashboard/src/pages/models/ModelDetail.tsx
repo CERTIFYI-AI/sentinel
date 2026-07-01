@@ -3,12 +3,13 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
 import { toast } from 'sonner';
 import {
   ArrowLeft, Brain, ChartLine, Shield, Warning, Clock, CheckCircle,
   Export, DownloadSimple, Bell, X, GitBranch, ArrowRight,
   Scales, TestTube, Robot, Gauge, XCircle,
-  Sparkle, FileText, ListBullets, CalendarCheck, Copy,
+  Sparkle, FileText, ListBullets, CalendarCheck, Copy, Plus,
 } from '@phosphor-icons/react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
@@ -193,6 +194,28 @@ export default function ModelDetail() {
   const [copiedHash, setCopiedHash] = useState(false);
 
   const model = MODELS.find(m => m.id === id) || MODELS[0];
+
+  // Technical documentation — linked from the DMS/evidence store. Seed set +
+  // any docs linked during this session (real platform persists to Supabase).
+  interface TechDoc { title: string; type: string; date: string; size: string; desc: string; url?: string }
+  const seedDocs: TechDoc[] = [
+    { title: 'Architecture Overview', type: 'PDF', date: '2026-03-01', size: '2.4 MB', desc: 'Neural architecture diagrams, layer specifications, and hyperparameters.' },
+    { title: 'API Reference', type: 'HTML', date: '2026-03-15', size: '1.1 MB', desc: 'Full REST API reference with request/response schemas and auth patterns.' },
+    { title: 'Training Runbook', type: 'MD', date: '2026-02-28', size: '240 KB', desc: 'Step-by-step training procedure, dataset preparation, and evaluation criteria.' },
+    { title: 'FMEA Risk Assessment', type: 'XLSX', date: '2026-03-10', size: '560 KB', desc: 'Failure Mode and Effects Analysis aligned to ISO 26262 methodology.' },
+    { title: 'EU AI Act Annex IV Package', type: 'ZIP', date: '2026-04-01', size: '8.7 MB', desc: 'Complete Annex IV technical documentation bundle for regulatory submission.' },
+    { title: 'Model Card', type: 'JSON', date: formatDate(model.lastValidated), size: '24 KB', desc: 'Standardised model card following Mitchell et al. (2019) format.' },
+  ];
+  const [docs, setDocs] = useState<TechDoc[]>(seedDocs);
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [dForm, setDForm] = useState({ title: '', type: 'PDF', url: '', desc: '' });
+  const linkDoc = () => {
+    if (!dForm.title.trim() || !dForm.url.trim()) { toast.error('Title and document URL are required'); return; }
+    setDocs(prev => [{ title: dForm.title.trim(), type: dForm.type, date: new Date().toISOString().slice(0, 10), size: 'Linked', desc: dForm.desc.trim() || 'Linked from document store.', url: dForm.url.trim() }, ...prev]);
+    toast.success(`Linked “${dForm.title.trim()}” to ${model.id}`);
+    setDForm({ title: '', type: 'PDF', url: '', desc: '' });
+    setLinkOpen(false);
+  };
 
   // FIXED: was `a.model === model.name` (wrong field), now correctly matches by modelId
   const modelBiasAudits = useMemo(() =>
@@ -896,20 +919,33 @@ export default function ModelDetail() {
       {tab === 'Technical Docs' && (
         <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
           <CardHeader className="pb-2">
-            <CardTitle style={{ fontSize: 13, color: 'hsl(var(--text-1))', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <FileText size={14} style={{ color: 'hsl(var(--brand))' }} />
-              Technical Documentation
-            </CardTitle>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+              <CardTitle style={{ fontSize: 13, color: 'hsl(var(--text-1))', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <FileText size={14} style={{ color: 'hsl(var(--brand))' }} />
+                Technical Documentation <span style={{ fontSize: 11, color: 'hsl(var(--text-4))', fontWeight: 400 }}>· {docs.length} linked</span>
+              </CardTitle>
+              <Button size="sm" variant="outline" leftIcon={<Plus size={13} />} onClick={() => setLinkOpen(v => !v)}>Link Document</Button>
+            </div>
           </CardHeader>
           <CardContent style={{ padding: 0 }}>
-            {[
-              { title: 'Architecture Overview', type: 'PDF', date: '2026-03-01', size: '2.4 MB', desc: 'Neural architecture diagrams, layer specifications, and hyperparameters.' },
-              { title: 'API Reference', type: 'HTML', date: '2026-03-15', size: '1.1 MB', desc: 'Full REST API reference with request/response schemas and auth patterns.' },
-              { title: 'Training Runbook', type: 'MD', date: '2026-02-28', size: '240 KB', desc: 'Step-by-step training procedure, dataset preparation, and evaluation criteria.' },
-              { title: 'FMEA Risk Assessment', type: 'XLSX', date: '2026-03-10', size: '560 KB', desc: 'Failure Mode and Effects Analysis aligned to ISO 26262 methodology.' },
-              { title: 'EU AI Act Annex IV Package', type: 'ZIP', date: '2026-04-01', size: '8.7 MB', desc: 'Complete Annex IV technical documentation bundle for regulatory submission.' },
-              { title: 'Model Card', type: 'JSON', date: formatDate(model.lastValidated), size: '24 KB', desc: 'Standardised model card following Mitchell et al. (2019) format.' },
-            ].map(doc => (
+            {linkOpen && (
+              <div style={{ padding: '12px 16px', borderBottom: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-muted))' }}>
+                <p style={{ fontSize: 11, color: 'hsl(var(--text-4))', marginBottom: 8 }}>Link a document from your DMS / evidence store (SharePoint, S3, Confluence…). The registry references it — the file is not copied.</p>
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8, marginBottom: 8 }}>
+                  <Input value={dForm.title} onChange={e => setDForm({ ...dForm, title: e.target.value })} placeholder="Document title *" style={{ borderRadius: 0 }} />
+                  <select value={dForm.type} onChange={e => setDForm({ ...dForm, type: e.target.value })} style={{ height: 36, borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', fontSize: 13, padding: '0 8px' }}>
+                    {['PDF', 'HTML', 'MD', 'DOCX', 'XLSX', 'JSON', 'ZIP', 'LINK'].map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <Input value={dForm.url} onChange={e => setDForm({ ...dForm, url: e.target.value })} placeholder="Document URL / reference *" style={{ borderRadius: 0, marginBottom: 8 }} />
+                <Input value={dForm.desc} onChange={e => setDForm({ ...dForm, desc: e.target.value })} placeholder="Short description (optional)" style={{ borderRadius: 0, marginBottom: 8 }} />
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                  <Button size="sm" variant="outline" onClick={() => setLinkOpen(false)}>Cancel</Button>
+                  <Button size="sm" onClick={linkDoc}>Link Document</Button>
+                </div>
+              </div>
+            )}
+            {docs.map(doc => (
               <div key={doc.title} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', borderBottom: '1px solid hsl(var(--border))' }}>
                 <div style={{ width: 40, height: 40, background: 'hsl(var(--brand-subtle))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800, color: 'hsl(var(--brand))', flexShrink: 0, letterSpacing: '0.05em' }}>
                   {doc.type}
@@ -917,13 +953,13 @@ export default function ModelDetail() {
                 <div style={{ flex: 1 }}>
                   <p style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--text-1))', marginBottom: 2 }}>{doc.title}</p>
                   <p style={{ fontSize: 11, color: 'hsl(var(--text-4))' }}>{doc.desc}</p>
-                  <p style={{ fontSize: 10, color: 'hsl(var(--text-4))', marginTop: 2 }}>{doc.size} · Updated {doc.date}</p>
+                  <p style={{ fontSize: 10, color: 'hsl(var(--text-4))', marginTop: 2 }}>{doc.size} · Updated {doc.date}{doc.url ? ' · linked' : ''}</p>
                 </div>
                 <button
-                  onClick={() => toast.success(`Downloading ${doc.title}…`)}
+                  onClick={() => { if (doc.url) { window.open(doc.url, '_blank', 'noopener'); } else { toast.success(`Downloading ${doc.title}…`); } }}
                   style={{ padding: '6px 12px', background: 'none', border: '1px solid hsl(var(--border))', cursor: 'pointer', color: 'hsl(var(--text-2))', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
                 >
-                  <DownloadSimple size={13} /> Download
+                  <DownloadSimple size={13} /> {doc.url ? 'Open' : 'Download'}
                 </button>
               </div>
             ))}
