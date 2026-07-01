@@ -1,3 +1,7 @@
+## 1.14.0 (2026-07-01)
+
+* feat(models): Prompt Registry — working prompt playground (Test tab) ([0f7eb30](https://github.com/CERTIFYI-AI/sentinel/commit/0f7eb30))
+
 ## 1.13.0 (2026-07-01)
 
 * feat(models): complete Model Registry CRUD — GRC fields + Technical Docs linking ([bb4e972](https://github.com/CERTIFYI-AI/sentinel/commit/bb4e972)), closes [Hi#Risk](https://github.com/Hi/issues/Risk) [Hi#Risk](https://github.com/Hi/issues/Risk)
