@@ -1,3 +1,7 @@
+## 1.24.0 (2026-07-01)
+
+* feat(impact-risk): tokenize AIIA/Risk Tiering/MRC/UseCase pages + PageHeader ([7d08982](https://github.com/CERTIFYI-AI/sentinel/commit/7d08982))
+
 ## 1.23.0 (2026-07-01)
 
 * feat(use-cases): make Use Case detail tabs functional (CRUD actions) ([df3786f](https://github.com/CERTIFYI-AI/sentinel/commit/df3786f))
