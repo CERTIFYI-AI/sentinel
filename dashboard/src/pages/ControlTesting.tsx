@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
+import { PageHeader } from '../components/ui/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { TooltipProvider } from '../components/ui/tooltip';
 import { toast } from 'sonner';
@@ -114,32 +115,23 @@ export default function ControlTesting() {
 
   return (
     <TooltipProvider>
-      <div className="space-y-5">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Continuous Control Testing</h1>
-              <Badge style={{ borderRadius: 0, fontSize: 9, background: 'hsl(var(--brand) / 0.12)', color: 'hsl(var(--brand))', border: '1px solid hsl(var(--brand) / 0.3)' }}>
-                AUTOMATED ASSURANCE
-              </Badge>
-              <div className="flex items-center gap-1.5 px-2 py-0.5" style={{ background: 'hsl(var(--s-ok-bg))', border: '1px solid hsl(var(--s-ok-br))' }}>
-                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'hsl(var(--s-ok-tx))' }} />
-                <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: 'hsl(var(--s-ok-tx))' }}>Live · {CONTROL_TESTS.filter(t => t.frequency === 'continuous').length} monitors active</span>
-              </div>
+      <div className="space-y-4">
+        <PageHeader
+          title="Continuous Control Testing"
+          subtitle={`${orgName} · ${CONTROL_TESTS.filter(t => t.testType === 'automated' || t.testType === 'hybrid').length} automated tests running continuously · replaces manual quarterly testing`}
+          badge={
+            <div className="flex items-center gap-1.5 px-2 py-0.5" style={{ background: 'hsl(var(--s-ok-bg))', border: '1px solid hsl(var(--s-ok-br))' }}>
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'hsl(var(--s-ok-tx))' }} />
+              <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: 'hsl(var(--s-ok-tx))' }}>Live · {CONTROL_TESTS.filter(t => t.frequency === 'continuous').length} monitors active</span>
             </div>
-            <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>
-              {orgName} · {CONTROL_TESTS.filter(t => t.testType === 'automated' || t.testType === 'hybrid').length} automated tests running continuously · Replaces manual quarterly control testing
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => toast.success('Schedule view — all test runs in calendar')}>
-              <CalendarBlank size={13} />View Schedule
-            </Button>
-            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={runAllTests} disabled={runningAll}>
-              <Play size={13} />{runningAll ? 'Running…' : 'Run All Now'}
-            </Button>
-          </div>
-        </div>
+          }
+          actions={
+            <>
+              <Button size="sm" variant="outline" leftIcon={<CalendarBlank size={13} />} onClick={() => toast.success('Schedule view — all test runs in calendar')}>View Schedule</Button>
+              <Button size="sm" leftIcon={<Play size={13} />} onClick={runAllTests} disabled={runningAll}>{runningAll ? 'Running…' : 'Run All Now'}</Button>
+            </>
+          }
+        />
 
         {/* KPI Strip */}
         <div className="grid grid-cols-5 gap-2">

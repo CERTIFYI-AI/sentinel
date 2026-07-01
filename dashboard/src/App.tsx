@@ -360,7 +360,6 @@ export default function App() {
           {/* Governance */}
           <Route path="/controls" element={<Navigate to="/compliance/controls" replace />} />
           <Route path="/frameworks" element={<Frameworks />} />
-          <Route path="/compliance/frameworks" element={<Frameworks />} />
           <Route path="/reg-radar" element={<RegRadar />} />
 
           {/* AI Inventory */}

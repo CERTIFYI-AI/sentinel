@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { Target, ChevronDown, ChevronRight, AlertTriangle, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { Target, ChevronDown, ChevronRight, AlertTriangle, CheckCircle2, Clock, XCircle, Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Button } from "../components/ui/button";
 
 interface Control {
   id: string;
@@ -56,21 +58,21 @@ const FRAMEWORKS: FrameworkGap[] = [
 ];
 
 const statusConfig: Record<string, { color: string; bg: string; icon: typeof CheckCircle2; label: string }> = {
-  met: { color: "text-green-700 dark:text-green-400", bg: "bg-green-100 dark:bg-green-950", icon: CheckCircle2, label: "Met" },
-  partial: { color: "text-amber-700 dark:text-amber-400", bg: "bg-amber-100 dark:bg-amber-950", icon: Clock, label: "Partial" },
-  "not-met": { color: "text-red-700 dark:text-red-400", bg: "bg-red-100 dark:bg-red-950", icon: XCircle, label: "Not Met" },
-  "not-applicable": { color: "text-slate-500", bg: "bg-slate-100 dark:bg-slate-800", icon: Target, label: "N/A" },
+  met: { color: "text-[hsl(var(--s-ok-tx))]", bg: "bg-[hsl(var(--s-ok-bg))]", icon: CheckCircle2, label: "Met" },
+  partial: { color: "text-[hsl(var(--s-wn-tx))]", bg: "bg-[hsl(var(--s-wn-bg))]", icon: Clock, label: "Partial" },
+  "not-met": { color: "text-[hsl(var(--s-er-tx))]", bg: "bg-[hsl(var(--s-er-bg))]", icon: XCircle, label: "Not Met" },
+  "not-applicable": { color: "text-[hsl(var(--text-3))]", bg: "bg-[hsl(var(--bg-muted))]", icon: Target, label: "N/A" },
 };
 
 const priorityColors: Record<string, string> = {
-  critical: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400",
-  high: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400",
-  medium: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400",
-  low: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400",
+  critical: "bg-[hsl(var(--s-er-bg))] text-[hsl(var(--s-er-tx))]",
+  high: "bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))]",
+  medium: "bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))]",
+  low: "bg-[hsl(var(--s-ok-bg))] text-[hsl(var(--s-ok-tx))]",
 };
 
-const scoreColor = (s: number) => s >= 85 ? "text-green-600 dark:text-green-400" : s >= 70 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400";
-const barColor = (s: number) => s >= 85 ? "bg-green-500" : s >= 70 ? "bg-amber-500" : "bg-red-500";
+const scoreColor = (s: number) => s >= 85 ? "text-[hsl(var(--s-ok-tx))]" : s >= 70 ? "text-[hsl(var(--s-wn-tx))]" : "text-[hsl(var(--s-er-tx))]";
+const barColor = (s: number) => s >= 85 ? "bg-[hsl(var(--s-ok-tx))]" : s >= 70 ? "bg-[hsl(var(--s-wn-tx))]" : "bg-[hsl(var(--s-er-tx))]";
 
 export default function GapAnalysis() {
   const [expandedFw, setExpandedFw] = useState<string>(FRAMEWORKS[0].framework);
@@ -81,17 +83,13 @@ export default function GapAnalysis() {
   const criticalGaps = FRAMEWORKS.reduce((s, f) => s + f.controls.filter(c => c.status !== "met" && c.priority === "critical").length, 0);
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-orange-100 dark:bg-orange-950 rounded-lg"><Target size={20} className="text-orange-600 dark:text-orange-400" /></div>
-          <div>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Gap Analysis</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Identify compliance gaps across active frameworks with remediation tracking</p>
-          </div>
-        </div>
-        <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">Export Gap Report</button>
-      </div>
+    <div className="space-y-4">
+      <PageHeader
+        title="Gap Analysis"
+        subtitle="Identify compliance gaps across active frameworks with remediation tracking"
+        icon={Target}
+        actions={<Button size="sm" variant="outline" leftIcon={<Download size={14} />}>Export Gap Report</Button>}
+      />
 
       {/* Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -101,11 +99,11 @@ export default function GapAnalysis() {
           { label: "Not Met", value: notMetControls, sub: "Require remediation" },
           { label: "Critical Gaps", value: criticalGaps, sub: "Immediate attention" },
         ].map((s, i) => (
-          <Card key={i} className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+          <Card key={i} className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
             <CardContent className="p-4">
-              <p className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-medium">{s.label}</p>
-              <p className="text-2xl font-bold font-mono mt-1 text-slate-900 dark:text-white">{s.value}</p>
-              <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">{s.sub}</p>
+              <p className="text-[10px] uppercase tracking-wider text-[hsl(var(--text-3))] font-medium">{s.label}</p>
+              <p className="text-2xl font-bold font-mono mt-1 text-[hsl(var(--text-1))]">{s.value}</p>
+              <p className="text-[11px] text-[hsl(var(--text-4))] mt-1">{s.sub}</p>
             </CardContent>
           </Card>
         ))}
@@ -118,19 +116,19 @@ export default function GapAnalysis() {
           const met = fw.controls.filter(c => c.status === "met").length;
           const gaps = fw.controls.filter(c => c.status !== "met" && c.status !== "not-applicable");
           return (
-            <Card key={fw.framework} className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
-              <button onClick={() => setExpandedFw(isExpanded ? "" : fw.framework)} className="w-full px-5 py-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors rounded-t-xl">
+            <Card key={fw.framework} className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
+              <button onClick={() => setExpandedFw(isExpanded ? "" : fw.framework)} className="w-full px-5 py-4 flex items-center justify-between hover:bg-[hsl(var(--bg-muted))] transition-colors rounded-t-xl">
                 <div className="flex items-center gap-3">
-                  {isExpanded ? <ChevronDown size={16} className="text-slate-400" /> : <ChevronRight size={16} className="text-slate-400" />}
+                  {isExpanded ? <ChevronDown size={16} className="text-[hsl(var(--text-4))]" /> : <ChevronRight size={16} className="text-[hsl(var(--text-4))]" />}
                   <span className="text-lg">{fw.flag}</span>
                   <div className="text-left">
-                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{fw.framework}</p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">{met}/{fw.controls.length} controls met · {gaps.length} gaps identified</p>
+                    <p className="text-sm font-semibold text-[hsl(var(--text-1))]">{fw.framework}</p>
+                    <p className="text-[11px] text-[hsl(var(--text-3))]">{met}/{fw.controls.length} controls met · {gaps.length} gaps identified</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="w-32">
-                    <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5">
+                    <div className="w-full bg-[hsl(var(--bg-muted))] rounded-full h-1.5">
                       <div className={`h-1.5 rounded-full ${barColor(fw.overallScore)} transition-all`} style={{ width: `${fw.overallScore}%` }} />
                     </div>
                   </div>
@@ -139,10 +137,10 @@ export default function GapAnalysis() {
               </button>
               {isExpanded && (
                 <CardContent className="px-5 pb-4 pt-0">
-                  <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
+                  <div className="border-t border-[hsl(var(--border))] pt-4">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        <tr className="text-[10px] uppercase tracking-wider text-[hsl(var(--text-3))]">
                           <th className="text-left pb-2 font-semibold">Control</th>
                           <th className="text-left pb-2 font-semibold">Status</th>
                           <th className="text-left pb-2 font-semibold">Gap</th>
@@ -151,25 +149,25 @@ export default function GapAnalysis() {
                           <th className="text-left pb-2 font-semibold">Due</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      <tbody className="divide-y divide-[hsl(var(--border))]">
                         {fw.controls.map(c => {
                           const sc = statusConfig[c.status];
                           const Icon = sc.icon;
                           return (
-                            <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                            <tr key={c.id} className="hover:bg-[hsl(var(--bg-muted))]">
                               <td className="py-2.5 pr-3">
-                                <span className="font-mono text-[11px] text-slate-400">{c.id}</span>
-                                <p className="text-xs text-slate-800 dark:text-slate-200">{c.title}</p>
+                                <span className="font-mono text-[11px] text-[hsl(var(--text-4))]">{c.id}</span>
+                                <p className="text-xs text-[hsl(var(--text-1))]">{c.title}</p>
                               </td>
                               <td className="py-2.5 pr-3">
                                 <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded ${sc.bg} ${sc.color}`}>
                                   <Icon size={10} /> {sc.label}
                                 </span>
                               </td>
-                              <td className="py-2.5 pr-3 text-xs text-slate-500 dark:text-slate-400 max-w-xs">{c.gap || "—"}</td>
+                              <td className="py-2.5 pr-3 text-xs text-[hsl(var(--text-3))] max-w-xs">{c.gap || "—"}</td>
                               <td className="py-2.5 pr-3">{c.status !== "met" && <span className={`text-[10px] font-medium px-2 py-0.5 rounded capitalize ${priorityColors[c.priority]}`}>{c.priority}</span>}</td>
-                              <td className="py-2.5 pr-3 text-xs text-slate-600 dark:text-slate-300">{c.owner}</td>
-                              <td className="py-2.5 text-xs text-slate-400">{c.dueDate || "—"}</td>
+                              <td className="py-2.5 pr-3 text-xs text-[hsl(var(--text-3))]">{c.owner}</td>
+                              <td className="py-2.5 text-xs text-[hsl(var(--text-4))]">{c.dueDate || "—"}</td>
                             </tr>
                           );
                         })}
