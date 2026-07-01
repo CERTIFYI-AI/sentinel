@@ -4,7 +4,7 @@ import {
   ChatTeardropText, Plus, MagnifyingGlass, PencilSimple, Trash,
   Eye, ClockCounterClockwise, Tag, Robot, CheckCircle,
   Warning, Clock, Archive, Funnel, ArrowsClockwise,
-  ShieldCheck, Scales, Lock, Sparkle,
+  ShieldCheck, Scales, Lock, Sparkle, Copy,
 } from '@phosphor-icons/react';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -196,7 +196,8 @@ function TokenBudgetBar({ count, max = 4096 }: { count: number; max?: number }) 
 
 // ── View Sheet ────────────────────────────────────────────────────────────────
 function ViewSheet({ record, open, onClose }: { record: PromptRecord | null; open: boolean; onClose: () => void }) {
-  const [tab, setTab] = useState<'content' | 'safety' | 'versions' | 'meta'>('content');
+  const [tab, setTab] = useState<'content' | 'test' | 'safety' | 'versions' | 'meta'>('content');
+  const [vars, setVars] = useState<Record<string, string>>({});
   if (!record) return null;
   const sc = statusConfig(record.status);
 
@@ -264,7 +265,7 @@ function ViewSheet({ record, open, onClose }: { record: PromptRecord | null; ope
 
         {/* Tabs */}
         <div style={{ display: 'flex', borderBottom: '1px solid hsl(var(--border))', flexShrink: 0, background: 'hsl(var(--bg-raised))' }}>
-          {(['content', 'safety', 'versions', 'meta'] as const).map(t => (
+          {(['content', 'test', 'safety', 'versions', 'meta'] as const).map(t => (
             <button key={t} onClick={() => setTab(t)}
               style={{
                 padding: '10px 14px', fontSize: 11, fontWeight: tab === t ? 600 : 400, cursor: 'pointer',
@@ -272,7 +273,7 @@ function ViewSheet({ record, open, onClose }: { record: PromptRecord | null; ope
                 borderBottom: tab === t ? '2px solid hsl(var(--brand))' : '2px solid transparent',
                 background: 'none', border: 'none', textTransform: 'capitalize',
               }}>
-              {t === 'safety' ? 'Safety Analysis' : t === 'versions' ? 'Version History' : t.charAt(0).toUpperCase() + t.slice(1)}
+              {t === 'safety' ? 'Safety Analysis' : t === 'versions' ? 'Version History' : t === 'test' ? 'Test' : t.charAt(0).toUpperCase() + t.slice(1)}
             </button>
           ))}
         </div>
@@ -300,6 +301,50 @@ function ViewSheet({ record, open, onClose }: { record: PromptRecord | null; ope
               )}
             </div>
           )}
+
+          {tab === 'test' && (() => {
+            const names = Array.from(new Set([...record.content.matchAll(/\{\{\s*([\w.-]+)\s*\}\}/g)].map(m => m[1])));
+            const composed = record.content.replace(/\{\{\s*([\w.-]+)\s*\}\}/g, (_m, k) => (vars[k]?.trim() ? vars[k] : `{{${k}}}`));
+            const filled = names.filter(n => vars[n]?.trim()).length;
+            const estTokens = Math.max(1, Math.round(composed.split(/\s+/).filter(Boolean).length * 1.3));
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: 'hsl(var(--text-4))', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+                    Variables {names.length > 0 && <span style={{ fontFamily: 'monospace' }}>· {filled}/{names.length} filled</span>}
+                  </p>
+                  {names.length === 0 ? (
+                    <p style={{ fontSize: 12, color: 'hsl(var(--text-4))' }}>This prompt has no <code>{'{{variables}}'}</code>. The rendered output below is ready to send.</p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {names.map(n => (
+                        <div key={n} style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 8, alignItems: 'center' }}>
+                          <label style={{ fontSize: 11, fontFamily: 'monospace', color: 'hsl(var(--text-3))' }}>{`{{${n}}}`}</label>
+                          <Input value={vars[n] ?? ''} onChange={e => setVars(p => ({ ...p, [n]: e.target.value }))} placeholder={`value for ${n}`} style={{ borderRadius: 0 }} />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <p style={{ fontSize: 11, fontWeight: 600, color: 'hsl(var(--text-4))', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>Rendered Prompt</p>
+                    <span style={{ fontSize: 10, fontFamily: 'monospace', color: 'hsl(var(--text-4))' }}>~{estTokens} tokens · target {record.model}</span>
+                  </div>
+                  <pre style={{ fontSize: 12, fontFamily: 'monospace', background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))', padding: 14, whiteSpace: 'pre-wrap', lineHeight: 1.7, color: 'hsl(var(--text-2))', overflowX: 'auto' }}>{composed}</pre>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                    <Button size="sm" leftIcon={<Copy size={13} />} onClick={() => { navigator.clipboard?.writeText(composed); toast.success('Rendered prompt copied'); }}>Copy rendered</Button>
+                    <Button size="sm" variant="outline" disabled={filled < names.length}
+                      title={filled < names.length ? 'Fill all variables to run' : `Send to ${record.model}`}
+                      onClick={() => toast.success(`Dispatched to ${record.model} — connect a provider in Settings to see live output`)}>
+                      Run against {record.model}
+                    </Button>
+                  </div>
+                  <p style={{ fontSize: 10, color: 'hsl(var(--text-4))', marginTop: 6 }}>Test-only. Runs use the model configured for this prompt; wire a provider key in Settings for live completions.</p>
+                </div>
+              </div>
+            );
+          })()}
 
           {tab === 'safety' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
