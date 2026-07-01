@@ -30,6 +30,7 @@ const MfaEnrollment = lazy(() => import('./pages/security/MfaEnrollment'));
 const QualityMetrics = lazy(() => import('./pages/evals/QualityMetrics'));
 const EvalTechniques = lazy(() => import('./pages/evals/EvalTechniques'));
 const ComplianceControls = lazy(() => import('./pages/compliance/ComplianceControls'));
+const ControlDrift = lazy(() => import('./pages/compliance/ControlDrift'));
 const FrameworkCatalog = lazy(() => import('./pages/compliance/FrameworkCatalog'));
 const EvidenceHub = lazy(() => import('./pages/compliance/EvidenceHub'));
 const ComplianceDashboard = lazy(() => import('./pages/ComplianceDashboard'));
@@ -328,6 +329,8 @@ export default function App() {
           <Route path="/regulatory" element={<Navigate to="/reg-radar" replace />} />
           <Route path="/compliance" element={<ComplianceDashboard />} />
           <Route path="/compliance/controls" element={<ComplianceControls />} />
+          <Route path="/compliance/drift" element={<ControlDrift />} />
+          <Route path="/compliance/graph" element={<ControlDrift />} />
           <Route path="/compliance/frameworks" element={<Suspense fallback={<Loading />}><FrameworkCatalog /></Suspense>} />
           <Route path="/compliance/evidence" element={<EvidenceHub />} />
           <Route path="/compliance/gap-analysis" element={<GapAnalysis />} />

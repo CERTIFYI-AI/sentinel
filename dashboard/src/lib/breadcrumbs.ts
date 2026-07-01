@@ -51,6 +51,8 @@ const MODULE_TRAILS: Record<string, Crumb[]> = {
   '/compliance':         [{ label: 'Compliance' }, { label: 'Compliance', href: '/compliance' }],
   '/frameworks':         [{ label: 'Compliance' }, { label: 'Frameworks', href: '/frameworks' }],
   '/controls':           [{ label: 'Compliance' }, { label: 'Controls', href: '/controls' }],
+  '/compliance/controls': [{ label: 'Compliance' }, { label: 'Controls', href: '/compliance/controls' }],
+  '/compliance/drift':   [{ label: 'Compliance' }, { label: 'Control Drift', href: '/compliance/drift' }],
   '/policies':           [{ label: 'Compliance' }, { label: 'Policies', href: '/policies' }],
   '/audit-trail':        [{ label: 'Compliance' }, { label: 'Audit Trail', href: '/audit-trail' }],
 
