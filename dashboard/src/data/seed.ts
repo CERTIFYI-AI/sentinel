@@ -496,6 +496,8 @@ export interface Control {
   id: string; title: string; framework: string; clause: string; status: ControlStatus;
   score: number; owner: string; evidenceCount: number; lastTested: string;
   description: string; testResult: 'pass' | 'fail' | 'pending' | 'not_tested';
+  // Optional atomic-control governance metadata (from the compliance library).
+  code?: string; severity?: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'; evalType?: 'AUTO' | 'MANUAL';
 }
 export const CONTROLS: Control[] = [
   { id: 'CTRL-001', title: 'AI System Risk Classification', framework: 'EU AI Act', clause: 'Art. 6', status: 'implemented', score: 95, owner: 'James Patel', evidenceCount: 22, lastTested: '2026-03-15', description: 'Classify all AI systems by risk level per EU AI Act categories.', testResult: 'pass' },

@@ -16,8 +16,27 @@ import {
   CheckCircle, XCircle, Clock, Warning, ClipboardText,
 } from '@phosphor-icons/react';
 import { CONTROLS, FRAMEWORKS, GAPS, EVIDENCE, Control, ControlStatus, statusColor, severityColor, formatDate } from '../../data/seed';
+import { CONTROLS as LIB_CONTROLS, FRAMEWORK_NAME } from '../../data/complianceLibrary';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useChartTheme } from '../../hooks/useChartTheme';
+
+// The full atomic-control library (92 controls · 11 frameworks) mapped into the
+// registry shape. Deterministic demo status (from the code) while the Supabase
+// `controls` table is empty; real rows replace this once seeded.
+function hashCode(s: string): number { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; }
+const SEV_TX: Record<string, string> = { CRITICAL: 'hsl(var(--r-cr-tx))', HIGH: 'hsl(var(--r-hi-tx))', MEDIUM: 'hsl(var(--s-wn-tx))', LOW: 'hsl(var(--text-3))' };
+const LIBRARY_CONTROLS: Control[] = LIB_CONTROLS.map(c => {
+  const h = hashCode(c.code); const m = h % 10;
+  const status: ControlStatus = m < 6 ? 'implemented' : m < 8 ? 'partial' : 'planned';
+  const score = status === 'implemented' ? 80 + (h % 20) : status === 'partial' ? 50 + (h % 30) : 10 + (h % 30);
+  return {
+    id: c.code, code: c.code, title: c.name, framework: FRAMEWORK_NAME[c.framework] ?? c.framework,
+    clause: c.clause, status, score, owner: '', evidenceCount: h % 6, lastTested: status === 'implemented' ? '2026-06-01' : '',
+    description: c.description, testResult: status === 'implemented' ? 'pass' : status === 'partial' ? 'pending' : 'not_tested',
+    severity: c.severity, evalType: c.evalType,
+  };
+});
 
 
 const EMPTY_CONTROL: Omit<Control, 'id'> = {
@@ -37,7 +56,7 @@ export default function ComplianceControls() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
 
-  const [controls, setControls] = useState<Control[]>(CONTROLS);
+  const [controls, setControls] = useState<Control[]>(LIBRARY_CONTROLS);
   const [search, setSearch] = useState('');
   const [filterFramework, setFilterFramework] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -96,26 +115,13 @@ export default function ComplianceControls() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Breadcrumb */}
-      <div className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>
-        <Link to="/compliance" style={{ color: 'hsl(var(--text-3))', textDecoration: 'none' }}>Compliance</Link>
-        <span className="mx-1">›</span>
-        <span style={{ color: 'hsl(var(--text-1))' }}>Controls</span>
-      </div>
-
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Compliance Controls</h1>
-          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>
-            {orgName} · {totalControls} controls across {frameworks.length} frameworks
-          </p>
-        </div>
-        <Button size="sm" onClick={() => { setFormData(EMPTY_CONTROL); setCreateOpen(true); }}>
-          <Plus size={14} /> Add Control
-        </Button>
-      </div>
+    <div className="space-y-4">
+      <PageHeader
+        title="Controls Registry"
+        subtitle={`${orgName} · ${totalControls} atomic controls across ${frameworks.length} frameworks`}
+        icon={ShieldCheck}
+        actions={<Button size="sm" leftIcon={<Plus size={14} />} onClick={() => { setFormData(EMPTY_CONTROL); setCreateOpen(true); }}>Add Control</Button>}
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
@@ -150,11 +156,15 @@ export default function ComplianceControls() {
           <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--text-3))' }} />
           <Input placeholder="Search controls..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8" style={{ borderRadius: 0 }} />
         </div>
+        <select value={filterFramework} onChange={e => setFilterFramework(e.target.value)} style={selectStyle}>
+          <option value="all">All Frameworks</option>
+          {frameworks.sort().map(f => <option key={f} value={f}>{f}</option>)}
+        </select>
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={selectStyle}>
           <option value="all">All Statuses</option>
           {['implemented', 'partial', 'planned', 'not_applicable'].map(s => <option key={s} value={s}>{s}</option>)}
         </select>
-        <span className="text-xs ml-auto" style={{ color: 'hsl(var(--text-3))' }}>{filtered.length} of {controls.length}</span>
+        <span className="text-xs ml-auto font-mono" style={{ color: 'hsl(var(--text-3))' }}>{filtered.length} of {controls.length}</span>
       </div>
 
       {/* Table */}
@@ -169,7 +179,7 @@ export default function ComplianceControls() {
             <table className="w-full">
               <thead style={{ background: 'hsl(var(--bg-muted))' }}>
                 <tr>
-                  {['ID', 'Title', 'Framework', 'Clause', 'Status', 'Score', 'Evidence', 'Last Tested', 'Actions'].map(h => (
+                  {['Code', 'Title', 'Framework', 'Clause', 'Severity', 'Eval', 'Status', 'Score', 'Actions'].map(h => (
                     <th key={h} className="text-left p-3 text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>{h}</th>
                   ))}
                 </tr>
@@ -192,6 +202,8 @@ export default function ComplianceControls() {
                       </td>
                       <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{c.framework.replace('ISO/IEC ', '')}</td>
                       <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{c.clause}</td>
+                      <td className="p-3 text-[10px] font-semibold uppercase" style={{ color: c.severity ? SEV_TX[c.severity] : 'hsl(var(--text-4))' }}>{c.severity ?? '—'}</td>
+                      <td className="p-3 text-[10px] font-mono" style={{ color: c.evalType === 'AUTO' ? 'hsl(var(--s-in-tx))' : 'hsl(var(--text-4))' }}>{c.evalType ?? '—'}</td>
                       <td className="p-3">
                         <div className="flex items-center gap-1.5">
                           {statusIcon(c.status)}
@@ -212,8 +224,6 @@ export default function ComplianceControls() {
                           <span className="text-xs font-bold" style={{ color: 'hsl(var(--text-1))' }}>{c.score}%</span>
                         </div>
                       </td>
-                      <td className="p-3 text-xs text-center" style={{ color: 'hsl(var(--text-2))' }}>{c.evidenceCount}</td>
-                      <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{c.lastTested ? formatDate(c.lastTested) : '—'}</td>
                       <td className="p-3">
                         <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                           <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setViewItem(c)}>
