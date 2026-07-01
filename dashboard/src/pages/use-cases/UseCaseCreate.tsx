@@ -9,7 +9,7 @@ import { Textarea } from '../../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Checkbox } from '../../components/ui/checkbox';
 import { toast } from 'sonner';
-import { ArrowLeft, CheckCircle } from '@phosphor-icons/react';
+import { CheckCircle } from '@phosphor-icons/react';
 
 const FRAMEWORKS = ['EU AI Act', 'ISO 42001', 'ISO 27001', 'NIST AI RMF'];
 
@@ -50,19 +50,15 @@ export default function UseCaseCreate() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-12">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/use-cases')} style={{ padding: '0 8px' }}>
-          <ArrowLeft size={16} />
-        </Button>
-        <PageHeader
-          title="Create Use Case"
-          subtitle="Scope and initialize a new AI system"
-          breadcrumbs={[{ label: 'AI Governance' }, { label: 'Use Cases', href: '/use-cases' }, { label: 'New' }]}
-        />
-      </div>
+    <div className="space-y-4 pb-12">
+      <PageHeader
+        title="Create Use Case"
+        subtitle="Scope and initialize a new AI system"
+        breadcrumbs={[{ label: 'AI Governance' }, { label: 'Use Cases', href: '/use-cases' }, { label: 'New' }]}
+        onBack={() => navigate('/use-cases')}
+      />
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4 max-w-5xl">
         <Card style={{ borderRadius: 0 }}>
           <CardContent className="space-y-5">
             <div>
