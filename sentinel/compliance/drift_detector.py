@@ -81,26 +81,72 @@ def classify_drift(
     return DriftResult(DriftSeverity.NONE, previous_status, current_status, metric_trend, delta_pct, "Stable", fw)
 
 
-# ── Persistence adapter (fill against the real asyncpg cycle) ─────────────────
-# async def detect_and_store_drift(control_id, control_code, tenant_id, current_status,
-#                                  current_metric, frameworks, db) -> DriftResult:
-#     rows = await db.fetch(
-#         "SELECT status, metric_value FROM control_evaluation_history "
-#         "WHERE control_id = $1 ORDER BY evaluated_at DESC LIMIT 5", control_id)
-#     prev_status = rows[0]["status"] if rows else None
-#     trend = [r["metric_value"] for r in reversed(rows) if r["metric_value"] is not None]
-#     if current_metric is not None:
-#         trend.append(current_metric)
-#     result = classify_drift(prev_status, current_status, trend, frameworks, control_code)
-#     await db.execute(
-#         "INSERT INTO control_evaluation_history (control_id, tenant_id, status, metric_value, "
-#         "frameworks, drift_severity, drift_delta_pct) VALUES ($1,$2,$3,$4,$5,$6,$7)",
-#         control_id, tenant_id, current_status, current_metric, frameworks,
-#         result.drift_severity.value, result.delta_pct)
-#     if result.drift_severity in (DriftSeverity.CRITICAL, DriftSeverity.WARNING):
-#         await db.execute(
-#             "INSERT INTO realtime_alerts (tenant_id, alert_type, title, message, payload) "
-#             "VALUES ($1,$2,$3,$4,$5)", tenant_id,
-#             f"control_drift_{result.drift_severity.value.lower()}",
-#             f"{control_code}", result.message, {...})
-#     return result
+# ── Persistence adapter — real asyncpg (this project's DB layer, NOT supabase) ─
+import json
+
+
+async def detect_and_store_drift(
+    control_id: str,
+    control_code: str,
+    tenant_id: str,
+    org_id: str,
+    current_status: str,
+    current_metric: float | None,
+    frameworks_impacted: list[str],
+    db,
+    history_window: int = 5,
+) -> DriftResult:
+    """Read the last-N evaluations, classify drift, persist the new evaluation,
+    and emit a realtime alert on WARNING/CRITICAL.
+
+    ``db`` is this project's asyncpg connection (``db.fetch`` / ``db.execute``
+    with ``$1`` params), acquired via ``db_pool.acquire()`` in the runner — the
+    same pattern used by ``run_compliance_evaluation``. No supabase-py client.
+    """
+    rows = await db.fetch(
+        "SELECT status, metric_value FROM control_evaluation_history "
+        "WHERE control_id = $1 ORDER BY evaluated_at DESC LIMIT $2",
+        control_id, history_window,
+    )
+    prev_status = rows[0]["status"] if rows else None
+    trend = [r["metric_value"] for r in reversed(rows) if r["metric_value"] is not None]
+    if current_metric is not None:
+        trend.append(float(current_metric))
+
+    result = classify_drift(prev_status, current_status, trend, frameworks_impacted, control_code)
+
+    await db.execute(
+        """
+        INSERT INTO control_evaluation_history
+            (id, control_id, tenant_id, control_code, status, metric_value,
+             frameworks, drift_severity, drift_delta_pct, evaluated_at)
+        VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, now())
+        """,
+        control_id, tenant_id, control_code, current_status, current_metric,
+        json.dumps(frameworks_impacted), result.drift_severity.value, result.delta_pct,
+    )
+
+    if result.drift_severity in (DriftSeverity.CRITICAL, DriftSeverity.WARNING):
+        await db.execute(
+            """
+            INSERT INTO realtime_alerts (id, tenant_id, alert_type, title, message, payload, created_at)
+            VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, now())
+            """,
+            tenant_id,
+            f"control_drift_{result.drift_severity.value.lower()}",
+            f"{'Critical' if result.drift_severity is DriftSeverity.CRITICAL else 'Warning'}: {control_code}",
+            result.message,
+            json.dumps({
+                "control_id": control_id,
+                "control_code": control_code,
+                "org_id": org_id,
+                "current_status": result.current_status,
+                "previous_status": result.previous_status,
+                "drift_severity": result.drift_severity.value,
+                "metric_trend": result.metric_trend,
+                "delta_pct": result.delta_pct,
+                "frameworks_impacted": result.frameworks_impacted,
+            }),
+        )
+
+    return result
