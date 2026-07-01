@@ -1,3 +1,7 @@
+## 1.17.0 (2026-07-01)
+
+* feat(compliance): Controls Registry lists all 92 controls across 11 frameworks ([cdaf1fb](https://github.com/CERTIFYI-AI/sentinel/commit/cdaf1fb))
+
 ## 1.16.0 (2026-07-01)
 
 * feat(compliance): deterministic policy rules + drift classifier (backend) ([81a7ad1](https://github.com/CERTIFYI-AI/sentinel/commit/81a7ad1))
