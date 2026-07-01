@@ -1,3 +1,7 @@
+## 1.23.0 (2026-07-01)
+
+* feat(use-cases): make Use Case detail tabs functional (CRUD actions) ([df3786f](https://github.com/CERTIFYI-AI/sentinel/commit/df3786f))
+
 ## 1.22.0 (2026-07-01)
 
 * feat(compliance): expand control library to authoritative framework counts (530) ([43cdec6](https://github.com/CERTIFYI-AI/sentinel/commit/43cdec6))
