@@ -6,6 +6,8 @@ import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { USE_CASES, MODELS, RISKS, formatDate } from '../../data/seed';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
+import { Input } from '../../components/ui/input';
 import { toast } from 'sonner';
 import {
   Briefcase, Warning, ShieldCheck, ListChecks, Clock,
@@ -45,6 +47,32 @@ export default function UseCaseDetail() {
 
   const uc = useMemo(() => USE_CASES.find(u => u.id === id), [id]);
 
+  // Functional state (optimistic; persists to Supabase once the tables exist).
+  const [linkedModelIds, setLinkedModelIds] = useState<string[]>(() => USE_CASES.find(u => u.id === id)?.linkedModels ?? []);
+  const [extraRisks, setExtraRisks] = useState<{ id: string; title: string; category: string; severity: string; score: number }[]>([]);
+  const [ceItems, setCeItems] = useState([
+    { id: 'ce-1', label: 'Technical documentation (Annex IV) complete', done: true },
+    { id: 'ce-2', label: 'Conformity assessment (Art. 43) performed', done: false },
+    { id: 'ce-3', label: 'Quality management system (Art. 17) in place', done: true },
+    { id: 'ce-4', label: 'Human oversight mechanism (Art. 14) implemented', done: true },
+    { id: 'ce-5', label: 'Accuracy, robustness & cybersecurity (Art. 15) verified', done: false },
+    { id: 'ce-6', label: 'Post-market monitoring plan (Art. 72) exists', done: false },
+    { id: 'ce-7', label: 'EU declaration of conformity (Art. 47) signed', done: false },
+    { id: 'ce-8', label: 'EU database registration (Art. 49) complete', done: false },
+  ]);
+  const [activity, setActivity] = useState<{ action: string; date: string; actor: string }[]>([
+    { action: 'Status changed to Under Review', date: '2026-03-20T14:30:00', actor: 'James Patel' },
+    { action: 'Risk classification confirmed as High-Risk (Annex III)', date: '2026-03-15T10:00:00', actor: 'Maria Santos' },
+    { action: 'Framework EU AI Act attached', date: '2026-03-01T09:15:00', actor: 'Raj Gupta' },
+    { action: 'Model MDL-001 linked', date: '2026-02-20T16:45:00', actor: 'Maria Santos' },
+    { action: 'DPIA initiated', date: '2026-02-10T11:20:00', actor: 'Sarah Chen' },
+    { action: 'Use case created', date: '2026-02-01T11:00:00', actor: 'Sarah Chen' },
+  ]);
+  const [showAddRisk, setShowAddRisk] = useState(false);
+  const [showLinkModel, setShowLinkModel] = useState(false);
+  const [riskForm, setRiskForm] = useState({ title: '', category: 'Fairness', severity: 'high', score: 12 });
+  const logActivity = (action: string) => setActivity(prev => [{ action, date: new Date().toISOString(), actor: 'You' }, ...prev]);
+
   const handleDelete = () => {
     setConfirmDelete(false);
     toast.success(`Use case ${id} deleted`);
@@ -66,8 +94,30 @@ export default function UseCaseDetail() {
     );
   }
 
-  const linkedModels = MODELS.filter(m => uc.linkedModels.includes(m.id));
-  const linkedRisks = RISKS.filter(r => uc.linkedModels.includes(r.linkedModel));
+  const linkedModels = MODELS.filter(m => linkedModelIds.includes(m.id));
+  const availableModels = MODELS.filter(m => !linkedModelIds.includes(m.id));
+  const linkedRisks = [
+    ...RISKS.filter(r => linkedModelIds.includes(r.linkedModel)).map(r => ({ id: r.id, title: r.title, category: r.category, severity: r.severity, score: r.score })),
+    ...extraRisks,
+  ];
+
+  const addRisk = () => {
+    if (!riskForm.title.trim()) { toast.error('Risk title is required'); return; }
+    const rid = `UCR-${String(extraRisks.length + 1).padStart(3, '0')}`;
+    setExtraRisks(prev => [...prev, { id: rid, ...riskForm, title: riskForm.title.trim() }]);
+    logActivity(`Risk "${riskForm.title.trim()}" logged`);
+    toast.success(`Risk ${rid} logged`);
+    setRiskForm({ title: '', category: 'Fairness', severity: 'high', score: 12 });
+    setShowAddRisk(false);
+  };
+  const linkModel = (mid: string, mname: string) => {
+    setLinkedModelIds(prev => [...prev, mid]);
+    logActivity(`Model ${mid} linked`);
+    toast.success(`Linked ${mname}`);
+    setShowLinkModel(false);
+  };
+  const toggleCe = (cid: string) => setCeItems(prev => prev.map(c => c.id === cid ? { ...c, done: !c.done } : c));
+  const ceComplete = ceItems.filter(c => c.done).length;
 
   return (
     <div className="space-y-6">
@@ -257,7 +307,7 @@ export default function UseCaseDetail() {
             <div className="bg-surface border border-[hsl(var(--border))]">
               <div className="p-4 border-b border-[hsl(var(--border))] flex justify-between items-center">
                 <h3 className="font-semibold">Risk Register</h3>
-                <Button size="sm" style={{ borderRadius: 0 }} onClick={() => toast.success('Risk logging form opened for ' + uc.id)}><Plus size={14} /> Log Risk</Button>
+                <Button size="sm" style={{ borderRadius: 0 }} onClick={() => setShowAddRisk(true)}><Plus size={14} /> Log Risk</Button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -300,7 +350,7 @@ export default function UseCaseDetail() {
             <div className="bg-surface border border-[hsl(var(--border))]">
               <div className="p-4 border-b border-[hsl(var(--border))] flex justify-between items-center">
                 <h3 className="font-semibold">Linked Models ({linkedModels.length})</h3>
-                <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={() => toast.success('Model linking dialog opened')}><Briefcase size={14} /> Link Existing Model</Button>
+                <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={() => setShowLinkModel(true)}><Briefcase size={14} /> Link Existing Model</Button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -388,52 +438,113 @@ export default function UseCaseDetail() {
 
           {/* TAB 5: CE MARKING */}
           <TabsContent value="ce" className="mt-0">
-             <div className="bg-surface border border-[hsl(var(--border))] p-8 text-center">
-              <ShieldCheck size={48} className="mx-auto text-[hsl(var(--brand))] mb-4" />
-              <h3 className="text-lg font-bold mb-2">CE Marking Conformity Assessment</h3>
-              <p className="text-[hsl(var(--text-3))] mb-6 max-w-lg mx-auto">
-                Generate the technical documentation and declaration of conformity required by the EU AI Act before deploying this high-risk use case.
-              </p>
-              <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={() => toast.success('CE marking conformity checklist started')}>Start Assessment Checklist</Button>
+            <div className="bg-surface border border-[hsl(var(--border))]">
+              <div className="p-4 border-b border-[hsl(var(--border))] flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck size={18} className="text-[hsl(var(--brand))]" />
+                  <div>
+                    <h3 className="font-semibold">CE Marking Conformity Assessment</h3>
+                    <p className="text-xs text-[hsl(var(--text-4))]">EU AI Act declaration of conformity checklist for high-risk systems</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-bold font-mono" style={{ color: ceComplete === ceItems.length ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-1))' }}>{ceComplete}/{ceItems.length}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-[hsl(var(--text-4))]">Complete</p>
+                </div>
+              </div>
+              <div className="h-1 w-full bg-[hsl(var(--bg-muted))]">
+                <div className="h-full bg-[hsl(var(--s-ok-tx))]" style={{ width: `${(ceComplete / ceItems.length) * 100}%` }} />
+              </div>
+              <div>
+                {ceItems.map(item => (
+                  <label key={item.id} className="flex items-center gap-3 px-4 py-3 border-b border-[hsl(var(--border))] cursor-pointer hover:bg-[hsl(var(--bg-muted))]">
+                    <input type="checkbox" checked={item.done} onChange={() => toggleCe(item.id)} className="h-4 w-4" style={{ borderRadius: 0 }} />
+                    <span className="text-sm flex-1" style={{ color: item.done ? 'hsl(var(--text-3))' : 'hsl(var(--text-1))', textDecoration: item.done ? 'line-through' : 'none' }}>{item.label}</span>
+                    <Badge style={{ background: item.done ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-wn-bg))', color: item.done ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 9 }}>{item.done ? 'DONE' : 'PENDING'}</Badge>
+                  </label>
+                ))}
+              </div>
+              <div className="p-4 flex justify-between items-center">
+                <p className="text-xs text-[hsl(var(--text-4))]">{ceComplete === ceItems.length ? 'All checks complete — ready to sign the Declaration of Conformity.' : `${ceItems.length - ceComplete} item(s) remaining before CE marking.`}</p>
+                <Button size="sm" disabled={ceComplete !== ceItems.length} onClick={() => toast.success('EU Declaration of Conformity generated')} style={{ borderRadius: 0 }}>Generate Declaration</Button>
+              </div>
             </div>
           </TabsContent>
 
           {/* TAB 6: ACTIVITY */}
           <TabsContent value="activity" className="mt-0">
-             <div className="bg-surface border border-[hsl(var(--border))] p-6">
-               <h3 className="font-semibold mb-6">Audit Log</h3>
-               <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-[hsl(var(--border))]">
-                  {[
-                    { action: 'Status changed to Under Review', date: '2026-03-20T14:30:00', actor: 'James Patel' },
-                    { action: 'Framework EU AI Act added', date: '2026-03-01T09:15:00', actor: 'Raj Gupta' },
-                    { action: 'Use case created', date: '2026-02-01T11:00:00', actor: uc.owner }
-                  ].map((log, i) => (
-                    <div key={i} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-full border border-[hsl(var(--bg-surface))] bg-[hsl(var(--bg-muted))] text-[hsl(var(--text-3))] shadow shrink-0 z-10 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
-                        <Clock size={16} />
-                      </div>
-                      <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 border border-[hsl(var(--border))] bg-raised shadow-sm">
-                        <div className="flex items-center justify-between space-x-2 mb-1">
-                          <div className="font-bold text-[hsl(var(--text-1))] text-sm">{log.action}</div>
-                          <time className="font-mono text-xs text-[hsl(var(--text-4))]">{new Date(log.date).toLocaleDateString()}</time>
-                        </div>
-                        <div className="text-[hsl(var(--text-3))] text-xs">by {log.actor}</div>
+            <div className="bg-surface border border-[hsl(var(--border))]">
+              <div className="p-4 border-b border-[hsl(var(--border))] flex items-center justify-between">
+                <h3 className="font-semibold">Audit Log</h3>
+                <span className="text-xs font-mono text-[hsl(var(--text-4))]">{activity.length} events</span>
+              </div>
+              <div>
+                {activity.map((log, i) => {
+                  const initials = log.actor.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+                  return (
+                    <div key={i} className="flex items-start gap-3 px-4 py-3 border-b border-[hsl(var(--border))]">
+                      <div className="w-7 h-7 flex items-center justify-center text-[10px] font-bold shrink-0" style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))' }}>{initials}</div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-[hsl(var(--text-1))]">{log.action}</p>
+                        <p className="text-[11px] text-[hsl(var(--text-4))] mt-0.5">
+                          <span className="font-medium text-[hsl(var(--text-3))]">{log.actor}</span> · {new Date(log.date).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </p>
                       </div>
                     </div>
-                  ))}
-                </div>
-             </div>
+                  );
+                })}
+              </div>
+            </div>
           </TabsContent>
 
           {/* TAB 7: MONITORING */}
-          <TabsContent value="monitoring" className="mt-0">
-            <div className="bg-surface border border-[hsl(var(--border))] p-8 text-center">
-              <ChartLineUp size={48} className="mx-auto text-[hsl(var(--text-4))] mb-4" />
-              <h3 className="text-lg font-bold mb-2">Post-Market Monitoring</h3>
-              <p className="text-[hsl(var(--text-3))] mb-6 max-w-lg mx-auto">
-                No telemetry data available yet. Link an active model to this use case and deploy to production to start monitoring performance and incidents.
-              </p>
-            </div>
+          <TabsContent value="monitoring" className="mt-0 space-y-4">
+            {linkedModels.length === 0 ? (
+              <div className="bg-surface border border-[hsl(var(--border))] p-8 text-center">
+                <ChartLineUp size={40} className="mx-auto text-[hsl(var(--text-4))] mb-3" />
+                <h3 className="text-base font-bold mb-1">No models linked</h3>
+                <p className="text-[hsl(var(--text-3))] text-sm">Link an active model to start post-market monitoring.</p>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {[
+                    { label: 'Uptime (30d)', value: '99.94%', tx: 'hsl(var(--s-ok-tx))' },
+                    { label: 'P95 Latency', value: '142 ms', tx: 'hsl(var(--text-1))' },
+                    { label: 'Drift (PSI)', value: '0.07', tx: 'hsl(var(--s-wn-tx))' },
+                    { label: 'Open Incidents', value: '1', tx: 'hsl(var(--s-er-tx))' },
+                  ].map(m => (
+                    <div key={m.label} className="bg-surface border border-[hsl(var(--border))] p-4">
+                      <p className="text-[10px] uppercase tracking-wider font-medium text-[hsl(var(--text-4))]">{m.label}</p>
+                      <p className="text-2xl font-bold font-mono mt-0.5" style={{ color: m.tx }}>{m.value}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-surface border border-[hsl(var(--border))]">
+                  <div className="p-4 border-b border-[hsl(var(--border))]"><h3 className="font-semibold text-sm">Post-Market Signals (30-day)</h3></div>
+                  <table className="w-full text-sm">
+                    <thead><tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-muted))]">{['Signal', 'Model', 'Current', 'Threshold', 'Status'].map(h => <th key={h} className="px-4 py-2 text-left text-[10px] uppercase tracking-wider font-semibold text-[hsl(var(--text-4))]">{h}</th>)}</tr></thead>
+                    <tbody>
+                      {[
+                        { sig: 'Accuracy (F1)', cur: '0.913', thr: '≥ 0.85', ok: true },
+                        { sig: 'Demographic parity', cur: '0.84', thr: '≥ 0.85', ok: false },
+                        { sig: 'Data drift (PSI)', cur: '0.07', thr: '< 0.10', ok: true },
+                        { sig: 'Prediction volume', cur: '890K/mo', thr: 'baseline ±20%', ok: true },
+                        { sig: 'Override rate (HITL)', cur: '3.2%', thr: '< 5%', ok: true },
+                      ].map(r => (
+                        <tr key={r.sig} className="border-b border-[hsl(var(--border))]">
+                          <td className="px-4 py-2 font-medium">{r.sig}</td>
+                          <td className="px-4 py-2 font-mono text-xs text-[hsl(var(--brand))]">{linkedModels[0]?.id ?? '—'}</td>
+                          <td className="px-4 py-2 font-mono">{r.cur}</td>
+                          <td className="px-4 py-2 font-mono text-xs text-[hsl(var(--text-3))]">{r.thr}</td>
+                          <td className="px-4 py-2"><Badge style={{ background: r.ok ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-er-bg))', color: r.ok ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))', borderRadius: 0, fontSize: 9 }}>{r.ok ? 'WITHIN' : 'BREACH'}</Badge></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
           </TabsContent>
 
           {/* TAB 8: SETTINGS */}
@@ -464,6 +575,62 @@ export default function UseCaseDetail() {
 
         </div>
       </Tabs>
+
+      {/* Add Risk modal */}
+      <Dialog open={showAddRisk} onOpenChange={setShowAddRisk}>
+        <DialogContent style={{ borderRadius: 0, maxWidth: 440 }}>
+          <DialogHeader><DialogTitle>Log Use Case Risk</DialogTitle></DialogHeader>
+          <div className="space-y-3 py-1">
+            <div>
+              <label className="text-xs font-semibold text-[hsl(var(--text-4))]">Risk title *</label>
+              <Input value={riskForm.title} onChange={e => setRiskForm({ ...riskForm, title: e.target.value })} placeholder="e.g. Proxy discrimination via ZIP code" className="mt-1" style={{ borderRadius: 0 }} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-semibold text-[hsl(var(--text-4))]">Category</label>
+                <select value={riskForm.category} onChange={e => setRiskForm({ ...riskForm, category: e.target.value })} className="mt-1 w-full h-9 px-2 text-sm" style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))' }}>
+                  {['Fairness', 'Privacy', 'Security', 'Robustness', 'Transparency', 'Safety', 'Operational'].map(c => <option key={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-[hsl(var(--text-4))]">Severity</label>
+                <select value={riskForm.severity} onChange={e => setRiskForm({ ...riskForm, severity: e.target.value })} className="mt-1 w-full h-9 px-2 text-sm" style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))' }}>
+                  {['critical', 'high', 'medium', 'low'].map(s => <option key={s}>{s}</option>)}
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-[hsl(var(--text-4))]">Risk score (1–25)</label>
+              <Input type="number" min={1} max={25} value={riskForm.score} onChange={e => setRiskForm({ ...riskForm, score: Number(e.target.value) })} className="mt-1" style={{ borderRadius: 0 }} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setShowAddRisk(false)}>Cancel</Button>
+            <Button size="sm" onClick={addRisk}>Log Risk</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Link Model modal */}
+      <Dialog open={showLinkModel} onOpenChange={setShowLinkModel}>
+        <DialogContent style={{ borderRadius: 0, maxWidth: 520 }}>
+          <DialogHeader><DialogTitle>Link Existing Model</DialogTitle></DialogHeader>
+          <div className="py-1 max-h-80 overflow-y-auto">
+            {availableModels.length === 0 ? (
+              <p className="text-sm text-[hsl(var(--text-4))] py-6 text-center">All models are already linked to this use case.</p>
+            ) : availableModels.map(m => (
+              <div key={m.id} className="flex items-center justify-between px-1 py-2 border-b border-[hsl(var(--border))]">
+                <div>
+                  <p className="text-sm font-medium text-[hsl(var(--text-1))]">{m.name} <span className="text-xs font-mono text-[hsl(var(--text-4))]">{m.id}</span></p>
+                  <p className="text-[11px] text-[hsl(var(--text-4))]">{m.type} · v{m.version} · {m.riskTier}</p>
+                </div>
+                <Button size="sm" variant="outline" onClick={() => linkModel(m.id, m.name)}>Link</Button>
+              </div>
+            ))}
+          </div>
+          <DialogFooter><Button variant="outline" size="sm" onClick={() => setShowLinkModel(false)}>Close</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDialog
         open={confirmDelete}
