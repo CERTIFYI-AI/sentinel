@@ -37,7 +37,7 @@ export default function ComplianceDashboardPage() {
       const impl = ctrls.filter(c => controlStatus(c.code) === "implemented").length;
       const partial = ctrls.filter(c => controlStatus(c.code) === "partial").length;
       const coverage = ctrls.length ? Math.round(((impl + partial * 0.5) / ctrls.length) * 100) : 0;
-      return { code: f.code, name: f.name, category: f.category, total: ctrls.length, gaps: ctrls.length - impl, coverage };
+      return { code: f.code, name: f.name, category: f.category, total: ctrls.length, gaps: ctrls.length - impl, coverage, scope: `${f.official.count} ${f.official.unit}`, structure: f.official.structure };
     }).sort((a, b) => a.coverage - b.coverage);
 
     const total = CONTROLS.length;
@@ -113,12 +113,15 @@ export default function ComplianceDashboardPage() {
 
       {/* Framework coverage table */}
       <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Framework Coverage — {FRAMEWORKS.length} frameworks</CardTitle></CardHeader>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium">Framework Coverage — {FRAMEWORKS.length} frameworks</CardTitle>
+          <p className="text-[11px]" style={{ color: "hsl(var(--text-4))" }}>“Framework Scope” = the full standard; “Mapped” = the operational atomic controls Sentinel tracks against it.</p>
+        </CardHeader>
         <CardContent className="p-0">
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottom: "1px solid hsl(var(--border))", background: "hsl(var(--bg-muted))" }}>
-                {["Framework", "Category", "Controls", "Open Gaps", "Coverage"].map(h => (
+                {["Framework", "Framework Scope", "Mapped", "Open Gaps", "Coverage"].map(h => (
                   <th key={h} className="px-3 py-2 text-left text-[10px] uppercase tracking-wider font-semibold" style={{ color: "hsl(var(--text-4))" }}>{h}</th>
                 ))}
               </tr>
@@ -126,8 +129,8 @@ export default function ComplianceDashboardPage() {
             <tbody>
               {data.perFw.map(f => (
                 <tr key={f.code} onClick={() => nav("/compliance/controls")} className="cursor-pointer hover:bg-[hsl(var(--bg-raised))]" style={{ borderBottom: "1px solid hsl(var(--border))" }}>
-                  <td className="px-3 py-2 font-medium" style={{ color: "hsl(var(--text-1))" }}>{f.name}</td>
-                  <td className="px-3 py-2 text-xs" style={{ color: "hsl(var(--text-3))" }}>{f.category}</td>
+                  <td className="px-3 py-2 font-medium" style={{ color: "hsl(var(--text-1))" }}>{f.name}<span className="block text-[10px] font-normal" style={{ color: "hsl(var(--text-4))" }}>{f.category}</span></td>
+                  <td className="px-3 py-2 text-xs" style={{ color: "hsl(var(--text-2))" }} title={f.structure}><span className="font-mono font-semibold">{f.scope}</span></td>
                   <td className="px-3 py-2 font-mono text-xs" style={{ color: "hsl(var(--text-2))" }}>{f.total}</td>
                   <td className="px-3 py-2 font-mono text-xs" style={{ color: f.gaps > 0 ? "hsl(var(--r-hi-tx))" : "hsl(var(--text-3))" }}>{f.gaps}</td>
                   <td className="px-3 py-2" style={{ minWidth: 160 }}>

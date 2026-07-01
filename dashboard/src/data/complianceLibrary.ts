@@ -13,6 +13,10 @@ export type EvalType = 'AUTO' | 'MANUAL';
 export interface FrameworkDef {
   code: string; name: string; shortCode: string; version: string;
   region: string; category: string; effectiveDate: string; description: string;
+  // Authoritative framework scope (the full standard), distinct from the mapped
+  // operational controls Sentinel tracks. `count`/`unit` = official size;
+  // `structure` = how it decomposes.
+  official: { count: number; unit: string; structure: string };
 }
 
 export interface ControlDef {
@@ -38,17 +42,17 @@ export const POLICY_RULE_KEYS: Record<string, string> = {
 };
 
 export const FRAMEWORKS: FrameworkDef[] = [
-  { code: 'EU_AI_ACT', name: 'EU AI Act', shortCode: 'EU_AI_ACT', version: '2024/1689', region: 'EU', category: 'AI Regulation', effectiveDate: '2024-08-01', description: 'EU regulation on artificial intelligence systems' },
-  { code: 'GDPR', name: 'GDPR', shortCode: 'GDPR', version: '2016/679', region: 'EU', category: 'Data Privacy', effectiveDate: '2018-05-25', description: 'EU General Data Protection Regulation' },
-  { code: 'GOOGLE_SAIF', name: 'Google SAIF', shortCode: 'GOOGLE_SAIF', version: '1.0', region: 'GLOBAL', category: 'AI Security', effectiveDate: '2023-06-08', description: 'Google Secure AI Framework for securing AI systems' },
-  { code: 'ISO_42001', name: 'ISO/IEC 42001', shortCode: 'ISO_42001', version: '2023', region: 'GLOBAL', category: 'AI Management', effectiveDate: '2023-12-01', description: 'International standard for AI management systems' },
-  { code: 'MITRE_ATLAS', name: 'MITRE ATLAS', shortCode: 'MITRE_ATLAS', version: '2024', region: 'GLOBAL', category: 'AI Threat Intel', effectiveDate: '2022-01-01', description: 'Adversarial Threat Landscape for AI Systems' },
-  { code: 'NIST_AI_RMF', name: 'NIST AI RMF 1.0', shortCode: 'NIST_AI_RMF', version: '1.0', region: 'US', category: 'Risk Management', effectiveDate: '2023-01-26', description: 'NIST AI Risk Management Framework' },
-  { code: 'OECD_AI', name: 'OECD AI Principles', shortCode: 'OECD_AI', version: '2024', region: 'GLOBAL', category: 'AI Ethics', effectiveDate: '2019-05-22', description: 'OECD principles for trustworthy AI stewardship' },
-  { code: 'OWASP_LLM', name: 'OWASP LLM Top 10', shortCode: 'OWASP_LLM', version: '2025', region: 'GLOBAL', category: 'LLM Security', effectiveDate: '2023-10-01', description: 'Security risks specific to LLM applications' },
-  { code: 'SG_MODEL_AI', name: 'Singapore Model AI Framework', shortCode: 'SG_MODEL_AI', version: '2.0', region: 'APAC', category: 'AI Governance', effectiveDate: '2024-05-01', description: 'Singapore framework for responsible AI governance' },
-  { code: 'UNESCO_AI', name: 'UNESCO Ethics of AI', shortCode: 'UNESCO_AI', version: '2021', region: 'GLOBAL', category: 'AI Ethics', effectiveDate: '2021-11-23', description: 'UNESCO recommendation on the ethics of AI' },
-  { code: 'INDIA_AI_GOV', name: 'India AI Governance Guidelines', shortCode: 'INDIA_AI_GOV', version: '2024', region: 'IN', category: 'AI Governance', effectiveDate: '2024-01-01', description: 'India IndiaAI / MeitY responsible AI guidelines' },
+  { code: 'EU_AI_ACT', name: 'EU AI Act', shortCode: 'EU_AI_ACT', version: '2024/1689', region: 'EU', category: 'AI Regulation', effectiveDate: '2024-08-01', description: 'EU regulation on artificial intelligence systems', official: { count: 130, unit: 'obligations', structure: '113 Articles → ~130 high-risk provider obligations (Art. 9 risk mgmt, Art. 10 data governance, Art. 11 tech docs)' } },
+  { code: 'GDPR', name: 'GDPR', shortCode: 'GDPR', version: '2016/679', region: 'EU', category: 'Data Privacy', effectiveDate: '2018-05-25', description: 'EU General Data Protection Regulation', official: { count: 99, unit: 'articles', structure: '99 legal Articles → ~35–40 operational controls (RoPA Art. 30, DPIA Art. 35)' } },
+  { code: 'GOOGLE_SAIF', name: 'Google SAIF', shortCode: 'GOOGLE_SAIF', version: '1.0', region: 'GLOBAL', category: 'AI Security', effectiveDate: '2023-06-08', description: 'Google Secure AI Framework for securing AI systems', official: { count: 60, unit: 'controls', structure: '6 core pillars → 60 security controls (model security, data protection, infrastructure)' } },
+  { code: 'ISO_42001', name: 'ISO/IEC 42001', shortCode: 'ISO_42001', version: '2023', region: 'GLOBAL', category: 'AI Management', effectiveDate: '2023-12-01', description: 'International standard for AI management systems', official: { count: 38, unit: 'Annex A controls', structure: '10 clauses + exactly 38 Annex A controls (A.2–A.10)' } },
+  { code: 'MITRE_ATLAS', name: 'MITRE ATLAS', shortCode: 'MITRE_ATLAS', version: '2024', region: 'GLOBAL', category: 'AI Threat Intel', effectiveDate: '2022-01-01', description: 'Adversarial Threat Landscape for AI Systems', official: { count: 84, unit: 'techniques', structure: '16 tactics · 84 techniques · 32 mitigations' } },
+  { code: 'NIST_AI_RMF', name: 'NIST AI RMF 1.0', shortCode: 'NIST_AI_RMF', version: '1.0', region: 'US', category: 'Risk Management', effectiveDate: '2023-01-26', description: 'NIST AI Risk Management Framework', official: { count: 72, unit: 'sub-categories', structure: '4 functions (Govern/Map/Measure/Manage) · 19 categories · 72 sub-categories' } },
+  { code: 'OECD_AI', name: 'OECD AI Principles', shortCode: 'OECD_AI', version: '2024', region: 'GLOBAL', category: 'AI Ethics', effectiveDate: '2019-05-22', description: 'OECD principles for trustworthy AI stewardship', official: { count: 10, unit: 'principles', structure: '5 values-based principles + 5 policymaker recommendations' } },
+  { code: 'OWASP_LLM', name: 'OWASP LLM Top 10', shortCode: 'OWASP_LLM', version: '2025', region: 'GLOBAL', category: 'LLM Security', effectiveDate: '2023-10-01', description: 'Security risks specific to LLM applications', official: { count: 10, unit: 'risks', structure: 'Top 10 critical LLM risks → ~50+ specific mitigations' } },
+  { code: 'SG_MODEL_AI', name: 'Singapore Model AI Framework', shortCode: 'SG_MODEL_AI', version: '2.0', region: 'APAC', category: 'AI Governance', effectiveDate: '2024-05-01', description: 'Singapore framework for responsible AI governance', official: { count: 9, unit: 'principles', structure: '2 key pillars (internal governance, human-centricity) · 9 guiding principles' } },
+  { code: 'UNESCO_AI', name: 'UNESCO Ethics of AI', shortCode: 'UNESCO_AI', version: '2021', region: 'GLOBAL', category: 'AI Ethics', effectiveDate: '2021-11-23', description: 'UNESCO recommendation on the ethics of AI', official: { count: 11, unit: 'policy areas', structure: '10 core values/principles · 11 policy action areas (data, gender, education…)' } },
+  { code: 'INDIA_AI_GOV', name: 'India AI Governance Guidelines', shortCode: 'INDIA_AI_GOV', version: '2024', region: 'IN', category: 'AI Governance', effectiveDate: '2024-01-01', description: 'India IndiaAI / MeitY responsible AI guidelines', official: { count: 7, unit: 'guideline areas', structure: 'MeitY/IndiaAI responsible-AI guideline areas aligned to the DPDP Act 2023' } },
 ];
 
 export const FRAMEWORK_NAME: Record<string, string> = Object.fromEntries(FRAMEWORKS.map(f => [f.code, f.name]));
