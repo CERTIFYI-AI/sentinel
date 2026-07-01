@@ -1,3 +1,7 @@
+## <small>1.21.1 (2026-07-01)</small>
+
+* fix(compliance): control detail page 404 for library controls ([1a52153](https://github.com/CERTIFYI-AI/sentinel/commit/1a52153))
+
 ## 1.21.0 (2026-07-01)
 
 * feat(compliance): add authoritative framework scope metadata + surface in UI ([8474721](https://github.com/CERTIFYI-AI/sentinel/commit/8474721))
