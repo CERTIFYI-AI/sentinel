@@ -145,30 +145,30 @@ const BLANK: Omit<AIIA, 'id' | 'findings'> = {
 const STATUS_STYLE: Record<AIIAStatus, { bg: string; color: string }> = {
   Draft: { bg: 'bg-sunken', color: 'text-[hsl(var(--text-3))]' },
   'In Progress': { bg: 'bg-[hsl(var(--brand-subtle))]', color: 'text-[hsl(var(--brand))]' },
-  'Pending Review': { bg: 'bg-yellow-500/10', color: 'text-yellow-500' },
-  Approved: { bg: 'bg-emerald-500/10', color: 'text-emerald-500' },
-  Rejected: { bg: 'bg-red-500/10', color: 'text-red-500' },
-  Completed: { bg: 'bg-emerald-500/10', color: 'text-emerald-500' },
+  'Pending Review': { bg: 'bg-[hsl(var(--s-wn-tx))]', color: 'text-[hsl(var(--s-wn-tx))]' },
+  Approved: { bg: 'bg-[hsl(var(--s-ok-tx))]', color: 'text-[hsl(var(--s-ok-tx))]' },
+  Rejected: { bg: 'bg-[hsl(var(--s-er-tx))]', color: 'text-[hsl(var(--s-er-tx))]' },
+  Completed: { bg: 'bg-[hsl(var(--s-ok-tx))]', color: 'text-[hsl(var(--s-ok-tx))]' },
 }
 
 const RISK_STYLE: Record<RiskLevel, { bg: string; color: string }> = {
-  Critical: { bg: 'bg-red-500/10', color: 'text-red-500' },
-  High: { bg: 'bg-orange-500/10', color: 'text-orange-500' },
-  Medium: { bg: 'bg-yellow-500/10', color: 'text-yellow-500' },
-  Low: { bg: 'bg-emerald-500/10', color: 'text-emerald-500' },
-  Minimal: { bg: 'bg-emerald-500/10', color: 'text-emerald-500' },
+  Critical: { bg: 'bg-[hsl(var(--s-er-tx))]', color: 'text-[hsl(var(--s-er-tx))]' },
+  High: { bg: 'bg-[hsl(var(--s-wn-tx))]', color: 'text-[hsl(var(--s-wn-tx))]' },
+  Medium: { bg: 'bg-[hsl(var(--s-wn-tx))]', color: 'text-[hsl(var(--s-wn-tx))]' },
+  Low: { bg: 'bg-[hsl(var(--s-ok-tx))]', color: 'text-[hsl(var(--s-ok-tx))]' },
+  Minimal: { bg: 'bg-[hsl(var(--s-ok-tx))]', color: 'text-[hsl(var(--s-ok-tx))]' },
 }
 
 const MITIGATION_STATUS: Record<string, { bg: string; color: string }> = {
-  Implemented: { bg: 'bg-emerald-500/10', color: 'text-emerald-500' },
-  Planned: { bg: 'bg-yellow-500/10', color: 'text-yellow-500' },
+  Implemented: { bg: 'bg-[hsl(var(--s-ok-tx))]', color: 'text-[hsl(var(--s-ok-tx))]' },
+  Planned: { bg: 'bg-[hsl(var(--s-wn-tx))]', color: 'text-[hsl(var(--s-wn-tx))]' },
   'Not Applicable': { bg: 'bg-sunken', color: 'text-[hsl(var(--text-3))]' },
 }
 
 const FINDING_SEV: Record<string, { bg: string; color: string, border: string }> = {
-  High: { bg: 'bg-red-500/10', color: 'text-red-500', border: 'border-red-500' },
-  Medium: { bg: 'bg-orange-500/10', color: 'text-orange-500', border: 'border-orange-500' },
-  Low: { bg: 'bg-emerald-500/10', color: 'text-emerald-500', border: 'border-emerald-500' },
+  High: { bg: 'bg-[hsl(var(--s-er-tx))]', color: 'text-[hsl(var(--s-er-tx))]', border: 'border-[hsl(var(--s-er-br))]' },
+  Medium: { bg: 'bg-[hsl(var(--s-wn-tx))]', color: 'text-[hsl(var(--s-wn-tx))]', border: 'border-[hsl(var(--s-wn-br))]' },
+  Low: { bg: 'bg-[hsl(var(--s-ok-tx))]', color: 'text-[hsl(var(--s-ok-tx))]', border: 'border-[hsl(var(--s-ok-br))]' },
 }
 
 export default function AIImpactAssessments() {
@@ -323,7 +323,7 @@ export default function AIImpactAssessments() {
                       <div className="flex items-center gap-1">
                         <Button variant="ghost" size="sm" onClick={() => setSelected(r)} className="h-8 w-8 p-0 text-[hsl(var(--text-2))] hover:text-[hsl(var(--brand))] rounded-none"><Eye size={16} /></Button>
                         <Button variant="ghost" size="sm" onClick={() => openEdit(r)} className="h-8 w-8 p-0 text-[hsl(var(--text-2))] hover:text-[hsl(var(--brand))] rounded-none"><PencilSimple size={16} /></Button>
-                        <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(r)} className="h-8 w-8 p-0 text-[hsl(var(--text-2))] hover:text-red-500 rounded-none"><Trash size={16} /></Button>
+                        <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(r)} className="h-8 w-8 p-0 text-[hsl(var(--text-2))] hover:text-[hsl(var(--s-er-tx))] rounded-none"><Trash size={16} /></Button>
                       </div>
                     </td>
                   </tr>
@@ -356,7 +356,7 @@ export default function AIImpactAssessments() {
                 {selected.status === 'Draft' || selected.status === 'In Progress' ? (
                   <Button size="sm" onClick={() => submitForReview(selected)} className="rounded-none bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-hover))]"><ArrowRight size={16} /> Submit for Review</Button>
                 ) : selected.status === 'Pending Review' ? (
-                  <Button size="sm" onClick={() => approveAssessment(selected)} className="rounded-none bg-emerald-600 hover:bg-emerald-700 text-white"><CheckCircle size={16} /> Approve</Button>
+                  <Button size="sm" onClick={() => approveAssessment(selected)} className="rounded-none bg-[hsl(var(--s-ok-tx))] hover:bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))]"><CheckCircle size={16} /> Approve</Button>
                 ) : null}
                 <Button variant="ghost" size="sm" onClick={() => setSelected(null)} className="h-8 w-8 p-0 rounded-none"><X size={20} className="text-[hsl(var(--text-3))]" /></Button>
               </div>
@@ -418,7 +418,7 @@ export default function AIImpactAssessments() {
                         <div className="flex flex-wrap gap-2">
                           {selected.approvers.map(a => (
                             <Badge key={a} className="bg-raised border-[hsl(var(--border))] text-[hsl(var(--text-1))] rounded-none flex items-center gap-2 px-3 py-1.5 font-normal">
-                              <CheckCircle size={14} className="text-emerald-500" weight="fill" /> {a}
+                              <CheckCircle size={14} className="text-[hsl(var(--s-ok-tx))]" weight="fill" /> {a}
                             </Badge>
                           ))}
                         </div>
@@ -466,7 +466,7 @@ export default function AIImpactAssessments() {
                                 <div className="flex items-center gap-2 mb-2">
                                   <span className="font-mono text-xs font-bold text-[hsl(var(--text-1))]">{f.id}</span>
                                   <Badge className={`${(FINDING_SEV[f.severity] || { bg: 'bg-sunken', color: 'text-[hsl(var(--text-3))]', border: 'border-[hsl(var(--border))]' }).bg} ${(FINDING_SEV[f.severity] || { bg: 'bg-sunken', color: 'text-[hsl(var(--text-3))]', border: 'border-[hsl(var(--border))]' }).color} border-0 rounded-none uppercase text-[10px]`}>{f.severity} Severity</Badge>
-                                  <Badge className={f.status === 'Resolved' ? 'bg-emerald-500/10 text-emerald-500 border-0 rounded-none' : 'bg-yellow-500/10 text-yellow-500 border-0 rounded-none'}>{f.status}</Badge>
+                                  <Badge className={f.status === 'Resolved' ? 'bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--s-ok-tx))] border-0 rounded-none' : 'bg-[hsl(var(--s-wn-tx))] text-[hsl(var(--s-wn-tx))] border-0 rounded-none'}>{f.status}</Badge>
                                 </div>
                                 <p className="text-sm text-[hsl(var(--text-2))]">{f.description}</p>
                               </div>

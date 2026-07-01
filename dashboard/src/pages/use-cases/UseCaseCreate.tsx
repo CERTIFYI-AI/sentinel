@@ -69,15 +69,15 @@ export default function UseCaseCreate() {
               <h3 className="text-sm font-bold uppercase tracking-widest text-[hsl(var(--text-3))] mb-4">Required Details</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label>Title <span className="text-red-500">*</span></Label>
+                  <Label>Title <span className="text-[hsl(var(--s-er-tx))]">*</span></Label>
                   <Input maxLength={64} placeholder="e.g. Resume Screening Automation" value={formData.title} onChange={e => handleChange('title', e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Owner <span className="text-red-500">*</span></Label>
+                  <Label>Owner <span className="text-[hsl(var(--s-er-tx))]">*</span></Label>
                   <Input placeholder="Assignee email or name" value={formData.owner} onChange={e => handleChange('owner', e.target.value)} />
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <Label>Goal <span className="text-red-500">*</span></Label>
+                  <Label>Goal <span className="text-[hsl(var(--s-er-tx))]">*</span></Label>
                   <Textarea maxLength={256} placeholder="What is the AI system supposed to accomplish?" value={formData.goal} onChange={e => handleChange('goal', e.target.value)} />
                 </div>
                 <div className="space-y-2">
@@ -85,7 +85,7 @@ export default function UseCaseCreate() {
                   <Input type="date" value={formData.startDate} onChange={e => handleChange('startDate', e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label>AI Risk Classification <span className="text-red-500">*</span></Label>
+                  <Label>AI Risk Classification <span className="text-[hsl(var(--s-er-tx))]">*</span></Label>
                   <Select value={formData.riskClass} onValueChange={v => handleChange('riskClass', v)}>
                     <SelectTrigger><SelectValue placeholder="Select classification" /></SelectTrigger>
                     <SelectContent>
@@ -97,7 +97,7 @@ export default function UseCaseCreate() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Type of High Risk Role <span className="text-red-500">*</span></Label>
+                  <Label>Type of High Risk Role <span className="text-[hsl(var(--s-er-tx))]">*</span></Label>
                   <Select value={formData.role} onValueChange={v => handleChange('role', v)}>
                     <SelectTrigger><SelectValue placeholder="Select role" /></SelectTrigger>
                     <SelectContent>
@@ -111,7 +111,7 @@ export default function UseCaseCreate() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Geography <span className="text-red-500">*</span></Label>
+                  <Label>Geography <span className="text-[hsl(var(--s-er-tx))]">*</span></Label>
                   <Select value={formData.geography} onValueChange={v => handleChange('geography', v)}>
                     <SelectTrigger><SelectValue placeholder="Select geography" /></SelectTrigger>
                     <SelectContent>
@@ -125,7 +125,7 @@ export default function UseCaseCreate() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Target Industry <span className="text-red-500">*</span></Label>
+                  <Label>Target Industry <span className="text-[hsl(var(--s-er-tx))]">*</span></Label>
                   <Input placeholder="e.g. Financial Services" value={formData.industry} onChange={e => handleChange('industry', e.target.value)} />
                 </div>
               </div>

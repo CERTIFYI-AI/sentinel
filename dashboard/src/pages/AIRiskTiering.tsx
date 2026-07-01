@@ -66,20 +66,20 @@ const SEED: Classification[] = [
 
 function tierColor(tier: EUTier) {
   switch (tier) {
-    case 'Unacceptable': return { bg: 'bg-red-500/10', text: 'text-red-500', border: 'border-red-500/30' };
-    case 'High Risk': return { bg: 'bg-orange-500/10', text: 'text-orange-500', border: 'border-orange-500/30' };
+    case 'Unacceptable': return { bg: 'bg-[hsl(var(--s-er-tx))]', text: 'text-[hsl(var(--s-er-tx))]', border: 'border-[hsl(var(--s-er-br))]' };
+    case 'High Risk': return { bg: 'bg-[hsl(var(--s-wn-tx))]', text: 'text-[hsl(var(--s-wn-tx))]', border: 'border-[hsl(var(--s-wn-br))]' };
     case 'Limited': return { bg: 'bg-[hsl(var(--brand-subtle))]', text: 'text-[hsl(var(--brand))]', border: 'border-[hsl(var(--brand))/30]' };
-    case 'Minimal': return { bg: 'bg-emerald-500/10', text: 'text-emerald-500', border: 'border-emerald-500/30' };
+    case 'Minimal': return { bg: 'bg-[hsl(var(--s-ok-tx))]', text: 'text-[hsl(var(--s-ok-tx))]', border: 'border-[hsl(var(--s-ok-br))]' };
     default: return { bg: 'bg-sunken', text: 'text-[hsl(var(--text-3))]', border: 'border-[hsl(var(--border))]' };
   }
 }
 
 function reviewColor(status: ReviewStatus) {
   switch (status) {
-    case 'Approved': return { bg: 'bg-emerald-500/10', text: 'text-emerald-500' };
-    case 'In Review': return { bg: 'bg-yellow-500/10', text: 'text-yellow-500' };
-    case 'Pending': return { bg: 'bg-orange-500/10', text: 'text-orange-500' };
-    case 'Rejected': return { bg: 'bg-red-500/10', text: 'text-red-500' };
+    case 'Approved': return { bg: 'bg-[hsl(var(--s-ok-tx))]', text: 'text-[hsl(var(--s-ok-tx))]' };
+    case 'In Review': return { bg: 'bg-[hsl(var(--s-wn-tx))]', text: 'text-[hsl(var(--s-wn-tx))]' };
+    case 'Pending': return { bg: 'bg-[hsl(var(--s-wn-tx))]', text: 'text-[hsl(var(--s-wn-tx))]' };
+    case 'Rejected': return { bg: 'bg-[hsl(var(--s-er-tx))]', text: 'text-[hsl(var(--s-er-tx))]' };
     default: return { bg: 'bg-sunken', text: 'text-[hsl(var(--text-3))]' };
   }
 }
@@ -345,7 +345,7 @@ export default function AIRiskTiering() {
                       {item.gpai ? <Badge className="bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))] border-0 rounded-none uppercase text-[10px]">Yes</Badge> : <span className="text-xs text-[hsl(var(--text-3))]">No</span>}
                     </td>
                     <td className="px-4 py-3">
-                      {item.transparencyReq ? <CheckCircle size={16} className="text-emerald-500" /> : <span className="text-xs text-[hsl(var(--text-3))]">—</span>}
+                      {item.transparencyReq ? <CheckCircle size={16} className="text-[hsl(var(--s-ok-tx))]" /> : <span className="text-xs text-[hsl(var(--text-3))]">—</span>}
                     </td>
                     <td className="px-4 py-3">
                       <Badge className={`${rc.bg} ${rc.text} border-0 rounded-none`}>{item.reviewStatus}</Badge>
@@ -356,7 +356,7 @@ export default function AIRiskTiering() {
                         <Button variant="ghost" size="sm" onClick={() => { setSelected(item); setSheetOpen(true); }} className="h-8 w-8 p-0 text-[hsl(var(--text-2))] hover:text-[hsl(var(--brand))] rounded-none"><Eye size={16} /></Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-[hsl(var(--text-2))] hover:text-red-500 rounded-none"><Trash size={16} /></Button>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-[hsl(var(--text-2))] hover:text-[hsl(var(--s-er-tx))] rounded-none"><Trash size={16} /></Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent className="rounded-none bg-surface border-[hsl(var(--border))]">
                             <AlertDialogHeader>
@@ -365,7 +365,7 @@ export default function AIRiskTiering() {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel className="rounded-none border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:text-[hsl(var(--text-1))] hover:bg-raised">Cancel</AlertDialogCancel>
-                              <AlertDialogAction className="rounded-none bg-red-600 hover:bg-red-700 text-white" onClick={() => deleteItem(item.id)}>Delete</AlertDialogAction>
+                              <AlertDialogAction className="rounded-none bg-[hsl(var(--s-er-tx))] hover:bg-[hsl(var(--s-er-tx))] text-[hsl(var(--bg-surface))]" onClick={() => deleteItem(item.id)}>Delete</AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
@@ -423,7 +423,7 @@ export default function AIRiskTiering() {
                     <p className="text-sm text-[hsl(var(--text-2))]">EU AI Act requirements for <strong>{selected.tier}</strong> tier:</p>
                     {selected.tier === 'High Risk' ? HIGH_RISK_OBLIGATIONS.map(ob => (
                       <div key={ob} className="flex items-center gap-3 p-3 bg-raised border border-[hsl(var(--border))] rounded-none">
-                        <CheckCircle size={18} className="text-emerald-500" />
+                        <CheckCircle size={18} className="text-[hsl(var(--s-ok-tx))]" />
                         <span className="text-sm text-[hsl(var(--text-1))]">{ob}</span>
                       </div>
                     )) : (

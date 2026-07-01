@@ -6,6 +6,7 @@ import {
 } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { StatCardRow } from '../../components/ui/StatCardRow';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -162,26 +163,18 @@ export default function UseCasePage() {
         ))}
       </div>
 
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <Briefcase size={22} weight="fill" style={{ color: 'hsl(var(--brand))' }} />
-            <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Use Case Management</h1>
-          </div>
-          <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>Track AI use cases across the organization with risk classification and compliance mapping</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => toast('Exported to CSV', 'success')}>
-            <DownloadSimple size={14} />Export
-          </Button>
-          <Button variant="outline" style={{ borderRadius: 0 }}>
-            <Upload size={14} />Import
-          </Button>
-          <Button onClick={() => navigate('/use-cases/new')} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-            <Plus size={14} />New Use Case
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Use Case Registry"
+        subtitle="Track AI use cases across the organization with risk classification and compliance mapping"
+        icon={Briefcase}
+        actions={
+          <>
+            <Button size="sm" variant="outline" leftIcon={<DownloadSimple size={14} />} onClick={() => toast('Exported to CSV', 'success')}>Export</Button>
+            <Button size="sm" variant="outline" leftIcon={<Upload size={14} />} onClick={() => toast('Import dialog opened', 'info')}>Import</Button>
+            <Button size="sm" leftIcon={<Plus size={14} />} onClick={() => navigate('/use-cases/new')}>New Use Case</Button>
+          </>
+        }
+      />
 
       <StatCardRow cards={[
         { label: 'Total Use Cases', value: total, variant: 'default' },

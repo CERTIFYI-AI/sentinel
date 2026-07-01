@@ -243,7 +243,7 @@ export default function ModelRiskCommittee() {
         <div className="p-5 bg-surface border border-[hsl(var(--border))] rounded-none">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-[hsl(var(--text-1))]">Meeting Quorum Members</h3>
-            <Badge className={`rounded-none uppercase text-[10px] ${quorumMet ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30' : 'bg-red-500/10 text-red-500 border border-red-500/30'}`}>
+            <Badge className={`rounded-none uppercase text-[10px] ${quorumMet ? 'bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--s-ok-tx))] border border-[hsl(var(--s-ok-br))]' : 'bg-[hsl(var(--s-er-tx))] text-[hsl(var(--s-er-tx))] border border-[hsl(var(--s-er-br))]'}`}>
               {quorumMet ? 'QUORUM ACHIEVED' : 'QUORUM NOT MET'}
             </Badge>
           </div>
@@ -252,7 +252,7 @@ export default function ModelRiskCommittee() {
               <div key={member.id} className={`flex items-center gap-2 px-3 py-2 border rounded-none ${member.quorum ? 'bg-[hsl(var(--brand-subtle))] border-[hsl(var(--brand)/30)]' : 'bg-raised border-[hsl(var(--border))] opacity-60'}`}>
                 <div className={`w-2 h-2 rounded-full ${member.quorum ? 'bg-[hsl(var(--brand))]' : 'bg-[hsl(var(--text-4))]'}`} />
                 <span className="text-sm font-medium text-[hsl(var(--text-1))]">{member.name}</span>
-                {member.chair && <Star size={12} weight="fill" className="text-yellow-500" />}
+                {member.chair && <Star size={12} weight="fill" className="text-[hsl(var(--s-wn-tx))]" />}
                 <span className="text-xs text-[hsl(var(--text-3))] ml-2">{member.role}</span>
               </div>
             ))}
@@ -267,7 +267,7 @@ export default function ModelRiskCommittee() {
             <TabsList className="bg-transparent space-x-6 h-12 p-0">
               <TabsTrigger value="agenda" className="h-full border-b-2 border-transparent data-[state=active]:border-[hsl(var(--brand))] data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-2 text-sm">
                 Current Agenda
-                {pendingItems.length > 0 && <Badge className="ml-2 bg-[hsl(var(--brand))] text-white border-0 rounded-none h-5 px-1.5 text-[10px]">{pendingItems.length}</Badge>}
+                {pendingItems.length > 0 && <Badge className="ml-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] border-0 rounded-none h-5 px-1.5 text-[10px]">{pendingItems.length}</Badge>}
               </TabsTrigger>
               <TabsTrigger value="history" className="h-full border-b-2 border-transparent data-[state=active]:border-[hsl(var(--brand))] data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-2 text-sm">Decision History</TabsTrigger>
               <TabsTrigger value="committee" className="h-full border-b-2 border-transparent data-[state=active]:border-[hsl(var(--brand))] data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-2 text-sm">Committee Members</TabsTrigger>
@@ -310,10 +310,10 @@ export default function ModelRiskCommittee() {
                     {total > 0 && (
                       <div className="mb-4">
                         <div className="flex items-center gap-4 mb-2">
-                          <div className="flex items-center gap-1.5 text-xs text-emerald-500">
+                          <div className="flex items-center gap-1.5 text-xs text-[hsl(var(--s-ok-tx))]">
                             <CheckCircle size={14} /> <span>{approveVotes} Approve</span>
                           </div>
-                          <div className="flex items-center gap-1.5 text-xs text-red-500">
+                          <div className="flex items-center gap-1.5 text-xs text-[hsl(var(--s-er-tx))]">
                             <XCircle size={14} /> <span>{rejectVotes} Reject</span>
                           </div>
                           <div className="flex items-center gap-1.5 text-xs text-[hsl(var(--text-3))]">
@@ -324,8 +324,8 @@ export default function ModelRiskCommittee() {
                           </div>
                         </div>
                         <div className="h-2 w-full flex overflow-hidden bg-sunken">
-                          <div style={{ width: `${(approveVotes / item.votes.length) * 100}%` }} className="bg-emerald-500 h-full" />
-                          <div style={{ width: `${(rejectVotes / item.votes.length) * 100}%` }} className="bg-red-500 h-full" />
+                          <div style={{ width: `${(approveVotes / item.votes.length) * 100}%` }} className="bg-[hsl(var(--s-ok-tx))] h-full" />
+                          <div style={{ width: `${(rejectVotes / item.votes.length) * 100}%` }} className="bg-[hsl(var(--s-er-tx))] h-full" />
                         </div>
                       </div>
                     )}
@@ -340,7 +340,7 @@ export default function ModelRiskCommittee() {
                               {member?.name.split(' ').map(n => n[0]).join('')}
                             </div>
                             <span className="text-[hsl(var(--text-2))]">{member?.name.split(' ')[0]}</span>
-                            <span className={`font-bold ${v.vote === 'approve' ? 'text-emerald-500' : v.vote === 'reject' ? 'text-red-500' : v.vote === 'abstain' ? 'text-yellow-500' : 'text-[hsl(var(--brand))]'}`}>
+                            <span className={`font-bold ${v.vote === 'approve' ? 'text-[hsl(var(--s-ok-tx))]' : v.vote === 'reject' ? 'text-[hsl(var(--s-er-tx))]' : v.vote === 'abstain' ? 'text-[hsl(var(--s-wn-tx))]' : 'text-[hsl(var(--brand))]'}`}>
                               {v.vote === 'pending' ? '…' : v.vote.toUpperCase()}
                             </span>
                           </div>
@@ -349,8 +349,8 @@ export default function ModelRiskCommittee() {
                     </div>
 
                     {item.conditions && item.conditions.length > 0 && (
-                      <div className="mt-4 p-4 bg-yellow-500/10 border-l-4 border-yellow-500">
-                        <p className="text-xs font-bold text-yellow-600 uppercase tracking-wide mb-2">Approval Conditions:</p>
+                      <div className="mt-4 p-4 bg-[hsl(var(--s-wn-tx))] border-l-4 border-[hsl(var(--s-wn-br))]">
+                        <p className="text-xs font-bold text-[hsl(var(--s-wn-tx))] uppercase tracking-wide mb-2">Approval Conditions:</p>
                         <div className="space-y-1">
                           {item.conditions.map((c, ci) => (
                             <p key={ci} className="text-sm text-[hsl(var(--text-2))]">• {c}</p>
@@ -383,19 +383,19 @@ export default function ModelRiskCommittee() {
                         <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--brand))]">{m.id}</td>
                         <td className="px-4 py-3 text-[hsl(var(--text-3))] font-mono text-xs">{m.date}</td>
                         <td className="px-4 py-3">
-                          <Badge className={`border-0 rounded-none uppercase text-[10px] ${m.type === 'Emergency' ? 'bg-red-500/10 text-red-500' : 'bg-sunken text-[hsl(var(--text-2))]'}`}>{m.type}</Badge>
+                          <Badge className={`border-0 rounded-none uppercase text-[10px] ${m.type === 'Emergency' ? 'bg-[hsl(var(--s-er-tx))] text-[hsl(var(--s-er-tx))]' : 'bg-sunken text-[hsl(var(--text-2))]'}`}>{m.type}</Badge>
                         </td>
                         <td className="px-4 py-3 font-bold text-[hsl(var(--text-1))]">{m.items}</td>
                         <td className="px-4 py-3">
                           <div className="flex gap-2 flex-wrap">
-                            {m.approved && <Badge className="bg-emerald-500/10 text-emerald-500 border-0 rounded-none uppercase text-[10px]">{m.approved} approved</Badge>}
-                            {(m as any).conditional && <Badge className="bg-yellow-500/10 text-yellow-500 border-0 rounded-none uppercase text-[10px]">{(m as any).conditional} conditional</Badge>}
-                            {(m as any).rejected && <Badge className="bg-red-500/10 text-red-500 border-0 rounded-none uppercase text-[10px]">{(m as any).rejected} rejected</Badge>}
+                            {m.approved && <Badge className="bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--s-ok-tx))] border-0 rounded-none uppercase text-[10px]">{m.approved} approved</Badge>}
+                            {(m as any).conditional && <Badge className="bg-[hsl(var(--s-wn-tx))] text-[hsl(var(--s-wn-tx))] border-0 rounded-none uppercase text-[10px]">{(m as any).conditional} conditional</Badge>}
+                            {(m as any).rejected && <Badge className="bg-[hsl(var(--s-er-tx))] text-[hsl(var(--s-er-tx))] border-0 rounded-none uppercase text-[10px]">{(m as any).rejected} rejected</Badge>}
                             {m.pending && <Badge className="bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))] border-0 rounded-none uppercase text-[10px]">{m.pending} pending</Badge>}
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <span className={`font-semibold ${m.quorum ? 'text-emerald-500' : 'text-red-500'}`}>{m.quorum ? '✓ Met' : '✗ Not Met'}</span>
+                          <span className={`font-semibold ${m.quorum ? 'text-[hsl(var(--s-ok-tx))]' : 'text-[hsl(var(--s-er-tx))]'}`}>{m.quorum ? '✓ Met' : '✗ Not Met'}</span>
                         </td>
                       </tr>
                     ))}
@@ -415,13 +415,13 @@ export default function ModelRiskCommittee() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <p className="text-sm font-bold text-[hsl(var(--text-1))]">{m.name}</p>
-                      {m.chair && <Star size={14} weight="fill" className="text-yellow-500" />}
+                      {m.chair && <Star size={14} weight="fill" className="text-[hsl(var(--s-wn-tx))]" />}
                     </div>
                     <p className="text-xs text-[hsl(var(--text-3))] mb-0.5">{m.role}</p>
                     <p className="text-[10px] text-[hsl(var(--text-4))] uppercase tracking-wider">{m.department}</p>
                     <div className="flex items-center gap-2 mt-3">
                       {m.chair && <Badge className="bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))] border-0 rounded-none uppercase text-[9px]">CHAIR</Badge>}
-                      <Badge className={`border-0 rounded-none uppercase text-[9px] ${m.quorum ? 'bg-emerald-500/10 text-emerald-500' : 'bg-sunken text-[hsl(var(--text-3))]'}`}>
+                      <Badge className={`border-0 rounded-none uppercase text-[9px] ${m.quorum ? 'bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--s-ok-tx))]' : 'bg-sunken text-[hsl(var(--text-3))]'}`}>
                         {m.quorum ? 'QUORUM MEMBER' : 'NON-QUORUM'}
                       </Badge>
                     </div>
@@ -431,7 +431,7 @@ export default function ModelRiskCommittee() {
             </div>
             <div className="mt-4 p-4 text-sm border border-[hsl(var(--border))] bg-raised rounded-none">
               <p className="text-[hsl(var(--text-2))]">
-                <strong className="text-[hsl(var(--text-1))]">Quorum requirement:</strong> {Math.ceil(MRC_MEMBERS.length * 0.6)} of {MRC_MEMBERS.length} members must be present ({quorumMet ? <span className="text-emerald-500 font-medium">Currently met</span> : <span className="text-red-500 font-medium">Not met</span>}).
+                <strong className="text-[hsl(var(--text-1))]">Quorum requirement:</strong> {Math.ceil(MRC_MEMBERS.length * 0.6)} of {MRC_MEMBERS.length} members must be present ({quorumMet ? <span className="text-[hsl(var(--s-ok-tx))] font-medium">Currently met</span> : <span className="text-[hsl(var(--s-er-tx))] font-medium">Not met</span>}).
                 Per SR 11-7 guidance, model approval decisions require documented quorum and dissenting votes must be recorded.
               </p>
             </div>
@@ -541,10 +541,10 @@ export default function ModelRiskCommittee() {
                   className={`p-3 text-sm font-semibold uppercase tracking-wide text-center border-2 rounded-none transition-all ${
                     vote === v
                       ? v === 'approve'
-                        ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-500'
+                        ? 'border-[hsl(var(--s-ok-br))] bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--s-ok-tx))]'
                         : v === 'reject'
-                          ? 'border-red-500/50 bg-red-500/10 text-red-500'
-                          : 'border-yellow-500/50 bg-yellow-500/10 text-yellow-600'
+                          ? 'border-[hsl(var(--s-er-br))] bg-[hsl(var(--s-er-tx))] text-[hsl(var(--s-er-tx))]'
+                          : 'border-[hsl(var(--s-wn-br))] bg-[hsl(var(--s-wn-tx))] text-[hsl(var(--s-wn-tx))]'
                       : 'border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-3))] hover:border-[hsl(var(--text-4))]'
                   }`}>
                   {v === 'approve' ? '✓ Approve' : v === 'reject' ? '✗ Reject' : '— Abstain'}
@@ -558,16 +558,16 @@ export default function ModelRiskCommittee() {
               </div>
             )}
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-[hsl(var(--text-2))] uppercase tracking-wide">Rationale <span className="text-red-500">*</span></label>
+              <label className="text-xs font-semibold text-[hsl(var(--text-2))] uppercase tracking-wide">Rationale <span className="text-[hsl(var(--s-er-tx))]">*</span></label>
               <Textarea placeholder="Your documented rationale for this vote (required for audit trail)…" value={rationale} onChange={e => setRationale(e.target.value)} className="text-sm bg-raised border-[hsl(var(--border))] text-[hsl(var(--text-1))] rounded-none focus-visible:ring-[hsl(var(--brand))] min-h-[80px]" />
             </div>
           </div>
           <DialogFooter className="border-t border-[hsl(var(--border))] pt-5">
             <Button variant="outline" className="rounded-none border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:text-[hsl(var(--text-1))] hover:bg-raised" onClick={() => setVoteDialog(null)}>Cancel</Button>
-            <Button className={`rounded-none text-white ${
-              vote === 'approve' ? 'bg-emerald-600 hover:bg-emerald-700' :
-              vote === 'reject' ? 'bg-red-600 hover:bg-red-700' :
-              'bg-yellow-600 hover:bg-yellow-700'
+            <Button className={`rounded-none text-[hsl(var(--bg-surface))] ${
+              vote === 'approve' ? 'bg-[hsl(var(--s-ok-tx))] hover:bg-[hsl(var(--s-ok-tx))]' :
+              vote === 'reject' ? 'bg-[hsl(var(--s-er-tx))] hover:bg-[hsl(var(--s-er-tx))]' :
+              'bg-[hsl(var(--s-wn-tx))] hover:bg-[hsl(var(--s-wn-tx))]'
             }`} onClick={castVote}>
               <Gavel size={16} />Submit Vote
             </Button>
@@ -608,8 +608,8 @@ export default function ModelRiskCommittee() {
               <label className="text-xs font-semibold mb-1 block uppercase tracking-wide text-[hsl(var(--text-2))]">Agenda Items</label>
               <Textarea value={mtgAgenda} onChange={e => setMtgAgenda(e.target.value)} placeholder={`e.g.\n1. Review ${AGENDA_ITEMS.filter(a => a.status === 'pending').length} pending model approvals\n2. Q2 risk posture update\n3. SR 11-7 compliance review`} className="text-sm bg-raised border-[hsl(var(--border))] text-[hsl(var(--text-1))] rounded-none min-h-[80px]" />
             </div>
-            <div className="p-4 text-sm bg-yellow-500/10 border-l-4 border-yellow-500">
-              <p className="font-bold mb-1 text-yellow-600 uppercase tracking-wide">Quorum requirement</p>
+            <div className="p-4 text-sm bg-[hsl(var(--s-wn-tx))] border-l-4 border-[hsl(var(--s-wn-br))]">
+              <p className="font-bold mb-1 text-[hsl(var(--s-wn-tx))] uppercase tracking-wide">Quorum requirement</p>
               <p className="text-[hsl(var(--text-2))]">A minimum of {Math.ceil(MRC_MEMBERS.length * 0.6)} of {MRC_MEMBERS.length} members must attend for binding votes per SR 11-7 §IV.C.</p>
             </div>
           </div>
