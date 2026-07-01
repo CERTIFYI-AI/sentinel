@@ -66,20 +66,20 @@ const SEED: Classification[] = [
 
 function tierColor(tier: EUTier) {
   switch (tier) {
-    case 'Unacceptable': return { bg: 'bg-[hsl(var(--s-er-tx))]', text: 'text-[hsl(var(--s-er-tx))]', border: 'border-[hsl(var(--s-er-br))]' };
-    case 'High Risk': return { bg: 'bg-[hsl(var(--s-wn-tx))]', text: 'text-[hsl(var(--s-wn-tx))]', border: 'border-[hsl(var(--s-wn-br))]' };
+    case 'Unacceptable': return { bg: 'bg-[hsl(var(--s-er-bg))]', text: 'text-[hsl(var(--s-er-tx))]', border: 'border-[hsl(var(--s-er-br))]' };
+    case 'High Risk': return { bg: 'bg-[hsl(var(--r-hi-bg))]', text: 'text-[hsl(var(--r-hi-tx))]', border: 'border-[hsl(var(--r-hi-br))]' };
     case 'Limited': return { bg: 'bg-[hsl(var(--brand-subtle))]', text: 'text-[hsl(var(--brand))]', border: 'border-[hsl(var(--brand))/30]' };
-    case 'Minimal': return { bg: 'bg-[hsl(var(--s-ok-tx))]', text: 'text-[hsl(var(--s-ok-tx))]', border: 'border-[hsl(var(--s-ok-br))]' };
+    case 'Minimal': return { bg: 'bg-[hsl(var(--s-ok-bg))]', text: 'text-[hsl(var(--s-ok-tx))]', border: 'border-[hsl(var(--s-ok-br))]' };
     default: return { bg: 'bg-sunken', text: 'text-[hsl(var(--text-3))]', border: 'border-[hsl(var(--border))]' };
   }
 }
 
 function reviewColor(status: ReviewStatus) {
   switch (status) {
-    case 'Approved': return { bg: 'bg-[hsl(var(--s-ok-tx))]', text: 'text-[hsl(var(--s-ok-tx))]' };
-    case 'In Review': return { bg: 'bg-[hsl(var(--s-wn-tx))]', text: 'text-[hsl(var(--s-wn-tx))]' };
-    case 'Pending': return { bg: 'bg-[hsl(var(--s-wn-tx))]', text: 'text-[hsl(var(--s-wn-tx))]' };
-    case 'Rejected': return { bg: 'bg-[hsl(var(--s-er-tx))]', text: 'text-[hsl(var(--s-er-tx))]' };
+    case 'Approved': return { bg: 'bg-[hsl(var(--s-ok-bg))]', text: 'text-[hsl(var(--s-ok-tx))]' };
+    case 'In Review': return { bg: 'bg-[hsl(var(--s-wn-bg))]', text: 'text-[hsl(var(--s-wn-tx))]' };
+    case 'Pending': return { bg: 'bg-[hsl(var(--s-wn-bg))]', text: 'text-[hsl(var(--s-wn-tx))]' };
+    case 'Rejected': return { bg: 'bg-[hsl(var(--s-er-bg))]', text: 'text-[hsl(var(--s-er-tx))]' };
     default: return { bg: 'bg-sunken', text: 'text-[hsl(var(--text-3))]' };
   }
 }
