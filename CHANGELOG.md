@@ -1,3 +1,7 @@
+## 1.22.0 (2026-07-01)
+
+* feat(compliance): expand control library to authoritative framework counts (530) ([43cdec6](https://github.com/CERTIFYI-AI/sentinel/commit/43cdec6))
+
 ## <small>1.21.1 (2026-07-01)</small>
 
 * fix(compliance): control detail page 404 for library controls ([1a52153](https://github.com/CERTIFYI-AI/sentinel/commit/1a52153))
