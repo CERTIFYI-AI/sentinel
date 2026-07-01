@@ -1,3 +1,8 @@
+## 1.16.0 (2026-07-01)
+
+* feat(compliance): deterministic policy rules + drift classifier (backend) ([81a7ad1](https://github.com/CERTIFYI-AI/sentinel/commit/81a7ad1))
+* feat(compliance): deterministic policy rules + drift classifier + realtime alerts ([79b65d5](https://github.com/CERTIFYI-AI/sentinel/commit/79b65d5))
+
 ## 1.15.0 (2026-07-01)
 
 * feat(compliance): atomic control library + real-time Control Drift view ([5925708](https://github.com/CERTIFYI-AI/sentinel/commit/5925708))
