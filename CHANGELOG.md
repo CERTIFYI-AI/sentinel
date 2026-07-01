@@ -1,3 +1,7 @@
+## 1.18.0 (2026-07-01)
+
+* feat(compliance): rewrite Compliance Overview as AI-framework command view ([acccc69](https://github.com/CERTIFYI-AI/sentinel/commit/acccc69))
+
 ## 1.17.0 (2026-07-01)
 
 * feat(compliance): Controls Registry lists all 92 controls across 11 frameworks ([cdaf1fb](https://github.com/CERTIFYI-AI/sentinel/commit/cdaf1fb))
