@@ -1,3 +1,7 @@
+## 1.21.0 (2026-07-01)
+
+* feat(compliance): add authoritative framework scope metadata + surface in UI ([8474721](https://github.com/CERTIFYI-AI/sentinel/commit/8474721))
+
 ## 1.20.0 (2026-07-01)
 
 * feat(compliance): tokenize Gap Analysis, PageHeader on Testing, fix dup route ([b6f2054](https://github.com/CERTIFYI-AI/sentinel/commit/b6f2054))
