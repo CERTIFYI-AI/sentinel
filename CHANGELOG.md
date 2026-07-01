@@ -1,3 +1,7 @@
+## <small>1.24.1 (2026-07-01)</small>
+
+* fix(risk): AI Risk Tiering unreadable tier cards (contrast bug) ([29e5030](https://github.com/CERTIFYI-AI/sentinel/commit/29e5030))
+
 ## 1.24.0 (2026-07-01)
 
 * feat(impact-risk): tokenize AIIA/Risk Tiering/MRC/UseCase pages + PageHeader ([7d08982](https://github.com/CERTIFYI-AI/sentinel/commit/7d08982))
