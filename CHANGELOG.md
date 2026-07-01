@@ -1,3 +1,7 @@
+## 1.26.0 (2026-07-01)
+
+* feat(mrc): Committee Members — add from Organization + IAM link, fix badge ([a523db7](https://github.com/CERTIFYI-AI/sentinel/commit/a523db7))
+
 ## 1.25.0 (2026-07-01)
 
 * feat(use-cases): make all detail tabs functional (real CRUD + data) ([8c9431d](https://github.com/CERTIFYI-AI/sentinel/commit/8c9431d))
