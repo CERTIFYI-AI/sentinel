@@ -1,3 +1,7 @@
+## 1.32.0 (2026-07-02)
+
+* feat(trust): GenAI Risk Profiles — persistence, Users-wired owner, edit, cross-links ([f28f2a7](https://github.com/CERTIFYI-AI/sentinel/commit/f28f2a7))
+
 ## 1.31.0 (2026-07-02)
 
 * feat(agents): Agent governance — persistence, Users-wired forms, cross-module links ([ae3f7c5](https://github.com/CERTIFYI-AI/sentinel/commit/ae3f7c5))
