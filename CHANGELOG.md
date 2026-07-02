@@ -1,3 +1,7 @@
+## 1.28.0 (2026-07-02)
+
+* feat(evals): Validation & Evals domain model, CRUD, and rich detail views ([80a256b](https://github.com/CERTIFYI-AI/sentinel/commit/80a256b))
+
 ## 1.27.0 (2026-07-02)
 
 * feat(ui): app-wide tokenization sweep — remove all remaining raw colors ([41886fd](https://github.com/CERTIFYI-AI/sentinel/commit/41886fd))
