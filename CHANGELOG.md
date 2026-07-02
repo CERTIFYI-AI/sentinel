@@ -1,3 +1,7 @@
+## 1.29.0 (2026-07-02)
+
+* feat(evals): Phase 1 — Users integration, reusable form/table primitives, Validation Lab CRUD ([3fc5c2b](https://github.com/CERTIFYI-AI/sentinel/commit/3fc5c2b))
+
 ## 1.28.0 (2026-07-02)
 
 * feat(evals): Validation & Evals domain model, CRUD, and rich detail views ([80a256b](https://github.com/CERTIFYI-AI/sentinel/commit/80a256b))
