@@ -4,14 +4,18 @@
 // GenAIRisks — Generative AI-specific risk catalogue (NIST AI 600-1).
 
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
-  Plus, Eye, Trash, Robot, ShieldWarning,
+  Plus, Eye, Trash, PencilSimple, Cpu, ShieldCheck,
 } from '@phosphor-icons/react';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { UserSelect } from '@/components/evals/UserSelect';
+import { genaiRiskHooks } from '@/hooks/queries/useTrustEngineCrud';
+import type { GenAIRiskProfile } from '@/types/trustEngine';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from '../components/ui/sheet';
@@ -28,22 +32,9 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { StatCardRow } from '@/components/ui/StatCardRow';
 import { FilterBar } from '@/components/ui/FilterBar';
 
-type Severity = 'Critical' | 'High' | 'Medium' | 'Low';
-type MitigationStatus = 'Implemented' | 'Partial' | 'Under Review' | 'Not Addressed';
-type GuardrailCoverage = 'None' | 'Partial' | 'Implemented';
-
-interface GenAIRiskProfile {
-  id: string;
-  model: string;
-  riskCategory: string;
-  riskNumber: number;
-  severity: Severity;
-  guardrails: string;
-  guardrailCoverage: GuardrailCoverage;
-  mitigationStatus: MitigationStatus;
-  owner: string;
-  created: string;
-}
+type Severity = GenAIRiskProfile['severity'];
+type MitigationStatus = GenAIRiskProfile['mitigationStatus'];
+type GuardrailCoverage = GenAIRiskProfile['guardrailCoverage'];
 
 const NIST_600_1_RISKS = [
   { num: 1, name: 'Confabulation (Hallucination)', desc: 'The tendency to generate plausible but factually incorrect outputs.' },
@@ -58,17 +49,6 @@ const NIST_600_1_RISKS = [
   { num: 10, name: 'Dual Use Risk', desc: 'Potential misuse of AI capabilities for harmful applications.' },
   { num: 11, name: 'Environmental Impact', desc: 'Carbon emissions and resource consumption from training and inference.' },
   { num: 12, name: 'Misuse Facilitation', desc: 'AI systems being used to facilitate illegal or harmful activities.' },
-];
-
-const SEED: GenAIRiskProfile[] = [
-  { id: 'GRP-001', model: 'Loan Approval Assistant', riskCategory: 'Confabulation (Hallucination)', riskNumber: 1, severity: 'Critical', guardrails: 'Hallucination Guard (TP-003)', guardrailCoverage: 'Partial', mitigationStatus: 'Partial', owner: 'Maria Santos', created: '2026-01-15' },
-  { id: 'GRP-002', model: 'Loan Approval Assistant', riskCategory: 'Harmful Content', riskNumber: 4, severity: 'High', guardrails: 'Toxicity Filter (TP-002)', guardrailCoverage: 'Implemented', mitigationStatus: 'Implemented', owner: 'Maria Santos', created: '2026-01-15' },
-  { id: 'GRP-003', model: 'Customer Service Chatbot', riskCategory: 'Human-AI Confusion', riskNumber: 9, severity: 'Medium', guardrails: 'None', guardrailCoverage: 'None', mitigationStatus: 'Not Addressed', owner: 'Sarah Chen', created: '2026-02-01' },
-  { id: 'GRP-004', model: 'Loan Approval Assistant', riskCategory: 'Intellectual Property', riskNumber: 5, severity: 'Medium', guardrails: 'Data Boundary (TP-004)', guardrailCoverage: 'Partial', mitigationStatus: 'Partial', owner: 'James Patel', created: '2026-02-10' },
-  { id: 'GRP-005', model: 'Credit Risk Scorer', riskCategory: 'Data Poisoning', riskNumber: 7, severity: 'High', guardrails: 'None', guardrailCoverage: 'None', mitigationStatus: 'Under Review', owner: 'David Kim', created: '2026-02-20' },
-  { id: 'GRP-006', model: 'Loan Approval Assistant', riskCategory: 'Dual Use Risk', riskNumber: 10, severity: 'High', guardrails: 'Policy Firewall', guardrailCoverage: 'Partial', mitigationStatus: 'Partial', owner: 'Sarah Chen', created: '2026-03-01' },
-  { id: 'GRP-007', model: 'Fraud Detection Engine', riskCategory: 'Bias/Discrimination', riskNumber: 3, severity: 'Critical', guardrails: 'Demographic Masking (GR-006)', guardrailCoverage: 'Implemented', mitigationStatus: 'Implemented', owner: 'Maria Santos', created: '2026-03-10' },
-  { id: 'GRP-008', model: 'Loan Approval Assistant', riskCategory: 'Cybersecurity', riskNumber: 6, severity: 'High', guardrails: 'Prompt Injection Firewall (GR-002)', guardrailCoverage: 'Implemented', mitigationStatus: 'Implemented', owner: 'David Kim', created: '2026-03-15' },
 ];
 
 function severityColor(s: Severity) {
@@ -92,13 +72,17 @@ function mitigationColor(s: MitigationStatus) {
 }
 
 export default function GenAIRisks() {
-  const [profiles, setProfiles] = useState<GenAIRiskProfile[]>(SEED);
+  const navigate = useNavigate();
+  const { data: profiles = [] } = genaiRiskHooks.useList();
+  const upsert = genaiRiskHooks.useUpsert();
+  const remove = genaiRiskHooks.useDelete();
   const [search, setSearch] = useState('');
   const [filterSeverity, setFilterSeverity] = useState('');
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
   const [selected, setSelected] = useState<GenAIRiskProfile | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const [wModel, setWModel] = useState('');
   const [wCategory, setWCategory] = useState(NIST_600_1_RISKS[0].name);
@@ -106,6 +90,20 @@ export default function GenAIRisks() {
   const [wGuardrails, setWGuardrails] = useState('');
   const [wCoverage, setWCoverage] = useState<GuardrailCoverage>('None');
   const [wOwner, setWOwner] = useState('Sarah Chen');
+
+  function openCreate() {
+    setEditingId(null);
+    setWModel(''); setWCategory(NIST_600_1_RISKS[0].name); setWSeverity('High');
+    setWGuardrails(''); setWCoverage('None'); setWOwner('Sarah Chen');
+    setCreateOpen(true);
+  }
+
+  function openEdit(p: GenAIRiskProfile) {
+    setEditingId(p.id);
+    setWModel(p.model); setWCategory(p.riskCategory); setWSeverity(p.severity);
+    setWGuardrails(p.guardrails === 'None' ? '' : p.guardrails); setWCoverage(p.guardrailCoverage); setWOwner(p.owner);
+    setCreateOpen(true);
+  }
 
   const filtered = useMemo(() => profiles.filter(p => {
     const matchSearch = !search || p.model.toLowerCase().includes(search.toLowerCase()) || p.id.toLowerCase().includes(search.toLowerCase()) || p.riskCategory.toLowerCase().includes(search.toLowerCase());
@@ -122,29 +120,36 @@ export default function GenAIRisks() {
   const activeFilterCount = (filterSeverity ? 1 : 0) + (filterCategory ? 1 : 0);
 
   function submitCreate() {
+    if (!wModel) { toast.error('Linked model is required'); return; }
+    if (!wOwner) { toast.error('Owner is required'); return; }
     const risk = NIST_600_1_RISKS.find(r => r.name === wCategory);
-    const newProfile: GenAIRiskProfile = {
-      id: `GRP-${String(profiles.length + 1).padStart(3, '0')}`,
-      model: wModel || 'Unknown Model',
+    const existing = editingId ? profiles.find(p => p.id === editingId) : null;
+    const rec: GenAIRiskProfile = {
+      id: editingId ?? `GRP-${String(profiles.length + 1).padStart(3, '0')}`,
+      model: wModel,
       riskCategory: wCategory,
       riskNumber: risk?.num || 1,
       severity: wSeverity,
       guardrails: wGuardrails || 'None',
       guardrailCoverage: wCoverage,
-      mitigationStatus: wCoverage === 'Implemented' ? 'Implemented' : wCoverage === 'Partial' ? 'Partial' : 'Not Addressed',
+      mitigationStatus: wCoverage === 'Implemented' ? 'Implemented' : wCoverage === 'Partial' ? 'Partial' : (existing?.mitigationStatus === 'Under Review' ? 'Under Review' : 'Not Addressed'),
       owner: wOwner,
-      created: new Date().toISOString().split('T')[0],
+      created: existing?.created ?? new Date().toISOString().split('T')[0],
     };
-    setProfiles(prev => [newProfile, ...prev]);
-    toast.success(`Risk profile "${newProfile.id}" created for ${newProfile.model}`);
+    upsert.mutate(rec, {
+      onSuccess: () => toast.success(editingId ? `Risk profile "${rec.id}" updated` : `Risk profile "${rec.id}" created for ${rec.model}`),
+      onError: () => toast.error('Failed to save risk profile'),
+    });
+    if (selected?.id === rec.id) setSelected(rec);
     setCreateOpen(false);
-    setWModel(''); setWGuardrails(''); setWCoverage('None');
   }
 
   function deleteProfile(id: string) {
-    const profile = profiles.find(p => p.id === id);
-    if (profile) toast.success(`Risk profile "${profile.id}" removed`);
-    setProfiles(prev => prev.filter(p => p.id !== id));
+    remove.mutate(id, {
+      onSuccess: () => toast.success(`Risk profile "${id}" removed`),
+      onError: () => toast.error('Failed to remove risk profile'),
+    });
+    if (selected?.id === id) { setSheetOpen(false); setSelected(null); }
   }
 
   const selectedRiskInfo = selected ? NIST_600_1_RISKS.find(r => r.num === selected.riskNumber) : null;
@@ -156,9 +161,14 @@ export default function GenAIRisks() {
         subtitle="Generative AI-specific risk catalogue — NIST AI 600-1 risk management"
         breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'GenAI Risks' }]}
         actions={
-          <Button onClick={() => setCreateOpen(true)} style={{ borderRadius: 0 }}>
-            <Plus size={15} /> Create Risk Profile
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate('/trust-engine/guardrails')} style={{ borderRadius: 0 }}>
+              <ShieldCheck size={15} /> Guardrails
+            </Button>
+            <Button onClick={openCreate} style={{ borderRadius: 0 }}>
+              <Plus size={15} /> Create Risk Profile
+            </Button>
+          </div>
         }
       />
 
@@ -279,6 +289,10 @@ export default function GenAIRisks() {
                             onClick={() => { setSelected(p); setSheetOpen(true); }}>
                             <Eye size={13} />
                           </Button>
+                          <Button variant="ghost" size="sm" className="h-7 px-2" style={{ borderRadius: 0 }}
+                            onClick={() => openEdit(p)}>
+                            <PencilSimple size={13} />
+                          </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="ghost" size="sm" className="h-7 px-2" style={{ borderRadius: 0, color: 'hsl(var(--s-er-tx))' }}>
@@ -322,6 +336,18 @@ export default function GenAIRisks() {
                   <span className="font-mono text-sm px-1.5 py-0.5" style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))' }}>{selected.id}</span>
                   {selected.model}
                 </SheetTitle>
+                {/* Cross-module: risk profile → model registry / guardrails */}
+                <div className="flex gap-2 pt-1">
+                  <Button variant="outline" size="sm" style={{ borderRadius: 0 }} onClick={() => navigate(`/models/inventory?q=${encodeURIComponent(selected.model)}`)}>
+                    <Cpu size={12} /> View Model
+                  </Button>
+                  <Button variant="outline" size="sm" style={{ borderRadius: 0 }} onClick={() => navigate('/trust-engine/guardrails')}>
+                    <ShieldCheck size={12} /> Guardrails
+                  </Button>
+                  <Button variant="outline" size="sm" style={{ borderRadius: 0 }} onClick={() => { setSheetOpen(false); openEdit(selected); }}>
+                    <PencilSimple size={12} /> Edit
+                  </Button>
+                </div>
               </SheetHeader>
               <Tabs defaultValue="overview" className="mt-4">
                 <TabsList style={{ borderRadius: 0 }}>
@@ -410,7 +436,8 @@ export default function GenAIRisks() {
                           );
                         })}
                       </div>
-                      <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>Apply Recommended Guardrail</Button>
+                      <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
+                        onClick={() => navigate('/trust-engine/guardrails')}>Apply Recommended Guardrail</Button>
                     </>
                   )}
                 </TabsContent>
@@ -436,7 +463,8 @@ export default function GenAIRisks() {
                     <div className="p-4 text-center" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-br))', borderRadius: 0 }}>
                       <p className="text-sm font-semibold" style={{ color: 'hsl(var(--s-er-tx))' }}>No guardrails configured</p>
                       <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>This risk has no active controls. Immediate action recommended.</p>
-                      <Button size="sm" className="mt-3" style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: 'hsl(var(--bg-surface))' }}>Assign Guardrail</Button>
+                      <Button size="sm" className="mt-3" style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: 'hsl(var(--bg-surface))' }}
+                        onClick={() => navigate('/trust-engine/guardrails')}>Assign Guardrail</Button>
                     </div>
                   )}
                   <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
@@ -495,7 +523,7 @@ export default function GenAIRisks() {
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent style={{ borderRadius: 0, maxWidth: 520 }}>
           <DialogHeader>
-            <DialogTitle>Create GenAI Risk Profile</DialogTitle>
+            <DialogTitle>{editingId ? `Edit Risk Profile ${editingId}` : 'Create GenAI Risk Profile'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <div className="space-y-1">
@@ -543,15 +571,12 @@ export default function GenAIRisks() {
             </div>
             <div className="space-y-1">
               <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Owner *</label>
-              <select className="w-full text-sm border p-2" style={{ borderRadius: 0, borderColor: 'hsl(var(--border))', background: 'hsl(var(--bg-surface))', color: 'hsl(var(--text-1))' }}
-                value={wOwner} onChange={e => setWOwner(e.target.value)}>
-                {['Sarah Chen', 'James Patel', 'Maria Santos', 'David Kim', 'Emma Wilson'].map(u => <option key={u}>{u}</option>)}
-              </select>
+              <UserSelect value={wOwner} onChange={setWOwner} by="name" rolesFilter={['risk', 'ml', 'compliance', 'ciso']} />
             </div>
           </div>
           <div className="flex items-center justify-between pt-4 border-t" style={{ borderColor: 'hsl(var(--border))' }}>
             <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setCreateOpen(false)}>Cancel</Button>
-            <Button style={{ borderRadius: 0 }} onClick={submitCreate}>Create Profile</Button>
+            <Button style={{ borderRadius: 0 }} onClick={submitCreate} loading={upsert.isPending}>{editingId ? 'Save Changes' : 'Create Profile'}</Button>
           </div>
         </DialogContent>
       </Dialog>
