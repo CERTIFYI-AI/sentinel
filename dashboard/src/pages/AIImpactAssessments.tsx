@@ -307,7 +307,7 @@ export default function AIImpactAssessments() {
                 const ss = STATUS_STYLE[r.status] || { bg: 'bg-sunken', color: 'text-[hsl(var(--text-3))]' }
                 const rs = RISK_STYLE[r.risk] || { bg: 'bg-sunken', color: 'text-[hsl(var(--text-3))]' }
                 return (
-                  <tr key={r.id} className="border-b border-[hsl(var(--border))] hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => setSelected(r)}>
+                  <tr key={r.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-muted))] transition-colors cursor-pointer" onClick={() => setSelected(r)}>
                     <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--brand))]">{r.id}</td>
                     <td className="px-4 py-3 font-medium text-[hsl(var(--text-1))] max-w-[200px] truncate">{r.name}</td>
                     <td className="px-4 py-3 text-[hsl(var(--text-2))]">{r.system}</td>

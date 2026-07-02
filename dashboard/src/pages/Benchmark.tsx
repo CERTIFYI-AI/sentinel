@@ -80,8 +80,8 @@ function metricStatus(score: number, baseline: number, lowerBetter: boolean): "g
   return "bad";
 }
 
-const statusColors = { good: "text-green-600 dark:text-green-400", warn: "text-amber-600 dark:text-amber-400", bad: "text-red-600 dark:text-red-400" };
-const statusBg = { good: "bg-green-50 dark:bg-green-950/50", warn: "bg-amber-50 dark:bg-amber-950/50", bad: "bg-red-50 dark:bg-red-950/50" };
+const statusColors = { good: "text-[hsl(var(--s-ok-tx))]", warn: "text-[hsl(var(--s-wn-tx))]", bad: "text-[hsl(var(--s-er-tx))]" };
+const statusBg = { good: "bg-[hsl(var(--s-ok-bg))]", warn: "bg-[hsl(var(--s-wn-bg))]", bad: "bg-[hsl(var(--s-er-bg))]" };
 
 export default function Benchmark() {
   const [selectedModel, setSelectedModel] = useState(0);
@@ -91,13 +91,13 @@ export default function Benchmark() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-indigo-100 dark:bg-indigo-950 rounded-lg"><BarChart3 size={20} className="text-indigo-600 dark:text-indigo-400" /></div>
+          <div className="p-2 bg-[hsl(var(--s-in-bg))] rounded-lg"><BarChart3 size={20} className="text-[hsl(var(--s-in-tx))]" /></div>
           <div>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Benchmarks</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">AI safety, accuracy, and fairness benchmarking across all registered models</p>
+            <h1 className="text-xl font-bold text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))]">Benchmarks</h1>
+            <p className="text-sm text-[hsl(var(--text-3))]">AI safety, accuracy, and fairness benchmarking across all registered models</p>
           </div>
         </div>
-        <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">Run Benchmark Suite</button>
+        <button className="bg-[hsl(var(--s-ok-tx))] hover:bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))] px-4 py-2 rounded-lg text-sm font-medium transition-colors">Run Benchmark Suite</button>
       </div>
 
       {/* Model Selector */}
@@ -105,27 +105,27 @@ export default function Benchmark() {
         {BENCHMARKS.map((b, i) => (
           <button key={i} onClick={() => setSelectedModel(i)} className={`flex-shrink-0 px-4 py-2.5 rounded-lg text-sm font-medium border transition-all ${
             selectedModel === i
-              ? "bg-green-50 dark:bg-green-950 border-green-300 dark:border-green-700 text-green-700 dark:text-green-400"
-              : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-300"
+              ? "bg-[hsl(var(--s-ok-bg))] border-[hsl(var(--s-ok-br))] text-[hsl(var(--s-ok-tx))]"
+              : "bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] text-[hsl(var(--text-3))] hover:border-[hsl(var(--border))]"
           }`}>
-            <span className={`inline-block w-2 h-2 rounded-full mr-2 ${b.status === "passed" ? "bg-green-500" : b.status === "warning" ? "bg-amber-500" : "bg-red-500"}`} />
+            <span className={`inline-block w-2 h-2 rounded-full mr-2 ${b.status === "passed" ? "bg-[hsl(var(--s-ok-tx))]" : b.status === "warning" ? "bg-[hsl(var(--s-wn-tx))]" : "bg-[hsl(var(--s-er-tx))]"}`} />
             {b.model}
           </button>
         ))}
       </div>
 
       {/* Benchmark Results */}
-      <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+      <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm font-medium">{bench.model} — Benchmark Results</CardTitle>
-            <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+            <div className="flex items-center gap-3 text-xs text-[hsl(var(--text-3))]">
               <span>Provider: {bench.provider}</span>
               <span>Last Run: {bench.lastRun}</span>
               <span className={`font-medium px-2 py-0.5 rounded capitalize ${
-                bench.status === "passed" ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400" :
-                bench.status === "warning" ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400" :
-                "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400"
+                bench.status === "passed" ? "bg-[hsl(var(--s-ok-bg))] text-[hsl(var(--s-ok-tx))]" :
+                bench.status === "warning" ? "bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))]" :
+                "bg-[hsl(var(--s-er-bg))] text-[hsl(var(--s-er-tx))]"
               }`}>{bench.status}</span>
             </div>
           </div>
@@ -139,19 +139,19 @@ export default function Benchmark() {
               const deltaPercent = ((delta / m.baseline) * 100).toFixed(1);
               const isPositive = delta > 0;
               return (
-                <div key={i} className={`p-3 rounded-lg border border-slate-100 dark:border-slate-800 ${statusBg[status]}`}>
-                  <p className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-medium">{m.name}</p>
+                <div key={i} className={`p-3 rounded-lg border border-[hsl(var(--border))] ${statusBg[status]}`}>
+                  <p className="text-[10px] uppercase tracking-wider text-[hsl(var(--text-3))] font-medium">{m.name}</p>
                   <div className="flex items-end justify-between mt-1">
                     <span className={`text-xl font-bold font-mono ${statusColors[status]}`}>
                       {m.name.includes("Latency") ? `${m.score}` : m.name === "Accuracy" || m.name === "Robustness" ? `${m.score}%` : `${m.score}%`}
                     </span>
-                    <span className={`flex items-center gap-0.5 text-[11px] font-medium ${isPositive ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                    <span className={`flex items-center gap-0.5 text-[11px] font-medium ${isPositive ? "text-[hsl(var(--s-ok-tx))]" : "text-[hsl(var(--s-er-tx))]"}`}>
                       {isPositive ? <ArrowUpRight size={12} /> : delta < 0 ? <ArrowDownRight size={12} /> : <Minus size={12} />}
                       {Math.abs(Number(deltaPercent))}%
                     </span>
                   </div>
                   <div className="mt-2">
-                    <div className="flex justify-between text-[9px] text-slate-400 dark:text-slate-500">
+                    <div className="flex justify-between text-[9px] text-[hsl(var(--text-4))]">
                       <span>Baseline: {m.baseline}{m.name.includes("Latency") ? "ms" : "%"}</span>
                       <span className={statusColors[status]}>{status === "good" ? "PASS" : status === "warn" ? "WARN" : "FAIL"}</span>
                     </div>
@@ -164,7 +164,7 @@ export default function Benchmark() {
       </Card>
 
       {/* Comparison Table */}
-      <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+      <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium">Cross-Model Comparison</CardTitle>
         </CardHeader>
@@ -172,17 +172,17 @@ export default function Benchmark() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
-                  <th className="px-4 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">Metric</th>
+                <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-muted))]">
+                  <th className="px-4 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-[hsl(var(--text-3))]">Metric</th>
                   {BENCHMARKS.map(b => (
-                    <th key={b.model} className="px-4 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">{b.model}</th>
+                    <th key={b.model} className="px-4 py-3 text-left text-[10px] uppercase tracking-wider font-semibold text-[hsl(var(--text-3))]">{b.model}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-[hsl(var(--border))]">
                 {BENCHMARKS[0].metrics.map((m, mi) => (
-                  <tr key={mi} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                    <td className="px-4 py-2.5 text-xs font-medium text-slate-700 dark:text-slate-300">{m.name}</td>
+                  <tr key={mi} className="hover:bg-[hsl(var(--bg-muted))]">
+                    <td className="px-4 py-2.5 text-xs font-medium text-[hsl(var(--text-2))]">{m.name}</td>
                     {BENCHMARKS.map(b => {
                       const metric = b.metrics[mi];
                       const lb = isLowerBetter(metric.name);

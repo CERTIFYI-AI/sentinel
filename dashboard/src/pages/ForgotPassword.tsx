@@ -102,7 +102,7 @@ export default function ForgotPassword() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-2.5 text-sm font-semibold text-white flex items-center justify-center gap-2 transition-opacity disabled:opacity-60"
+                  className="w-full py-2.5 text-sm font-semibold text-[hsl(var(--bg-surface))] flex items-center justify-center gap-2 transition-opacity disabled:opacity-60"
                   style={{ background: 'hsl(var(--brand))', borderRadius: 0 }}
                 >
                   {loading ? (

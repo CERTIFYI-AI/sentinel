@@ -87,16 +87,16 @@ export default function IncidentsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Incident Management</h1>
-          <p className="text-sm text-zinc-400 mt-1">AI-related incident tracking</p>
+          <h1 className="text-2xl font-bold text-[hsl(var(--bg-surface))]">Incident Management</h1>
+          <p className="text-sm text-[hsl(var(--text-4))] mt-1">AI-related incident tracking</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-3 py-2 bg-zinc-800 text-zinc-300 rounded-lg text-sm hover:bg-zinc-700">
+          <button className="flex items-center gap-2 px-3 py-2 bg-[hsl(var(--bg-sunken))] text-[hsl(var(--text-4))] rounded-lg text-sm hover:bg-[hsl(var(--bg-sunken))]">
             <Download size={16} /> Export
           </button>
           <button
             onClick={() => { setEditId(null); setForm({"title": "", "severity": "", "affected_model": "", "reported_by": "", "date": "", "status": ""}); setShowModal(true); }}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+            className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--s-in-tx))] text-[hsl(var(--bg-surface))] rounded-lg text-sm hover:bg-[hsl(var(--s-in-tx))]"
           >
             <Plus size={16} weight="bold" /> Add New
           </button>
@@ -105,71 +105,71 @@ export default function IncidentsPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-          <p className="text-zinc-400 text-xs">Total</p>
-          <p className="text-2xl font-bold text-white">{items.length}</p>
+        <div className="bg-[hsl(var(--bg-sunken))] border border-[hsl(var(--border))] rounded-lg p-4">
+          <p className="text-[hsl(var(--text-4))] text-xs">Total</p>
+          <p className="text-2xl font-bold text-[hsl(var(--bg-surface))]">{items.length}</p>
         </div>
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-          <p className="text-zinc-400 text-xs">Active</p>
-          <p className="text-2xl font-bold text-green-400">{items.filter(i => Object.values(i).some(v => /active|approved|pass|complet|low/i.test(String(v)))).length}</p>
+        <div className="bg-[hsl(var(--bg-sunken))] border border-[hsl(var(--border))] rounded-lg p-4">
+          <p className="text-[hsl(var(--text-4))] text-xs">Active</p>
+          <p className="text-2xl font-bold text-[hsl(var(--s-ok-tx))]">{items.filter(i => Object.values(i).some(v => /active|approved|pass|complet|low/i.test(String(v)))).length}</p>
         </div>
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-          <p className="text-zinc-400 text-xs">Pending</p>
-          <p className="text-2xl font-bold text-yellow-400">{items.filter(i => Object.values(i).some(v => /pending|review|medium|draft/i.test(String(v)))).length}</p>
+        <div className="bg-[hsl(var(--bg-sunken))] border border-[hsl(var(--border))] rounded-lg p-4">
+          <p className="text-[hsl(var(--text-4))] text-xs">Pending</p>
+          <p className="text-2xl font-bold text-[hsl(var(--s-wn-tx))]">{items.filter(i => Object.values(i).some(v => /pending|review|medium|draft/i.test(String(v)))).length}</p>
         </div>
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-          <p className="text-zinc-400 text-xs">Critical</p>
-          <p className="text-2xl font-bold text-red-400">{items.filter(i => Object.values(i).some(v => /critical|high|fail|reject|expired/i.test(String(v)))).length}</p>
+        <div className="bg-[hsl(var(--bg-sunken))] border border-[hsl(var(--border))] rounded-lg p-4">
+          <p className="text-[hsl(var(--text-4))] text-xs">Critical</p>
+          <p className="text-2xl font-bold text-[hsl(var(--s-er-tx))]">{items.filter(i => Object.values(i).some(v => /critical|high|fail|reject|expired/i.test(String(v)))).length}</p>
         </div>
       </div>
 
       {/* Search */}
       <div className="flex items-center gap-3">
         <div className="relative flex-1">
-          <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+          <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-3))]" />
           <input
             type="text"
             placeholder="Search..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            className="w-full pl-10 pr-4 py-2 bg-[hsl(var(--bg-sunken))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--bg-surface))] focus:border-[hsl(var(--s-in-br))] focus:ring-1 focus:ring-[hsl(var(--s-in-br))]"
           />
         </div>
-        <button className="flex items-center gap-2 px-3 py-2 bg-zinc-800 text-zinc-300 rounded-lg text-sm hover:bg-zinc-700">
+        <button className="flex items-center gap-2 px-3 py-2 bg-[hsl(var(--bg-sunken))] text-[hsl(var(--text-4))] rounded-lg text-sm hover:bg-[hsl(var(--bg-sunken))]">
           <Funnel size={16} /> Filter
         </button>
       </div>
 
       {/* Table */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
+      <div className="bg-[hsl(var(--bg-sunken))] border border-[hsl(var(--border))] rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-zinc-800/50">
+            <thead className="bg-[hsl(var(--bg-sunken))]">
               <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Incident</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Severity</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Affected Model</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Reported By</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Date</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Status</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-zinc-400 uppercase">Actions</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-[hsl(var(--text-4))] uppercase tracking-wider">Incident</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-[hsl(var(--text-4))] uppercase tracking-wider">Severity</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-[hsl(var(--text-4))] uppercase tracking-wider">Affected Model</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-[hsl(var(--text-4))] uppercase tracking-wider">Reported By</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-[hsl(var(--text-4))] uppercase tracking-wider">Date</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-[hsl(var(--text-4))] uppercase tracking-wider">Status</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-[hsl(var(--text-4))] uppercase">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800">
+            <tbody className="divide-y divide-[hsl(var(--border))]">
               {filtered.map(item => (
-                <tr key={item.id} className="hover:bg-zinc-800/30 transition-colors">
-              <td className="px-4 py-3 text-sm text-zinc-300">{item.title}</td>
-              <td className="px-4 py-3 text-sm text-zinc-300"><span className={"px-2 py-1 text-xs rounded-full " + ({"P1-Critical": "bg-red-900/50 text-red-400", "P2-High": "bg-orange-900/50 text-orange-400", "P3-Medium": "bg-yellow-900/50 text-yellow-400", "P4-Low": "bg-green-900/50 text-green-400"}[item.severity] || "bg-zinc-700 text-zinc-300")}>{item.severity}</span></td>
-              <td className="px-4 py-3 text-sm text-zinc-300">{item.affected_model}</td>
-              <td className="px-4 py-3 text-sm text-zinc-300">{item.reported_by}</td>
-              <td className="px-4 py-3 text-sm text-zinc-300">{item.date}</td>
-              <td className="px-4 py-3 text-sm text-zinc-300"><span className={"px-2 py-1 text-xs rounded-full " + ({"Active": "bg-red-900/50 text-red-400", "Investigating": "bg-orange-900/50 text-orange-400", "Resolved": "bg-yellow-900/50 text-yellow-400", "Closed": "bg-green-900/50 text-green-400"}[item.status] || "bg-zinc-700 text-zinc-300")}>{item.status}</span></td>
+                <tr key={item.id} className="hover:bg-[hsl(var(--bg-sunken))] transition-colors">
+              <td className="px-4 py-3 text-sm text-[hsl(var(--text-4))]">{item.title}</td>
+              <td className="px-4 py-3 text-sm text-[hsl(var(--text-4))]"><span className={"px-2 py-1 text-xs rounded-full " + ({"P1-Critical": "bg-[hsl(var(--s-er-tx))] text-[hsl(var(--s-er-tx))]", "P2-High": "bg-[hsl(var(--s-wn-tx))] text-[hsl(var(--s-wn-tx))]", "P3-Medium": "bg-[hsl(var(--s-wn-tx))] text-[hsl(var(--s-wn-tx))]", "P4-Low": "bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--s-ok-tx))]"}[item.severity] || "bg-[hsl(var(--bg-sunken))] text-[hsl(var(--text-4))]")}>{item.severity}</span></td>
+              <td className="px-4 py-3 text-sm text-[hsl(var(--text-4))]">{item.affected_model}</td>
+              <td className="px-4 py-3 text-sm text-[hsl(var(--text-4))]">{item.reported_by}</td>
+              <td className="px-4 py-3 text-sm text-[hsl(var(--text-4))]">{item.date}</td>
+              <td className="px-4 py-3 text-sm text-[hsl(var(--text-4))]"><span className={"px-2 py-1 text-xs rounded-full " + ({"Active": "bg-[hsl(var(--s-er-tx))] text-[hsl(var(--s-er-tx))]", "Investigating": "bg-[hsl(var(--s-wn-tx))] text-[hsl(var(--s-wn-tx))]", "Resolved": "bg-[hsl(var(--s-wn-tx))] text-[hsl(var(--s-wn-tx))]", "Closed": "bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--s-ok-tx))]"}[item.status] || "bg-[hsl(var(--bg-sunken))] text-[hsl(var(--text-4))]")}>{item.status}</span></td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <button onClick={() => handleEdit(item)} className="p-1 rounded hover:bg-zinc-700 text-zinc-400 hover:text-blue-400">
+                      <button onClick={() => handleEdit(item)} className="p-1 rounded hover:bg-[hsl(var(--bg-sunken))] text-[hsl(var(--text-4))] hover:text-[hsl(var(--s-in-tx))]">
                         <PencilSimple size={16} />
                       </button>
-                      <button onClick={() => setDeleteId(item.id)} className="p-1 rounded hover:bg-zinc-700 text-zinc-400 hover:text-red-400">
+                      <button onClick={() => setDeleteId(item.id)} className="p-1 rounded hover:bg-[hsl(var(--bg-sunken))] text-[hsl(var(--text-4))] hover:text-[hsl(var(--s-er-tx))]">
                         <Trash size={16} />
                       </button>
                     </div>
@@ -180,49 +180,49 @@ export default function IncidentsPage() {
           </table>
         </div>
         {filtered.length === 0 && (
-          <div className="p-8 text-center text-zinc-500">No records found</div>
+          <div className="p-8 text-center text-[hsl(var(--text-3))]">No records found</div>
         )}
       </div>
 
       {/* Create/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={() => setShowModal(false)}>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="bg-[hsl(var(--bg-sunken))] border border-[hsl(var(--border))] rounded-xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-white">{editId ? "Edit" : "Create"} Record</h2>
-              <button onClick={() => setShowModal(false)} className="p-1 rounded hover:bg-zinc-800 text-zinc-400">
+              <h2 className="text-lg font-bold text-[hsl(var(--bg-surface))]">{editId ? "Edit" : "Create"} Record</h2>
+              <button onClick={() => setShowModal(false)} className="p-1 rounded hover:bg-[hsl(var(--bg-sunken))] text-[hsl(var(--text-4))]">
                 <X size={18} />
               </button>
             </div>
             <div className="space-y-3">
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1">Incident</label>
-              <input type="text" value={form.title} onChange={e => setForm({...form, title: e.target.value})} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+              <label className="block text-xs font-medium text-[hsl(var(--text-4))] mb-1">Incident</label>
+              <input type="text" value={form.title} onChange={e => setForm({...form, title: e.target.value})} className="w-full px-3 py-2 bg-[hsl(var(--bg-sunken))] border border-[hsl(var(--border))] rounded-md text-sm text-[hsl(var(--bg-surface))] focus:border-[hsl(var(--s-in-br))] focus:ring-1 focus:ring-[hsl(var(--s-in-br))]" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1">Severity</label>
-              <select value={form.severity} onChange={e => setForm({...form, severity: e.target.value})} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"><option value="P1-Critical">P1-Critical</option><option value="P2-High">P2-High</option><option value="P3-Medium">P3-Medium</option><option value="P4-Low">P4-Low</option></select>
+              <label className="block text-xs font-medium text-[hsl(var(--text-4))] mb-1">Severity</label>
+              <select value={form.severity} onChange={e => setForm({...form, severity: e.target.value})} className="w-full px-3 py-2 bg-[hsl(var(--bg-sunken))] border border-[hsl(var(--border))] rounded-md text-sm text-[hsl(var(--bg-surface))] focus:border-[hsl(var(--s-in-br))] focus:ring-1 focus:ring-[hsl(var(--s-in-br))]"><option value="P1-Critical">P1-Critical</option><option value="P2-High">P2-High</option><option value="P3-Medium">P3-Medium</option><option value="P4-Low">P4-Low</option></select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1">Affected Model</label>
-              <input type="text" value={form.affected_model} onChange={e => setForm({...form, affected_model: e.target.value})} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+              <label className="block text-xs font-medium text-[hsl(var(--text-4))] mb-1">Affected Model</label>
+              <input type="text" value={form.affected_model} onChange={e => setForm({...form, affected_model: e.target.value})} className="w-full px-3 py-2 bg-[hsl(var(--bg-sunken))] border border-[hsl(var(--border))] rounded-md text-sm text-[hsl(var(--bg-surface))] focus:border-[hsl(var(--s-in-br))] focus:ring-1 focus:ring-[hsl(var(--s-in-br))]" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1">Reported By</label>
-              <input type="text" value={form.reported_by} onChange={e => setForm({...form, reported_by: e.target.value})} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+              <label className="block text-xs font-medium text-[hsl(var(--text-4))] mb-1">Reported By</label>
+              <input type="text" value={form.reported_by} onChange={e => setForm({...form, reported_by: e.target.value})} className="w-full px-3 py-2 bg-[hsl(var(--bg-sunken))] border border-[hsl(var(--border))] rounded-md text-sm text-[hsl(var(--bg-surface))] focus:border-[hsl(var(--s-in-br))] focus:ring-1 focus:ring-[hsl(var(--s-in-br))]" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1">Date</label>
-              <input type="text" value={form.date} onChange={e => setForm({...form, date: e.target.value})} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+              <label className="block text-xs font-medium text-[hsl(var(--text-4))] mb-1">Date</label>
+              <input type="text" value={form.date} onChange={e => setForm({...form, date: e.target.value})} className="w-full px-3 py-2 bg-[hsl(var(--bg-sunken))] border border-[hsl(var(--border))] rounded-md text-sm text-[hsl(var(--bg-surface))] focus:border-[hsl(var(--s-in-br))] focus:ring-1 focus:ring-[hsl(var(--s-in-br))]" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1">Status</label>
-              <select value={form.status} onChange={e => setForm({...form, status: e.target.value})} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"><option value="Active">Active</option><option value="Investigating">Investigating</option><option value="Resolved">Resolved</option><option value="Closed">Closed</option></select>
+              <label className="block text-xs font-medium text-[hsl(var(--text-4))] mb-1">Status</label>
+              <select value={form.status} onChange={e => setForm({...form, status: e.target.value})} className="w-full px-3 py-2 bg-[hsl(var(--bg-sunken))] border border-[hsl(var(--border))] rounded-md text-sm text-[hsl(var(--bg-surface))] focus:border-[hsl(var(--s-in-br))] focus:ring-1 focus:ring-[hsl(var(--s-in-br))]"><option value="Active">Active</option><option value="Investigating">Investigating</option><option value="Resolved">Resolved</option><option value="Closed">Closed</option></select>
             </div>
             </div>
             <div className="flex justify-end gap-3 mt-6">
-              <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-zinc-400 hover:text-white">Cancel</button>
-              <button onClick={handleSave} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">{editId ? "Update" : "Create"}</button>
+              <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-[hsl(var(--text-4))] hover:text-[hsl(var(--bg-surface))]">Cancel</button>
+              <button onClick={handleSave} className="px-4 py-2 bg-[hsl(var(--s-in-tx))] text-[hsl(var(--bg-surface))] rounded-lg text-sm hover:bg-[hsl(var(--s-in-tx))]">{editId ? "Update" : "Create"}</button>
             </div>
           </div>
         </div>
@@ -231,12 +231,12 @@ export default function IncidentsPage() {
       {/* Delete Confirm */}
       {deleteId && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 w-full max-w-sm">
-            <h2 className="text-lg font-bold text-white mb-2">Confirm Delete</h2>
-            <p className="text-sm text-zinc-400 mb-4">This action cannot be undone.</p>
+          <div className="bg-[hsl(var(--bg-sunken))] border border-[hsl(var(--border))] rounded-xl p-6 w-full max-w-sm">
+            <h2 className="text-lg font-bold text-[hsl(var(--bg-surface))] mb-2">Confirm Delete</h2>
+            <p className="text-sm text-[hsl(var(--text-4))] mb-4">This action cannot be undone.</p>
             <div className="flex justify-end gap-3">
-              <button onClick={() => setDeleteId(null)} className="px-4 py-2 text-sm text-zinc-400 hover:text-white">Cancel</button>
-              <button onClick={handleDelete} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">Delete</button>
+              <button onClick={() => setDeleteId(null)} className="px-4 py-2 text-sm text-[hsl(var(--text-4))] hover:text-[hsl(var(--bg-surface))]">Cancel</button>
+              <button onClick={handleDelete} className="px-4 py-2 bg-[hsl(var(--s-er-tx))] text-[hsl(var(--bg-surface))] rounded-lg text-sm hover:bg-[hsl(var(--s-er-tx))]">Delete</button>
             </div>
           </div>
         </div>

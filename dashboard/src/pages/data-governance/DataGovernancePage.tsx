@@ -238,10 +238,10 @@ export default function DataGovernancePage() {
 
       {/* Metrics */}
       <div className="grid grid-cols-4 gap-4">
-        <MetricTile label="Datasets Tracked" value={String(tracked)} variant="info" icon={<Database size={16} weight="fill" className="text-blue-600 dark:text-blue-400" />} />
+        <MetricTile label="Datasets Tracked" value={String(tracked)} variant="info" icon={<Database size={16} weight="fill" className="text-[hsl(var(--s-in-tx))]" />} />
         <MetricTile label="Consent Gap" value={String(consentGap)} variant="error" icon={<Warning size={16} weight="fill" style={{ color: 'hsl(var(--destructive))' }} />} />
         <MetricTile label="DSAR Pending" value={String(dsarPending)} variant="warn" icon={<Clock size={16} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />} />
-        <MetricTile label="Cross-Border Transfers" value={String(crossBorder)} variant="info" icon={<Globe size={16} weight="fill" className="text-blue-600 dark:text-blue-400" />} />
+        <MetricTile label="Cross-Border Transfers" value={String(crossBorder)} variant="info" icon={<Globe size={16} weight="fill" className="text-[hsl(var(--s-in-tx))]" />} />
       </div>
 
       {/* Tabs */}

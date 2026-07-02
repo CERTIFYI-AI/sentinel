@@ -58,7 +58,7 @@ export default function AccessControlOverview() {
             RBAC governance — users, roles, departments, and permission coverage
           </p>
         </div>
-        <button onClick={() => navigate('/access-control/users')} className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white hover:opacity-90" style={{ background: 'hsl(var(--brand))' }}>
+        <button onClick={() => navigate('/access-control/users')} className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-[hsl(var(--bg-surface))] hover:opacity-90" style={{ background: 'hsl(var(--brand))' }}>
           <UserPlus size={14} /> Invite User
         </button>
       </div>

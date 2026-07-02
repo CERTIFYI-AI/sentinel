@@ -575,7 +575,7 @@ export default function BenchmarkingMaturity() {
                         setAssessDone(true);
                       }
                     }}
-                    className="px-4 py-2 text-sm font-medium bg-[hsl(var(--brand))] text-white hover:opacity-90"
+                    className="px-4 py-2 text-sm font-medium bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] hover:opacity-90"
                   >
                     {assessStep < ASSESSMENT_QUESTIONS.length - 1 ? 'Next →' : 'Complete Assessment'}
                   </button>
@@ -613,7 +613,7 @@ export default function BenchmarkingMaturity() {
                       setShowAssessment(false);
                       toast.success('Assessment results saved. Maturity scores updated.');
                     }}
-                    className="px-4 py-2 text-sm font-medium bg-[hsl(var(--brand))] text-white hover:opacity-90"
+                    className="px-4 py-2 text-sm font-medium bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] hover:opacity-90"
                   >
                     Save Results
                   </button>

@@ -17,19 +17,19 @@ const TEMPLATES: Policy[] = [
 ];
 
 const fwColor: Record<string, string> = {
-  "EU AI Act": "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400",
-  "GDPR": "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-400",
-  "NIST AI RMF": "bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-400",
-  "IEEE 7000": "bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400",
-  "ISO 42001": "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400",
-  "SOC 2 Type II": "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400",
-  "ISO 27001": "bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-400",
+  "EU AI Act": "bg-[hsl(var(--s-in-bg))] text-[hsl(var(--s-in-tx))]",
+  "GDPR": "bg-[hsl(var(--tag-purple-bg))] text-[hsl(var(--tag-purple))]",
+  "NIST AI RMF": "bg-[hsl(var(--s-in-bg))] text-[hsl(var(--s-in-tx))]",
+  "IEEE 7000": "bg-[hsl(var(--s-in-bg))] text-[hsl(var(--s-in-tx))]",
+  "ISO 42001": "bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))]",
+  "SOC 2 Type II": "bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))]",
+  "ISO 27001": "bg-[hsl(var(--s-in-bg))] text-[hsl(var(--s-in-tx))]",
 };
 
 const statusBadge: Record<string, string> = {
-  active: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400",
-  draft: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400",
-  archived: "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400",
+  active: "bg-[hsl(var(--s-ok-bg))] text-[hsl(var(--s-ok-tx))]",
+  draft: "bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))]",
+  archived: "bg-[hsl(var(--bg-muted))] text-[hsl(var(--text-3))]",
 };
 
 export default function PolicyEditor() {
@@ -60,13 +60,13 @@ export default function PolicyEditor() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-100 dark:bg-blue-950 rounded-lg"><FileText size={20} className="text-blue-600 dark:text-blue-400" /></div>
+          <div className="p-2 bg-[hsl(var(--s-in-bg))] rounded-lg"><FileText size={20} className="text-[hsl(var(--s-in-tx))]" /></div>
           <div>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Policy Editor</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Create and manage governance policies across all compliance frameworks</p>
+            <h1 className="text-xl font-bold text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))]">Policy Editor</h1>
+            <p className="text-sm text-[hsl(var(--text-3))]">Create and manage governance policies across all compliance frameworks</p>
           </div>
         </div>
-        <button onClick={() => setShowNew(true)} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+        <button onClick={() => setShowNew(true)} className="flex items-center gap-2 bg-[hsl(var(--s-ok-tx))] hover:bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))] px-4 py-2 rounded-lg text-sm font-medium transition-colors">
           <Plus size={14} /> New Policy
         </button>
       </div>
@@ -74,26 +74,26 @@ export default function PolicyEditor() {
       {/* New Policy Modal */}
       {showNew && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setShowNew(false)}>
-          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl p-6 w-full max-w-lg border border-slate-200 dark:border-slate-700" onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Create New Policy</h2>
+          <div className="bg-[hsl(var(--bg-surface))] rounded-xl shadow-xl p-6 w-full max-w-lg border border-[hsl(var(--border))]" onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-bold text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))] mb-4">Create New Policy</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Policy Name *</label>
-                <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white" placeholder="e.g. Data Governance Policy" />
+                <label className="block text-xs font-medium text-[hsl(var(--text-3))] mb-1">Policy Name *</label>
+                <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full border border-[hsl(var(--border))] rounded-lg px-3 py-2 text-sm bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))]" placeholder="e.g. Data Governance Policy" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Framework</label>
-                <select value={form.framework} onChange={e => setForm({...form, framework: e.target.value})} className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white">
+                <label className="block text-xs font-medium text-[hsl(var(--text-3))] mb-1">Framework</label>
+                <select value={form.framework} onChange={e => setForm({...form, framework: e.target.value})} className="w-full border border-[hsl(var(--border))] rounded-lg px-3 py-2 text-sm bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))]">
                   {Object.keys(fwColor).map(f => <option key={f}>{f}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Policy Content *</label>
-                <textarea value={form.content} onChange={e => setForm({...form, content: e.target.value})} rows={5} className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white" placeholder="Write the policy content..." />
+                <label className="block text-xs font-medium text-[hsl(var(--text-3))] mb-1">Policy Content *</label>
+                <textarea value={form.content} onChange={e => setForm({...form, content: e.target.value})} rows={5} className="w-full border border-[hsl(var(--border))] rounded-lg px-3 py-2 text-sm bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))]" placeholder="Write the policy content..." />
               </div>
               <div className="flex gap-3 justify-end">
-                <button onClick={() => setShowNew(false)} className="px-4 py-2 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">Cancel</button>
-                <button onClick={addPolicy} disabled={!form.name.trim() || !form.content.trim()} className="px-4 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg disabled:opacity-40 transition-colors">Create Policy</button>
+                <button onClick={() => setShowNew(false)} className="px-4 py-2 text-sm text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-muted))] rounded-lg transition-colors">Cancel</button>
+                <button onClick={addPolicy} disabled={!form.name.trim() || !form.content.trim()} className="px-4 py-2 text-sm bg-[hsl(var(--s-ok-tx))] hover:bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))] rounded-lg disabled:opacity-40 transition-colors">Create Policy</button>
               </div>
             </div>
           </div>
@@ -102,23 +102,23 @@ export default function PolicyEditor() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Policy List */}
-        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+        <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Policies ({policies.length})</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="divide-y divide-slate-50 dark:divide-slate-800 max-h-[600px] overflow-y-auto">
+            <div className="divide-y divide-[hsl(var(--border))] max-h-[600px] overflow-y-auto">
               {policies.map(p => (
-                <button key={p.id} onClick={() => { setSelected(p.id); setEditContent(null); }} className={`w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${
-                  selected === p.id ? "bg-green-50 dark:bg-green-950/30 border-l-2 border-l-green-500" : ""
+                <button key={p.id} onClick={() => { setSelected(p.id); setEditContent(null); }} className={`w-full text-left px-4 py-3 hover:bg-[hsl(var(--bg-muted))] transition-colors ${
+                  selected === p.id ? "bg-[hsl(var(--s-ok-bg))] border-l-2 border-l-green-500" : ""
                 }`}>
                   <div className="flex items-center justify-between mb-0.5">
-                    <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">{p.name}</p>
+                    <p className="text-sm font-medium text-[hsl(var(--text-1))] truncate">{p.name}</p>
                     <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded capitalize flex-shrink-0 ml-2 ${statusBadge[p.status]}`}>{p.status}</span>
                   </div>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${fwColor[p.framework] || "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"}`}>{p.framework}</span>
-                    <span className="text-[10px] text-slate-400 dark:text-slate-500">{p.version} · {p.updated}</span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${fwColor[p.framework] || "bg-[hsl(var(--bg-muted))] text-[hsl(var(--text-3))]"}`}>{p.framework}</span>
+                    <span className="text-[10px] text-[hsl(var(--text-4))]">{p.version} · {p.updated}</span>
                   </div>
                 </button>
               ))}
@@ -128,40 +128,40 @@ export default function PolicyEditor() {
 
         {/* Policy Content */}
         <div className="lg:col-span-2">
-          <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+          <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
             {sel ? (
               <>
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle className="text-base font-bold text-slate-900 dark:text-white">{sel.name}</CardTitle>
+                      <CardTitle className="text-base font-bold text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))]">{sel.name}</CardTitle>
                       <div className="flex items-center gap-2 mt-1">
                         <span className={`text-[10px] px-1.5 py-0.5 rounded ${fwColor[sel.framework] || ""}`}>{sel.framework}</span>
-                        <span className="text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1"><Clock size={10} /> {sel.version} · Updated {sel.updated}</span>
+                        <span className="text-[11px] text-[hsl(var(--text-4))] flex items-center gap-1"><Clock size={10} /> {sel.version} · Updated {sel.updated}</span>
                       </div>
                     </div>
                     <div className="flex gap-2">
                       {editContent !== null ? (
                         <>
-                          <button onClick={() => setEditContent(null)} className="flex items-center gap-1 px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"><X size={12} /> Cancel</button>
-                          <button onClick={saveEdit} className="flex items-center gap-1 px-3 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"><Save size={12} /> Save</button>
+                          <button onClick={() => setEditContent(null)} className="flex items-center gap-1 px-3 py-1.5 text-xs text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-muted))] rounded-lg transition-colors"><X size={12} /> Cancel</button>
+                          <button onClick={saveEdit} className="flex items-center gap-1 px-3 py-1.5 text-xs bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))] rounded-lg hover:bg-[hsl(var(--s-ok-tx))] transition-colors"><Save size={12} /> Save</button>
                         </>
                       ) : (
-                        <button onClick={() => setEditContent(sel.content)} className="flex items-center gap-1 px-3 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors"><Edit3 size={12} /> Edit</button>
+                        <button onClick={() => setEditContent(sel.content)} className="flex items-center gap-1 px-3 py-1.5 text-xs border border-[hsl(var(--border))] rounded-lg hover:bg-[hsl(var(--bg-muted))] text-[hsl(var(--text-3))] transition-colors"><Edit3 size={12} /> Edit</button>
                       )}
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
                   {editContent !== null ? (
-                    <textarea value={editContent} onChange={e => setEditContent(e.target.value)} rows={16} className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 text-sm font-mono bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none" />
+                    <textarea value={editContent} onChange={e => setEditContent(e.target.value)} rows={16} className="w-full border border-[hsl(var(--border))] rounded-lg px-4 py-3 text-sm font-mono bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:ring-2 focus:ring-[hsl(var(--s-ok-br))] focus:border-[hsl(var(--s-ok-br))] outline-none" />
                   ) : (
-                    <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap font-mono">{sel.content}</div>
+                    <div className="bg-[hsl(var(--bg-muted))] rounded-lg p-4 text-sm text-[hsl(var(--text-2))] leading-relaxed whitespace-pre-wrap font-mono">{sel.content}</div>
                   )}
                 </CardContent>
               </>
             ) : (
-              <CardContent className="p-10 text-center text-slate-400 dark:text-slate-500">
+              <CardContent className="p-10 text-center text-[hsl(var(--text-4))]">
                 <FileText size={32} className="mx-auto mb-2 opacity-50" />
                 <p className="text-sm">Select a policy to view</p>
               </CardContent>

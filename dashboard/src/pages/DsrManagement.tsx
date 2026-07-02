@@ -145,7 +145,7 @@ export default function DsrManagement() {
             <button onClick={() => exportCsv(records, 'dsr-requests.csv')} className="flex items-center gap-1.5 px-3 py-1.5 border border-[hsl(var(--border))] text-xs text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-raised))]">
               <Export size={13} /> Export
             </button>
-            <button onClick={() => { setForm(BLANK); setShowCreate(true) }} className="flex items-center gap-1.5 px-3 py-1.5 bg-[hsl(var(--brand))] text-white text-xs hover:bg-[hsl(var(--brand-hover))]">
+            <button onClick={() => { setForm(BLANK); setShowCreate(true) }} className="flex items-center gap-1.5 px-3 py-1.5 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-xs hover:bg-[hsl(var(--brand-hover))]">
               <Plus size={13} weight="bold" /> New DSR
             </button>
           </div>
@@ -359,7 +359,7 @@ export default function DsrManagement() {
                             await saveDsrRequests({ ...selected, status: 'Completed' })
                             setSelected(prev => prev ? { ...prev, status: 'Completed' } : null)
                             toast.success('DSR marked as completed')
-                          }} className="w-full flex items-center gap-2 p-3 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90">
+                          }} className="w-full flex items-center gap-2 p-3 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90">
                             <CheckCircle size={16} /> Mark as Completed
                           </button>
                         )}
@@ -415,7 +415,7 @@ export default function DsrManagement() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={handleEdit} className="flex-1 py-2 bg-[hsl(var(--brand))] text-white text-sm">Save Changes</button>
+                    <button onClick={handleEdit} className="flex-1 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm">Save Changes</button>
                     <button onClick={() => setEditMode(false)} className="px-4 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))]">Cancel</button>
                   </div>
                 </>
@@ -491,7 +491,7 @@ export default function DsrManagement() {
               </div>
             </div>
             <div className="flex gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
-              <button onClick={handleCreate} className="flex-1 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium">Create DSR</button>
+              <button onClick={handleCreate} className="flex-1 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium">Create DSR</button>
               <button onClick={() => setShowCreate(false)} className="px-4 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))]">Cancel</button>
             </div>
           </div>
@@ -507,7 +507,7 @@ export default function DsrManagement() {
             <h3 className="font-semibold text-[hsl(var(--text-1))] mb-1">Delete DSR Request?</h3>
             <p className="text-sm text-[hsl(var(--text-3))] mb-4">This action cannot be undone. The request record will be permanently removed.</p>
             <div className="flex gap-2">
-              <button onClick={() => handleDelete(deleteTarget)} className="flex-1 py-2 bg-[hsl(var(--destructive))] text-white text-sm">Delete</button>
+              <button onClick={() => handleDelete(deleteTarget)} className="flex-1 py-2 bg-[hsl(var(--destructive))] text-[hsl(var(--bg-surface))] text-sm">Delete</button>
               <button onClick={() => setDeleteTarget(null)} className="flex-1 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))]">Cancel</button>
             </div>
           </div>

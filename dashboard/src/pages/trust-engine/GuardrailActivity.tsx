@@ -309,9 +309,9 @@ export default function GuardrailActivity() {
 
         {/* Metrics */}
         <div className="grid grid-cols-4 gap-4">
-          <MetricTile label="Total Events" value={String(events.length)} variant="info" icon={<Lightning size={16} weight="fill" className="text-blue-600 dark:text-blue-400" />} />
+          <MetricTile label="Total Events" value={String(events.length)} variant="info" icon={<Lightning size={16} weight="fill" className="text-[hsl(var(--s-in-tx))]" />} />
           <MetricTile label="Blocked" value={String(blockedCount)} variant="error" icon={<Warning size={16} weight="fill" className="text-destructive" />} />
-          <MetricTile label="Avg Latency" value={`${avgLatency}ms`} variant="ok" icon={<Clock size={16} className="text-green-600 dark:text-green-400" />} />
+          <MetricTile label="Avg Latency" value={`${avgLatency}ms`} variant="ok" icon={<Clock size={16} className="text-[hsl(var(--s-ok-tx))]" />} />
           <MetricTile label="Acknowledged" value={`${ackedCount}/${events.length}`} variant={ackedCount === events.length ? 'ok' : 'warn'} icon={<CheckCircle size={16} weight="fill" style={{ color: ackedCount === events.length ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))' }} />} />
         </div>
 
@@ -608,7 +608,7 @@ export default function GuardrailActivity() {
                             </Button>
                             {!ev.acknowledged && (
                               <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => { setAckTarget(ev); setAckForm({ assignee: '', note: '', rootCause: '', linkedIncident: '' }); }}>
-                                <span className="text-xs text-green-600 dark:text-green-400">Ack</span>
+                                <span className="text-xs text-[hsl(var(--s-ok-tx))]">Ack</span>
                               </Button>
                             )}
                             {escalatedMap[ev.id] ? (
@@ -625,7 +625,7 @@ export default function GuardrailActivity() {
                               </Button>
                             )}
                             <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => { setSelectedEvent(ev); setSheetOpen(true); }}>
-                              <span className="text-xs text-blue-600 dark:text-blue-400">Rule</span>
+                              <span className="text-xs text-[hsl(var(--s-in-tx))]">Rule</span>
                             </Button>
                           </div>
                         </td>

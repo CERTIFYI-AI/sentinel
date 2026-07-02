@@ -26,7 +26,7 @@ export default function Overview() {
       {/* Stats Row */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="p-4 border-[hsl(var(--border))] bg-surface-1 rounded-none flex items-center gap-4">
-          <div className="p-3 bg-[hsl(var(--brand))] text-white">
+          <div className="p-3 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))]">
             <Robot size={24} />
           </div>
           <div>
@@ -35,7 +35,7 @@ export default function Overview() {
           </div>
         </Card>
         <Card className="p-4 border-[hsl(var(--border))] bg-surface-1 rounded-none flex items-center gap-4">
-          <div className="p-3 bg-emerald-500 text-white">
+          <div className="p-3 bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))]">
             <Database size={24} />
           </div>
           <div>
@@ -44,7 +44,7 @@ export default function Overview() {
           </div>
         </Card>
         <Card className="p-4 border-[hsl(var(--border))] bg-surface-1 rounded-none flex items-center gap-4">
-          <div className="p-3 bg-blue-500 text-white">
+          <div className="p-3 bg-[hsl(var(--s-in-tx))] text-[hsl(var(--bg-surface))]">
             <ArrowsLeftRight size={24} />
           </div>
           <div>
@@ -53,7 +53,7 @@ export default function Overview() {
           </div>
         </Card>
         <Card className="p-4 border-[hsl(var(--border))] bg-surface-1 rounded-none flex items-center gap-4">
-          <div className="p-3 bg-orange-500 text-white">
+          <div className="p-3 bg-[hsl(var(--s-wn-tx))] text-[hsl(var(--bg-surface))]">
             <ShieldCheck size={24} />
           </div>
           <div>
@@ -80,20 +80,20 @@ export default function Overview() {
               <div className="w-1/4 space-y-4">
                 <h4 className="text-xs font-mono text-[hsl(var(--text-2))] uppercase text-center mb-4">1. AI Agents</h4>
                 <div className="p-4 bg-surface-1 border border-[hsl(var(--border))] text-center">
-                  <Robot size={32} className="mx-auto mb-2 text-zinc-400" />
+                  <Robot size={32} className="mx-auto mb-2 text-[hsl(var(--text-4))]" />
                   <p className="text-sm font-medium">Customer Support Bot</p>
-                  <Badge className="mt-2 bg-blue-500/10 text-blue-500 border-0 rounded-none text-[10px]">READ-ONLY</Badge>
+                  <Badge className="mt-2 bg-[hsl(var(--s-in-tx))] text-[hsl(var(--s-in-tx))] border-0 rounded-none text-[10px]">READ-ONLY</Badge>
                 </div>
                 <div className="p-4 bg-surface-1 border border-[hsl(var(--border))] text-center">
-                  <Robot size={32} className="mx-auto mb-2 text-zinc-400" />
+                  <Robot size={32} className="mx-auto mb-2 text-[hsl(var(--text-4))]" />
                   <p className="text-sm font-medium">Data Analyst Agent</p>
-                  <Badge className="mt-2 bg-red-500/10 text-red-500 border-0 rounded-none text-[10px]">HIGH PRIVILEGE</Badge>
+                  <Badge className="mt-2 bg-[hsl(var(--s-er-tx))] text-[hsl(var(--s-er-tx))] border-0 rounded-none text-[10px]">HIGH PRIVILEGE</Badge>
                 </div>
               </div>
 
               {/* Middle: Gateway */}
               <div className="w-1/3 z-20">
-                <div className="p-6 bg-[hsl(var(--brand))] text-white shadow-xl relative text-center">
+                <div className="p-6 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] shadow-xl relative text-center">
                   <h2 className="text-xl font-bold mb-1">Sentinel MCP Gateway</h2>
                   <p className="text-xs opacity-80 mb-6">Centralized Routing & Zero-Trust</p>
                   
@@ -109,14 +109,14 @@ export default function Overview() {
               <div className="w-1/4 space-y-4">
                 <h4 className="text-xs font-mono text-[hsl(var(--text-2))] uppercase text-center mb-4">3. Enterprise Backends</h4>
                 <div className="p-4 bg-surface-1 border border-[hsl(var(--border))] text-center">
-                  <Database size={32} className="mx-auto mb-2 text-zinc-400" />
+                  <Database size={32} className="mx-auto mb-2 text-[hsl(var(--text-4))]" />
                   <p className="text-sm font-medium">CRM Database</p>
-                  <Badge className="mt-2 bg-zinc-500/10 text-zinc-400 border-0 rounded-none text-[10px]">MCP v1.2</Badge>
+                  <Badge className="mt-2 bg-[hsl(var(--bg-muted))]0/10 text-[hsl(var(--text-4))] border-0 rounded-none text-[10px]">MCP v1.2</Badge>
                 </div>
                 <div className="p-4 bg-surface-1 border border-[hsl(var(--border))] text-center">
-                  <Database size={32} className="mx-auto mb-2 text-zinc-400" />
+                  <Database size={32} className="mx-auto mb-2 text-[hsl(var(--text-4))]" />
                   <p className="text-sm font-medium">Internal Wiki API</p>
-                  <Badge className="mt-2 bg-zinc-500/10 text-zinc-400 border-0 rounded-none text-[10px]">MCP v1.2</Badge>
+                  <Badge className="mt-2 bg-[hsl(var(--bg-muted))]0/10 text-[hsl(var(--text-4))] border-0 rounded-none text-[10px]">MCP v1.2</Badge>
                 </div>
               </div>
 

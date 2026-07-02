@@ -255,44 +255,44 @@ const TRAIL_ENTRIES: TrailEntry[] = [
 ];
 
 const ACTION_STYLES: Record<ActionType, string> = {
-  Created: 'bg-emerald-500/15 text-emerald-400',
-  Updated: 'bg-blue-500/15 text-blue-400',
-  Modified: 'bg-blue-500/15 text-blue-400',
-  Approved: 'bg-emerald-500/15 text-emerald-400',
-  Rejected: 'bg-red-500/15 text-red-400',
-  Deleted: 'bg-red-500/15 text-red-400',
-  Triggered: 'bg-purple-500/15 text-purple-400',
-  Uploaded: 'bg-cyan-500/15 text-cyan-400',
-  Escalated: 'bg-orange-500/15 text-orange-400',
-  Deployed: 'bg-indigo-500/15 text-indigo-400',
-  Revoked: 'bg-red-500/15 text-red-400',
-  Accessed: 'bg-yellow-500/15 text-yellow-500',
-  Exported: 'bg-cyan-500/15 text-cyan-400',
-  Signed: 'bg-teal-500/15 text-teal-400',
+  Created: 'bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--s-ok-tx))]',
+  Updated: 'bg-[hsl(var(--s-in-tx))] text-[hsl(var(--s-in-tx))]',
+  Modified: 'bg-[hsl(var(--s-in-tx))] text-[hsl(var(--s-in-tx))]',
+  Approved: 'bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--s-ok-tx))]',
+  Rejected: 'bg-[hsl(var(--s-er-tx))] text-[hsl(var(--s-er-tx))]',
+  Deleted: 'bg-[hsl(var(--s-er-tx))] text-[hsl(var(--s-er-tx))]',
+  Triggered: 'bg-[hsl(var(--tag-purple-bg))] text-[hsl(var(--tag-purple))]',
+  Uploaded: 'bg-[hsl(var(--s-in-tx))] text-[hsl(var(--s-in-tx))]',
+  Escalated: 'bg-[hsl(var(--s-wn-tx))] text-[hsl(var(--s-wn-tx))]',
+  Deployed: 'bg-[hsl(var(--s-in-tx))] text-[hsl(var(--s-in-tx))]',
+  Revoked: 'bg-[hsl(var(--s-er-tx))] text-[hsl(var(--s-er-tx))]',
+  Accessed: 'bg-[hsl(var(--s-wn-tx))] text-[hsl(var(--s-wn-tx))]',
+  Exported: 'bg-[hsl(var(--s-in-tx))] text-[hsl(var(--s-in-tx))]',
+  Signed: 'bg-[hsl(var(--s-in-bg))] text-[hsl(var(--s-in-tx))]',
 };
 
 const CATEGORY_STYLES: Record<CategoryType, string> = {
-  model: 'bg-blue-500/15 text-blue-400',
-  bias_audit: 'bg-purple-500/15 text-purple-400',
-  policy: 'bg-emerald-500/15 text-emerald-400',
-  risk: 'bg-red-500/15 text-red-400',
-  evidence: 'bg-cyan-500/15 text-cyan-400',
-  control: 'bg-amber-500/15 text-amber-400',
-  vendor: 'bg-orange-500/15 text-orange-400',
-  incident: 'bg-red-500/15 text-red-400',
-  access: 'bg-violet-500/15 text-violet-400',
-  data: 'bg-sky-500/15 text-sky-400',
-  security: 'bg-rose-500/15 text-rose-400',
-  audit: 'bg-teal-500/15 text-teal-400',
+  model: 'bg-[hsl(var(--s-in-tx))] text-[hsl(var(--s-in-tx))]',
+  bias_audit: 'bg-[hsl(var(--tag-purple-bg))] text-[hsl(var(--tag-purple))]',
+  policy: 'bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--s-ok-tx))]',
+  risk: 'bg-[hsl(var(--s-er-tx))] text-[hsl(var(--s-er-tx))]',
+  evidence: 'bg-[hsl(var(--s-in-tx))] text-[hsl(var(--s-in-tx))]',
+  control: 'bg-[hsl(var(--s-wn-tx))] text-[hsl(var(--s-wn-tx))]',
+  vendor: 'bg-[hsl(var(--s-wn-tx))] text-[hsl(var(--s-wn-tx))]',
+  incident: 'bg-[hsl(var(--s-er-tx))] text-[hsl(var(--s-er-tx))]',
+  access: 'bg-[hsl(var(--tag-purple-bg))] text-[hsl(var(--tag-purple))]',
+  data: 'bg-[hsl(var(--s-in-tx))] text-[hsl(var(--s-in-tx))]',
+  security: 'bg-[hsl(var(--s-er-tx))] text-[hsl(var(--s-er-tx))]',
+  audit: 'bg-[hsl(var(--s-in-bg))] text-[hsl(var(--s-in-tx))]',
 };
 
 const OUTCOME_STYLES: Record<OutcomeType, { bg: string; text: string; icon: React.ElementType }> = {
-  Success: { bg: 'bg-emerald-500/15', text: 'text-emerald-400', icon: CheckCircle },
-  Failure: { bg: 'bg-red-500/15', text: 'text-red-400', icon: XCircle },
-  Partial: { bg: 'bg-amber-500/15', text: 'text-amber-400', icon: ArrowsClockwise },
-  Pending: { bg: 'bg-blue-500/15', text: 'text-blue-400', icon: ArrowsClockwise },
+  Success: { bg: 'bg-[hsl(var(--s-ok-tx))]', text: 'text-[hsl(var(--s-ok-tx))]', icon: CheckCircle },
+  Failure: { bg: 'bg-[hsl(var(--s-er-tx))]', text: 'text-[hsl(var(--s-er-tx))]', icon: XCircle },
+  Partial: { bg: 'bg-[hsl(var(--s-wn-tx))]', text: 'text-[hsl(var(--s-wn-tx))]', icon: ArrowsClockwise },
+  Pending: { bg: 'bg-[hsl(var(--s-in-tx))]', text: 'text-[hsl(var(--s-in-tx))]', icon: ArrowsClockwise },
 };
-const OUTCOME_FALLBACK = { bg: 'bg-zinc-500/15', text: 'text-zinc-400', icon: ArrowsClockwise } as const;
+const OUTCOME_FALLBACK = { bg: 'bg-[hsl(var(--bg-muted))]0/15', text: 'text-[hsl(var(--text-4))]', icon: ArrowsClockwise } as const;
 const outcomeStyle = (o: string) => OUTCOME_STYLES[o as OutcomeType] ?? OUTCOME_FALLBACK;
 
 const CATEGORY_ICON: Record<CategoryType, React.ElementType> = {
@@ -356,7 +356,7 @@ export default function AuditTrail() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <ClockCounterClockwise className="w-7 h-7 text-emerald-400" />
+            <ClockCounterClockwise className="w-7 h-7 text-[hsl(var(--s-ok-tx))]" />
             Audit Trail
           </h1>
           <p className="text-sm text-[hsl(var(--text-4))] mt-1">
@@ -379,21 +379,21 @@ export default function AuditTrail() {
         <Card>
           <CardContent className="pt-4">
             <p className="text-xs font-semibold uppercase tracking-wider text-[hsl(var(--text-4))]">Today</p>
-            <p className="text-3xl font-bold mt-1 text-blue-400">{stats.today}</p>
+            <p className="text-3xl font-bold mt-1 text-[hsl(var(--s-in-tx))]">{stats.today}</p>
             <p className="text-xs text-[hsl(var(--text-4))] mt-1">Apr 12, 2026</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4">
             <p className="text-xs font-semibold uppercase tracking-wider text-[hsl(var(--text-4))]">Active Users</p>
-            <p className="text-3xl font-bold mt-1 text-emerald-400">{stats.users}</p>
+            <p className="text-3xl font-bold mt-1 text-[hsl(var(--s-ok-tx))]">{stats.users}</p>
             <p className="text-xs text-[hsl(var(--text-4))] mt-1">Human actors</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4">
             <p className="text-xs font-semibold uppercase tracking-wider text-[hsl(var(--text-4))]">Failures</p>
-            <p className="text-3xl font-bold mt-1 text-red-400">{stats.failures}</p>
+            <p className="text-3xl font-bold mt-1 text-[hsl(var(--s-er-tx))]">{stats.failures}</p>
             <p className="text-xs text-[hsl(var(--text-4))] mt-1">Require review</p>
           </CardContent>
         </Card>
@@ -601,9 +601,9 @@ export default function AuditTrail() {
                       <div key={i} className="p-2.5 text-xs" style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-raised))' }}>
                         <p className="font-mono font-semibold text-[hsl(var(--text-3))] mb-1">{c.field}</p>
                         <div className="flex items-center gap-2">
-                          <span className="px-1.5 py-0.5 font-mono text-red-400 bg-red-500/10">{c.from || '—'}</span>
+                          <span className="px-1.5 py-0.5 font-mono text-[hsl(var(--s-er-tx))] bg-[hsl(var(--s-er-tx))]">{c.from || '—'}</span>
                           <span className="text-[hsl(var(--text-4))]">→</span>
-                          <span className="px-1.5 py-0.5 font-mono text-emerald-400 bg-emerald-500/10">{c.to}</span>
+                          <span className="px-1.5 py-0.5 font-mono text-[hsl(var(--s-ok-tx))] bg-[hsl(var(--s-ok-tx))]">{c.to}</span>
                         </div>
                       </div>
                     ))}

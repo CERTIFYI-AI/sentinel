@@ -153,7 +153,7 @@ export default function AgentDiscovery() {
                     <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))] whitespace-nowrap">{item.lastSeen?.slice(0,10)}</td>
                     <td className="px-3 py-2.5"><StatusBadge status={item.riskScore} /></td>
                     <td className="px-3 py-2.5">
-                      <span className={`text-xs px-2 py-0.5 ${item.enabled ? "text-green-600 bg-green-50" : "text-gray-400 bg-gray-100"}`}>
+                      <span className={`text-xs px-2 py-0.5 ${item.enabled ? "text-[hsl(var(--s-ok-tx))] bg-[hsl(var(--s-ok-bg))]" : "text-[hsl(var(--text-4))] bg-[hsl(var(--bg-muted))]"}`}>
                         {item.enabled ? "Enabled" : "Disabled"}
                       </span>
                     </td>
@@ -161,7 +161,7 @@ export default function AgentDiscovery() {
                       <div className="flex items-center justify-end gap-1">
                         <button onClick={() => { setViewItem(item); setModal("view"); }} className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"><Eye size={14} /></button>
                         <button onClick={() => openEdit(item)} className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"><PencilSimple size={14} /></button>
-                        <button onClick={() => setDeleteTarget(item)} className="p-1.5 hover:bg-red-50 text-[hsl(0_72%_51%)]"><Trash size={14} /></button>
+                        <button onClick={() => setDeleteTarget(item)} className="p-1.5 hover:bg-[hsl(var(--s-er-bg))] text-[hsl(0_72%_51%)]"><Trash size={14} /></button>
                       </div>
                     </td>
                   </tr>
@@ -214,7 +214,7 @@ export default function AgentDiscovery() {
                 <StatusBadge status={viewItem.status} />
                 <StatusBadge status={viewItem.riskScore} />
                 <span className="text-xs px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))]">{viewItem.type}</span>
-                {viewItem.enabled ? <span className="text-xs text-green-600 px-1.5 py-0.5 bg-green-50 border border-green-200">Enabled</span> : <span className="text-xs text-gray-500 px-1.5 py-0.5 bg-gray-100 border border-gray-200">Disabled</span>}
+                {viewItem.enabled ? <span className="text-xs text-[hsl(var(--s-ok-tx))] px-1.5 py-0.5 bg-[hsl(var(--s-ok-bg))] border border-[hsl(var(--s-ok-br))]">Enabled</span> : <span className="text-xs text-[hsl(var(--text-3))] px-1.5 py-0.5 bg-[hsl(var(--bg-muted))] border border-[hsl(var(--border))]">Disabled</span>}
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 {[["Auth Method",viewItem.authMethod],["Discovery Method",viewItem.discoveryMethod],["Owner Team",viewItem.ownerTeam],["Scan Frequency",viewItem.scanFreq],["Last Seen",viewItem.lastSeen?.slice(0,16)]].map(([k,v])=>(
@@ -226,7 +226,7 @@ export default function AgentDiscovery() {
               <div>
                 <p className="text-xs text-[hsl(var(--text-4))] mb-1.5 font-semibold uppercase tracking-wider">Connection Health</p>
                 <div className="flex items-center gap-4 p-3 bg-raised border border-[hsl(var(--border))]">
-                  <WifiHigh size={20} className={viewItem.enabled ? "text-green-500" : "text-gray-400"} />
+                  <WifiHigh size={20} className={viewItem.enabled ? "text-[hsl(var(--s-ok-tx))]" : "text-[hsl(var(--text-4))]"} />
                   <div>
                     <p className="text-sm font-medium text-[hsl(var(--text-1))]">{viewItem.enabled ? "Connected & Reachable" : "Monitoring Paused"}</p>
                     <p className="text-xs text-[hsl(var(--text-3))]">Last ping: {viewItem.lastSeen?.slice(0,16)}</p>

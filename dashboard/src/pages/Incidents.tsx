@@ -169,8 +169,8 @@ export default function Incidents() {
                       <p className="font-medium text-[hsl(var(--text-1))] line-clamp-1">{item.title}</p>
                       <div className="flex items-center gap-2 mt-0.5">
                         <p className="text-xs text-[hsl(var(--text-4))] font-mono">{item.id}</p>
-                        {item.regulatoryNotification&&<span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-1">Regulatory</span>}
-                        {item.dataBreachInvolved&&<span className="text-xs text-red-600 bg-red-50 border border-red-200 px-1">Breach</span>}
+                        {item.regulatoryNotification&&<span className="text-xs text-[hsl(var(--s-wn-tx))] bg-[hsl(var(--s-wn-bg))] border border-[hsl(var(--s-wn-br))] px-1">Regulatory</span>}
+                        {item.dataBreachInvolved&&<span className="text-xs text-[hsl(var(--s-er-tx))] bg-[hsl(var(--s-er-bg))] border border-[hsl(var(--s-er-br))] px-1">Breach</span>}
                       </div>
                     </td>
                     <td className="px-3 py-2.5"><span className="text-xs px-1.5 py-0.5 font-medium border" style={{ color:SEV_COLORS[item.severity], borderColor:`${SEV_COLORS[item.severity]}40`, background:`${SEV_COLORS[item.severity]}12` }}>{item.severity}</span></td>
@@ -183,7 +183,7 @@ export default function Incidents() {
                       <div className="flex items-center justify-end gap-1">
                         <button onClick={() => { setViewItem(item); setModal("view"); }} className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"><Eye size={14} /></button>
                         <button onClick={() => openEdit(item)} className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"><PencilSimple size={14} /></button>
-                        <button onClick={() => setDeleteTarget(item)} className="p-1.5 hover:bg-red-50 text-[hsl(0_72%_51%)]"><Trash size={14} /></button>
+                        <button onClick={() => setDeleteTarget(item)} className="p-1.5 hover:bg-[hsl(var(--s-er-bg))] text-[hsl(0_72%_51%)]"><Trash size={14} /></button>
                       </div>
                     </td>
                   </tr>
@@ -240,8 +240,8 @@ export default function Incidents() {
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs px-1.5 py-0.5 font-medium border" style={{ color:SEV_COLORS[viewItem.severity], borderColor:`${SEV_COLORS[viewItem.severity]}40`, background:`${SEV_COLORS[viewItem.severity]}12` }}>{viewItem.severity}</span>
                 <StatusBadge status={viewItem.status} />
-                {viewItem.regulatoryNotification&&<span className="text-xs px-1.5 py-0.5 bg-amber-50 text-amber-700 border border-amber-200">Regulatory Notification</span>}
-                {viewItem.dataBreachInvolved&&<span className="text-xs px-1.5 py-0.5 bg-red-50 text-red-700 border border-red-200">Data Breach</span>}
+                {viewItem.regulatoryNotification&&<span className="text-xs px-1.5 py-0.5 bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))] border border-[hsl(var(--s-wn-br))]">Regulatory Notification</span>}
+                {viewItem.dataBreachInvolved&&<span className="text-xs px-1.5 py-0.5 bg-[hsl(var(--s-er-bg))] text-[hsl(var(--s-er-tx))] border border-[hsl(var(--s-er-br))]">Data Breach</span>}
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 {[["Type",viewItem.type],["AI System",viewItem.aiSystem],["Business Impact",viewItem.businessImpact],["Reported By",viewItem.reportedBy],["Date Occurred",viewItem.dateOccurred?.slice(0,16)],["MTTR",viewItem.mttr||"—"],["Affected Users",viewItem.affectedUsers],["CVSS Score",viewItem.cvssScore||"—"]].map(([k,v])=>(

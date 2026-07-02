@@ -20,10 +20,10 @@ const REVIEWERS = ["Dr. Sarah Chen","Alex Kumar","James Wilson","Emma Rodriguez"
 const AI_SYSTEMS_LIST = ["GPT-4o Risk Scorer v2","Fraud Detection v3","HR Screening Model","NLP Classifier","Customer Support Orchestrator","Credit Scoring Engine","Bias Monitoring System"];
 
 const PRIV_COLORS: Record<string,string> = {
-  "Admin": "bg-red-100 text-red-700",
-  "Operator": "bg-amber-100 text-amber-700",
-  "Viewer": "bg-blue-100 text-blue-700",
-  "No Access": "bg-gray-100 text-gray-500",
+  "Admin": "bg-[hsl(var(--s-er-bg))] text-[hsl(var(--s-er-tx))]",
+  "Operator": "bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))]",
+  "Viewer": "bg-[hsl(var(--s-in-bg))] text-[hsl(var(--s-in-tx))]",
+  "No Access": "bg-[hsl(var(--bg-muted))] text-[hsl(var(--text-3))]",
 };
 
 const SEED: any[] = [
@@ -189,7 +189,7 @@ export default function IGA() {
                 <tr key={item.id} onClick={() => { setViewItem(item); setModal("view"); }} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/.4)] cursor-pointer transition-colors">
                   <td className="px-4 py-3" onClick={e => e.stopPropagation()}><input type="checkbox" checked={bulk.includes(item.id)} onChange={() => toggleBulk(item.id)} className="rounded" /></td>
                   <td className="px-4 py-3">
-                    <div className="font-medium text-[hsl(var(--text-1))]">{item.name}{item.riskFlags?.length > 0 && <Warning size={12} className="text-red-500 inline ml-1" weight="fill" />}</div>
+                    <div className="font-medium text-[hsl(var(--text-1))]">{item.name}{item.riskFlags?.length > 0 && <Warning size={12} className="text-[hsl(var(--s-er-tx))] inline ml-1" weight="fill" />}</div>
                     <div className="text-xs text-[hsl(var(--text-3))]">{item.email}</div>
                   </td>
                   <td className="px-4 py-3"><span className="inline-flex px-2 py-0.5 rounded-full text-xs bg-[hsl(var(--muted))] text-[hsl(var(--text-2))]">{item.type}</span></td>
@@ -206,7 +206,7 @@ export default function IGA() {
                     <div className="flex justify-end gap-1">
                       <Button variant="ghost" size="sm" onClick={() => { setViewItem(item); setModal("view"); }}><Eye size={14} /></Button>
                       <Button variant="ghost" size="sm" onClick={() => openEdit(item)}><PencilSimple size={14} /></Button>
-                      <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(item)} className="text-red-500"><Trash size={14} /></Button>
+                      <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(item)} className="text-[hsl(var(--s-er-tx))]"><Trash size={14} /></Button>
                     </div>
                   </td>
                 </tr>
@@ -309,9 +309,9 @@ export default function IGA() {
             { label:"Status", value: <StatusBadge status={viewItem.status} /> },
           ]} />
           {viewItem.riskFlags?.length > 0 && (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
-              <div className="flex items-center gap-2 mb-1"><Warning size={16} className="text-red-600" weight="fill" /><span className="text-sm font-semibold text-red-700">Risk Indicators</span></div>
-              {viewItem.riskFlags.map((f: string) => <div key={f} className="text-xs text-red-600 ml-6">• {f}</div>)}
+            <div className="rounded-xl border border-[hsl(var(--s-er-br))] bg-[hsl(var(--s-er-bg))] px-4 py-3">
+              <div className="flex items-center gap-2 mb-1"><Warning size={16} className="text-[hsl(var(--s-er-tx))]" weight="fill" /><span className="text-sm font-semibold text-[hsl(var(--s-er-tx))]">Risk Indicators</span></div>
+              {viewItem.riskFlags.map((f: string) => <div key={f} className="text-xs text-[hsl(var(--s-er-tx))] ml-6">• {f}</div>)}
             </div>
           )}
           <FormSection title="Identity Profile">
@@ -325,7 +325,7 @@ export default function IGA() {
           <FormSection title="AI Systems Access">
             <div className="flex flex-wrap gap-1">
               {(viewItem.aiSystemsAccess||[]).map((s: string) => (
-                <span key={s} className="inline-flex px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700">{s}</span>
+                <span key={s} className="inline-flex px-2 py-0.5 rounded-full text-xs bg-[hsl(var(--s-in-bg))] text-[hsl(var(--s-in-tx))]">{s}</span>
               ))}
             </div>
           </FormSection>
@@ -340,8 +340,8 @@ export default function IGA() {
                   <div className="text-xs text-[hsl(var(--text-3))]">Granted: {ent.granted} by {ent.grantedBy}</div>
                   <div className="text-xs text-[hsl(var(--text-2))] mt-0.5">{ent.justification}</div>
                   <div className="flex gap-2 mt-2">
-                    <Button size="sm" variant="outline" className="h-6 text-xs text-green-600" onClick={() => toast.success("Access approved")}><CheckCircle size={10} />Approve</Button>
-                    <Button size="sm" variant="outline" className="h-6 text-xs text-red-600" onClick={() => toast.success("Access revoked")}><XCircle size={10} />Revoke</Button>
+                    <Button size="sm" variant="outline" className="h-6 text-xs text-[hsl(var(--s-ok-tx))]" onClick={() => toast.success("Access approved")}><CheckCircle size={10} />Approve</Button>
+                    <Button size="sm" variant="outline" className="h-6 text-xs text-[hsl(var(--s-er-tx))]" onClick={() => toast.success("Access revoked")}><XCircle size={10} />Revoke</Button>
                   </div>
                 </div>
               ))}

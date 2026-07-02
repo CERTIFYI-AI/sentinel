@@ -287,7 +287,7 @@ export default function ComplianceControls() {
                         </button>
                         <button
                           onClick={() => setDeleteTarget(item)}
-                          className="p-1.5 hover:bg-red-50 text-[hsl(0_72%_51%)]"
+                          className="p-1.5 hover:bg-[hsl(var(--s-er-bg))] text-[hsl(0_72%_51%)]"
                         >
                           <Trash size={14} />
                         </button>

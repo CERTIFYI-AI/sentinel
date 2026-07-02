@@ -176,16 +176,16 @@ export default function RoPA() {
                 <td className="px-4 py-3 font-medium text-[hsl(var(--text-1))] max-w-[180px] truncate">{item.name}</td>
                 <td className="px-4 py-3"><span className="inline-flex px-2 py-0.5 rounded-full text-xs bg-[hsl(var(--muted))] text-[hsl(var(--text-2))]">{item.legalBasis.split(" ")[0] + " " + (item.legalBasis.split(" ")[1]||"")}</span></td>
                 <td className="px-4 py-3 text-[hsl(var(--text-2))] text-xs">{(item.dataSubjects||[]).slice(0,2).join(", ")}{item.dataSubjects?.length > 2 ? ` +${item.dataSubjects.length-2}` : ""}</td>
-                <td className="px-4 py-3">{item.internationalTransfer ? <span className="text-xs text-amber-600 font-medium flex items-center gap-1"><Warning size={12} />Yes — {item.transferDest}</span> : <span className="text-xs text-[hsl(var(--text-3))]">No</span>}</td>
+                <td className="px-4 py-3">{item.internationalTransfer ? <span className="text-xs text-[hsl(var(--s-wn-tx))] font-medium flex items-center gap-1"><Warning size={12} />Yes — {item.transferDest}</span> : <span className="text-xs text-[hsl(var(--text-3))]">No</span>}</td>
                 <td className="px-4 py-3 text-[hsl(var(--text-2))] text-xs max-w-[120px] truncate">{item.retentionPeriod}</td>
-                <td className="px-4 py-3"><span className="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold text-white" style={{ background: RISK_COLOR[item.riskLevel]||"#888" }}>{item.riskLevel}</span></td>
+                <td className="px-4 py-3"><span className="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold text-[hsl(var(--bg-surface))]" style={{ background: RISK_COLOR[item.riskLevel]||"#888" }}>{item.riskLevel}</span></td>
                 <td className="px-4 py-3"><StatusBadge status={item.status} /></td>
                 <td className="px-4 py-3 text-[hsl(var(--text-2))] text-xs">{item.owner}</td>
                 <td className="px-4 py-3 text-right" onClick={e => e.stopPropagation()}>
                   <div className="flex justify-end gap-1">
                     <Button variant="ghost" size="sm" onClick={() => { setViewItem(item); setModal("view"); }}><Eye size={14} /></Button>
                     <Button variant="ghost" size="sm" onClick={() => openEdit(item)}><PencilSimple size={14} /></Button>
-                    <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(item)} className="text-red-500 hover:text-red-600"><Trash size={14} /></Button>
+                    <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(item)} className="text-[hsl(var(--s-er-tx))] hover:text-[hsl(var(--s-er-tx))]"><Trash size={14} /></Button>
                   </div>
                 </td>
               </tr>
@@ -250,26 +250,26 @@ export default function RoPA() {
               <div><span className="text-[hsl(var(--text-3))]">Purpose:</span> <span className="text-[hsl(var(--text-1))]">{viewItem.purpose}</span></div>
               <div><span className="text-[hsl(var(--text-3))]">Legal Basis:</span> <span className="inline-flex px-2 py-0.5 rounded-full text-xs bg-[hsl(var(--muted))] text-[hsl(var(--text-2))] ml-1">{viewItem.legalBasis}</span></div>
               <div><span className="text-[hsl(var(--text-3))]">Retention:</span> <span className="text-[hsl(var(--text-1))]"> {viewItem.retentionPeriod}</span></div>
-              <div><span className="text-[hsl(var(--text-3))]">DPIA Required:</span> <span className={`ml-1 font-semibold ${viewItem.dpiaRequired ? "text-amber-500" : "text-green-500"}`}>{viewItem.dpiaRequired ? "Yes" : "No"}</span></div>
+              <div><span className="text-[hsl(var(--text-3))]">DPIA Required:</span> <span className={`ml-1 font-semibold ${viewItem.dpiaRequired ? "text-[hsl(var(--s-wn-tx))]" : "text-[hsl(var(--s-ok-tx))]"}`}>{viewItem.dpiaRequired ? "Yes" : "No"}</span></div>
             </div>
           </FormSection>
           <FormSection title="Data Subjects & Categories">
             <div className="space-y-2 text-sm">
-              <div><span className="text-[hsl(var(--text-3))]">Data Subjects:</span><div className="flex flex-wrap gap-1 mt-1">{(viewItem.dataSubjects||[]).map((s:string) => <span key={s} className="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700">{s}</span>)}</div></div>
-              <div><span className="text-[hsl(var(--text-3))]">Data Categories:</span><div className="flex flex-wrap gap-1 mt-1">{(viewItem.dataCategories||[]).map((c:string) => <span key={c} className="px-2 py-0.5 rounded-full text-xs bg-purple-100 text-purple-700">{c}</span>)}</div></div>
+              <div><span className="text-[hsl(var(--text-3))]">Data Subjects:</span><div className="flex flex-wrap gap-1 mt-1">{(viewItem.dataSubjects||[]).map((s:string) => <span key={s} className="px-2 py-0.5 rounded-full text-xs bg-[hsl(var(--s-in-bg))] text-[hsl(var(--s-in-tx))]">{s}</span>)}</div></div>
+              <div><span className="text-[hsl(var(--text-3))]">Data Categories:</span><div className="flex flex-wrap gap-1 mt-1">{(viewItem.dataCategories||[]).map((c:string) => <span key={c} className="px-2 py-0.5 rounded-full text-xs bg-[hsl(var(--tag-purple-bg))] text-[hsl(var(--tag-purple))]">{c}</span>)}</div></div>
             </div>
           </FormSection>
           <FormSection title="Recipients & Transfers">
             <div className="space-y-2 text-sm">
               <div><span className="text-[hsl(var(--text-3))]">Recipients:</span> <span className="text-[hsl(var(--text-1))]">{viewItem.recipients}</span></div>
-              <div><span className="text-[hsl(var(--text-3))]">International Transfer:</span> <span className={`ml-1 font-semibold ${viewItem.internationalTransfer ? "text-amber-500" : "text-green-500"}`}>{viewItem.internationalTransfer ? `Yes — ${viewItem.transferDest} (${viewItem.transferMechanism})` : "No"}</span></div>
+              <div><span className="text-[hsl(var(--text-3))]">International Transfer:</span> <span className={`ml-1 font-semibold ${viewItem.internationalTransfer ? "text-[hsl(var(--s-wn-tx))]" : "text-[hsl(var(--s-ok-tx))]"}`}>{viewItem.internationalTransfer ? `Yes — ${viewItem.transferDest} (${viewItem.transferMechanism})` : "No"}</span></div>
             </div>
           </FormSection>
           <FormSection title="Technical & Org Measures">
             <div className="grid grid-cols-3 gap-2 text-sm">
               {[["Encryption", viewItem.encryption],["Access Controls", viewItem.accessControls],["Pseudonymization", viewItem.pseudonymization],["DPO Reviewed", viewItem.dpoReviewed]].map(([label, val]) => (
                 <div key={label as string} className="flex items-center gap-1.5">
-                  <CheckCircle size={14} className={val ? "text-green-500" : "text-[hsl(var(--text-3))]"} weight={val ? "fill" : "regular"} />
+                  <CheckCircle size={14} className={val ? "text-[hsl(var(--s-ok-tx))]" : "text-[hsl(var(--text-3))]"} weight={val ? "fill" : "regular"} />
                   <span className={val ? "text-[hsl(var(--text-1))]" : "text-[hsl(var(--text-3))]"}>{label as string}</span>
                 </div>
               ))}

@@ -259,10 +259,10 @@ export default function RedTeamLab() {
 
       {/* Metrics */}
       <div className="grid grid-cols-4 gap-4">
-        <MetricTile label="Total Campaigns" value={String(exercises.length)} variant="info" icon={<Sword size={16} weight="fill" className="text-blue-600 dark:text-blue-400" />} />
+        <MetricTile label="Total Campaigns" value={String(exercises.length)} variant="info" icon={<Sword size={16} weight="fill" className="text-[hsl(var(--s-in-tx))]" />} />
         <MetricTile label="Active" value={String(activeCampaigns)} variant="warn" icon={<Lightning size={16} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />} sub="In progress" />
         <MetricTile label="Critical Findings" value={String(criticalFindings)} variant="error" icon={<Fire size={16} weight="fill" className="text-destructive" />} sub="Require remediation" />
-        <MetricTile label="Mitigated Findings" value={String(mitigatedFindings)} variant="ok" icon={<CheckCircle size={16} weight="fill" className="text-green-600 dark:text-green-400" />} />
+        <MetricTile label="Mitigated Findings" value={String(mitigatedFindings)} variant="ok" icon={<CheckCircle size={16} weight="fill" className="text-[hsl(var(--s-ok-tx))]" />} />
       </div>
 
       {/* Table / Empty State */}

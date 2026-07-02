@@ -102,7 +102,7 @@ export default function EvidenceChain() {
           <button onClick={handleExportPackage} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
             <Download size={14} /> Export Evidence Package
           </button>
-          <button onClick={() => toast.success('Chain integrity verification started across all 847 blocks')} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90">
+          <button onClick={() => toast.success('Chain integrity verification started across all 847 blocks')} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm hover:opacity-90">
             <ShieldCheck size={14} /> Verify Chain Integrity
           </button>
         </div>
@@ -267,7 +267,7 @@ export default function EvidenceChain() {
                       <div className="flex items-center gap-2"><CheckCircle size={12} className="text-[hsl(142_71%_45%)]" /><span className="text-[hsl(var(--text-2))]">Actor credential: on record</span></div>
                     </div>
                   </div>
-                  <button onClick={() => handleVerify(selected)} disabled={verifying} className="w-full py-2.5 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90 disabled:opacity-60">
+                  <button onClick={() => handleVerify(selected)} disabled={verifying} className="w-full py-2.5 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90 disabled:opacity-60">
                     {verifying ? 'Verifying cryptographic chain…' : 'Run Full Verification'}
                   </button>
                   {verifyResult && (
@@ -298,7 +298,7 @@ export default function EvidenceChain() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <button onClick={handleExportPackage} className="w-full py-2.5 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90 flex items-center justify-center gap-2">
+                    <button onClick={handleExportPackage} className="w-full py-2.5 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90 flex items-center justify-center gap-2">
                       <Download size={14} /> Generate Evidence Package (ZIP)
                     </button>
                     <button onClick={() => toast.success('Shared with external auditor — access link valid for 72 hours')} className="w-full py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">

@@ -155,7 +155,7 @@ export default function DataLineage() {
           <button onClick={() => toast.success('Lineage map exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
             <Export size={14} /> Export
           </button>
-          <button onClick={openCreate} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90">
+          <button onClick={openCreate} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm hover:opacity-90">
             <Plus size={14} /> Add Dataset
           </button>
         </div>
@@ -402,7 +402,7 @@ export default function DataLineage() {
               <button onClick={() => openEdit(selected)} className="flex-1 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised flex items-center justify-center gap-1.5">
                 <Pencil size={13} /> Edit
               </button>
-              <button onClick={() => toast.success(`Lineage for ${selected.datasetName} exported`)} className="flex-1 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90 flex items-center justify-center gap-1.5">
+              <button onClick={() => toast.success(`Lineage for ${selected.datasetName} exported`)} className="flex-1 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90 flex items-center justify-center gap-1.5">
                 <Export size={13} /> Export Lineage
               </button>
               <button onClick={() => { setDeleteTarget(selected); setSelected(null) }} className="px-3 py-2 border border-[hsl(var(--destructive)/0.3)] text-[hsl(var(--destructive))] hover:bg-[hsl(0_72%_51%/0.06)]">
@@ -498,7 +498,7 @@ export default function DataLineage() {
             </div>
             <div className="flex justify-end gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
               <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">Cancel</button>
-              <button onClick={handleSave} className="px-4 py-2 text-sm font-medium bg-[hsl(var(--brand))] text-white hover:opacity-90">{editMode ? 'Save Changes' : 'Register Dataset'}</button>
+              <button onClick={handleSave} className="px-4 py-2 text-sm font-medium bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] hover:opacity-90">{editMode ? 'Save Changes' : 'Register Dataset'}</button>
             </div>
           </div>
         </div>

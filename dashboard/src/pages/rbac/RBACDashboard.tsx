@@ -338,7 +338,7 @@ export default function RBACDashboard() {
                           <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{u.department}</td>
                           <td className="px-4 py-3">
                             {u.mfaEnabled
-                              ? <CheckCircle size={15} className="text-green-600 dark:text-green-400" weight="fill" />
+                              ? <CheckCircle size={15} className="text-[hsl(var(--s-ok-tx))]" weight="fill" />
                               : <XCircle size={15} style={{ color: 'hsl(var(--s-wn-tx))' }} weight="fill" />
                             }
                           </td>

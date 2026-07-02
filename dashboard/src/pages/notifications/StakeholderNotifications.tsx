@@ -199,8 +199,8 @@ export default function StakeholderNotifications() {
 
       {/* Metrics */}
       <div className="grid grid-cols-4 gap-4">
-        <MetricTile label="Templates" value={String(templates.length)} variant="info" icon={<Envelope size={16} weight="fill" className="text-blue-600 dark:text-blue-400" />} />
-        <MetricTile label="Sent This Month" value={String(sentThisMonth)} variant="ok" icon={<CheckCircle size={16} weight="fill" className="text-green-600 dark:text-green-400" />} />
+        <MetricTile label="Templates" value={String(templates.length)} variant="info" icon={<Envelope size={16} weight="fill" className="text-[hsl(var(--s-in-tx))]" />} />
+        <MetricTile label="Sent This Month" value={String(sentThisMonth)} variant="ok" icon={<CheckCircle size={16} weight="fill" className="text-[hsl(var(--s-ok-tx))]" />} />
         <MetricTile label="Overdue Notifications" value={String(overdueNotifications)} variant="error" icon={<Warning size={16} weight="fill" style={{ color: 'hsl(var(--destructive))' }} />} />
         <MetricTile label="Avg SLA Compliance" value={`${slaCompliance}%`} variant="warn" icon={<Timer size={16} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />} />
       </div>

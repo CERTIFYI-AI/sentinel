@@ -70,8 +70,8 @@ export default function PolicyTemplates() {
     toast(`Exporting "${t.name}" as PDF...`)
   }
 
-  const riskColor = (r: string) => r === 'Critical' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : r === 'High' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' : r === 'Medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-  const statusColor = (s: string) => s === 'Published' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : s === 'Draft' ? 'bg-gray-100 text-gray-600 dark:bg-gray-900/30 dark:text-gray-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+  const riskColor = (r: string) => r === 'Critical' ? 'bg-[hsl(var(--s-er-bg))] text-[hsl(var(--s-er-tx))]' : r === 'High' ? 'bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))]' : r === 'Medium' ? 'bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))]' : 'bg-[hsl(var(--s-in-bg))] text-[hsl(var(--s-in-tx))]'
+  const statusColor = (s: string) => s === 'Published' ? 'bg-[hsl(var(--s-ok-bg))] text-[hsl(var(--s-ok-tx))]' : s === 'Draft' ? 'bg-[hsl(var(--bg-muted))] text-[hsl(var(--text-3))]' : 'bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))]'
 
   return (
     <div className="flex flex-col gap-4 p-4 bg-background text-foreground h-full">
@@ -136,9 +136,9 @@ export default function PolicyTemplates() {
           {useTarget && (
             <div className="space-y-4 py-2">
               <div className="flex gap-2 flex-wrap">
-                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">{useTarget.framework}</span>
-                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-600 dark:bg-gray-900/30">{useTarget.article}</span>
-                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-600 dark:bg-gray-900/30">{useTarget.category}</span>
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-[hsl(var(--s-in-bg))] text-[hsl(var(--s-in-tx))]">{useTarget.framework}</span>
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-[hsl(var(--bg-muted))] text-[hsl(var(--text-3))]">{useTarget.article}</span>
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-[hsl(var(--bg-muted))] text-[hsl(var(--text-3))]">{useTarget.category}</span>
               </div>
               <p className="text-sm text-muted-foreground">{useTarget.description}</p>
               <div className="rounded border border-border bg-muted/40 p-3 space-y-1">

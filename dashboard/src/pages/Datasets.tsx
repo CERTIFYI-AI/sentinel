@@ -66,7 +66,7 @@ export default function Datasets() {
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search datasets or tags..." className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] rounded-lg bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:ring-2 focus:ring-green-500 focus:border-[hsl(var(--s-ok-br))] outline-none" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search datasets or tags..." className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] rounded-lg bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:ring-2 focus:ring-[hsl(var(--s-ok-br))] focus:border-[hsl(var(--s-ok-br))] outline-none" />
         </div>
         <div className="flex gap-2">
           {["all", "safety", "accuracy", "fairness", "custom"].map(f => (

@@ -382,10 +382,10 @@ export default function AuditManagement() {
 
       {/* KPIs */}
       <div className="grid grid-cols-4 gap-4">
-        <MetricTile label="Active Audits" value={String(activeAudits)} variant="info" icon={<ClipboardText size={16} weight="fill" className="text-blue-600" />} sub="Currently in progress" />
-        <MetricTile label="Findings Open" value={String(findingsOpen)} variant="warn" icon={<Warning size={16} weight="fill" className="text-amber-600" />} sub="Across all active audits" />
-        <MetricTile label="Overdue Actions" value={String(overdueActions)} variant="error" icon={<Clock size={16} weight="fill" className="text-red-600" />} sub="Require immediate attention" />
-        <MetricTile label="Audit Score" value={avgScore > 0 ? `${avgScore}%` : '—'} variant="ok" icon={<CheckCircle size={16} weight="fill" className="text-emerald-600" />} sub="Average closed audit score" />
+        <MetricTile label="Active Audits" value={String(activeAudits)} variant="info" icon={<ClipboardText size={16} weight="fill" className="text-[hsl(var(--s-in-tx))]" />} sub="Currently in progress" />
+        <MetricTile label="Findings Open" value={String(findingsOpen)} variant="warn" icon={<Warning size={16} weight="fill" className="text-[hsl(var(--s-wn-tx))]" />} sub="Across all active audits" />
+        <MetricTile label="Overdue Actions" value={String(overdueActions)} variant="error" icon={<Clock size={16} weight="fill" className="text-[hsl(var(--s-er-tx))]" />} sub="Require immediate attention" />
+        <MetricTile label="Audit Score" value={avgScore > 0 ? `${avgScore}%` : '—'} variant="ok" icon={<CheckCircle size={16} weight="fill" className="text-[hsl(var(--s-ok-tx))]" />} sub="Average closed audit score" />
       </div>
 
       {/* Filters */}

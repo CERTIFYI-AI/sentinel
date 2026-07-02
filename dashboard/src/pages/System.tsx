@@ -149,13 +149,13 @@ export default function System() {
                     <td className="px-3 py-2.5 text-xs font-mono text-[hsl(var(--text-3))]">{item.responseTimeMs != null ? `${item.responseTimeMs}ms` : "—"}</td>
                     <td className="px-3 py-2.5 text-xs font-mono text-[hsl(var(--text-3))]">{item.uptime99 != null ? `${item.uptime99}%` : "—"}</td>
                     <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))] whitespace-nowrap">{item.lastHealthCheck?.slice(0,16).replace("T"," ")||"—"}</td>
-                    <td className="px-3 py-2.5"><span className={`text-xs px-1.5 py-0.5 ${item.enabled?"text-green-600 bg-green-50 border border-green-200":"text-gray-400 bg-gray-100 border border-gray-200"}`}>{item.enabled?"Yes":"No"}</span></td>
+                    <td className="px-3 py-2.5"><span className={`text-xs px-1.5 py-0.5 ${item.enabled?"text-[hsl(var(--s-ok-tx))] bg-[hsl(var(--s-ok-bg))] border border-[hsl(var(--s-ok-br))]":"text-[hsl(var(--text-4))] bg-[hsl(var(--bg-muted))] border border-[hsl(var(--border))]"}`}>{item.enabled?"Yes":"No"}</span></td>
                     <td className="px-3 py-2.5 text-right" onClick={e=>e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
                         <button onClick={() => testConnection(item)} className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]" title="Test"><ArrowClockwise size={14} /></button>
                         <button onClick={() => { setViewItem(item); setModal("view"); }} className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"><Eye size={14} /></button>
                         <button onClick={() => openEdit(item)} className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"><PencilSimple size={14} /></button>
-                        <button onClick={() => setDeleteTarget(item)} className="p-1.5 hover:bg-red-50 text-[hsl(0_72%_51%)]"><Trash size={14} /></button>
+                        <button onClick={() => setDeleteTarget(item)} className="p-1.5 hover:bg-[hsl(var(--s-er-bg))] text-[hsl(0_72%_51%)]"><Trash size={14} /></button>
                       </div>
                     </td>
                   </tr>
@@ -198,7 +198,7 @@ export default function System() {
                 <HealthDot status={viewItem.status} />
                 <span className="text-xs px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))]">{viewItem.type}</span>
                 <span className="text-xs px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))]">{viewItem.environment}</span>
-                {viewItem.enabled?<span className="text-xs text-green-600 bg-green-50 border border-green-200 px-1.5 py-0.5">Enabled</span>:<span className="text-xs text-gray-400 bg-gray-100 border border-gray-200 px-1.5 py-0.5">Disabled</span>}
+                {viewItem.enabled?<span className="text-xs text-[hsl(var(--s-ok-tx))] bg-[hsl(var(--s-ok-bg))] border border-[hsl(var(--s-ok-br))] px-1.5 py-0.5">Enabled</span>:<span className="text-xs text-[hsl(var(--text-4))] bg-[hsl(var(--bg-muted))] border border-[hsl(var(--border))] px-1.5 py-0.5">Disabled</span>}
               </div>
               <div className="flex items-center justify-between p-3 bg-raised border border-[hsl(var(--border))]">
                 <div>

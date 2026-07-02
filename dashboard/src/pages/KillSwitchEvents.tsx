@@ -80,7 +80,7 @@ export default function KillSwitchEvents() {
           </button>
           <button
             onClick={() => { setKillAllOpen(true); setKillAllStep('confirm'); setKillAllCode(''); setMfaInput(''); }}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-white hover:opacity-90"
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-[hsl(var(--bg-surface))] hover:opacity-90"
             style={{ background: 'hsl(0 72% 51%)' }}>
             <Siren size={14} /> KILL ALL AGENTS
           </button>
@@ -251,7 +251,7 @@ export default function KillSwitchEvents() {
                     <button
                       disabled={killAllCode !== 'KILLALL'}
                       onClick={() => setKillAllStep('mfa')}
-                      className="flex-1 py-2 text-sm font-bold text-white hover:opacity-90 disabled:opacity-40"
+                      className="flex-1 py-2 text-sm font-bold text-[hsl(var(--bg-surface))] hover:opacity-90 disabled:opacity-40"
                       style={{ background: 'hsl(0 72% 51%)' }}>
                       Continue to MFA →
                     </button>
@@ -297,7 +297,7 @@ export default function KillSwitchEvents() {
                         toast.error('🚨 KILL ALL activated — 4 agents suspended. INC-EMERGENCY created. Regulatory notifications queued.');
                         setTimeout(() => setKillAllOpen(false), 2000);
                       }}
-                      className="flex-1 py-2 text-sm font-bold text-white hover:opacity-90 disabled:opacity-40"
+                      className="flex-1 py-2 text-sm font-bold text-[hsl(var(--bg-surface))] hover:opacity-90 disabled:opacity-40"
                       style={{ background: 'hsl(0 72% 51%)' }}>
                       EXECUTE KILL ALL
                     </button>
@@ -383,7 +383,7 @@ export default function KillSwitchEvents() {
             </div>
             {selected.status === 'Active — Agent Suspended' && (
               <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
-                <button onClick={() => setResumeTarget(selected)} className="flex-1 py-2 bg-[hsl(var(--s-ok-tx))] text-white text-sm font-medium hover:opacity-90">Approve Resumption</button>
+                <button onClick={() => setResumeTarget(selected)} className="flex-1 py-2 bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90">Approve Resumption</button>
                 <button onClick={() => toast.info('Escalation path opened')} className="px-4 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">Escalate</button>
               </div>
             )}

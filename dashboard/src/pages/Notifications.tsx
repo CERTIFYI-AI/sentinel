@@ -27,10 +27,10 @@ const INITIAL_NOTIFICATIONS: Notification[] = [
 ];
 
 const typeConfig: Record<string, { color: string; bg: string; borderColor: string; icon: typeof Bell }> = {
-  critical: { color: "text-red-600 dark:text-red-400", bg: "bg-red-50 dark:bg-red-950/30", borderColor: "border-l-red-500", icon: AlertTriangle },
-  warning: { color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-950/30", borderColor: "border-l-amber-500", icon: Shield },
-  info: { color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-950/30", borderColor: "border-l-blue-500", icon: Info },
-  success: { color: "text-green-600 dark:text-green-400", bg: "bg-green-50 dark:bg-green-950/30", borderColor: "border-l-green-500", icon: CheckCircle2 },
+  critical: { color: "text-[hsl(var(--s-er-tx))]", bg: "bg-[hsl(var(--s-er-bg))]", borderColor: "border-l-red-500", icon: AlertTriangle },
+  warning: { color: "text-[hsl(var(--s-wn-tx))]", bg: "bg-[hsl(var(--s-wn-bg))]", borderColor: "border-l-amber-500", icon: Shield },
+  info: { color: "text-[hsl(var(--s-in-tx))]", bg: "bg-[hsl(var(--s-in-bg))]", borderColor: "border-l-blue-500", icon: Info },
+  success: { color: "text-[hsl(var(--s-ok-tx))]", bg: "bg-[hsl(var(--s-ok-bg))]", borderColor: "border-l-green-500", icon: CheckCircle2 },
 };
 
 export default function Notifications() {
@@ -47,16 +47,16 @@ export default function Notifications() {
     <div className="p-6 space-y-6 max-w-4xl">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-violet-100 dark:bg-violet-950 rounded-lg"><Bell size={20} className="text-violet-600 dark:text-violet-400" /></div>
+          <div className="p-2 bg-[hsl(var(--tag-purple-bg))] rounded-lg"><Bell size={20} className="text-[hsl(var(--tag-purple))]" /></div>
           <div>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Notifications</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <h1 className="text-xl font-bold text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))]">Notifications</h1>
+            <p className="text-sm text-[hsl(var(--text-3))]">
               {unreadCount > 0 ? `${unreadCount} unread notifications` : "All caught up"} · Alerts from trust engine, compliance, and monitoring
             </p>
           </div>
         </div>
         {unreadCount > 0 && (
-          <button onClick={markAllRead} className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400 hover:underline font-medium">
+          <button onClick={markAllRead} className="flex items-center gap-1.5 text-xs text-[hsl(var(--s-ok-tx))] hover:underline font-medium">
             <CheckCheck size={14} /> Mark all read
           </button>
         )}
@@ -64,10 +64,10 @@ export default function Notifications() {
 
       {/* Filters */}
       <div className="flex items-center gap-2">
-        <Filter size={14} className="text-slate-400" />
+        <Filter size={14} className="text-[hsl(var(--text-4))]" />
         {["all", "critical", "warning", "info", "success"].map(f => (
           <button key={f} onClick={() => setTypeFilter(f)} className={`px-3 py-1.5 text-xs rounded-lg capitalize font-medium transition-colors ${
-            typeFilter === f ? "bg-green-600 text-white" : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+            typeFilter === f ? "bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))]" : "bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-muted))]"
           }`}>{f}</button>
         ))}
       </div>
@@ -78,7 +78,7 @@ export default function Notifications() {
           const tc = typeConfig[n.type];
           const Icon = tc.icon;
           return (
-            <Card key={n.id} className={`border-l-4 ${tc.borderColor} ${!n.read ? tc.bg : "bg-white dark:bg-slate-900"} border-slate-200 dark:border-slate-700 hover:shadow-sm transition-shadow cursor-pointer`} onClick={() => markRead(n.id)}>
+            <Card key={n.id} className={`border-l-4 ${tc.borderColor} ${!n.read ? tc.bg : "bg-[hsl(var(--bg-surface))]"} border-[hsl(var(--border))] hover:shadow-sm transition-shadow cursor-pointer`} onClick={() => markRead(n.id)}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
                   <div className={`mt-0.5 flex-shrink-0 ${tc.color}`}>
@@ -86,14 +86,14 @@ export default function Notifications() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className={`text-sm font-semibold ${!n.read ? "text-slate-900 dark:text-white" : "text-slate-700 dark:text-slate-300"}`}>{n.title}</h3>
-                      {!n.read && <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />}
+                      <h3 className={`text-sm font-semibold ${!n.read ? "text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))]" : "text-[hsl(var(--text-2))]"}`}>{n.title}</h3>
+                      {!n.read && <span className="w-2 h-2 rounded-full bg-[hsl(var(--s-in-tx))] flex-shrink-0" />}
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{n.description}</p>
-                    <div className="flex items-center gap-3 mt-2 text-[11px] text-slate-400 dark:text-slate-500">
+                    <p className="text-xs text-[hsl(var(--text-3))] mt-0.5">{n.description}</p>
+                    <div className="flex items-center gap-3 mt-2 text-[11px] text-[hsl(var(--text-4))]">
                       <span className="flex items-center gap-1"><Clock size={10} /> {n.timestamp}</span>
                       <span>{n.source}</span>
-                      {n.actionUrl && <span className="text-green-600 dark:text-green-400 hover:underline font-medium">View Details</span>}
+                      {n.actionUrl && <span className="text-[hsl(var(--s-ok-tx))] hover:underline font-medium">View Details</span>}
                     </div>
                   </div>
                 </div>

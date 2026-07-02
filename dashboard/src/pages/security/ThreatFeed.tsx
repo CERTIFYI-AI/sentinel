@@ -343,7 +343,7 @@ export default function ThreatFeed() {
                           )}
                           {threat.status !== 'resolved' && (
                             <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { setResolveTarget(threat); setResolveNote(''); }}>
-                              <CheckCircle size={14} className="text-green-600 dark:text-green-400" />
+                              <CheckCircle size={14} className="text-[hsl(var(--s-ok-tx))]" />
                             </Button>
                           )}
                         </div>
@@ -434,7 +434,7 @@ export default function ThreatFeed() {
                     </div>
                     <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                       <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>MITRE ATT&CK</span>
-                      <p className="text-sm font-mono font-medium mt-1 text-blue-600 dark:text-blue-400">{selectedThreat.mitreId || '—'}</p>
+                      <p className="text-sm font-mono font-medium mt-1 text-[hsl(var(--s-in-tx))]">{selectedThreat.mitreId || '—'}</p>
                     </div>
                   </div>
                   <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
@@ -486,7 +486,7 @@ export default function ThreatFeed() {
                   </div>
                   {selectedThreat.status === 'mitigated' && (
                     <div className="flex items-start gap-3 p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                      <CheckCircle size={14} weight="fill" className="text-green-600 dark:text-green-400 mt-0.5" />
+                      <CheckCircle size={14} weight="fill" className="text-[hsl(var(--s-ok-tx))] mt-0.5" />
                       <div>
                         <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>Threat mitigated</p>
                         <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Remediation steps applied successfully.</p>
@@ -495,7 +495,7 @@ export default function ThreatFeed() {
                   )}
                   {selectedThreat.status === 'resolved' && (
                     <div className="flex items-start gap-3 p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                      <CheckCircle size={14} weight="fill" className="text-green-600 dark:text-green-400 mt-0.5" />
+                      <CheckCircle size={14} weight="fill" className="text-[hsl(var(--s-ok-tx))] mt-0.5" />
                       <div>
                         <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>Threat resolved</p>
                         <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Closed and archived.</p>

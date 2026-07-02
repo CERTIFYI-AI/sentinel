@@ -131,7 +131,7 @@ export default function AiAdvisor() {
         {/* Header */}
         <div className="rounded border border-[hsl(var(--border))] bg-surface p-4 flex items-center gap-3">
           <div className="w-10 h-10 bg-[hsl(var(--brand))] flex items-center justify-center flex-shrink-0">
-            <Brain size={20} weight="fill" className="text-white" />
+            <Brain size={20} weight="fill" className="text-[hsl(var(--bg-surface))]" />
           </div>
           <div className="flex-1">
             <h1 className="text-base font-semibold text-[hsl(var(--text-1))]">AI Governance Advisor</h1>
@@ -157,13 +157,13 @@ export default function AiAdvisor() {
             <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               {m.role === 'assistant' && (
                 <div className="w-7 h-7 bg-[hsl(var(--brand))] flex items-center justify-center flex-shrink-0 mr-2 mt-0.5">
-                  <Brain size={14} weight="fill" className="text-white" />
+                  <Brain size={14} weight="fill" className="text-[hsl(var(--bg-surface))]" />
                 </div>
               )}
               <div
                 className={`max-w-[85%] rounded px-4 py-3 text-[13px] leading-relaxed ${
                   m.role === 'user'
-                    ? 'bg-[hsl(var(--brand))] text-white'
+                    ? 'bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))]'
                     : 'bg-raised border border-[hsl(var(--border))]'
                 }`}
               >
@@ -174,7 +174,7 @@ export default function AiAdvisor() {
           {loading && (
             <div className="flex justify-start">
               <div className="w-7 h-7 bg-[hsl(var(--brand))] flex items-center justify-center flex-shrink-0 mr-2">
-                <Brain size={14} weight="fill" className="text-white" />
+                <Brain size={14} weight="fill" className="text-[hsl(var(--bg-surface))]" />
               </div>
               <div className="bg-raised border border-[hsl(var(--border))] rounded px-4 py-3 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 bg-[hsl(var(--brand))] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -211,7 +211,7 @@ export default function AiAdvisor() {
           <button
             onClick={handleSend}
             disabled={!input.trim() || loading}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90 disabled:opacity-40 transition-opacity rounded"
+            className="flex items-center gap-2 px-4 py-2.5 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90 disabled:opacity-40 transition-opacity rounded"
           >
             <PaperPlaneRight size={15} weight="fill" />
             Send
@@ -227,7 +227,7 @@ export default function AiAdvisor() {
             <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-1.5">
               <Lightbulb size={14} weight="fill" className="text-[hsl(var(--brand))]" />
               Advisory Queue
-              <span className="ml-1 text-[10px] px-1.5 py-0.5 bg-[hsl(var(--brand))] text-white font-bold">
+              <span className="ml-1 text-[10px] px-1.5 py-0.5 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] font-bold">
                 {suggestions.length}
               </span>
             </h3>
@@ -297,7 +297,7 @@ export default function AiAdvisor() {
                 <div className="flex gap-1.5">
                   <button
                     onClick={() => handleTakeAction(s)}
-                    className="flex-1 text-[11px] py-1.5 bg-[hsl(var(--brand))] text-white font-medium hover:opacity-90 transition-opacity"
+                    className="flex-1 text-[11px] py-1.5 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] font-medium hover:opacity-90 transition-opacity"
                   >
                     Take Action
                   </button>

@@ -199,8 +199,8 @@ export default function ConformityAssessment() {
 
       {/* Metrics */}
       <div className="grid grid-cols-4 gap-4">
-        <MetricTile label="Total Assessments" value={String(total)} variant="info" icon={<ClipboardText size={16} weight="fill" className="text-blue-600 dark:text-blue-400" />} />
-        <MetricTile label="Complete" value={String(complete)} variant="ok" icon={<CheckCircle size={16} weight="fill" className="text-green-600 dark:text-green-400" />} />
+        <MetricTile label="Total Assessments" value={String(total)} variant="info" icon={<ClipboardText size={16} weight="fill" className="text-[hsl(var(--s-in-tx))]" />} />
+        <MetricTile label="Complete" value={String(complete)} variant="ok" icon={<CheckCircle size={16} weight="fill" className="text-[hsl(var(--s-ok-tx))]" />} />
         <MetricTile label="In Progress" value={String(inProgress)} variant="warn" icon={<Clock size={16} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />} />
         <MetricTile label="Not Started" value={String(notStarted)} variant="error" icon={<Warning size={16} weight="fill" style={{ color: 'hsl(var(--destructive))' }} />} />
       </div>

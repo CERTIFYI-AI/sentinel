@@ -172,7 +172,7 @@ function EsgReportsInner({ reports: initialReports, save, remove, chartTheme }: 
         </div>
         <div className="flex gap-2">
           <button onClick={() => exportCsv(reports, 'esg-reports.csv')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised"><Export size={14} /> Export CSV</button>
-          <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 px-4 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90"><Plus size={14} /> New Report</button>
+          <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 px-4 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90"><Plus size={14} /> New Report</button>
         </div>
       </div>
 
@@ -349,9 +349,9 @@ function EsgReportsInner({ reports: initialReports, save, remove, chartTheme }: 
                 <button onClick={() => handleSubmitForReview(selected)} className="w-full py-2 border border-[hsl(var(--brand))] text-[hsl(var(--brand))] text-sm font-medium hover:bg-[hsl(var(--brand)/0.06)]">Submit for Review</button>
               )}
               {selected.status === 'Under Review' && (
-                <button onClick={() => handlePublish(selected)} className="w-full py-2 bg-[hsl(var(--s-ok-tx))] text-white text-sm font-medium hover:opacity-90">Approve & Publish</button>
+                <button onClick={() => handlePublish(selected)} className="w-full py-2 bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90">Approve & Publish</button>
               )}
-              <button onClick={() => toast.success('Report downloaded')} className="w-full py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90">Download Report</button>
+              <button onClick={() => toast.success('Report downloaded')} className="w-full py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90">Download Report</button>
             </div>
           </div>
         </div>
@@ -437,7 +437,7 @@ function EsgReportsInner({ reports: initialReports, save, remove, chartTheme }: 
             </div>
             <div className="flex justify-end gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
               <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">Cancel</button>
-              <button onClick={handleCreate} className="px-4 py-2 text-sm font-medium bg-[hsl(var(--brand))] text-white hover:opacity-90">Generate Report</button>
+              <button onClick={handleCreate} className="px-4 py-2 text-sm font-medium bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] hover:opacity-90">Generate Report</button>
             </div>
           </div>
         </div>

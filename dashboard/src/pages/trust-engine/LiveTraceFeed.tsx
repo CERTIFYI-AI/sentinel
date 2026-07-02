@@ -334,10 +334,10 @@ export default function LiveTraceFeed() {
 
         {/* Metrics */}
         <div className="grid grid-cols-4 gap-4">
-          <MetricTile label="Total Traces" value={String(traces.length)} variant="info" icon={<Lightning size={16} weight="fill" className="text-blue-600 dark:text-blue-400" />} />
+          <MetricTile label="Total Traces" value={String(traces.length)} variant="info" icon={<Lightning size={16} weight="fill" className="text-[hsl(var(--s-in-tx))]" />} />
           <MetricTile label="Blocked" value={String(blockedCount)} variant="error" icon={<Warning size={16} weight="fill" className="text-destructive" />} />
           <MetricTile label="Fallbacks" value={String(fallbackCount)} variant="warn" icon={<ArrowsClockwise size={16} style={{ color: 'hsl(var(--s-wn-tx))' }} />} />
-          <MetricTile label="Status" value={paused ? 'Paused' : 'Live'} variant={paused ? 'warn' : 'ok'} icon={paused ? <Pause size={16} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} /> : <Play size={16} weight="fill" className="text-green-600 dark:text-green-400" />} />
+          <MetricTile label="Status" value={paused ? 'Paused' : 'Live'} variant={paused ? 'warn' : 'ok'} icon={paused ? <Pause size={16} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} /> : <Play size={16} weight="fill" className="text-[hsl(var(--s-ok-tx))]" />} />
         </div>
 
         {/* Filters */}

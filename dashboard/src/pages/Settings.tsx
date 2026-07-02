@@ -43,10 +43,10 @@ export default function SettingsPage() {
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-3">
-        <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg"><SettingsIcon size={20} className="text-slate-600 dark:text-slate-400" /></div>
+        <div className="p-2 bg-[hsl(var(--bg-muted))] rounded-lg"><SettingsIcon size={20} className="text-[hsl(var(--text-3))]" /></div>
         <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-white">Settings</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Platform configuration and team management</p>
+          <h1 className="text-xl font-bold text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))]">Settings</h1>
+          <p className="text-sm text-[hsl(var(--text-3))]">Platform configuration and team management</p>
         </div>
       </div>
 
@@ -59,8 +59,8 @@ export default function SettingsPage() {
               return (
                 <button key={t.id} onClick={() => setActiveTab(t.id)} className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
                   activeTab === t.id
-                    ? "bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-400 font-medium"
-                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+                    ? "bg-[hsl(var(--s-ok-bg))] text-[hsl(var(--s-ok-tx))] font-medium"
+                    : "text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-muted))]"
                 }`}>
                   <Icon size={14} /> {t.label}
                 </button>
@@ -72,52 +72,52 @@ export default function SettingsPage() {
         {/* Content */}
         <div className="flex-1 min-w-0">
           {activeTab === "general" && (
-            <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+            <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
               <CardHeader><CardTitle className="text-sm">Organization Settings</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Organization Name</label>
-                  <input defaultValue="CertifyI" className="w-full max-w-sm border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white" />
+                  <label className="block text-xs font-medium text-[hsl(var(--text-3))] mb-1">Organization Name</label>
+                  <input defaultValue="CertifyI" className="w-full max-w-sm border border-[hsl(var(--border))] rounded-lg px-3 py-2 text-sm bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))]" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Tenant ID</label>
-                  <input defaultValue="tenant_certifyi_prod" readOnly className="w-full max-w-sm border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 text-slate-500 font-mono" />
+                  <label className="block text-xs font-medium text-[hsl(var(--text-3))] mb-1">Tenant ID</label>
+                  <input defaultValue="tenant_certifyi_prod" readOnly className="w-full max-w-sm border border-[hsl(var(--border))] rounded-lg px-3 py-2 text-sm bg-[hsl(var(--bg-muted))] text-[hsl(var(--text-3))] font-mono" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Default Trust Threshold</label>
-                  <input defaultValue="0.85" type="number" step="0.01" className="w-full max-w-sm border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono" />
+                  <label className="block text-xs font-medium text-[hsl(var(--text-3))] mb-1">Default Trust Threshold</label>
+                  <input defaultValue="0.85" type="number" step="0.01" className="w-full max-w-sm border border-[hsl(var(--border))] rounded-lg px-3 py-2 text-sm bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))] font-mono" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Data Retention (days)</label>
-                  <input defaultValue="90" type="number" className="w-full max-w-sm border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono" />
+                  <label className="block text-xs font-medium text-[hsl(var(--text-3))] mb-1">Data Retention (days)</label>
+                  <input defaultValue="90" type="number" className="w-full max-w-sm border border-[hsl(var(--border))] rounded-lg px-3 py-2 text-sm bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))] font-mono" />
                 </div>
-                <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">Save Changes</button>
+                <button className="bg-[hsl(var(--s-ok-tx))] hover:bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))] px-4 py-2 rounded-lg text-sm font-medium transition-colors">Save Changes</button>
               </CardContent>
             </Card>
           )}
 
           {activeTab === "team" && (
-            <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+            <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm">Team Members</CardTitle>
-                  <button className="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg font-medium transition-colors">Invite Member</button>
+                  <button className="text-xs bg-[hsl(var(--s-ok-tx))] hover:bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))] px-3 py-1.5 rounded-lg font-medium transition-colors">Invite Member</button>
                 </div>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                <div className="divide-y divide-[hsl(var(--border))]">
                   {TEAM_MEMBERS.map(m => (
                     <div key={m.email} className="flex items-center justify-between px-6 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-950 flex items-center justify-center text-xs font-bold text-green-700 dark:text-green-400">{m.name.split(" ").map(n => n[0]).join("")}</div>
+                        <div className="w-8 h-8 rounded-full bg-[hsl(var(--s-ok-bg))] flex items-center justify-center text-xs font-bold text-[hsl(var(--s-ok-tx))]">{m.name.split(" ").map(n => n[0]).join("")}</div>
                         <div>
-                          <p className="text-sm font-medium text-slate-900 dark:text-white">{m.name}</p>
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400">{m.email}</p>
+                          <p className="text-sm font-medium text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))]">{m.name}</p>
+                          <p className="text-[11px] text-[hsl(var(--text-3))]">{m.email}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
-                        <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium">{m.role}</span>
-                        <span className="text-[11px] text-slate-400">{m.lastActive}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-[hsl(var(--bg-muted))] text-[hsl(var(--text-3))] font-medium">{m.role}</span>
+                        <span className="text-[11px] text-[hsl(var(--text-4))]">{m.lastActive}</span>
                       </div>
                     </div>
                   ))}
@@ -127,25 +127,25 @@ export default function SettingsPage() {
           )}
 
           {activeTab === "api-keys" && (
-            <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+            <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm">API Keys</CardTitle>
-                  <button className="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg font-medium transition-colors">Generate Key</button>
+                  <button className="text-xs bg-[hsl(var(--s-ok-tx))] hover:bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))] px-3 py-1.5 rounded-lg font-medium transition-colors">Generate Key</button>
                 </div>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                <div className="divide-y divide-[hsl(var(--border))]">
                   {API_KEYS.map(k => (
                     <div key={k.prefix} className="flex items-center justify-between px-6 py-3">
                       <div>
-                        <p className="text-sm font-medium text-slate-900 dark:text-white">{k.name}</p>
-                        <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400">{k.prefix}</p>
+                        <p className="text-sm font-medium text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))]">{k.name}</p>
+                        <p className="text-[11px] font-mono text-[hsl(var(--text-3))]">{k.prefix}</p>
                       </div>
                       <div className="flex items-center gap-4">
-                        <span className="text-[11px] text-slate-400">Last used: {k.lastUsed}</span>
+                        <span className="text-[11px] text-[hsl(var(--text-4))]">Last used: {k.lastUsed}</span>
                         <span className={`text-[10px] font-medium px-2 py-0.5 rounded capitalize ${
-                          k.status === "active" ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400" : "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400 line-through"
+                          k.status === "active" ? "bg-[hsl(var(--s-ok-bg))] text-[hsl(var(--s-ok-tx))]" : "bg-[hsl(var(--s-er-bg))] text-[hsl(var(--s-er-tx))] line-through"
                         }`}>{k.status}</span>
                       </div>
                     </div>
@@ -156,7 +156,7 @@ export default function SettingsPage() {
           )}
 
           {activeTab === "notifications" && (
-            <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+            <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
               <CardHeader><CardTitle className="text-sm">Notification Preferences</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 {[
@@ -169,11 +169,11 @@ export default function SettingsPage() {
                 ].map((n, i) => (
                   <div key={i} className="flex items-center justify-between py-2">
                     <div>
-                      <p className="text-sm font-medium text-slate-900 dark:text-white">{n.label}</p>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">{n.description}</p>
+                      <p className="text-sm font-medium text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))]">{n.label}</p>
+                      <p className="text-[11px] text-[hsl(var(--text-3))]">{n.description}</p>
                     </div>
-                    <button className={`w-10 h-5 rounded-full relative transition-colors ${n.enabled ? "bg-green-500" : "bg-slate-300 dark:bg-slate-700"}`}>
-                      <div className={`w-4 h-4 rounded-full bg-white absolute top-0.5 transition-all ${n.enabled ? "left-5" : "left-0.5"}`} />
+                    <button className={`w-10 h-5 rounded-full relative transition-colors ${n.enabled ? "bg-[hsl(var(--s-ok-tx))]" : "bg-[hsl(var(--bg-muted))]"}`}>
+                      <div className={`w-4 h-4 rounded-full bg-[hsl(var(--bg-surface))] absolute top-0.5 transition-all ${n.enabled ? "left-5" : "left-0.5"}`} />
                     </button>
                   </div>
                 ))}
@@ -182,7 +182,7 @@ export default function SettingsPage() {
           )}
 
           {activeTab === "compliance" && (
-            <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+            <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
               <CardHeader><CardTitle className="text-sm">Compliance Configuration</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 {[
@@ -194,11 +194,11 @@ export default function SettingsPage() {
                 ].map((c, i) => (
                   <div key={i} className="flex items-center justify-between py-2">
                     <div>
-                      <p className="text-sm font-medium text-slate-900 dark:text-white">{c.label}</p>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">{c.description}</p>
+                      <p className="text-sm font-medium text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))]">{c.label}</p>
+                      <p className="text-[11px] text-[hsl(var(--text-3))]">{c.description}</p>
                     </div>
-                    <button className={`w-10 h-5 rounded-full relative transition-colors ${c.enabled ? "bg-green-500" : "bg-slate-300 dark:bg-slate-700"}`}>
-                      <div className={`w-4 h-4 rounded-full bg-white absolute top-0.5 transition-all ${c.enabled ? "left-5" : "left-0.5"}`} />
+                    <button className={`w-10 h-5 rounded-full relative transition-colors ${c.enabled ? "bg-[hsl(var(--s-ok-tx))]" : "bg-[hsl(var(--bg-muted))]"}`}>
+                      <div className={`w-4 h-4 rounded-full bg-[hsl(var(--bg-surface))] absolute top-0.5 transition-all ${c.enabled ? "left-5" : "left-0.5"}`} />
                     </button>
                   </div>
                 ))}
@@ -209,25 +209,25 @@ export default function SettingsPage() {
           {activeTab === "integrations" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {INTEGRATIONS.map(int => (
-                <Card key={int.name} className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+                <Card key={int.name} className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
                         <span className="text-2xl">{int.icon}</span>
                         <div>
-                          <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{int.name}</h3>
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400">{int.description}</p>
+                          <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))]">{int.name}</h3>
+                          <p className="text-[11px] text-[hsl(var(--text-3))]">{int.description}</p>
                         </div>
                       </div>
                       <span className={`text-[10px] font-medium px-2 py-0.5 rounded capitalize ${
                         int.status === "connected"
-                          ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400"
-                          : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                          ? "bg-[hsl(var(--s-ok-bg))] text-[hsl(var(--s-ok-tx))]"
+                          : "bg-[hsl(var(--bg-muted))] text-[hsl(var(--text-3))]"
                       }`}>{int.status}</span>
                     </div>
-                    <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <div className="mt-3 pt-3 border-t border-[hsl(var(--border))]">
                       <button className={`text-xs font-medium ${
-                        int.status === "connected" ? "text-slate-600 dark:text-slate-400 hover:text-red-600" : "text-green-600 dark:text-green-400 hover:underline"
+                        int.status === "connected" ? "text-[hsl(var(--text-3))] hover:text-[hsl(var(--s-er-tx))]" : "text-[hsl(var(--s-ok-tx))] hover:underline"
                       }`}>
                         {int.status === "connected" ? "Disconnect" : "Connect"}
                       </button>

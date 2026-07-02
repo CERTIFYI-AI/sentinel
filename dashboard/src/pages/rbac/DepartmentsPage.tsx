@@ -170,7 +170,7 @@ export default function DepartmentsPage() {
           <button onClick={exportCsv} className="flex items-center gap-1.5 px-3 py-2 text-sm border hover:opacity-80" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}>
             <Export size={14} /> Export CSV
           </button>
-          <button onClick={openCreate} className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white hover:opacity-90" style={{ background: 'hsl(var(--brand))' }}>
+          <button onClick={openCreate} className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-[hsl(var(--bg-surface))] hover:opacity-90" style={{ background: 'hsl(var(--brand))' }}>
             <Plus size={14} weight="bold" /> New Department
           </button>
         </div>
@@ -233,7 +233,7 @@ export default function DepartmentsPage() {
                 <Buildings size={32} className="mx-auto mb-3 opacity-30" />
                 <p className="font-medium">No departments found</p>
                 <p className="text-xs mt-1">Create your first department to organize users and access structures.</p>
-                <button onClick={openCreate} className="mt-4 px-4 py-2 text-xs font-medium text-white" style={{ background: 'hsl(var(--brand))' }}>+ Create Department</button>
+                <button onClick={openCreate} className="mt-4 px-4 py-2 text-xs font-medium text-[hsl(var(--bg-surface))]" style={{ background: 'hsl(var(--brand))' }}>+ Create Department</button>
               </td></tr>
             ) : filtered.map(d => (
               <tr key={d.id} className="hover:opacity-90 cursor-pointer" style={{ borderBottom: '1px solid hsl(var(--border))' }} onClick={() => setSelected(d)}>
@@ -311,7 +311,7 @@ export default function DepartmentsPage() {
             </div>
             <div className="flex justify-end gap-2 px-5 py-4" style={{ borderTop: '1px solid hsl(var(--border))' }}>
               <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm border" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}>Cancel</button>
-              <button onClick={handleSave} disabled={saving} className="px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60" style={{ background: 'hsl(var(--brand))' }}>
+              <button onClick={handleSave} disabled={saving} className="px-4 py-2 text-sm font-medium text-[hsl(var(--bg-surface))] hover:opacity-90 disabled:opacity-60" style={{ background: 'hsl(var(--brand))' }}>
                 {saving ? 'Saving…' : editTarget ? 'Save Changes' : 'Create Department'}
               </button>
             </div>

@@ -268,7 +268,7 @@ export default function RolesPage() {
             Define roles and configure granular module-level permissions
           </p>
         </div>
-        <button onClick={openCreate} className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white hover:opacity-90" style={{ background: 'hsl(var(--brand))' }}>
+        <button onClick={openCreate} className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-[hsl(var(--bg-surface))] hover:opacity-90" style={{ background: 'hsl(var(--brand))' }}>
           <Plus size={14} weight="bold" /> New Role
         </button>
       </div>
@@ -321,7 +321,7 @@ export default function RolesPage() {
                 <ShieldCheck size={32} className="mx-auto mb-3 opacity-30" />
                 <p className="font-medium">No roles found</p>
                 <p className="text-xs mt-1">System roles are always available. Create a custom role to define tailored access.</p>
-                <button onClick={openCreate} className="mt-4 px-4 py-2 text-xs font-medium text-white" style={{ background: 'hsl(var(--brand))' }}>+ Create Role</button>
+                <button onClick={openCreate} className="mt-4 px-4 py-2 text-xs font-medium text-[hsl(var(--bg-surface))]" style={{ background: 'hsl(var(--brand))' }}>+ Create Role</button>
               </td></tr>
             ) : filtered.map(r => (
               <tr key={r.id} className="hover:opacity-90 cursor-pointer" style={{ borderBottom: '1px solid hsl(var(--border))' }} onClick={() => setSelected(r)}>
@@ -418,7 +418,7 @@ export default function RolesPage() {
             </div>
             <div className="flex justify-end gap-2 px-5 py-4 flex-shrink-0" style={{ borderTop: '1px solid hsl(var(--border))' }}>
               <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm border" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}>Cancel</button>
-              <button onClick={handleSave} disabled={saving} className="px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60" style={{ background: 'hsl(var(--brand))' }}>
+              <button onClick={handleSave} disabled={saving} className="px-4 py-2 text-sm font-medium text-[hsl(var(--bg-surface))] hover:opacity-90 disabled:opacity-60" style={{ background: 'hsl(var(--brand))' }}>
                 {saving ? 'Saving…' : editTarget ? 'Save Changes' : 'Create Role'}
               </button>
             </div>

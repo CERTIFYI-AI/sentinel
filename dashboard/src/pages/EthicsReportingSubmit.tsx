@@ -153,7 +153,7 @@ export default function EthicsReportingSubmit() {
               <button type="button" onClick={() => setAnonymous(!anonymous)}
                 className="w-11 h-6 relative transition-colors flex-shrink-0"
                 style={{ background: anonymous ? 'hsl(var(--brand))' : 'hsl(var(--bg-raised))', borderRadius: 9999 }}>
-                <span className="absolute top-0.5 h-5 w-5 bg-white transition-all" style={{ borderRadius: 9999, left: anonymous ? '24px' : '2px', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }} />
+                <span className="absolute top-0.5 h-5 w-5 bg-[hsl(var(--bg-surface))] transition-all" style={{ borderRadius: 9999, left: anonymous ? '24px' : '2px', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }} />
               </button>
             </div>
 

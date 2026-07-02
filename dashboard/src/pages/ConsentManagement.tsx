@@ -111,7 +111,7 @@ export default function ConsentManagement() {
         </div>
         <div className="flex gap-2">
           <button onClick={() => exportCsv(records as any[], 'consent-records.csv')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised"><Export size={14} /> Export CSV</button>
-          <button onClick={() => { setForm(BLANK); setShowCreate(true) }} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90"><Plus size={14} weight="bold" /> New Record</button>
+          <button onClick={() => { setForm(BLANK); setShowCreate(true) }} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm hover:opacity-90"><Plus size={14} weight="bold" /> New Record</button>
         </div>
       </div>
 
@@ -344,7 +344,7 @@ export default function ConsentManagement() {
                     </select>
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={handleEdit} className="flex-1 py-2 bg-[hsl(var(--brand))] text-white text-sm">Save</button>
+                    <button onClick={handleEdit} className="flex-1 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm">Save</button>
                     <button onClick={() => setEditMode(false)} className="px-4 py-2 border border-[hsl(var(--border))] text-sm">Cancel</button>
                   </div>
                 </div>
@@ -411,7 +411,7 @@ export default function ConsentManagement() {
               </div>
             </div>
             <div className="flex gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
-              <button onClick={handleCreate} className="flex-1 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium">Create Record</button>
+              <button onClick={handleCreate} className="flex-1 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium">Create Record</button>
               <button onClick={() => setShowCreate(false)} className="px-4 py-2 border border-[hsl(var(--border))] text-sm">Cancel</button>
             </div>
           </div>
@@ -426,7 +426,7 @@ export default function ConsentManagement() {
             <h3 className="font-semibold mb-1">Delete Consent Record?</h3>
             <p className="text-sm text-[hsl(var(--text-3))] mb-4">This permanently removes the consent record. Consider withdrawing instead.</p>
             <div className="flex gap-2">
-              <button onClick={() => handleDelete(deleteTarget)} className="flex-1 py-2 bg-[hsl(var(--destructive))] text-white text-sm">Delete</button>
+              <button onClick={() => handleDelete(deleteTarget)} className="flex-1 py-2 bg-[hsl(var(--destructive))] text-[hsl(var(--bg-surface))] text-sm">Delete</button>
               <button onClick={() => setDeleteTarget(null)} className="flex-1 py-2 border border-[hsl(var(--border))] text-sm">Cancel</button>
             </div>
           </div>

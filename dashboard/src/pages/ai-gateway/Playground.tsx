@@ -195,16 +195,16 @@ export default function Playground() {
 
             <div className="pt-4 border-t border-[hsl(var(--border))]">
               <label className="text-xs font-medium text-[hsl(var(--text-2))] uppercase tracking-wider mb-3 block flex items-center gap-2">
-                <ShieldCheck size={14} className="text-emerald-500"/> Active Guardrails
+                <ShieldCheck size={14} className="text-[hsl(var(--s-ok-tx))]"/> Active Guardrails
               </label>
               <div className="space-y-2">
                 <div className="flex items-center justify-between p-2 bg-surface-2 border border-[hsl(var(--border))]">
-                  <span className="text-xs flex items-center gap-2"><EyeSlash size={14} className="text-yellow-500"/> PII Masking</span>
-                  <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 rounded-none text-[10px]">ENFORCED</Badge>
+                  <span className="text-xs flex items-center gap-2"><EyeSlash size={14} className="text-[hsl(var(--s-wn-tx))]"/> PII Masking</span>
+                  <Badge className="bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--s-ok-tx))] border-[hsl(var(--s-ok-br))] rounded-none text-[10px]">ENFORCED</Badge>
                 </div>
                 <div className="flex items-center justify-between p-2 bg-surface-2 border border-[hsl(var(--border))]">
-                  <span className="text-xs flex items-center gap-2"><Bug size={14} className="text-red-500"/> Prompt Inject</span>
-                  <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 rounded-none text-[10px]">ENFORCED</Badge>
+                  <span className="text-xs flex items-center gap-2"><Bug size={14} className="text-[hsl(var(--s-er-tx))]"/> Prompt Inject</span>
+                  <Badge className="bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--s-ok-tx))] border-[hsl(var(--s-ok-br))] rounded-none text-[10px]">ENFORCED</Badge>
                 </div>
               </div>
             </div>
@@ -221,7 +221,7 @@ export default function Playground() {
               <Button 
                 variant={viewMode === 'chat' ? 'default' : 'outline'} 
                 size="sm" 
-                className={`rounded-none h-8 text-xs ${viewMode === 'chat' ? 'bg-[hsl(var(--brand))] text-white' : 'text-[hsl(var(--text-2))]'}`}
+                className={`rounded-none h-8 text-xs ${viewMode === 'chat' ? 'bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))]' : 'text-[hsl(var(--text-2))]'}`}
                 onClick={() => setViewMode('chat')}
               >
                 <ChatCircle size={14}/> Chat View
@@ -229,7 +229,7 @@ export default function Playground() {
               <Button 
                 variant={viewMode === 'trace' ? 'default' : 'outline'} 
                 size="sm" 
-                className={`rounded-none h-8 text-xs ${viewMode === 'trace' ? 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600' : 'text-[hsl(var(--text-2))]'}`}
+                className={`rounded-none h-8 text-xs ${viewMode === 'trace' ? 'bg-[hsl(var(--s-in-tx))] hover:bg-[hsl(var(--s-in-tx))] text-[hsl(var(--bg-surface))] border-[hsl(var(--s-in-br))]' : 'text-[hsl(var(--text-2))]'}`}
                 onClick={() => setViewMode('trace')}
               >
                 <CodeBlock size={14}/> Trace Logs
@@ -256,10 +256,10 @@ export default function Playground() {
                 {/* Message Bubble */}
                 <div className={`flex gap-3 max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
                   <div className={`w-8 h-8 flex-shrink-0 flex items-center justify-center border ${
-                    msg.role === 'system' ? 'bg-zinc-900 border-zinc-700 text-zinc-400' :
-                    msg.role === 'user' ? 'bg-[hsl(var(--brand))] border-[hsl(var(--brand))] text-white' : 
-                    msg.role === 'gateway' ? 'bg-red-500/20 border-red-500/30 text-red-500' :
-                    'bg-emerald-500/20 border-emerald-500/30 text-emerald-500'
+                    msg.role === 'system' ? 'bg-[hsl(var(--bg-sunken))] border-[hsl(var(--border))] text-[hsl(var(--text-4))]' :
+                    msg.role === 'user' ? 'bg-[hsl(var(--brand))] border-[hsl(var(--brand))] text-[hsl(var(--bg-surface))]' : 
+                    msg.role === 'gateway' ? 'bg-[hsl(var(--s-er-tx))] border-[hsl(var(--s-er-br))] text-[hsl(var(--s-er-tx))]' :
+                    'bg-[hsl(var(--s-ok-tx))] border-[hsl(var(--s-ok-br))] text-[hsl(var(--s-ok-tx))]'
                   }`}>
                     {msg.role === 'system' && <Gear size={16} />}
                     {msg.role === 'user' && <User size={16} />}
@@ -268,17 +268,17 @@ export default function Playground() {
                   </div>
                   
                   <div className={`rounded-none p-4 ${
-                    msg.role === 'system' ? 'bg-zinc-900/80 border border-zinc-700 text-zinc-300 font-mono text-xs' :
+                    msg.role === 'system' ? 'bg-[hsl(var(--bg-sunken))]/80 border border-[hsl(var(--border))] text-[hsl(var(--text-4))] font-mono text-xs' :
                     msg.role === 'user' ? 'bg-surface-1 border border-[hsl(var(--border))]' : 
-                    msg.role === 'gateway' ? 'bg-red-500/10 border border-red-500/30 text-red-200' :
+                    msg.role === 'gateway' ? 'bg-[hsl(var(--s-er-tx))] border border-[hsl(var(--s-er-br))] text-[hsl(var(--s-er-tx))]' :
                     'bg-surface-2 border border-[hsl(var(--border))] shadow-sm'
                   }`}>
-                    {msg.role === 'system' && <div className="text-[10px] uppercase tracking-wider mb-2 text-zinc-500 font-sans font-bold">System Prompt</div>}
+                    {msg.role === 'system' && <div className="text-[10px] uppercase tracking-wider mb-2 text-[hsl(var(--text-3))] font-sans font-bold">System Prompt</div>}
                     
                     {/* Violation Alert */}
                     {msg.violation && viewMode === 'chat' && (
                       <div className={`mb-3 p-2 text-xs border flex items-center justify-between ${
-                        msg.violation.action === 'BLOCKED' ? 'bg-red-500/20 border-red-500/50 text-red-500' : 'bg-yellow-500/20 border-yellow-500/50 text-yellow-500'
+                        msg.violation.action === 'BLOCKED' ? 'bg-[hsl(var(--s-er-tx))] border-[hsl(var(--s-er-br))] text-[hsl(var(--s-er-tx))]' : 'bg-[hsl(var(--s-wn-tx))] border-[hsl(var(--s-wn-br))] text-[hsl(var(--s-wn-tx))]'
                       }`}>
                         <span className="font-semibold flex items-center gap-2">
                           <WarningCircle size={14}/> {msg.violation.policy}
@@ -290,8 +290,8 @@ export default function Playground() {
                     {/* Diff Viewer in Trace Mode */}
                     {msg.diff && viewMode === 'trace' ? (
                       <div className="space-y-2 font-mono text-xs">
-                        <div className="text-red-400 bg-red-950/30 p-2 border border-red-900/50">- {msg.diff.original}</div>
-                        <div className="text-emerald-400 bg-emerald-950/30 p-2 border border-emerald-900/50">+ {msg.diff.redacted}</div>
+                        <div className="text-[hsl(var(--s-er-tx))] bg-[hsl(var(--s-er-tx))] p-2 border border-[hsl(var(--s-er-br))]">- {msg.diff.original}</div>
+                        <div className="text-[hsl(var(--s-ok-tx))] bg-[hsl(var(--s-ok-tx))] p-2 border border-[hsl(var(--s-ok-br))]">+ {msg.diff.redacted}</div>
                       </div>
                     ) : (
                       <p className="text-sm whitespace-pre-wrap leading-relaxed">
@@ -334,7 +334,7 @@ export default function Playground() {
             </div>
             <div className="flex justify-between items-center mt-3 text-xs text-[hsl(var(--text-3))] px-1">
               <div className="flex items-center gap-4">
-                <span className="flex items-center gap-1"><ShieldCheck size={12} className="text-emerald-500"/> Gateway inline protection active</span>
+                <span className="flex items-center gap-1"><ShieldCheck size={12} className="text-[hsl(var(--s-ok-tx))]"/> Gateway inline protection active</span>
               </div>
               <span>Shift + Enter to add a new line</span>
             </div>

@@ -34,7 +34,7 @@ function trendIndicator(calls: number) {
   const diff = calls - priorWeek;
   const pct = priorWeek > 0 ? Math.round((diff / priorWeek) * 100) : 0;
   if (pct > 0) return <span className="text-xs flex items-center gap-0.5 text-destructive"><ArrowUp size={10} />+{pct}%</span>;
-  if (pct < 0) return <span className="text-xs flex items-center gap-0.5 text-green-600 dark:text-green-400"><ArrowDown size={10} />{pct}%</span>;
+  if (pct < 0) return <span className="text-xs flex items-center gap-0.5 text-[hsl(var(--s-ok-tx))]"><ArrowDown size={10} />{pct}%</span>;
   return <span className="text-xs flex items-center gap-0.5" style={{ color: 'hsl(var(--text-4))' }}><Minus size={10} />0%</span>;
 }
 
@@ -283,7 +283,7 @@ export default function AgentDiscovery() {
                                       onClick={() => handleRequestOwnership(a)}>
                                       <Lightning size={12} />Ownership
                                     </Button>
-                                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-green-600 dark:text-green-400"
+                                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-[hsl(var(--s-ok-tx))]"
                                       onClick={() => handleWhitelist(a)}>
                                       <CheckCircle size={12} />Whitelist
                                     </Button>
@@ -464,7 +464,7 @@ export default function AgentDiscovery() {
                     <div key={idx} className="flex items-center justify-between p-3" style={{ border: '1px solid hsl(var(--border))' }}>
                       <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{check.label}</span>
                       {check.met ? (
-                        <CheckCircle size={16} className="text-green-600 dark:text-green-400" />
+                        <CheckCircle size={16} className="text-[hsl(var(--s-ok-tx))]" />
                       ) : (
                         <Warning size={16} className="text-destructive" />
                       )}

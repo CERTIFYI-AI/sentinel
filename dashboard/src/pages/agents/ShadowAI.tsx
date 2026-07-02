@@ -209,7 +209,7 @@ export default function ShadowAI() {
                             onClick={() => setInvestigateAgent(a)}>
                             <Eye size={12} />Investigate
                           </Button>
-                          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-green-600 dark:text-green-400"
+                          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-[hsl(var(--s-ok-tx))]"
                             onClick={() => handleWhitelist(a)}>
                             <CheckCircle size={12} />Whitelist
                           </Button>

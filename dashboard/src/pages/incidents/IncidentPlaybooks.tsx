@@ -168,7 +168,7 @@ export default function IncidentPlaybooks() {
       {/* Toast */}
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
         {toasts.map(t => (
-          <div key={t.id} className="px-4 py-2 rounded text-sm text-white shadow-lg"
+          <div key={t.id} className="px-4 py-2 rounded text-sm text-[hsl(var(--bg-surface))] shadow-lg"
             style={{ background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--s-er-tx))' : '#3b82f6' }}>
             {t.text}
           </div>
@@ -378,7 +378,7 @@ export default function IncidentPlaybooks() {
                   <p className="text-xs text-[hsl(var(--text-3))]">Escalate when the previous tier doesn't respond within SLA. Contact information verified monthly.</p>
                   {selected.escalationChain.map((tier, i) => (
                     <div key={tier.tier} className="flex items-center gap-3 p-3 border border-[hsl(var(--border))]">
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-[hsl(var(--bg-surface))] text-xs font-bold flex-shrink-0"
                         style={{ background: `hsl(${220 + i * 30} 70% 50%)` }}>
                         T{tier.tier}
                       </div>

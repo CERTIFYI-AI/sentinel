@@ -89,7 +89,7 @@ export default function AgentIAM() {
           <button onClick={() => toast.success('Exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
             <Export size={14} /> Export
           </button>
-          <button onClick={() => toast.info('Credential provisioning wizard')} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90">
+          <button onClick={() => toast.info('Credential provisioning wizard')} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm hover:opacity-90">
             <Plus size={14} /> Provision Identity
           </button>
         </div>
@@ -113,7 +113,7 @@ export default function AgentIAM() {
         <div className="flex items-center gap-3 p-3 border border-[hsl(45_93%_47%/0.5)] bg-[hsl(45_93%_47%/0.08)]">
           <Warning size={16} className="text-[hsl(45_85%_40%)] flex-shrink-0" />
           <p className="text-sm text-[hsl(var(--text-2))]"><span className="font-semibold">{stats.pendingRotation} credential(s)</span> pending rotation. Rotate immediately to maintain security posture.</p>
-          <button onClick={() => toast.success('Rotation initiated for all pending credentials')} className="ml-auto text-sm px-3 py-1 bg-[hsl(var(--brand))] text-white hover:opacity-90 flex-shrink-0">Rotate Now</button>
+          <button onClick={() => toast.success('Rotation initiated for all pending credentials')} className="ml-auto text-sm px-3 py-1 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] hover:opacity-90 flex-shrink-0">Rotate Now</button>
         </div>
       )}
 
@@ -212,7 +212,7 @@ export default function AgentIAM() {
                 </td>
                 <td className="px-3 py-2">
                   {r.unused.length > 0 ? (
-                    <button onClick={() => toast.success(`Revoked unused scopes for ${r.agent}`)} className="text-[10px] px-2 py-0.5 bg-[hsl(var(--brand))] text-white hover:opacity-90">Revoke Unused</button>
+                    <button onClick={() => toast.success(`Revoked unused scopes for ${r.agent}`)} className="text-[10px] px-2 py-0.5 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] hover:opacity-90">Revoke Unused</button>
                   ) : <span className="text-[10px] text-[hsl(var(--text-4))]">No action needed</span>}
                 </td>
               </tr>
@@ -312,7 +312,7 @@ export default function AgentIAM() {
             <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
               <button
                 onClick={() => setRotateTarget(selected)}
-                className="flex-1 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90"
+                className="flex-1 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90"
               >
                 Rotate Credential
               </button>

@@ -253,7 +253,7 @@ export default function ApprovalWorkflows() {
           <button onClick={() => toast.success('Exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
             <Export size={14} /> Export
           </button>
-          <button onClick={openCreate} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[hsl(var(--brand))] hover:opacity-90">
+          <button onClick={openCreate} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-[hsl(var(--bg-surface))] bg-[hsl(var(--brand))] hover:opacity-90">
             <Plus size={14} /> New Workflow
           </button>
         </div>
@@ -313,7 +313,7 @@ export default function ApprovalWorkflows() {
                       <span className="font-mono text-[10px] text-[hsl(var(--text-4))]">{r.id}</span>
                       <span className="text-[10px] px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-4))]">{r.type}</span>
                       <span className="text-[11px] px-2 py-0.5 font-medium" style={ss}>{r.status}</span>
-                      {r.pending > 0 && <span className="text-[10px] px-1.5 py-0.5 font-semibold text-white" style={{ background: 'hsl(45 85% 40%)' }}>{r.pending} pending</span>}
+                      {r.pending > 0 && <span className="text-[10px] px-1.5 py-0.5 font-semibold text-[hsl(var(--bg-surface))]" style={{ background: 'hsl(45 85% 40%)' }}>{r.pending} pending</span>}
                     </div>
                     <p className="text-sm font-semibold text-[hsl(var(--text-1))] truncate">{r.name}</p>
                     <p className="text-xs text-[hsl(var(--text-4))]">Approvers: {r.approvers} · SLA: {r.sla} · Completed: {r.totalCompleted}</p>
@@ -343,7 +343,7 @@ export default function ApprovalWorkflows() {
                       </div>
                       <button
                         onClick={() => setApproveTarget({ wf: r, pa })}
-                        className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-white bg-[hsl(var(--brand))] hover:opacity-90 flex-shrink-0 ml-3"
+                        className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-[hsl(var(--bg-surface))] bg-[hsl(var(--brand))] hover:opacity-90 flex-shrink-0 ml-3"
                       >
                         <CheckCircle size={11} /> Approve
                       </button>
@@ -439,7 +439,7 @@ export default function ApprovalWorkflows() {
                           <p className="text-sm font-medium text-[hsl(var(--text-1))]">{pa.title}</p>
                           <p className="text-xs text-[hsl(var(--text-4))]">{pa.currentStep} · {pa.requestedBy} · Due: {pa.dueAt}</p>
                         </div>
-                        <button onClick={() => setApproveTarget({ wf: selected, pa })} className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-white bg-[hsl(var(--brand))] hover:opacity-90 flex-shrink-0">
+                        <button onClick={() => setApproveTarget({ wf: selected, pa })} className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-[hsl(var(--bg-surface))] bg-[hsl(var(--brand))] hover:opacity-90 flex-shrink-0">
                           <CheckCircle size={11} /> Approve
                         </button>
                       </div>
@@ -505,7 +505,7 @@ export default function ApprovalWorkflows() {
             </div>
             <div className="flex justify-end gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
               <button onClick={() => setFormOpen(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">Cancel</button>
-              <button onClick={saveForm} className="px-4 py-2 text-sm font-medium text-white bg-[hsl(var(--brand))] hover:opacity-90">{editing ? 'Save Changes' : 'Create Workflow'}</button>
+              <button onClick={saveForm} className="px-4 py-2 text-sm font-medium text-[hsl(var(--bg-surface))] bg-[hsl(var(--brand))] hover:opacity-90">{editing ? 'Save Changes' : 'Create Workflow'}</button>
             </div>
           </div>
         </div>

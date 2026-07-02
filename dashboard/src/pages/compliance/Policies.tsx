@@ -19,8 +19,8 @@ function normalizeStatus(s: string): string {
   const map: Record<string,string> = { active: 'Published', review: 'In Review', expired: 'Archived', draft: 'Draft', archived: 'Archived' };
   return map[s] || s.charAt(0).toUpperCase() + s.slice(1);
 }
-const STATUS_MAP: Record<string,string> = { active:"bg-[hsl(var(--brand))]/20 text-[hsl(var(--brand))]", review:"bg-amber-500/20 text-amber-400", expired:"bg-red-500/20 text-red-400", draft:"bg-blue-500/20 text-blue-400", archived:"bg-zinc-500/20 text-[hsl(var(--text-3))]" };
-const RISK_MAP: Record<string,string> = { High:"text-red-400 bg-red-500/20", Medium:"text-amber-400 bg-amber-500/20", Low:"text-[hsl(var(--brand))] bg-[hsl(var(--brand))]/20" };
+const STATUS_MAP: Record<string,string> = { active:"bg-[hsl(var(--brand))]/20 text-[hsl(var(--brand))]", review:"bg-[hsl(var(--s-wn-tx))] text-[hsl(var(--s-wn-tx))]", expired:"bg-[hsl(var(--s-er-tx))] text-[hsl(var(--s-er-tx))]", draft:"bg-[hsl(var(--s-in-tx))] text-[hsl(var(--s-in-tx))]", archived:"bg-[hsl(var(--bg-muted))]0/20 text-[hsl(var(--text-3))]" };
+const RISK_MAP: Record<string,string> = { High:"text-[hsl(var(--s-er-tx))] bg-[hsl(var(--s-er-tx))]", Medium:"text-[hsl(var(--s-wn-tx))] bg-[hsl(var(--s-wn-tx))]", Low:"text-[hsl(var(--brand))] bg-[hsl(var(--brand))]/20" };
 const CATS = ["AI Usage","Data Privacy","Fairness","Security","Vendor Mgmt","Incident Response"];
 const FWS = ["EU AI Act","NIST AI RMF","GDPR","ISO 27001","SOC 2","OWASP LLM"];
 const OWNERS = ["Emma Wilson","Maria Santos","James Liu","Bob Kumar","Alice Chen","David Kim","Sarah Park","Raj Patel"];
@@ -88,7 +88,7 @@ export default function PolicyManagement() {
 
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
   const paged = filtered.slice((page-1)*PER_PAGE, page*PER_PAGE);
-  const stats = [{label:"Total Policies",value:policies.length,icon:"FileText",color:"text-blue-400"},{label:"Active",value:policies.filter(p=>p.status==="active").length,icon:"CheckCircle",color:"text-[hsl(var(--brand))]"},{label:"Under Review",value:policies.filter(p=>p.status==="review").length,icon:"Clock",color:"text-amber-400"},{label:"Expired",value:policies.filter(p=>p.status==="expired").length,icon:"XCircle",color:"text-red-400"}];
+  const stats = [{label:"Total Policies",value:policies.length,icon:"FileText",color:"text-[hsl(var(--s-in-tx))]"},{label:"Active",value:policies.filter(p=>p.status==="active").length,icon:"CheckCircle",color:"text-[hsl(var(--brand))]"},{label:"Under Review",value:policies.filter(p=>p.status==="review").length,icon:"Clock",color:"text-[hsl(var(--s-wn-tx))]"},{label:"Expired",value:policies.filter(p=>p.status==="expired").length,icon:"XCircle",color:"text-[hsl(var(--s-er-tx))]"}];
   const iconMap: Record<string,any> = {FileText,CheckCircle,Clock,XCircle};
 
   const openCreate = () => { setForm({name:"",category:"AI Usage",framework:"EU AI Act",owner:"Emma Wilson",status:"draft",scope:"",description:"",risk:"Medium",reviewFreq:"Quarterly"}); setEditPolicy(null); setShowCreate(true); };
@@ -170,7 +170,7 @@ export default function PolicyManagement() {
                   <td className="px-4 py-3 text-[hsl(var(--text-2))]">{p.version}</td>
                   <td className="px-4 py-3 text-[hsl(var(--text-2))]">{p.owner}</td>
                   <td className="px-4 py-3 text-[hsl(var(--text-3))] text-xs">{p.updated}</td>
-                  <td className="px-4 py-3"><Badge variant="outline" className="text-xs border-zinc-600 text-[hsl(var(--text-2))]">{p.framework}</Badge></td>
+                  <td className="px-4 py-3"><Badge variant="outline" className="text-xs border-[hsl(var(--border))] text-[hsl(var(--text-2))]">{p.framework}</Badge></td>
                   <td className="px-4 py-3"><span className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_MAP[p.status]||""}`}>{normalizeStatus(p.status)}</span></td>
                   <td className="px-4 py-3">
                     <div className="relative">
@@ -181,7 +181,7 @@ export default function PolicyManagement() {
                         <button className="w-full text-left px-3 py-2 text-sm text-[hsl(var(--text-2))] hover:bg-muted flex items-center gap-2" onClick={e=>{e.stopPropagation();setActionMenu(null);nav(`/policy-editor?id=${p.id}`);}}><Eye className="w-3 h-3"/>Open Editor</button>
                         <button className="w-full text-left px-3 py-2 text-sm text-[hsl(var(--text-2))] hover:bg-muted flex items-center gap-2" onClick={e=>{e.stopPropagation();setActionMenu(null);}}><Copy className="w-3 h-3"/>Clone</button>
                         <button className="w-full text-left px-3 py-2 text-sm text-[hsl(var(--text-2))] hover:bg-muted flex items-center gap-2" onClick={e=>{e.stopPropagation();setActionMenu(null);}}><Archive className="w-3 h-3"/>Archive</button>
-                        <button className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-muted flex items-center gap-2" onClick={e=>{e.stopPropagation();setActionMenu(null);}}><Trash2 className="w-3 h-3"/>Delete</button>
+                        <button className="w-full text-left px-3 py-2 text-sm text-[hsl(var(--s-er-tx))] hover:bg-muted flex items-center gap-2" onClick={e=>{e.stopPropagation();setActionMenu(null);}}><Trash2 className="w-3 h-3"/>Delete</button>
                       </div>}
                     </div>
                   </td>
@@ -270,7 +270,7 @@ export default function PolicyManagement() {
               <TabsContent value="versions" className="space-y-3 mt-4">
                 {sel.versions.map((v,i)=>(
                   <div key={i} className="bg-raised/30 rounded-lg p-3 flex items-start gap-3">
-                    <div className={`w-2 h-2 rounded-full mt-2 ${v.current?"bg-[hsl(var(--brand))]":"bg-zinc-600"}`}/>
+                    <div className={`w-2 h-2 rounded-full mt-2 ${v.current?"bg-[hsl(var(--brand))]":"bg-[hsl(var(--bg-sunken))]"}`}/>
                     <div className="flex-1">
                       <div className="flex items-center justify-between"><span className="text-foreground text-sm font-medium">{v.ver}</span>{v.current&&<Badge className="bg-[hsl(var(--brand))]/20 text-[hsl(var(--brand))] text-xs">Current</Badge>}</div>
                       <p className="text-[hsl(var(--text-3))] text-xs mt-1">{v.date} by {v.author}</p>
@@ -287,7 +287,7 @@ export default function PolicyManagement() {
               <TabsContent value="controls" className="space-y-3 mt-4">
                 {sel.controls.map((c,i)=>(
                   <div key={i} className="bg-raised/30 rounded-lg p-3">
-                    <div className="flex items-center justify-between"><span className="text-foreground text-sm">{c.id}</span><span className={`px-2 py-0.5 rounded text-xs ${c.status==="implemented"?"bg-[hsl(var(--brand))]/20 text-[hsl(var(--brand))]":c.status==="partial"?"bg-amber-500/20 text-amber-400":"bg-blue-500/20 text-blue-400"}`}>{c.status}</span></div>
+                    <div className="flex items-center justify-between"><span className="text-foreground text-sm">{c.id}</span><span className={`px-2 py-0.5 rounded text-xs ${c.status==="implemented"?"bg-[hsl(var(--brand))]/20 text-[hsl(var(--brand))]":c.status==="partial"?"bg-[hsl(var(--s-wn-tx))] text-[hsl(var(--s-wn-tx))]":"bg-[hsl(var(--s-in-tx))] text-[hsl(var(--s-in-tx))]"}`}>{c.status}</span></div>
                     <p className="text-[hsl(var(--text-2))] text-sm mt-1">{c.name}</p>
                     {c.score>0&&<div className="mt-2"><div className="flex justify-between text-xs text-[hsl(var(--text-3))] mb-1"><span>Effectiveness</span><span>{c.score}%</span></div><div className="w-full bg-muted rounded-full h-1.5"><div className="h-1.5 rounded-full bg-[hsl(var(--brand))]" style={{width:`${c.score}%`}}/></div></div>}
                   </div>
@@ -313,7 +313,7 @@ export default function PolicyManagement() {
               <div className="grid grid-cols-2 gap-4 mt-2">
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <Badge className="bg-zinc-700 text-zinc-300 text-xs">{prev.ver}</Badge>
+                    <Badge className="bg-[hsl(var(--bg-sunken))] text-[hsl(var(--text-4))] text-xs">{prev.ver}</Badge>
                     <span className="text-xs" style={{color:'hsl(var(--text-4))'}}>{prev.date}</span>
                   </div>
                   <div className="p-3 text-xs font-mono whitespace-pre-wrap" style={{background:'hsl(var(--bg-raised))',border:'1px solid hsl(var(--border))',minHeight:180,color:'hsl(var(--text-2))'}}>{prevText}</div>

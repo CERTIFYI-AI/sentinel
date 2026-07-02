@@ -354,7 +354,7 @@ export default function CommitteeManagement() {
                 <TabsContent value="members" className="mt-4 space-y-2">
                   {selected.members.map((m, i) => (
                     <div key={i} className="flex items-center gap-3 p-3 border border-[hsl(var(--border))] rounded-none">
-                      <div className="w-8 h-8 rounded-full bg-[hsl(var(--brand))] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-[hsl(var(--brand))] flex items-center justify-center text-[hsl(var(--bg-surface))] text-xs font-bold flex-shrink-0">
                         {(m.name ?? '').split(' ').filter(Boolean).map((n: string) => n[0]).join('').slice(0,2) || '?'}
                       </div>
                       <div className="flex-1 min-w-0">

@@ -200,7 +200,7 @@ export default function DocumentManagement() {
                 <td className="px-3 py-2" onClick={e=>e.stopPropagation()}>
                   <div className="flex gap-1">
                     <button onClick={()=>openEdit(doc)} className="p-1 hover:bg-raised" title="Edit"><PencilSimple size={14} style={{color:'hsl(var(--text-4))'}} /></button>
-                    <button onClick={()=>setDeleteTarget(doc)} className="p-1 hover:bg-red-50" title="Delete"><Trash size={14} style={{color:'hsl(0 72% 51%)'}} /></button>
+                    <button onClick={()=>setDeleteTarget(doc)} className="p-1 hover:bg-[hsl(var(--s-er-bg))]" title="Delete"><Trash size={14} style={{color:'hsl(0 72% 51%)'}} /></button>
                   </div>
                 </td>
               </tr>
@@ -293,7 +293,7 @@ export default function DocumentManagement() {
               </FormField>
               <div className="flex items-center justify-between p-3 border" style={{borderRadius:0,borderColor:'hsl(var(--border))',background:'hsl(var(--bg-muted))'}}>
                 <div className="flex items-center gap-2"><Bell size={16} style={{color:'hsl(var(--brand))'}} /><div><p className="text-xs font-semibold" style={{color:'hsl(var(--text-1))'}}>Enable Notifications</p><p className="text-[10px]" style={{color:'hsl(var(--text-4))'}}>Receive alerts before document expiry.</p></div></div>
-                <button onClick={()=>setF('enableNotifications')(!form.enableNotifications)} className="w-10 h-5 rounded-full relative transition-colors" style={{background:form.enableNotifications?'hsl(var(--brand))':'hsl(var(--border))'}}><span className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all" style={{left:form.enableNotifications?'22px':'2px'}} /></button>
+                <button onClick={()=>setF('enableNotifications')(!form.enableNotifications)} className="w-10 h-5 rounded-full relative transition-colors" style={{background:form.enableNotifications?'hsl(var(--brand))':'hsl(var(--border))'}}><span className="absolute top-0.5 w-4 h-4 rounded-full bg-[hsl(var(--bg-surface))] shadow transition-all" style={{left:form.enableNotifications?'22px':'2px'}} /></button>
               </div>
               {form.enableNotifications && (
                 <FormField label="Notification Days Before Expiry" hint="Number of days before expiry to send notification (1-90).">

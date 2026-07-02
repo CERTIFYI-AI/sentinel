@@ -91,17 +91,17 @@ export default function Servers() {
                   </td>
                   <td className="px-6 py-4">
                     {server.status === 'healthy' && (
-                      <Badge className="bg-emerald-500/10 text-emerald-500 border-0 rounded-none gap-1 px-2 py-1">
+                      <Badge className="bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--s-ok-tx))] border-0 rounded-none gap-1 px-2 py-1">
                         <CheckCircle weight="fill" /> Healthy
                       </Badge>
                     )}
                     {server.status === 'degraded' && (
-                      <Badge className="bg-yellow-500/10 text-yellow-500 border-0 rounded-none gap-1 px-2 py-1">
+                      <Badge className="bg-[hsl(var(--s-wn-tx))] text-[hsl(var(--s-wn-tx))] border-0 rounded-none gap-1 px-2 py-1">
                         <WarningCircle weight="fill" /> Degraded
                       </Badge>
                     )}
                     {server.status === 'offline' && (
-                      <Badge className="bg-red-500/10 text-red-500 border-0 rounded-none gap-1 px-2 py-1">
+                      <Badge className="bg-[hsl(var(--s-er-tx))] text-[hsl(var(--s-er-tx))] border-0 rounded-none gap-1 px-2 py-1">
                         <XCircle weight="fill" /> Offline
                       </Badge>
                     )}

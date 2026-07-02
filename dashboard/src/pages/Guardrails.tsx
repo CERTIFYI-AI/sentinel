@@ -199,7 +199,7 @@ export default function Guardrails() {
             Define, configure, and enforce AI safety guardrails and runtime constraints across all deployed agents
           </p>
         </div>
-        <button onClick={openCreate} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90">
+        <button onClick={openCreate} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm hover:opacity-90">
           <Plus size={14} /> New Guardrail
         </button>
       </div>
@@ -391,7 +391,7 @@ export default function Guardrails() {
                 style={{ color: selected.status === 'active' ? 'hsl(var(--destructive))' : 'hsl(var(--s-ok-tx))' }}>
                 {selected.status === 'active' ? 'Disable Rule' : 'Enable Rule'}
               </button>
-              <button onClick={() => openEdit(selected)} className="flex-1 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90">
+              <button onClick={() => openEdit(selected)} className="flex-1 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90">
                 Edit Rule
               </button>
             </div>
@@ -452,7 +452,7 @@ export default function Guardrails() {
                 Cancel
               </button>
               <button onClick={handleSave} disabled={!form.name.trim()}
-                className="flex-1 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90 disabled:opacity-40">
+                className="flex-1 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90 disabled:opacity-40">
                 {editTarget ? 'Save Changes' : 'Create Rule'}
               </button>
             </div>

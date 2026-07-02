@@ -281,14 +281,14 @@ function FrameworkDetailSheet({
 
   const statusColor = (status: string) => {
     if (status === "Compliant" || status === "Implemented" || status === "compliant") return "text-[hsl(var(--brand))] border-primary/20 bg-[hsl(var(--brand))]/10";
-    if (status === "Partial" || status === "partial") return "text-amber-400 border-amber-500/20 bg-amber-500/10";
-    return "text-red-400 border-red-500/20 bg-red-500/10";
+    if (status === "Partial" || status === "partial") return "text-[hsl(var(--s-wn-tx))] border-[hsl(var(--s-wn-br))] bg-[hsl(var(--s-wn-tx))]";
+    return "text-[hsl(var(--s-er-tx))] border-[hsl(var(--s-er-br))] bg-[hsl(var(--s-er-tx))]";
   };
 
   const severityColor = (s: string) => {
-    if (s === "Critical") return "text-red-400 border-red-500/20 bg-red-500/10";
-    if (s === "High") return "text-amber-400 border-amber-500/20 bg-amber-500/10";
-    return "text-blue-400 border-blue-500/20 bg-blue-500/10";
+    if (s === "Critical") return "text-[hsl(var(--s-er-tx))] border-[hsl(var(--s-er-br))] bg-[hsl(var(--s-er-tx))]";
+    if (s === "High") return "text-[hsl(var(--s-wn-tx))] border-[hsl(var(--s-wn-br))] bg-[hsl(var(--s-wn-tx))]";
+    return "text-[hsl(var(--s-in-tx))] border-[hsl(var(--s-in-br))] bg-[hsl(var(--s-in-tx))]";
   };
 
   return (
@@ -441,7 +441,7 @@ export default function Frameworks() {
         </Card>
         <Card>
           <CardContent className="pt-4">
-            <div className="text-2xl font-bold text-amber-500">
+            <div className="text-2xl font-bold text-[hsl(var(--s-wn-tx))]">
               {frameworks.filter(f => f.status === "partial").length}
             </div>
             <p className="text-sm text-muted-foreground">Partial</p>
@@ -613,8 +613,8 @@ export default function Frameworks() {
                         f.status === "compliant"
                           ? "bg-[hsl(var(--brand))]/10 text-[hsl(var(--brand))] border-primary/20"
                           : f.status === "partial"
-                          ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                          : "bg-red-500/10 text-red-400 border-red-500/20"
+                          ? "bg-[hsl(var(--s-wn-tx))] text-[hsl(var(--s-wn-tx))] border-[hsl(var(--s-wn-br))]"
+                          : "bg-[hsl(var(--s-er-tx))] text-[hsl(var(--s-er-tx))] border-[hsl(var(--s-er-br))]"
                       )}
                     >
                       {f.status.charAt(0).toUpperCase() + f.status.slice(1)}
@@ -622,7 +622,7 @@ export default function Frameworks() {
                   </td>
                   <td className="p-2">{f.passing}/{f.controls}</td>
                   <td className="p-2">
-                    <span className={cn(f.gaps > 2 ? "text-amber-400" : "text-muted-foreground")}>
+                    <span className={cn(f.gaps > 2 ? "text-[hsl(var(--s-wn-tx))]" : "text-muted-foreground")}>
                       {f.gaps}
                     </span>
                   </td>

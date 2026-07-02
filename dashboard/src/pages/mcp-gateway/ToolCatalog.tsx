@@ -37,7 +37,7 @@ export default function ToolCatalog() {
           title="MCP Tool Catalog" 
           description="A unified registry of all tools discovered across your connected MCP servers. Assign risk levels and configure HITL approvals."
         />
-        <Button variant="outline" className="border-[hsl(var(--brand))] text-[hsl(var(--brand))] hover:bg-[hsl(var(--brand))] hover:text-white rounded-none flex items-center gap-2">
+        <Button variant="outline" className="border-[hsl(var(--brand))] text-[hsl(var(--brand))] hover:bg-[hsl(var(--brand))] hover:text-[hsl(var(--bg-surface))] rounded-none flex items-center gap-2">
           <Wrench weight="fill" /> Sync Tools
         </Button>
       </div>
@@ -92,10 +92,10 @@ export default function ToolCatalog() {
                     {tool.server}
                   </td>
                   <td className="px-6 py-4">
-                    {tool.risk === 'critical' && <Badge className="bg-red-500/10 text-red-500 border-red-500/20 rounded-none uppercase text-[10px]">Critical</Badge>}
-                    {tool.risk === 'high' && <Badge className="bg-orange-500/10 text-orange-500 border-orange-500/20 rounded-none uppercase text-[10px]">High</Badge>}
-                    {tool.risk === 'medium' && <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 rounded-none uppercase text-[10px]">Medium</Badge>}
-                    {tool.risk === 'low' && <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 rounded-none uppercase text-[10px]">Low</Badge>}
+                    {tool.risk === 'critical' && <Badge className="bg-[hsl(var(--s-er-tx))] text-[hsl(var(--s-er-tx))] border-[hsl(var(--s-er-br))] rounded-none uppercase text-[10px]">Critical</Badge>}
+                    {tool.risk === 'high' && <Badge className="bg-[hsl(var(--s-wn-tx))] text-[hsl(var(--s-wn-tx))] border-[hsl(var(--s-wn-br))] rounded-none uppercase text-[10px]">High</Badge>}
+                    {tool.risk === 'medium' && <Badge className="bg-[hsl(var(--s-wn-tx))] text-[hsl(var(--s-wn-tx))] border-[hsl(var(--s-wn-br))] rounded-none uppercase text-[10px]">Medium</Badge>}
+                    {tool.risk === 'low' && <Badge className="bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--s-ok-tx))] border-[hsl(var(--s-ok-br))] rounded-none uppercase text-[10px]">Low</Badge>}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex justify-center items-center gap-2">
@@ -105,7 +105,7 @@ export default function ToolCatalog() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     {tool.status === 'active' ? (
-                       <Badge className="bg-emerald-500/10 text-emerald-500 border-0 rounded-none">Active</Badge>
+                       <Badge className="bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--s-ok-tx))] border-0 rounded-none">Active</Badge>
                     ) : (
                        <Badge className="bg-surface-3 text-[hsl(var(--text-3))] border-0 rounded-none">Disabled</Badge>
                     )}

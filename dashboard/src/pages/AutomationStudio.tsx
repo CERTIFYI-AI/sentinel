@@ -320,7 +320,7 @@ function NodeRow({ node, index, total, onUpdate, onDelete }: {
               </div>
             ))}
             <div className="flex gap-2 mt-2">
-              <button onClick={save} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-[hsl(var(--brand))] text-white hover:opacity-90">
+              <button onClick={save} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] hover:opacity-90">
                 <Check size={11} /> Save
               </button>
               <button onClick={() => setEditing(false)} className="px-3 py-1.5 text-xs border hover:bg-surface" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-3))' }}>

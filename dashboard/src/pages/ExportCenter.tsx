@@ -41,17 +41,17 @@ const RECENT_JOBS: ExportJob[] = [
 ];
 
 const formatColors: Record<string, string> = {
-  PDF: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400",
-  JSON: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400",
-  CSV: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400",
-  XLSX: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400",
+  PDF: "bg-[hsl(var(--s-er-bg))] text-[hsl(var(--s-er-tx))]",
+  JSON: "bg-[hsl(var(--s-in-bg))] text-[hsl(var(--s-in-tx))]",
+  CSV: "bg-[hsl(var(--s-ok-bg))] text-[hsl(var(--s-ok-tx))]",
+  XLSX: "bg-[hsl(var(--s-ok-bg))] text-[hsl(var(--s-ok-tx))]",
 };
 
 const jobStatusConfig: Record<string, { color: string; icon: typeof CheckCircle2 }> = {
-  queued: { color: "text-slate-500", icon: Clock },
-  generating: { color: "text-blue-500", icon: Play },
-  completed: { color: "text-green-500", icon: CheckCircle2 },
-  failed: { color: "text-red-500", icon: AlertTriangle },
+  queued: { color: "text-[hsl(var(--text-3))]", icon: Clock },
+  generating: { color: "text-[hsl(var(--s-in-tx))]", icon: Play },
+  completed: { color: "text-[hsl(var(--s-ok-tx))]", icon: CheckCircle2 },
+  failed: { color: "text-[hsl(var(--s-er-tx))]", icon: AlertTriangle },
 };
 
 export default function ExportCenter() {
@@ -66,16 +66,16 @@ export default function ExportCenter() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-teal-100 dark:bg-teal-950 rounded-lg"><Download size={20} className="text-teal-600 dark:text-teal-400" /></div>
+          <div className="p-2 bg-[hsl(var(--s-in-bg))] rounded-lg"><Download size={20} className="text-[hsl(var(--s-in-tx))]" /></div>
           <div>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Export Center</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Generate compliance reports, audit exports, and regulatory documentation</p>
+            <h1 className="text-xl font-bold text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))]">Export Center</h1>
+            <p className="text-sm text-[hsl(var(--text-3))]">Generate compliance reports, audit exports, and regulatory documentation</p>
           </div>
         </div>
       </div>
 
       {/* Recent Jobs */}
-      <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+      <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium flex items-center gap-2"><Clock size={14} /> Recent Exports</CardTitle>
         </CardHeader>
@@ -85,19 +85,19 @@ export default function ExportCenter() {
               const sc = jobStatusConfig[job.status];
               const Icon = sc.icon;
               return (
-                <div key={job.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                <div key={job.id} className="flex items-center justify-between p-3 rounded-lg bg-[hsl(var(--bg-muted))]">
                   <div className="flex items-center gap-3">
                     <Icon size={16} className={sc.color} />
                     <div>
-                      <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{job.template}</p>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">{job.startedAt} · {job.requestedBy}</p>
+                      <p className="text-sm font-medium text-[hsl(var(--text-1))]">{job.template}</p>
+                      <p className="text-[11px] text-[hsl(var(--text-3))]">{job.startedAt} · {job.requestedBy}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    {job.size && <span className="text-xs text-slate-500 dark:text-slate-400">{job.size}</span>}
+                    {job.size && <span className="text-xs text-[hsl(var(--text-3))]">{job.size}</span>}
                     <span className={`text-[10px] font-medium capitalize ${sc.color}`}>{job.status}</span>
                     {job.status === "completed" && (
-                      <button className="text-xs text-green-600 dark:text-green-400 hover:underline font-medium">Download</button>
+                      <button className="text-xs text-[hsl(var(--s-ok-tx))] hover:underline font-medium">Download</button>
                     )}
                   </div>
                 </div>
@@ -109,30 +109,30 @@ export default function ExportCenter() {
 
       {/* Export Templates */}
       <div>
-        <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-3">Export Templates</h2>
+        <h2 className="text-sm font-semibold text-[hsl(var(--text-1))] mb-3">Export Templates</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {TEMPLATES.map(t => (
-            <Card key={t.id} className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:shadow-sm transition-shadow">
+            <Card key={t.id} className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] hover:shadow-sm transition-shadow">
               <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <FileText size={16} className="text-slate-400 flex-shrink-0" />
+                    <FileText size={16} className="text-[hsl(var(--text-4))] flex-shrink-0" />
                     <div>
-                      <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{t.name}</h3>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{t.description}</p>
+                      <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))]">{t.name}</h3>
+                      <p className="text-[11px] text-[hsl(var(--text-3))] mt-0.5">{t.description}</p>
                     </div>
                   </div>
                   <span className={`text-[10px] font-medium px-2 py-0.5 rounded flex-shrink-0 ${formatColors[t.format]}`}>{t.format}</span>
                 </div>
-                <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-                  <div className="flex items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400">
+                <div className="flex items-center justify-between mt-3 pt-3 border-t border-[hsl(var(--border))]">
+                  <div className="flex items-center gap-3 text-[11px] text-[hsl(var(--text-3))]">
                     <span className="flex items-center gap-1"><Calendar size={10} /> Last: {t.lastGenerated}</span>
                     <span className="flex items-center gap-1"><Clock size={10} /> {t.estimatedTime}</span>
                   </div>
                   <button
                     onClick={() => handleGenerate(t.id)}
                     disabled={generating === t.id}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[hsl(var(--s-ok-tx))] hover:bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))] rounded-lg transition-colors disabled:opacity-50"
                   >
                     {generating === t.id ? (
                       <><span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> Generating...</>

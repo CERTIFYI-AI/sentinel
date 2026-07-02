@@ -70,7 +70,7 @@ function isOverdue(item: HITLItem): boolean {
 
 function slaDisplay(item: HITLItem) {
   if (item.status === 'approved' || item.status === 'rejected') {
-    return <span className="text-xs text-green-600 dark:text-green-400">Completed</span>;
+    return <span className="text-xs text-[hsl(var(--s-ok-tx))]">Completed</span>;
   }
   const deadline = new Date(item.slaDeadline);
   const now = new Date();

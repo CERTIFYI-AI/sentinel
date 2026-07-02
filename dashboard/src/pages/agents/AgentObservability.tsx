@@ -65,7 +65,7 @@ export default function AgentObservability() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-[hsl(var(--text-1))] flex items-center gap-2">
-              1,432 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+              1,432 <CheckCircle2 className="h-4 w-4 text-[hsl(var(--s-ok-tx))]" />
             </div>
           </CardContent>
         </Card>
@@ -75,7 +75,7 @@ export default function AgentObservability() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-[hsl(var(--text-1))] flex items-center gap-2">
-              245ms <Clock className="h-4 w-4 text-blue-500" />
+              245ms <Clock className="h-4 w-4 text-[hsl(var(--s-in-tx))]" />
             </div>
           </CardContent>
         </Card>
@@ -85,7 +85,7 @@ export default function AgentObservability() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-[hsl(var(--text-1))] flex items-center gap-2">
-              3 <ShieldAlert className="h-4 w-4 text-rose-500" />
+              3 <ShieldAlert className="h-4 w-4 text-[hsl(var(--s-er-tx))]" />
             </div>
           </CardContent>
         </Card>
@@ -93,24 +93,24 @@ export default function AgentObservability() {
 
       <Card className="bg-black/90 border-[hsl(var(--border))] flex flex-col h-[600px] font-mono shadow-2xl">
         <CardHeader className="border-b border-white/10 bg-black py-3">
-          <CardTitle className="text-xs font-semibold text-emerald-500 uppercase flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <CardTitle className="text-xs font-semibold text-[hsl(var(--s-ok-tx))] uppercase flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-[hsl(var(--s-ok-tx))] animate-pulse" />
             Live Telemetry Stream
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex-1 overflow-y-auto p-4 space-y-2 text-sm text-gray-300">
+        <CardContent className="flex-1 overflow-y-auto p-4 space-y-2 text-sm text-[hsl(var(--text-4))]">
           {logs.map((log) => (
-            <div key={log.id} className="flex gap-4 p-2 hover:bg-white/5 rounded transition-colors">
-              <span className="text-gray-500 shrink-0">
+            <div key={log.id} className="flex gap-4 p-2 hover:bg-[hsl(var(--bg-surface))]/5 rounded transition-colors">
+              <span className="text-[hsl(var(--text-3))] shrink-0">
                 {new Date(log.timestamp).toLocaleTimeString()}
               </span>
-              <span className="text-blue-400 w-48 shrink-0 truncate">
+              <span className="text-[hsl(var(--s-in-tx))] w-48 shrink-0 truncate">
                 [{log.payload.sourceModule || 'system'}]
               </span>
-              <span className={`w-24 shrink-0 font-bold ${log.payload.status === 'failed' ? 'text-red-400' : log.payload.status === 'processing' ? 'text-amber-400' : 'text-emerald-400'}`}>
+              <span className={`w-24 shrink-0 font-bold ${log.payload.status === 'failed' ? 'text-[hsl(var(--s-er-tx))]' : log.payload.status === 'processing' ? 'text-[hsl(var(--s-wn-tx))]' : 'text-[hsl(var(--s-ok-tx))]'}`}>
                 {log.payload.status?.toUpperCase() || 'INFO'}
               </span>
-              <span className="text-gray-100 flex-1 break-all">
+              <span className="text-[hsl(var(--text-1))] flex-1 break-all">
                 {log.payload.type || 'EXECUTION_LOG'} - {JSON.stringify(log.payload)}
               </span>
             </div>

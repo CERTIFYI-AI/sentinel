@@ -145,12 +145,12 @@ export default function RegRadar() {
                         <span className="text-xs font-mono text-[hsl(var(--text-3))]">{item.relevance}%</span>
                       </div>
                     </td>
-                    <td className="px-3 py-2.5">{item.actionRequired?<span className="text-xs px-1.5 py-0.5 bg-red-50 text-red-600 border border-red-200">Required</span>:<span className="text-xs text-[hsl(var(--text-4))]">—</span>}</td>
+                    <td className="px-3 py-2.5">{item.actionRequired?<span className="text-xs px-1.5 py-0.5 bg-[hsl(var(--s-er-bg))] text-[hsl(var(--s-er-tx))] border border-[hsl(var(--s-er-br))]">Required</span>:<span className="text-xs text-[hsl(var(--text-4))]">—</span>}</td>
                     <td className="px-3 py-2.5 text-right" onClick={e=>e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
                         <button onClick={() => { setViewItem(item); setModal("view"); }} className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"><Eye size={14} /></button>
                         <button onClick={() => openEdit(item)} className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"><PencilSimple size={14} /></button>
-                        <button onClick={() => setDeleteTarget(item)} className="p-1.5 hover:bg-red-50 text-[hsl(0_72%_51%)]"><Trash size={14} /></button>
+                        <button onClick={() => setDeleteTarget(item)} className="p-1.5 hover:bg-[hsl(var(--s-er-bg))] text-[hsl(0_72%_51%)]"><Trash size={14} /></button>
                       </div>
                     </td>
                   </tr>
@@ -203,7 +203,7 @@ export default function RegRadar() {
                 <StatusBadge status={viewItem.impactLevel} />
                 <StatusBadge status={viewItem.status} />
                 <span className="text-xs px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))]">{viewItem.type}</span>
-                {viewItem.actionRequired&&<span className="text-xs px-1.5 py-0.5 bg-red-50 text-red-600 border border-red-200">Action Required</span>}
+                {viewItem.actionRequired&&<span className="text-xs px-1.5 py-0.5 bg-[hsl(var(--s-er-bg))] text-[hsl(var(--s-er-tx))] border border-[hsl(var(--s-er-br))]">Action Required</span>}
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 {[["Jurisdiction",viewItem.jurisdiction],["Effective Date",viewItem.effectiveDate],["Owner",viewItem.owner],["Prep Timeline",viewItem.prepTimeline],["Relevance Score",`${viewItem.relevance}%`]].map(([k,v])=>(

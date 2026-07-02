@@ -269,7 +269,7 @@ export default function VulnTracker() {
                           </Button>
                           {v.status !== 'patched' && (
                             <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { setPatchTarget(v); setPatchEvidence(''); }}>
-                              <Wrench size={14} className="text-green-600 dark:text-green-400" />
+                              <Wrench size={14} className="text-[hsl(var(--s-ok-tx))]" />
                             </Button>
                           )}
                           <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setDeleteTarget(v)}>
@@ -416,7 +416,7 @@ export default function VulnTracker() {
                 <TabsContent value="patches" className="space-y-3 mt-4">
                   {selectedVuln.patchDate ? (
                     <div className="flex items-start gap-3 p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                      <CheckCircle size={14} weight="fill" className="text-green-600 dark:text-green-400 mt-0.5" />
+                      <CheckCircle size={14} weight="fill" className="text-[hsl(var(--s-ok-tx))] mt-0.5" />
                       <div>
                         <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>Patched on {formatDate(selectedVuln.patchDate)}</p>
                         <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>By {selectedVuln.assignee}</p>

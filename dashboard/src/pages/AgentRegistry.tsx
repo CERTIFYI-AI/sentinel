@@ -141,7 +141,7 @@ export default function AgentRegistry() {
       </button>
       <button
         onClick={() => { setForm(BLANK); setShowCreate(true) }}
-        className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90"
+        className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm hover:opacity-90"
       >
         <Plus size={14} weight="bold" /> Register Agent
       </button>
@@ -388,7 +388,7 @@ export default function AgentRegistry() {
                       className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={handleEdit} className="flex-1 py-2 bg-[hsl(var(--brand))] text-white text-sm">Save</button>
+                    <button onClick={handleEdit} className="flex-1 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm">Save</button>
                     <button onClick={() => setEditMode(false)} className="px-4 py-2 border border-[hsl(var(--border))] text-sm">Cancel</button>
                   </div>
                 </div>
@@ -467,7 +467,7 @@ export default function AgentRegistry() {
               </div>
             </div>
             <div className="flex gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
-              <button onClick={handleCreate} className="flex-1 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium">Register Agent</button>
+              <button onClick={handleCreate} className="flex-1 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium">Register Agent</button>
               <button onClick={() => setShowCreate(false)} className="px-4 py-2 border border-[hsl(var(--border))] text-sm">Cancel</button>
             </div>
           </div>
@@ -483,7 +483,7 @@ export default function AgentRegistry() {
             <h3 className="font-semibold text-[hsl(var(--text-1))] mb-1">Deregister Agent?</h3>
             <p className="text-sm text-[hsl(var(--text-3))] mb-4">This will permanently remove the agent from the registry. This action cannot be undone.</p>
             <div className="flex gap-2">
-              <button onClick={() => handleDelete(deleteTarget)} className="flex-1 py-2 bg-[hsl(var(--destructive))] text-white text-sm">Deregister</button>
+              <button onClick={() => handleDelete(deleteTarget)} className="flex-1 py-2 bg-[hsl(var(--destructive))] text-[hsl(var(--bg-surface))] text-sm">Deregister</button>
               <button onClick={() => setDeleteTarget(null)} className="flex-1 py-2 border border-[hsl(var(--border))] text-sm">Cancel</button>
             </div>
           </div>

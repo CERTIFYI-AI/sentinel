@@ -145,10 +145,10 @@ export default function CostTokenDashboard() {
           <div className="flex items-center gap-3 mb-1">
             <CurrencyDollar size={22} weight="fill" style={{ color: 'hsl(var(--brand))' }} />
             <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Cost & Token Dashboard</h1>
-            <Badge className="rounded-none bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 font-medium tracking-wide flex items-center gap-1.5 px-2">
+            <Badge className="rounded-none bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--s-ok-tx))] border border-[hsl(var(--s-ok-br))] font-medium tracking-wide flex items-center gap-1.5 px-2">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[hsl(var(--s-ok-tx))] opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[hsl(var(--s-ok-tx))]"></span>
               </span>
               LIVE SYNC: AI GATEWAY DB
             </Badge>
@@ -177,21 +177,21 @@ export default function CostTokenDashboard() {
       {/* Anomaly Banner */}
       <div className="flex items-center justify-between p-3" style={{ background: 'hsl(45 93% 47% / 0.10)', border: '1px solid hsl(45 93% 47% / 0.3)', borderRadius: 0 }}>
         <div className="flex items-center gap-3">
-          <WarningCircle size={20} weight="fill" className="text-orange-500" />
+          <WarningCircle size={20} weight="fill" className="text-[hsl(var(--s-wn-tx))]" />
           <div>
-            <p className="text-sm font-semibold text-orange-500">Anomaly Detected: High Token Usage</p>
+            <p className="text-sm font-semibold text-[hsl(var(--s-wn-tx))]">Anomaly Detected: High Token Usage</p>
             <p className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>OpenAI-API-Connector usage spiked by 42% in the last 4 hours compared to 7-day moving average.</p>
           </div>
         </div>
-        <Button variant="outline" size="sm" className="rounded-none border-orange-500/30 text-orange-500 hover:bg-orange-500/10">Investigate Logs</Button>
+        <Button variant="outline" size="sm" className="rounded-none border-[hsl(var(--s-wn-br))] text-[hsl(var(--s-wn-tx))] hover:bg-[hsl(var(--s-wn-tx))]">Investigate Logs</Button>
       </div>
 
       {/* Metrics */}
       <div className="grid grid-cols-4 gap-4">
-        <MetricTile label="Tokens This Week" value={`${Math.round(totalTokens)}K`} variant="info" icon={<Lightning size={16} weight="fill" className="text-blue-600 dark:text-blue-400" />} />
-        <MetricTile label="Total Cost This Week" value={`$${totalCost.toFixed(2)}`} variant="ok" icon={<CurrencyDollar size={16} weight="fill" className="text-green-600 dark:text-green-400" />} sub="+12% WoW" />
-        <MetricTile label="Active Models" value="4" variant="info" icon={<Gauge size={16} className="text-blue-600 dark:text-blue-400" />} />
-        <MetricTile label="Cost Per 1K Tokens (Avg)" value="$0.012" variant="warn" icon={<TrendUp size={16} className="text-orange-600 dark:text-orange-400" />} sub="Up 3% from yesterday" />
+        <MetricTile label="Tokens This Week" value={`${Math.round(totalTokens)}K`} variant="info" icon={<Lightning size={16} weight="fill" className="text-[hsl(var(--s-in-tx))]" />} />
+        <MetricTile label="Total Cost This Week" value={`$${totalCost.toFixed(2)}`} variant="ok" icon={<CurrencyDollar size={16} weight="fill" className="text-[hsl(var(--s-ok-tx))]" />} sub="+12% WoW" />
+        <MetricTile label="Active Models" value="4" variant="info" icon={<Gauge size={16} className="text-[hsl(var(--s-in-tx))]" />} />
+        <MetricTile label="Cost Per 1K Tokens (Avg)" value="$0.012" variant="warn" icon={<TrendUp size={16} className="text-[hsl(var(--s-wn-tx))]" />} sub="Up 3% from yesterday" />
       </div>
 
       {/* Charts Row 1: Token Usage + Cost Trend */}
@@ -314,7 +314,7 @@ export default function CostTokenDashboard() {
                   <td className="px-4 py-3" style={{ color: 'hsl(var(--text-2))' }}>{p.activeKeys} keys</td>
                   <td className="px-4 py-3 font-mono text-[hsl(var(--text-2))]" >{p.latency}ms</td>
                   <td className="px-4 py-3 text-right">
-                    <Badge className="rounded-none bg-emerald-500/10 text-emerald-500 border-emerald-500/30 font-medium">{p.status}</Badge>
+                    <Badge className="rounded-none bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--s-ok-tx))] border-[hsl(var(--s-ok-br))] font-medium">{p.status}</Badge>
                   </td>
                 </tr>
               ))}
@@ -339,8 +339,8 @@ export default function CostTokenDashboard() {
                 type="number" placeholder="15.00" style={{ borderRadius: 0 }} />
             </div>
             <div className="flex items-center gap-2 px-3 py-2" style={{ background: 'hsl(220 90% 56% / 0.06)', border: '1px solid hsl(220 90% 56% / 0.2)', borderRadius: 0 }}>
-              <Info size={12} className="text-blue-600 dark:text-blue-400" />
-              <p className="text-xs text-blue-600 dark:text-blue-400">
+              <Info size={12} className="text-[hsl(var(--s-in-tx))]" />
+              <p className="text-xs text-[hsl(var(--s-in-tx))]">
                 Current weekly spend: <strong>${totalCost.toFixed(2)}</strong>
               </p>
             </div>

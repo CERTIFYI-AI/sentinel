@@ -161,7 +161,7 @@ export default function BIA() {
                       const isSelected = matrixFilter?.l === likelihood && matrixFilter?.i === impact;
                       return (
                         <td key={likelihood} onClick={() => { setMatrixFilter(isSelected ? null : { l: likelihood, i: impact }); setActiveTab("list"); }} className={`w-16 h-16 text-center border border-white cursor-pointer hover:opacity-80 transition-opacity rounded ${isSelected ? "ring-2 ring-[hsl(var(--brand))]" : ""}`} style={{ background: cellColor(likelihood, impact) }}>
-                          {count > 0 && <span className="text-sm font-bold text-gray-700">{count}</span>}
+                          {count > 0 && <span className="text-sm font-bold text-[hsl(var(--text-2))]">{count}</span>}
                         </td>
                       );
                     })}
@@ -232,7 +232,7 @@ export default function BIA() {
                   <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--text-3))]">{item.id}</td>
                   <td className="px-4 py-3 font-medium text-[hsl(var(--text-1))] max-w-[200px] truncate">{item.name}</td>
                   <td className="px-4 py-3 text-xs text-[hsl(var(--text-2))]">{item.department}</td>
-                  <td className="px-4 py-3"><span className="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold text-white" style={{ background: CRIT_COLORS[item.criticality]||"#888" }}>{item.criticality}</span></td>
+                  <td className="px-4 py-3"><span className="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold text-[hsl(var(--bg-surface))]" style={{ background: CRIT_COLORS[item.criticality]||"#888" }}>{item.criticality}</span></td>
                   <td className="px-4 py-3 text-xs font-mono text-[hsl(var(--text-1))]">{item.rto}</td>
                   <td className="px-4 py-3 text-xs font-mono text-[hsl(var(--text-2))]">{item.rpo}</td>
                   <td className="px-4 py-3 text-xs text-[hsl(var(--text-2))]">{item.mtpd}</td>
@@ -243,7 +243,7 @@ export default function BIA() {
                     <div className="flex justify-end gap-1">
                       <Button variant="ghost" size="sm" onClick={() => { setViewItem(item); setModal("view"); }}><Eye size={14} /></Button>
                       <Button variant="ghost" size="sm" onClick={() => openEdit(item)}><PencilSimple size={14} /></Button>
-                      <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(item)} className="text-red-500"><Trash size={14} /></Button>
+                      <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(item)} className="text-[hsl(var(--s-er-tx))]"><Trash size={14} /></Button>
                     </div>
                   </td>
                 </tr>
@@ -275,7 +275,7 @@ export default function BIA() {
                 <label className="text-xs font-semibold text-[hsl(var(--text-2))] mb-1 block">{label}</label>
                 <div className="flex gap-2">
                   {[1,2,3,4,5].map(n => (
-                    <button key={n} type="button" onClick={() => setDim(key)(n)} className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${form.impactDimensions?.[key] === n ? "bg-[hsl(var(--brand))] text-white" : "bg-[hsl(var(--muted))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--muted))]"}`}>{n}</button>
+                    <button key={n} type="button" onClick={() => setDim(key)(n)} className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${form.impactDimensions?.[key] === n ? "bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))]" : "bg-[hsl(var(--muted))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--muted))]"}`}>{n}</button>
                   ))}
                 </div>
               </div>
@@ -293,7 +293,7 @@ export default function BIA() {
             <label className="text-xs font-semibold text-[hsl(var(--text-2))] mb-1 block">Likelihood of Disruption (1=Rare → 5=Almost Certain)</label>
             <div className="flex gap-2">
               {[1,2,3,4,5].map(n => (
-                <button key={n} type="button" onClick={() => setF("likelihood")(n)} className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${form.likelihood === n ? "bg-[hsl(var(--brand))] text-white" : "bg-[hsl(var(--muted))] text-[hsl(var(--text-2))]"}`}>{n}</button>
+                <button key={n} type="button" onClick={() => setF("likelihood")(n)} className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${form.likelihood === n ? "bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))]" : "bg-[hsl(var(--muted))] text-[hsl(var(--text-2))]"}`}>{n}</button>
               ))}
             </div>
           </div>
@@ -352,7 +352,7 @@ export default function BIA() {
                     <div className="font-medium text-[hsl(var(--text-1))]">{m.model}</div>
                     <div className="text-xs text-[hsl(var(--text-3))] mt-0.5">Purpose: {m.purpose}</div>
                     <div className="text-xs text-[hsl(var(--text-2))] mt-0.5">Fallback: {m.fallback}</div>
-                    <div className="text-xs mt-0.5"><span className="text-[hsl(var(--text-3))]">Manual Override:</span> <span className={`font-semibold ${m.manualOverride === "Yes" ? "text-green-600" : "text-amber-600"}`}>{m.manualOverride}</span></div>
+                    <div className="text-xs mt-0.5"><span className="text-[hsl(var(--text-3))]">Manual Override:</span> <span className={`font-semibold ${m.manualOverride === "Yes" ? "text-[hsl(var(--s-ok-tx))]" : "text-[hsl(var(--s-wn-tx))]"}`}>{m.manualOverride}</span></div>
                   </div>
                 ))}
               </div>

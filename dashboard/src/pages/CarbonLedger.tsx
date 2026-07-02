@@ -178,7 +178,7 @@ function CarbonLedgerInner({ entries: initialEntries, save, remove, chartTheme }
         </div>
         <div className="flex gap-2">
           <button onClick={() => exportCsv(entries, 'carbon-ledger.csv')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised"><Export size={14} /> Export CSV</button>
-          <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90"><Plus size={14} /> Log Entry</button>
+          <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm hover:opacity-90"><Plus size={14} /> Log Entry</button>
         </div>
       </div>
 
@@ -472,7 +472,7 @@ function CarbonLedgerInner({ entries: initialEntries, save, remove, chartTheme }
             </div>
             <div className="flex justify-end gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
               <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">Cancel</button>
-              <button onClick={handleCreate} className="px-4 py-2 text-sm font-medium bg-[hsl(var(--brand))] text-white hover:opacity-90">Log Entry</button>
+              <button onClick={handleCreate} className="px-4 py-2 text-sm font-medium bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] hover:opacity-90">Log Entry</button>
             </div>
           </div>
         </div>

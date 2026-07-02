@@ -157,7 +157,7 @@ export default function PerformanceMonitoring() {
       {/* Toast */}
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
         {toasts.map(t => (
-          <div key={t.id} className="px-4 py-2 rounded text-sm text-white shadow-lg"
+          <div key={t.id} className="px-4 py-2 rounded text-sm text-[hsl(var(--bg-surface))] shadow-lg"
             style={{ background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--s-er-tx))' : '#3b82f6' }}>
             {t.text}
           </div>

@@ -694,7 +694,7 @@ export default function Overview() {
         {kpis.map(k => {
           const trend = KPI_TRENDS[k.label];
           const isNegative = k.label === 'Open Risks' || k.label === 'Critical Incidents' || k.label === 'Open Tasks';
-              const metricColor = k.label === 'Critical Incidents' ? 'text-red-600' : k.label === 'Open Risks' ? 'text-amber-600' : k.label === 'Compliance Score' || k.label === 'Security Score' ? 'text-emerald-600' : '';
+              const metricColor = k.label === 'Critical Incidents' ? 'text-[hsl(var(--s-er-tx))]' : k.label === 'Open Risks' ? 'text-[hsl(var(--s-wn-tx))]' : k.label === 'Compliance Score' || k.label === 'Security Score' ? 'text-[hsl(var(--s-ok-tx))]' : '';
           const trendColor = !trend || trend.dir === 'stable' ? 'hsl(var(--text-4))'
             : (trend.dir === 'up' && isNegative) || (trend.dir === 'down' && !isNegative) ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-ok-tx))';
           return (

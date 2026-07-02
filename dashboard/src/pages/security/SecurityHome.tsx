@@ -461,7 +461,7 @@ export default function SecurityHome() {
             <MetricTile label="Components Tracked" value={String(SBOM_ENTRIES.length)} variant="info" icon={<Package size={16} weight="fill" style={{ color: 'hsl(var(--s-in-tx))' }} />} sub="AI/ML supply chain" />
             <MetricTile label="Open CVEs" value={String(totalCVEs)} variant={totalCVEs > 0 ? 'error' : 'ok'} icon={<Bug size={16} weight="fill" className="text-destructive" />} sub={`${totalCVEs} across ${SBOM_ENTRIES.filter(e => e.cveCount > 0).length} components`} />
             <MetricTile label="Unverified Integrity" value={String(unverified)} variant={unverified > 0 ? 'warn' : 'ok'} icon={<Certificate size={16} style={{ color: 'hsl(var(--s-wn-tx))' }} />} sub="Sigstore not verified" />
-            <MetricTile label="SBOM Format" value="CycloneDX 1.5" variant="ok" icon={<CheckCircle size={16} className="text-green-600 dark:text-green-400" />} sub="NTIA min. elements compliant" />
+            <MetricTile label="SBOM Format" value="CycloneDX 1.5" variant="ok" icon={<CheckCircle size={16} className="text-[hsl(var(--s-ok-tx))]" />} sub="NTIA min. elements compliant" />
           </div>
 
           {/* Generate SBOM Banner */}

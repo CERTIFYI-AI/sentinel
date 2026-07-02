@@ -135,7 +135,7 @@ export default function ComplianceAutopilot() {
           }
           actions={
             <button onClick={() => { toast.success('All agents synchronized'); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[hsl(var(--brand))] text-white text-xs font-medium hover:bg-[hsl(var(--brand-hover))]">
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-xs font-medium hover:bg-[hsl(var(--brand-hover))]">
               <Lightning size={13} />Sync All
             </button>
           }

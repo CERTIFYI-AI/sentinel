@@ -64,11 +64,11 @@ export default function DatasetDetail() {
   const schema = schemaByDataset[dataset.id] || schemaByDataset['default'];
 
   const sensitivityColor: Record<string, string> = {
-    PII: 'bg-red-900/30 text-red-400 border-red-700',
-    PHI: 'bg-purple-900/30 text-purple-400 border-purple-700',
-    confidential: 'bg-orange-900/30 text-orange-400 border-orange-700',
-    internal: 'bg-blue-900/30 text-blue-400 border-blue-700',
-    public: 'bg-green-900/30 text-green-400 border-green-700',
+    PII: 'bg-[hsl(var(--s-er-tx))] text-[hsl(var(--s-er-tx))] border-[hsl(var(--s-er-br))]',
+    PHI: 'bg-[hsl(var(--tag-purple-bg))] text-[hsl(var(--tag-purple))] border-[hsl(var(--tag-purple-border))]',
+    confidential: 'bg-[hsl(var(--s-wn-tx))] text-[hsl(var(--s-wn-tx))] border-[hsl(var(--s-wn-br))]',
+    internal: 'bg-[hsl(var(--s-in-tx))] text-[hsl(var(--s-in-tx))] border-[hsl(var(--s-in-br))]',
+    public: 'bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--s-ok-tx))] border-[hsl(var(--s-ok-br))]',
   };
 
   return (
@@ -152,7 +152,7 @@ export default function DatasetDetail() {
                       <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--text-3))]">{col.type}</td>
                       <td className="px-4 py-3 text-xs text-[hsl(var(--text-3))]">{col.nullable ? 'YES' : 'NO'}</td>
                       <td className="px-4 py-3">
-                        {col.pii && <span className="px-1.5 py-0.5 text-xs bg-red-900/30 text-red-400 border border-red-700">PII</span>}
+                        {col.pii && <span className="px-1.5 py-0.5 text-xs bg-[hsl(var(--s-er-tx))] text-[hsl(var(--s-er-tx))] border border-[hsl(var(--s-er-br))]">PII</span>}
                       </td>
                       <td className="px-4 py-3 text-xs text-[hsl(var(--text-4))]">{col.description}</td>
                     </tr>

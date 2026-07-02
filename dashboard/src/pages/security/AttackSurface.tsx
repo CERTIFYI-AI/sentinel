@@ -191,10 +191,10 @@ export default function AttackSurface() {
 
       {/* Metrics */}
       <div className="grid grid-cols-4 gap-4">
-        <MetricTile label="Total Assets" value={String(assets.length)} variant="info" icon={<Globe size={16} className="text-blue-600 dark:text-blue-400" />} />
+        <MetricTile label="Total Assets" value={String(assets.length)} variant="info" icon={<Globe size={16} className="text-[hsl(var(--s-in-tx))]" />} />
         <MetricTile label="Exposed (Public)" value={String(exposedCount)} variant="error" icon={<ShieldWarning size={16} weight="fill" className="text-destructive" />} />
         <MetricTile label="Critical Risk" value={String(criticalCount)} variant="error" icon={<Fire size={16} weight="fill" className="text-destructive" />} sub="Immediate attention" />
-        <MetricTile label="Monitored" value={String(monitoredCount)} variant="ok" icon={<CheckCircle size={16} weight="fill" className="text-green-600 dark:text-green-400" />} />
+        <MetricTile label="Monitored" value={String(monitoredCount)} variant="ok" icon={<CheckCircle size={16} weight="fill" className="text-[hsl(var(--s-ok-tx))]" />} />
       </div>
 
       {/* Exposure Chart */}

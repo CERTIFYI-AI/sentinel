@@ -272,19 +272,19 @@ export default function ImportSampleData() {
     if (!state || state.status === 'idle') return null;
     if (state.status === 'importing')
       return (
-        <Badge variant="outline" className="text-xs gap-1 border-blue-400/40 text-blue-400">
+        <Badge variant="outline" className="text-xs gap-1 border-[hsl(var(--s-in-br))] text-[hsl(var(--s-in-tx))]">
           <Spinner size={12} className="animate-spin" /> Importing
         </Badge>
       );
     if (state.status === 'imported')
       return (
-        <Badge variant="outline" className="text-xs gap-1 border-emerald-400/40 text-emerald-400">
+        <Badge variant="outline" className="text-xs gap-1 border-[hsl(var(--s-ok-br))] text-[hsl(var(--s-ok-tx))]">
           <CheckCircle size={12} weight="fill" /> Imported
         </Badge>
       );
     if (state.status === 'error')
       return (
-        <Badge variant="outline" className="text-xs gap-1 border-red-400/40 text-red-400">
+        <Badge variant="outline" className="text-xs gap-1 border-[hsl(var(--s-er-br))] text-[hsl(var(--s-er-tx))]">
           <XCircle size={12} weight="fill" /> Error
         </Badge>
       );
@@ -302,7 +302,7 @@ export default function ImportSampleData() {
           <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
             Populate Sentinel with realistic enterprise demo data for Acme Financial Corp.
             {!connected && (
-              <span className="ml-2 text-amber-400">(Local mode — Supabase not configured)</span>
+              <span className="ml-2 text-[hsl(var(--s-wn-tx))]">(Local mode — Supabase not configured)</span>
             )}
           </p>
         </div>
@@ -331,7 +331,7 @@ export default function ImportSampleData() {
           <Button
             onClick={importAll}
             disabled={isImportingAll}
-            className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+            className="gap-1.5 bg-[hsl(var(--s-ok-tx))] hover:bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))]"
           >
             {isImportingAll ? (
               <Spinner size={14} className="animate-spin" />
@@ -359,7 +359,7 @@ export default function ImportSampleData() {
         </Card>
         <Card className="bg-[hsl(var(--card))] border-[hsl(var(--border))]">
           <CardContent className="pt-4 pb-4">
-            <div className="text-2xl font-bold text-emerald-400">{importedCount}</div>
+            <div className="text-2xl font-bold text-[hsl(var(--s-ok-tx))]">{importedCount}</div>
             <div className="text-xs text-[hsl(var(--muted-foreground))]">Categories Imported</div>
           </CardContent>
         </Card>
@@ -367,7 +367,7 @@ export default function ImportSampleData() {
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center gap-2">
               <div
-                className={`w-2.5 h-2.5 rounded-full ${connected ? 'bg-emerald-400' : 'bg-amber-400'}`}
+                className={`w-2.5 h-2.5 rounded-full ${connected ? 'bg-[hsl(var(--s-ok-tx))]' : 'bg-[hsl(var(--s-wn-tx))]'}`}
               />
               <div className="text-sm font-medium text-[hsl(var(--foreground))]">
                 {connected ? 'Supabase Connected' : 'Local Mode'}
@@ -408,14 +408,14 @@ export default function ImportSampleData() {
                     <SectionIcon
                       size={20}
                       weight="duotone"
-                      className="text-emerald-500"
+                      className="text-[hsl(var(--s-ok-tx))]"
                     />
                     <CardTitle className="text-base">{section.title}</CardTitle>
                     <Badge variant="outline" className="text-xs">
                       {section.categories.length} categories
                     </Badge>
                     {sectionImported > 0 && (
-                      <Badge variant="outline" className="text-xs border-emerald-400/40 text-emerald-400">
+                      <Badge variant="outline" className="text-xs border-[hsl(var(--s-ok-br))] text-[hsl(var(--s-ok-tx))]">
                         {sectionImported}/{section.categories.length} imported
                       </Badge>
                     )}
@@ -440,10 +440,10 @@ export default function ImportSampleData() {
                           className={`
                             flex items-center justify-between p-3 rounded-lg border transition-colors
                             ${isImported
-                              ? 'border-emerald-500/30 bg-emerald-500/5'
+                              ? 'border-[hsl(var(--s-ok-br))] bg-[hsl(var(--s-ok-tx))]'
                               : 'border-[hsl(var(--border))] bg-[hsl(var(--card))]'
                             }
-                            ${state?.status === 'error' ? 'border-red-500/30 bg-red-500/5' : ''}
+                            ${state?.status === 'error' ? 'border-[hsl(var(--s-er-br))] bg-[hsl(var(--s-er-tx))]' : ''}
                           `}
                         >
                           <div className="flex items-center gap-3 min-w-0">
@@ -488,14 +488,14 @@ export default function ImportSampleData() {
 
                   {/* Section error details */}
                   {section.categories.some((c) => categoryStates[c.key]?.status === 'error') && (
-                    <div className="mt-3 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-                      <div className="flex items-center gap-2 text-sm font-medium text-red-400 mb-1">
+                    <div className="mt-3 p-3 rounded-lg bg-[hsl(var(--s-er-tx))] border border-[hsl(var(--s-er-br))]">
+                      <div className="flex items-center gap-2 text-sm font-medium text-[hsl(var(--s-er-tx))] mb-1">
                         <XCircle size={14} weight="fill" /> Import Errors
                       </div>
                       {section.categories
                         .filter((c) => categoryStates[c.key]?.status === 'error')
                         .map((c) => (
-                          <div key={c.key} className="text-xs text-red-300/80 ml-5">
+                          <div key={c.key} className="text-xs text-[hsl(var(--s-er-tx))] ml-5">
                             {c.label}: {categoryStates[c.key]?.error}
                           </div>
                         ))}
@@ -512,7 +512,7 @@ export default function ImportSampleData() {
       <Card className="bg-[hsl(var(--card))] border-[hsl(var(--border))]">
         <CardContent className="py-4">
           <div className="flex items-start gap-3">
-            <Warning size={20} weight="duotone" className="text-amber-400 mt-0.5 flex-shrink-0" />
+            <Warning size={20} weight="duotone" className="text-[hsl(var(--s-wn-tx))] mt-0.5 flex-shrink-0" />
             <div className="text-sm text-[hsl(var(--muted-foreground))]">
               <p className="font-medium text-[hsl(var(--foreground))] mb-1">About Sample Data</p>
               <p>
@@ -523,7 +523,7 @@ export default function ImportSampleData() {
                 mappings, and dates are cross-linked.
               </p>
               {!connected && (
-                <p className="mt-2 text-amber-400/80">
+                <p className="mt-2 text-[hsl(var(--s-wn-tx))]">
                   Configure <code className="px-1 py-0.5 bg-[hsl(var(--muted))] rounded text-xs">VITE_SUPABASE_URL</code> and{' '}
                   <code className="px-1 py-0.5 bg-[hsl(var(--muted))] rounded text-xs">VITE_SUPABASE_ANON_KEY</code> in your{' '}
                   <code className="px-1 py-0.5 bg-[hsl(var(--muted))] rounded text-xs">.env.local</code> to persist data to Supabase.

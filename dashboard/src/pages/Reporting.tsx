@@ -42,9 +42,9 @@ const scheduledReports: ScheduledReport[] = [
 
 const categoryIcon = (cat: string) => {
   switch (cat) {
-    case "Executive": return <BarChart3 className="h-5 w-5 text-teal-400" />;
-    case "Audit": return <Checks className="h-5 w-5 text-blue-400" />;
-    case "Regulatory": return <AlertTriangle className="h-5 w-5 text-amber-400" />;
+    case "Executive": return <BarChart3 className="h-5 w-5 text-[hsl(var(--s-in-tx))]" />;
+    case "Audit": return <Checks className="h-5 w-5 text-[hsl(var(--s-in-tx))]" />;
+    case "Regulatory": return <AlertTriangle className="h-5 w-5 text-[hsl(var(--s-wn-tx))]" />;
     case "Operational": return <Clock className="h-5 w-5 text-[hsl(var(--brand))]" />;
     default: return <FileText className="h-5 w-5 text-muted-foreground" />;
   }
@@ -52,11 +52,11 @@ const categoryIcon = (cat: string) => {
 
 const categoryColor = (cat: string) => {
   switch (cat) {
-    case "Executive": return "bg-teal-500/10 text-teal-400 border-teal-500/20";
-    case "Audit": return "bg-blue-500/10 text-blue-400 border-blue-500/20";
-    case "Regulatory": return "bg-amber-500/10 text-amber-400 border-amber-500/20";
+    case "Executive": return "bg-[hsl(var(--s-in-bg))] text-[hsl(var(--s-in-tx))] border-[hsl(var(--s-in-br))]/20";
+    case "Audit": return "bg-[hsl(var(--s-in-tx))] text-[hsl(var(--s-in-tx))] border-[hsl(var(--s-in-br))]";
+    case "Regulatory": return "bg-[hsl(var(--s-wn-tx))] text-[hsl(var(--s-wn-tx))] border-[hsl(var(--s-wn-br))]";
     case "Operational": return "bg-[hsl(var(--brand))]/10 text-[hsl(var(--brand))] border-primary/20";
-    default: return "bg-[hsl(var(--bg-page))]0/10 text-muted-foreground border-slate-500/20";
+    default: return "bg-[hsl(var(--bg-page))]0/10 text-muted-foreground border-[hsl(var(--border))]";
   }
 };
 
@@ -89,7 +89,7 @@ export default function Reporting() {
           <h1 className="text-2xl font-bold">Reporting</h1>
           <p className="text-muted-foreground">Generate compliance reports, audit packs, and executive summaries</p>
         </div>
-        <Button onClick={() => setShowBuilder(true)} className="bg-teal-600 hover:bg-teal-700">
+        <Button onClick={() => setShowBuilder(true)} className="bg-[hsl(var(--s-in-tx))] hover:bg-[hsl(var(--s-in-tx))]">
           <Plus className="h-4 w-4" /> Create Custom Report
         </Button>
       </div>
@@ -103,7 +103,7 @@ export default function Reporting() {
                 <p className="text-sm text-muted-foreground">Reports This Month</p>
                 <p className="text-2xl font-bold">12</p>
               </div>
-              <div className="p-2 rounded-lg bg-teal-500/10"><FileText className="h-5 w-5 text-teal-400" /></div>
+              <div className="p-2 rounded-lg bg-[hsl(var(--s-in-bg))]"><FileText className="h-5 w-5 text-[hsl(var(--s-in-tx))]" /></div>
             </div>
             <p className="text-xs text-[hsl(var(--brand))] mt-1">+3 from last month</p>
           </CardContent>
@@ -115,7 +115,7 @@ export default function Reporting() {
                 <p className="text-sm text-muted-foreground">Scheduled Reports</p>
                 <p className="text-2xl font-bold">{scheduledReports.length}</p>
               </div>
-              <div className="p-2 rounded-lg bg-blue-500/10"><Calendar className="h-5 w-5 text-blue-400" /></div>
+              <div className="p-2 rounded-lg bg-[hsl(var(--s-in-tx))]"><Calendar className="h-5 w-5 text-[hsl(var(--s-in-tx))]" /></div>
             </div>
             <p className="text-xs text-muted-foreground mt-1">Next: Apr 4, 2026</p>
           </CardContent>
@@ -125,11 +125,11 @@ export default function Reporting() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Overdue Reports</p>
-                <p className="text-2xl font-bold text-red-400">1</p>
+                <p className="text-2xl font-bold text-[hsl(var(--s-er-tx))]">1</p>
               </div>
-              <div className="p-2 rounded-lg bg-red-500/10"><AlertTriangle className="h-5 w-5 text-red-400" /></div>
+              <div className="p-2 rounded-lg bg-[hsl(var(--s-er-tx))]"><AlertTriangle className="h-5 w-5 text-[hsl(var(--s-er-tx))]" /></div>
             </div>
-            <p className="text-xs text-red-400 mt-1">SOC 2 annual due</p>
+            <p className="text-xs text-[hsl(var(--s-er-tx))] mt-1">SOC 2 annual due</p>
           </CardContent>
         </Card>
         <Card className="bg-card border-border">
@@ -160,7 +160,7 @@ export default function Reporting() {
             </div>
             <div className="flex gap-1">
               {categories.map(cat => (
-                <Button key={cat} variant={selectedCategory === cat ? "default" : "outline"} size="sm" onClick={() => setSelectedCategory(cat)} className={selectedCategory === cat ? "bg-teal-600" : ""}>
+                <Button key={cat} variant={selectedCategory === cat ? "default" : "outline"} size="sm" onClick={() => setSelectedCategory(cat)} className={selectedCategory === cat ? "bg-[hsl(var(--s-in-tx))]" : ""}>
                   {cat === "all" ? "All" : cat}
                 </Button>
               ))}
@@ -171,7 +171,7 @@ export default function Reporting() {
         <TabsContent value="templates">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredReports.map(report => (
-              <Card key={report.id} className="bg-card border-border hover:border-teal-500/30 transition-colors cursor-pointer group">
+              <Card key={report.id} className="bg-card border-border hover:border-[hsl(var(--s-in-br))] transition-colors cursor-pointer group">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2">
@@ -199,7 +199,7 @@ export default function Reporting() {
                     <span>{report.recipients.length} recipients</span>
                   </div>
                   <div className="flex gap-2 pt-2">
-                    <Button size="sm" className="flex-1 bg-teal-600 hover:bg-teal-700" onClick={() => handleGenerate(report)}>
+                    <Button size="sm" className="flex-1 bg-[hsl(var(--s-in-tx))] hover:bg-[hsl(var(--s-in-tx))]" onClick={() => handleGenerate(report)}>
                       <Download className="h-3 w-3" /> Generate
                     </Button>
                     <Button size="sm" variant="outline" className="flex-1" onClick={() => { setSelectedReport(report); setShowPreview(true); }}>
@@ -222,7 +222,7 @@ export default function Reporting() {
                   return (
                     <div key={i} className="flex items-center justify-between p-3 rounded-lg border border-border">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 rounded bg-blue-500/10"><Calendar className="h-4 w-4 text-blue-400" /></div>
+                        <div className="p-2 rounded bg-[hsl(var(--s-in-tx))]"><Calendar className="h-4 w-4 text-[hsl(var(--s-in-tx))]" /></div>
                         <div>
                           <p className="font-medium text-sm">{template?.name}</p>
                           <p className="text-xs text-muted-foreground">Next: {new Date(sr.nextRun).toLocaleString()}</p>
@@ -305,7 +305,7 @@ export default function Reporting() {
                 </div>
               </div>
               <div className="flex gap-2 pt-2">
-                <Button className="flex-1 bg-teal-600 hover:bg-teal-700" onClick={() => { handleGenerate(selectedReport); setShowPreview(false); }}>
+                <Button className="flex-1 bg-[hsl(var(--s-in-tx))] hover:bg-[hsl(var(--s-in-tx))]" onClick={() => { handleGenerate(selectedReport); setShowPreview(false); }}>
                   <Download className="h-4 w-4" /> Generate Now
                 </Button>
                 <Button variant="outline" className="flex-1" onClick={() => setShowPreview(false)}>Close</Button>
@@ -345,7 +345,7 @@ export default function Reporting() {
               <label className="text-sm font-medium">Include Models</label>
               <div className="flex flex-wrap gap-1 mt-1">
                 {["CreditScorer v2.1", "GPT-4-Turbo", "FraudDetector v4.2", "HiringFilter v3.0"].map(m => (
-                  <Badge key={m} variant="outline" className="cursor-pointer hover:bg-teal-500/10">{m}</Badge>
+                  <Badge key={m} variant="outline" className="cursor-pointer hover:bg-[hsl(var(--s-in-bg))]">{m}</Badge>
                 ))}
               </div>
             </div>
@@ -354,7 +354,7 @@ export default function Reporting() {
               <Input placeholder="email@company.com" className="mt-1" />
             </div>
             <div className="flex gap-2 pt-2">
-              <Button className="flex-1 bg-teal-600 hover:bg-teal-700">Generate Report</Button>
+              <Button className="flex-1 bg-[hsl(var(--s-in-tx))] hover:bg-[hsl(var(--s-in-tx))]">Generate Report</Button>
               <Button variant="outline" onClick={() => setShowBuilder(false)}>Cancel</Button>
             </div>
           </div>
@@ -363,8 +363,8 @@ export default function Reporting() {
 
       {/* Generation Toast */}
       {generating && (
-        <div className="fixed bottom-4 right-4 bg-card border border-teal-500/30 rounded-lg p-4 shadow-lg flex items-center gap-3">
-          <div className="animate-spin h-4 w-4 border-2 border-teal-400 border-t-transparent rounded-full" />
+        <div className="fixed bottom-4 right-4 bg-card border border-[hsl(var(--s-in-br))] rounded-lg p-4 shadow-lg flex items-center gap-3">
+          <div className="animate-spin h-4 w-4 border-2 border-[hsl(var(--s-in-br))] border-t-transparent rounded-full" />
           <span className="text-sm">Generating {selectedReport?.name}...</span>
         </div>
       )}

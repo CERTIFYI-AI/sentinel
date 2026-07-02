@@ -199,7 +199,7 @@ export default function VendorUpload() {
             </div>
             {(selected.status === 'Pending Review' || selected.status === 'Under Review') && (
               <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
-                <button onClick={() => handleAccept(selected.id)} className="flex-1 py-2 bg-[hsl(var(--s-ok-tx))] text-white text-sm font-medium hover:opacity-90">Accept</button>
+                <button onClick={() => handleAccept(selected.id)} className="flex-1 py-2 bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90">Accept</button>
                 <button onClick={() => setRejectTarget(selected)} className="flex-1 py-2 border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] text-sm font-medium hover:bg-[hsl(0_72%_51%/0.05)]">Reject</button>
               </div>
             )}

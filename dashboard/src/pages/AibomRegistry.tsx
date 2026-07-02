@@ -155,7 +155,7 @@ export default function AibomRegistry() {
           <button onClick={handleExport} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
             <Export size={14} /> Export CSV
           </button>
-          <button onClick={openWizard} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90">
+          <button onClick={openWizard} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm hover:opacity-90">
             <Plus size={14} /> Generate AIBOM
           </button>
         </div>
@@ -379,7 +379,7 @@ export default function AibomRegistry() {
             </div>
 
             <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
-              <button onClick={() => handleDownload(selected!)} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90">
+              <button onClick={() => handleDownload(selected!)} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90">
                 <DownloadSimple size={14} /> Download AIBOM
               </button>
               <button
@@ -492,7 +492,7 @@ export default function AibomRegistry() {
                     </div>
                     <button onClick={() => { if (newDs.name) { setWizardDatasets(p => [...p, { ...newDs }]); setNewDs({ ...BLANK_DS }) } }}
                       disabled={!newDs.name}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs bg-[hsl(var(--brand))] text-white disabled:opacity-40">
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] disabled:opacity-40">
                       <Plus size={12} /> Add Dataset
                     </button>
                   </div>
@@ -522,7 +522,7 @@ export default function AibomRegistry() {
                         placeholder="e.g. scikit-learn 1.4.0 (press Enter)"
                         className="flex-1 px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none" />
                       <button onClick={() => { if (wizardFwInput.trim()) { setWizardFw(p => [...p, wizardFwInput.trim()]); setWizardFwInput('') }}}
-                        className="px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm"><Plus size={14} /></button>
+                        className="px-3 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm"><Plus size={14} /></button>
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {wizardFw.map((f, i) => (
@@ -552,7 +552,7 @@ export default function AibomRegistry() {
                       </div>
                       <button onClick={() => { if (newDep.name) { setWizardDeps(p => [...p, { ...newDep }]); setNewDep({ ...BLANK_DEP }) }}}
                         disabled={!newDep.name}
-                        className="flex items-center gap-1 px-3 py-1.5 text-xs bg-[hsl(var(--brand))] text-white disabled:opacity-40">
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] disabled:opacity-40">
                         <Plus size={12} /> Add Dependency
                       </button>
                     </div>
@@ -632,12 +632,12 @@ export default function AibomRegistry() {
                     if (wizardStep === 1 && (!form.model || !form.version || !form.baseModel)) { toast.error('Model name, version, and base model are required'); return }
                     setWizardStep(s => s + 1)
                   }}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90">
+                  className="flex items-center gap-1.5 px-4 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm hover:opacity-90">
                   Next <ArrowRight size={14} />
                 </button>
               ) : (
                 <button onClick={handleCreate} disabled={generating}
-                  className="flex items-center gap-1.5 px-5 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90 disabled:opacity-60">
+                  className="flex items-center gap-1.5 px-5 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90 disabled:opacity-60">
                   {generating ? <><Spinner size={14} className="animate-spin" /> Generating…</> : <><FloppyDisk size={14} /> Generate AIBOM</>}
                 </button>
               )}

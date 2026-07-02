@@ -249,7 +249,7 @@ export default function UsersPage() {
           <button onClick={exportCsv} className="flex items-center gap-1.5 px-3 py-2 text-sm border hover:opacity-80" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}>
             <Export size={14} /> Export CSV
           </button>
-          <button onClick={openCreate} className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white hover:opacity-90" style={{ background: 'hsl(var(--brand))' }}>
+          <button onClick={openCreate} className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-[hsl(var(--bg-surface))] hover:opacity-90" style={{ background: 'hsl(var(--brand))' }}>
             <Plus size={14} weight="bold" /> Invite User
           </button>
         </div>
@@ -315,7 +315,7 @@ export default function UsersPage() {
                   <p className="font-medium">{search || activeFilters > 0 ? 'No results match your filters' : 'No users yet'}</p>
                   {search || activeFilters > 0
                     ? <button onClick={clearFilters} className="mt-3 text-xs px-3 py-1.5 border" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-3))' }}>Clear Filters</button>
-                    : <button onClick={openCreate} className="mt-4 px-4 py-2 text-xs font-medium text-white" style={{ background: 'hsl(var(--brand))' }}>+ Invite User</button>}
+                    : <button onClick={openCreate} className="mt-4 px-4 py-2 text-xs font-medium text-[hsl(var(--bg-surface))]" style={{ background: 'hsl(var(--brand))' }}>+ Invite User</button>}
                 </td></tr>
               ) : filtered.map(u => {
                 const dept = getDept(u.departmentId)
@@ -598,11 +598,11 @@ export default function UsersPage() {
                 <CaretLeft size={13} /> {step > 1 ? 'Back' : 'Cancel'}
               </button>
               {step < 3 ? (
-                <button onClick={nextStep} className="flex items-center gap-1 px-4 py-2 text-sm font-medium text-white hover:opacity-90" style={{ background: 'hsl(var(--brand))' }}>
+                <button onClick={nextStep} className="flex items-center gap-1 px-4 py-2 text-sm font-medium text-[hsl(var(--bg-surface))] hover:opacity-90" style={{ background: 'hsl(var(--brand))' }}>
                   Continue <CaretRight size={13} />
                 </button>
               ) : (
-                <button onClick={handleSave} disabled={saving} className="px-5 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60" style={{ background: 'hsl(var(--brand))' }}>
+                <button onClick={handleSave} disabled={saving} className="px-5 py-2 text-sm font-medium text-[hsl(var(--bg-surface))] hover:opacity-90 disabled:opacity-60" style={{ background: 'hsl(var(--brand))' }}>
                   {saving ? 'Saving…' : editTarget ? 'Save Changes' : 'Create User'}
                 </button>
               )}

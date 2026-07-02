@@ -27,21 +27,21 @@ const VENDORS: Vendor[] = [
 ];
 
 const riskColors: Record<string, string> = {
-  critical: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400",
-  high: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400",
-  medium: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400",
-  low: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400",
+  critical: "bg-[hsl(var(--s-er-bg))] text-[hsl(var(--s-er-tx))]",
+  high: "bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))]",
+  medium: "bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))]",
+  low: "bg-[hsl(var(--s-ok-bg))] text-[hsl(var(--s-ok-tx))]",
 };
 
 const statusConfig: Record<string, { color: string; icon: typeof CheckCircle2 }> = {
-  approved: { color: "text-green-600 dark:text-green-400", icon: CheckCircle2 },
-  "under-review": { color: "text-amber-600 dark:text-amber-400", icon: Clock },
-  conditional: { color: "text-blue-600 dark:text-blue-400", icon: AlertTriangle },
-  rejected: { color: "text-red-600 dark:text-red-400", icon: Shield },
+  approved: { color: "text-[hsl(var(--s-ok-tx))]", icon: CheckCircle2 },
+  "under-review": { color: "text-[hsl(var(--s-wn-tx))]", icon: Clock },
+  conditional: { color: "text-[hsl(var(--s-in-tx))]", icon: AlertTriangle },
+  rejected: { color: "text-[hsl(var(--s-er-tx))]", icon: Shield },
 };
 
-const scoreColor = (s: number) => s >= 85 ? "text-green-600 dark:text-green-400" : s >= 70 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400";
-const barColor = (s: number) => s >= 85 ? "bg-green-500" : s >= 70 ? "bg-amber-500" : "bg-red-500";
+const scoreColor = (s: number) => s >= 85 ? "text-[hsl(var(--s-ok-tx))]" : s >= 70 ? "text-[hsl(var(--s-wn-tx))]" : "text-[hsl(var(--s-er-tx))]";
+const barColor = (s: number) => s >= 85 ? "bg-[hsl(var(--s-ok-tx))]" : s >= 70 ? "bg-[hsl(var(--s-wn-tx))]" : "bg-[hsl(var(--s-er-tx))]";
 
 export default function Vendors() {
   const [search, setSearch] = useState("");
@@ -51,13 +51,13 @@ export default function Vendors() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-purple-100 dark:bg-purple-950 rounded-lg"><Globe size={20} className="text-purple-600 dark:text-purple-400" /></div>
+          <div className="p-2 bg-[hsl(var(--tag-purple-bg))] rounded-lg"><Globe size={20} className="text-[hsl(var(--tag-purple))]" /></div>
           <div>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Vendor Register</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Third-party AI vendor risk management and compliance tracking</p>
+            <h1 className="text-xl font-bold text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))]">Vendor Register</h1>
+            <p className="text-sm text-[hsl(var(--text-3))]">Third-party AI vendor risk management and compliance tracking</p>
           </div>
         </div>
-        <button className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+        <button className="flex items-center gap-2 bg-[hsl(var(--s-ok-tx))] hover:bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))] px-4 py-2 rounded-lg text-sm font-medium transition-colors">
           <Globe size={14} /> Add Vendor
         </button>
       </div>
@@ -70,10 +70,10 @@ export default function Vendors() {
           { label: "High Risk", value: VENDORS.filter(v => v.riskRating === "high" || v.riskRating === "critical").length },
           { label: "Avg Compliance", value: `${Math.round(VENDORS.reduce((s, v) => s + v.complianceScore, 0) / VENDORS.length)}%` },
         ].map((s, i) => (
-          <Card key={i} className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+          <Card key={i} className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
             <CardContent className="p-4">
-              <p className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-medium">{s.label}</p>
-              <p className="text-2xl font-bold font-mono mt-1 text-slate-900 dark:text-white">{s.value}</p>
+              <p className="text-[10px] uppercase tracking-wider text-[hsl(var(--text-3))] font-medium">{s.label}</p>
+              <p className="text-2xl font-bold font-mono mt-1 text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))]">{s.value}</p>
             </CardContent>
           </Card>
         ))}
@@ -81,8 +81,8 @@ export default function Vendors() {
 
       {/* Search */}
       <div className="relative max-w-sm">
-        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search vendors..." className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none" />
+        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search vendors..." className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] rounded-lg bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))] placeholder:text-[hsl(var(--text-4))] focus:ring-2 focus:ring-[hsl(var(--s-ok-br))] focus:border-[hsl(var(--s-ok-br))] outline-none" />
       </div>
 
       {/* Vendor Cards */}
@@ -91,12 +91,12 @@ export default function Vendors() {
           const sc = statusConfig[v.status];
           const Icon = sc.icon;
           return (
-            <Card key={v.id} className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow">
+            <Card key={v.id} className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))] hover:shadow-md transition-shadow">
               <CardContent className="p-5">
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <h3 className="font-semibold text-sm text-slate-900 dark:text-white">{v.name}</h3>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">{v.type} · {v.region}</p>
+                    <h3 className="font-semibold text-sm text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))]">{v.name}</h3>
+                    <p className="text-[11px] text-[hsl(var(--text-3))]">{v.type} · {v.region}</p>
                   </div>
                   <span className={`text-[10px] font-medium px-2 py-0.5 rounded capitalize ${riskColors[v.riskRating]}`}>{v.riskRating} risk</span>
                 </div>
@@ -108,27 +108,27 @@ export default function Vendors() {
 
                 <div className="mb-3">
                   <div className="flex justify-between text-[10px] mb-1">
-                    <span className="text-slate-500 dark:text-slate-400">Compliance Score</span>
+                    <span className="text-[hsl(var(--text-3))]">Compliance Score</span>
                     <span className={`font-mono font-bold ${scoreColor(v.complianceScore)}`}>{v.complianceScore}%</span>
                   </div>
-                  <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5">
+                  <div className="w-full bg-[hsl(var(--bg-muted))] rounded-full h-1.5">
                     <div className={`h-1.5 rounded-full ${barColor(v.complianceScore)} transition-all`} style={{ width: `${v.complianceScore}%` }} />
                   </div>
                 </div>
 
                 <div className="flex flex-wrap gap-1 mb-3">
                   {v.certifications.map(c => (
-                    <span key={c} className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">{c}</span>
+                    <span key={c} className="text-[9px] px-1.5 py-0.5 rounded bg-[hsl(var(--bg-muted))] text-[hsl(var(--text-3))] border border-[hsl(var(--border))]">{c}</span>
                   ))}
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-3">
-                  <div>Sub-processors: <span className="font-medium text-slate-700 dark:text-slate-300">{v.subProcessors}</span></div>
-                  <div>Contract: <span className="font-medium text-slate-700 dark:text-slate-300">{v.contractExpiry}</span></div>
-                  <div>Last assessed: <span className="font-medium text-slate-700 dark:text-slate-300">{v.lastAssessment}</span></div>
+                <div className="grid grid-cols-2 gap-2 text-[11px] text-[hsl(var(--text-3))] border-t border-[hsl(var(--border))] pt-3">
+                  <div>Sub-processors: <span className="font-medium text-[hsl(var(--text-2))]">{v.subProcessors}</span></div>
+                  <div>Contract: <span className="font-medium text-[hsl(var(--text-2))]">{v.contractExpiry}</span></div>
+                  <div>Last assessed: <span className="font-medium text-[hsl(var(--text-2))]">{v.lastAssessment}</span></div>
                   <div className="flex items-center gap-1">
                     <ExternalLink size={10} />
-                    <span className="text-green-600 dark:text-green-400 cursor-pointer hover:underline">DPA</span>
+                    <span className="text-[hsl(var(--s-ok-tx))] cursor-pointer hover:underline">DPA</span>
                   </div>
                 </div>
               </CardContent>

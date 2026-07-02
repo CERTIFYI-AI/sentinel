@@ -91,7 +91,7 @@ export default function MultiAgentChoreography() {
           <button onClick={() => toast.success('Exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
             <Export size={14} /> Export
           </button>
-          <button onClick={() => { setNewWfName(''); setNewWfTrigger('Manual'); setNewWfOrch(''); setShowCreate(true) }} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90">
+          <button onClick={() => { setNewWfName(''); setNewWfTrigger('Manual'); setNewWfOrch(''); setShowCreate(true) }} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm hover:opacity-90">
             <Plus size={14} /> New Workflow
           </button>
         </div>
@@ -340,7 +340,7 @@ export default function MultiAgentChoreography() {
                           <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide">Required Action</p>
                           <p className="text-xs text-[hsl(var(--text-2))] leading-relaxed">Review the workflow output and approve to continue automated processing, or terminate if the result is unacceptable.</p>
                           <div className="flex gap-2 mt-3">
-                            <button onClick={() => handleApprove(selected.id)} className="flex-1 py-2.5 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90">Approve & Resume</button>
+                            <button onClick={() => handleApprove(selected.id)} className="flex-1 py-2.5 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90">Approve & Resume</button>
                             <button onClick={() => setTerminateTarget(selected)} className="px-4 py-2.5 border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] text-sm hover:bg-[hsl(0_72%_51%/0.05)]">Terminate</button>
                           </div>
                         </div>
@@ -364,13 +364,13 @@ export default function MultiAgentChoreography() {
 
             <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2 flex-shrink-0">
               {(selected.status === 'Awaiting Approval' || selected.status === 'Paused') && (
-                <button onClick={() => handleApprove(selected.id)} className="flex-1 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90">Approve & Resume</button>
+                <button onClick={() => handleApprove(selected.id)} className="flex-1 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90">Approve & Resume</button>
               )}
               {(selected.status === 'Running' || selected.status === 'Awaiting Approval' || selected.status === 'Paused') && (
                 <button onClick={() => setTerminateTarget(selected)} className="px-4 py-2 border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] text-sm hover:bg-[hsl(0_72%_51%/0.05)]">Terminate</button>
               )}
               {selected.status === 'Failed' && (
-                <button onClick={() => toast.success('Retry queued')} className="flex-1 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90">Retry Workflow</button>
+                <button onClick={() => toast.success('Retry queued')} className="flex-1 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90">Retry Workflow</button>
               )}
             </div>
           </div>
@@ -412,7 +412,7 @@ export default function MultiAgentChoreography() {
                 setWorkflows(p => [wf, ...p])
                 setShowCreate(false)
                 toast.success(`Workflow ${id} created`)
-              }} className="flex-1 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90">Create Workflow</button>
+              }} className="flex-1 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90">Create Workflow</button>
               <button onClick={() => setShowCreate(false)} className="px-4 py-2 border border-[hsl(var(--border))] text-sm">Cancel</button>
             </div>
           </div>

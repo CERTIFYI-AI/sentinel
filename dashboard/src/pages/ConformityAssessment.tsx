@@ -157,9 +157,9 @@ export default function ConformityAssessment() {
                     <td className="px-3 py-2.5"><StatusBadge status={item.status} /></td>
                     <td className="px-3 py-2.5">
                       <div className="flex items-center gap-1.5 text-xs">
-                        {item.criticalFindings>0&&<span className="px-1 py-0.5 bg-red-50 text-red-600 border border-red-200">{item.criticalFindings}C</span>}
-                        {item.majorFindings>0&&<span className="px-1 py-0.5 bg-amber-50 text-amber-700 border border-amber-200">{item.majorFindings}M</span>}
-                        {item.minorFindings>0&&<span className="px-1 py-0.5 bg-blue-50 text-blue-600 border border-blue-200">{item.minorFindings}m</span>}
+                        {item.criticalFindings>0&&<span className="px-1 py-0.5 bg-[hsl(var(--s-er-bg))] text-[hsl(var(--s-er-tx))] border border-[hsl(var(--s-er-br))]">{item.criticalFindings}C</span>}
+                        {item.majorFindings>0&&<span className="px-1 py-0.5 bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))] border border-[hsl(var(--s-wn-br))]">{item.majorFindings}M</span>}
+                        {item.minorFindings>0&&<span className="px-1 py-0.5 bg-[hsl(var(--s-in-bg))] text-[hsl(var(--s-in-tx))] border border-[hsl(var(--s-in-br))]">{item.minorFindings}m</span>}
                         {!item.criticalFindings&&!item.majorFindings&&!item.minorFindings&&<span className="text-[hsl(var(--text-4))]">—</span>}
                       </div>
                     </td>
@@ -168,7 +168,7 @@ export default function ConformityAssessment() {
                       <div className="flex items-center justify-end gap-1">
                         <button onClick={() => { setViewItem(item); setModal("view"); }} className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"><Eye size={14} /></button>
                         <button onClick={() => openEdit(item)} className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"><PencilSimple size={14} /></button>
-                        <button onClick={() => setDeleteTarget(item)} className="p-1.5 hover:bg-red-50 text-[hsl(0_72%_51%)]"><Trash size={14} /></button>
+                        <button onClick={() => setDeleteTarget(item)} className="p-1.5 hover:bg-[hsl(var(--s-er-bg))] text-[hsl(0_72%_51%)]"><Trash size={14} /></button>
                       </div>
                     </td>
                   </tr>
@@ -234,7 +234,7 @@ export default function ConformityAssessment() {
                 <StatusBadge status={viewItem.status} />
                 <span className="text-xs px-1.5 py-0.5 border font-medium" style={{ color:outcomeColors[viewItem.outcome], borderColor:`${outcomeColors[viewItem.outcome]}40`, background:`${outcomeColors[viewItem.outcome]}12` }}>{viewItem.outcome}</span>
                 <span className="text-xs px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))]">{viewItem.assessmentType}</span>
-                {viewItem.certificationRequired&&<span className="text-xs px-1.5 py-0.5 bg-blue-50 text-blue-600 border border-blue-200">Certification Required</span>}
+                {viewItem.certificationRequired&&<span className="text-xs px-1.5 py-0.5 bg-[hsl(var(--s-in-bg))] text-[hsl(var(--s-in-tx))] border border-[hsl(var(--s-in-br))]">Certification Required</span>}
               </div>
               <div className="p-3 bg-raised border border-[hsl(var(--border))]">
                 <div className="flex items-center justify-between mb-1.5">

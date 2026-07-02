@@ -110,7 +110,7 @@ export default function IntegrationsPage() {
           </h1>
           <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">Connected systems — AI providers, data sources, monitoring, identity, and notification services</p>
         </div>
-        <button onClick={() => { setForm(BLANK_INT); setShowCreate(true) }} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90"><Plus size={14} /> Add Integration</button>
+        <button onClick={() => { setForm(BLANK_INT); setShowCreate(true) }} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm hover:opacity-90"><Plus size={14} /> Add Integration</button>
       </div>
 
       <div className="grid grid-cols-4 gap-4">
@@ -164,10 +164,10 @@ export default function IntegrationsPage() {
               <p className="text-[10px] text-[hsl(var(--text-4))]">{int.lastSync ? `Last sync: ${int.lastSync}` : 'Not connected'}</p>
               <div className="flex gap-1 items-center">
                 {int.status === 'Error' && (
-                  <button onClick={e => { e.stopPropagation(); toast.success(`${int.name} reconnected`) }} className="text-[10px] px-2 py-0.5 bg-[hsl(var(--brand))] text-white hover:opacity-90">Reconnect</button>
+                  <button onClick={e => { e.stopPropagation(); toast.success(`${int.name} reconnected`) }} className="text-[10px] px-2 py-0.5 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] hover:opacity-90">Reconnect</button>
                 )}
                 {int.status === 'Pending Setup' && (
-                  <button onClick={e => { e.stopPropagation(); toast.info(`Setting up ${int.name}`) }} className="text-[10px] px-2 py-0.5 bg-[hsl(var(--brand))] text-white hover:opacity-90">Set Up</button>
+                  <button onClick={e => { e.stopPropagation(); toast.info(`Setting up ${int.name}`) }} className="text-[10px] px-2 py-0.5 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] hover:opacity-90">Set Up</button>
                 )}
                 <button onClick={e => { e.stopPropagation(); setDeleteTarget(int) }} className="p-1 text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))]"><Trash size={12} /></button>
               </div>
@@ -208,7 +208,7 @@ export default function IntegrationsPage() {
             </div>
             <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
               <button onClick={() => toast.success(`${selected.name} synced`)} className="flex-1 flex items-center justify-center gap-1.5 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised"><ArrowClockwise size={14} /> Sync Now</button>
-              {selected.status === 'Error' && <button onClick={() => { toast.success(`${selected.name} reconnected`); setSelected(null) }} className="flex-1 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90">Reconnect</button>}
+              {selected.status === 'Error' && <button onClick={() => { toast.success(`${selected.name} reconnected`); setSelected(null) }} className="flex-1 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90">Reconnect</button>}
               <button onClick={() => { setDeleteTarget(selected); setSelected(null) }} className="px-3 py-2 border border-[hsl(var(--destructive)/0.3)] text-[hsl(var(--destructive))] text-sm hover:bg-[hsl(0_72%_51%/0.06)]"><Trash size={14} /></button>
             </div>
           </div>
@@ -251,7 +251,7 @@ export default function IntegrationsPage() {
             </div>
             <div className="flex justify-end gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
               <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">Cancel</button>
-              <button onClick={handleCreate} className="px-4 py-2 text-sm font-medium bg-[hsl(var(--brand))] text-white hover:opacity-90">Add Integration</button>
+              <button onClick={handleCreate} className="px-4 py-2 text-sm font-medium bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] hover:opacity-90">Add Integration</button>
             </div>
           </div>
         </div>

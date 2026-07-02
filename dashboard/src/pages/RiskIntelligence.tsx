@@ -153,7 +153,7 @@ export default function RegulatoryIntelligenceEngine() {
           <button onClick={() => toast.success('Regulatory brief exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
             <Download size={14} /> Export Brief
           </button>
-          <button onClick={() => toast.success('Alert subscription updated')} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90">
+          <button onClick={() => toast.success('Alert subscription updated')} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm hover:opacity-90">
             <Bell size={14} /> Subscribe to Alerts
           </button>
         </div>
@@ -284,7 +284,7 @@ export default function RegulatoryIntelligenceEngine() {
           </table>
           <div className="p-3 flex items-center justify-between border-t border-[hsl(var(--border))] bg-raised">
             <p className="text-xs text-[hsl(var(--text-4))]">{OBLIGATIONS.length} obligations shown · {OBLIGATIONS.filter(o => o.status === 'Unmapped').length} unmapped</p>
-            <button onClick={() => toast.success('Auto-mapping initiated for all automatable obligations')} className="text-xs px-3 py-1.5 bg-[hsl(var(--brand))] text-white hover:opacity-90">
+            <button onClick={() => toast.success('Auto-mapping initiated for all automatable obligations')} className="text-xs px-3 py-1.5 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] hover:opacity-90">
               Auto-Map All Automatable
             </button>
           </div>
@@ -338,7 +338,7 @@ export default function RegulatoryIntelligenceEngine() {
                     {a.label} <ArrowRight size={11} />
                   </a>
                 ))}
-                <button onClick={() => toast.success('Gap remediation task created')} className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[hsl(var(--brand))] text-white hover:opacity-90">
+                <button onClick={() => toast.success('Gap remediation task created')} className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] hover:opacity-90">
                   <Plus size={11} /> Create Remediation Task
                 </button>
               </div>
@@ -481,7 +481,7 @@ export default function RegulatoryIntelligenceEngine() {
                 <>
                   <div className="flex items-center justify-between">
                     <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide">Control Coverage</p>
-                    <button onClick={() => toast.success('Auto-mapping initiated')} className="text-xs px-3 py-1.5 bg-[hsl(var(--brand))] text-white hover:opacity-90">Auto-Map</button>
+                    <button onClick={() => toast.success('Auto-mapping initiated')} className="text-xs px-3 py-1.5 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] hover:opacity-90">Auto-Map</button>
                   </div>
                   <div className="p-4 bg-raised border border-[hsl(var(--border))] space-y-3">
                     <div className="flex items-center justify-between">
@@ -503,7 +503,7 @@ export default function RegulatoryIntelligenceEngine() {
               )}
             </div>
             <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
-              <button onClick={() => toast.success('Obligation mapping task created')} className="flex-1 py-2 bg-[hsl(var(--brand))] text-white text-sm font-medium hover:opacity-90">Map Obligations</button>
+              <button onClick={() => toast.success('Obligation mapping task created')} className="flex-1 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90">Map Obligations</button>
               <button onClick={() => toast.success('Regulatory brief exported')} className="px-4 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">Export Brief</button>
             </div>
           </div>

@@ -174,10 +174,10 @@ export default function FallbackLog() {
 
         {/* Metrics */}
         <div className="grid grid-cols-4 gap-4">
-          <MetricTile label="Total Fallbacks" value={String(entries.length)} variant="info" icon={<ArrowsClockwise size={16} className="text-blue-600 dark:text-blue-400" />} />
+          <MetricTile label="Total Fallbacks" value={String(entries.length)} variant="info" icon={<ArrowsClockwise size={16} className="text-[hsl(var(--s-in-tx))]" />} />
           <MetricTile label="Critical (Failed)" value={String(criticalCount)} variant="error" icon={<Fire size={16} weight="fill" className="text-destructive" />} sub="Requires incident" />
-          <MetricTile label="Auto-Recovered" value={String(autoRecoveredCount)} variant="ok" icon={<CheckCircle size={16} weight="fill" className="text-green-600 dark:text-green-400" />} />
-          <MetricTile label="Avg Recovery Time" value={`${avgRecovery}s`} variant="info" icon={<Clock size={16} className="text-blue-600 dark:text-blue-400" />} />
+          <MetricTile label="Auto-Recovered" value={String(autoRecoveredCount)} variant="ok" icon={<CheckCircle size={16} weight="fill" className="text-[hsl(var(--s-ok-tx))]" />} />
+          <MetricTile label="Avg Recovery Time" value={`${avgRecovery}s`} variant="info" icon={<Clock size={16} className="text-[hsl(var(--s-in-tx))]" />} />
         </div>
 
         {/* Filters */}
@@ -380,7 +380,7 @@ export default function FallbackLog() {
                       </p>
                     </div>
                     <div className="p-3" style={{ background: 'hsl(220 90% 56% / 0.06)', border: '1px solid hsl(220 90% 56% / 0.2)', borderRadius: 0 }}>
-                      <p className="text-xs text-blue-600 dark:text-blue-400">
+                      <p className="text-xs text-[hsl(var(--s-in-tx))]">
                         <Info size={12} className="inline mr-1" />
                         Model quality impact: Fallback from {selectedEntry.primaryModel} to {selectedEntry.fallbackModel} may affect output quality, hallucination rate, and bias characteristics (ISO 42001 Cl. 8.4).
                       </p>
@@ -407,7 +407,7 @@ export default function FallbackLog() {
                         <div className="flex items-start gap-3 p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                           <div className="flex items-center justify-center w-5 h-5 text-xs font-bold" style={{ background: 'hsl(var(--s-ok-tx))', color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 20 }}>3</div>
                           <div>
-                            <p className="text-xs font-medium text-green-600 dark:text-green-400">Recovery successful</p>
+                            <p className="text-xs font-medium text-[hsl(var(--s-ok-tx))]">Recovery successful</p>
                             <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{selectedEntry.tokens} tokens processed in {(selectedEntry.latencyMs / 1000).toFixed(1)}s</p>
                           </div>
                         </div>

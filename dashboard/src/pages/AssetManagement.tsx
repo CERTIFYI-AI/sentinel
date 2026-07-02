@@ -20,11 +20,11 @@ const OWNERS = ["Dr. Sarah Chen","Alex Kumar","James Wilson","Emma Rodriguez","N
 const DEPTS = ["IT","Security","Data Science","Compliance","Finance","Operations","HR","Product"];
 
 const CLASS_COLORS: Record<string, string> = {
-  "Public": "bg-green-100 text-green-700",
-  "Internal": "bg-blue-100 text-blue-700",
-  "Confidential": "bg-amber-100 text-amber-700",
-  "Restricted": "bg-orange-100 text-orange-700",
-  "Top Secret": "bg-red-100 text-red-700",
+  "Public": "bg-[hsl(var(--s-ok-bg))] text-[hsl(var(--s-ok-tx))]",
+  "Internal": "bg-[hsl(var(--s-in-bg))] text-[hsl(var(--s-in-tx))]",
+  "Confidential": "bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))]",
+  "Restricted": "bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))]",
+  "Top Secret": "bg-[hsl(var(--s-er-bg))] text-[hsl(var(--s-er-tx))]",
 };
 const RISK_COLORS: Record<string, string> = { Critical:"hsl(var(--s-er-tx))", High:"hsl(var(--r-hi-tx))", Medium:"hsl(var(--s-wn-tx))", Low:"#22c55e" };
 
@@ -191,17 +191,17 @@ export default function AssetManagement() {
                 <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--text-3))]">{item.id}</td>
                 <td className="px-4 py-3 font-medium text-[hsl(var(--text-1))] max-w-[200px] truncate">{item.name}</td>
                 <td className="px-4 py-3"><span className="inline-flex px-2 py-0.5 rounded-full text-xs bg-[hsl(var(--muted))] text-[hsl(var(--text-2))]">{item.type}</span></td>
-                <td className="px-4 py-3"><span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${CLASS_COLORS[item.classification]||"bg-gray-100 text-gray-700"}`}>{item.classification}</span></td>
+                <td className="px-4 py-3"><span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${CLASS_COLORS[item.classification]||"bg-[hsl(var(--bg-muted))] text-[hsl(var(--text-2))]"}`}>{item.classification}</span></td>
                 <td className="px-4 py-3 text-xs text-[hsl(var(--text-2))]">{item.owner}</td>
                 <td className="px-4 py-3 text-xs text-[hsl(var(--text-2))]">{item.location}</td>
-                <td className="px-4 py-3"><span className="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold text-white" style={{ background: RISK_COLORS[item.riskLevel]||"#888" }}>{item.riskLevel}</span></td>
+                <td className="px-4 py-3"><span className="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold text-[hsl(var(--bg-surface))]" style={{ background: RISK_COLORS[item.riskLevel]||"#888" }}>{item.riskLevel}</span></td>
                 <td className="px-4 py-3"><StatusBadge status={item.status} /></td>
                 <td className="px-4 py-3 text-xs text-[hsl(var(--text-2))]">{item.lastAudited}</td>
                 <td className="px-4 py-3 text-right" onClick={e => e.stopPropagation()}>
                   <div className="flex justify-end gap-1">
                     <Button variant="ghost" size="sm" onClick={() => { setViewItem(item); setModal("view"); }}><Eye size={14} /></Button>
                     <Button variant="ghost" size="sm" onClick={() => openEdit(item)}><PencilSimple size={14} /></Button>
-                    <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(item)} className="text-red-500"><Trash size={14} /></Button>
+                    <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(item)} className="text-[hsl(var(--s-er-tx))]"><Trash size={14} /></Button>
                   </div>
                 </td>
               </tr>
@@ -239,8 +239,8 @@ export default function AssetManagement() {
           </div>
           <div className="flex flex-wrap gap-1">
             {(form.controls||[]).map((c: string, idx: number) => (
-              <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700">
-                {c}<button onClick={() => setForm((f: any) => ({ ...f, controls: f.controls.filter((_: any, i: number) => i !== idx) }))} className="hover:text-red-500"><X size={10} /></button>
+              <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-[hsl(var(--s-in-bg))] text-[hsl(var(--s-in-tx))]">
+                {c}<button onClick={() => setForm((f: any) => ({ ...f, controls: f.controls.filter((_: any, i: number) => i !== idx) }))} className="hover:text-[hsl(var(--s-er-tx))]"><X size={10} /></button>
               </span>
             ))}
           </div>
@@ -266,14 +266,14 @@ export default function AssetManagement() {
           <FormSection title="Security Controls">
             <div className="flex flex-wrap gap-1">
               {(viewItem.controls||[]).map((c: string) => (
-                <span key={c} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700">{c}</span>
+                <span key={c} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-[hsl(var(--s-in-bg))] text-[hsl(var(--s-in-tx))]">{c}</span>
               ))}
             </div>
           </FormSection>
           <FormSection title="Compliance Mapping">
             <div className="flex flex-wrap gap-1">
               {(viewItem.frameworks||[]).map((f: string) => (
-                <span key={f} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-purple-100 text-purple-700">{f}</span>
+                <span key={f} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-[hsl(var(--tag-purple-bg))] text-[hsl(var(--tag-purple))]">{f}</span>
               ))}
             </div>
           </FormSection>
@@ -284,7 +284,7 @@ export default function AssetManagement() {
                   <div key={idx} className="flex items-center gap-3 text-sm border-b border-[hsl(var(--border))] pb-2 last:border-0">
                     <span className="text-[hsl(var(--text-3))] text-xs">{a.date}</span>
                     <span className="text-[hsl(var(--text-2))] flex-1">{a.auditor}</span>
-                    <span className={`text-xs font-medium ${a.result.startsWith("Pass") ? "text-green-600" : "text-red-600"}`}>{a.result}</span>
+                    <span className={`text-xs font-medium ${a.result.startsWith("Pass") ? "text-[hsl(var(--s-ok-tx))]" : "text-[hsl(var(--s-er-tx))]"}`}>{a.result}</span>
                   </div>
                 ))}
               </div>

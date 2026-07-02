@@ -492,7 +492,7 @@ export default function PostMarket() {
               <button onClick={() => setWFeedback(!wFeedback)}
                 className="w-10 h-5 relative transition-colors"
                 style={{ background: wFeedback ? 'hsl(var(--brand))' : 'hsl(var(--bg-raised))', borderRadius: 9999 }}>
-                <span className="absolute top-0.5 h-4 w-4 bg-white transition-all" style={{ borderRadius: 9999, left: wFeedback ? '22px' : '2px' }} />
+                <span className="absolute top-0.5 h-4 w-4 bg-[hsl(var(--bg-surface))] transition-all" style={{ borderRadius: 9999, left: wFeedback ? '22px' : '2px' }} />
               </button>
             </div>
           </div>

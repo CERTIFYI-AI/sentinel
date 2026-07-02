@@ -96,7 +96,7 @@ export default function IncidentLog() {
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search incidents..." className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] rounded-lg bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:ring-2 focus:ring-green-500 focus:border-[hsl(var(--s-ok-br))] outline-none" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search incidents..." className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] rounded-lg bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:ring-2 focus:ring-[hsl(var(--s-ok-br))] focus:border-[hsl(var(--s-ok-br))] outline-none" />
         </div>
         <div className="flex items-center gap-2">
           <Filter size={14} className="text-[hsl(var(--text-4))]" />
@@ -116,7 +116,7 @@ export default function IncidentLog() {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-[hsl(var(--text-3))] mb-1">Title *</label>
-                <input value={form.title} onChange={e => setForm({...form, title: e.target.value})} className="w-full border border-[hsl(var(--border))] rounded-lg px-3 py-2 text-sm bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:ring-2 focus:ring-green-500 focus:border-[hsl(var(--s-ok-br))] outline-none" placeholder="Brief incident title" />
+                <input value={form.title} onChange={e => setForm({...form, title: e.target.value})} className="w-full border border-[hsl(var(--border))] rounded-lg px-3 py-2 text-sm bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:ring-2 focus:ring-[hsl(var(--s-ok-br))] focus:border-[hsl(var(--s-ok-br))] outline-none" placeholder="Brief incident title" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -134,7 +134,7 @@ export default function IncidentLog() {
               </div>
               <div>
                 <label className="block text-xs font-medium text-[hsl(var(--text-3))] mb-1">Description *</label>
-                <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} rows={3} className="w-full border border-[hsl(var(--border))] rounded-lg px-3 py-2 text-sm bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:ring-2 focus:ring-green-500 focus:border-[hsl(var(--s-ok-br))] outline-none" placeholder="Detailed description of what happened..." />
+                <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} rows={3} className="w-full border border-[hsl(var(--border))] rounded-lg px-3 py-2 text-sm bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:ring-2 focus:ring-[hsl(var(--s-ok-br))] focus:border-[hsl(var(--s-ok-br))] outline-none" placeholder="Detailed description of what happened..." />
               </div>
               <div className="flex gap-3 justify-end pt-2">
                 <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-muted))] rounded-lg transition-colors">Cancel</button>

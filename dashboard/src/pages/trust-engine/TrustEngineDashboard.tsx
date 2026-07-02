@@ -131,7 +131,7 @@ function MiniSparkline({ data, trend }: { data: number[]; trend: 'up' | 'down' |
           );
         })}
       </svg>
-      {trend === 'up' && <ArrowUp size={12} weight="bold" className="text-green-600 dark:text-green-400" />}
+      {trend === 'up' && <ArrowUp size={12} weight="bold" className="text-[hsl(var(--s-ok-tx))]" />}
       {trend === 'down' && <ArrowDown size={12} weight="bold" className="text-destructive" />}
     </div>
   );
@@ -421,10 +421,10 @@ export default function TrustEngineDashboard() {
                             <PencilSimple size={14} style={{ color: 'hsl(var(--text-4))' }} />
                           </Button>
                           <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleTestPolicy(p)}>
-                            <Play size={14} className="text-green-600 dark:text-green-400" />
+                            <Play size={14} className="text-[hsl(var(--s-ok-tx))]" />
                           </Button>
                           <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleClone(p)}>
-                            <Copy size={14} className="text-blue-600 dark:text-blue-400" />
+                            <Copy size={14} className="text-[hsl(var(--s-in-tx))]" />
                           </Button>
                           {p.status === 'active' && (
                             <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setDeactivateTarget(p)}>
@@ -450,7 +450,7 @@ export default function TrustEngineDashboard() {
           </SheetHeader>
           <div className="space-y-4 mt-4">
             <div className="p-3" style={{ background: 'hsl(220 90% 56% / 0.06)', border: '1px solid hsl(220 90% 56% / 0.2)', borderRadius: 0 }}>
-              <p className="text-xs text-blue-600 dark:text-blue-400">
+              <p className="text-xs text-[hsl(var(--s-in-tx))]">
                 <Info size={12} className="inline mr-1" />
                 <strong>Weighted Methodology:</strong> The composite trust score is a weighted average where each policy's contribution is proportional to its evaluation volume. Policies with more evaluations have greater influence on the overall score.
               </p>

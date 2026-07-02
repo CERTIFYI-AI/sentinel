@@ -288,7 +288,7 @@ export default function SsoProviders() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="bg-[hsl(var(--brand))] text-white px-3 py-1.5 text-xs"
+          className="bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] px-3 py-1.5 text-xs"
         >
           {isSubmitting ? 'Saving…' : 'Add provider'}
         </button>

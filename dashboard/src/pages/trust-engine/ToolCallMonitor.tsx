@@ -354,7 +354,7 @@ export default function ToolCallMonitor() {
         </div>
         <div className="px-3 py-2" style={{ border: '1px solid hsl(var(--border))' }}>
           <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Idempotent Calls</p>
-          <p className="text-sm font-bold mt-0.5 text-green-600 dark:text-green-400">
+          <p className="text-sm font-bold mt-0.5 text-[hsl(var(--s-ok-tx))]">
             {calls.filter(c => IDEMPOTENT_TOOLS.includes(c.tool)).length} (retryable)
           </p>
         </div>
@@ -439,7 +439,7 @@ export default function ToolCallMonitor() {
                             {c.latencyMs >= 1000 ? `${(c.latencyMs / 1000).toFixed(1)}s` : `${c.latencyMs}ms`}
                           </td>
                           <td className="px-4 py-3">
-                            {c.traceId ? <span className="font-mono text-xs text-blue-600 dark:text-blue-400">{c.traceId}</span> : <span style={{ color: 'hsl(var(--text-4))' }}>—</span>}
+                            {c.traceId ? <span className="font-mono text-xs text-[hsl(var(--s-in-tx))]">{c.traceId}</span> : <span style={{ color: 'hsl(var(--text-4))' }}>—</span>}
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-1">
@@ -447,7 +447,7 @@ export default function ToolCallMonitor() {
                                 <Eye size={14} />
                               </Button>
                               {(c.result === 'error' || c.result === 'timeout') && IDEMPOTENT_TOOLS.includes(c.tool) && (
-                                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-green-600 dark:text-green-400"
+                                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-[hsl(var(--s-ok-tx))]"
                                   onClick={() => handleRetry(c)}>
                                   <ArrowCounterClockwise size={12} />Retry
                                 </Button>

@@ -117,9 +117,9 @@ export default function Controls() {
 
       <div className="grid grid-cols-4 gap-4">
         <Card><CardContent className="pt-4"><div className="text-sm text-muted-foreground">Total Controls</div><div className="text-2xl font-bold">{controls.length}</div></CardContent></Card>
-        <Card><CardContent className="pt-4"><div className="text-sm text-muted-foreground">Implemented</div><div className="text-2xl font-bold text-green-600">{controls.filter(c => c.status === "implemented").length}</div></CardContent></Card>
-        <Card><CardContent className="pt-4"><div className="text-sm text-muted-foreground">Partial</div><div className="text-2xl font-bold text-yellow-600">{controls.filter(c => c.status === "partial").length}</div></CardContent></Card>
-        <Card><CardContent className="pt-4"><div className="text-sm text-muted-foreground">Missing</div><div className="text-2xl font-bold text-red-600">{controls.filter(c => c.status === "not-implemented").length}</div></CardContent></Card>
+        <Card><CardContent className="pt-4"><div className="text-sm text-muted-foreground">Implemented</div><div className="text-2xl font-bold text-[hsl(var(--s-ok-tx))]">{controls.filter(c => c.status === "implemented").length}</div></CardContent></Card>
+        <Card><CardContent className="pt-4"><div className="text-sm text-muted-foreground">Partial</div><div className="text-2xl font-bold text-[hsl(var(--s-wn-tx))]">{controls.filter(c => c.status === "partial").length}</div></CardContent></Card>
+        <Card><CardContent className="pt-4"><div className="text-sm text-muted-foreground">Missing</div><div className="text-2xl font-bold text-[hsl(var(--s-er-tx))]">{controls.filter(c => c.status === "not-implemented").length}</div></CardContent></Card>
       </div>
 
       <div className="flex items-center gap-4">

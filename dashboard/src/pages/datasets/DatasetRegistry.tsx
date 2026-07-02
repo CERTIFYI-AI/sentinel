@@ -360,7 +360,7 @@ export default function DatasetRegistry() {
                     <div key={idx} className="flex items-center justify-between p-3" style={{ border: '1px solid hsl(var(--border))' }}>
                       <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{check.label}</span>
                       {check.met ? (
-                        <CheckCircle size={16} className="text-green-600 dark:text-green-400" />
+                        <CheckCircle size={16} className="text-[hsl(var(--s-ok-tx))]" />
                       ) : (
                         <Warning size={16} className="text-destructive" />
                       )}

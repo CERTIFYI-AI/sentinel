@@ -63,7 +63,7 @@ export default function ComplianceDashboard() {
         icon={Scale}
         actions={
           <button onClick={generateReport} disabled={generating}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[hsl(var(--brand))] text-white text-xs font-medium hover:bg-[hsl(var(--brand-hover))] disabled:opacity-60 transition-colors">
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-xs font-medium hover:bg-[hsl(var(--brand-hover))] disabled:opacity-60 transition-colors">
             <Download size={13} />
             {generating ? "Generating..." : "Generate Report"}
           </button>
@@ -124,7 +124,7 @@ export default function ComplianceDashboard() {
                   <span className="text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{fw.name}</span>
                 </div>
                 <button onClick={() => toggle(fw.id)} className="w-8 h-4 relative transition-colors" style={{ background: fw.enabled ? 'hsl(var(--brand))' : 'hsl(var(--border-mid))' }}>
-                  <div className="w-3 h-3 bg-white absolute top-0.5 transition-all" style={{ left: fw.enabled ? '17px' : '2px' }} />
+                  <div className="w-3 h-3 bg-[hsl(var(--bg-surface))] absolute top-0.5 transition-all" style={{ left: fw.enabled ? '17px' : '2px' }} />
                 </button>
               </div>
               <span className="text-[9px] font-semibold px-1.5 py-0.5 uppercase tracking-wider border" style={{ background: sb.bg, color: sb.tx, borderColor: sb.br }}>{fw.status}</span>

@@ -561,7 +561,7 @@ export default function VendorRegistry() {
 
                   {selectedVendor.dpaStatus === 'signed' && (
                     <div className="p-3" style={{ border: '1px solid hsl(142 71% 45% / 0.3)', background: 'hsl(142 71% 45% / 0.05)' }}>
-                      <p className="text-xs font-medium text-green-600 dark:text-green-400">Data Processing Agreement signed and active</p>
+                      <p className="text-xs font-medium text-[hsl(var(--s-ok-tx))]">Data Processing Agreement signed and active</p>
                       <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>Signed: {formatDate(selectedVendor.lastReview)} · Valid for 12 months</p>
                     </div>
                   )}

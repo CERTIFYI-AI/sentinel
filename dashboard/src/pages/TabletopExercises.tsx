@@ -173,13 +173,13 @@ export default function TabletopExercises() {
                     </div>
                   ) : <span className="text-xs text-[hsl(var(--text-3))]">—</span>}
                 </td>
-                <td className="px-4 py-3 text-xs text-[hsl(var(--text-2))]">{item.findings > 0 ? <span className="text-amber-600 font-semibold">{item.findings} issues</span> : "—"}</td>
+                <td className="px-4 py-3 text-xs text-[hsl(var(--text-2))]">{item.findings > 0 ? <span className="text-[hsl(var(--s-wn-tx))] font-semibold">{item.findings} issues</span> : "—"}</td>
                 <td className="px-4 py-3"><StatusBadge status={item.status} /></td>
                 <td className="px-4 py-3 text-right" onClick={e => e.stopPropagation()}>
                   <div className="flex justify-end gap-1">
                     <Button variant="ghost" size="sm" onClick={() => { setViewItem(item); setModal("view"); }}><Eye size={14} /></Button>
                     <Button variant="ghost" size="sm" onClick={() => openEdit(item)}><PencilSimple size={14} /></Button>
-                    <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(item)} className="text-red-500"><Trash size={14} /></Button>
+                    <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(item)} className="text-[hsl(var(--s-er-tx))]"><Trash size={14} /></Button>
                   </div>
                 </td>
               </tr>
@@ -212,7 +212,7 @@ export default function TabletopExercises() {
           <div className="flex flex-wrap gap-1">
             {(form.participants||[]).map((p: string, idx: number) => (
               <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-[hsl(var(--muted))] text-[hsl(var(--text-2))]">
-                {p}<button onClick={() => setForm((f: any) => ({ ...f, participants: f.participants.filter((_: any, i: number) => i !== idx) }))} className="ml-0.5 hover:text-red-500"><X size={10} /></button>
+                {p}<button onClick={() => setForm((f: any) => ({ ...f, participants: f.participants.filter((_: any, i: number) => i !== idx) }))} className="ml-0.5 hover:text-[hsl(var(--s-er-tx))]"><X size={10} /></button>
               </span>
             ))}
           </div>
@@ -246,7 +246,7 @@ export default function TabletopExercises() {
                 {viewItem.injects.map((inj: any, idx: number) => (
                   <div key={idx} className="flex gap-3">
                     <div className="flex flex-col items-center">
-                      <div className="w-6 h-6 rounded-full bg-[hsl(var(--brand))] flex items-center justify-center text-xs font-bold text-white">{idx+1}</div>
+                      <div className="w-6 h-6 rounded-full bg-[hsl(var(--brand))] flex items-center justify-center text-xs font-bold text-[hsl(var(--bg-surface))]">{idx+1}</div>
                       {idx < viewItem.injects.length-1 && <div className="w-0.5 flex-1 bg-[hsl(var(--border))] mt-1" />}
                     </div>
                     <div className="pb-3 flex-1">
@@ -287,7 +287,7 @@ export default function TabletopExercises() {
                   </div>
                 ))}
               </div>
-              {viewItem.findings > 0 && <p className="text-sm text-amber-600 mt-2 font-medium">{viewItem.findings} findings identified during exercise</p>}
+              {viewItem.findings > 0 && <p className="text-sm text-[hsl(var(--s-wn-tx))] mt-2 font-medium">{viewItem.findings} findings identified during exercise</p>}
             </FormSection>
           )}
           <div className="flex gap-2 pt-2">

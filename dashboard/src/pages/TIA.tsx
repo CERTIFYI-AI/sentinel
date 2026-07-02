@@ -161,7 +161,7 @@ export default function TIA() {
                 <td className="px-4 py-3 font-medium text-[hsl(var(--text-1))] max-w-[160px] truncate">{item.name}</td>
                 <td className="px-4 py-3 text-[hsl(var(--text-2))]">{item.destCountry}</td>
                 <td className="px-4 py-3">
-                  <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${item.adequacy === "Yes" ? "bg-green-100 text-green-700" : item.adequacy === "Partial" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>{item.adequacy}</span>
+                  <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${item.adequacy === "Yes" ? "bg-[hsl(var(--s-ok-bg))] text-[hsl(var(--s-ok-tx))]" : item.adequacy === "Partial" ? "bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))]" : "bg-[hsl(var(--s-er-bg))] text-[hsl(var(--s-er-tx))]"}`}>{item.adequacy}</span>
                 </td>
                 <td className="px-4 py-3 text-xs text-[hsl(var(--text-2))]">{item.transferTool}</td>
                 <td className="px-4 py-3">
@@ -179,7 +179,7 @@ export default function TIA() {
                   <div className="flex justify-end gap-1">
                     <Button variant="ghost" size="sm" onClick={() => { setViewItem(item); setModal("view"); }}><Eye size={14} /></Button>
                     <Button variant="ghost" size="sm" onClick={() => openEdit(item)}><PencilSimple size={14} /></Button>
-                    <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(item)} className="text-red-500"><Trash size={14} /></Button>
+                    <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(item)} className="text-[hsl(var(--s-er-tx))]"><Trash size={14} /></Button>
                   </div>
                 </td>
               </tr>
@@ -242,7 +242,7 @@ export default function TIA() {
           <MetaBar items={[
             { label:"Ref", value: viewItem.id },
             { label:"Destination", value: viewItem.destCountry },
-            { label:"Adequacy", value: <span className={`font-semibold ${viewItem.adequacy === "Yes" ? "text-green-600" : "text-red-600"}`}>{viewItem.adequacy}</span> },
+            { label:"Adequacy", value: <span className={`font-semibold ${viewItem.adequacy === "Yes" ? "text-[hsl(var(--s-ok-tx))]" : "text-[hsl(var(--s-er-tx))]"}`}>{viewItem.adequacy}</span> },
             { label:"Risk Score", value: <span className="font-bold" style={{ color: SCORE_COLOR(viewItem.riskScore) }}>{viewItem.riskScore}/100</span> },
             { label:"Status", value: <StatusBadge status={viewItem.status} /> },
             { label:"Assessor", value: viewItem.assessor },
@@ -262,7 +262,7 @@ export default function TIA() {
             <div className="grid grid-cols-2 gap-2 text-sm">
               {Object.entries(viewItem.supplementaryMeasures||{}).map(([k, v]) => (
                 <div key={k} className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${v ? "bg-green-500" : "bg-[hsl(var(--muted))]"}`} />
+                  <div className={`w-3 h-3 rounded-full ${v ? "bg-[hsl(var(--s-ok-tx))]" : "bg-[hsl(var(--muted))]"}`} />
                   <span className={v ? "text-[hsl(var(--text-1))]" : "text-[hsl(var(--text-3))]"}>{k.replace(/([A-Z])/g, " $1").trim()}</span>
                 </div>
               ))}

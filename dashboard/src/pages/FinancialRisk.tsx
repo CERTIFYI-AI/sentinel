@@ -121,7 +121,7 @@ export default function FinancialRisk() {
           <button onClick={() => toast.success('Exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
             <Export size={14} /> Export
           </button>
-          <button onClick={openCreate} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-white text-sm hover:opacity-90">
+          <button onClick={openCreate} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm hover:opacity-90">
             <Plus size={14} /> Quantify Risk
           </button>
         </div>
@@ -206,7 +206,7 @@ export default function FinancialRisk() {
             <ChartLine size={16} className="text-[hsl(var(--brand))]" weight="duotone" />
             Monte Carlo Loss Distribution Simulation (10,000 iterations)
           </h3>
-          <button onClick={() => toast.info('Re-running simulation...')} className="text-xs px-3 py-1 bg-[hsl(var(--brand))] text-white hover:opacity-90">Run Simulation</button>
+          <button onClick={() => toast.info('Re-running simulation...')} className="text-xs px-3 py-1 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] hover:opacity-90">Run Simulation</button>
         </div>
         <div className="grid grid-cols-4 gap-3 mb-4">
           {[
@@ -262,7 +262,7 @@ export default function FinancialRisk() {
               </div>
             </div>
           ))}
-          <button onClick={() => toast.success('FAIR model recalculated')} className="w-full text-xs py-1.5 bg-[hsl(var(--brand))] text-white hover:opacity-90">Recalculate AEL</button>
+          <button onClick={() => toast.success('FAIR model recalculated')} className="w-full text-xs py-1.5 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] hover:opacity-90">Recalculate AEL</button>
         </div>
 
         <div className="rounded border border-[hsl(var(--border))] bg-surface p-4">
@@ -463,7 +463,7 @@ export default function FinancialRisk() {
             </div>
             <div className="flex justify-end gap-2 p-4 border-t border-[hsl(var(--border))]">
               <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">Cancel</button>
-              <button onClick={saveForm} className="px-4 py-2 text-sm bg-[hsl(var(--brand))] text-white hover:opacity-90">{editTarget ? 'Save Changes' : 'Add Risk'}</button>
+              <button onClick={saveForm} className="px-4 py-2 text-sm bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] hover:opacity-90">{editTarget ? 'Save Changes' : 'Add Risk'}</button>
             </div>
           </div>
         </div>

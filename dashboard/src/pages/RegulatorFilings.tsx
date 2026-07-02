@@ -98,12 +98,12 @@ export default function RegulatorFilings() {
       <Breadcrumbs />
 
       {urgentBanner.length > 0 && (
-        <div className="rounded-xl border border-red-300 bg-red-50 px-4 py-3 flex items-start gap-3">
-          <Warning size={20} className="text-red-600 mt-0.5 shrink-0" weight="fill" />
-          <div className="text-sm text-red-800">
+        <div className="rounded-xl border border-[hsl(var(--s-er-br))] bg-[hsl(var(--s-er-bg))] px-4 py-3 flex items-start gap-3">
+          <Warning size={20} className="text-[hsl(var(--s-er-tx))] mt-0.5 shrink-0" weight="fill" />
+          <div className="text-sm text-[hsl(var(--s-er-tx))]">
             {urgentBanner.map(item => {
               const warn = isOverdueSoon(item);
-              return <div key={item.id}>⚠ <strong>{item.type}</strong> requires notification. <strong>[{item.id}]</strong> — {warn === "OVERDUE" ? <span className="font-bold text-red-900">OVERDUE — deadline passed</span> : <span>deadline in <strong>{warn}</strong></span>}.</div>;
+              return <div key={item.id}>⚠ <strong>{item.type}</strong> requires notification. <strong>[{item.id}]</strong> — {warn === "OVERDUE" ? <span className="font-bold text-[hsl(var(--s-er-tx))]">OVERDUE — deadline passed</span> : <span>deadline in <strong>{warn}</strong></span>}.</div>;
             })}
           </div>
         </div>
@@ -196,7 +196,7 @@ export default function RegulatorFilings() {
                   <td className="px-4 py-3 text-xs text-[hsl(var(--text-2))]">{item.regulator}</td>
                   <td className="px-4 py-3 text-xs">
                     <div>{item.deadline ? new Date(item.deadline).toLocaleDateString() : "—"}</div>
-                    {warn && <span className={`text-xs font-semibold ${warn === "OVERDUE" ? "text-red-600" : "text-amber-600"}`}>{warn}</span>}
+                    {warn && <span className={`text-xs font-semibold ${warn === "OVERDUE" ? "text-[hsl(var(--s-er-tx))]" : "text-[hsl(var(--s-wn-tx))]"}`}>{warn}</span>}
                   </td>
                   <td className="px-4 py-3"><StatusBadge status={item.status} /></td>
                   <td className="px-4 py-3 text-xs text-[hsl(var(--text-2))]">{item.jurisdiction}</td>
@@ -205,7 +205,7 @@ export default function RegulatorFilings() {
                     <div className="flex justify-end gap-1">
                       <Button variant="ghost" size="sm" onClick={() => { setViewItem(item); setModal("view"); }}><Eye size={14} /></Button>
                       <Button variant="ghost" size="sm" onClick={() => openEdit(item)}><PencilSimple size={14} /></Button>
-                      <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(item)} className="text-red-500"><Trash size={14} /></Button>
+                      <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(item)} className="text-[hsl(var(--s-er-tx))]"><Trash size={14} /></Button>
                     </div>
                   </td>
                 </tr>
@@ -266,7 +266,7 @@ export default function RegulatorFilings() {
               ].map((step, idx, arr) => (
                 <div key={step.node} className="flex gap-3 mb-3">
                   <div className="flex flex-col items-center">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${step.done ? "bg-green-500 text-white" : "bg-[hsl(var(--muted))] text-[hsl(var(--text-3))]"}`}>{idx+1}</div>
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${step.done ? "bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))]" : "bg-[hsl(var(--muted))] text-[hsl(var(--text-3))]"}`}>{idx+1}</div>
                     {idx < arr.length-1 && <div className="w-0.5 flex-1 bg-[hsl(var(--border))] mt-1" />}
                   </div>
                   <div className="pb-3">

@@ -13,12 +13,12 @@ export const PolicyStatsCards = ({ policies }: Props) => {
   const critical = policies.filter(p => p.priority === 'Critical').length;
 
   const cards = [
-    { label: 'Total Policies', value: total, icon: FileText, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
+    { label: 'Total Policies', value: total, icon: FileText, color: 'text-[hsl(var(--s-in-tx))]', bg: 'bg-[hsl(var(--s-in-tx))]', border: 'border-[hsl(var(--s-in-br))]' },
     { label: 'Published', value: published, icon: CheckCircle, color: 'text-[hsl(var(--brand))]', bg: 'bg-[hsl(var(--brand))]/10', border: 'border-primary/20' },
-    { label: 'In Review', value: inReview, icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
-    { label: 'Draft', value: draft, icon: AlertTriangle, color: 'text-sky-400', bg: 'bg-sky-500/10', border: 'border-sky-500/20' },
-    { label: 'Expired', value: expired, icon: XCircle, color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20' },
-    { label: 'Critical Priority', value: critical, icon: AlertTriangle, color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/20' },
+    { label: 'In Review', value: inReview, icon: Clock, color: 'text-[hsl(var(--s-wn-tx))]', bg: 'bg-[hsl(var(--s-wn-tx))]', border: 'border-[hsl(var(--s-wn-br))]' },
+    { label: 'Draft', value: draft, icon: AlertTriangle, color: 'text-[hsl(var(--s-in-tx))]', bg: 'bg-[hsl(var(--s-in-tx))]', border: 'border-[hsl(var(--s-in-br))]' },
+    { label: 'Expired', value: expired, icon: XCircle, color: 'text-[hsl(var(--s-er-tx))]', bg: 'bg-[hsl(var(--s-er-tx))]', border: 'border-[hsl(var(--s-er-br))]' },
+    { label: 'Critical Priority', value: critical, icon: AlertTriangle, color: 'text-[hsl(var(--s-wn-tx))]', bg: 'bg-[hsl(var(--s-wn-tx))]', border: 'border-[hsl(var(--s-wn-br))]' },
   ];
 
   return (

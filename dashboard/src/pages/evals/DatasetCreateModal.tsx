@@ -124,7 +124,7 @@ export default function DatasetCreateModal() {
                   </thead>
                   <tbody className="divide-y divide-[hsl(var(--border))]">
                     <tr>
-                      <td className="py-4"><span className="font-mono text-xs bg-[hsl(var(--bg-muted))] px-2 py-1">input</span> <span className="text-red-500">*</span></td>
+                      <td className="py-4"><span className="font-mono text-xs bg-[hsl(var(--bg-muted))] px-2 py-1">input</span> <span className="text-[hsl(var(--s-er-tx))]">*</span></td>
                       <td className="py-4">
                         <select className="w-full p-2 border border-[hsl(var(--border))] bg-[hsl(var(--bg-main))] text-xs focus:outline-none focus:border-[hsl(var(--brand))]">
                           <option>user_query</option>

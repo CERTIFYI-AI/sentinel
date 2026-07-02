@@ -205,8 +205,8 @@ export default function ExplainabilityCenter() {
 
       {/* Metrics */}
       <div className="grid grid-cols-4 gap-4">
-        <MetricTile label="Reports" value={String(reports.length)} variant="info" icon={<FileText size={16} weight="fill" className="text-blue-600 dark:text-blue-400" />} />
-        <MetricTile label="Models Covered" value={String(modelTabs.length)} variant="info" icon={<Brain size={16} weight="fill" className="text-blue-600 dark:text-blue-400" />} />
+        <MetricTile label="Reports" value={String(reports.length)} variant="info" icon={<FileText size={16} weight="fill" className="text-[hsl(var(--s-in-tx))]" />} />
+        <MetricTile label="Models Covered" value={String(modelTabs.length)} variant="info" icon={<Brain size={16} weight="fill" className="text-[hsl(var(--s-in-tx))]" />} />
         <MetricTile label="Review Required" value={String(reviewRequired)} variant="warn" icon={<Warning size={16} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />} />
         <MetricTile label="GDPR Art.22 Gap" value={String(gdprGap)} variant="error" icon={<Warning size={16} weight="fill" style={{ color: 'hsl(var(--destructive))' }} />} />
       </div>
@@ -502,7 +502,7 @@ export default function ExplainabilityCenter() {
               <div className="flex gap-2">
                 <button className="px-3 py-1.5 text-xs border" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}
                   onClick={() => toast('Explanation exported as PDF', 'success')}>Export PDF</button>
-                <button className="px-3 py-1.5 text-xs text-white" style={{ background: 'hsl(var(--brand))' }}
+                <button className="px-3 py-1.5 text-xs text-[hsl(var(--bg-surface))]" style={{ background: 'hsl(var(--brand))' }}
                   onClick={() => toast('Plain-language explanation generated', 'success')}>Regenerate</button>
               </div>
             </div>
