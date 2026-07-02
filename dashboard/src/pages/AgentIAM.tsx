@@ -1,35 +1,19 @@
 import { useState } from 'react'
-import { IdentificationCard, MagnifyingGlass, Plus, Eye, X, Export, Key, ShieldCheck, Warning, Lock, UserCheck, ArrowsClockwise, Siren } from '@phosphor-icons/react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { IdentificationCard, MagnifyingGlass, Plus, Eye, X, Export, Key, ShieldCheck, Warning, Lock, UserCheck, Siren, Pulse, Cpu } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { FormDialog, Field } from '@/components/evals/FormDialog'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { UserSelect } from '@/components/evals/UserSelect'
+import { agentCredentialHooks, agentRecordHooks } from '@/hooks/queries/useAgentGovCrud'
+import type { AgentCredential, PrincipalType } from '@/types/agentGov'
 
 
-interface AgentIdentity {
-  id: string
-  agentId: string
-  agentName: string
-  principalType: 'Service Account' | 'API Key' | 'OAuth Client' | 'mTLS Certificate'
-  principalId: string
-  roles: string[]
-  scopes: string[]
-  created: string
-  expires: string
-  lastUsed: string
-  status: 'Active' | 'Revoked' | 'Expired' | 'Pending Rotation'
-  mfaRequired: boolean
-  ipAllowlist: string[]
-  rotationPolicy: string
-  auditRequired: boolean
-}
+type AgentIdentity = AgentCredential
 
-const SEED: AgentIdentity[] = [
-  { id: 'IAM-001', agentId: 'AGT-001', agentName: 'LoanProcessorAgent', principalType: 'Service Account', principalId: 'svc-loan-processor@acme-ai.iam.prod', roles: ['LoanProcessor', 'CreditReporter', 'AuditWriter'], scopes: ['credit:read', 'loans:write', 'documents:read', 'audit:write'], created: '2026-01-15', expires: '2026-07-15', lastUsed: '2026-04-10 09:18:00', status: 'Active', mfaRequired: false, ipAllowlist: ['10.0.0.0/8', '172.16.0.0/12'], rotationPolicy: 'Every 90 days — next: 2026-04-15', auditRequired: true },
-  { id: 'IAM-002', agentId: 'AGT-001', agentName: 'LoanProcessorAgent', principalType: 'API Key', principalId: 'sk-prod-lpa-...f4a2', roles: ['CreditBureauCaller'], scopes: ['credit_bureau:read'], created: '2026-01-15', expires: '2026-04-15', lastUsed: '2026-04-10 09:18:00', status: 'Pending Rotation', mfaRequired: false, ipAllowlist: ['10.0.1.0/24'], rotationPolicy: 'Every 90 days — OVERDUE by 2 days', auditRequired: true },
-  { id: 'IAM-003', agentId: 'AGT-002', agentName: 'FraudInvestigatorAgent', principalType: 'OAuth Client', principalId: 'oauth-fraud-inv-prod-7a3f', roles: ['FraudInvestigator', 'CaseManager'], scopes: ['transactions:read', 'customers:read', 'cases:write', 'enrichment:call'], created: '2026-02-01', expires: '2027-02-01', lastUsed: '2026-04-10 08:55:00', status: 'Active', mfaRequired: true, ipAllowlist: ['10.0.2.0/24', '10.0.3.0/24'], rotationPolicy: 'Annually — next: 2027-02-01', auditRequired: true },
-  { id: 'IAM-004', agentId: 'AGT-003', agentName: 'ComplianceMonitorAgent', principalType: 'mTLS Certificate', principalId: 'CN=compliance-monitor,O=AcmeFinancial,C=US', roles: ['ComplianceReader', 'ReportWriter', 'AlertSender'], scopes: ['compliance:read', 'reports:write', 'alerts:send', 'regulatory:fetch'], created: '2026-01-20', expires: '2027-01-20', lastUsed: '2026-04-10 07:00:00', status: 'Active', mfaRequired: false, ipAllowlist: ['10.0.0.0/8'], rotationPolicy: 'Annually — auto-renewed via PKI', auditRequired: false },
-  { id: 'IAM-005', agentId: 'AGT-004', agentName: 'CustomerServiceOrchestrator', principalType: 'Service Account', principalId: 'svc-cs-orchestrator@acme-ai.iam.prod', roles: ['AgentOrchestrator', 'ConversationManager'], scopes: ['agents:spawn', 'conversations:write', 'customers:read'], created: '2026-03-01', expires: '2026-09-01', lastUsed: '2026-04-07 14:20:00', status: 'Revoked', mfaRequired: false, ipAllowlist: ['10.0.5.0/24'], rotationPolicy: 'N/A — suspended', auditRequired: true },
-  { id: 'IAM-006', agentId: 'AGT-006', agentName: 'DataQualityPatrolAgent', principalType: 'API Key', principalId: 'sk-prod-dqp-...b8f1', roles: ['DataReader', 'AlertWriter'], scopes: ['pipelines:read', 'schemas:read', 'alerts:write'], created: '2025-12-01', expires: '2026-06-01', lastUsed: '2026-04-10 09:20:00', status: 'Active', mfaRequired: false, ipAllowlist: ['10.0.0.0/8'], rotationPolicy: 'Every 180 days — next: 2026-06-01', auditRequired: false },
-]
 
 const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
   Active: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
@@ -39,32 +23,49 @@ const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
 }
 
 export default function AgentIAM() {
-  const [search, setSearch] = useState('')
+  const navigate = useNavigate()
+  const [params] = useSearchParams()
+  const [search, setSearch] = useState(params.get('agent') ?? '')
   const [selected, setSelected] = useState<AgentIdentity | null>(null)
   const [statusFilter, setStatusFilter] = useState('All')
   const [revokeTarget, setRevokeTarget] = useState<AgentIdentity | null>(null)
   const [rotateTarget, setRotateTarget] = useState<AgentIdentity | null>(null)
-  const [identities, setIdentities] = useState(SEED)
+  const [showProvision, setShowProvision] = useState(false)
+  const { data: identities = [] } = agentCredentialHooks.useList()
+  const { data: registryAgents = [] } = agentRecordHooks.useList()
+  const upsert = agentCredentialHooks.useUpsert()
 
   function confirmRevoke() {
     if (!revokeTarget) return
-    setIdentities(prev => prev.map(i => i.id === revokeTarget.id ? { ...i, status: 'Revoked' as const } : i))
-    toast.success(`Credential ${revokeTarget.id} revoked`)
+    upsert.mutate({ ...revokeTarget, status: 'Revoked' }, {
+      onSuccess: () => toast.success(`Credential ${revokeTarget.id} revoked`),
+      onError: () => toast.error('Revoke failed'),
+    })
     setRevokeTarget(null)
     setSelected(null)
   }
 
+  function rotate(target: AgentIdentity) {
+    const newExpiry = new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10)
+    upsert.mutate(
+      { ...target, status: 'Active', expires: newExpiry, rotationPolicy: `Every 90 days — next: ${newExpiry}` },
+      {
+        onSuccess: () => toast.success(`Credential ${target.id} rotated — new expiry: ${newExpiry}`),
+        onError: () => toast.error('Rotation failed'),
+      },
+    )
+  }
+
   function confirmRotate() {
     if (!rotateTarget) return
-    const newExpiry = new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10)
-    setIdentities(prev => prev.map(i => i.id === rotateTarget.id ? { ...i, status: 'Active' as const, expires: newExpiry, rotationPolicy: `Every 90 days — next: ${newExpiry}` } : i))
-    toast.success(`Credential ${rotateTarget.id} rotated successfully — new expiry: ${newExpiry}`)
+    rotate(rotateTarget)
     setRotateTarget(null)
     setSelected(null)
   }
 
   const filtered = identities.filter(i => {
-    const ms = i.agentName.toLowerCase().includes(search.toLowerCase()) || i.principalId.toLowerCase().includes(search.toLowerCase()) || i.id.toLowerCase().includes(search.toLowerCase())
+    const q = search.toLowerCase()
+    const ms = i.agentName.toLowerCase().includes(q) || i.agentId.toLowerCase().includes(q) || i.principalId.toLowerCase().includes(q) || i.id.toLowerCase().includes(q)
     return ms && (statusFilter === 'All' || i.status === statusFilter)
   })
 
@@ -77,23 +78,27 @@ export default function AgentIAM() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-[hsl(var(--text-1))] flex items-center gap-2">
-            <IdentificationCard size={20} weight="fill" className="text-[hsl(var(--brand))]" />
-            Agent IAM
-          </h1>
-          <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">Identity and access management for AI agents — credentials, roles, scopes, and rotation policies</p>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={() => toast.success('Exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
-            <Export size={14} /> Export
-          </button>
-          <button onClick={() => toast.info('Credential provisioning wizard')} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm hover:opacity-90">
-            <Plus size={14} /> Provision Identity
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Agent IAM"
+        subtitle="Identity and access management for AI agents — credentials, roles, scopes, and rotation policies"
+        icon={IdentificationCard}
+        actions={
+          <div className="flex gap-2">
+            <button onClick={() => navigate('/agent-registry')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
+              <Cpu size={14} /> Agent Registry
+            </button>
+            <button onClick={() => navigate('/trust-engine/traces')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
+              <Pulse size={14} /> Runtime Traces
+            </button>
+            <button onClick={() => toast.success('Exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
+              <Export size={14} /> Export
+            </button>
+            <button onClick={() => setShowProvision(true)} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm hover:opacity-90">
+              <Plus size={14} /> Provision Identity
+            </button>
+          </div>
+        }
+      />
 
       <div className="grid grid-cols-4 gap-4">
         {[
@@ -113,7 +118,9 @@ export default function AgentIAM() {
         <div className="flex items-center gap-3 p-3 border border-[hsl(45_93%_47%/0.5)] bg-[hsl(45_93%_47%/0.08)]">
           <Warning size={16} className="text-[hsl(45_85%_40%)] flex-shrink-0" />
           <p className="text-sm text-[hsl(var(--text-2))]"><span className="font-semibold">{stats.pendingRotation} credential(s)</span> pending rotation. Rotate immediately to maintain security posture.</p>
-          <button onClick={() => toast.success('Rotation initiated for all pending credentials')} className="ml-auto text-sm px-3 py-1 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] hover:opacity-90 flex-shrink-0">Rotate Now</button>
+          <button
+            onClick={() => { identities.filter(i => i.status === 'Pending Rotation').forEach(rotate) }}
+            className="ml-auto text-sm px-3 py-1 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] hover:opacity-90 flex-shrink-0">Rotate Now</button>
         </div>
       )}
 
@@ -140,7 +147,13 @@ export default function AgentIAM() {
             {filtered.map(i => (
               <tr key={i.id} className="border-b border-[hsl(var(--border))] hover:bg-raised cursor-pointer" onClick={() => setSelected(i)}>
                 <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--brand))]">{i.id}</td>
-                <td className="px-4 py-3 text-xs text-[hsl(var(--text-2))] font-medium">{i.agentName}</td>
+                <td className="px-4 py-3 text-xs font-medium">
+                  <button
+                    onClick={e => { e.stopPropagation(); navigate(`/agent-registry?agent=${i.agentId}`) }}
+                    className="text-[hsl(var(--brand))] hover:underline"
+                    title={`Open ${i.agentId} in Agent Registry`}
+                  >{i.agentName}</button>
+                </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1 text-xs text-[hsl(var(--text-3))]">
                     <Key size={11} />
@@ -309,6 +322,17 @@ export default function AgentIAM() {
               <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">IP Allowlist</p><div className="space-y-0.5">{selected.ipAllowlist.map(ip => <div key={ip} className="font-mono text-[10px] text-[hsl(var(--text-2))] p-1.5 bg-raised border border-[hsl(var(--border))]">{ip}</div>)}</div></div>
               <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">Rotation Policy</p><p className="text-sm text-[hsl(var(--text-2))] p-3 bg-raised border border-[hsl(var(--border))]">{selected.rotationPolicy}</p></div>
             </div>
+            {/* Cross-module: credential → agent record → runtime traces */}
+            <div className="px-4 pt-3 flex gap-2">
+              <button onClick={() => navigate(`/agent-registry?agent=${selected.agentId}`)}
+                className="flex items-center gap-1.5 px-3 py-1.5 border border-[hsl(var(--border))] text-xs text-[hsl(var(--text-2))] hover:bg-raised">
+                <Cpu size={12} /> View Agent
+              </button>
+              <button onClick={() => navigate('/trust-engine/traces')}
+                className="flex items-center gap-1.5 px-3 py-1.5 border border-[hsl(var(--border))] text-xs text-[hsl(var(--text-2))] hover:bg-raised">
+                <Pulse size={12} /> Runtime Traces
+              </button>
+            </div>
             <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
               <button
                 onClick={() => setRotateTarget(selected)}
@@ -328,6 +352,17 @@ export default function AgentIAM() {
           </div>
         </div>
       )}
+
+      <ProvisionDialog
+        open={showProvision}
+        onOpenChange={setShowProvision}
+        agents={registryAgents.map(a => ({ id: a.id, name: a.name }))}
+        nextId={`IAM-${String(identities.length + 1).padStart(3, '0')}`}
+        onSubmit={(rec) => upsert.mutate(rec, {
+          onSuccess: () => { toast.success(`Identity ${rec.id} provisioned for ${rec.agentName}`); setShowProvision(false) },
+          onError: () => toast.error('Provisioning failed'),
+        })}
+      />
 
       <ConfirmDialog
         open={!!rotateTarget}
@@ -349,5 +384,106 @@ export default function AgentIAM() {
         onClose={() => setRevokeTarget(null)}
       />
     </div>
+  )
+}
+
+// ── Provision Identity dialog ─────────────────────────────────────────────────
+// Issues a new credential bound to a registered agent; the issuance approver
+// comes from the central Users directory.
+function ProvisionDialog({ open, onOpenChange, agents, nextId, onSubmit }: {
+  open: boolean
+  onOpenChange: (o: boolean) => void
+  agents: { id: string; name: string }[]
+  nextId: string
+  onSubmit: (rec: AgentCredential) => void
+}) {
+  const today = new Date().toISOString().slice(0, 10)
+  const in90 = new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10)
+  const [agentId, setAgentId] = useState('')
+  const [principalType, setPrincipalType] = useState<PrincipalType>('Service Account')
+  const [principalId, setPrincipalId] = useState('')
+  const [roles, setRoles] = useState('')
+  const [scopes, setScopes] = useState('')
+  const [approvedBy, setApprovedBy] = useState('')
+  const [mfaRequired, setMfaRequired] = useState(false)
+
+  const agent = agents.find(a => a.id === agentId)
+  const valid = !!agent && principalId.trim() && scopes.trim() && approvedBy.trim()
+
+  function submit() {
+    if (!agent) return
+    onSubmit({
+      id: nextId,
+      agentId: agent.id,
+      agentName: agent.name,
+      principalType,
+      principalId: principalId.trim(),
+      roles: roles.split(',').map(s => s.trim()).filter(Boolean),
+      scopes: scopes.split(',').map(s => s.trim()).filter(Boolean),
+      created: today,
+      expires: in90,
+      lastUsed: 'Never',
+      status: 'Active',
+      mfaRequired,
+      ipAllowlist: [],
+      rotationPolicy: `Every 90 days — next: ${in90}`,
+      auditRequired: true,
+      approvedBy,
+    })
+  }
+
+  return (
+    <FormDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Provision Agent Identity"
+      description="Issue a credential bound to a registered agent. Least-privilege: grant only the scopes the agent demonstrably needs."
+      submitLabel="Provision"
+      disabled={!valid}
+      onSubmit={submit}
+    >
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Agent" required hint="From the Agent Registry">
+          <Select value={agentId} onValueChange={setAgentId}>
+            <SelectTrigger><SelectValue placeholder="Select agent…" /></SelectTrigger>
+            <SelectContent>
+              {agents.map(a => <SelectItem key={a.id} value={a.id}>{a.name} ({a.id})</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </Field>
+        <Field label="Principal type">
+          <Select value={principalType} onValueChange={v => setPrincipalType(v as PrincipalType)}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {(['Service Account', 'API Key', 'OAuth Client', 'mTLS Certificate'] as PrincipalType[]).map(t => (
+                <SelectItem key={t} value={t}>{t}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+      </div>
+      <Field label="Principal ID" required>
+        <Input value={principalId} onChange={e => setPrincipalId(e.target.value)} placeholder="svc-my-agent@acme-ai.iam.prod" />
+      </Field>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Roles" hint="Comma-separated">
+          <Input value={roles} onChange={e => setRoles(e.target.value)} placeholder="DataReader, AlertWriter" />
+        </Field>
+        <Field label="Scopes" required hint="Comma-separated, least-privilege">
+          <Input value={scopes} onChange={e => setScopes(e.target.value)} placeholder="pipelines:read, alerts:write" />
+        </Field>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Issuance approver" required hint="From the Users directory">
+          <UserSelect value={approvedBy} onChange={setApprovedBy} by="name" rolesFilter={['ciso', 'risk', 'compliance']} />
+        </Field>
+        <Field label="MFA">
+          <label className="flex h-9 items-center gap-2 text-sm text-[hsl(var(--text-2))]">
+            <input type="checkbox" checked={mfaRequired} onChange={e => setMfaRequired(e.target.checked)} />
+            Require MFA for this principal
+          </label>
+        </Field>
+      </div>
+    </FormDialog>
   )
 }

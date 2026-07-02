@@ -20,7 +20,7 @@ import type {
   DatasetCatalogEntry, ScenarioTemplate, ScenarioCampaign, SessionTrace,
 } from '../../types/evals'
 
-function makeHooks<T extends { id: string; state?: string; modelId?: string; version?: number }>(
+export function makeHooks<T extends { id: string; state?: string; modelId?: string; version?: number }>(
   crud: EvalsCrud<T>,
   seed: T[],
 ) {

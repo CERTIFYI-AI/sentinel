@@ -5,54 +5,18 @@
 // Provides lifecycle tracking, permissions, trust scoring, and kill-switch controls.
 
 import { useState } from 'react'
-import { Cpu, Plus, Eye, X, Export, Warning, CheckCircle, Power, Pencil, Trash, Shield } from '@phosphor-icons/react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Plus, Eye, X, Export, Warning, Power, Pencil, Trash, Shield, IdentificationCard, Pulse } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { StatCardRow } from '@/components/ui/StatCardRow'
 import { FilterBar } from '@/components/ui/FilterBar'
+import { UserSelect } from '@/components/evals/UserSelect'
+import { agentRecordHooks } from '@/hooks/queries/useAgentGovCrud'
+import type { AgentRecord, AgentStatus, AgentType, AgentRiskTier as RiskTier } from '@/types/agentGov'
 
+type AgentRegistryItem = AgentRecord
 
-type AgentStatus = 'Active' | 'Suspended' | 'Quarantined' | 'Decommissioned' | 'Pending Approval'
-type AgentType = 'Autonomous' | 'Semi-Autonomous' | 'Tool-Using' | 'Multi-Modal' | 'Orchestrator' | 'Worker'
-type RiskTier = 'Critical' | 'High' | 'Medium' | 'Low'
-
-interface AgentRegistryItem {
-  id: string
-  name: string
-  version: string
-  type: AgentType
-  status: AgentStatus
-  riskTier: RiskTier
-  owner: string
-  team: string
-  purpose: string
-  tools: string[]
-  permissions: string[]
-  model: string
-  maxBudget: number
-  dailyCallCount: number
-  lastActivity: string
-  registeredDate: string
-  approvedBy: string
-  trustScore: number
-  escalationPolicy: string
-  killSwitchEnabled: boolean
-  totalCallsLifetime: number
-  avgLatencyMs: number
-}
-
-const SEED: AgentRegistryItem[] = [
-  { id: 'AGT-001', name: 'LoanProcessorAgent', version: '2.3.1', type: 'Autonomous', status: 'Active', riskTier: 'Critical', owner: 'James Liu', team: 'Lending AI', purpose: 'End-to-end loan application processing including document verification, credit scoring queries, and preliminary decision generation.', tools: ['CreditAPI', 'DocumentVerifier', 'CustomerDB', 'NotificationService', 'AuditLogger'], permissions: ['READ:customer_data', 'WRITE:loan_decisions', 'CALL:credit_bureau_api', 'READ:policy_rules'], model: 'GPT-4o via OpenAI', maxBudget: 5000, dailyCallCount: 1247, lastActivity: '2026-04-10 09:18:00', registeredDate: '2026-01-15', approvedBy: 'Sarah Chen', trustScore: 72, escalationPolicy: 'HITL on decisions > $500K or score < 0.65', killSwitchEnabled: true, totalCallsLifetime: 184291, avgLatencyMs: 1240 },
-  { id: 'AGT-002', name: 'FraudInvestigatorAgent', version: '1.8.0', type: 'Semi-Autonomous', status: 'Active', riskTier: 'High', owner: 'Sarah Chen', team: 'Fraud & Security', purpose: 'Investigates flagged transactions by gathering evidence, querying internal databases, and generating investigation reports for human review.', tools: ['TransactionDB', 'DeviceFingerprinter', 'IPGeolocation', 'CustomerHistory', 'CaseManagement'], permissions: ['READ:transaction_data', 'READ:customer_pii', 'WRITE:case_notes', 'CALL:third_party_enrichment'], model: 'Claude 3.5 Sonnet via Anthropic', maxBudget: 2000, dailyCallCount: 342, lastActivity: '2026-04-10 08:55:00', registeredDate: '2026-02-01', approvedBy: 'Sarah Chen', trustScore: 85, escalationPolicy: 'Auto-escalate cases > $50K to Senior Investigator', killSwitchEnabled: true, totalCallsLifetime: 52340, avgLatencyMs: 2100 },
-  { id: 'AGT-003', name: 'ComplianceMonitorAgent', version: '3.1.0', type: 'Autonomous', status: 'Active', riskTier: 'High', owner: 'Maria Santos', team: 'GRC', purpose: 'Continuously monitors regulatory feeds, identifies applicable obligations, and maps them to controls. Generates compliance gap reports.', tools: ['RegulatoryFeed', 'ControlsDB', 'PolicyEngine', 'ReportGenerator', 'NotificationService'], permissions: ['READ:compliance_data', 'WRITE:gap_reports', 'CALL:external_regulatory_api', 'READ:policy_library'], model: 'GPT-4o via OpenAI', maxBudget: 1500, dailyCallCount: 89, lastActivity: '2026-04-10 07:00:00', registeredDate: '2026-01-20', approvedBy: 'Maria Santos', trustScore: 91, escalationPolicy: 'Alert human on new Critical obligations within 4 hours', killSwitchEnabled: false, totalCallsLifetime: 21874, avgLatencyMs: 890 },
-  { id: 'AGT-004', name: 'CustomerServiceOrchestrator', version: '1.2.0', type: 'Orchestrator', status: 'Suspended', riskTier: 'Medium', owner: 'James Liu', team: 'Digital Banking', purpose: 'Orchestrates sub-agents for customer service: routes queries, manages context, coordinates handoffs between specialist agents.', tools: ['ConversationRouter', 'ContextStore', 'SubAgentSpawner', 'CustomerDB'], permissions: ['READ:customer_profile', 'SPAWN:worker_agents', 'WRITE:conversation_logs'], model: 'GPT-4o-mini via OpenAI', maxBudget: 800, dailyCallCount: 0, lastActivity: '2026-04-07 14:20:00', registeredDate: '2026-03-01', approvedBy: 'Sarah Chen', trustScore: 68, escalationPolicy: 'Suspend on error rate > 5%', killSwitchEnabled: true, totalCallsLifetime: 8920, avgLatencyMs: 450 },
-  { id: 'AGT-005', name: 'RiskAssessmentAgent', version: '0.9.0-beta', type: 'Tool-Using', status: 'Pending Approval', riskTier: 'Critical', owner: 'Marcus Johnson', team: 'Risk Management', purpose: 'Automated risk scoring for new financial products. Integrates with risk models and generates board-ready risk reports.', tools: ['RiskModelAPI', 'FinancialDataWarehouse', 'ScenariosEngine', 'ReportGenerator'], permissions: ['READ:financial_data', 'CALL:risk_models', 'WRITE:risk_scores', 'WRITE:board_reports'], model: 'GPT-4 via Azure OpenAI', maxBudget: 3000, dailyCallCount: 0, lastActivity: 'Never', registeredDate: '2026-04-08', approvedBy: 'Pending', trustScore: 0, escalationPolicy: 'All outputs require human sign-off during beta', killSwitchEnabled: true, totalCallsLifetime: 0, avgLatencyMs: 0 },
-  { id: 'AGT-006', name: 'DataQualityPatrolAgent', version: '2.0.1', type: 'Worker', status: 'Active', riskTier: 'Low', owner: 'Maria Santos', team: 'Data Engineering', purpose: 'Continuously scans data pipelines for quality issues, schema drift, and PII. Triggers remediation workflows automatically.', tools: ['DataPipelineMonitor', 'PIIScanner', 'SchemaValidator', 'AlertingService'], permissions: ['READ:data_pipelines', 'READ:schema_registry', 'WRITE:quality_alerts'], model: 'Claude 3 Haiku via Anthropic', maxBudget: 500, dailyCallCount: 4521, lastActivity: '2026-04-10 09:20:00', registeredDate: '2025-12-01', approvedBy: 'James Liu', trustScore: 96, escalationPolicy: 'Alert on PII detection or schema breaking changes', killSwitchEnabled: false, totalCallsLifetime: 509124, avgLatencyMs: 145 },
-  { id: 'AGT-007', name: 'BiasAuditOrchestrator', version: '1.2.0', type: 'Orchestrator', status: 'Active', riskTier: 'High', owner: 'Maria Santos', team: 'AI Governance', purpose: 'Orchestrates automated bias audits across AI models: data sampling, metric computation, statistical testing, report generation.', tools: ['DataSampler', 'FairnessMetricEngine', 'StatisticalTester', 'ReportGenerator', 'HITLRouter'], permissions: ['READ:training_data', 'CALL:fairness_models', 'WRITE:audit_reports', 'CALL:hitl_queue'], model: 'GPT-4o via OpenAI', maxBudget: 2000, dailyCallCount: 12, lastActivity: '2026-04-10 06:00:00', registeredDate: '2026-02-15', approvedBy: 'Sarah Chen', trustScore: 88, escalationPolicy: 'Escalate to DPO if fairness metric < 0.75', killSwitchEnabled: true, totalCallsLifetime: 1820, avgLatencyMs: 4200 },
-  { id: 'AGT-008', name: 'MarketIntelligenceAgent', version: '1.0.0', type: 'Tool-Using', status: 'Active', riskTier: 'Low', owner: 'Emma Wilson', team: 'Strategy', purpose: 'Monitors competitive landscape, regulatory changes, and market conditions. Delivers daily intelligence briefings.', tools: ['WebSearch', 'RegulatoryFeed', 'NewsAPI', 'ReportGenerator', 'SlackNotifier'], permissions: ['CALL:external_web', 'CALL:regulatory_feed', 'WRITE:intelligence_reports', 'SEND:notifications'], model: 'Claude 3.5 Sonnet via Anthropic', maxBudget: 300, dailyCallCount: 45, lastActivity: '2026-04-10 07:30:00', registeredDate: '2026-03-10', approvedBy: 'Marcus Johnson', trustScore: 82, escalationPolicy: 'No auto-escalation — read-only', killSwitchEnabled: false, totalCallsLifetime: 1350, avgLatencyMs: 3100 },
-  { id: 'AGT-009', name: 'IncidentResponseAgent', version: '2.1.0', type: 'Semi-Autonomous', status: 'Active', riskTier: 'High', owner: 'Sarah Chen', team: 'Security Operations', purpose: 'First-response AI for security incidents: triage, evidence collection, containment recommendation, and stakeholder notification.', tools: ['SIEMConnector', 'AssetDB', 'ThreatIntel', 'CommunicationHub', 'TicketingSystem'], permissions: ['READ:security_events', 'READ:asset_inventory', 'WRITE:incident_tickets', 'SEND:notifications'], model: 'GPT-4o via OpenAI', maxBudget: 1800, dailyCallCount: 28, lastActivity: '2026-04-10 03:22:00', registeredDate: '2026-01-05', approvedBy: 'Sarah Chen', trustScore: 79, escalationPolicy: 'Auto-escalate P1 incidents to SOC team immediately', killSwitchEnabled: true, totalCallsLifetime: 4127, avgLatencyMs: 1890 },
-  { id: 'AGT-010', name: 'PolicyDraftingAgent', version: '0.8.0-beta', type: 'Tool-Using', status: 'Quarantined', riskTier: 'Medium', owner: 'Marcus Johnson', team: 'Legal & Compliance', purpose: 'Drafts AI governance policies, regulatory compliance documents, and control narratives based on framework templates and regulatory guidance.', tools: ['PolicyLibrary', 'RegulatoryDB', 'DocumentEditor', 'ReviewRouter'], permissions: ['READ:policy_library', 'READ:regulatory_db', 'WRITE:draft_policies'], model: 'Claude 3.5 Sonnet via Anthropic', maxBudget: 1000, dailyCallCount: 0, lastActivity: '2026-04-03 15:00:00', registeredDate: '2026-03-20', approvedBy: 'Pending Review', trustScore: 45, escalationPolicy: 'All drafts require legal review before publication', killSwitchEnabled: true, totalCallsLifetime: 284, avgLatencyMs: 5500 },
-]
 
 const STATUS_STYLE: Record<AgentStatus, { bg: string; color: string }> = {
   Active: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
@@ -69,7 +33,7 @@ const TIER_STYLE: Record<RiskTier, { bg: string; color: string }> = {
 }
 
 const BLANK = {
-  name: '', version: '1.0.0', type: 'Tool-Using' as AgentType, status: 'Pending Approval' as AgentStatus,
+  name: '', agentVersion: '1.0.0', type: 'Tool-Using' as AgentType, status: 'Pending Approval' as AgentStatus,
   riskTier: 'Medium' as RiskTier, owner: '', team: '', purpose: '', tools: [] as string[],
   permissions: [] as string[], model: 'GPT-4o via OpenAI', maxBudget: 1000, dailyCallCount: 0,
   lastActivity: 'Never', registeredDate: '', approvedBy: 'Pending',
@@ -77,8 +41,12 @@ const BLANK = {
 }
 
 export default function AgentRegistry() {
-  const [agents, setAgents] = useState<AgentRegistryItem[]>(SEED)
-  const [search, setSearch] = useState('')
+  const navigate = useNavigate()
+  const [params] = useSearchParams()
+  const { data: agents = [] } = agentRecordHooks.useList()
+  const upsert = agentRecordHooks.useUpsert()
+  const remove = agentRecordHooks.useDelete()
+  const [search, setSearch] = useState(params.get('agent') ?? '')
   const [statusFilter, setStatusFilter] = useState('All')
   const [tierFilter, setTierFilter] = useState('All')
   const [selected, setSelected] = useState<AgentRegistryItem | null>(null)
@@ -96,38 +64,55 @@ export default function AgentRegistry() {
     active: agents.filter(a => a.status === 'Active').length,
     critical: agents.filter(a => a.riskTier === 'Critical').length,
     pending: agents.filter(a => a.status === 'Pending Approval').length,
-    avgTrust: Math.round(agents.filter(a => a.trustScore > 0).reduce((s, a) => s + a.trustScore, 0) / agents.filter(a => a.trustScore > 0).length),
+    avgTrust: (() => {
+      const scored = agents.filter(a => a.trustScore > 0)
+      return scored.length ? Math.round(scored.reduce((s, a) => s + a.trustScore, 0) / scored.length) : 0
+    })(),
   }
 
   const activeFilterCount = (statusFilter !== 'All' ? 1 : 0) + (tierFilter !== 'All' ? 1 : 0)
 
   const handleCreate = () => {
     if (!form.name) { toast.error('Agent name is required'); return }
+    if (!form.owner) { toast.error('Owner is required'); return }
     const id = `AGT-${String(agents.length + 1).padStart(3, '0')}`
-    setAgents(p => [{ ...form, id, registeredDate: '2026-04-10' }, ...p])
+    const rec: AgentRegistryItem = { ...form, id, registeredDate: new Date().toISOString().slice(0, 10) }
+    upsert.mutate(rec, {
+      onSuccess: () => toast.success(`${rec.name} registered as ${id}`),
+      onError: () => toast.error('Failed to register agent'),
+    })
     setShowCreate(false)
     setForm(BLANK)
-    toast.success(`${form.name} registered as ${id}`)
   }
 
   const handleEdit = () => {
     if (!selected) return
-    setAgents(p => p.map(a => a.id === selected.id ? { ...a, ...form } : a))
-    setSelected(prev => prev ? { ...prev, ...form } : null)
+    const rec: AgentRegistryItem = { ...selected, ...form }
+    upsert.mutate(rec, {
+      onSuccess: () => toast.success('Agent record updated'),
+      onError: () => toast.error('Failed to update agent'),
+    })
+    setSelected(rec)
     setEditMode(false)
-    toast.success('Agent record updated')
   }
 
   const handleDelete = (id: string) => {
-    setAgents(p => p.filter(a => a.id !== id))
+    remove.mutate(id, {
+      onSuccess: () => toast.success('Agent deregistered'),
+      onError: () => toast.error('Failed to deregister agent'),
+    })
     setDeleteTarget(null)
     if (selected?.id === id) setSelected(null)
-    toast.success('Agent deregistered')
   }
 
   const toggleKillSwitch = (id: string) => {
-    setAgents(p => p.map(a => a.id === id ? { ...a, status: a.status === 'Active' ? 'Suspended' : 'Active' } : a))
-    toast.success('Kill switch toggled')
+    const a = agents.find(x => x.id === id)
+    if (!a) return
+    const next: AgentStatus = a.status === 'Active' ? 'Suspended' : 'Active'
+    upsert.mutate({ ...a, status: next }, {
+      onSuccess: () => toast.success(next === 'Suspended' ? `${a.name} suspended via kill switch` : `${a.name} resumed`),
+      onError: () => toast.error('Kill switch action failed'),
+    })
   }
 
   // RegisterAgentButton rendered inline as an actions node
@@ -223,7 +208,7 @@ export default function AgentRegistry() {
               <tr key={a.id} className="border-b border-[hsl(var(--border))] hover:bg-raised">
                 <td className="px-3 py-2.5">
                   <p className="font-medium text-[hsl(var(--text-1))]">{a.name}</p>
-                  <p className="text-xs text-[hsl(var(--text-4))]">{a.id} · v{a.version} · {a.team}</p>
+                  <p className="text-xs text-[hsl(var(--text-4))]">{a.id} · v{a.agentVersion} · {a.team}</p>
                 </td>
                 <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))]">{a.type}</td>
                 <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))] max-w-[120px] truncate">{a.model}</td>
@@ -267,7 +252,7 @@ export default function AgentRegistry() {
             <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))] sticky top-0 bg-surface">
               <div>
                 <p className="font-mono text-xs text-[hsl(var(--brand))] font-semibold">{selected.id}</p>
-                <h2 className="text-base font-semibold text-[hsl(var(--text-1))] mt-0.5">{selected.name} <span className="text-xs font-normal text-[hsl(var(--text-4))]">v{selected.version}</span></h2>
+                <h2 className="text-base font-semibold text-[hsl(var(--text-1))] mt-0.5">{selected.name} <span className="text-xs font-normal text-[hsl(var(--text-4))]">v{selected.agentVersion}</span></h2>
               </div>
               <div className="flex gap-1">
                 {!editMode && <button onClick={() => { setForm({ ...selected }); setEditMode(true) }} className="p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))]"><Pencil size={15} /></button>}
@@ -340,6 +325,17 @@ export default function AgentRegistry() {
                     <p className="text-sm text-[hsl(var(--text-2))] bg-raised p-3 rounded">{selected.escalationPolicy}</p>
                   </div>
 
+                  {/* Cross-module: agent → permissions (IAM) → runtime traces */}
+                  <div className="flex gap-2 pt-2 border-t border-[hsl(var(--border))]">
+                    <button onClick={() => navigate(`/agent-iam?agent=${selected.id}`)}
+                      className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
+                      <IdentificationCard size={13} /> IAM Credentials
+                    </button>
+                    <button onClick={() => navigate('/trust-engine/traces')}
+                      className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
+                      <Pulse size={13} /> Runtime Traces
+                    </button>
+                  </div>
                   <div className="flex gap-2 pt-2 border-t border-[hsl(var(--border))]">
                     {selected.killSwitchEnabled && (
                       <button onClick={() => { toggleKillSwitch(selected.id); setSelected(p => p ? { ...p, status: p.status === 'Active' ? 'Suspended' : 'Active' } : null) }}
@@ -353,10 +349,13 @@ export default function AgentRegistry() {
               ) : (
                 <div className="space-y-3">
                   <h3 className="text-sm font-semibold">Edit Agent</h3>
+                  <div>
+                    <label className="text-xs text-[hsl(var(--text-4))]">Owner</label>
+                    <UserSelect value={form.owner} onChange={v => setForm(p => ({ ...p, owner: v }))} by="name" className="mt-0.5" />
+                  </div>
                   {[
                     { label: 'Agent Name', key: 'name' },
-                    { label: 'Version', key: 'version' },
-                    { label: 'Owner', key: 'owner' },
+                    { label: 'Version', key: 'agentVersion' },
                     { label: 'Team', key: 'team' },
                     { label: 'Escalation Policy', key: 'escalationPolicy' },
                   ].map(f => (
@@ -416,7 +415,7 @@ export default function AgentRegistry() {
                 </div>
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Version</label>
-                  <input value={form.version} onChange={e => setForm(p => ({ ...p, version: e.target.value }))} placeholder="1.0.0"
+                  <input value={form.agentVersion} onChange={e => setForm(p => ({ ...p, agentVersion: e.target.value }))} placeholder="1.0.0"
                     className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
                 </div>
               </div>
@@ -438,9 +437,8 @@ export default function AgentRegistry() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-[hsl(var(--text-4))]">Owner</label>
-                  <input value={form.owner} onChange={e => setForm(p => ({ ...p, owner: e.target.value }))} placeholder="John Smith"
-                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
+                  <label className="text-xs text-[hsl(var(--text-4))]">Owner *</label>
+                  <UserSelect value={form.owner} onChange={v => setForm(p => ({ ...p, owner: v }))} by="name" className="mt-0.5" />
                 </div>
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Team</label>
