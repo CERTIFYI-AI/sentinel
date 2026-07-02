@@ -1,3 +1,7 @@
+## 1.31.0 (2026-07-02)
+
+* feat(agents): Agent governance — persistence, Users-wired forms, cross-module links ([ae3f7c5](https://github.com/CERTIFYI-AI/sentinel/commit/ae3f7c5))
+
 ## 1.30.0 (2026-07-02)
 
 * feat(evals): Phases 2b-4 — CRUD lists + forms for all Validation & Evals modules ([6784a43](https://github.com/CERTIFYI-AI/sentinel/commit/6784a43))
