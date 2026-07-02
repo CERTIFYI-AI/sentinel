@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { trustConfigCrud } from '@/hooks/queries/useTrustEngineCrud';
 import {
   FloppyDisk, ArrowCounterClockwise, Warning, ShieldCheck,
   CurrencyDollar, GitFork, Bell, Plus, Trash, Clock, Info,
@@ -172,6 +173,25 @@ export default function TrustConfig() {
 
   const markDirty = () => setDirty(true);
 
+  // Hydrate from the persisted configuration document (falls back to defaults).
+  useEffect(() => {
+    let active = true;
+    trustConfigCrud.get('default').then(doc => {
+      if (!active || !doc) return;
+      if (Array.isArray(doc.guardrails) && doc.guardrails.length) setGuardrails(doc.guardrails as GuardrailConfig[]);
+      if (Array.isArray(doc.costLimits) && doc.costLimits.length) setCostLimits(doc.costLimits as CostLimit[]);
+      if (Array.isArray(doc.fallbackChains) && doc.fallbackChains.length) setFallbackChains(doc.fallbackChains as FallbackChain[]);
+      if (Array.isArray(doc.alertThresholds) && doc.alertThresholds.length) setAlertThresholds(doc.alertThresholds as AlertThreshold[]);
+      setSavedSnapshot({
+        guardrails: (doc.guardrails as GuardrailConfig[]) ?? DEFAULT_GUARDRAILS,
+        costLimits: (doc.costLimits as CostLimit[]) ?? DEFAULT_COST_LIMITS,
+        fallbackChains: (doc.fallbackChains as FallbackChain[]) ?? DEFAULT_FALLBACK_CHAINS,
+        alertThresholds: (doc.alertThresholds as AlertThreshold[]) ?? DEFAULT_ALERT_THRESHOLDS,
+      });
+    });
+    return () => { active = false; };
+  }, []);
+
   const createAuditEntry = (section: string, change: string, before: string, after: string) => {
     const entry: AuditEntry = {
       id: `AUD-${Date.now()}`, timestamp: new Date().toISOString(),
@@ -184,7 +204,10 @@ export default function TrustConfig() {
     createAuditEntry('Configuration', 'Configuration saved', 'Previous state', 'Updated state');
     setSavedSnapshot({ guardrails: [...guardrails], costLimits: [...costLimits], fallbackChains: [...fallbackChains], alertThresholds: [...alertThresholds] });
     setDirty(false);
-    toast('Configuration saved — audit entry created');
+    // Persist the configuration bundle (single 'default' document).
+    trustConfigCrud.upsert({ id: 'default', guardrails, costLimits, fallbackChains, alertThresholds })
+      .then(() => toast('Configuration saved — audit entry created'))
+      .catch(() => toast('Saved locally, but persistence failed', 'error'));
   };
 
   const handleReset = () => {
