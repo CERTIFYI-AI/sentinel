@@ -1,3 +1,7 @@
+## 1.33.0 (2026-07-02)
+
+* feat(trust): Runtime Trust workspace sub-nav + cross-module links across modules ([3dca188](https://github.com/CERTIFYI-AI/sentinel/commit/3dca188))
+
 ## 1.32.0 (2026-07-02)
 
 * feat(trust): GenAI Risk Profiles — persistence, Users-wired owner, edit, cross-links ([f28f2a7](https://github.com/CERTIFYI-AI/sentinel/commit/f28f2a7))
