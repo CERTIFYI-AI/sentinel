@@ -22,6 +22,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../components/ui/tooltip';
 import { TRUST_POLICIES } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
+import { TrustEngineTabs } from '../../components/trust-engine/TrustEngineTabs';
 
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -224,6 +225,7 @@ export default function TrustConfig() {
   return (
     <TooltipProvider>
       <div className="space-y-6">
+        <TrustEngineTabs />
         {/* Toast */}
         <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
           {toasts.map(t => (

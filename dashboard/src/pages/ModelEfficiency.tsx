@@ -1,8 +1,10 @@
 import { useState, useMemo } from 'react'
-import { Speedometer, Export, Eye, X, Plus, Trash, CheckCircle } from '@phosphor-icons/react'
+import { useNavigate } from 'react-router-dom'
+import { Speedometer, Export, Eye, X, Plus, Trash, CheckCircle, Gauge, Cpu } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { UserSelect } from '@/components/evals/UserSelect'
 import { useModelEfficiencyData } from '@/hooks/useModelEfficiencyData'
 import { PageSkeleton } from '@/components/ui/PageSkeleton'
 import { useChartTheme } from '@/hooks/useChartTheme'
@@ -67,6 +69,7 @@ export default function ModelEfficiency() {
 }
 
 function ModelEfficiencyInner({ benchmarks: initialBenchmarks, save, remove, chartTheme }: any) {
+  const navigate = useNavigate()
   const [selected, setSelected] = useState<any | null>(null)
   const [compareA, setCompareA] = useState<string>('')
   const [compareB, setCompareB] = useState<string>('')
@@ -148,6 +151,8 @@ function ModelEfficiencyInner({ benchmarks: initialBenchmarks, save, remove, cha
           <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">Multi-dimensional model benchmarking — accuracy, latency, cost, carbon, fairness, and explainability</p>
         </div>
         <div className="flex gap-2">
+          <button onClick={() => navigate('/models/inventory')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised"><Cpu size={14} /> Model Registry</button>
+          <button onClick={() => navigate('/trust-engine')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised"><Gauge size={14} /> Runtime Trust</button>
           <button onClick={() => exportCsv(benchmarks, 'model-efficiency.csv')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised"><Export size={14} /> Export CSV</button>
           <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 px-4 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90"><Plus size={14} /> Add Benchmark Run</button>
         </div>
@@ -385,7 +390,7 @@ function ModelEfficiencyInner({ benchmarks: initialBenchmarks, save, remove, cha
                     ))}
                     <div>
                       <label className="text-[10px] text-[hsl(var(--text-4))] mb-1 block">Benchmarked By *</label>
-                      <input value={form.benchmarkedBy} onChange={e => setForm(p => ({ ...p, benchmarkedBy: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="Your name" />
+                      <UserSelect value={form.benchmarkedBy} onChange={v => setForm(p => ({ ...p, benchmarkedBy: v }))} by="name" rolesFilter={['ml', 'engineer', 'model']} />
                     </div>
                   </div>
                 </div>

@@ -16,6 +16,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../
 import { FALLBACK_LOG, FallbackEntry, formatDate } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useChartTheme } from '../../hooks/useChartTheme';
+import { TrustEngineTabs } from '../../components/trust-engine/TrustEngineTabs';
 
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -138,6 +139,7 @@ export default function FallbackLog() {
   return (
     <TooltipProvider>
       <div className="space-y-6">
+        <TrustEngineTabs />
         {/* Toast */}
         <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
           {toasts.map(t => (

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Gauge, Warning, Siren, ArrowUp, ArrowDown, Minus, Plus,
   MagnifyingGlass, Export, Eye, ArrowsClockwise, Check,
@@ -123,6 +124,7 @@ const ALERT_COLORS: Record<AlertSeverity, { bg: string; color: string }> = {
 interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info' }
 
 export default function PerformanceMonitoring() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<ModelEndpoint | null>(null);
   const [tab, setTab] = useState('overview');
@@ -177,10 +179,13 @@ export default function PerformanceMonitoring() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="gap-1.5 rounded-none" onClick={() => navigate('/trust-engine')}>
+            <Gauge size={14} /> Runtime Trust
+          </Button>
           <Button variant="outline" size="sm" className="gap-1.5 rounded-none" onClick={() => { setLastUpdated(new Date()); addToast('Metrics refreshed'); }}>
             <ArrowsClockwise size={14} /> Refresh
           </Button>
-          <Button variant="outline" size="sm" className="gap-1.5 rounded-none" onClick={() => addToast('Alert configuration opened', 'info')}>
+          <Button variant="outline" size="sm" className="gap-1.5 rounded-none" onClick={() => navigate('/trust-engine/config')}>
             <Warning size={14} /> Configure Alerts
           </Button>
         </div>

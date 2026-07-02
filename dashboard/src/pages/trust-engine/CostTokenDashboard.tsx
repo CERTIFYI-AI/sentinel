@@ -28,6 +28,7 @@ interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info
 // ── Chart Data ────────────────────────────────────────────────────────────────
 
 import { useCostMetrics } from '../../hooks/useCostMetrics';
+import { TrustEngineTabs } from '../../components/trust-engine/TrustEngineTabs';
 
 // ── Metric Tile ───────────────────────────────────────────────────────────────
 
@@ -129,6 +130,7 @@ export default function CostTokenDashboard() {
 
   return (
     <div className="space-y-6">
+      <TrustEngineTabs />
       {/* Toast */}
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
         {toasts.map(t => (

@@ -21,6 +21,7 @@ import { useSettingsStore } from '../../stores/settingsStore';
 import { useChartTheme } from '../../hooks/useChartTheme';
 import { usePolicyFirewallData } from '../../hooks/usePolicyFirewallData';
 import { PageSkeleton } from '../../components/ui/PageSkeleton';
+import { TrustEngineTabs } from '../../components/trust-engine/TrustEngineTabs';
 
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -278,6 +279,7 @@ export default function GuardrailActivity() {
   return (
     <TooltipProvider>
       <div className="space-y-6">
+        <TrustEngineTabs />
         {/* Toast */}
         <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
           {toasts.map(t => (

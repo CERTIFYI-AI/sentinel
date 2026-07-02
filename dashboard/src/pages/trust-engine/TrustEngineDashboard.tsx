@@ -29,6 +29,7 @@ import { PageSkeleton } from '../../components/ui/PageSkeleton';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { StatCardRow } from '../../components/ui/StatCardRow';
 import type { StatCardRowItem } from '../../components/ui/StatCardRow';
+import { TrustEngineTabs } from '../../components/trust-engine/TrustEngineTabs';
 
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -279,6 +280,7 @@ export default function TrustEngineDashboard() {
 
   return (
     <div className="space-y-6">
+      <TrustEngineTabs />
       {/* Toast */}
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
         {toasts.map(t => (
