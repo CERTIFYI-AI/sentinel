@@ -66,6 +66,9 @@ export default function ValidationRunDetail() {
         onBack={() => nav('/model-validation')}
         actions={
           <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" title="Metric Studio for this model" onClick={() => nav(`/evals/metric-studio/MP-${run.modelId.replace(/\D/g, '') || '003'}`)}>Metrics</Button>
+            <Button variant="ghost" size="sm" title="Bias audit for this model" onClick={() => nav('/bias-audits/record/BIA-2026-014')}>Bias</Button>
+            <Button variant="ghost" size="sm" title="Scenario campaigns" onClick={() => nav('/evals/scenario/SC-001')}>Scenarios</Button>
             {run.state === 'Draft' && can('update') && (
               <Button variant="secondary" size="sm" onClick={() => advance('InReview')}>Submit for review</Button>
             )}

@@ -198,7 +198,7 @@ const ControlTesting = lazy(() => import('./pages/ControlTesting'));
 
 // ── New GRC Modules ─────────────────────────────────────────────────────────
 const CommitteeManagement = lazy(() => import('./pages/committee/CommitteeManagement'));
-const ModelValidationLab = lazy(() => import('./pages/validation/ModelValidationLab'));
+const ModelValidationLab = lazy(() => import('./pages/validation/ValidationRunList'));
 const PerformanceMonitoring = lazy(() => import('./pages/performance/PerformanceMonitoring'));
 const IncidentPlaybooks = lazy(() => import('./pages/incidents/IncidentPlaybooks'));
 const EvalResultsViewer = lazy(() => import('./pages/evals/EvalResultsViewer'));
