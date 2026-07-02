@@ -1,3 +1,7 @@
+## 1.27.0 (2026-07-02)
+
+* feat(ui): app-wide tokenization sweep — remove all remaining raw colors ([41886fd](https://github.com/CERTIFYI-AI/sentinel/commit/41886fd))
+
 ## <small>1.26.1 (2026-07-01)</small>
 
 * fix(use-cases): align Create Use Case form with app layout ([42410f1](https://github.com/CERTIFYI-AI/sentinel/commit/42410f1))
