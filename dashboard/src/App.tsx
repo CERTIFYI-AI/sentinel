@@ -207,7 +207,13 @@ const DatasetCreateModal = lazy(() => import('./pages/evals/DatasetCreateModal')
 const DatasetPreviewDrawer = lazy(() => import('./pages/evals/DatasetPreviewDrawer'));
 const MultiTurnEditor = lazy(() => import('./pages/evals/MultiTurnEditor'));
 const ConversationViewer = lazy(() => import('./pages/evals/ConversationViewer'));
-// ── Validation & Evals — detail views ───────────────────────────────────────
+// ── Validation & Evals — CRUD lists + detail views ──────────────────────────
+const ExplainabilityProfileList = lazy(() => import('./pages/explainability/ExplainabilityProfileList'));
+const BiasAuditList = lazy(() => import('./pages/bias-audits/BiasAuditList'));
+const MetricProfileList = lazy(() => import('./pages/evals/MetricProfileList'));
+const DatasetCatalogList = lazy(() => import('./pages/evals/DatasetCatalogList'));
+const ScenarioTemplateList = lazy(() => import('./pages/evals/ScenarioTemplateList'));
+const SessionTraceList = lazy(() => import('./pages/evals/SessionTraceList'));
 const ValidationRunDetail = lazy(() => import('./pages/validation/ValidationRunDetail'));
 const ExplainabilityProfileDetail = lazy(() => import('./pages/explainability/ExplainabilityProfileDetail'));
 const BiasAuditDetail = lazy(() => import('./pages/bias-audits/BiasAuditDetail'));
@@ -385,7 +391,8 @@ export default function App() {
           <Route path="/vendors/:id/questionnaire" element={<VendorQuestionnaire />} />
 
           {/* Risk & Compliance */}
-          <Route path="/bias-audits" element={<BiasAuditWizard />} />
+          <Route path="/bias-audits" element={<Suspense fallback={<Loading />}><BiasAuditList /></Suspense>} />
+          <Route path="/bias-audits/wizard" element={<BiasAuditWizard />} />
           <Route path="/bias-audits/:id" element={<BiasAuditResults />} />
           <Route path="/evidence-sync" element={<EvidenceSyncEngine />} />
           <Route path="/hitl" element={<HITLReviewCenter />} />
@@ -418,20 +425,25 @@ export default function App() {
           <Route path="/models/:id" element={<ModelDetail />} />
           <Route path="/policies/:id" element={<PolicyDetail />} />
           <Route path="/reg-radar/:id" element={<RegDetail />} />
-          <Route path="/explainability" element={<ExplainabilityCenterNew />} />
+          <Route path="/explainability" element={<Suspense fallback={<Loading />}><ExplainabilityProfileList /></Suspense>} />
+          <Route path="/explainability/center" element={<ExplainabilityCenterNew />} />
           <Route path="/explainability/:id" element={<Suspense fallback={<Loading />}><ExplainabilityProfileDetail /></Suspense>} />
           <Route path="/conformity" element={<ConformityAssessmentNew />} />
 
           {/* Validation & Evals — detail views */}
           <Route path="/bias-audits/record/:id" element={<Suspense fallback={<Loading />}><BiasAuditDetail /></Suspense>} />
-          <Route path="/evals/metric-studio" element={<MetricStudio />} />
+          <Route path="/evals/metric-studio" element={<Suspense fallback={<Loading />}><MetricProfileList /></Suspense>} />
+          <Route path="/evals/metric-studio/workspace" element={<MetricStudio />} />
           <Route path="/evals/metric-studio/:id" element={<Suspense fallback={<Loading />}><MetricProfileDetail /></Suspense>} />
           <Route path="/evals/dataset-create" element={<DatasetCreateModal />} />
-          <Route path="/evals/dataset-preview" element={<DatasetPreviewDrawer />} />
+          <Route path="/evals/dataset-preview" element={<Suspense fallback={<Loading />}><DatasetCatalogList /></Suspense>} />
+          <Route path="/evals/dataset-preview/drawer" element={<DatasetPreviewDrawer />} />
           <Route path="/evals/dataset/:id" element={<Suspense fallback={<Loading />}><DatasetCatalogDetail /></Suspense>} />
-          <Route path="/evals/multi-turn" element={<MultiTurnEditor />} />
+          <Route path="/evals/multi-turn" element={<Suspense fallback={<Loading />}><ScenarioTemplateList /></Suspense>} />
+          <Route path="/evals/multi-turn/editor" element={<MultiTurnEditor />} />
           <Route path="/evals/scenario/:id" element={<Suspense fallback={<Loading />}><ScenarioTemplateDetail /></Suspense>} />
-          <Route path="/evals/conversation" element={<ConversationViewer />} />
+          <Route path="/evals/conversation" element={<Suspense fallback={<Loading />}><SessionTraceList /></Suspense>} />
+          <Route path="/evals/conversation/viewer" element={<ConversationViewer />} />
           <Route path="/evals/trace/:id" element={<Suspense fallback={<Loading />}><SessionTraceDetail /></Suspense>} />
 
           <Route path="/use-cases" element={<UseCasePage />} />

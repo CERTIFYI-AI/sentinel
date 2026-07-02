@@ -13,6 +13,7 @@ import {
 } from 'recharts'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Stat, Section, StateBadge, VerdictBadge, AuditTimeline } from '@/components/evals/primitives'
 import { metricProfileHooks } from '@/hooks/queries/useEvalsCrud'
@@ -44,6 +45,12 @@ export default function MetricProfileDetail() {
         subtitle={`${mp.modelVersion} · owner ${mp.owner}`}
         badge={<StateBadge s={mp.state} />}
         onBack={() => nav('/evals/metric-studio')}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" title="Validation runs for this model" onClick={() => nav('/model-validation')}>Validation</Button>
+            <Button variant="ghost" size="sm" title="Bias audits for this model" onClick={() => nav('/bias-audits')}>Bias audits</Button>
+          </div>
+        }
       />
 
       <Card className="mb-4">

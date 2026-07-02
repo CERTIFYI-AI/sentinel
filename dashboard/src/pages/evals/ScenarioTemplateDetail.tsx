@@ -77,8 +77,9 @@ export default function ScenarioTemplateDetail() {
             {sc.campaignIds.length ? (
               <ul className="space-y-1">
                 {sc.campaignIds.map((c) => (
-                  <li key={c}>
-                    <button onClick={() => nav(`/evals/campaign/${c}`)} className="font-mono text-sm text-[hsl(var(--brand))] hover:underline">{c}</button>
+                  <li key={c} className="flex items-center gap-2">
+                    <span className="font-mono text-sm text-[hsl(var(--text-1))]">{c}</span>
+                    <button onClick={() => nav('/evals/conversation')} className="text-[12px] text-[hsl(var(--brand))] hover:underline">view captured traces →</button>
                   </li>
                 ))}
               </ul>

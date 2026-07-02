@@ -41,9 +41,16 @@ export default function BiasAuditDetail() {
         subtitle={`${audit.modelName} · ${audit.datasetId} · ${audit.framework}`}
         badge={<StateBadge s={audit.state} />}
         onBack={() => nav('/bias-audits')}
-        actions={can('update') && (
-          <Button variant="secondary" size="sm" onClick={() => toast.success('Opened remediation plan')}>Manage remediation</Button>
-        )}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" title="Open dataset catalog entry" onClick={() => nav(`/evals/dataset/${audit.datasetId}`)}>Dataset</Button>
+            <Button variant="ghost" size="sm" title="Validation runs for this model" onClick={() => nav('/model-validation')}>Validation</Button>
+            <Button variant="ghost" size="sm" title="Metric profile for this model" onClick={() => nav(`/evals/metric-studio/MP-${audit.modelId.replace(/\D/g, '') || '003'}`)}>Metrics</Button>
+            {can('update') && (
+              <Button variant="secondary" size="sm" onClick={() => setTab('remediation')}>Manage remediation</Button>
+            )}
+          </div>
+        }
       />
 
       <Card className="mb-4">

@@ -7,6 +7,7 @@
 
 import { useParams, useNavigate } from 'react-router-dom'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Stat, Section, VerdictBadge } from '@/components/evals/primitives'
 import { sessionTraceHooks } from '@/hooks/queries/useEvalsCrud'
@@ -26,6 +27,9 @@ export default function SessionTraceDetail() {
         subtitle={`${tr.modelId} · ${tr.modelVersion}${tr.scenarioId ? ` · scenario ${tr.scenarioId}` : ''}`}
         badge={<VerdictBadge v={tr.verdict} />}
         onBack={() => nav('/evals/conversation')}
+        actions={tr.scenarioId && (
+          <Button variant="ghost" size="sm" title="Open source scenario" onClick={() => nav(`/evals/scenario/${tr.scenarioId}`)}>Scenario</Button>
+        )}
       />
 
       <Card className="mb-4">

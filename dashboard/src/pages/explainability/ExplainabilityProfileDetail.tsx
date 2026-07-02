@@ -43,6 +43,10 @@ export default function ExplainabilityProfileDetail() {
         onBack={() => nav('/explainability')}
         actions={
           <div className="flex items-center gap-1">
+            <button onClick={() => nav('/model-validation')} title="Validation runs for this model"
+              className="border border-[hsl(var(--border))] px-2 py-1 text-[11px] text-[hsl(var(--text-3))] hover:text-[hsl(var(--text-1))]">Validation</button>
+            <button onClick={() => nav('/bias-audits')} title="Bias audits for this model"
+              className="mr-2 border border-[hsl(var(--border))] px-2 py-1 text-[11px] text-[hsl(var(--text-3))] hover:text-[hsl(var(--text-1))]">Bias audits</button>
             {(['all', ...p.jurisdictions] as (Jurisdiction | 'all')[]).map((j) => (
               <button key={j} onClick={() => setJur(j)}
                 className={cn('border px-2 py-1 text-[11px]', jur === j

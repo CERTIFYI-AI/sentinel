@@ -8,6 +8,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import {
@@ -30,6 +31,12 @@ export default function DatasetDetail() {
         subtitle={`${ds.datasetId} · v${ds.datasetVersion} · ${ds.category}`}
         badge={<RiskBadge r={ds.sensitivity} />}
         onBack={() => nav('/evals/dataset-preview')}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" title="Bias audits using this dataset" onClick={() => nav('/bias-audits')}>Bias audits</Button>
+            <Button variant="ghost" size="sm" title="Raw data preview" onClick={() => nav('/evals/dataset-preview/drawer')}>Preview data</Button>
+          </div>
+        }
       />
 
       <Card className="mb-4">
