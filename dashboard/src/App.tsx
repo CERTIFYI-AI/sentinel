@@ -207,6 +207,14 @@ const DatasetCreateModal = lazy(() => import('./pages/evals/DatasetCreateModal')
 const DatasetPreviewDrawer = lazy(() => import('./pages/evals/DatasetPreviewDrawer'));
 const MultiTurnEditor = lazy(() => import('./pages/evals/MultiTurnEditor'));
 const ConversationViewer = lazy(() => import('./pages/evals/ConversationViewer'));
+// ── Validation & Evals — detail views ───────────────────────────────────────
+const ValidationRunDetail = lazy(() => import('./pages/validation/ValidationRunDetail'));
+const ExplainabilityProfileDetail = lazy(() => import('./pages/explainability/ExplainabilityProfileDetail'));
+const BiasAuditDetail = lazy(() => import('./pages/bias-audits/BiasAuditDetail'));
+const MetricProfileDetail = lazy(() => import('./pages/evals/MetricProfileDetail'));
+const DatasetCatalogDetail = lazy(() => import('./pages/evals/DatasetDetail'));
+const ScenarioTemplateDetail = lazy(() => import('./pages/evals/ScenarioTemplateDetail'));
+const SessionTraceDetail = lazy(() => import('./pages/evals/SessionTraceDetail'));
 const CisoDashboard = lazy(() => import('./pages/ciso/CisoDashboard'));
 const BoardReport = lazy(() => import('./pages/ciso/BoardReport'));
 
@@ -411,13 +419,20 @@ export default function App() {
           <Route path="/policies/:id" element={<PolicyDetail />} />
           <Route path="/reg-radar/:id" element={<RegDetail />} />
           <Route path="/explainability" element={<ExplainabilityCenterNew />} />
+          <Route path="/explainability/:id" element={<Suspense fallback={<Loading />}><ExplainabilityProfileDetail /></Suspense>} />
           <Route path="/conformity" element={<ConformityAssessmentNew />} />
-          
+
+          {/* Validation & Evals — detail views */}
+          <Route path="/bias-audits/record/:id" element={<Suspense fallback={<Loading />}><BiasAuditDetail /></Suspense>} />
           <Route path="/evals/metric-studio" element={<MetricStudio />} />
+          <Route path="/evals/metric-studio/:id" element={<Suspense fallback={<Loading />}><MetricProfileDetail /></Suspense>} />
           <Route path="/evals/dataset-create" element={<DatasetCreateModal />} />
           <Route path="/evals/dataset-preview" element={<DatasetPreviewDrawer />} />
+          <Route path="/evals/dataset/:id" element={<Suspense fallback={<Loading />}><DatasetCatalogDetail /></Suspense>} />
           <Route path="/evals/multi-turn" element={<MultiTurnEditor />} />
+          <Route path="/evals/scenario/:id" element={<Suspense fallback={<Loading />}><ScenarioTemplateDetail /></Suspense>} />
           <Route path="/evals/conversation" element={<ConversationViewer />} />
+          <Route path="/evals/trace/:id" element={<Suspense fallback={<Loading />}><SessionTraceDetail /></Suspense>} />
 
           <Route path="/use-cases" element={<UseCasePage />} />
           <Route path="/use-cases/new" element={<UseCaseCreate />} />
@@ -491,6 +506,7 @@ export default function App() {
           {/* New GRC Modules */}
           <Route path="/committee" element={<Suspense fallback={<Loading />}><CommitteeManagement /></Suspense>} />
           <Route path="/model-validation" element={<Suspense fallback={<Loading />}><ModelValidationLab /></Suspense>} />
+          <Route path="/model-validation/:id" element={<Suspense fallback={<Loading />}><ValidationRunDetail /></Suspense>} />
           <Route path="/performance-monitoring" element={<Suspense fallback={<Loading />}><PerformanceMonitoring /></Suspense>} />
           <Route path="/incidents/playbooks" element={<Suspense fallback={<Loading />}><IncidentPlaybooks /></Suspense>} />
 

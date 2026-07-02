@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Flask, Play, Plus, Eye, MagnifyingGlass, Export, CheckCircle,
   Warning, Siren, ChartBar, Brain, ShieldCheck, ArrowRight,
@@ -137,6 +138,7 @@ interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info
 
 export default function ModelValidationLab() {
   const [search, setSearch] = useState('');
+  const navigate = useNavigate();
   const [selected, setSelected] = useState<ValidationReport | null>(null);
   const [tab, setTab] = useState('tests');
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
@@ -245,9 +247,14 @@ export default function ModelValidationLab() {
                     <Badge style={{ ...REC_COLORS[r.recommendation], borderRadius: 0, fontSize: 10 }}>{r.recommendation}</Badge>
                   </td>
                   <td className="px-3 py-2">
-                    <Button variant="ghost" size="sm" className="h-7 rounded-none text-xs" onClick={() => { setSelected(r); setTab('tests'); }}>
-                      <Eye size={13} />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="sm" className="h-7 rounded-none text-xs" onClick={() => { setSelected(r); setTab('tests'); }}>
+                        <Eye size={13} />
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-7 rounded-none text-xs" title="Open full validation record" onClick={() => navigate(`/model-validation/${r.id}`)}>
+                        <ArrowRight size={13} />
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
