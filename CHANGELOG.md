@@ -1,3 +1,7 @@
+## 1.34.0 (2026-07-02)
+
+* feat(trust): Configuration persistence — save/load Trust config to Supabase ([0a9002a](https://github.com/CERTIFYI-AI/sentinel/commit/0a9002a))
+
 ## 1.33.0 (2026-07-02)
 
 * feat(trust): Runtime Trust workspace sub-nav + cross-module links across modules ([3dca188](https://github.com/CERTIFYI-AI/sentinel/commit/3dca188))
