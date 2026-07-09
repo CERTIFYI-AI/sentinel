@@ -7,6 +7,7 @@ import React from 'react';
 import { lazy, Suspense, useEffect } from 'react';
 import { PageSkeleton } from './components/ui/PageSkeleton';
 import Sidebar from './components/Sidebar';
+import { SkipLink } from './lib/a11y/SkipLink';
 import TopHeader from './components/TopHeader';
 import CommandPalette from './components/CommandPalette';
 import { useRealtimeEvents } from './hooks/useRealtimeEvents';
@@ -277,16 +278,18 @@ function ProtectedLayout() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-[hsl(var(--bg-page))]">
+      <SkipLink />
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <TopHeader />
-        <div className="flex-1 overflow-auto bg-sentinel-background p-4 lg:p-5">
+        {/* Main landmark — WCAG 2.4.1 Bypass Blocks / 1.3.1 Info & Relationships */}
+        <main id="main-content" role="main" tabIndex={-1} className="flex-1 overflow-auto bg-sentinel-background p-4 lg:p-5 focus:outline-none">
         <ErrorBoundary>
           <Suspense fallback={<PageSkeleton />}>
             <Outlet />
           </Suspense>
         </ErrorBoundary>
-      </div>
+      </main>
       </div>
     </div>
   );
