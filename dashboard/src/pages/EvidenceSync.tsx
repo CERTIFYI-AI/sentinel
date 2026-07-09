@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { StatusBadge, BulkActionToolbar, PaginationBar, CrudModal, FormSection, FormFooter, MetaBar, ActivityTimeline, useSortAndPage, Th, TInput, TSelect, TTextarea, TToggle } from "@/components/ui/crud-helpers";
 import { toast } from "sonner";
 
@@ -72,18 +73,18 @@ export default function EvidenceSync() {
   const doDelete = () => { setItems(p => p.filter(i => i.id !== deleteTarget?.id)); setDeleteTarget(null); toast.success("Evidence deleted"); };
 
   return (
-    <div className="p-6 space-y-5 max-w-[1400px]">
-      <Breadcrumbs />
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[hsl(var(--text-1))] flex items-center gap-2"><FileMagnifyingGlass size={24} weight="duotone" className="text-[hsl(var(--brand))]" />Evidence Sync</h1>
-          <p className="text-sm text-[hsl(var(--text-3))] mt-0.5">Collect, verify and manage compliance evidence artifacts across frameworks</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5"><Export size={14} />Export</Button>
-          <Button size="sm" className="gap-1.5" onClick={() => { setForm(EMPTY); setEditId(null); setModal("create"); }}><Plus size={14} />Upload Evidence</Button>
-        </div>
-      </div>
+    <div className="space-y-5 max-w-[1400px]">
+      <PageHeader
+        title="Evidence Sync"
+        subtitle="Collect, verify and manage compliance evidence artifacts across frameworks"
+        icon={FileMagnifyingGlass}
+        actions={
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="gap-1.5"><Export size={14} />Export</Button>
+            <Button size="sm" className="gap-1.5" onClick={() => { setForm(EMPTY); setEditId(null); setModal("create"); }}><Plus size={14} />Upload Evidence</Button>
+          </div>
+        }
+      />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[["Total Evidence",items.length],["Verified",items.filter(i=>i.status==="Verified").length],["Pending Review",items.filter(i=>["Pending","Uploaded"].includes(i.status)).length],["Expiring Soon",items.filter(i=>{ const d=new Date(i.expiryDate); const now=new Date(); return d>now && (d.getTime()-now.getTime())<90*24*60*60*1000; }).length]].map(([l,v])=>(

@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { StatusBadge, BulkActionToolbar, PaginationBar, CrudModal, FormSection, FormFooter, MetaBar, ActivityTimeline, useSortAndPage, Th, TInput, TSelect, TTextarea } from "@/components/ui/crud-helpers";
 import { toast } from "sonner";
 
@@ -78,18 +79,18 @@ export default function HitlReviews() {
   };
 
   return (
-    <div className="p-3 space-y-3 max-w-[1400px]">
-      <Breadcrumbs />
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[hsl(var(--text-1))] flex items-center gap-2"><UserCheck size={24} weight="duotone" className="text-[hsl(var(--brand))]" />HITL Reviews</h1>
-          <p className="text-sm text-[hsl(var(--text-3))] mt-0.5">Human-in-the-loop review outcomes and override audit trail</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5"><Export size={14} />Export</Button>
-          <Button size="sm" className="gap-1.5" onClick={() => { setForm(EMPTY); setEditId(null); setModal("create"); }}><Plus size={14} />New Review</Button>
-        </div>
-      </div>
+    <div className="space-y-3 max-w-[1400px]">
+      <PageHeader
+        title="HITL Reviews"
+        subtitle="Human-in-the-loop review outcomes and override audit trail"
+        icon={UserCheck}
+        actions={
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="gap-1.5"><Export size={14} />Export</Button>
+            <Button size="sm" className="gap-1.5" onClick={() => { setForm(EMPTY); setEditId(null); setModal("create"); }}><Plus size={14} />New Review</Button>
+          </div>
+        }
+      />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[["Total Reviews",items.length],["Approved",items.filter(i=>i.outcome==="Approved").length],["Rejected",items.filter(i=>i.outcome==="Rejected").length],["Pending",items.filter(i=>i.status==="Pending").length]].map(([l,v])=>(

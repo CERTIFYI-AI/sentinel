@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Notepad, MagnifyingGlass, Export, Eye, X, ShieldCheck, User, Gear, Warning } from '@phosphor-icons/react'
 import { toast } from 'sonner'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 
 type EventCategory = 'Authentication' | 'Authorization' | 'Data Access' | 'Configuration' | 'AI System' | 'Policy' | 'Compliance' | 'Security'
@@ -77,18 +78,16 @@ export default function SystemAuditLog() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-[hsl(var(--text-1))] flex items-center gap-2">
-            <Notepad size={20} weight="fill" className="text-[hsl(var(--brand))]" />
-            System Audit Log
-          </h1>
-          <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">Immutable, tamper-evident log of all platform actions, access events, and AI system changes</p>
-        </div>
-        <button onClick={() => toast.success('Audit log exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
-          <Export size={14} /> Export Log
-        </button>
-      </div>
+      <PageHeader
+        title="System Audit Log"
+        subtitle="Immutable, tamper-evident log of all platform actions, access events, and AI system changes"
+        icon={Notepad}
+        actions={
+          <button onClick={() => toast.success('Audit log exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
+            <Export size={14} /> Export Log
+          </button>
+        }
+      />
 
       <div className="grid grid-cols-4 gap-3">
         {[

@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { StatusBadge, BulkActionToolbar, PaginationBar, CrudModal, FormSection, FormFooter, MetaBar, ActivityTimeline, useSortAndPage, Th, TInput, TSelect, TTextarea, TToggle, TCheckGroup } from "@/components/ui/crud-helpers";
 import { toast } from "sonner";
 
@@ -72,18 +73,18 @@ export default function RegRadar() {
   const doDelete = () => { setItems(p => p.filter(i => i.id !== deleteTarget?.id)); setDeleteTarget(null); toast.success("Removed from radar"); };
 
   return (
-    <div className="p-6 space-y-5 max-w-[1400px]">
-      <Breadcrumbs />
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[hsl(var(--text-1))] flex items-center gap-2"><Broadcast size={24} weight="duotone" className="text-[hsl(var(--brand))]" />Regulatory Radar</h1>
-          <p className="text-sm text-[hsl(var(--text-3))] mt-0.5">Track emerging regulations and assess their impact on your AI governance posture</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5"><Export size={14} />Export</Button>
-          <Button size="sm" className="gap-1.5" onClick={() => { setForm(EMPTY); setEditId(null); setModal("create"); }}><Plus size={14} />Track Regulation</Button>
-        </div>
-      </div>
+    <div className="space-y-5 max-w-[1400px]">
+      <PageHeader
+        title="Regulatory Radar"
+        subtitle="Track emerging regulations and assess their impact on your AI governance posture"
+        icon={Broadcast}
+        actions={
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="gap-1.5"><Export size={14} />Export</Button>
+            <Button size="sm" className="gap-1.5" onClick={() => { setForm(EMPTY); setEditId(null); setModal("create"); }}><Plus size={14} />Track Regulation</Button>
+          </div>
+        }
+      />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[["Tracking",items.length],["Action Required",items.filter(i=>i.actionRequired).length],["Critical Impact",items.filter(i=>i.impactLevel==="Critical").length],["Effective / Enacted",items.filter(i=>["Effective","Enacted"].includes(i.status)).length]].map(([l,v])=>(
