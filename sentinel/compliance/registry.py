@@ -140,7 +140,7 @@ _EU_AI_ACT = ComplianceFramework(
 # ---------------------------------------------------------------------------
 
 _ISO_42001 = ComplianceFramework(
-    framework_id="iso_42001",
+    framework_id="iso42001",
     name="ISO 42001",
     version="2023",
     description="AI Management System standard controls.",
@@ -262,7 +262,7 @@ _NIST_AI_RMF = ComplianceFramework(
 # ---------------------------------------------------------------------------
 
 _SOC2_AI = ComplianceFramework(
-    framework_id="soc2_ai",
+    framework_id="soc2",
     name="SOC 2 + AI",
     version="2024",
     description="SOC 2 Trust Service Criteria extended for AI systems.",
@@ -316,7 +316,7 @@ _SOC2_AI = ComplianceFramework(
 # ---------------------------------------------------------------------------
 
 _HIPAA_AI = ComplianceFramework(
-    framework_id="hipaa_ai",
+    framework_id="hipaa",
     name="HIPAA + AI",
     version="2024",
     description="HIPAA Privacy and Security Rules extended for AI in healthcare.",
@@ -369,7 +369,7 @@ _HIPAA_AI = ComplianceFramework(
 # ---------------------------------------------------------------------------
 
 _GDPR_AI = ComplianceFramework(
-    framework_id="gdpr_ai",
+    framework_id="gdpr",
     name="GDPR + AI",
     version="2024",
     description="GDPR data protection requirements for AI systems.",
@@ -422,7 +422,7 @@ _GDPR_AI = ComplianceFramework(
 # ---------------------------------------------------------------------------
 
 _OWASP_LLM = ComplianceFramework(
-    framework_id="owasp_llm_top10",
+    framework_id="owasp_llm",
     name="OWASP LLM Top 10",
     version="2025-v2",
     description="OWASP Top 10 for Large Language Model Applications.",
@@ -554,19 +554,36 @@ def list_framework_ids() -> list:
 
 
 def register_all(registry=None):
+    import logging
+
     from sentinel.compliance.frameworks import ALL_FRAMEWORKS
+
+    logger = logging.getLogger(__name__)
     if registry is None:
         registry = ComplianceRegistry()
     for fw_class in ALL_FRAMEWORKS:
         try:
             instance = fw_class()
-            registry.register(instance)
-        except Exception:
-                            raise NotImplementedError(
+        except TypeError as exc:
+            # Only an unimplemented abstract method (_evaluate_control)
+            # raises TypeError on instantiation of a BaseFramework subclass.
+            # Anything else is a real bug and must not be masked as this.
+            if "_evaluate_control" in str(exc) or "abstract" in str(exc).lower():
+                raise NotImplementedError(
                     f"Framework '{getattr(fw_class, 'framework_id', fw_class.__name__)}' "
                     f"is registered but has no evaluation handler. Implement "
                     f"_evaluate_control() in its framework file."
-                )
+                ) from exc
+            logger.exception(
+                "Failed to instantiate framework %s", fw_class.__name__
+            )
+            raise
+        except Exception:
+            logger.exception(
+                "Failed to register framework %s", fw_class.__name__
+            )
+            raise
+        registry.register(instance)
     return registry
 
 def get_registry():
@@ -585,6 +602,83 @@ class ComplianceRegistry:
         fid = getattr(framework, "framework_id", None)
         if fid:
             self._frameworks[fid] = framework
+
+    def _ensure_populated(self) -> None:
+        """Lazily populate from the frameworks/ package if this instance
+        was constructed directly (``ComplianceRegistry()``) rather than via
+        :func:`get_registry`/:func:`register_all`."""
+        if not self._frameworks:
+            register_all(self)
+
+    async def get_all_scores(
+        self, tenant_id: str, signals: dict | None = None
+    ) -> list[dict]:
+        """Return per-framework compliance scores for *tenant_id*.
+
+        Runs each registered ``BaseFramework``'s real ``evaluate()`` logic.
+        Without a live signals feed, ``evaluate()`` returns every control as
+        PENDING (see ``BaseFramework.evaluate``), so every framework will
+        honestly score 0 until a live signal source is wired up — this
+        reports that truthfully rather than fabricating a number.
+        """
+        self._ensure_populated()
+        signals = signals or {}
+        results: list[dict] = []
+        for fw_id, fw in sorted(self._frameworks.items()):
+            evidence = fw.evaluate(signals, tenant_id=tenant_id)
+            total = len(evidence)
+            passed = sum(1 for e in evidence if str(e.status) == "PASS")
+            na = sum(1 for e in evidence if str(e.status) in ("NA", "N/A"))
+            applicable = total - na
+            score = round(passed / applicable * 100, 1) if applicable else 0.0
+            results.append({
+                "framework_id": fw_id,
+                "framework_name": fw.display_name,
+                "total_controls": total,
+                "passing_controls": passed,
+                "score": score,
+            })
+        return results
+
+    async def get_gaps(
+        self,
+        tenant_id: str,
+        *,
+        framework_id: str | None = None,
+        severity: str | None = None,
+    ) -> list[dict]:
+        """Return compliance gaps derived from FAIL/PARTIAL evidence.
+
+        ``create_gap()`` below only builds an ephemeral, non-persisted gap
+        record (see its docstring) — there is no gap table backing this
+        registry yet. Rather than call a nonexistent persistence method,
+        this derives gaps live from the current framework evaluation.
+        """
+        self._ensure_populated()
+        gaps: list[dict] = []
+        for fw_id, fw in sorted(self._frameworks.items()):
+            if framework_id and fw_id != framework_id:
+                continue
+            evidence = fw.evaluate({}, tenant_id=tenant_id)
+            controls_by_id = {c.control_id: c for c in fw.controls}
+            for e in evidence:
+                if str(e.status) not in ("FAIL", "PARTIAL"):
+                    continue
+                control = controls_by_id.get(e.control_id)
+                gap_severity = getattr(control, "severity", "medium") or "medium"
+                if severity and gap_severity != severity:
+                    continue
+                gaps.append({
+                    "id": f"{fw_id}:{e.control_id}",
+                    "tenant_id": tenant_id,
+                    "framework_id": fw_id,
+                    "control_id": e.control_id,
+                    "severity": gap_severity,
+                    "title": e.control_name or e.control_id,
+                    "description": e.evidence_text,
+                    "status": "OPEN",
+                })
+        return gaps
 
     async def create_gap(
         self,

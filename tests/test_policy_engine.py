@@ -16,8 +16,8 @@ class TestPolicyStatus:
 class TestFramework:
     def test_all_frameworks_defined(self):
         assert len(Framework) == 11
-        assert Framework.SOC2.value == 'SOC2'
-        assert Framework.EU_AI_ACT.value == 'EU-AI-Act'
+        assert Framework.SOC2.value == 'soc2'
+        assert Framework.EU_AI_ACT.value == 'eu_ai_act'
 
 class TestPolicyEngine:
     def test_valid_transition(self, engine):

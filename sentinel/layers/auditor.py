@@ -125,6 +125,26 @@ async def log(
         entry_data.intervention_level,
     )
 
+    # Feed the security posture calculator from this request's signals.
+    # Synchronous, in-memory, best-effort: a failure here must never break
+    # the audit chain write itself, so it's isolated in its own try/except.
+    try:
+        from sentinel.security.posture_calculator import record_pipeline_signals
+
+        record_pipeline_signals(
+            entry_data.tenant_id,
+            request_id=entry_data.request_id,
+            trust_score=entry_data.trust_score,
+            intervention_level=entry_data.intervention_level,
+        )
+    except Exception:
+        _logger.warning(
+            "Failed to record posture signals for request %s (tenant %s)",
+            entry_data.request_id,
+            entry_data.tenant_id,
+            exc_info=True,
+        )
+
     return AuditEntry(
         entry_id=uuid.UUID(entry_id),
         tenant_id=entry_data.tenant_id,

@@ -15,11 +15,16 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["ciso"])
 
 # ---------------------------------------------------------------------------
-# Singleton posture calculator — shared across all requests
+# Singleton posture calculator — shared across all requests.
+#
+# This must be the SAME instance that sentinel/layers/auditor.py feeds via
+# record_pipeline_signals() after every audited request, and the same one
+# sentinel/api/security_router.py reads via get_security_score() /
+# get_open_findings() / get_top_findings(). Previously this router
+# instantiated its own separate PostureCalculator(), so it never saw
+# findings recorded anywhere else in the process.
 # ---------------------------------------------------------------------------
-from sentinel.security.posture_calculator import PostureCalculator
-
-_posture_calculator = PostureCalculator()
+from sentinel.security.posture_calculator import default_calculator as _posture_calculator
 
 
 # ---------------------------------------------------------------------------
@@ -61,7 +66,7 @@ async def get_posture_summary(
     report = _posture_calculator.compute(tenant_id)
     return {
         "overall_score": report.overall_score,
-        "trend": "stable",  # TODO: compute from PostureHistoryStore
+        "trend": report.trend,
         "open_findings": report.open_findings,
         "critical_findings": report.critical_findings,
         "categories": report.category_scores,
@@ -74,15 +79,27 @@ async def get_compliance_status(
 ) -> list[dict[str, Any]]:
     """Return compliance status across all configured frameworks."""
     from sentinel.compliance.registry import FRAMEWORKS
+    from sentinel.compliance.engine import compliance_engine
 
     results = []
     for fw in FRAMEWORKS.values():
         total = fw.control_count
         technical = len(fw.technical_controls)
+        # ComplianceEngine.evaluate() enforces "never mark PASS without a
+        # computed signal" — until a live per-tenant signals feed exists
+        # (e.g. sourced from proxy.py inference telemetry), this correctly
+        # reports 0 passing rather than a hardcoded/fabricated number. The
+        # moment real signals are available, this call needs no changes.
+        eval_result = compliance_engine.evaluate(
+            framework=fw,
+            signals={},
+            tenant_id=tenant_id,
+            request_id="ciso-dashboard",
+        )
         results.append({
             "framework": fw.name,
             "coverage_pct": round((technical / total * 100) if total else 0, 1),
-            "passing_controls": 0,  # TODO: wire to compliance evaluator results
+            "passing_controls": eval_result.pass_count,
             "total_controls": total,
         })
     return results

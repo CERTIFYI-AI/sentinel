@@ -204,15 +204,25 @@ class PolicyEngine:
         return summary
 
 class Framework(enum.StrEnum):
-    """Available compliance frameworks."""
-    EU_AI_ACT = "EU-AI-Act"
-    ISO_42001 = "iso_42001"
+    """Available compliance frameworks.
+
+    Values match the canonical framework-id scheme used across
+    sentinel/compliance/{registry,control_registry}.py and the
+    sentinel/compliance/frameworks/ package (see the 2026-07 audit that
+    consolidated three previously-inconsistent id schemes). This enum
+    isn't consumed by PolicyEngine itself (framework is passed through as
+    a plain string) or referenced by any other module, but it's exercised
+    directly by tests/test_policy_engine.py, so it's aligned rather than
+    deleted to avoid a second, silently-diverging vocabulary.
+    """
+    EU_AI_ACT = "eu_ai_act"
+    ISO_42001 = "iso42001"
     NIST_AI_RMF = "nist_ai_rmf"
-    ISO_27001 = "iso_27001"
-    GDPR = "GDPR"
+    ISO_27001 = "iso27001"
+    GDPR = "gdpr"
     CCPA = "ccpa"
     HIPAA = "hipaa"
-    SOC2 = "SOC2"
+    SOC2 = "soc2"
     NYC_LL144 = "nyc_ll144"
     COLORADO_AI_ACT = "colorado_ai_act"
     CANADA_AIDA = "canada_aida"

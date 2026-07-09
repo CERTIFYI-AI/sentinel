@@ -300,7 +300,7 @@ GDPR: list[Control] = [
 
 ISO_42001: list[Control] = [
     Control(
-        id="iso_42001.context.01", framework_id="iso_42001",
+        id="iso_42001.context.01", framework_id="iso42001",
         control_code="4.1", title="Understanding Organisational Context",
         category="Context",
         description="Determine external/internal issues relevant to AI management system outcomes.",
@@ -310,7 +310,7 @@ ISO_42001: list[Control] = [
                               "environment, stakeholder requirements for AI systems.",
     ),
     Control(
-        id="iso_42001.leadership.02", framework_id="iso_42001",
+        id="iso_42001.leadership.02", framework_id="iso42001",
         control_code="5.1", title="Leadership Commitment",
         category="Leadership",
         description="Top management shall demonstrate leadership and commitment to the AI management system.",
@@ -320,7 +320,7 @@ ISO_42001: list[Control] = [
                               "AI ethics principles, accountability structure, resource commitment.",
     ),
     Control(
-        id="iso_42001.risk_assessment.03", framework_id="iso_42001",
+        id="iso_42001.risk_assessment.03", framework_id="iso42001",
         control_code="6.1.2", title="AI Risk Assessment",
         category="Planning",
         description="Plan, implement, control, review, and maintain AI-specific risk assessment.",
@@ -331,7 +331,7 @@ ISO_42001: list[Control] = [
                     "with affected model and session IDs. Schedule a review within 5 business days.",
     ),
     Control(
-        id="iso_42001.objectives.04", framework_id="iso_42001",
+        id="iso_42001.objectives.04", framework_id="iso42001",
         control_code="6.2", title="AI Objectives and Planning",
         category="Planning",
         description="Establish AI objectives at relevant functions and levels.",
@@ -341,7 +341,7 @@ ISO_42001: list[Control] = [
                               "and responsible owners aligned with Sentinel trust score thresholds.",
     ),
     Control(
-        id="iso_42001.impact_assessment.05", framework_id="iso_42001",
+        id="iso_42001.impact_assessment.05", framework_id="iso42001",
         control_code="6.1.4", title="AI Impact Assessment",
         category="Planning",
         description="Conduct AI impact assessment to identify societal, individual, and organisational impacts.",
@@ -351,7 +351,7 @@ ISO_42001: list[Control] = [
                               "potential harms, likelihood, severity, mitigations. Upload per model.",
     ),
     Control(
-        id="iso_42001.data_quality.06", framework_id="iso_42001",
+        id="iso_42001.data_quality.06", framework_id="iso42001",
         control_code="8.4", title="Data for AI Systems",
         category="Operation",
         description="Identify, collect, manage, and use data in a manner consistent with the AI management system.",
@@ -362,7 +362,7 @@ ISO_42001: list[Control] = [
                     "documents for accuracy and recency. Remove outdated entries and re-index.",
     ),
     Control(
-        id="iso_42001.system_lifecycle.07", framework_id="iso_42001",
+        id="iso_42001.system_lifecycle.07", framework_id="iso42001",
         control_code="8.3", title="AI System Lifecycle Management",
         category="Operation",
         description="Implement and control AI system lifecycle: design, development, deployment, decommission.",
@@ -372,7 +372,7 @@ ISO_42001: list[Control] = [
                               "approval workflow completion, lifecycle stage, decommission plan.",
     ),
     Control(
-        id="iso_42001.monitoring.08", framework_id="iso_42001",
+        id="iso_42001.monitoring.08", framework_id="iso42001",
         control_code="9.1", title="Monitoring, Measurement and Analysis",
         category="Performance",
         description="Determine what needs to be monitored, including AI system performance.",
@@ -383,7 +383,7 @@ ISO_42001: list[Control] = [
                     "Review Grafana for trend analysis. Update baseline after each model change.",
     ),
     Control(
-        id="iso_42001.incident.09", framework_id="iso_42001",
+        id="iso_42001.incident.09", framework_id="iso42001",
         control_code="10.2", title="Incident Management for AI",
         category="Improvement",
         description="React to nonconformity: control, correct, and deal with consequences.",
@@ -394,7 +394,7 @@ ISO_42001: list[Control] = [
                     "Ensure HITL items resolved within SLA. Export BLOCKED entries as incident records.",
     ),
     Control(
-        id="iso_42001.continual_improvement.10", framework_id="iso_42001",
+        id="iso_42001.continual_improvement.10", framework_id="iso42001",
         control_code="10.3", title="Continual Improvement",
         category="Improvement",
         description="Continually improve suitability, adequacy, and effectiveness of the AI management system.",
@@ -413,7 +413,7 @@ ISO_42001: list[Control] = [
 
 ISO_27001: list[Control] = [
     Control(
-        id="iso_27001.access_control.01", framework_id="iso_27001",
+        id="iso_27001.access_control.01", framework_id="iso27001",
         control_code="A.5.15", title="Access Control Policy",
         category="Access Control",
         description="Rules for access to information and assets shall be established and reviewed.",
@@ -424,7 +424,7 @@ ISO_27001: list[Control] = [
                     "Review all API key usage in last 24 hours via /proxy/api-keys audit entries.",
     ),
     Control(
-        id="iso_27001.cryptography.02", framework_id="iso_27001",
+        id="iso_27001.cryptography.02", framework_id="iso27001",
         control_code="A.8.24", title="Use of Cryptography",
         category="Cryptography",
         description="Rules for effective use of cryptography including key management.",
@@ -435,7 +435,7 @@ ISO_27001: list[Control] = [
                               "Also: TLS certificate inventory with renewal schedule.",
     ),
     Control(
-        id="iso_27001.logging_monitoring.03", framework_id="iso_27001",
+        id="iso_27001.logging_monitoring.03", framework_id="iso27001",
         control_code="A.8.15", title="Logging and Monitoring",
         category="Operations",
         description="Logs recording activities, exceptions, and faults shall be produced, stored, protected.",
@@ -446,7 +446,7 @@ ISO_27001: list[Control] = [
                     "Do not write new records until chain is repaired.",
     ),
     Control(
-        id="iso_27001.data_masking.04", framework_id="iso_27001",
+        id="iso_27001.data_masking.04", framework_id="iso27001",
         control_code="A.8.11", title="Data Masking",
         category="Data Protection",
         description="Data masking used according to access control policies and business requirements.",
@@ -457,7 +457,7 @@ ISO_27001: list[Control] = [
                     "Review false-negative examples in sanitizer audit log.",
     ),
     Control(
-        id="iso_27001.secure_development.05", framework_id="iso_27001",
+        id="iso_27001.secure_development.05", framework_id="iso27001",
         control_code="A.8.25", title="Secure Development Lifecycle",
         category="Development",
         description="Rules for secure software development shall be established and applied.",
@@ -467,7 +467,7 @@ ISO_27001: list[Control] = [
                               "reviews on last 3 PRs). Plus SAST/DAST scan results from most recent release.",
     ),
     Control(
-        id="iso_27001.vulnerability_management.06", framework_id="iso_27001",
+        id="iso_27001.vulnerability_management.06", framework_id="iso27001",
         control_code="A.8.8", title="Management of Technical Vulnerabilities",
         category="Operations",
         description="Technical vulnerabilities shall be obtained, evaluated, and addressed timely.",
@@ -478,7 +478,7 @@ ISO_27001: list[Control] = [
                     "All CRITICAL findings need assigned tasks within 30 days; HIGH within 90 days.",
     ),
     Control(
-        id="iso_27001.incident_response.07", framework_id="iso_27001",
+        id="iso_27001.incident_response.07", framework_id="iso27001",
         control_code="A.5.26", title="Response to Information Security Incidents",
         category="Incident Management",
         description="Information security incidents shall be responded to per documented procedures.",
@@ -489,7 +489,7 @@ ISO_27001: list[Control] = [
                               "Evidence: completed tabletop exercise or real incident record.",
     ),
     Control(
-        id="iso_27001.supplier_security.08", framework_id="iso_27001",
+        id="iso_27001.supplier_security.08", framework_id="iso27001",
         control_code="A.5.19", title="Information Security in Supplier Relationships",
         category="Supplier",
         description="Processes to manage information security risks in supplier relationships.",
@@ -499,7 +499,7 @@ ISO_27001: list[Control] = [
                               "provider (OpenAI, Anthropic, etc.). Link each model in Inventory to vendor evidence.",
     ),
     Control(
-        id="iso_27001.asset_management.09", framework_id="iso_27001",
+        id="iso_27001.asset_management.09", framework_id="iso27001",
         control_code="A.5.9", title="Inventory of Information and Assets",
         category="Asset Management",
         description="An inventory of information assets shall be developed and maintained.",
@@ -510,7 +510,7 @@ ISO_27001: list[Control] = [
                     "provider, version, deployment date, use case, risk classification, owner.",
     ),
     Control(
-        id="iso_27001.business_continuity.10", framework_id="iso_27001",
+        id="iso_27001.business_continuity.10", framework_id="iso27001",
         control_code="A.5.30", title="ICT Readiness for Business Continuity",
         category="Business Continuity",
         description="ICT readiness shall be planned, implemented, maintained, and tested.",
@@ -610,7 +610,7 @@ NIST_AI_RMF: list[Control] = [
 
 IEEE_7000: list[Control] = [
     Control(
-        id="ieee_7000.value_elicitation.01", framework_id="ieee_7000",
+        id="ieee_7000.value_elicitation.01", framework_id="ieee7000",
         control_code="Clause 7", title="Value Elicitation and Stakeholder Identification",
         category="Ethics",
         description="Stakeholders identified and their values systematically used in design.",
@@ -620,7 +620,7 @@ IEEE_7000: list[Control] = [
                               "in trust score thresholds, PII sensitivity, and HITL trigger conditions.",
     ),
     Control(
-        id="ieee_7000.transparency.02", framework_id="ieee_7000",
+        id="ieee_7000.transparency.02", framework_id="ieee7000",
         control_code="Clause 8.3", title="Transparency in AI Decision Making",
         category="Transparency",
         description="System shall provide explainability of decisions to support accountability and fairness.",
@@ -631,7 +631,7 @@ IEEE_7000: list[Control] = [
                     "provides decision explainability. Enable component headers in API responses.",
     ),
     Control(
-        id="ieee_7000.privacy.03", framework_id="ieee_7000",
+        id="ieee_7000.privacy.03", framework_id="ieee7000",
         control_code="Clause 9.4", title="Privacy by Design",
         category="Privacy",
         description="Privacy incorporated into AI system design from the outset.",
@@ -642,7 +642,7 @@ IEEE_7000: list[Control] = [
                     "Score <0.95: add domain-specific Presidio recognisers.",
     ),
     Control(
-        id="ieee_7000.bias.04", framework_id="ieee_7000",
+        id="ieee_7000.bias.04", framework_id="ieee7000",
         control_code="Clause 8.4", title="Bias Identification and Mitigation",
         category="Fairness",
         description="System shall identify potential sources of bias and implement mitigation strategies.",
@@ -651,7 +651,7 @@ IEEE_7000: list[Control] = [
                               "and counterfactual fairness. Run before every model version deployment.",
     ),
     Control(
-        id="ieee_7000.accountability.05", framework_id="ieee_7000",
+        id="ieee_7000.accountability.05", framework_id="ieee7000",
         control_code="Clause 8.5", title="Accountability Mechanism",
         category="Ethics",
         description="System shall maintain audit trails supporting accountability for AI-related decisions.",
@@ -662,7 +662,7 @@ IEEE_7000: list[Control] = [
                     "Export audit log as evidence for IEEE 7000 assessments.",
     ),
     Control(
-        id="ieee_7000.wellbeing.06", framework_id="ieee_7000",
+        id="ieee_7000.wellbeing.06", framework_id="ieee7000",
         control_code="Clause 8.6", title="Human Wellbeing Prioritisation",
         category="Ethics",
         description="System shall prioritise human wellbeing with mechanisms to prevent potential harm.",
@@ -673,7 +673,7 @@ IEEE_7000: list[Control] = [
                     "Review BLOCKED audit entries to identify patterns and update injection rules.",
     ),
     Control(
-        id="ieee_7000.value_monitoring.07", framework_id="ieee_7000",
+        id="ieee_7000.value_monitoring.07", framework_id="ieee7000",
         control_code="Clause 10", title="Ongoing Value Alignment Monitoring",
         category="Monitoring",
         description="System monitored continuously to ensure behaviour remains aligned with ethical values.",
@@ -684,7 +684,7 @@ IEEE_7000: list[Control] = [
                     "trigger a value re-elicitation review and update baseline.",
     ),
     Control(
-        id="ieee_7000.stakeholder_engagement.08", framework_id="ieee_7000",
+        id="ieee_7000.stakeholder_engagement.08", framework_id="ieee7000",
         control_code="Clause 7.3", title="Stakeholder Engagement Process",
         category="Ethics",
         description="Organisation maintains ongoing stakeholder engagement regarding AI system values.",
@@ -1298,10 +1298,10 @@ for _c in ALL_CONTROLS:
 FRAMEWORK_CONTROL_COUNTS: dict[str, int] = {
     "eu_ai_act":     12,
     "gdpr":           8,
-    "iso_42001":     10,
-    "iso_27001":     10,
+    "iso42001":      10,
+    "iso27001":      10,
     "nist_ai_rmf":    7,
-    "ieee_7000":      8,
+    "ieee7000":       8,
     "owasp_llm":     10,
     "owasp_agentic": 10,
     "owasp_api":     10,
@@ -1313,10 +1313,10 @@ FRAMEWORK_CONTROL_COUNTS: dict[str, int] = {
 FRAMEWORK_METADATA: dict[str, dict] = {
     "eu_ai_act":     {"name": "EU AI Act",                    "abbreviation": "EU AI Act"},
     "gdpr":          {"name": "GDPR",                         "abbreviation": "GDPR"},
-    "iso_42001":     {"name": "ISO/IEC 42001:2023",           "abbreviation": "ISO 42001"},
-    "iso_27001":     {"name": "ISO/IEC 27001:2022",           "abbreviation": "ISO 27001"},
+    "iso42001":      {"name": "ISO/IEC 42001:2023",           "abbreviation": "ISO 42001"},
+    "iso27001":      {"name": "ISO/IEC 27001:2022",           "abbreviation": "ISO 27001"},
     "nist_ai_rmf":   {"name": "NIST AI Risk Management Framework", "abbreviation": "NIST AI RMF"},
-    "ieee_7000":     {"name": "IEEE 7000-2021",               "abbreviation": "IEEE 7000"},
+    "ieee7000":      {"name": "IEEE 7000-2021",               "abbreviation": "IEEE 7000"},
     "owasp_llm":     {"name": "OWASP LLM Top 10",             "abbreviation": "OWASP LLM"},
     "owasp_agentic": {"name": "OWASP Agentic AI Top 10",      "abbreviation": "OWASP Agentic"},
     "owasp_api":     {"name": "OWASP API Security Top 10",    "abbreviation": "OWASP API"},

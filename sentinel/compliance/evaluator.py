@@ -21,6 +21,7 @@ from typing import Any, Optional
 from sentinel.compliance.control_registry import (
     ALL_CONTROLS, Control, EvalType, ControlSeverity
 )
+from sentinel.models import InterventionLevel
 
 
 class ControlStatus(str, Enum):
@@ -60,10 +61,56 @@ _SIGNAL_FIELD: dict[str, str] = {
     "intervention":             "intervention_level",
 }
 
-# Intervention levels that pass / warn / fail
-_INTERVENTION_PASS = {"NONE", "REGENERATE"}
-_INTERVENTION_WARN = {"UPGRADE"}
-_INTERVENTION_FAIL = {"HITL", "BLOCKED"}
+# Intervention levels that pass / warn / fail.
+#
+# InterventionLevel (sentinel/models.py) is an IntEnum: NONE=0,
+# REGENERATE=1, UPGRADE=2, HITL=3. The audit_log field this maps to
+# (intervention_level) stores that int directly — it was never a string
+# enum name, so the previous `str(raw).upper()` comparison against
+# {"NONE","REGENERATE"} etc. could never match and always fell through to
+# FAIL. There is no BLOCKED member on InterventionLevel (it was aspirational
+# in the old string set); HITL is the highest/most severe level today.
+_INTERVENTION_PASS = {InterventionLevel.NONE, InterventionLevel.REGENERATE}
+_INTERVENTION_WARN = {InterventionLevel.UPGRADE}
+_INTERVENTION_FAIL = {InterventionLevel.HITL}
+
+# Legacy string names accepted for backward compatibility, in case any
+# caller still passes the enum's name instead of its int value.
+_INTERVENTION_NAME_FALLBACK: dict[str, InterventionLevel] = {
+    "NONE": InterventionLevel.NONE,
+    "REGENERATE": InterventionLevel.REGENERATE,
+    "UPGRADE": InterventionLevel.UPGRADE,
+    "HITL": InterventionLevel.HITL,
+    "BLOCKED": InterventionLevel.HITL,  # no such member; map to the closest real one
+}
+
+
+def _normalize_intervention_level(raw: Any) -> Optional["InterventionLevel"]:
+    """Coerce a raw audit_log `intervention_level` value to InterventionLevel.
+
+    Accepts the real int (0-3) or an InterventionLevel member (the actual
+    shapes this field takes today), and defensively also accepts a legacy
+    string name. Returns None if the value can't be interpreted, so the
+    caller can report PENDING instead of guessing.
+    """
+    if isinstance(raw, InterventionLevel):
+        return raw
+    if isinstance(raw, bool):
+        return None  # bool is an int subclass in Python; not a valid level
+    if isinstance(raw, int):
+        try:
+            return InterventionLevel(raw)
+        except ValueError:
+            return None
+    if isinstance(raw, str):
+        name = raw.strip().upper()
+        if name in _INTERVENTION_NAME_FALLBACK:
+            return _INTERVENTION_NAME_FALLBACK[name]
+        try:
+            return InterventionLevel(int(name))
+        except (TypeError, ValueError):
+            return None
+    return None
 
 
 class ComplianceEvaluator:
@@ -152,29 +199,36 @@ class ComplianceEvaluator:
 
         # ── intervention (enum) ───────────────────────────────────────────────
         if signal == "intervention":
-            level = str(raw).upper()
+            level = _normalize_intervention_level(raw)
+            if level is None:
+                return self._pending(
+                    control,
+                    f"Unrecognised intervention_level value: {raw!r}.",
+                    now, audit_id,
+                )
+            level_label = level.name
             if level in _INTERVENTION_PASS:
                 return ControlEvalResult(
                     control_id=control.id, framework_id=control.framework_id,
-                    status=ControlStatus.PASS, signal_name=signal, signal_value=None,
+                    status=ControlStatus.PASS, signal_name=signal, signal_value=float(level),
                     threshold=None, delta=None,
-                    evidence_note=f"Intervention level {level} — within acceptable bounds.",
+                    evidence_note=f"Intervention level {level_label} — within acceptable bounds.",
                     remediation=None, evaluated_at=now, audit_entry_id=audit_id or None,
                 )
             if level in _INTERVENTION_WARN:
                 return ControlEvalResult(
                     control_id=control.id, framework_id=control.framework_id,
-                    status=ControlStatus.WARN, signal_name=signal, signal_value=None,
+                    status=ControlStatus.WARN, signal_name=signal, signal_value=float(level),
                     threshold=None, delta=None,
-                    evidence_note=f"Intervention level {level} — elevated risk, monitor closely.",
+                    evidence_note=f"Intervention level {level_label} — elevated risk, monitor closely.",
                     remediation=control.remediation, evaluated_at=now, audit_entry_id=audit_id or None,
                 )
             return ControlEvalResult(
                 control_id=control.id, framework_id=control.framework_id,
-                status=ControlStatus.FAIL, signal_name=signal, signal_value=None,
+                status=ControlStatus.FAIL, signal_name=signal, signal_value=float(level),
                 threshold=None, delta=None,
                 evidence_note=(
-                    f"Intervention level {level} — human oversight required. "
+                    f"Intervention level {level_label} — human oversight required. "
                     "Review HITL queue item for this session."
                 ),
                 remediation=control.remediation, evaluated_at=now, audit_entry_id=audit_id or None,
