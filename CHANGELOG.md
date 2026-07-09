@@ -1,3 +1,10 @@
+## <small>1.34.2 (2026-07-09)</small>
+
+* fix(ui): Phase 5 (batch 1) — wire fake "Exported" toasts to real CSV export ([b1e6156](https://github.com/CERTIFYI-AI/sentinel/commit/b1e6156))
+* refactor(ui): Phase 2 (batch 1) — migrate 5 pages to canonical PageHeader ([792aea0](https://github.com/CERTIFYI-AI/sentinel/commit/792aea0))
+* refactor(ui): Phase 3 — tokenize 1,069 hardcoded color literals across pages ([5bf684e](https://github.com/CERTIFYI-AI/sentinel/commit/5bf684e))
+* refactor(ui): Phase 3 (cont.) — tokenize 94 color literals in shared components ([42a40ad](https://github.com/CERTIFYI-AI/sentinel/commit/42a40ad))
+
 ## <small>1.34.1 (2026-07-09)</small>
 
 * fix(a11y): Phase 1 — mount skip link + main landmark in app shell ([4fb68fb](https://github.com/CERTIFYI-AI/sentinel/commit/4fb68fb)), closes [#main-content](https://github.com/CERTIFYI-AI/sentinel/issues/main-content)
