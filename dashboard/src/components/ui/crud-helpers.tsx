@@ -5,38 +5,38 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 // ── StatusBadge ─────────────────────────────────────────────────────────────
 
 const STATUS_STYLES: Record<string, { bg: string; color: string; border: string }> = {
-  active:      { bg: "hsl(142 71% 45% / 0.12)", color: "hsl(142 71% 35%)", border: "hsl(142 71% 45% / 0.3)" },
-  enabled:     { bg: "hsl(142 71% 45% / 0.12)", color: "hsl(142 71% 35%)", border: "hsl(142 71% 45% / 0.3)" },
+  active:      { bg: "hsl(var(--s-ok-bg))", color: "hsl(var(--s-ok-tx))", border: "hsl(var(--s-ok-bg))" },
+  enabled:     { bg: "hsl(var(--s-ok-bg))", color: "hsl(var(--s-ok-tx))", border: "hsl(var(--s-ok-bg))" },
   approved:    { bg: "hsl(152 60% 40% / 0.12)", color: "hsl(152 60% 30%)", border: "hsl(152 60% 40% / 0.3)" },
-  conformant:  { bg: "hsl(142 71% 45% / 0.12)", color: "hsl(142 71% 35%)", border: "hsl(142 71% 45% / 0.3)" },
-  complete:    { bg: "hsl(142 71% 45% / 0.12)", color: "hsl(142 71% 35%)", border: "hsl(142 71% 45% / 0.3)" },
-  completed:   { bg: "hsl(142 71% 45% / 0.12)", color: "hsl(142 71% 35%)", border: "hsl(142 71% 45% / 0.3)" },
-  acknowledged:{ bg: "hsl(142 71% 45% / 0.12)", color: "hsl(142 71% 35%)", border: "hsl(142 71% 45% / 0.3)" },
-  current:     { bg: "hsl(142 71% 45% / 0.12)", color: "hsl(142 71% 35%)", border: "hsl(142 71% 45% / 0.3)" },
-  pass:        { bg: "hsl(142 71% 45% / 0.12)", color: "hsl(142 71% 35%)", border: "hsl(142 71% 45% / 0.3)" },
-  low:         { bg: "hsl(142 71% 45% / 0.12)", color: "hsl(142 71% 35%)", border: "hsl(142 71% 45% / 0.3)" },
-  filed:       { bg: "hsl(142 71% 45% / 0.12)", color: "hsl(142 71% 35%)", border: "hsl(142 71% 45% / 0.3)" },
-  draft:       { bg: "hsl(45 93% 47% / 0.12)", color: "hsl(35 80% 35%)", border: "hsl(45 93% 47% / 0.3)" },
-  pending:     { bg: "hsl(220 90% 56% / 0.12)", color: "hsl(220 80% 45%)", border: "hsl(220 90% 56% / 0.3)" },
-  in_review:   { bg: "hsl(220 90% 56% / 0.12)", color: "hsl(220 80% 45%)", border: "hsl(220 90% 56% / 0.3)" },
-  "in progress": { bg: "hsl(220 90% 56% / 0.12)", color: "hsl(220 80% 45%)", border: "hsl(220 90% 56% / 0.3)" },
-  "under review": { bg: "hsl(220 90% 56% / 0.12)", color: "hsl(220 80% 45%)", border: "hsl(220 90% 56% / 0.3)" },
-  "ready to file": { bg: "hsl(220 90% 56% / 0.12)", color: "hsl(220 80% 45%)", border: "hsl(220 90% 56% / 0.3)" },
-  "not started": { bg: "hsl(220 90% 56% / 0.12)", color: "hsl(220 80% 45%)", border: "hsl(220 90% 56% / 0.3)" },
-  scheduled:   { bg: "hsl(220 90% 56% / 0.12)", color: "hsl(220 80% 45%)", border: "hsl(220 90% 56% / 0.3)" },
-  investigating: { bg: "hsl(220 90% 56% / 0.12)", color: "hsl(220 80% 45%)", border: "hsl(220 90% 56% / 0.3)" },
-  monitoring:  { bg: "hsl(220 90% 56% / 0.12)", color: "hsl(220 80% 45%)", border: "hsl(220 90% 56% / 0.3)" },
-  piloting:    { bg: "hsl(220 90% 56% / 0.12)", color: "hsl(220 80% 45%)", border: "hsl(220 90% 56% / 0.3)" },
-  planned:     { bg: "hsl(220 90% 56% / 0.12)", color: "hsl(220 80% 45%)", border: "hsl(220 90% 56% / 0.3)" },
+  conformant:  { bg: "hsl(var(--s-ok-bg))", color: "hsl(var(--s-ok-tx))", border: "hsl(var(--s-ok-bg))" },
+  complete:    { bg: "hsl(var(--s-ok-bg))", color: "hsl(var(--s-ok-tx))", border: "hsl(var(--s-ok-bg))" },
+  completed:   { bg: "hsl(var(--s-ok-bg))", color: "hsl(var(--s-ok-tx))", border: "hsl(var(--s-ok-bg))" },
+  acknowledged:{ bg: "hsl(var(--s-ok-bg))", color: "hsl(var(--s-ok-tx))", border: "hsl(var(--s-ok-bg))" },
+  current:     { bg: "hsl(var(--s-ok-bg))", color: "hsl(var(--s-ok-tx))", border: "hsl(var(--s-ok-bg))" },
+  pass:        { bg: "hsl(var(--s-ok-bg))", color: "hsl(var(--s-ok-tx))", border: "hsl(var(--s-ok-bg))" },
+  low:         { bg: "hsl(var(--s-ok-bg))", color: "hsl(var(--s-ok-tx))", border: "hsl(var(--s-ok-bg))" },
+  filed:       { bg: "hsl(var(--s-ok-bg))", color: "hsl(var(--s-ok-tx))", border: "hsl(var(--s-ok-bg))" },
+  draft:       { bg: "hsl(var(--s-wn-bg))", color: "hsl(35 80% 35%)", border: "hsl(var(--s-wn-bg))" },
+  pending:     { bg: "hsl(var(--s-in-bg))", color: "hsl(220 80% 45%)", border: "hsl(var(--s-in-bg))" },
+  in_review:   { bg: "hsl(var(--s-in-bg))", color: "hsl(220 80% 45%)", border: "hsl(var(--s-in-bg))" },
+  "in progress": { bg: "hsl(var(--s-in-bg))", color: "hsl(220 80% 45%)", border: "hsl(var(--s-in-bg))" },
+  "under review": { bg: "hsl(var(--s-in-bg))", color: "hsl(220 80% 45%)", border: "hsl(var(--s-in-bg))" },
+  "ready to file": { bg: "hsl(var(--s-in-bg))", color: "hsl(220 80% 45%)", border: "hsl(var(--s-in-bg))" },
+  "not started": { bg: "hsl(var(--s-in-bg))", color: "hsl(220 80% 45%)", border: "hsl(var(--s-in-bg))" },
+  scheduled:   { bg: "hsl(var(--s-in-bg))", color: "hsl(220 80% 45%)", border: "hsl(var(--s-in-bg))" },
+  investigating: { bg: "hsl(var(--s-in-bg))", color: "hsl(220 80% 45%)", border: "hsl(var(--s-in-bg))" },
+  monitoring:  { bg: "hsl(var(--s-in-bg))", color: "hsl(220 80% 45%)", border: "hsl(var(--s-in-bg))" },
+  piloting:    { bg: "hsl(var(--s-in-bg))", color: "hsl(220 80% 45%)", border: "hsl(var(--s-in-bg))" },
+  planned:     { bg: "hsl(var(--s-in-bg))", color: "hsl(220 80% 45%)", border: "hsl(var(--s-in-bg))" },
   due:         { bg: "hsl(38 92% 50% / 0.12)", color: "hsl(28 80% 35%)", border: "hsl(38 92% 50% / 0.3)" },
-  overdue:     { bg: "hsl(0 72% 51% / 0.12)", color: "hsl(0 72% 40%)", border: "hsl(0 72% 51% / 0.3)" },
-  critical:    { bg: "hsl(0 72% 51% / 0.12)", color: "hsl(0 72% 40%)", border: "hsl(0 72% 51% / 0.3)" },
-  failed:      { bg: "hsl(0 72% 51% / 0.12)", color: "hsl(0 72% 40%)", border: "hsl(0 72% 51% / 0.3)" },
-  fail:        { bg: "hsl(0 72% 51% / 0.12)", color: "hsl(0 72% 40%)", border: "hsl(0 72% 51% / 0.3)" },
-  high:        { bg: "hsl(0 72% 51% / 0.12)", color: "hsl(0 72% 40%)", border: "hsl(0 72% 51% / 0.3)" },
-  error:       { bg: "hsl(0 72% 51% / 0.12)", color: "hsl(0 72% 40%)", border: "hsl(0 72% 51% / 0.3)" },
-  "non-conformant": { bg: "hsl(0 72% 51% / 0.12)", color: "hsl(0 72% 40%)", border: "hsl(0 72% 51% / 0.3)" },
-  "requires supplementary measures": { bg: "hsl(0 72% 51% / 0.12)", color: "hsl(0 72% 40%)", border: "hsl(0 72% 51% / 0.3)" },
+  overdue:     { bg: "hsl(var(--s-er-bg))", color: "hsl(0 72% 40%)", border: "hsl(var(--s-er-bg))" },
+  critical:    { bg: "hsl(var(--s-er-bg))", color: "hsl(0 72% 40%)", border: "hsl(var(--s-er-bg))" },
+  failed:      { bg: "hsl(var(--s-er-bg))", color: "hsl(0 72% 40%)", border: "hsl(var(--s-er-bg))" },
+  fail:        { bg: "hsl(var(--s-er-bg))", color: "hsl(0 72% 40%)", border: "hsl(var(--s-er-bg))" },
+  high:        { bg: "hsl(var(--s-er-bg))", color: "hsl(0 72% 40%)", border: "hsl(var(--s-er-bg))" },
+  error:       { bg: "hsl(var(--s-er-bg))", color: "hsl(0 72% 40%)", border: "hsl(var(--s-er-bg))" },
+  "non-conformant": { bg: "hsl(var(--s-er-bg))", color: "hsl(0 72% 40%)", border: "hsl(var(--s-er-bg))" },
+  "requires supplementary measures": { bg: "hsl(var(--s-er-bg))", color: "hsl(0 72% 40%)", border: "hsl(var(--s-er-bg))" },
   inactive:    { bg: "hsl(var(--bg-raised))", color: "hsl(var(--text-4))", border: "hsl(var(--border))" },
   disabled:    { bg: "hsl(var(--bg-raised))", color: "hsl(var(--text-4))", border: "hsl(var(--border))" },
   archived:    { bg: "hsl(var(--bg-raised))", color: "hsl(var(--text-4))", border: "hsl(var(--border))" },
@@ -48,12 +48,12 @@ const STATUS_STYLES: Record<string, { bg: string; color: string; border: string 
   decommissioning: { bg: "hsl(var(--bg-raised))", color: "hsl(var(--text-4))", border: "hsl(var(--border))" },
   medium:      { bg: "hsl(38 92% 50% / 0.12)", color: "hsl(28 80% 35%)", border: "hsl(38 92% 50% / 0.3)" },
   warning:     { bg: "hsl(38 92% 50% / 0.12)", color: "hsl(28 80% 35%)", border: "hsl(38 92% 50% / 0.3)" },
-  running:     { bg: "hsl(142 71% 45% / 0.12)", color: "hsl(142 71% 35%)", border: "hsl(142 71% 45% / 0.3)" },
-  healthy:     { bg: "hsl(142 71% 45% / 0.12)", color: "hsl(142 71% 35%)", border: "hsl(142 71% 45% / 0.3)" },
+  running:     { bg: "hsl(var(--s-ok-bg))", color: "hsl(var(--s-ok-tx))", border: "hsl(var(--s-ok-bg))" },
+  healthy:     { bg: "hsl(var(--s-ok-bg))", color: "hsl(var(--s-ok-tx))", border: "hsl(var(--s-ok-bg))" },
   degraded:    { bg: "hsl(38 92% 50% / 0.12)", color: "hsl(28 80% 35%)", border: "hsl(38 92% 50% / 0.3)" },
-  down:        { bg: "hsl(0 72% 51% / 0.12)", color: "hsl(0 72% 40%)", border: "hsl(0 72% 51% / 0.3)" },
-  open:        { bg: "hsl(0 72% 51% / 0.12)", color: "hsl(0 72% 40%)", border: "hsl(0 72% 51% / 0.3)" },
-  resolved:    { bg: "hsl(142 71% 45% / 0.12)", color: "hsl(142 71% 35%)", border: "hsl(142 71% 45% / 0.3)" },
+  down:        { bg: "hsl(var(--s-er-bg))", color: "hsl(0 72% 40%)", border: "hsl(var(--s-er-bg))" },
+  open:        { bg: "hsl(var(--s-er-bg))", color: "hsl(0 72% 40%)", border: "hsl(var(--s-er-bg))" },
+  resolved:    { bg: "hsl(var(--s-ok-bg))", color: "hsl(var(--s-ok-tx))", border: "hsl(var(--s-ok-bg))" },
   maintenance: { bg: "hsl(38 92% 50% / 0.12)", color: "hsl(28 80% 35%)", border: "hsl(38 92% 50% / 0.3)" },
 };
 
@@ -101,7 +101,7 @@ export function BulkActionToolbar({
             onClick={a.onClick}
             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs border ${
               a.variant === "destructive"
-                ? "border-[hsl(0_72%_51%/0.4)] text-[hsl(0_72%_51%)] hover:bg-[hsl(0_72%_51%/0.08)]"
+                ? "border-[hsl(var(--s-er-bg))] text-[hsl(var(--s-er-tx))] hover:bg-[hsl(var(--s-er-bg))]"
                 : "border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised"
             }`}
           >
@@ -120,7 +120,7 @@ export function BulkActionToolbar({
           </button>
         )}
         {!actions && onDelete && (
-          <button onClick={onDelete} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-[hsl(0_72%_51%/0.4)] text-[hsl(0_72%_51%)] hover:bg-[hsl(0_72%_51%/0.08)]">
+          <button onClick={onDelete} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-[hsl(var(--s-er-bg))] text-[hsl(var(--s-er-tx))] hover:bg-[hsl(var(--s-er-bg))]">
             <Trash size={12} /> Delete
           </button>
         )}
@@ -225,12 +225,12 @@ export function Field({
     <div className="space-y-1">
       <label className="flex items-center gap-1 text-sm font-medium text-[hsl(var(--text-2))]">
         {label}
-        {required && <span className="text-[hsl(0_72%_51%)]">*</span>}
+        {required && <span className="text-[hsl(var(--s-er-tx))]">*</span>}
       </label>
       {hint && <p className="text-xs text-[hsl(var(--text-4))]">{hint}</p>}
       {children}
       <div className="flex items-center justify-between">
-        {error && <p className="text-xs text-[hsl(0_72%_51%)]">{error}</p>}
+        {error && <p className="text-xs text-[hsl(var(--s-er-tx))]">{error}</p>}
         {charCount && <p className="text-xs text-[hsl(var(--text-4))] ml-auto">{charCount.current}/{charCount.max}</p>}
       </div>
     </div>

@@ -40,14 +40,14 @@ export function ErrorState({
         padding: '48px 24px',
         textAlign: 'center',
         gap: 12,
-        background: 'hsl(0 72% 51% / 0.04)',
-        border: '1px solid hsl(0 72% 51% / 0.20)',
+        background: 'hsl(var(--s-er-bg))',
+        border: '1px solid hsl(var(--s-er-bg))',
         borderRadius: 0,
       }}
     >
       <div
         style={{
-          background: 'hsl(0 72% 51% / 0.08)',
+          background: 'hsl(var(--s-er-bg))',
           padding: 16,
           display: 'inline-flex',
           borderRadius: 0,
