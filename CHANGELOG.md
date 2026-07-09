@@ -1,3 +1,7 @@
+## <small>1.34.1 (2026-07-09)</small>
+
+* fix(a11y): Phase 1 — mount skip link + main landmark in app shell ([4fb68fb](https://github.com/CERTIFYI-AI/sentinel/commit/4fb68fb)), closes [#main-content](https://github.com/CERTIFYI-AI/sentinel/issues/main-content)
+
 ## 1.34.0 (2026-07-02)
 
 * feat(trust): Configuration persistence — save/load Trust config to Supabase ([0a9002a](https://github.com/CERTIFYI-AI/sentinel/commit/0a9002a))
