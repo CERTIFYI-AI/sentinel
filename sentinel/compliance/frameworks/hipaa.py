@@ -1,5 +1,6 @@
 from __future__ import annotations
 from sentinel.compliance.frameworks.base import BaseFramework, Control, ControlStatus, EvidenceRecord, FrameworkMetadata, FrameworkStatus
+from sentinel.models import InterventionLevel, normalize_intervention_level
 
 
 class HIPAAFramework(BaseFramework):
@@ -40,7 +41,7 @@ class HIPAAFramework(BaseFramework):
 
     def _access(self, c, e, r, cfg):
         trust = r.get('trust_score', 0.0)
-        intervention = r.get('intervention_level', 'L0')
+        intervention = normalize_intervention_level(r.get('intervention_level', InterventionLevel.NONE)) or InterventionLevel.NONE
         if trust >= 0.5:
-            return self._r(c, ControlStatus.PASS, trust, 'trust_score,intervention_level', {'trust': trust, 'intervention': intervention}, 'Access control enforced via trust scoring.')
-        return self._r(c, ControlStatus.FAIL, trust, 'trust_score,intervention_level', {'trust': trust, 'intervention': intervention}, 'Access control concern: low trust score.', 'Review intervention policy and trust thresholds.')
+            return self._r(c, ControlStatus.PASS, trust, 'trust_score,intervention_level', {'trust': trust, 'intervention': intervention.name}, 'Access control enforced via trust scoring.')
+        return self._r(c, ControlStatus.FAIL, trust, 'trust_score,intervention_level', {'trust': trust, 'intervention': intervention.name}, 'Access control concern: low trust score.', 'Review intervention policy and trust thresholds.')

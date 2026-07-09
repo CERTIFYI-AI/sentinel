@@ -1,5 +1,6 @@
 from __future__ import annotations
 from sentinel.compliance.frameworks.base import BaseFramework,Control,ControlStatus,EvidenceRecord,FrameworkMetadata,FrameworkStatus
+from sentinel.models import InterventionLevel, normalize_intervention_level
 class OECDPrinciplesFramework(BaseFramework):
     metadata=FrameworkMetadata(
         framework_id='oecd_principles',
@@ -27,8 +28,9 @@ class OECDPrinciplesFramework(BaseFramework):
             return EvidenceRecord(control_id=ctrl.control_id,framework_id=self.metadata.framework_id,framework_name=self.metadata.framework_name,status=ControlStatus.NA,score=0.0,evidence_text='Organisational control. Not evaluated at runtime.',remediation=ctrl.description)
         return dispatch[ctrl.control_id](ctrl,entry,result,config)
     def _p12(self,c,e,r,cfg):
-        hitl=cfg.get('hitl_configured',True);intervention=r.get('intervention_level','L0')
-        return self._r(c,ControlStatus.PASS,1.0,'hitl_configured,intervention_level',{'hitl':hitl,'intervention':intervention},f'Human-centred design (OECD P1.2): Human oversight available. HITL configured: {hitl}. Intervention: {intervention}.')
+        hitl=cfg.get('hitl_configured',True)
+        intervention=normalize_intervention_level(r.get('intervention_level',InterventionLevel.NONE)) or InterventionLevel.NONE
+        return self._r(c,ControlStatus.PASS,1.0,'hitl_configured,intervention_level',{'hitl':hitl,'intervention':intervention.name},f'Human-centred design (OECD P1.2): Human oversight available. HITL configured: {hitl}. Intervention: {intervention.name}.')
     def _p13(self,c,e,r,cfg):
         claims=r.get('claim_scores',[]);sources=r.get('sources_cited',[]);headers=r.get('response_headers',{})
         has_h='X-Sentinel-Trust-Score' in headers or 'trust_score' in r

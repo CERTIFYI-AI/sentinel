@@ -1,6 +1,7 @@
 
 from __future__ import annotations
 from sentinel.compliance.frameworks.base import BaseFramework, Control, ControlStatus, EvidenceRecord, FrameworkMetadata, FrameworkStatus
+from sentinel.models import InterventionLevel, normalize_intervention_level
 
 class ISO42001Framework(BaseFramework):
     metadata = FrameworkMetadata(
@@ -38,16 +39,18 @@ class ISO42001Framework(BaseFramework):
         entry_id=e.get("entry_id",e.get("request_id",""))
         return self._r(c,ControlStatus.PASS,trust,"trust_score,claim_scores,injection_score",{"trust":trust,"injection":inj,"claims_count":len(claims)},f"AI risk assessed per request. Trust {trust:.3f}. Claims evaluated: {len(claims)}. Injection risk: {inj:.3f}. Risk documented in audit entry {entry_id}.")
     def _a42(self,c,e,r,cfg):
-        intervention=r.get("intervention_level","L0");cost=r.get("cost_usd",0.0)
-        return self._r(c,ControlStatus.PASS,1.0,"intervention_level,cost_usd",{"intervention":intervention,"cost":cost},f"Risk treatment decision made. Method: {intervention}. Cost: ${cost:.5f}. Outcome documented.")
+        intervention=normalize_intervention_level(r.get("intervention_level",InterventionLevel.NONE)) or InterventionLevel.NONE
+        cost=r.get("cost_usd",0.0)
+        return self._r(c,ControlStatus.PASS,1.0,"intervention_level,cost_usd",{"intervention":intervention.name,"cost":cost},f"Risk treatment decision made. Method: {intervention.name}. Cost: ${cost:.5f}. Outcome documented.")
     def _a52(self,c,e,r,cfg):
-        intervention=r.get("intervention_level","L0")
-        if intervention=="L0":return self._r(c,ControlStatus.NA,-1.0,"intervention_level",intervention,"No correction needed. Automated pipeline met quality threshold.")
-        if intervention in("L1","L2"):return self._r(c,ControlStatus.PASS,1.0,"intervention_level",intervention,f"Automated corrective action taken via {intervention}.")
-        return self._r(c,ControlStatus.PARTIAL,0.5,"intervention_level",intervention,f"Manual corrective action initiated. HITL review pending.")
+        intervention=normalize_intervention_level(r.get("intervention_level",InterventionLevel.NONE)) or InterventionLevel.NONE
+        if intervention==InterventionLevel.NONE:return self._r(c,ControlStatus.NA,-1.0,"intervention_level",intervention.name,"No correction needed. Automated pipeline met quality threshold.")
+        if intervention in(InterventionLevel.REGENERATE,InterventionLevel.UPGRADE):return self._r(c,ControlStatus.PASS,1.0,"intervention_level",intervention.name,f"Automated corrective action taken via {intervention.name}.")
+        return self._r(c,ControlStatus.PARTIAL,0.5,"intervention_level",intervention.name,f"Manual corrective action initiated. HITL review pending.")
     def _a611(self,c,e,r,cfg):
-        entry_id=e.get("entry_id",e.get("request_id",""));ts=e.get("timestamp","");trust=r.get("trust_score",0.0);intervention=r.get("intervention_level","L0")
-        if entry_id:return self._r(c,ControlStatus.PASS,1.0,"audit_entry_id,timestamp,trust_score",{"entry_id":entry_id,"ts":ts},f"AI system behaviour logged. Entry {entry_id}. Timestamp {ts}. Trust {trust:.3f}. Intervention: {intervention}.")
+        entry_id=e.get("entry_id",e.get("request_id",""));ts=e.get("timestamp","");trust=r.get("trust_score",0.0)
+        intervention=normalize_intervention_level(r.get("intervention_level",InterventionLevel.NONE)) or InterventionLevel.NONE
+        if entry_id:return self._r(c,ControlStatus.PASS,1.0,"audit_entry_id,timestamp,trust_score",{"entry_id":entry_id,"ts":ts},f"AI system behaviour logged. Entry {entry_id}. Timestamp {ts}. Trust {trust:.3f}. Intervention: {intervention.name}.")
         return self._r(c,ControlStatus.FAIL,0.0,"audit_entry_id",entry_id,"Behaviour logging failed. No entry ID present.","Check audit store connectivity.")
     def _a612(self,c,e,r,cfg):
         h=e.get("entry_hash","");prev=e.get("prev_hash","")

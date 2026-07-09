@@ -21,7 +21,7 @@ from typing import Any, Optional
 from sentinel.compliance.control_registry import (
     ALL_CONTROLS, Control, EvalType, ControlSeverity
 )
-from sentinel.models import InterventionLevel
+from sentinel.models import InterventionLevel, normalize_intervention_level
 
 
 class ControlStatus(str, Enum):
@@ -74,43 +74,9 @@ _INTERVENTION_PASS = {InterventionLevel.NONE, InterventionLevel.REGENERATE}
 _INTERVENTION_WARN = {InterventionLevel.UPGRADE}
 _INTERVENTION_FAIL = {InterventionLevel.HITL}
 
-# Legacy string names accepted for backward compatibility, in case any
-# caller still passes the enum's name instead of its int value.
-_INTERVENTION_NAME_FALLBACK: dict[str, InterventionLevel] = {
-    "NONE": InterventionLevel.NONE,
-    "REGENERATE": InterventionLevel.REGENERATE,
-    "UPGRADE": InterventionLevel.UPGRADE,
-    "HITL": InterventionLevel.HITL,
-    "BLOCKED": InterventionLevel.HITL,  # no such member; map to the closest real one
-}
-
-
-def _normalize_intervention_level(raw: Any) -> Optional["InterventionLevel"]:
-    """Coerce a raw audit_log `intervention_level` value to InterventionLevel.
-
-    Accepts the real int (0-3) or an InterventionLevel member (the actual
-    shapes this field takes today), and defensively also accepts a legacy
-    string name. Returns None if the value can't be interpreted, so the
-    caller can report PENDING instead of guessing.
-    """
-    if isinstance(raw, InterventionLevel):
-        return raw
-    if isinstance(raw, bool):
-        return None  # bool is an int subclass in Python; not a valid level
-    if isinstance(raw, int):
-        try:
-            return InterventionLevel(raw)
-        except ValueError:
-            return None
-    if isinstance(raw, str):
-        name = raw.strip().upper()
-        if name in _INTERVENTION_NAME_FALLBACK:
-            return _INTERVENTION_NAME_FALLBACK[name]
-        try:
-            return InterventionLevel(int(name))
-        except (TypeError, ValueError):
-            return None
-    return None
+# Normalization (int, legacy string names, "L0".."L3" tier strings) now
+# lives in sentinel.models.normalize_intervention_level — the single
+# shared source of truth also used by sentinel/compliance/frameworks/*.py.
 
 
 class ComplianceEvaluator:
@@ -199,7 +165,7 @@ class ComplianceEvaluator:
 
         # ── intervention (enum) ───────────────────────────────────────────────
         if signal == "intervention":
-            level = _normalize_intervention_level(raw)
+            level = normalize_intervention_level(raw)
             if level is None:
                 return self._pending(
                     control,

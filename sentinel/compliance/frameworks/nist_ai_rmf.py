@@ -1,6 +1,7 @@
 
 from __future__ import annotations
 from sentinel.compliance.frameworks.base import BaseFramework,Control,ControlStatus,EvidenceRecord,FrameworkMetadata,FrameworkStatus
+from sentinel.models import InterventionLevel, normalize_intervention_level
 class NISTAIRMFFramework(BaseFramework):
     metadata=FrameworkMetadata('nist_ai_rmf','NIST AI RMF 1.0','AI 600-1 GenAI Profile',FrameworkStatus.VOLUNTARY,'United States','Available now','https://www.nist.gov/itl/ai-risk-management-framework','9 of 12 functions evaluated at runtime. GOVERN-1.1, MEASURE-2.5 are organisational.')
     controls=[
@@ -45,15 +46,17 @@ class NISTAIRMFFramework(BaseFramework):
         inj=r.get('injection_score',0.0);blocked=r.get('injection_blocked',False);thresh=cfg.get('injection_threshold',0.7)
         return self._r(c,ControlStatus.PASS,1.0-inj,'injection_score,injection_blocked',{'score':inj,'blocked':blocked,'threshold':thresh},f'Security assessment: injection {inj:.3f} vs threshold {thresh}. Blocked: {blocked}.')
     def _manage1_3(self,c,e,r,cfg):
-        intervention=r.get('intervention_level','L0');cb=r.get('circuit_breaker_state','CLOSED')
-        return self._r(c,ControlStatus.PASS,1.0,'intervention_level,circuit_breaker_state',{'intervention':intervention,'cb':cb},f'Incident response: {intervention}. Recovery mechanism: circuit breaker {cb}. Provider failover configured.')
+        intervention=normalize_intervention_level(r.get('intervention_level',InterventionLevel.NONE)) or InterventionLevel.NONE
+        cb=r.get('circuit_breaker_state','CLOSED')
+        return self._r(c,ControlStatus.PASS,1.0,'intervention_level,circuit_breaker_state',{'intervention':intervention.name,'cb':cb},f'Incident response: {intervention.name}. Recovery mechanism: circuit breaker {cb}. Provider failover configured.')
     def _manage2_2(self,c,e,r,cfg):
         drift=r.get('semantic_drift_sigma',0.0);score=r.get('rolling_compliance_score',1.0)
         return self._r(c,ControlStatus.PASS,score,'semantic_drift_sigma,rolling_compliance_score',{'drift':drift,'rolling_score':score},f'Continuous monitoring: drift {drift:.2f}. Rolling 7-day compliance score: {score:.1%}.')
     def _gv1_1(self,c,e,r,cfg):
-        trust=r.get('trust_score',0.0);rag=r.get('rag_entailment_score',0.0);cross=r.get('cross_check_agreement',0.0);thresh=cfg.get('trust_threshold',0.85);intervention=r.get('intervention_level','L0')
+        trust=r.get('trust_score',0.0);rag=r.get('rag_entailment_score',0.0);cross=r.get('cross_check_agreement',0.0);thresh=cfg.get('trust_threshold',0.85)
+        intervention=normalize_intervention_level(r.get('intervention_level',InterventionLevel.NONE)) or InterventionLevel.NONE
         if trust>=thresh:
-            return self._r(c,ControlStatus.PASS,trust,'trust_score,rag_entailment_score,cross_check_agreement',{'trust':trust,'rag':rag,'cross':cross},f'Hallucination risk managed. NLI entailment: {rag:.3f}. Cross-model agreement: {cross:.3f}. Final trust: {trust:.3f}. Treatment: {intervention}.')
+            return self._r(c,ControlStatus.PASS,trust,'trust_score,rag_entailment_score,cross_check_agreement',{'trust':trust,'rag':rag,'cross':cross},f'Hallucination risk managed. NLI entailment: {rag:.3f}. Cross-model agreement: {cross:.3f}. Final trust: {trust:.3f}. Treatment: {intervention.name}.')
         return self._r(c,ControlStatus.FAIL,trust,'trust_score,rag_entailment_score',{'trust':trust,'rag':rag},f'Hallucination risk unmanaged. Trust {trust:.3f} < threshold {thresh}.',f'Review HITL job. Investigate low entailment ({rag:.3f}) and cross-check disagreement.')
     def _gv4_1(self,c,e,r,cfg):
         ents=r.get('pii_entities_detected',[]); blocked=r.get('pii_blocked',False); mode=r.get('sanitizer_mode','presidio')

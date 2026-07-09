@@ -1,5 +1,6 @@
 from __future__ import annotations
 from sentinel.compliance.frameworks.base import BaseFramework,Control,ControlStatus,EvidenceRecord,FrameworkMetadata,FrameworkStatus
+from sentinel.models import InterventionLevel, normalize_intervention_level
 class GDPRFramework(BaseFramework):
     metadata=FrameworkMetadata(
         framework_id='gdpr',
@@ -40,14 +41,15 @@ class GDPRFramework(BaseFramework):
             return self._r(c,ControlStatus.PASS,1.0,'response_headers',{'trust_header':ht,'intervention_header':hi},'Transparency Art.13 met. AI processing disclosed via response headers.')
         return self._r(c,ControlStatus.FAIL,0.0,'response_headers',{'trust_header':ht,'intervention_header':hi},'Transparency headers missing.','Add X-Sentinel-Trust-Score and X-Sentinel-Intervention to API responses.')
     def _art22(self,c,e,r,cfg):
-        intervention=r.get('intervention_level','L0'); hitl=cfg.get('hitl_configured',True); reviewed=r.get('human_reviewed',False)
-        if intervention in ('L0','L1'):
-            return self._r(c,ControlStatus.PASS,1.0,'intervention_level,hitl_configured',{'intervention':intervention,'hitl':hitl},'Automated decision-making Art.22: Low-risk intervention. Human oversight available.')
-        if intervention == 'L3' and reviewed:
-            return self._r(c,ControlStatus.PASS,1.0,'intervention_level,human_reviewed',{'intervention':intervention,'reviewed':reviewed},'Art.22: Human reviewed and approved the response.')
-        if intervention == 'L3':
-            return self._r(c,ControlStatus.PARTIAL,0.5,'intervention_level,human_reviewed',{'intervention':intervention,'reviewed':reviewed},'Art.22: High-risk decision pending human review.','Complete HITL review for this request.')
-        return self._r(c,ControlStatus.PASS,0.9,'intervention_level',{'intervention':intervention},'Automated intervention applied. Human oversight configured.')
+        intervention=normalize_intervention_level(r.get('intervention_level',InterventionLevel.NONE)) or InterventionLevel.NONE
+        hitl=cfg.get('hitl_configured',True); reviewed=r.get('human_reviewed',False)
+        if intervention in (InterventionLevel.NONE, InterventionLevel.REGENERATE):
+            return self._r(c,ControlStatus.PASS,1.0,'intervention_level,hitl_configured',{'intervention':intervention.name,'hitl':hitl},'Automated decision-making Art.22: Low-risk intervention. Human oversight available.')
+        if intervention == InterventionLevel.HITL and reviewed:
+            return self._r(c,ControlStatus.PASS,1.0,'intervention_level,human_reviewed',{'intervention':intervention.name,'reviewed':reviewed},'Art.22: Human reviewed and approved the response.')
+        if intervention == InterventionLevel.HITL:
+            return self._r(c,ControlStatus.PARTIAL,0.5,'intervention_level,human_reviewed',{'intervention':intervention.name,'reviewed':reviewed},'Art.22: High-risk decision pending human review.','Complete HITL review for this request.')
+        return self._r(c,ControlStatus.PASS,0.9,'intervention_level',{'intervention':intervention.name},'Automated intervention applied. Human oversight configured.')
     def _art25(self,c,e,r,cfg):
         pii_blocked=r.get('pii_blocked',False); minimised=r.get('data_minimisation_applied',False); purpose=r.get('purpose_limitation_enforced',False)
         score=sum([pii_blocked,minimised,purpose])/3.0

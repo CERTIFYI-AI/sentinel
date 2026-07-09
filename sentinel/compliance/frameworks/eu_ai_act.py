@@ -8,6 +8,7 @@ from sentinel.compliance.frameworks.base import (
     BaseFramework, Control, ControlStatus, EvidenceRecord,
     FrameworkMetadata, FrameworkStatus,
 )
+from sentinel.models import InterventionLevel, normalize_intervention_level
 
 
 class EUAIActFramework(BaseFramework):
@@ -94,18 +95,20 @@ class EUAIActFramework(BaseFramework):
     def _eval_article9(self, control, entry, result, config):
         trust = result.get("trust_score", 0.0)
         threshold = config.get("trust_threshold", 0.85)
-        intervention = result.get("intervention_level", "L0")
-        if trust >= threshold and intervention == "L0":
+        intervention = normalize_intervention_level(
+            result.get("intervention_level", InterventionLevel.NONE)
+        ) or InterventionLevel.NONE
+        if trust >= threshold and intervention == InterventionLevel.NONE:
             return self._make_record(control, ControlStatus.PASS, trust,
-                "trust_score,intervention_level", {"trust_score": trust, "intervention": intervention},
+                "trust_score,intervention_level", {"trust_score": trust, "intervention": intervention.name},
                 f"Risk management active. Trust {trust:.3f} >= threshold {threshold}. No risk event.")
-        elif intervention in ("L1", "L2"):
+        elif intervention in (InterventionLevel.REGENERATE, InterventionLevel.UPGRADE):
             return self._make_record(control, ControlStatus.PARTIAL, trust,
-                "trust_score,intervention_level", {"trust_score": trust, "intervention": intervention},
-                f"Risk detected (score {trust:.3f}) and treated via {intervention}.")
+                "trust_score,intervention_level", {"trust_score": trust, "intervention": intervention.name},
+                f"Risk detected (score {trust:.3f}) and treated via {intervention.name}.")
         else:
             return self._make_record(control, ControlStatus.FAIL, trust,
-                "trust_score,intervention_level", {"trust_score": trust, "intervention": intervention},
+                "trust_score,intervention_level", {"trust_score": trust, "intervention": intervention.name},
                 f"Risk event unresolved. Score {trust:.3f} below threshold {threshold}.",
                 f"Review HITL job. Investigate why automated treatment did not raise trust above {threshold}.")
 
@@ -156,27 +159,29 @@ class EUAIActFramework(BaseFramework):
                 "Ensure X-Sentinel-Trust-Score and X-Sentinel-Intervention headers are set.")
 
     def _eval_article14(self, control, entry, result, config):
-        intervention = result.get("intervention_level", "L0")
+        intervention = normalize_intervention_level(
+            result.get("intervention_level", InterventionLevel.NONE)
+        ) or InterventionLevel.NONE
         hitl_configured = config.get("hitl_configured", True)
         human_reviewed = result.get("human_reviewed", False)
         trust = result.get("trust_score", 0.0)
         threshold = config.get("trust_threshold", 0.85)
-        if intervention == "L0":
+        if intervention == InterventionLevel.NONE:
             return self._make_record(control, ControlStatus.PASS, 1.0,
-                "intervention_level,hitl_configured", {"intervention": intervention, "hitl": hitl_configured},
+                "intervention_level,hitl_configured", {"intervention": intervention.name, "hitl": hitl_configured},
                 f"Human oversight available. Automated pipeline sufficient (trust {trust:.3f} >= {threshold}). HITL configured: {hitl_configured}.")
-        elif intervention == "L3" and human_reviewed:
+        elif intervention == InterventionLevel.HITL and human_reviewed:
             return self._make_record(control, ControlStatus.PASS, 1.0,
-                "intervention_level,human_reviewed", {"intervention": intervention, "reviewed": human_reviewed},
+                "intervention_level,human_reviewed", {"intervention": intervention.name, "reviewed": human_reviewed},
                 f"Human oversight exercised. Human reviewer approved final response.")
-        elif intervention == "L3":
+        elif intervention == InterventionLevel.HITL:
             return self._make_record(control, ControlStatus.PARTIAL, 0.5,
-                "intervention_level,human_reviewed", {"intervention": intervention, "reviewed": human_reviewed},
+                "intervention_level,human_reviewed", {"intervention": intervention.name, "reviewed": human_reviewed},
                 f"Human oversight triggered. Response withheld pending review.")
         else:
             return self._make_record(control, ControlStatus.PASS, 0.9,
-                "intervention_level", {"intervention": intervention},
-                f"Automated intervention {intervention} applied. Human oversight available.")
+                "intervention_level", {"intervention": intervention.name},
+                f"Automated intervention {intervention.name} applied. Human oversight available.")
 
     def _eval_article17(self, control, entry, result, config):
         drift_sigma = result.get("semantic_drift_sigma", 0.0)
