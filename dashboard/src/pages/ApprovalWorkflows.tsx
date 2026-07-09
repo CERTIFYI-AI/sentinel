@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { exportCsv } from '@/lib/exportUtils';
 import { FlowArrow, Plus, Eye, X, Trash, PencilSimple, Export, CheckCircle, Clock, Warning, MagnifyingGlass, ArrowRight, Pause, Play, User, ClipboardText } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
@@ -250,7 +251,7 @@ export default function ApprovalWorkflows() {
           <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">Manage multi-stage approval pipelines for governance actions</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => toast.success('Exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
+          <button onClick={() => exportCsv(filtered as any, 'approval-workflows.csv')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
             <Export size={14} /> Export
           </button>
           <button onClick={openCreate} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-[hsl(var(--bg-surface))] bg-[hsl(var(--brand))] hover:opacity-90">

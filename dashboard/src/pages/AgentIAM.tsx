@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { exportCsv } from '@/lib/exportUtils';
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { IdentificationCard, MagnifyingGlass, Plus, Eye, X, Export, Key, ShieldCheck, Warning, Lock, UserCheck, Siren, Pulse, Cpu } from '@phosphor-icons/react'
 import { toast } from 'sonner'
@@ -90,7 +91,7 @@ export default function AgentIAM() {
             <button onClick={() => navigate('/trust-engine/traces')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
               <Pulse size={14} /> Runtime Traces
             </button>
-            <button onClick={() => toast.success('Exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
+            <button onClick={() => exportCsv(filtered as any, 'agent-iam.csv')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
               <Export size={14} /> Export
             </button>
             <button onClick={() => setShowProvision(true)} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm hover:opacity-90">

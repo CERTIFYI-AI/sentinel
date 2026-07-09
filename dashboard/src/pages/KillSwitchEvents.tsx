@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { exportCsv } from '@/lib/exportUtils';
 import { Power, Warning, MagnifyingGlass, Plus, Eye, X, Export, ShieldWarning, CheckCircle, Siren, ClipboardText, ArrowsClockwise } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
@@ -75,7 +76,7 @@ export default function KillSwitchEvents() {
           <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">Audit log of all agent suspension events — manual, automated, and regulatory</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => toast.success('Exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
+          <button onClick={() => exportCsv(filtered as any, 'kill-switch-events.csv')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
             <Export size={14} /> Export
           </button>
           <button

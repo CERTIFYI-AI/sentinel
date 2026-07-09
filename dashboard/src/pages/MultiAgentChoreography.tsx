@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { exportCsv } from '@/lib/exportUtils';
 import { Swap, Plus, Eye, X, Export, CheckCircle, Warning, Clock, ArrowRight, MagnifyingGlass } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
@@ -88,7 +89,7 @@ export default function MultiAgentChoreography() {
           <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">Live view of multi-agent workflows, orchestration state, and HITL intervention points</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => toast.success('Exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
+          <button onClick={() => exportCsv(filtered as any, 'agent-workflows.csv')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
             <Export size={14} /> Export
           </button>
           <button onClick={() => { setNewWfName(''); setNewWfTrigger('Manual'); setNewWfOrch(''); setShowCreate(true) }} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm hover:opacity-90">

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { exportCsv } from '@/lib/exportUtils';
 import { FileMagnifyingGlass, Plus, Eye, X, Trash, PencilSimple, Export, Warning, CheckCircle, Clock, MagnifyingGlass, ArrowRight } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
@@ -252,7 +253,7 @@ export default function AIImpactAssessments() {
           description="Document and review the impact of AI systems on individuals and society per EU AI Act Art. 9"
         />
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => toast.success('Exported')} className="rounded-none border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:text-[hsl(var(--text-1))]">
+          <Button variant="outline" onClick={() => exportCsv(filtered as any, 'ai-impact-assessments.csv')} className="rounded-none border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:text-[hsl(var(--text-1))]">
             <Export size={16} /> Export
           </Button>
           <Button onClick={openCreate} className="rounded-none bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-hover))]">

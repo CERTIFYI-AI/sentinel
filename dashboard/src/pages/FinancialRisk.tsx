@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { exportCsv } from '@/lib/exportUtils';
 import { HandCoins, MagnifyingGlass, Plus, Eye, X, Export, TrendUp, TrendDown, ChartLine, Calculator, Target, Sliders, PencilSimple, Trash } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
@@ -118,7 +119,7 @@ export default function FinancialRisk() {
           <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">FAIR-based monetary quantification of AI governance risks — Annual Expected Loss modeling</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => toast.success('Exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
+          <button onClick={() => exportCsv(filtered as any, 'financial-risk.csv')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
             <Export size={14} /> Export
           </button>
           <button onClick={openCreate} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm hover:opacity-90">
