@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Bell, AlertTriangle, Shield, CheckCircle2, Clock, Info, Filter, CheckCheck } from "lucide-react";
 import { Card, CardContent } from "../components/ui/card";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 interface Notification {
   id: string;
@@ -44,23 +45,17 @@ export default function Notifications() {
   const markRead = (id: string) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
 
   return (
-    <div className="p-6 space-y-6 max-w-4xl">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-[hsl(var(--tag-purple-bg))] rounded-lg"><Bell size={20} className="text-[hsl(var(--tag-purple))]" /></div>
-          <div>
-            <h1 className="text-xl font-bold text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))]">Notifications</h1>
-            <p className="text-sm text-[hsl(var(--text-3))]">
-              {unreadCount > 0 ? `${unreadCount} unread notifications` : "All caught up"} · Alerts from trust engine, compliance, and monitoring
-            </p>
-          </div>
-        </div>
-        {unreadCount > 0 && (
+    <div className="space-y-6 max-w-4xl">
+      <PageHeader
+        title="Notifications"
+        subtitle={`${unreadCount > 0 ? `${unreadCount} unread notifications` : "All caught up"} · Alerts from trust engine, compliance, and monitoring`}
+        icon={Bell}
+        actions={unreadCount > 0 ? (
           <button onClick={markAllRead} className="flex items-center gap-1.5 text-xs text-[hsl(var(--s-ok-tx))] hover:underline font-medium">
             <CheckCheck size={14} /> Mark all read
           </button>
-        )}
-      </div>
+        ) : undefined}
+      />
 
       {/* Filters */}
       <div className="flex items-center gap-2">

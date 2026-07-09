@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Wrench, Clock, CheckCircle2, AlertTriangle, ArrowRight, Filter } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 interface RemediationItem {
   id: string;
@@ -57,15 +58,11 @@ export default function Remediation() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-[hsl(var(--s-wn-bg))] rounded-lg"><Wrench size={20} className="text-[hsl(var(--s-wn-tx))]" /></div>
-          <div>
-            <h1 className="text-xl font-bold text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))]">Remediation Tracker</h1>
-            <p className="text-sm text-[hsl(var(--text-3))]">Track compliance gap remediation from identification to verification</p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Remediation Tracker"
+        subtitle="Track compliance gap remediation from identification to verification"
+        icon={Wrench}
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

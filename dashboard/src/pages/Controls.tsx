@@ -8,6 +8,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../components/ui/sheet";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 
 type ToDResult = "pass" | "fail";
@@ -104,16 +105,17 @@ export default function Controls() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Controls Library</h1>
-          <p className="text-sm text-muted-foreground">Acme Financial Corp - Security & AI Controls</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm"><Export className="h-4 w-4" />Export</Button>
-          <Button size="sm"><Plus className="h-4 w-4" />Add Control</Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Controls Library"
+        subtitle="Acme Financial Corp — Security & AI Controls"
+        icon={ShieldCheck}
+        actions={
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm"><Export className="h-4 w-4" />Export</Button>
+            <Button size="sm"><Plus className="h-4 w-4" />Add Control</Button>
+          </div>
+        }
+      />
 
       <div className="grid grid-cols-4 gap-4">
         <Card><CardContent className="pt-4"><div className="text-sm text-muted-foreground">Total Controls</div><div className="text-2xl font-bold">{controls.length}</div></CardContent></Card>

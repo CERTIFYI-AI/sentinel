@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Globe, Search, Shield, AlertTriangle, CheckCircle2, Clock, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 interface Vendor {
   id: string;
@@ -49,18 +50,16 @@ export default function Vendors() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-[hsl(var(--tag-purple-bg))] rounded-lg"><Globe size={20} className="text-[hsl(var(--tag-purple))]" /></div>
-          <div>
-            <h1 className="text-xl font-bold text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))]">Vendor Register</h1>
-            <p className="text-sm text-[hsl(var(--text-3))]">Third-party AI vendor risk management and compliance tracking</p>
-          </div>
-        </div>
-        <button className="flex items-center gap-2 bg-[hsl(var(--s-ok-tx))] hover:bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))] px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-          <Globe size={14} /> Add Vendor
-        </button>
-      </div>
+      <PageHeader
+        title="Vendor Register"
+        subtitle="Third-party AI vendor risk management and compliance tracking"
+        icon={Globe}
+        actions={
+          <button className="flex items-center gap-2 bg-[hsl(var(--s-ok-tx))] hover:bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))] px-4 py-2 text-sm font-medium transition-colors">
+            <Globe size={14} /> Add Vendor
+          </button>
+        }
+      />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

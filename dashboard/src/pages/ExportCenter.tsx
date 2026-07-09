@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Download, FileText, Clock, CheckCircle2, AlertTriangle, Play, Calendar } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 interface ExportTemplate {
   id: string;
@@ -64,15 +65,11 @@ export default function ExportCenter() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-[hsl(var(--s-in-bg))] rounded-lg"><Download size={20} className="text-[hsl(var(--s-in-tx))]" /></div>
-          <div>
-            <h1 className="text-xl font-bold text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))]">Export Center</h1>
-            <p className="text-sm text-[hsl(var(--text-3))]">Generate compliance reports, audit exports, and regulatory documentation</p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Export Center"
+        subtitle="Generate compliance reports, audit exports, and regulatory documentation"
+        icon={Download}
+      />
 
       {/* Recent Jobs */}
       <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
