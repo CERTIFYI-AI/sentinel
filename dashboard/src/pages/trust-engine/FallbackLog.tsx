@@ -27,11 +27,11 @@ interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info
 
 function causeBadge(trigger: string) {
   const map: Record<string, { bg: string; color: string; label: string }> = {
-    'Rate limit exceeded': { bg: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))', label: 'Rate-Limit' },
-    '30s timeout': { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(var(--s-wn-tx))', label: 'Timeout' },
-    '503 API error': { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))', label: 'Model-Error' },
-    'Cost limit exceeded': { bg: 'hsl(25 95% 53% / 0.15)', color: 'hsl(var(--s-wn-tx))', label: 'Content-Policy' },
-    'Context window exceeded': { bg: 'hsl(280 67% 56% / 0.15)', color: 'hsl(280 67% 56%)', label: 'Context-Length' },
+    'Rate limit exceeded': { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', label: 'Rate-Limit' },
+    '30s timeout': { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', label: 'Timeout' },
+    '503 API error': { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', label: 'Model-Error' },
+    'Cost limit exceeded': { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', label: 'Content-Policy' },
+    'Context window exceeded': { bg: 'hsl(var(--tag-purple-bg))', color: 'hsl(var(--tag-purple))', label: 'Context-Length' },
   };
   const s = map[trigger] || { bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))', label: trigger };
   return <Badge style={{ background: s.bg, color: s.color, borderRadius: 0, fontSize: 10, fontWeight: 600 }}>{s.label}</Badge>;
@@ -43,10 +43,10 @@ function MetricTile({ label, value, variant, icon, sub }: {
   label: string; value: string; variant: 'ok' | 'warn' | 'error' | 'info'; icon: React.ReactNode; sub?: string;
 }) {
   const vs = {
-    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(var(--s-ok-tx))' },
-    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(var(--s-wn-tx))' },
-    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(var(--destructive))' },
-    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))' },
+    ok: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+    warn: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+    error: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+    info: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
   };
   const s = vs[variant];
   return (
@@ -166,7 +166,7 @@ export default function FallbackLog() {
 
         {/* Spike Alert Banner */}
         {showSpikeAlert && (
-          <div className="flex items-center gap-2 px-4 py-2" style={{ background: 'hsl(45 93% 47% / 0.08)', border: '1px solid hsl(45 93% 47% / 0.3)', borderRadius: 0 }}>
+          <div className="flex items-center gap-2 px-4 py-2" style={{ background: 'hsl(var(--s-wn-bg))', border: '1px solid hsl(var(--s-wn-bg))', borderRadius: 0 }}>
             <Warning size={14} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />
             <p className="text-xs" style={{ color: 'hsl(var(--s-wn-tx))' }}>
               <strong>Fallback Spike Detected:</strong> {entries.length} fallbacks in current session exceeds baseline (rate &gt; baseline + 2σ). Investigate GPT-4o reliability.
@@ -224,7 +224,7 @@ export default function FallbackLog() {
                       </td>
                       <td className="px-3 py-3">
                         <Badge style={{
-                          background: entry.status === 'success' ? 'hsl(142 71% 45% / 0.12)' : 'hsl(0 72% 51% / 0.12)',
+                          background: entry.status === 'success' ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-er-bg))',
                           color: entry.status === 'success' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))',
                           borderRadius: 0, fontSize: 10,
                         }}>
@@ -235,7 +235,7 @@ export default function FallbackLog() {
                         {escalatedEntries[entry.id] ? (
                           <Tooltip>
                             <TooltipTrigger>
-                              <Badge style={{ background: 'hsl(280 67% 56% / 0.12)', color: 'hsl(280 67% 56%)', borderRadius: 0, fontSize: 10, fontWeight: 600 }}>
+                              <Badge style={{ background: 'hsl(var(--tag-purple-bg))', color: 'hsl(var(--tag-purple))', borderRadius: 0, fontSize: 10, fontWeight: 600 }}>
                                 <UserCircleGear size={10} weight="fill" className="mr-1 inline" />
                                 {escalatedEntries[entry.id]}
                               </Badge>
@@ -322,7 +322,7 @@ export default function FallbackLog() {
                         <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Status</span>
                         <div className="mt-1">
                           <Badge style={{
-                            background: selectedEntry.status === 'success' ? 'hsl(142 71% 45% / 0.12)' : 'hsl(0 72% 51% / 0.12)',
+                            background: selectedEntry.status === 'success' ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-er-bg))',
                             color: selectedEntry.status === 'success' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))',
                             borderRadius: 0, fontSize: 11,
                           }}>
@@ -343,7 +343,7 @@ export default function FallbackLog() {
                     </div>
                     {selectedEntry.status === 'failed' && (
                       <div className="space-y-3">
-                        <div className="p-3" style={{ background: 'hsl(0 72% 51% / 0.06)', border: '1px solid hsl(0 72% 51% / 0.3)', borderRadius: 0 }}>
+                        <div className="p-3" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-bg))', borderRadius: 0 }}>
                           <p className="text-xs font-semibold text-destructive">
                             <Warning size={12} className="inline mr-1" weight="fill" />
                             FAILED — Fallback model also failed. Zero tokens processed. Data may have been silently dropped.
@@ -351,9 +351,9 @@ export default function FallbackLog() {
                           </p>
                         </div>
                         {escalatedEntries[selectedEntry.id] ? (
-                          <div className="p-3 flex items-center gap-2" style={{ background: 'hsl(280 67% 56% / 0.08)', border: '1px solid hsl(280 67% 56% / 0.3)', borderRadius: 0 }}>
-                            <UserCircleGear size={14} weight="fill" style={{ color: 'hsl(280 67% 56%)' }} />
-                            <p className="text-xs font-semibold" style={{ color: 'hsl(280 67% 56%)' }}>
+                          <div className="p-3 flex items-center gap-2" style={{ background: 'hsl(var(--tag-purple-bg))', border: '1px solid hsl(var(--tag-purple-bg))', borderRadius: 0 }}>
+                            <UserCircleGear size={14} weight="fill" style={{ color: 'hsl(var(--tag-purple))' }} />
+                            <p className="text-xs font-semibold" style={{ color: 'hsl(var(--tag-purple))' }}>
                               Escalated to HITL review {escalatedEntries[selectedEntry.id]}
                             </p>
                           </div>
@@ -381,7 +381,7 @@ export default function FallbackLog() {
                         {new Date(selectedEntry.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                       </p>
                     </div>
-                    <div className="p-3" style={{ background: 'hsl(220 90% 56% / 0.06)', border: '1px solid hsl(220 90% 56% / 0.2)', borderRadius: 0 }}>
+                    <div className="p-3" style={{ background: 'hsl(var(--s-in-bg))', border: '1px solid hsl(var(--s-in-bg))', borderRadius: 0 }}>
                       <p className="text-xs text-[hsl(var(--s-in-tx))]">
                         <Info size={12} className="inline mr-1" />
                         Model quality impact: Fallback from {selectedEntry.primaryModel} to {selectedEntry.fallbackModel} may affect output quality, hallucination rate, and bias characteristics (ISO 42001 Cl. 8.4).
@@ -416,7 +416,7 @@ export default function FallbackLog() {
                       </>
                     ) : (
                       <>
-                        <div className="flex items-start gap-3 p-3" style={{ background: 'hsl(0 72% 51% / 0.06)', border: '1px solid hsl(0 72% 51% / 0.3)', borderRadius: 0 }}>
+                        <div className="flex items-start gap-3 p-3" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-bg))', borderRadius: 0 }}>
                           <Warning size={14} weight="fill" className="text-destructive mt-0.5" />
                           <div>
                             <p className="text-xs font-bold text-destructive">Recovery FAILED</p>

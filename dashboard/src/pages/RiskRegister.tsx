@@ -109,10 +109,10 @@ function MiniMatrix({ likelihood, impact }: { likelihood: number; impact: number
   for (let row = 5; row >= 1; row--) {
     for (let col = 1; col <= 5; col++) {
       const s = row * col;
-      let bg = 'hsl(142 71% 45% / 0.15)';
-      if (s >= 17) bg = 'hsl(0 72% 51% / 0.3)';
-      else if (s >= 10) bg = 'hsl(25 95% 53% / 0.3)';
-      else if (s >= 5) bg = 'hsl(45 93% 47% / 0.2)';
+      let bg = 'hsl(var(--s-ok-bg))';
+      if (s >= 17) bg = 'hsl(var(--s-er-bg))';
+      else if (s >= 10) bg = 'hsl(var(--s-wn-bg))';
+      else if (s >= 5) bg = 'hsl(var(--s-wn-bg))';
       const isActive = row === likelihood && col === impact;
       cells.push(
         <div
@@ -224,11 +224,11 @@ function RiskHeatmap({
               <span style={{ width: 14, fontSize: 9, color: 'hsl(var(--text-4))', textAlign: 'right', flexShrink: 0 }}>{l}</span>
               {[1, 2, 3, 4, 5].map(i => {
                 const s = l * i;
-                let bg = 'hsl(142 71% 45% / 0.14)';
-                let hoverBg = 'hsl(142 71% 45% / 0.25)';
-                if (s >= 17) { bg = 'hsl(0 72% 51% / 0.22)'; hoverBg = 'hsl(0 72% 51% / 0.38)'; }
-                else if (s >= 10) { bg = 'hsl(25 95% 53% / 0.22)'; hoverBg = 'hsl(25 95% 53% / 0.38)'; }
-                else if (s >= 5) { bg = 'hsl(45 93% 47% / 0.18)'; hoverBg = 'hsl(45 93% 47% / 0.32)'; }
+                let bg = 'hsl(var(--s-ok-bg))';
+                let hoverBg = 'hsl(var(--s-ok-bg))';
+                if (s >= 17) { bg = 'hsl(var(--s-er-bg))'; hoverBg = 'hsl(var(--s-er-bg))'; }
+                else if (s >= 10) { bg = 'hsl(var(--s-wn-bg))'; hoverBg = 'hsl(var(--s-wn-bg))'; }
+                else if (s >= 5) { bg = 'hsl(var(--s-wn-bg))'; hoverBg = 'hsl(var(--s-wn-bg))'; }
                 const cellRisks = matrix[`${l}-${i}`] || [];
                 const visible = cellRisks.slice(0, 2);
                 const overflow = cellRisks.length - 2;
@@ -302,10 +302,10 @@ function RiskHeatmap({
         {/* Legend */}
         <div className="flex flex-col gap-2 ml-4 mt-2" style={{ flexShrink: 0 }}>
           {[
-            { label: 'Critical (17–25)', bg: 'hsl(0 72% 51% / 0.22)' },
-            { label: 'High (10–16)', bg: 'hsl(25 95% 53% / 0.22)' },
-            { label: 'Medium (5–9)', bg: 'hsl(45 93% 47% / 0.18)' },
-            { label: 'Low (1–4)', bg: 'hsl(142 71% 45% / 0.14)' },
+            { label: 'Critical (17–25)', bg: 'hsl(var(--s-er-bg))' },
+            { label: 'High (10–16)', bg: 'hsl(var(--s-wn-bg))' },
+            { label: 'Medium (5–9)', bg: 'hsl(var(--s-wn-bg))' },
+            { label: 'Low (1–4)', bg: 'hsl(var(--s-ok-bg))' },
           ].map(({ label, bg }) => (
             <div key={label} className="flex items-center gap-2">
               <div style={{ width: 14, height: 14, background: bg, border: '1px solid hsl(var(--border))', flexShrink: 0 }} />
@@ -452,10 +452,10 @@ export default function RiskRegister() {
                 {[5, 4, 3, 2, 1].map(l => (
                   [1, 2, 3, 4, 5].map(i => {
                     const s = l * i;
-                    let bg = 'hsl(142 71% 45% / 0.12)';
-                    if (s >= 17) bg = 'hsl(0 72% 51% / 0.25)';
-                    else if (s >= 10) bg = 'hsl(25 95% 53% / 0.25)';
-                    else if (s >= 5) bg = 'hsl(45 93% 47% / 0.18)';
+                    let bg = 'hsl(var(--s-ok-bg))';
+                    if (s >= 17) bg = 'hsl(var(--s-er-bg))';
+                    else if (s >= 10) bg = 'hsl(var(--s-wn-bg))';
+                    else if (s >= 5) bg = 'hsl(var(--s-wn-bg))';
                     const cellRisks = matrix[`${l}-${i}`] || [];
                     const visible = cellRisks.slice(0, 2);
                     const overflow = cellRisks.length - 2;
@@ -502,10 +502,10 @@ export default function RiskRegister() {
           {/* Legend */}
           <div className="flex items-center gap-4 mt-4">
             {[
-              { label: '1–4 Low', bg: 'hsl(142 71% 45% / 0.3)' },
-              { label: '5–9 Medium', bg: 'hsl(45 93% 47% / 0.3)' },
-              { label: '10–16 High', bg: 'hsl(25 95% 53% / 0.3)' },
-              { label: '17–25 Critical', bg: 'hsl(0 72% 51% / 0.3)' },
+              { label: '1–4 Low', bg: 'hsl(var(--s-ok-bg))' },
+              { label: '5–9 Medium', bg: 'hsl(var(--s-wn-bg))' },
+              { label: '10–16 High', bg: 'hsl(var(--s-wn-bg))' },
+              { label: '17–25 Critical', bg: 'hsl(var(--s-er-bg))' },
             ].map(l => (
               <div key={l.label} className="flex items-center gap-1.5">
                 <div style={{ width: 14, height: 14, background: l.bg, borderRadius: 0 }} />

@@ -173,14 +173,14 @@ export default function RBACDashboard() {
           </div>
 
           {/* MFA Warning */}
-          <div className="flex items-center gap-3 p-3" style={{ background: 'hsl(45 93% 47% / 0.1)', border: '1px solid hsl(45 93% 47% / 0.3)', borderRadius: 0 }}>
+          <div className="flex items-center gap-3 p-3" style={{ background: 'hsl(var(--s-wn-bg))', border: '1px solid hsl(var(--s-wn-bg))', borderRadius: 0 }}>
             <Warning size={16} style={{ color: 'hsl(var(--s-wn-tx))' }} />
             <p className="text-sm flex-1" style={{ color: 'hsl(var(--s-wn-tx))' }}>
               <strong>MFA at 63%</strong> — 2 users without MFA have active sessions. Consider enforcing MFA organization-wide.
             </p>
             <Button
               size="sm"
-              style={{ borderRadius: 0, background: 'hsl(0 72% 51%)', color: 'hsl(var(--bg-surface))', flexShrink: 0 }}
+              style={{ borderRadius: 0, background: 'hsl(var(--s-er-tx))', color: 'hsl(var(--bg-surface))', flexShrink: 0 }}
               onClick={() => setMfaDialogOpen(true)}
             >
               <Warning size={13} weight="bold" />
@@ -243,7 +243,7 @@ export default function RBACDashboard() {
                       <td className="px-4 py-3 font-bold" style={{ color: 'hsl(var(--text-1))' }}>{r.userCount}</td>
                       <td className="px-4 py-3">
                         <Badge style={{
-                          background: r.riskLevel === 'high' ? 'hsl(0 72% 51% / 0.15)' : r.riskLevel === 'medium' ? 'hsl(45 93% 47% / 0.15)' : 'hsl(142 71% 45% / 0.15)',
+                          background: r.riskLevel === 'high' ? 'hsl(var(--s-er-bg))' : r.riskLevel === 'medium' ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-ok-bg))',
                           color: r.riskLevel === 'high' ? 'hsl(var(--destructive))' : r.riskLevel === 'medium' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))',
                           borderRadius: 0, fontSize: 11
                         }}>
@@ -346,7 +346,7 @@ export default function RBACDashboard() {
                           <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{u.lastActive}</td>
                           <td className="px-4 py-3">
                             <Badge style={{
-                              background: u.status === 'active' ? 'hsl(142 71% 45% / 0.15)' : u.status === 'inactive' ? 'hsl(var(--border) / 0.5)' : 'hsl(0 72% 51% / 0.15)',
+                              background: u.status === 'active' ? 'hsl(var(--s-ok-bg))' : u.status === 'inactive' ? 'hsl(var(--border) / 0.5)' : 'hsl(var(--s-er-bg))',
                               color: u.status === 'active' ? 'hsl(var(--s-ok-tx))' : u.status === 'inactive' ? 'hsl(var(--text-4))' : 'hsl(var(--destructive))',
                               borderRadius: 0, fontSize: 11
                             }}>
@@ -469,7 +469,7 @@ export default function RBACDashboard() {
                       </td>
                       <td className="px-4 py-3">
                         <Badge style={{
-                          background: e.result === 'granted' ? 'hsl(142 71% 45% / 0.15)' : 'hsl(0 72% 51% / 0.15)',
+                          background: e.result === 'granted' ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-er-bg))',
                           color: e.result === 'granted' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))',
                           borderRadius: 0, fontSize: 11
                         }}>
@@ -533,7 +533,7 @@ export default function RBACDashboard() {
         <AlertDialogContent style={{ borderRadius: 0 }}>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <Warning size={16} style={{ color: 'hsl(0 72% 51%)' }} />
+              <Warning size={16} style={{ color: 'hsl(var(--s-er-tx))' }} />
               Enforce MFA for All Users
             </AlertDialogTitle>
             <AlertDialogDescription>
@@ -546,7 +546,7 @@ export default function RBACDashboard() {
             <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={enforceMFA}
-              style={{ borderRadius: 0, background: 'hsl(0 72% 51%)', color: 'hsl(var(--bg-surface))' }}
+              style={{ borderRadius: 0, background: 'hsl(var(--s-er-tx))', color: 'hsl(var(--bg-surface))' }}
             >
               Enforce MFA
             </AlertDialogAction>

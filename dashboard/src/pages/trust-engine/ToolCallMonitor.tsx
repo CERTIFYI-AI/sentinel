@@ -190,19 +190,19 @@ function timeAgo(iso: string): string {
 
 function resultBadge(result: ToolCall['result']) {
   const map: Record<string, { bg: string; color: string; label: string }> = {
-    success: { bg: 'hsl(142 71% 45% / 0.15)', color: 'hsl(var(--s-ok-tx))', label: 'Success' },
-    error: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))', label: 'Error' },
-    timeout: { bg: 'hsl(25 95% 53% / 0.15)', color: 'hsl(var(--s-wn-tx))', label: 'Timeout' },
-    blocked: { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(var(--s-wn-tx))', label: 'Blocked' },
+    success: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', label: 'Success' },
+    error: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', label: 'Error' },
+    timeout: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', label: 'Timeout' },
+    blocked: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', label: 'Blocked' },
   };
   const s = map[result] ?? map.success;
   return <Badge style={{ background: s.bg, color: s.color, borderRadius: 0, fontSize: 11 }}>{s.label}</Badge>;
 }
 
 function permBadge(p: AuthRule['permission']) {
-  if (p === 'allowed') return <Badge style={{ background: 'hsl(142 71% 45% / 0.15)', color: 'hsl(var(--s-ok-tx))', borderRadius: 0, fontSize: 10 }}>Allowed</Badge>;
-  if (p === 'blocked') return <Badge style={{ background: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>Blocked</Badge>;
-  return <Badge style={{ background: 'hsl(45 93% 47% / 0.15)', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 10 }}>Conditional</Badge>;
+  if (p === 'allowed') return <Badge style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', borderRadius: 0, fontSize: 10 }}>Allowed</Badge>;
+  if (p === 'blocked') return <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>Blocked</Badge>;
+  return <Badge style={{ background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 10 }}>Conditional</Badge>;
 }
 
 // ── Main Component ────────────────────────────────────────────────────────────
@@ -318,7 +318,7 @@ export default function ToolCallMonitor() {
       </div>
 
       {/* TC-002 GDPR Alert Banner */}
-      <div className="flex items-start gap-3 px-4 py-3" style={{ background: 'hsl(0 72% 51% / 0.08)', border: '1px solid hsl(0 72% 51% / 0.5)', borderRadius: 0 }}>
+      <div className="flex items-start gap-3 px-4 py-3" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-bg))', borderRadius: 0 }}>
         <Warning size={16} className="mt-0.5 shrink-0 text-destructive" />
         <div>
           <p className="text-sm font-semibold text-destructive">GDPR Alert: TC-002 — Unauthorized PII Access Attempt</p>
@@ -531,7 +531,7 @@ export default function ToolCallMonitor() {
             <div className="mt-6 space-y-4 text-sm overflow-y-auto h-[calc(100vh-100px)]">
               <div className="flex gap-2 flex-wrap">
                 {resultBadge(viewItem.result)}
-                {viewItem.isIdempotent && <Badge style={{ background: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))', borderRadius: 0, fontSize: 10 }}>Idempotent (retryable)</Badge>}
+                {viewItem.isIdempotent && <Badge style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', borderRadius: 0, fontSize: 10 }}>Idempotent (retryable)</Badge>}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -559,14 +559,14 @@ export default function ToolCallMonitor() {
 
               {viewItem.error && (
                 <div><p className="text-xs font-semibold mb-1 text-destructive">Error Details</p>
-                  <p className="p-2 text-xs" style={{ background: 'hsl(0 72% 51% / 0.08)', borderRadius: 0, color: 'hsl(var(--destructive))', lineHeight: 1.5 }}>{viewItem.error}</p>
+                  <p className="p-2 text-xs" style={{ background: 'hsl(var(--s-er-bg))', borderRadius: 0, color: 'hsl(var(--destructive))', lineHeight: 1.5 }}>{viewItem.error}</p>
                 </div>
               )}
 
               {viewItem.authCheck && (
                 <div><p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-4))' }}>Authorization Check</p>
                   <p className="p-2 text-xs" style={{
-                    background: viewItem.result === 'blocked' ? 'hsl(0 72% 51% / 0.08)' : 'hsl(142 71% 45% / 0.08)',
+                    background: viewItem.result === 'blocked' ? 'hsl(var(--s-er-bg))' : 'hsl(var(--s-ok-bg))',
                     borderRadius: 0, lineHeight: 1.5,
                     color: viewItem.result === 'blocked' ? 'hsl(var(--destructive))' : 'hsl(var(--s-ok-tx))'
                   }}>{viewItem.authCheck}</p>
@@ -575,7 +575,7 @@ export default function ToolCallMonitor() {
 
               {viewItem.traceId && (
                 <div><p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Linked Trace</p>
-                  <Badge style={{ background: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))', borderRadius: 0 }}>{viewItem.traceId}</Badge>
+                  <Badge style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0 }}>{viewItem.traceId}</Badge>
                 </div>
               )}
 

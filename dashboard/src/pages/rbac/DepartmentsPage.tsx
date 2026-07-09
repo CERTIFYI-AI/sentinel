@@ -248,7 +248,7 @@ export default function DepartmentsPage() {
                 </td>
                 <td className="px-4 py-3">
                   <span className="text-[11px] px-2 py-0.5 font-medium" style={d.status === 'active'
-                    ? { background: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' }
+                    ? { background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' }
                     : { background: 'hsl(var(--border) / 0.5)', color: 'hsl(var(--text-4))' }}>
                     {d.status === 'active' ? 'Active' : 'Inactive'}
                   </span>
@@ -307,7 +307,7 @@ export default function DepartmentsPage() {
                   </select>
                 </div>
               </div>
-              {formError && <p className="text-xs px-3 py-2 border" style={{ background: 'hsl(0 72% 51% / 0.08)', borderColor: 'hsl(var(--destructive) / 0.3)', color: 'hsl(var(--destructive))' }}>{formError}</p>}
+              {formError && <p className="text-xs px-3 py-2 border" style={{ background: 'hsl(var(--s-er-bg))', borderColor: 'hsl(var(--destructive) / 0.3)', color: 'hsl(var(--destructive))' }}>{formError}</p>}
             </div>
             <div className="flex justify-end gap-2 px-5 py-4" style={{ borderTop: '1px solid hsl(var(--border))' }}>
               <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm border" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}>Cancel</button>
@@ -334,7 +334,7 @@ export default function DepartmentsPage() {
             <div className="p-4 space-y-4 flex-1">
               <div className="flex gap-2">
                 <span className="text-[11px] px-2 py-0.5 font-medium" style={selected.status === 'active'
-                  ? { background: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' }
+                  ? { background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' }
                   : { background: 'hsl(var(--border) / 0.5)', color: 'hsl(var(--text-4))' }}>
                   {selected.status === 'active' ? 'Active' : 'Inactive'}
                 </span>
@@ -368,10 +368,10 @@ export default function DepartmentsPage() {
                           <p className="text-[10px] truncate" style={{ color: 'hsl(var(--text-4))' }}>{u.email}</p>
                         </div>
                         <span className="text-[10px] px-1.5 py-0.5" style={u.status === 'active'
-                          ? { background: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' }
+                          ? { background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' }
                           : u.status === 'pending'
-                          ? { background: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)' }
-                          : { background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' }}>
+                          ? { background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' }
+                          : { background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' }}>
                           {u.status}
                         </span>
                       </div>

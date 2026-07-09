@@ -25,7 +25,7 @@ export default function MultiTurnEditor() {
     switch (role) {
       case 'system': return 'hsl(var(--text-4))';
       case 'user': return 'hsl(var(--brand))';
-      case 'assistant': return 'hsl(142 71% 45%)';
+      case 'assistant': return 'hsl(var(--s-ok-tx))';
       default: return 'hsl(var(--text-3))';
     }
   };
@@ -69,7 +69,7 @@ export default function MultiTurnEditor() {
                       {turn.role}
                     </span>
                   </div>
-                  <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 h-6 w-6" style={{ color: 'hsl(0 72% 51%)' }}>
+                  <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 h-6 w-6" style={{ color: 'hsl(var(--s-er-tx))' }}>
                     <Trash size={14} />
                   </Button>
                 </div>

@@ -39,11 +39,11 @@ const SEED: AgentWorkflow[] = [
 ]
 
 const STATUS_STYLE: Record<WorkflowStatus, { bg: string; color: string }> = {
-  Running: { bg: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))' },
-  Completed: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
-  Failed: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
-  Paused: { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)' },
-  'Awaiting Approval': { bg: 'hsl(280 67% 56% / 0.12)', color: 'hsl(280 60% 55%)' },
+  Running: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
+  Completed: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  Failed: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+  Paused: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+  'Awaiting Approval': { bg: 'hsl(var(--tag-purple-bg))', color: 'hsl(var(--tag-purple))' },
 }
 
 export default function MultiAgentChoreography() {
@@ -132,7 +132,7 @@ export default function MultiAgentChoreography() {
                   <div className="flex items-center gap-2 mb-0.5">
                     <span className="font-mono text-[10px] text-[hsl(var(--brand))]">{w.id}</span>
                     <span className="text-[11px] px-2 py-0.5 font-medium" style={ss}>{w.status}</span>
-                    {w.hitlRequired && <span className="text-[10px] px-1.5 py-0.5 bg-[hsl(280_67%_56%/0.12)] text-[hsl(280_60%_55%)]">HITL</span>}
+                    {w.hitlRequired && <span className="text-[10px] px-1.5 py-0.5 bg-[hsl(var(--tag-purple-bg))] text-[hsl(var(--tag-purple))]">HITL</span>}
                   </div>
                   <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] truncate">{w.name}</h3>
                   <p className="text-xs text-[hsl(var(--text-4))] mt-0.5 truncate">{w.trigger}</p>
@@ -208,7 +208,7 @@ export default function MultiAgentChoreography() {
                 <>
                   <div className="flex gap-2 flex-wrap">
                     <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status] || { bg: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }}>{selected.status}</span>
-                    {selected.hitlRequired && <span className="text-[11px] px-2 py-0.5 bg-[hsl(280_67%_56%/0.12)] text-[hsl(280_60%_55%)]">HITL Required</span>}
+                    {selected.hitlRequired && <span className="text-[11px] px-2 py-0.5 bg-[hsl(var(--tag-purple-bg))] text-[hsl(var(--tag-purple))]">HITL Required</span>}
                   </div>
                   <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">{selected.description}</p>
                   <div>
@@ -231,7 +231,7 @@ export default function MultiAgentChoreography() {
                   {selected.lastError && (
                     <div>
                       <p className="text-[11px] font-semibold text-[hsl(var(--destructive))] uppercase tracking-wide mb-1">Error</p>
-                      <p className="text-xs text-[hsl(var(--destructive))] p-3 bg-[hsl(0_72%_51%/0.06)] border border-[hsl(var(--destructive)/0.3)] leading-relaxed">{selected.lastError}</p>
+                      <p className="text-xs text-[hsl(var(--destructive))] p-3 bg-[hsl(var(--s-er-bg))] border border-[hsl(var(--destructive)/0.3)] leading-relaxed">{selected.lastError}</p>
                     </div>
                   )}
                 </>
@@ -328,10 +328,10 @@ export default function MultiAgentChoreography() {
                 <>
                   {selected.hitlRequired ? (
                     <>
-                      <div className="flex items-start gap-3 p-4 bg-[hsl(280_67%_56%/0.06)] border border-[hsl(280_67%_56%/0.25)]">
-                        <Warning size={20} className="text-[hsl(280_60%_55%)] flex-shrink-0 mt-0.5" />
+                      <div className="flex items-start gap-3 p-4 bg-[hsl(var(--tag-purple-bg))] border border-[hsl(var(--tag-purple-bg))]">
+                        <Warning size={20} className="text-[hsl(var(--tag-purple))] flex-shrink-0 mt-0.5" />
                         <div>
-                          <p className="text-sm font-semibold text-[hsl(280_60%_55%)]">Human-in-the-Loop Required</p>
+                          <p className="text-sm font-semibold text-[hsl(var(--tag-purple))]">Human-in-the-Loop Required</p>
                           <p className="text-xs text-[hsl(var(--text-3))] mt-1 leading-relaxed">{selected.hitlStep}</p>
                         </div>
                       </div>
@@ -341,13 +341,13 @@ export default function MultiAgentChoreography() {
                           <p className="text-xs text-[hsl(var(--text-2))] leading-relaxed">Review the workflow output and approve to continue automated processing, or terminate if the result is unacceptable.</p>
                           <div className="flex gap-2 mt-3">
                             <button onClick={() => handleApprove(selected.id)} className="flex-1 py-2.5 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90">Approve & Resume</button>
-                            <button onClick={() => setTerminateTarget(selected)} className="px-4 py-2.5 border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] text-sm hover:bg-[hsl(0_72%_51%/0.05)]">Terminate</button>
+                            <button onClick={() => setTerminateTarget(selected)} className="px-4 py-2.5 border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] text-sm hover:bg-[hsl(var(--s-er-bg))]">Terminate</button>
                           </div>
                         </div>
                       )}
                     </>
                   ) : (
-                    <div className="flex items-center gap-3 p-4 bg-[hsl(142_71%_45%/0.06)] border border-[hsl(142_71%_45%/0.3)]">
+                    <div className="flex items-center gap-3 p-4 bg-[hsl(var(--s-ok-bg))] border border-[hsl(var(--s-ok-bg))]">
                       <CheckCircle size={20} className="text-[hsl(var(--s-ok-tx))]" />
                       <div>
                         <p className="text-sm font-semibold text-[hsl(var(--s-ok-tx))]">No Human Intervention Required</p>
@@ -356,7 +356,7 @@ export default function MultiAgentChoreography() {
                     </div>
                   )}
                   {selected.status === 'Running' && (
-                    <button onClick={() => setTerminateTarget(selected)} className="w-full py-2.5 border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] text-sm hover:bg-[hsl(0_72%_51%/0.05)]">Terminate Workflow</button>
+                    <button onClick={() => setTerminateTarget(selected)} className="w-full py-2.5 border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] text-sm hover:bg-[hsl(var(--s-er-bg))]">Terminate Workflow</button>
                   )}
                 </>
               )}
@@ -367,7 +367,7 @@ export default function MultiAgentChoreography() {
                 <button onClick={() => handleApprove(selected.id)} className="flex-1 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90">Approve & Resume</button>
               )}
               {(selected.status === 'Running' || selected.status === 'Awaiting Approval' || selected.status === 'Paused') && (
-                <button onClick={() => setTerminateTarget(selected)} className="px-4 py-2 border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] text-sm hover:bg-[hsl(0_72%_51%/0.05)]">Terminate</button>
+                <button onClick={() => setTerminateTarget(selected)} className="px-4 py-2 border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] text-sm hover:bg-[hsl(var(--s-er-bg))]">Terminate</button>
               )}
               {selected.status === 'Failed' && (
                 <button onClick={() => toast.success('Retry queued')} className="flex-1 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90">Retry Workflow</button>

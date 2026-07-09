@@ -290,7 +290,7 @@ export default function ModelInventoryPage() {
 
       {/* Critical Drift Banner */}
       {driftAlerts > 0 && (
-        <div className="p-4 flex items-start gap-3" style={{ background: 'hsl(0 72% 51% / 0.08)', border: '1px solid hsl(0 72% 51% / 0.3)' }}>
+        <div className="p-4 flex items-start gap-3" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-bg))' }}>
           <Siren size={20} style={{ color: 'hsl(var(--destructive))', flexShrink: 0, marginTop: 1 }} />
           <div>
             <p className="text-sm font-semibold text-destructive">
@@ -360,7 +360,7 @@ export default function ModelInventoryPage() {
                         className="hover:bg-muted/30 transition-colors"
                         style={{
                           borderBottom: '1px solid hsl(var(--border))',
-                          borderLeft: isCritical ? '4px solid hsl(0 72% 51%)' : '4px solid transparent',
+                          borderLeft: isCritical ? '4px solid hsl(var(--s-er-tx))' : '4px solid transparent',
                         }}
                       >
                         <td className="px-4 py-3 font-mono text-xs" style={{ color: 'hsl(var(--text-4))' }}>{m.id}</td>
@@ -585,8 +585,8 @@ export default function ModelInventoryPage() {
                         <YAxis domain={[0, 0.4]} tick={{ fill: ct.axis, fontSize: 10 }}
                           label={{ value: 'Drift Score', angle: -90, position: 'insideLeft', style: { fill: ct.axis, fontSize: 10 } }} />
                         <RechartsTooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.tooltipText, borderRadius: 0 }} />
-                        <ReferenceLine y={0.20} stroke="hsl(0 72% 51%)" strokeDasharray="5 5" label={{ value: 'Threshold', fill: 'hsl(var(--destructive))', fontSize: 10 }} />
-                        <Line type="monotone" dataKey="drift" stroke="hsl(45 93% 47%)" strokeWidth={2} dot={false} name="Drift Score" />
+                        <ReferenceLine y={0.20} stroke="hsl(var(--s-er-tx))" strokeDasharray="5 5" label={{ value: 'Threshold', fill: 'hsl(var(--destructive))', fontSize: 10 }} />
+                        <Line type="monotone" dataKey="drift" stroke="hsl(var(--s-wn-tx))" strokeWidth={2} dot={false} name="Drift Score" />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
@@ -607,7 +607,7 @@ export default function ModelInventoryPage() {
                             {bm.value}
                           </span>
                           <Badge style={{
-                            background: bm.status === 'Pass' ? 'hsl(142 71% 45% / 0.15)' : 'hsl(0 72% 51% / 0.15)',
+                            background: bm.status === 'Pass' ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-er-bg))',
                             color: bm.status === 'Pass' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))',
                             borderRadius: 0, fontSize: 10,
                           }}>
@@ -642,7 +642,7 @@ export default function ModelInventoryPage() {
                           <div key={idx} className="flex items-center justify-between text-xs">
                             <span style={{ color: 'hsl(var(--text-1))' }}>{g.name}: {g.threshold}</span>
                             <Badge style={{
-                              background: g.enabled ? 'hsl(142 71% 45% / 0.15)' : 'hsl(var(--s-nt-bg))',
+                              background: g.enabled ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-nt-bg))',
                               color: g.enabled ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-nt-tx))',
                               borderRadius: 0, fontSize: 10,
                             }}>
@@ -673,7 +673,7 @@ export default function ModelInventoryPage() {
                             <div className="flex items-center gap-2">
                               <Badge style={{ background: sc.bg, color: sc.text, borderRadius: 0, fontSize: 10 }}>{inc.severity}</Badge>
                               <Badge style={{
-                                background: inc.resolved ? 'hsl(142 71% 45% / 0.15)' : 'hsl(0 72% 51% / 0.15)',
+                                background: inc.resolved ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-er-bg))',
                                 color: inc.resolved ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))',
                                 borderRadius: 0, fontSize: 10,
                               }}>

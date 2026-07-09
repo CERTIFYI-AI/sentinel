@@ -78,17 +78,17 @@ function timeAgo(isoDate: string): string {
 }
 
 function latencyGradeBadge(ms: number) {
-  if (ms <= 10) return <Badge style={{ background: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))', borderRadius: 0, fontSize: 10 }}>Good</Badge>;
-  if (ms <= 20) return <Badge style={{ background: 'hsl(45 93% 47% / 0.12)', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 10 }}>Fair</Badge>;
-  return <Badge style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>Slow</Badge>;
+  if (ms <= 10) return <Badge style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', borderRadius: 0, fontSize: 10 }}>Good</Badge>;
+  if (ms <= 20) return <Badge style={{ background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 10 }}>Fair</Badge>;
+  return <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>Slow</Badge>;
 }
 
 function actionBadge(action: string) {
   const map: Record<string, { bg: string; color: string }> = {
-    blocked: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))' },
-    warned: { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(var(--s-wn-tx))' },
-    flagged: { bg: 'hsl(220 90% 56% / 0.15)', color: 'hsl(var(--s-in-tx))' },
-    allowed: { bg: 'hsl(142 71% 45% / 0.15)', color: 'hsl(var(--s-ok-tx))' },
+    blocked: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+    warned: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+    flagged: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
+    allowed: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
   };
   const s = map[action] || map['flagged'];
   return <Badge style={{ background: s.bg, color: s.color, borderRadius: 0, fontSize: 10 }}>{action.charAt(0).toUpperCase() + action.slice(1)}</Badge>;
@@ -100,10 +100,10 @@ function MetricTile({ label, value, variant, icon, sub }: {
   label: string; value: string; variant: 'ok' | 'warn' | 'error' | 'info'; icon: React.ReactNode; sub?: string;
 }) {
   const vs = {
-    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(var(--s-ok-tx))' },
-    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(var(--s-wn-tx))' },
-    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(var(--destructive))' },
-    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))' },
+    ok: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+    warn: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+    error: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+    info: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
   };
   const s = vs[variant];
   return (
@@ -319,7 +319,7 @@ export default function GuardrailActivity() {
 
         {/* SLA Warning Banner */}
         {events.some(e => !e.acknowledged && (e.severity === 'critical' || e.severity === 'high')) && (
-          <div className="flex items-center gap-2 px-4 py-2" style={{ background: 'hsl(45 93% 47% / 0.08)', border: '1px solid hsl(45 93% 47% / 0.3)', borderRadius: 0 }}>
+          <div className="flex items-center gap-2 px-4 py-2" style={{ background: 'hsl(var(--s-wn-bg))', border: '1px solid hsl(var(--s-wn-bg))', borderRadius: 0 }}>
             <Warning size={14} style={{ color: 'hsl(var(--s-wn-tx))' }} />
             <p className="text-xs flex-1" style={{ color: 'hsl(var(--s-wn-tx))' }}>
               <strong>SLA Enforcement:</strong> Unacknowledged Critical events &gt;30 min → amber | &gt;60 min → red pulsing
@@ -329,8 +329,8 @@ export default function GuardrailActivity() {
 
         {/* Auto-Escalation Banner */}
         <div className="flex items-center gap-3 px-4 py-2" style={{
-          background: autoEscalation ? 'hsl(0 72% 51% / 0.06)' : 'hsl(var(--bg-surface))',
-          border: `1px solid ${autoEscalation ? 'hsl(0 72% 51% / 0.3)' : 'hsl(var(--border))'}`,
+          background: autoEscalation ? 'hsl(var(--s-er-bg))' : 'hsl(var(--bg-surface))',
+          border: `1px solid ${autoEscalation ? 'hsl(var(--s-er-bg))' : 'hsl(var(--border))'}`,
           borderRadius: 0,
         }}>
           <Siren size={16} weight="fill" style={{ color: autoEscalation ? 'hsl(var(--destructive))' : 'hsl(var(--text-4))' }} />
@@ -600,7 +600,7 @@ export default function GuardrailActivity() {
                         <td className="px-3 py-3">{slaBadge || <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>—</span>}</td>
                         <td className="px-3 py-3">
                           {ev.acknowledged
-                            ? <Badge style={{ background: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))', borderRadius: 0, fontSize: 9 }}>Acked</Badge>
+                            ? <Badge style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', borderRadius: 0, fontSize: 9 }}>Acked</Badge>
                             : <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>—</span>}
                         </td>
                         <td className="px-3 py-3">
@@ -614,7 +614,7 @@ export default function GuardrailActivity() {
                               </Button>
                             )}
                             {escalatedMap[ev.id] ? (
-                              <Badge style={{ background: 'hsl(0 72% 51% / 0.10)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 9, gap: 4, display: 'inline-flex', alignItems: 'center' }}>
+                              <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 9, gap: 4, display: 'inline-flex', alignItems: 'center' }}>
                                 <Siren size={10} weight="fill" />Escalated → {escalatedMap[ev.id]}
                               </Badge>
                             ) : (ev.severity === 'critical' || ev.severity === 'high') ? (
@@ -721,7 +721,7 @@ export default function GuardrailActivity() {
                     {actionBadge(escalateTarget.action)}
                   </div>
                 </div>
-                <div className="p-3" style={{ background: 'hsl(0 72% 51% / 0.05)', border: '1px solid hsl(0 72% 51% / 0.2)', borderRadius: 0 }}>
+                <div className="p-3" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-bg))', borderRadius: 0 }}>
                   <p className="text-xs font-mono" style={{ color: 'hsl(var(--destructive))' }}>{escalateTarget.output}</p>
                 </div>
               </div>
@@ -752,7 +752,7 @@ export default function GuardrailActivity() {
                   <p className="text-sm font-semibold mb-1" style={{ color: 'hsl(var(--text-1))' }}>{tpl.name}</p>
                   <p className="text-xs mb-2" style={{ color: 'hsl(var(--text-4))' }}>{tpl.description}</p>
                   <div className="flex items-center gap-2">
-                    <Badge style={{ background: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 9 }}>{tpl.threshold}</Badge>
+                    <Badge style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 9 }}>{tpl.threshold}</Badge>
                     {actionBadge(tpl.action === 'block' ? 'blocked' : tpl.action === 'warn' ? 'warned' : 'flagged')}
                   </div>
                 </div>
@@ -844,15 +844,15 @@ export default function GuardrailActivity() {
                   <TabsContent value="models" className="space-y-3 mt-4">
                     <div className="flex items-center justify-between p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                       <span className="text-sm" style={{ color: 'hsl(var(--text-1))' }}>GPT-4o</span>
-                      <Badge style={{ background: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))', borderRadius: 0, fontSize: 10 }}>Active</Badge>
+                      <Badge style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', borderRadius: 0, fontSize: 10 }}>Active</Badge>
                     </div>
                     <div className="flex items-center justify-between p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                       <span className="text-sm" style={{ color: 'hsl(var(--text-1))' }}>Claude-3-Opus</span>
-                      <Badge style={{ background: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))', borderRadius: 0, fontSize: 10 }}>Active</Badge>
+                      <Badge style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', borderRadius: 0, fontSize: 10 }}>Active</Badge>
                     </div>
                     <div className="flex items-center justify-between p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                       <span className="text-sm" style={{ color: 'hsl(var(--text-1))' }}>Internal Rule Engine</span>
-                      <Badge style={{ background: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>Monitoring</Badge>
+                      <Badge style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>Monitoring</Badge>
                     </div>
                   </TabsContent>
                 </Tabs>

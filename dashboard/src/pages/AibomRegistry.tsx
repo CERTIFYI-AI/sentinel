@@ -31,10 +31,10 @@ const SEED: AIBOMRecord[] = [
 ]
 
 const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
-  Verified: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
-  'Pending Verification': { bg: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))' },
-  Stale: { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)' },
-  Incomplete: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
+  Verified: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  'Pending Verification': { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
+  Stale: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+  Incomplete: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
 }
 
 const BLANK_AIBOM = { model: '', version: '', format: 'Sentinel-AIBOM' as const, baseModel: '', baseModelProvider: 'Open Source', owner: '', description: '' }
@@ -166,7 +166,7 @@ export default function AibomRegistry() {
           { label: 'Models in Registry', value: records.length, color: 'hsl(var(--text-1))' },
           { label: 'Verified', value: records.filter(r => r.status === 'Verified').length, color: 'hsl(var(--s-ok-tx))' },
           { label: 'Total Vulnerabilities', value: records.reduce((s, r) => s + r.vulnerabilities, 0), color: 'hsl(var(--destructive))' },
-          { label: 'License Conflicts', value: records.reduce((s, r) => s + r.licenseConflicts, 0), color: 'hsl(45 85% 40%)' },
+          { label: 'License Conflicts', value: records.reduce((s, r) => s + r.licenseConflicts, 0), color: 'hsl(var(--s-wn-tx))' },
         ].map(s => (
           <div key={s.label} className="border border-[hsl(var(--border))] bg-surface p-4" style={{ borderRadius: 0 }}>
             <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
@@ -201,7 +201,7 @@ export default function AibomRegistry() {
                   <span className={`text-[11px] font-bold ${r.vulnerabilities > 0 ? 'text-[hsl(var(--destructive))]' : 'text-[hsl(var(--s-ok-tx))]'}`}>{r.vulnerabilities}</span>
                 </td>
                 <td className="px-4 py-3">
-                  <span className={`text-[11px] font-bold ${r.licenseConflicts > 0 ? 'text-[hsl(45_85%_40%)]' : 'text-[hsl(var(--s-ok-tx))]'}`}>{r.licenseConflicts}</span>
+                  <span className={`text-[11px] font-bold ${r.licenseConflicts > 0 ? 'text-[hsl(var(--s-wn-tx))]' : 'text-[hsl(var(--s-ok-tx))]'}`}>{r.licenseConflicts}</span>
                 </td>
                 <td className="px-4 py-3 text-xs text-[hsl(var(--text-4))]">{r.generatedDate}</td>
                 <td className="px-4 py-3"><span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[r.status] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{r.status}</span></td>
@@ -292,7 +292,7 @@ export default function AibomRegistry() {
                             <p className="text-xs font-medium text-[hsl(var(--text-1))]">{d.name} <span className="font-normal text-[hsl(var(--text-4))]">{d.version}</span></p>
                             <p className="text-[10px] text-[hsl(var(--text-4))]">{d.license}</p>
                           </div>
-                          <span className="text-[10px] px-1.5 py-0.5 font-medium" style={{ background: d.risk === 'High' ? 'hsl(0 72% 51% / 0.12)' : d.risk === 'Medium' ? 'hsl(45 93% 47% / 0.12)' : 'hsl(142 71% 45% / 0.12)', color: d.risk === 'High' ? 'hsl(var(--destructive))' : d.risk === 'Medium' ? 'hsl(45 85% 40%)' : 'hsl(var(--s-ok-tx))' }}>{d.risk}</span>
+                          <span className="text-[10px] px-1.5 py-0.5 font-medium" style={{ background: d.risk === 'High' ? 'hsl(var(--s-er-bg))' : d.risk === 'Medium' ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-ok-bg))', color: d.risk === 'High' ? 'hsl(var(--destructive))' : d.risk === 'Medium' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))' }}>{d.risk}</span>
                         </div>
                       ))}
                       {selected.dependencies.length === 0 && <p className="text-xs text-[hsl(var(--text-4))]">No dependencies listed</p>}
@@ -303,7 +303,7 @@ export default function AibomRegistry() {
 
               {drawerTab === 'vulnerabilities' && (
                 <>
-                  <div className="flex items-center gap-3 p-4 rounded border" style={selected.vulnerabilities > 0 ? { background: 'hsl(0 72% 51% / 0.06)', borderColor: 'hsl(var(--destructive) / 0.3)' } : { background: 'hsl(142 71% 45% / 0.06)', borderColor: 'hsl(142 71% 45% / 0.3)' }}>
+                  <div className="flex items-center gap-3 p-4 rounded border" style={selected.vulnerabilities > 0 ? { background: 'hsl(var(--s-er-bg))', borderColor: 'hsl(var(--destructive) / 0.3)' } : { background: 'hsl(var(--s-ok-bg))', borderColor: 'hsl(var(--s-ok-bg))' }}>
                     {selected.vulnerabilities > 0 ? <ShieldWarning size={24} className="text-[hsl(var(--destructive))]" /> : <CheckCircle size={24} className="text-[hsl(var(--s-ok-tx))]" />}
                     <div>
                       <p className="text-sm font-bold" style={{ color: selected.vulnerabilities > 0 ? 'hsl(var(--destructive))' : 'hsl(var(--s-ok-tx))' }}>{selected.vulnerabilities} Known CVE{selected.vulnerabilities !== 1 ? 's' : ''}</p>
@@ -317,7 +317,7 @@ export default function AibomRegistry() {
                         const count = selected.dependencies.filter(d => d.risk === risk).length
                         return (
                           <div key={risk} className="flex items-center gap-3 p-2.5 bg-raised border border-[hsl(var(--border))]">
-                            <div className="w-2 h-2 rounded-full" style={{ background: risk === 'High' ? 'hsl(var(--destructive))' : risk === 'Medium' ? 'hsl(45 85% 40%)' : 'hsl(var(--s-ok-tx))' }} />
+                            <div className="w-2 h-2 rounded-full" style={{ background: risk === 'High' ? 'hsl(var(--destructive))' : risk === 'Medium' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))' }} />
                             <p className="text-xs text-[hsl(var(--text-2))] flex-1">{risk} Risk</p>
                             <span className="text-xs font-bold text-[hsl(var(--text-1))]">{count}</span>
                           </div>
@@ -340,10 +340,10 @@ export default function AibomRegistry() {
                 <>
                   <div>
                     <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">License Compliance</p>
-                    <div className="flex items-center gap-3 p-4 rounded border mb-3" style={selected.licenseConflicts > 0 ? { background: 'hsl(45 93% 47% / 0.06)', borderColor: 'hsl(45 93% 47% / 0.3)' } : { background: 'hsl(142 71% 45% / 0.06)', borderColor: 'hsl(142 71% 45% / 0.3)' }}>
-                      {selected.licenseConflicts > 0 ? <Warning size={20} className="text-[hsl(45_85%_40%)]" /> : <CheckCircle size={20} className="text-[hsl(var(--s-ok-tx))]" />}
+                    <div className="flex items-center gap-3 p-4 rounded border mb-3" style={selected.licenseConflicts > 0 ? { background: 'hsl(var(--s-wn-bg))', borderColor: 'hsl(var(--s-wn-bg))' } : { background: 'hsl(var(--s-ok-bg))', borderColor: 'hsl(var(--s-ok-bg))' }}>
+                      {selected.licenseConflicts > 0 ? <Warning size={20} className="text-[hsl(var(--s-wn-tx))]" /> : <CheckCircle size={20} className="text-[hsl(var(--s-ok-tx))]" />}
                       <div>
-                        <p className="text-sm font-bold" style={{ color: selected.licenseConflicts > 0 ? 'hsl(45 85% 40%)' : 'hsl(var(--s-ok-tx))' }}>{selected.licenseConflicts} License Conflict{selected.licenseConflicts !== 1 ? 's' : ''}</p>
+                        <p className="text-sm font-bold" style={{ color: selected.licenseConflicts > 0 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))' }}>{selected.licenseConflicts} License Conflict{selected.licenseConflicts !== 1 ? 's' : ''}</p>
                         <p className="text-xs text-[hsl(var(--text-4))]">{selected.licenseConflicts > 0 ? 'Resolve conflicts before distribution' : 'All licenses compatible — no conflicts detected'}</p>
                       </div>
                     </div>
@@ -565,7 +565,7 @@ export default function AibomRegistry() {
                             <span className="text-[10px] font-mono text-[hsl(var(--text-4))]">{d.license}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-[10px] px-1.5 py-0.5 font-medium" style={{ background: d.risk === 'High' ? 'hsl(0 72% 51% / 0.12)' : d.risk === 'Medium' ? 'hsl(45 93% 47% / 0.12)' : 'hsl(142 71% 45% / 0.12)', color: d.risk === 'High' ? 'hsl(var(--destructive))' : d.risk === 'Medium' ? 'hsl(45 85% 40%)' : 'hsl(var(--s-ok-tx))' }}>{d.risk}</span>
+                            <span className="text-[10px] px-1.5 py-0.5 font-medium" style={{ background: d.risk === 'High' ? 'hsl(var(--s-er-bg))' : d.risk === 'Medium' ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-ok-bg))', color: d.risk === 'High' ? 'hsl(var(--destructive))' : d.risk === 'Medium' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))' }}>{d.risk}</span>
                             <button onClick={() => setWizardDeps(p => p.filter((_, idx) => idx !== i))} className="text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))]"><X size={12} /></button>
                           </div>
                         </div>
@@ -601,7 +601,7 @@ export default function AibomRegistry() {
                     ))}
                   </div>
                   {wizardDeps.filter(d => d.risk === 'High').length > 0 && (
-                    <div className="flex items-center gap-2 p-3 border border-[hsl(0_72%_51%_/_0.3)] bg-[hsl(0_72%_51%_/_0.06)]">
+                    <div className="flex items-center gap-2 p-3 border border-[hsl(var(--s-er-bg))] bg-[hsl(var(--s-er-bg))]">
                       <ShieldWarning size={16} className="text-[hsl(var(--destructive))] flex-shrink-0" />
                       <p className="text-xs text-[hsl(var(--text-2))]">{wizardDeps.filter(d => d.risk === 'High').length} high-risk dependency(ies) detected — will flag vulnerabilities after generation</p>
                     </div>

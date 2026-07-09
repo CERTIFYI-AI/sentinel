@@ -118,9 +118,9 @@ const EXTENDED_EXERCISES: ExtExercise[] = [
 
 function campaignStatusBadge(status: string) {
   const map: Record<string, { bg: string; color: string }> = {
-    'Planning': { bg: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))' },
-    'Active': { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(var(--s-wn-tx))' },
-    'Completed': { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
+    'Planning': { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
+    'Active': { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+    'Completed': { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
     'Archived': { bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))' },
   };
   const normalized = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
@@ -138,10 +138,10 @@ function MetricTile({ label, value, variant, icon, sub }: {
   label: string; value: string; variant: 'ok' | 'warn' | 'error' | 'info'; icon: React.ReactNode; sub?: string;
 }) {
   const vs = {
-    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(var(--s-ok-tx))' },
-    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(var(--s-wn-tx))' },
-    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(var(--destructive))' },
-    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))' },
+    ok: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+    warn: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+    error: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+    info: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
   };
   const s = vs[variant];
   return (
@@ -297,7 +297,7 @@ export default function RedTeamLab() {
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold" style={{ color: 'hsl(var(--text-1))' }}>{ex.findings}</span>
                         {ex.criticalFindings > 0 && (
-                          <Badge style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 9 }}>
+                          <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 9 }}>
                             {ex.criticalFindings} critical
                           </Badge>
                         )}
@@ -484,11 +484,11 @@ export default function RedTeamLab() {
                     </div>
                   ))}
                   {selected.targetModel === 'MDL-004' && (
-                    <div className="p-3 mt-2" style={{ background: 'hsl(45 93% 47% / 0.08)', border: '1px solid hsl(45 93% 47% / 0.3)', borderRadius: 0 }}>
+                    <div className="p-3 mt-2" style={{ background: 'hsl(var(--s-wn-bg))', border: '1px solid hsl(var(--s-wn-bg))', borderRadius: 0 }}>
                       <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--s-wn-tx))' }}>OWASP LLM Top 10 Coverage</p>
                       <div className="flex flex-wrap gap-2">
                         {['LLM01: Prompt Injection', 'LLM02: Insecure Output', 'LLM03: Training Data Poisoning', 'LLM04: Model DoS', 'LLM06: Sensitive Info Disclosure', 'LLM07: Insecure Plugin Design'].map(cat => (
-                          <Badge key={cat} style={{ background: 'hsl(45 93% 47% / 0.15)', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 10 }}>{cat}</Badge>
+                          <Badge key={cat} style={{ background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 10 }}>{cat}</Badge>
                         ))}
                       </div>
                     </div>
@@ -509,7 +509,7 @@ export default function RedTeamLab() {
                           </div>
                           <p className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{f.title}</p>
                           {f.owaspCategory && (
-                            <Badge className="mt-1" style={{ background: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 9 }}>
+                            <Badge className="mt-1" style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 9 }}>
                               {f.owaspCategory}
                             </Badge>
                           )}

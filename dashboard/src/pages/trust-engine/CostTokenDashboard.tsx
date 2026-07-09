@@ -36,10 +36,10 @@ function MetricTile({ label, value, variant, icon, sub }: {
   label: string; value: string; variant: 'ok' | 'warn' | 'error' | 'info'; icon: React.ReactNode; sub?: string;
 }) {
   const vs = {
-    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(var(--s-ok-tx))' },
-    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(var(--s-wn-tx))' },
-    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(var(--destructive))' },
-    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))' },
+    ok: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+    warn: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+    error: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+    info: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
   };
   const s = vs[variant];
   return (
@@ -177,7 +177,7 @@ export default function CostTokenDashboard() {
       </div>
 
       {/* Anomaly Banner */}
-      <div className="flex items-center justify-between p-3" style={{ background: 'hsl(45 93% 47% / 0.10)', border: '1px solid hsl(45 93% 47% / 0.3)', borderRadius: 0 }}>
+      <div className="flex items-center justify-between p-3" style={{ background: 'hsl(var(--s-wn-bg))', border: '1px solid hsl(var(--s-wn-bg))', borderRadius: 0 }}>
         <div className="flex items-center gap-3">
           <WarningCircle size={20} weight="fill" className="text-[hsl(var(--s-wn-tx))]" />
           <div>
@@ -340,7 +340,7 @@ export default function CostTokenDashboard() {
               <Input value={budgetThreshold} onChange={e => setBudgetThreshold(e.target.value)}
                 type="number" placeholder="15.00" style={{ borderRadius: 0 }} />
             </div>
-            <div className="flex items-center gap-2 px-3 py-2" style={{ background: 'hsl(220 90% 56% / 0.06)', border: '1px solid hsl(220 90% 56% / 0.2)', borderRadius: 0 }}>
+            <div className="flex items-center gap-2 px-3 py-2" style={{ background: 'hsl(var(--s-in-bg))', border: '1px solid hsl(var(--s-in-bg))', borderRadius: 0 }}>
               <Info size={12} className="text-[hsl(var(--s-in-tx))]" />
               <p className="text-xs text-[hsl(var(--s-in-tx))]">
                 Current weekly spend: <strong>${totalCost.toFixed(2)}</strong>

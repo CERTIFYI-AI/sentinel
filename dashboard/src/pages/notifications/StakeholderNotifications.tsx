@@ -84,10 +84,10 @@ function MetricTile({ label, value, variant, icon, sub }: {
   label: string; value: string; variant: 'ok' | 'warn' | 'error' | 'info'; icon: React.ReactNode; sub?: string;
 }) {
   const vs = {
-    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(var(--s-ok-tx))' },
-    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(var(--s-wn-tx))' },
-    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(var(--destructive))' },
-    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))' },
+    ok: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+    warn: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+    error: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+    info: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
   };
   const s = vs[variant];
   return (
@@ -165,7 +165,7 @@ export default function StakeholderNotifications() {
   const highlightPlaceholders = (text: string) => {
     return text.split(/(\[.*?\])/).map((part, i) => {
       if (part.startsWith('[') && part.endsWith(']')) {
-        return <span key={i} className="px-1 py-0.5 font-semibold" style={{ background: 'hsl(45 93% 47% / 0.15)', color: 'hsl(var(--s-wn-tx))', borderRadius: 0 }}>{part}</span>;
+        return <span key={i} className="px-1 py-0.5 font-semibold" style={{ background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', borderRadius: 0 }}>{part}</span>;
       }
       return <span key={i}>{part}</span>;
     });
@@ -237,7 +237,7 @@ export default function StakeholderNotifications() {
                           </p>
                         </td>
                         <td className="px-4 py-3">
-                          <Badge style={{ background: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>
+                          <Badge style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>
                             {inc.regulation} {inc.article}
                           </Badge>
                         </td>
@@ -246,7 +246,7 @@ export default function StakeholderNotifications() {
                         </td>
                         <td className="px-4 py-3">
                           <Badge style={{
-                            background: inc.status === 'Overdue' ? 'hsl(0 72% 51% / 0.12)' : 'hsl(45 93% 47% / 0.12)',
+                            background: inc.status === 'Overdue' ? 'hsl(var(--s-er-bg))' : 'hsl(var(--s-wn-bg))',
                             color: inc.status === 'Overdue' ? 'hsl(var(--destructive))' : 'hsl(var(--s-wn-tx))',
                             borderRadius: 0, fontSize: 10,
                           }}>{inc.status}</Badge>
@@ -273,7 +273,7 @@ export default function StakeholderNotifications() {
                 <CardContent className="p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{tmpl.id}</span>
-                    <Badge style={{ background: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>{tmpl.regulation} {tmpl.article}</Badge>
+                    <Badge style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>{tmpl.regulation} {tmpl.article}</Badge>
                   </div>
                   <h3 className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{tmpl.name}</h3>
                   <div className="flex items-center gap-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>
@@ -328,12 +328,12 @@ export default function StakeholderNotifications() {
                         <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-1))' }}>{d.templateName}</td>
                         <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{d.recipient}</td>
                         <td className="px-4 py-3">
-                          <Badge style={{ background: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>{d.regulation}</Badge>
+                          <Badge style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>{d.regulation}</Badge>
                         </td>
                         <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{formatDate(d.sentDate)}</td>
                         <td className="px-4 py-3">
                           <Badge style={{
-                            background: d.status === 'Delivered' || d.status === 'Acknowledged' ? 'hsl(142 71% 45% / 0.12)' : d.status === 'Failed' ? 'hsl(0 72% 51% / 0.12)' : 'hsl(45 93% 47% / 0.12)',
+                            background: d.status === 'Delivered' || d.status === 'Acknowledged' ? 'hsl(var(--s-ok-bg))' : d.status === 'Failed' ? 'hsl(var(--s-er-bg))' : 'hsl(var(--s-wn-bg))',
                             color: d.status === 'Delivered' || d.status === 'Acknowledged' ? 'hsl(var(--s-ok-tx))' : d.status === 'Failed' ? 'hsl(var(--destructive))' : 'hsl(var(--s-wn-tx))',
                             borderRadius: 0, fontSize: 10,
                           }}>{d.status}</Badge>
@@ -356,7 +356,7 @@ export default function StakeholderNotifications() {
             <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>Edit Template — {selectedTemplate?.name}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
-            <div className="p-3" style={{ background: 'hsl(220 90% 56% / 0.06)', border: '1px solid hsl(220 90% 56% / 0.2)', borderRadius: 0 }}>
+            <div className="p-3" style={{ background: 'hsl(var(--s-in-bg))', border: '1px solid hsl(var(--s-in-bg))', borderRadius: 0 }}>
               <p className="text-xs" style={{ color: 'hsl(var(--s-in-tx))' }}>
                 <Info size={12} className="inline mr-1" />
                 Placeholders in [BRACKETS] will be replaced with actual values when sending.

@@ -27,11 +27,11 @@ interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info
 
 function entityTypeBadge(t: HITLItem['entityType']) {
   const map: Record<string, { bg: string; color: string }> = {
-    model: { bg: 'hsl(220 90% 56% / 0.15)', color: 'hsl(var(--s-in-tx))' },
+    model: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
     agent: { bg: 'hsl(270 70% 56% / 0.15)', color: 'hsl(270 70% 56%)' },
-    dataset: { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(var(--s-wn-tx))' },
+    dataset: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
     vendor: { bg: 'hsl(180 60% 45% / 0.15)', color: 'hsl(180 60% 45%)' },
-    incident: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))' },
+    incident: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
   };
   const s = map[t] ?? map.model;
   return (
@@ -298,9 +298,9 @@ export default function HITLReviewCenter() {
                     {reviewer.overdue > 0 && (
                       <Badge style={{
                         borderRadius: 0, fontSize: 10, minWidth: 24, justifyContent: 'center',
-                        background: 'hsl(0 72% 51% / 0.1)',
+                        background: 'hsl(var(--s-er-bg))',
                         color: 'hsl(var(--destructive))',
-                        border: '1px solid hsl(0 72% 51% / 0.3)',
+                        border: '1px solid hsl(var(--s-er-bg))',
                       }}>
                         {reviewer.overdue} overdue
                       </Badge>
@@ -381,7 +381,7 @@ export default function HITLReviewCenter() {
                           className="hover:bg-muted/30 transition-colors cursor-pointer"
                           style={{
                             borderBottom: '1px solid hsl(var(--border))',
-                            borderLeft: isOverdue(item) ? '4px solid hsl(0 72% 51%)' : '4px solid transparent',
+                            borderLeft: isOverdue(item) ? '4px solid hsl(var(--s-er-tx))' : '4px solid transparent',
                           }}
                           onClick={() => { setSelectedItem(item); setReviewRemarks(item.remarks || ''); }}
                         >
@@ -433,7 +433,7 @@ export default function HITLReviewCenter() {
                   {priorityBadge(selectedItem.priority)}
                   {hitlStatusBadge(selectedItem.status)}
                   {isOverdue(selectedItem) && (
-                    <Badge style={{ background: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>
+                    <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>
                       OVERDUE
                     </Badge>
                   )}
@@ -463,7 +463,7 @@ export default function HITLReviewCenter() {
               </div>
 
               {/* Trigger Alert */}
-              <div className="p-3 flex gap-3" style={{ background: 'hsl(45 93% 47% / 0.08)', border: '1px solid hsl(45 93% 47% / 0.3)' }}>
+              <div className="p-3 flex gap-3" style={{ background: 'hsl(var(--s-wn-bg))', border: '1px solid hsl(var(--s-wn-bg))' }}>
                 <Warning size={18} style={{ color: 'hsl(var(--s-wn-tx))', flexShrink: 0, marginTop: 1 }} />
                 <div>
                   <p className="text-xs font-semibold" style={{ color: 'hsl(var(--s-wn-tx))' }}>Trigger Reason</p>
@@ -527,8 +527,8 @@ export default function HITLReviewCenter() {
               {/* Existing remarks if approved/rejected */}
               {(selectedItem.status === 'approved' || selectedItem.status === 'rejected') && selectedItem.remarks && (
                 <div className="p-3" style={{
-                  border: `1px solid ${selectedItem.status === 'approved' ? 'hsl(142 71% 45% / 0.3)' : 'hsl(0 72% 51% / 0.3)'}`,
-                  background: selectedItem.status === 'approved' ? 'hsl(142 71% 45% / 0.05)' : 'hsl(0 72% 51% / 0.05)',
+                  border: `1px solid ${selectedItem.status === 'approved' ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-er-bg))'}`,
+                  background: selectedItem.status === 'approved' ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-er-bg))',
                 }}>
                   <p className="text-xs font-semibold" style={{
                     color: selectedItem.status === 'approved' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))',

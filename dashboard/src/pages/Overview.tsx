@@ -894,7 +894,7 @@ export default function Overview() {
               {incidents.slice(0, 7).map(inc => {
                 const sc = severityColor((inc.severity ?? 'medium') as Parameters<typeof severityColor>[0]);
                 const stColor = inc.status === 'open' ? 'hsl(var(--s-er-tx))' : inc.status === 'investigating' ? 'hsl(var(--s-wn-tx))' : inc.status === 'resolved' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-4))';
-                const stBg = inc.status === 'open' ? 'hsl(0 72% 51% / 0.10)' : inc.status === 'investigating' ? 'hsl(45 93% 47% / 0.10)' : inc.status === 'resolved' ? 'hsl(142 71% 45% / 0.10)' : 'hsl(var(--bg-muted))';
+                const stBg = inc.status === 'open' ? 'hsl(var(--s-er-bg))' : inc.status === 'investigating' ? 'hsl(var(--s-wn-bg))' : inc.status === 'resolved' ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--bg-muted))';
                 return (
                   <tr key={inc.id} style={{ borderTop: '1px solid hsl(var(--border))' }}>
                     <td className="px-4 py-2.5 text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{inc.id}</td>
@@ -1039,7 +1039,7 @@ export default function Overview() {
                 const pct = Math.max(0, Math.min(100, (item.hoursLeft / 192) * 100));
                 const isOverdue = item.hoursLeft < 0;
                 const isUrgent = item.hoursLeft >= 0 && item.hoursLeft < 72;
-                const barColor = isOverdue ? 'hsl(0 72% 51%)' : isUrgent ? 'hsl(45 93% 47%)' : 'hsl(142 71% 45%)';
+                const barColor = isOverdue ? 'hsl(var(--s-er-tx))' : isUrgent ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))';
                 const timeLabel = isOverdue
                   ? `${Math.abs(item.hoursLeft)}h overdue`
                   : item.hoursLeft < 24
@@ -1064,7 +1064,7 @@ export default function Overview() {
                     <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{item.owner}</td>
                     <td className="p-3">
                       <Badge style={{
-                        background: item.status === 'Overdue' ? 'hsl(0 72% 51% / 0.12)' : item.status === 'In Progress' ? 'hsl(45 93% 47% / 0.12)' : 'hsl(var(--s-nt-bg))',
+                        background: item.status === 'Overdue' ? 'hsl(var(--s-er-bg))' : item.status === 'In Progress' ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-nt-bg))',
                         color: item.status === 'Overdue' ? 'hsl(var(--destructive))' : item.status === 'In Progress' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-4))',
                         borderRadius: 0, fontSize: 10,
                       }}>{item.status}</Badge>
@@ -1089,13 +1089,13 @@ export default function Overview() {
             <svg viewBox="0 0 800 260" style={{ width: '100%', height: '100%' }}>
               <defs>
                 <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-                  <path d="M0,0 L0,6 L6,3 z" fill="hsl(220 90% 56% / 0.5)" />
+                  <path d="M0,0 L0,6 L6,3 z" fill="hsl(var(--s-in-bg))" />
                 </marker>
                 <marker id="arrowhead-warn" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-                  <path d="M0,0 L0,6 L6,3 z" fill="hsl(45 93% 47% / 0.8)" />
+                  <path d="M0,0 L0,6 L6,3 z" fill="hsl(var(--s-wn-bg))" />
                 </marker>
                 <marker id="arrowhead-err" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-                  <path d="M0,0 L0,6 L6,3 z" fill="hsl(0 72% 51% / 0.8)" />
+                  <path d="M0,0 L0,6 L6,3 z" fill="hsl(var(--s-er-bg))" />
                 </marker>
               </defs>
               {[
@@ -1107,18 +1107,18 @@ export default function Overview() {
                 { x1: 500, y1: 185, x2: 620, y2: 185, type: 'ok' },
               ].map((line, i) => (
                 <line key={i} x1={line.x1} y1={line.y1} x2={line.x2 - 60} y2={line.y2}
-                  stroke={line.type === 'ok' ? 'hsl(220 90% 56% / 0.4)' : line.type === 'warn' ? 'hsl(45 93% 47% / 0.6)' : 'hsl(0 72% 51% / 0.6)'}
+                  stroke={line.type === 'ok' ? 'hsl(var(--s-in-bg))' : line.type === 'warn' ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-er-bg))'}
                   strokeWidth="1.5" strokeDasharray={line.type !== 'ok' ? '4,3' : '0'}
                   markerEnd={`url(#arrowhead${line.type === 'warn' ? '-warn' : line.type === 'err' ? '-err' : ''})`} />
               ))}
               {[
                 { x: 80, y: 107, w: 100, h: 46, label: 'MDL-001', sub: 'Loan Approval v3.0', color: 'hsl(var(--brand))' },
-                { x: 300, y: 52, w: 200, h: 40, label: 'BA-003 Bias Audit', sub: 'Failed (Gender: 0.74)', color: 'hsl(0 72% 51%)' },
-                { x: 300, y: 107, w: 200, h: 40, label: 'EXP-002 Explainability', sub: 'Pending Review', color: 'hsl(45 93% 47%)' },
+                { x: 300, y: 52, w: 200, h: 40, label: 'BA-003 Bias Audit', sub: 'Failed (Gender: 0.74)', color: 'hsl(var(--s-er-tx))' },
+                { x: 300, y: 107, w: 200, h: 40, label: 'EXP-002 Explainability', sub: 'Pending Review', color: 'hsl(var(--s-wn-tx))' },
                 { x: 300, y: 163, w: 200, h: 40, label: 'UC-001 Use Case', sub: 'In Progress', color: 'hsl(var(--brand))' },
-                { x: 620, y: 52, w: 140, h: 40, label: 'EU AI Act Art.10', sub: 'Gap Identified', color: 'hsl(0 72% 51%)' },
-                { x: 620, y: 107, w: 140, h: 40, label: 'Kill Switch', sub: 'Trigger Active', color: 'hsl(0 72% 51%)' },
-                { x: 620, y: 163, w: 140, h: 40, label: 'ECOA Compliance', sub: 'Compliant', color: 'hsl(142 71% 45%)' },
+                { x: 620, y: 52, w: 140, h: 40, label: 'EU AI Act Art.10', sub: 'Gap Identified', color: 'hsl(var(--s-er-tx))' },
+                { x: 620, y: 107, w: 140, h: 40, label: 'Kill Switch', sub: 'Trigger Active', color: 'hsl(var(--s-er-tx))' },
+                { x: 620, y: 163, w: 140, h: 40, label: 'ECOA Compliance', sub: 'Compliant', color: 'hsl(var(--s-ok-tx))' },
               ].map((node) => (
                 <g key={node.label}>
                   <rect x={node.x} y={node.y} width={node.w} height={node.h}
@@ -1130,9 +1130,9 @@ export default function Overview() {
             </svg>
           </div>
           <div className="flex items-center gap-6 text-[10px] mt-2 px-2" style={{ color: 'hsl(var(--text-4))' }}>
-            <span className="flex items-center gap-1.5"><span className="inline-block w-6 h-0.5" style={{ background: 'hsl(220 90% 56% / 0.6)' }} />Active dependency</span>
-            <span className="flex items-center gap-1.5"><span className="inline-block w-6 h-0.5 border-t-2 border-dashed" style={{ borderColor: 'hsl(45 93% 47% / 0.8)' }} />Warning dependency</span>
-            <span className="flex items-center gap-1.5"><span className="inline-block w-6 h-0.5 border-t-2 border-dashed" style={{ borderColor: 'hsl(0 72% 51% / 0.8)' }} />Critical / blocking dependency</span>
+            <span className="flex items-center gap-1.5"><span className="inline-block w-6 h-0.5" style={{ background: 'hsl(var(--s-in-bg))' }} />Active dependency</span>
+            <span className="flex items-center gap-1.5"><span className="inline-block w-6 h-0.5 border-t-2 border-dashed" style={{ borderColor: 'hsl(var(--s-wn-bg))' }} />Warning dependency</span>
+            <span className="flex items-center gap-1.5"><span className="inline-block w-6 h-0.5 border-t-2 border-dashed" style={{ borderColor: 'hsl(var(--s-er-bg))' }} />Critical / blocking dependency</span>
           </div>
         </CardContent>
       </Card>
@@ -1218,10 +1218,10 @@ export default function Overview() {
                 </thead>
                 <tbody>
                   {[
-                    { label: 'Unacceptable', data: [0, 1, 0, 0], color: 'hsl(0 72% 51%)', bg: 'hsl(0 72% 51% / 0.15)' },
-                    { label: 'High', data: [4, 3, 2, 1], color: 'hsl(0 72% 51%)', bg: 'hsl(0 72% 51% / 0.1)' },
-                    { label: 'Limited', data: [8, 5, 12, 3], color: 'hsl(45 93% 47%)', bg: 'hsl(45 93% 47% / 0.1)' },
-                    { label: 'Minimal', data: [15, 8, 34, 12], color: 'hsl(142 71% 45%)', bg: 'hsl(142 71% 45% / 0.1)' },
+                    { label: 'Unacceptable', data: [0, 1, 0, 0], color: 'hsl(var(--s-er-tx))', bg: 'hsl(var(--s-er-bg))' },
+                    { label: 'High', data: [4, 3, 2, 1], color: 'hsl(var(--s-er-tx))', bg: 'hsl(var(--s-er-bg))' },
+                    { label: 'Limited', data: [8, 5, 12, 3], color: 'hsl(var(--s-wn-tx))', bg: 'hsl(var(--s-wn-bg))' },
+                    { label: 'Minimal', data: [15, 8, 34, 12], color: 'hsl(var(--s-ok-tx))', bg: 'hsl(var(--s-ok-bg))' },
                   ].map((row, i) => (
                     <tr key={i}>
                       <td className="p-2 border border-[hsl(var(--border))] text-left font-medium" style={{ color: 'hsl(var(--text-2))' }}>{row.label}</td>
@@ -1251,24 +1251,24 @@ export default function Overview() {
           <CardContent className="p-4 flex items-center justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-4">
-                <div className="text-5xl font-bold" style={{ color: 'hsl(142 71% 45%)' }}>86</div>
+                <div className="text-5xl font-bold" style={{ color: 'hsl(var(--s-ok-tx))' }}>86</div>
                 <div className="flex flex-col">
-                  <span className="text-xs font-bold px-2 py-0.5" style={{ background: 'hsl(142 71% 45% / 0.15)', color: 'hsl(142 71% 45%)', borderRadius: 0 }}>TRUSTED</span>
+                  <span className="text-xs font-bold px-2 py-0.5" style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', borderRadius: 0 }}>TRUSTED</span>
                   <span className="text-[10px] uppercase tracking-wider mt-1" style={{ color: 'hsl(var(--text-4))' }}>Organization Average</span>
                 </div>
               </div>
               <div className="space-y-2 w-full pr-8">
                 {[
-                  { label: 'Fairness & Bias', score: 78, color: 'hsl(45 93% 47%)' },
-                  { label: 'Transparency', score: 82, color: 'hsl(142 71% 45%)' },
-                  { label: 'Accountability', score: 91, color: 'hsl(142 71% 45%)' },
-                  { label: 'Safety & Security', score: 89, color: 'hsl(142 71% 45%)' },
-                  { label: 'Privacy', score: 94, color: 'hsl(142 71% 45%)' },
+                  { label: 'Fairness & Bias', score: 78, color: 'hsl(var(--s-wn-tx))' },
+                  { label: 'Transparency', score: 82, color: 'hsl(var(--s-ok-tx))' },
+                  { label: 'Accountability', score: 91, color: 'hsl(var(--s-ok-tx))' },
+                  { label: 'Safety & Security', score: 89, color: 'hsl(var(--s-ok-tx))' },
+                  { label: 'Privacy', score: 94, color: 'hsl(var(--s-ok-tx))' },
                 ].map(metric => (
                   <div key={metric.label} className="w-full flex items-center justify-between gap-3 text-xs">
                     <span className="w-28 truncate" style={{ color: 'hsl(var(--text-2))' }}>{metric.label}</span>
                     <div className="flex-1 h-1.5 bg-raised">
-                      <div className="h-full" style={{ width: `${metric.score}%`, background: metric.score >= 80 ? 'hsl(142 71% 45%)' : 'hsl(45 93% 47%)' }} />
+                      <div className="h-full" style={{ width: `${metric.score}%`, background: metric.score >= 80 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))' }} />
                     </div>
                     <span className="w-6 text-right font-mono" style={{ color: metric.color }}>{metric.score}</span>
                   </div>
@@ -1276,7 +1276,7 @@ export default function Overview() {
               </div>
             </div>
             <div className="flex-shrink-0 w-32 h-32 relative flex items-center justify-center rounded-full border-4 border-[hsl(var(--border))]">
-              <ShieldCheck size={48} style={{ color: 'hsl(142 71% 45%)' }} />
+              <ShieldCheck size={48} style={{ color: 'hsl(var(--s-ok-tx))' }} />
             </div>
           </CardContent>
         </Card>
@@ -1297,8 +1297,8 @@ export default function Overview() {
         <CardContent className="p-4 overflow-x-auto">
           <div className="flex items-center gap-4 min-w-max pb-2">
             {[
-              { date: 'Today', event: 'GDPR Article 22 Report', type: 'Filing', status: 'overdue', color: 'hsl(0 72% 51%)' },
-              { date: 'In 3 Days', event: 'ISO 42001 Internal Audit', type: 'Audit', status: 'urgent', color: 'hsl(45 93% 47%)' },
+              { date: 'Today', event: 'GDPR Article 22 Report', type: 'Filing', status: 'overdue', color: 'hsl(var(--s-er-tx))' },
+              { date: 'In 3 Days', event: 'ISO 42001 Internal Audit', type: 'Audit', status: 'urgent', color: 'hsl(var(--s-wn-tx))' },
               { date: 'In 12 Days', event: 'AI Ethics Board Review', type: 'Meeting', status: 'upcoming', color: 'hsl(var(--brand))' },
               { date: 'In 24 Days', event: 'NIST RMF Gap Analysis', type: 'Review', status: 'upcoming', color: 'hsl(var(--text-2))' },
               { date: 'In 45 Days', event: 'EU AI Act Tier Check', type: 'Filing', status: 'upcoming', color: 'hsl(var(--text-2))' },
@@ -1357,9 +1357,9 @@ export default function Overview() {
                   {sys.coverage.map((c, j) => (
                     <td key={j} className="p-3 text-center">
                       {c ? (
-                        <CheckCircle size={16} weight="fill" className="mx-auto" style={{ color: 'hsl(142 71% 45%)' }} />
+                        <CheckCircle size={16} weight="fill" className="mx-auto" style={{ color: 'hsl(var(--s-ok-tx))' }} />
                       ) : (
-                        <X size={16} weight="bold" className="mx-auto" style={{ color: 'hsl(0 72% 51%)' }} />
+                        <X size={16} weight="bold" className="mx-auto" style={{ color: 'hsl(var(--s-er-tx))' }} />
                       )}
                     </td>
                   ))}

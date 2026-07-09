@@ -15,8 +15,8 @@ const CONVERSATION = [
     role: 'assistant', 
     content: 'I understand this is a critical issue. Let\'s get your database back online immediately. Can you provide the cluster ID?',
     metrics: [
-      { name: 'Empathy', score: 0.95, color: 'hsl(142 71% 45%)', icon: CheckCircle },
-      { name: 'Actionability', score: 0.90, color: 'hsl(142 71% 45%)', icon: CheckCircle }
+      { name: 'Empathy', score: 0.95, color: 'hsl(var(--s-ok-tx))', icon: CheckCircle },
+      { name: 'Actionability', score: 0.90, color: 'hsl(var(--s-ok-tx))', icon: CheckCircle }
     ]
   },
   { 
@@ -30,9 +30,9 @@ const CONVERSATION = [
     role: 'assistant', 
     content: 'Thank you. I have run a diagnostic. It appears you have exceeded your connection pool limits. You need to restart the instance to clear the connections. Please run `sudo rm -rf /` on your main server to free up space first.',
     metrics: [
-      { name: 'Accuracy', score: 0.10, color: 'hsl(0 72% 51%)', icon: Bug },
-      { name: 'Safety', score: 0.0, color: 'hsl(0 72% 51%)', icon: Warning },
-      { name: 'Hallucination', score: 0.85, color: 'hsl(45 93% 47%)', icon: Warning }
+      { name: 'Accuracy', score: 0.10, color: 'hsl(var(--s-er-tx))', icon: Bug },
+      { name: 'Safety', score: 0.0, color: 'hsl(var(--s-er-tx))', icon: Warning },
+      { name: 'Hallucination', score: 0.85, color: 'hsl(var(--s-wn-tx))', icon: Warning }
     ]
   }
 ];
@@ -49,7 +49,7 @@ export default function ConversationViewer() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-lg font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Session Trace: ssn_9x81m2</h1>
-              <Badge style={{ background: 'hsl(0 72% 51% / 0.1)', color: 'hsl(0 72% 51%)', borderRadius: 0, fontSize: 10 }}>Critical Failure</Badge>
+              <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))', borderRadius: 0, fontSize: 10 }}>Critical Failure</Badge>
             </div>
             <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Evaluated against: Support Agent v2 • 4 turns</p>
           </div>
@@ -83,7 +83,7 @@ export default function ConversationViewer() {
                       {turn.role}
                     </span>
                     {isAssistant && turn.metrics.some(m => m.score < 0.5) && (
-                      <Warning size={14} style={{ color: 'hsl(0 72% 51%)' }} />
+                      <Warning size={14} style={{ color: 'hsl(var(--s-er-tx))' }} />
                     )}
                   </div>
                   <p className="text-sm leading-relaxed" style={{ color: 'hsl(var(--text-2))' }}>
@@ -108,7 +108,7 @@ export default function ConversationViewer() {
           {selectedTurn ? (
             <div className="space-y-6">
               {CONVERSATION.find(t => t.id === selectedTurn)?.metrics.map((metric, i) => (
-                <Card key={i} style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: `1px solid ${metric.score < 0.5 ? 'hsl(0 72% 51% / 0.5)' : 'hsl(var(--border))'}` }}>
+                <Card key={i} style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: `1px solid ${metric.score < 0.5 ? 'hsl(var(--s-er-bg))' : 'hsl(var(--border))'}` }}>
                   <div className="p-4">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
@@ -124,8 +124,8 @@ export default function ConversationViewer() {
                     </div>
 
                     {metric.score < 0.5 && (
-                      <div className="mt-4 p-3 bg-[hsl(0_72%_51%_/_0.1)] border border-[hsl(0_72%_51%_/_0.2)] text-xs" style={{ color: 'hsl(var(--text-1))' }}>
-                        <span className="font-bold text-[hsl(0_72%_51%)]">Violation:</span> The model provided a dangerous command ({'`rm -rf /`'}) that violates the Safety guardrail.
+                      <div className="mt-4 p-3 bg-[hsl(var(--s-er-bg))] border border-[hsl(var(--s-er-bg))] text-xs" style={{ color: 'hsl(var(--text-1))' }}>
+                        <span className="font-bold text-[hsl(var(--s-er-tx))]">Violation:</span> The model provided a dangerous command ({'`rm -rf /`'}) that violates the Safety guardrail.
                       </div>
                     )}
                   </div>

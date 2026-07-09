@@ -55,10 +55,10 @@ function MetricTile({ label, value, variant, icon, sub }: {
   label: string; value: string; variant: 'ok' | 'warn' | 'error' | 'info'; icon: React.ReactNode; sub?: string;
 }) {
   const vs = {
-    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(var(--s-ok-tx))' },
-    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(var(--s-wn-tx))' },
-    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(var(--destructive))' },
-    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))' },
+    ok: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+    warn: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+    error: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+    info: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
   };
   const s = vs[variant];
   return (
@@ -79,9 +79,9 @@ function MetricTile({ label, value, variant, icon, sub }: {
 
 function ConsentBadge({ status }: { status: string }) {
   const map: Record<string, { bg: string; color: string }> = {
-    'Obtained': { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
-    'Partial': { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(var(--s-wn-tx))' },
-    'Missing': { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
+    'Obtained': { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+    'Partial': { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+    'Missing': { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
     'Not Required': { bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))' },
   };
   const style = map[status] || map['Not Required'];
@@ -95,9 +95,9 @@ function LineageFlow({ lineage }: { lineage: string[] }) {
   const line = lineage[0] || '';
   const steps = line.split('→').map(s => s.trim());
   const colors: Record<number, string> = {
-    0: 'hsl(220 90% 56%)', // source = blue
-    1: 'hsl(142 71% 45%)', // processing = green
-    2: 'hsl(142 71% 45%)', // processing = green
+    0: 'hsl(var(--s-in-tx))', // source = blue
+    1: 'hsl(var(--s-ok-tx))', // processing = green
+    2: 'hsl(var(--s-ok-tx))', // processing = green
     3: 'hsl(var(--brand))', // model = brand
   };
 
@@ -272,12 +272,12 @@ export default function DataGovernancePage() {
                         <td className="px-4 py-3 text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{dg.id}</td>
                         <td className="px-4 py-3">
                           <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{dg.name}</span>
-                          {dg.pii && <Badge className="ml-2" style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 9 }}>PII</Badge>}
+                          {dg.pii && <Badge className="ml-2" style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 9 }}>PII</Badge>}
                         </td>
                         <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{dg.type}</td>
                         <td className="px-4 py-3">
                           <Badge style={{
-                            background: dg.classification === 'Restricted' ? 'hsl(0 72% 51% / 0.12)' : dg.classification === 'Confidential' ? 'hsl(45 93% 47% / 0.12)' : 'hsl(var(--s-nt-bg))',
+                            background: dg.classification === 'Restricted' ? 'hsl(var(--s-er-bg))' : dg.classification === 'Confidential' ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-nt-bg))',
                             color: dg.classification === 'Restricted' ? 'hsl(var(--destructive))' : dg.classification === 'Confidential' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-nt-tx))',
                             borderRadius: 0, fontSize: 10,
                           }}>{dg.classification}</Badge>
@@ -326,7 +326,7 @@ export default function DataGovernancePage() {
                     <span className="text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{dg.id}</span>
                     <span className="text-sm font-medium ml-2" style={{ color: 'hsl(var(--text-1))' }}>{dg.name}</span>
                   </div>
-                  <Badge style={{ background: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>{dg.type}</Badge>
+                  <Badge style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>{dg.type}</Badge>
                 </div>
                 <LineageFlow lineage={dg.lineage} />
               </CardContent>
@@ -372,7 +372,7 @@ export default function DataGovernancePage() {
                         </td>
                         <td className="px-4 py-3">
                           {dg.pii ? (
-                            <Badge style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>Yes</Badge>
+                            <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>Yes</Badge>
                           ) : (
                             <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>No</span>
                           )}
@@ -411,7 +411,7 @@ export default function DataGovernancePage() {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Data Subject Access Requests</CardTitle>
-                <Badge style={{ background: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>
+                <Badge style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>
                   SLA: 30 days (GDPR)
                 </Badge>
               </div>
@@ -434,7 +434,7 @@ export default function DataGovernancePage() {
                         <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{d.dataset}</td>
                         <td className="px-4 py-3">
                           <Badge style={{
-                            background: d.type === 'Delete' ? 'hsl(0 72% 51% / 0.12)' : d.type === 'Portability' ? 'hsl(220 90% 56% / 0.12)' : 'hsl(var(--s-nt-bg))',
+                            background: d.type === 'Delete' ? 'hsl(var(--s-er-bg))' : d.type === 'Portability' ? 'hsl(var(--s-in-bg))' : 'hsl(var(--s-nt-bg))',
                             color: d.type === 'Delete' ? 'hsl(var(--destructive))' : d.type === 'Portability' ? 'hsl(var(--s-in-tx))' : 'hsl(var(--s-nt-tx))',
                             borderRadius: 0, fontSize: 10,
                           }}>{d.type}</Badge>
@@ -443,7 +443,7 @@ export default function DataGovernancePage() {
                         <td className="px-4 py-3 text-xs" style={{ color: d.status === 'Overdue' ? 'hsl(var(--destructive))' : 'hsl(var(--text-4))' }}>{formatDate(d.slaDeadline)}</td>
                         <td className="px-4 py-3">
                           <Badge style={{
-                            background: d.status === 'Complete' ? 'hsl(142 71% 45% / 0.12)' : d.status === 'Overdue' ? 'hsl(0 72% 51% / 0.12)' : d.status === 'In Progress' ? 'hsl(45 93% 47% / 0.12)' : 'hsl(var(--s-nt-bg))',
+                            background: d.status === 'Complete' ? 'hsl(var(--s-ok-bg))' : d.status === 'Overdue' ? 'hsl(var(--s-er-bg))' : d.status === 'In Progress' ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-nt-bg))',
                             color: d.status === 'Complete' ? 'hsl(var(--s-ok-tx))' : d.status === 'Overdue' ? 'hsl(var(--destructive))' : d.status === 'In Progress' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-nt-tx))',
                             borderRadius: 0, fontSize: 10,
                           }}>{d.status}</Badge>

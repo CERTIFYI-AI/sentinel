@@ -117,7 +117,7 @@ export default function ShadowAI() {
       </div>
 
       {/* Alert Banner */}
-      <div className="p-4 flex items-start gap-3" style={{ background: 'hsl(0 72% 51% / 0.08)', border: '1px solid hsl(0 72% 51% / 0.3)' }}>
+      <div className="p-4 flex items-start gap-3" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-bg))' }}>
         <Siren size={20} style={{ color: 'hsl(var(--destructive))', flexShrink: 0, marginTop: 1 }} />
         <div>
           <p className="text-sm font-semibold text-destructive">
@@ -149,7 +149,7 @@ export default function ShadowAI() {
                 contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.tooltipText, borderRadius: 0 }}
                 formatter={(v: number, _: string, p: any) => [formatNumber(v), p.payload.fullName]}
               />
-              <Bar dataKey="calls" name="API Calls" fill="hsl(0 72% 51%)" radius={0} />
+              <Bar dataKey="calls" name="API Calls" fill="hsl(var(--s-er-tx))" radius={0} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -254,7 +254,7 @@ export default function ShadowAI() {
               <div className="flex gap-2 flex-wrap">
                 <Badge style={{ ...severityColor(investigateAgent.risk), borderRadius: 0, fontSize: 10 }}>{investigateAgent.risk} risk</Badge>
                 <Badge style={{ ...statusColor(investigateAgent.status), borderRadius: 0, fontSize: 10 }}>{investigateAgent.status}</Badge>
-                <Badge style={{ background: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>
+                <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>
                   UNAUTHORIZED
                 </Badge>
               </div>
@@ -291,7 +291,7 @@ export default function ShadowAI() {
                 <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-4))' }}>Data Categories Accessed</p>
                 <div className="flex gap-2 flex-wrap">
                   {investigateAgent.dataAccess.map(d => (
-                    <Badge key={d} style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>
+                    <Badge key={d} style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>
                       {d.replace(/_/g, ' ')}
                     </Badge>
                   ))}

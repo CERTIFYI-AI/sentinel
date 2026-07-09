@@ -34,17 +34,17 @@ const SEVERITIES = ["Critical", "High", "Medium", "Low"];
 const STATUSES = ["Open", "Mitigating", "Accepted", "Closed"];
 
 const SEV_STYLE: Record<string, string> = {
-  Critical: "bg-[hsl(0_72%_51%/0.12)] text-[hsl(var(--s-er-tx))] border border-[hsl(0_72%_51%/0.3)]",
-  High: "bg-[hsl(25_95%_53%/0.12)] text-[hsl(var(--s-wn-tx))] border border-[hsl(25_95%_53%/0.3)]",
-  Medium: "bg-[hsl(45_93%_47%/0.12)] text-[hsl(var(--s-wn-tx))] border border-[hsl(45_93%_47%/0.3)]",
-  Low: "bg-[hsl(142_71%_45%/0.12)] text-[hsl(var(--s-ok-tx))] border border-[hsl(142_71%_45%/0.3)]",
+  Critical: "bg-[hsl(var(--s-er-bg))] text-[hsl(var(--s-er-tx))] border border-[hsl(var(--s-er-bg))]",
+  High: "bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))] border border-[hsl(var(--s-wn-bg))]",
+  Medium: "bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))] border border-[hsl(var(--s-wn-bg))]",
+  Low: "bg-[hsl(var(--s-ok-bg))] text-[hsl(var(--s-ok-tx))] border border-[hsl(var(--s-ok-bg))]",
 };
 
 const STATUS_STYLE: Record<string, string> = {
-  Open: "bg-[hsl(0_72%_51%/0.10)] text-[hsl(var(--s-er-tx))]",
-  Mitigating: "bg-[hsl(25_95%_53%/0.10)] text-[hsl(var(--s-wn-tx))]",
-  Accepted: "bg-[hsl(45_93%_47%/0.10)] text-[hsl(var(--s-wn-tx))]",
-  Closed: "bg-[hsl(142_71%_45%/0.10)] text-[hsl(var(--s-ok-tx))]",
+  Open: "bg-[hsl(var(--s-er-bg))] text-[hsl(var(--s-er-tx))]",
+  Mitigating: "bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))]",
+  Accepted: "bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))]",
+  Closed: "bg-[hsl(var(--s-ok-bg))] text-[hsl(var(--s-ok-tx))]",
 };
 
 export default function RiskPage() {
@@ -227,7 +227,7 @@ export default function RiskPage() {
                       <RBACGate action="delete">
                         <button
                           onClick={() => setDeleteId(item.id)}
-                          className="p-1.5 rounded hover:bg-[hsl(0_72%_51%/0.10)] text-[hsl(var(--text-3))] hover:text-[hsl(var(--s-er-tx))]"
+                          className="p-1.5 rounded hover:bg-[hsl(var(--s-er-bg))] text-[hsl(var(--text-3))] hover:text-[hsl(var(--s-er-tx))]"
                           aria-label="Delete risk"
                         >
                           <Trash size={14} />

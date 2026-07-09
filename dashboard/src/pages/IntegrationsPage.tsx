@@ -36,25 +36,25 @@ const SEED: Integration[] = [
 ]
 
 const STATUS_STYLE: Record<IntegrationStatus, { bg: string; color: string }> = {
-  Connected: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
+  Connected: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
   Disconnected: { bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--text-4))' },
-  Error: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
-  'Pending Setup': { bg: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))' },
+  Error: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+  'Pending Setup': { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
 }
 
 const HEALTH_DOT: Record<string, string> = {
   passing: 'hsl(var(--s-ok-tx))',
-  degraded: 'hsl(45 85% 40%)',
+  degraded: 'hsl(var(--s-wn-tx))',
   failing: 'hsl(var(--destructive))',
 }
 
 const CAT_COLORS: Record<IntegrationCategory, string> = {
   'AI Provider': 'hsl(var(--brand))',
-  'Data Source': 'hsl(142 71% 45%)',
-  'Compliance Tool': 'hsl(280 67% 56%)',
-  Monitoring: 'hsl(220 90% 56%)',
-  Identity: 'hsl(25 95% 53%)',
-  Notification: 'hsl(45 93% 47%)',
+  'Data Source': 'hsl(var(--s-ok-tx))',
+  'Compliance Tool': 'hsl(var(--tag-purple))',
+  Monitoring: 'hsl(var(--s-in-tx))',
+  Identity: 'hsl(var(--s-wn-tx))',
+  Notification: 'hsl(var(--s-wn-tx))',
   Ticketing: 'hsl(var(--text-3))',
 }
 
@@ -155,7 +155,7 @@ export default function IntegrationsPage() {
             </div>
             <p className="text-xs text-[hsl(var(--text-4))] mb-2 line-clamp-2">{int.description}</p>
             {int.error && (
-              <div className="flex items-start gap-1.5 p-2 bg-[hsl(0_72%_51%/0.06)] border border-[hsl(var(--destructive)/0.3)] mb-2">
+              <div className="flex items-start gap-1.5 p-2 bg-[hsl(var(--s-er-bg))] border border-[hsl(var(--destructive)/0.3)] mb-2">
                 <Warning size={12} className="text-[hsl(var(--destructive))] flex-shrink-0 mt-0.5" />
                 <p className="text-[10px] text-[hsl(var(--destructive))]">{int.error}</p>
               </div>
@@ -187,10 +187,10 @@ export default function IntegrationsPage() {
             <div className="p-4 space-y-4">
               <div className="flex gap-2">
                 <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{selected.status}</span>
-                {selected.healthCheck && <span className="text-[11px] px-2 py-0.5 font-medium flex items-center gap-1" style={{ background: selected.healthCheck === 'passing' ? 'hsl(142 71% 45% / 0.12)' : 'hsl(0 72% 51% / 0.12)', color: HEALTH_DOT[selected.healthCheck] }}><div className="w-1.5 h-1.5 rounded-full" style={{ background: HEALTH_DOT[selected.healthCheck] }} />{selected.healthCheck}</span>}
+                {selected.healthCheck && <span className="text-[11px] px-2 py-0.5 font-medium flex items-center gap-1" style={{ background: selected.healthCheck === 'passing' ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-er-bg))', color: HEALTH_DOT[selected.healthCheck] }}><div className="w-1.5 h-1.5 rounded-full" style={{ background: HEALTH_DOT[selected.healthCheck] }} />{selected.healthCheck}</span>}
               </div>
               <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">{selected.description}</p>
-              {selected.error && <div className="flex items-start gap-2 p-3 bg-[hsl(0_72%_51%/0.06)] border border-[hsl(var(--destructive)/0.3)]"><Warning size={14} className="text-[hsl(var(--destructive))] flex-shrink-0 mt-0.5" /><p className="text-sm text-[hsl(var(--destructive))]">{selected.error}</p></div>}
+              {selected.error && <div className="flex items-start gap-2 p-3 bg-[hsl(var(--s-er-bg))] border border-[hsl(var(--destructive)/0.3)]"><Warning size={14} className="text-[hsl(var(--destructive))] flex-shrink-0 mt-0.5" /><p className="text-sm text-[hsl(var(--destructive))]">{selected.error}</p></div>}
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { label: 'Auth Method', value: selected.authMethod },
@@ -209,7 +209,7 @@ export default function IntegrationsPage() {
             <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
               <button onClick={() => toast.success(`${selected.name} synced`)} className="flex-1 flex items-center justify-center gap-1.5 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised"><ArrowClockwise size={14} /> Sync Now</button>
               {selected.status === 'Error' && <button onClick={() => { toast.success(`${selected.name} reconnected`); setSelected(null) }} className="flex-1 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90">Reconnect</button>}
-              <button onClick={() => { setDeleteTarget(selected); setSelected(null) }} className="px-3 py-2 border border-[hsl(var(--destructive)/0.3)] text-[hsl(var(--destructive))] text-sm hover:bg-[hsl(0_72%_51%/0.06)]"><Trash size={14} /></button>
+              <button onClick={() => { setDeleteTarget(selected); setSelected(null) }} className="px-3 py-2 border border-[hsl(var(--destructive)/0.3)] text-[hsl(var(--destructive))] text-sm hover:bg-[hsl(var(--s-er-bg))]"><Trash size={14} /></button>
             </div>
           </div>
         </div>

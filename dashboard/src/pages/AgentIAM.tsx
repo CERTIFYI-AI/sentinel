@@ -16,10 +16,10 @@ type AgentIdentity = AgentCredential
 
 
 const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
-  Active: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
-  Revoked: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
-  Expired: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(var(--destructive))' },
-  'Pending Rotation': { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)' },
+  Active: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  Revoked: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+  Expired: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+  'Pending Rotation': { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
 }
 
 export default function AgentIAM() {
@@ -104,7 +104,7 @@ export default function AgentIAM() {
         {[
           { label: 'Total Identities', value: stats.total, color: 'hsl(var(--text-1))' },
           { label: 'Active', value: stats.active, color: 'hsl(var(--s-ok-tx))' },
-          { label: 'Pending Rotation', value: stats.pendingRotation, color: 'hsl(45 85% 40%)' },
+          { label: 'Pending Rotation', value: stats.pendingRotation, color: 'hsl(var(--s-wn-tx))' },
           { label: 'Audit Required', value: stats.auditRequired, color: 'hsl(var(--brand))' },
         ].map(s => (
           <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
@@ -115,8 +115,8 @@ export default function AgentIAM() {
       </div>
 
       {stats.pendingRotation > 0 && (
-        <div className="flex items-center gap-3 p-3 border border-[hsl(45_93%_47%/0.5)] bg-[hsl(45_93%_47%/0.08)]">
-          <Warning size={16} className="text-[hsl(45_85%_40%)] flex-shrink-0" />
+        <div className="flex items-center gap-3 p-3 border border-[hsl(var(--s-wn-bg))] bg-[hsl(var(--s-wn-bg))]">
+          <Warning size={16} className="text-[hsl(var(--s-wn-tx))] flex-shrink-0" />
           <p className="text-sm text-[hsl(var(--text-2))]"><span className="font-semibold">{stats.pendingRotation} credential(s)</span> pending rotation. Rotate immediately to maintain security posture.</p>
           <button
             onClick={() => { identities.filter(i => i.status === 'Pending Rotation').forEach(rotate) }}
@@ -212,15 +212,15 @@ export default function AgentIAM() {
                   {r.unused.length > 0 ? (
                     <div className="flex flex-wrap gap-1">
                       {r.unused.map(s => (
-                        <span key={s} className="text-[10px] px-1.5 py-0.5 bg-[hsl(0_72%_51%/0.1)] text-[hsl(var(--destructive))] border border-[hsl(var(--destructive)/0.2)]">{s}</span>
+                        <span key={s} className="text-[10px] px-1.5 py-0.5 bg-[hsl(var(--s-er-bg))] text-[hsl(var(--destructive))] border border-[hsl(var(--destructive)/0.2)]">{s}</span>
                       ))}
                     </div>
                   ) : <span className="text-[hsl(var(--s-ok-tx))]">None — minimal</span>}
                 </td>
                 <td className="px-3 py-2">
                   <span className="text-[10px] px-1.5 py-0.5 font-medium" style={{
-                    background: r.risk === 'None' ? 'hsl(142 71% 45% / 0.12)' : r.risk === 'Low' ? 'hsl(220 90% 56% / 0.12)' : 'hsl(45 93% 47% / 0.12)',
-                    color: r.risk === 'None' ? 'hsl(var(--s-ok-tx))' : r.risk === 'Low' ? 'hsl(var(--s-in-tx))' : 'hsl(45 85% 40%)',
+                    background: r.risk === 'None' ? 'hsl(var(--s-ok-bg))' : r.risk === 'Low' ? 'hsl(var(--s-in-bg))' : 'hsl(var(--s-wn-bg))',
+                    color: r.risk === 'None' ? 'hsl(var(--s-ok-tx))' : r.risk === 'Low' ? 'hsl(var(--s-in-tx))' : 'hsl(var(--s-wn-tx))',
                   }}>{r.risk}</span>
                 </td>
                 <td className="px-3 py-2">
@@ -250,8 +250,8 @@ export default function AgentIAM() {
               <div className="flex items-center justify-between mb-1">
                 <p className="text-xs font-medium text-[hsl(var(--text-1))]">{c.name}</p>
                 <span className="text-[10px] px-1.5 py-0.5 font-medium" style={{
-                  background: c.status === 'Overdue' ? 'hsl(0 72% 51% / 0.12)' : c.status === 'In Progress' ? 'hsl(45 93% 47% / 0.12)' : 'hsl(220 90% 56% / 0.12)',
-                  color: c.status === 'Overdue' ? 'hsl(var(--destructive))' : c.status === 'In Progress' ? 'hsl(45 85% 40%)' : 'hsl(var(--s-in-tx))',
+                  background: c.status === 'Overdue' ? 'hsl(var(--s-er-bg))' : c.status === 'In Progress' ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-in-bg))',
+                  color: c.status === 'Overdue' ? 'hsl(var(--destructive))' : c.status === 'In Progress' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-in-tx))',
                 }}>{c.status}</span>
               </div>
               <p className="text-[10px] text-[hsl(var(--text-4))] mb-1">Due: {c.due} · Reviewers: {c.reviewers}</p>
@@ -343,7 +343,7 @@ export default function AgentIAM() {
               {selected.status === 'Active' && (
                 <button
                   onClick={() => setRevokeTarget(selected)}
-                  className="px-4 py-2 border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] text-sm hover:bg-[hsl(0_72%_51%/0.05)]"
+                  className="px-4 py-2 border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] text-sm hover:bg-[hsl(var(--s-er-bg))]"
                 >
                   Revoke
                 </button>

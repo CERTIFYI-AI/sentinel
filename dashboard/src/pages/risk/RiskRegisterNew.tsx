@@ -270,19 +270,19 @@ const SEED_RISKS: RiskItem[] = [
 // ── Score Color Helper ───────────────────────────────────────────────────────
 
 function scoreColor(score: number): { bg: string; text: string; label: string } {
-  if (score >= 20) return { bg: 'hsl(0 72% 51% / 0.2)', text: 'hsl(var(--destructive))', label: 'Critical' };
-  if (score >= 12) return { bg: 'hsl(25 95% 53% / 0.2)', text: 'hsl(var(--s-wn-tx))', label: 'High' };
-  if (score >= 6) return { bg: 'hsl(45 93% 47% / 0.15)', text: 'hsl(var(--s-wn-tx))', label: 'Medium' };
-  return { bg: 'hsl(142 71% 45% / 0.15)', text: 'hsl(var(--s-ok-tx))', label: 'Low' };
+  if (score >= 20) return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--destructive))', label: 'Critical' };
+  if (score >= 12) return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))', label: 'High' };
+  if (score >= 6) return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))', label: 'Medium' };
+  return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', label: 'Low' };
 }
 
 function treatmentColor(status: TreatmentStatus): { bg: string; text: string } {
   switch (status) {
-    case 'Mitigated': return { bg: 'hsl(142 71% 45% / 0.15)', text: 'hsl(var(--s-ok-tx))' };
+    case 'Mitigated': return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))' };
     case 'In Progress': return { bg: 'hsl(217 91% 60% / 0.15)', text: 'hsl(var(--s-in-tx))' };
-    case 'Accepted': return { bg: 'hsl(45 93% 47% / 0.15)', text: 'hsl(var(--s-wn-tx))' };
+    case 'Accepted': return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))' };
     case 'Planned': return { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))' };
-    case 'Overdue': return { bg: 'hsl(0 72% 51% / 0.15)', text: 'hsl(var(--destructive))' };
+    case 'Overdue': return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--destructive))' };
     default: return { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))' };
   }
 }
@@ -291,9 +291,9 @@ function categoryColor(cat: RiskCategory): { bg: string; text: string } {
   switch (cat) {
     case 'AI Model': return { bg: 'hsl(271 81% 56% / 0.15)', text: 'hsl(271 81% 66%)' };
     case 'Data': return { bg: 'hsl(217 91% 60% / 0.15)', text: 'hsl(var(--s-in-tx))' };
-    case 'Operational': return { bg: 'hsl(45 93% 47% / 0.15)', text: 'hsl(var(--s-wn-tx))' };
-    case 'Compliance': return { bg: 'hsl(0 72% 51% / 0.15)', text: 'hsl(var(--destructive))' };
-    case 'Security': return { bg: 'hsl(25 95% 53% / 0.15)', text: 'hsl(25 95% 63%)' };
+    case 'Operational': return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))' };
+    case 'Compliance': return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--destructive))' };
+    case 'Security': return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(25 95% 63%)' };
     case 'Third-Party': return { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))' };
     default: return { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))' };
   }
@@ -306,9 +306,9 @@ function MetricTile({ label, value, variant }: {
 }) {
   const colors = {
     default: { bg: 'hsl(var(--bg-surface))', text: 'hsl(var(--text-1))', border: 'hsl(var(--border))' },
-    error: { bg: 'hsl(0 72% 51% / 0.08)', text: 'hsl(var(--destructive))', border: 'hsl(0 72% 51% / 0.3)' },
-    warn: { bg: 'hsl(45 93% 47% / 0.08)', text: 'hsl(var(--s-wn-tx))', border: 'hsl(45 93% 47% / 0.3)' },
-    ok: { bg: 'hsl(142 71% 45% / 0.08)', text: 'hsl(var(--s-ok-tx))', border: 'hsl(142 71% 45% / 0.3)' },
+    error: { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--destructive))', border: 'hsl(var(--s-er-bg))' },
+    warn: { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))', border: 'hsl(var(--s-wn-bg))' },
+    ok: { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-bg))' },
   };
   const c = colors[variant];
   return (
@@ -936,8 +936,8 @@ export default function RiskRegisterNew() {
                   </div>
                   {selectedRisk.treatmentStatus === 'Overdue' && (
                     <div className="p-3 flex items-center gap-2" style={{
-                      background: 'hsl(0 72% 51% / 0.08)',
-                      border: '1px solid hsl(0 72% 51% / 0.3)',
+                      background: 'hsl(var(--s-er-bg))',
+                      border: '1px solid hsl(var(--s-er-bg))',
                       borderRadius: 0,
                     }}>
                       <Warning size={16} style={{ color: 'hsl(var(--destructive))' }} />
@@ -1091,7 +1091,7 @@ export default function RiskRegisterNew() {
             <div className="flex items-center gap-3 p-3" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))' }}>
               <div className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Risk Score</div>
               <div className="text-2xl font-black" style={{
-                color: newLikelihood * newImpact >= 15 ? 'hsl(var(--destructive))' : newLikelihood * newImpact >= 8 ? 'hsl(45 85% 40%)' : 'hsl(var(--s-ok-tx))',
+                color: newLikelihood * newImpact >= 15 ? 'hsl(var(--destructive))' : newLikelihood * newImpact >= 8 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))',
               }}>
                 {newLikelihood * newImpact}
               </div>

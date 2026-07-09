@@ -24,9 +24,9 @@ interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info
 
 function slaStatusStyle(status: SLAStatus): { bg: string; color: string; label: string; icon: React.ElementType } {
   const map: Record<SLAStatus, { bg: string; color: string; label: string; icon: React.ElementType }> = {
-    healthy: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))', label: 'Healthy', icon: CheckCircle },
-    at_risk: { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(var(--s-wn-tx))', label: 'At Risk', icon: Warning },
-    breached: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))', label: 'Breached', icon: XCircle },
+    healthy: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', label: 'Healthy', icon: CheckCircle },
+    at_risk: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', label: 'At Risk', icon: Warning },
+    breached: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', label: 'Breached', icon: XCircle },
     waived: { bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--text-3))', label: 'Waived', icon: CheckCircle },
     retired: { bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--text-4))', label: 'Retired', icon: Timer },
   };
@@ -188,7 +188,7 @@ export default function VendorSLA() {
 
       {/* Breached SLAs alert */}
       {breached > 0 && (
-        <div className="p-4 flex items-start gap-3" style={{ background: 'hsl(0 72% 51% / 0.08)', border: '1px solid hsl(0 72% 51% / 0.3)' }}>
+        <div className="p-4 flex items-start gap-3" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-bg))' }}>
           <XCircle size={20} style={{ color: 'hsl(var(--destructive))', flexShrink: 0, marginTop: 1 }} />
           <div>
             <p className="text-sm font-semibold text-destructive">
@@ -209,7 +209,7 @@ export default function VendorSLA() {
           { label: 'At Risk', value: atRisk, color: 'hsl(var(--s-wn-tx))', icon: Warning },
           { label: 'Breached', value: breached, color: 'hsl(var(--destructive))', icon: XCircle },
         ].map(s => (
-          <Card key={s.label} style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: `1px solid ${s.color === 'hsl(var(--destructive))' && s.value > 0 ? 'hsl(0 72% 51% / 0.4)' : 'hsl(var(--border))'}` }}>
+          <Card key={s.label} style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: `1px solid ${s.color === 'hsl(var(--destructive))' && s.value > 0 ? 'hsl(var(--s-er-bg))' : 'hsl(var(--border))'}` }}>
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center justify-between mb-2">
                 <s.icon size={18} style={{ color: s.color }} />
@@ -289,7 +289,7 @@ export default function VendorSLA() {
                     const isBreached = s.status === 'breached';
                     return (
                       <tr key={s.id} className="hover:bg-muted/30 transition-colors cursor-pointer"
-                        style={{ borderBottom: '1px solid hsl(var(--border))', background: isBreached ? 'hsl(0 72% 51% / 0.04)' : 'transparent' }}
+                        style={{ borderBottom: '1px solid hsl(var(--border))', background: isBreached ? 'hsl(var(--s-er-bg))' : 'transparent' }}
                         onClick={() => setSelected(s)}>
                         <td className="px-4 py-3">
                           <p className="text-xs font-mono font-medium" style={{ color: 'hsl(var(--text-1))' }}>{s.id}</p>

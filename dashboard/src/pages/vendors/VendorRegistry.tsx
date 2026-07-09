@@ -42,10 +42,10 @@ interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info
 
 function tierColor(risk: Vendor['risk']) {
   const map: Record<string, { bg: string; color: string; label: string }> = {
-    critical: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))', label: 'Tier 1' },
-    high: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))', label: 'Tier 1' },
-    medium: { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(var(--s-wn-tx))', label: 'Tier 2' },
-    low: { bg: 'hsl(142 71% 45% / 0.15)', color: 'hsl(var(--s-ok-tx))', label: 'Tier 3' },
+    critical: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', label: 'Tier 1' },
+    high: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', label: 'Tier 1' },
+    medium: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', label: 'Tier 2' },
+    low: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', label: 'Tier 3' },
   };
   return map[risk] ?? map.medium;
 }
@@ -65,9 +65,9 @@ function scoreProgressColor(score: number): string {
 // ── Concentration Risk Data ───────────────────────────────────────────────────
 
 const CONCENTRATION_DATA: { vendor: string; pct: number; color: string }[] = [
-  { vendor: 'OpenAI', pct: 45, color: 'hsl(220 90% 56%)' },
-  { vendor: 'Anthropic', pct: 30, color: 'hsl(280 67% 56%)' },
-  { vendor: 'Internal', pct: 25, color: 'hsl(142 71% 45%)' },
+  { vendor: 'OpenAI', pct: 45, color: 'hsl(var(--s-in-tx))' },
+  { vendor: 'Anthropic', pct: 30, color: 'hsl(var(--tag-purple))' },
+  { vendor: 'Internal', pct: 25, color: 'hsl(var(--s-ok-tx))' },
 ];
 
 const CONCENTRATION_THRESHOLD = 40;
@@ -89,9 +89,9 @@ const VSQ_DATA: VSQEntry[] = [
 
 function vsqStatusStyle(status: VSQStatus): { bg: string; color: string } {
   switch (status) {
-    case 'Complete': return { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' };
-    case 'In Progress': return { bg: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))' };
-    case 'Overdue': return { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' };
+    case 'Complete': return { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' };
+    case 'In Progress': return { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' };
+    case 'Overdue': return { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' };
     case 'Not Started': return { bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--text-4))' };
   }
 }
@@ -244,7 +244,7 @@ export default function VendorRegistry() {
 
       {/* DPA Warning Banner */}
       {dpaWarningVendors.length > 0 && (
-        <div className="p-4 flex items-start gap-3" style={{ background: 'hsl(0 72% 51% / 0.08)', border: '1px solid hsl(0 72% 51% / 0.3)' }}>
+        <div className="p-4 flex items-start gap-3" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-bg))' }}>
           <Siren size={20} style={{ color: 'hsl(var(--destructive))', flexShrink: 0, marginTop: 1 }} />
           <div>
             <p className="text-sm font-semibold text-destructive">
@@ -265,7 +265,7 @@ export default function VendorRegistry() {
             <span className="text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Vendor Concentration Risk</span>
           </div>
           {CONCENTRATION_DATA.some(d => d.pct > CONCENTRATION_THRESHOLD) && (
-            <div className="flex items-center gap-2 px-3 py-2 mb-3" style={{ background: 'hsl(45 93% 47% / 0.08)', border: '1px solid hsl(45 93% 47% / 0.3)', borderRadius: 0 }}>
+            <div className="flex items-center gap-2 px-3 py-2 mb-3" style={{ background: 'hsl(var(--s-wn-bg))', border: '1px solid hsl(var(--s-wn-bg))', borderRadius: 0 }}>
               <Warning size={12} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />
               <p className="text-xs" style={{ color: 'hsl(var(--s-wn-tx))' }}>
                 <strong>Warning:</strong> {CONCENTRATION_DATA.filter(d => d.pct > CONCENTRATION_THRESHOLD).map(d => d.vendor).join(', ')} exceed{CONCENTRATION_DATA.filter(d => d.pct > CONCENTRATION_THRESHOLD).length === 1 ? 's' : ''} {CONCENTRATION_THRESHOLD}% dependency threshold
@@ -541,7 +541,7 @@ export default function VendorRegistry() {
                       <div className="flex items-center justify-between">
                         <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{formatDate(review.date)}</p>
                         <Badge style={{
-                          background: review.result === 'Approved' ? 'hsl(142 71% 45% / 0.15)' : 'hsl(45 93% 47% / 0.15)',
+                          background: review.result === 'Approved' ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-wn-bg))',
                           color: review.result === 'Approved' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))',
                           borderRadius: 0, fontSize: 10,
                         }}>{review.result}</Badge>
@@ -560,7 +560,7 @@ export default function VendorRegistry() {
                   </div>
 
                   {selectedVendor.dpaStatus === 'signed' && (
-                    <div className="p-3" style={{ border: '1px solid hsl(142 71% 45% / 0.3)', background: 'hsl(142 71% 45% / 0.05)' }}>
+                    <div className="p-3" style={{ border: '1px solid hsl(var(--s-ok-bg))', background: 'hsl(var(--s-ok-bg))' }}>
                       <p className="text-xs font-medium text-[hsl(var(--s-ok-tx))]">Data Processing Agreement signed and active</p>
                       <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>Signed: {formatDate(selectedVendor.lastReview)} · Valid for 12 months</p>
                     </div>
@@ -568,7 +568,7 @@ export default function VendorRegistry() {
 
                   {selectedVendor.dpaStatus !== 'signed' && (
                     <>
-                      <div className="p-3" style={{ border: '1px solid hsl(0 72% 51% / 0.3)', background: 'hsl(0 72% 51% / 0.05)' }}>
+                      <div className="p-3" style={{ border: '1px solid hsl(var(--s-er-bg))', background: 'hsl(var(--s-er-bg))' }}>
                         <p className="text-xs font-medium text-destructive">
                           {selectedVendor.dpaStatus === 'pending' ? 'DPA pending signature' : 'No DPA on file — GDPR Art. 28 violation'}
                         </p>

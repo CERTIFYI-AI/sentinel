@@ -26,13 +26,13 @@ interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info
 function statusStyle(status: AssessmentStatus): { bg: string; color: string; label: string; icon: React.ElementType } {
   const map: Record<AssessmentStatus, { bg: string; color: string; label: string; icon: React.ElementType }> = {
     draft: { bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--text-3))', label: 'Draft', icon: ClipboardText },
-    in_progress: { bg: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))', label: 'In Progress', icon: ArrowsClockwise },
-    submitted: { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(var(--s-wn-tx))', label: 'Submitted', icon: Clock },
-    under_review: { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(var(--s-wn-tx))', label: 'Under Review', icon: Eye },
-    approved: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))', label: 'Approved', icon: CheckCircle },
-    approved_with_conditions: { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(var(--s-wn-tx))', label: 'Approved w/ Conditions', icon: Warning },
-    rejected: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))', label: 'Rejected', icon: XCircle },
-    expired: { bg: 'hsl(0 72% 51% / 0.08)', color: 'hsl(var(--text-4))', label: 'Expired', icon: Clock },
+    in_progress: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', label: 'In Progress', icon: ArrowsClockwise },
+    submitted: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', label: 'Submitted', icon: Clock },
+    under_review: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', label: 'Under Review', icon: Eye },
+    approved: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', label: 'Approved', icon: CheckCircle },
+    approved_with_conditions: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', label: 'Approved w/ Conditions', icon: Warning },
+    rejected: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', label: 'Rejected', icon: XCircle },
+    expired: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--text-4))', label: 'Expired', icon: Clock },
   };
   return map[status] ?? map.draft;
 }
@@ -40,10 +40,10 @@ function statusStyle(status: AssessmentStatus): { bg: string; color: string; lab
 function recommendationBadge(rec: VendorAssessment['recommendation']) {
   if (!rec) return null;
   const map: Record<string, { bg: string; color: string }> = {
-    'Approve': { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
-    'Approve with Conditions': { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(var(--s-wn-tx))' },
-    'Reject': { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
-    'Reassess': { bg: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))' },
+    'Approve': { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+    'Approve with Conditions': { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+    'Reject': { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+    'Reassess': { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
   };
   const s = map[rec] ?? map['Reassess'];
   return <Badge style={{ background: s.bg, color: s.color, borderRadius: 0, fontSize: 10 }}>{rec}</Badge>;
@@ -336,7 +336,7 @@ export default function VendorAssessments() {
                           <div className="flex items-center gap-1">
                             <span className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>{a.riskFindingsCount}</span>
                             {a.criticalFindingsCount > 0 && (
-                              <Badge style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 9 }}>
+                              <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 9 }}>
                                 {a.criticalFindingsCount} crit
                               </Badge>
                             )}
@@ -390,7 +390,7 @@ export default function VendorAssessments() {
                   <Badge style={{ background: ss.bg, color: ss.color, borderRadius: 0, fontSize: 11 }}>{ss.label}</Badge>
                   {recommendationBadge(selected.recommendation)}
                   {selected.criticalFindingsCount > 0 && (
-                    <Badge style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 11 }}>
+                    <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 11 }}>
                       <Warning size={10} className="mr-1" />{selected.criticalFindingsCount} Critical Finding{selected.criticalFindingsCount > 1 ? 's' : ''}
                     </Badge>
                   )}

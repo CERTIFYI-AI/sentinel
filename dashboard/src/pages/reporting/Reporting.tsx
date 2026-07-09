@@ -599,7 +599,7 @@ export default function Reporting() {
                         </td>
                         <td className="px-3 py-2">
                           <span className="text-[9px] px-2 py-0.5 font-medium" style={{
-                            background: item.status === 'Approved' ? 'hsl(142 71% 45% / 0.12)' : item.status === 'Pending Signature' ? 'hsl(45 93% 47% / 0.12)' : 'hsl(var(--s-nt-bg))',
+                            background: item.status === 'Approved' ? 'hsl(var(--s-ok-bg))' : item.status === 'Pending Signature' ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-nt-bg))',
                             color: item.status === 'Approved' ? 'hsl(var(--s-ok-tx))' : item.status === 'Pending Signature' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-4))',
                           }}>{item.status}</span>
                         </td>
@@ -700,9 +700,9 @@ export default function Reporting() {
                             <YAxis tick={{ fill: ct.axis, fontSize: 10 }} label={{ value: 'Count', angle: -90, position: 'insideLeft', style: { fill: ct.axis } }} />
                             <RTooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, borderRadius: 0, color: ct.tooltipText, fontSize: 12 }} />
                             <Legend wrapperStyle={{ fontSize: 11 }} />
-                            <Line type="monotone" dataKey="critical" stroke="hsl(0 72% 51%)" strokeWidth={2} name="Critical" />
-                            <Line type="monotone" dataKey="high" stroke="hsl(25 95% 53%)" strokeWidth={2} name="High" />
-                            <Line type="monotone" dataKey="medium" stroke="hsl(45 93% 47%)" strokeWidth={2} name="Medium" />
+                            <Line type="monotone" dataKey="critical" stroke="hsl(var(--s-er-tx))" strokeWidth={2} name="Critical" />
+                            <Line type="monotone" dataKey="high" stroke="hsl(var(--s-wn-tx))" strokeWidth={2} name="High" />
+                            <Line type="monotone" dataKey="medium" stroke="hsl(var(--s-wn-tx))" strokeWidth={2} name="Medium" />
                           </LineChart>
                         </ResponsiveContainer>
                       </div>

@@ -37,10 +37,10 @@ import { useSettingsStore } from '../../stores/settingsStore';
 // ── Freshness Calc ────────────────────────────────────────────────────────────
 function getFreshness(lastSync: string, status: string): { label: string; color: string; dot: string; days: number; tier: 'green' | 'amber' | 'red' } {
   const days = Math.floor((Date.now() - new Date(lastSync).getTime()) / (86400000));
-  if (status === 'expired') return { label: 'Expired', color: 'hsl(var(--s-er-tx))', dot: 'hsl(0 72% 51%)', days, tier: 'red' };
-  if (days <= 30) return { label: 'Fresh', color: 'hsl(var(--s-ok-tx))', dot: 'hsl(142 71% 45%)', days, tier: 'green' };
-  if (days <= 90) return { label: 'Aging', color: 'hsl(var(--s-wn-tx))', dot: 'hsl(45 93% 47%)', days, tier: 'amber' };
-  return { label: 'Stale', color: 'hsl(var(--s-er-tx))', dot: 'hsl(0 72% 51%)', days, tier: 'red' };
+  if (status === 'expired') return { label: 'Expired', color: 'hsl(var(--s-er-tx))', dot: 'hsl(var(--s-er-tx))', days, tier: 'red' };
+  if (days <= 30) return { label: 'Fresh', color: 'hsl(var(--s-ok-tx))', dot: 'hsl(var(--s-ok-tx))', days, tier: 'green' };
+  if (days <= 90) return { label: 'Aging', color: 'hsl(var(--s-wn-tx))', dot: 'hsl(var(--s-wn-tx))', days, tier: 'amber' };
+  return { label: 'Stale', color: 'hsl(var(--s-er-tx))', dot: 'hsl(var(--s-er-tx))', days, tier: 'red' };
 }
 
 // ── Evidence-Control mapping ──────────────────────────────────────────────────
@@ -224,23 +224,23 @@ export default function EvidenceSyncEngine() {
             <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-4))' }}>Evidence Freshness Overview</p>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1.5">
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'hsl(142 71% 45%)' }} />
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'hsl(var(--s-ok-tx))' }} />
                 <span className="text-xs font-medium" style={{ color: 'hsl(var(--s-ok-tx))' }}>Fresh (&lt;30d): {freshCount}</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'hsl(45 93% 47%)' }} />
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'hsl(var(--s-wn-tx))' }} />
                 <span className="text-xs font-medium" style={{ color: 'hsl(var(--s-wn-tx))' }}>Aging (30-90d): {agingCount}</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'hsl(0 72% 51%)' }} />
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'hsl(var(--s-er-tx))' }} />
                 <span className="text-xs font-medium" style={{ color: 'hsl(var(--s-er-tx))' }}>Stale (&gt;90d): {staleCount}</span>
               </div>
               <div className="flex-1" />
               {/* Freshness progress bar */}
               <div className="flex h-2 w-48" style={{ borderRadius: 0, overflow: 'hidden' }}>
-                {freshCount > 0 && <div style={{ width: `${(freshCount / totalEvidence) * 100}%`, background: 'hsl(142 71% 45%)' }} />}
-                {agingCount > 0 && <div style={{ width: `${(agingCount / totalEvidence) * 100}%`, background: 'hsl(45 93% 47%)' }} />}
-                {staleCount > 0 && <div style={{ width: `${(staleCount / totalEvidence) * 100}%`, background: 'hsl(0 72% 51%)' }} />}
+                {freshCount > 0 && <div style={{ width: `${(freshCount / totalEvidence) * 100}%`, background: 'hsl(var(--s-ok-tx))' }} />}
+                {agingCount > 0 && <div style={{ width: `${(agingCount / totalEvidence) * 100}%`, background: 'hsl(var(--s-wn-tx))' }} />}
+                {staleCount > 0 && <div style={{ width: `${(staleCount / totalEvidence) * 100}%`, background: 'hsl(var(--s-er-tx))' }} />}
               </div>
             </div>
           </CardContent>
@@ -359,9 +359,9 @@ export default function EvidenceSyncEngine() {
                             <Badge style={{
                               borderRadius: 0,
                               fontSize: 10,
-                              background: freshness.tier === 'green' ? 'hsl(142 71% 45% / 0.1)' : freshness.tier === 'amber' ? 'hsl(45 93% 47% / 0.1)' : 'hsl(0 72% 51% / 0.1)',
+                              background: freshness.tier === 'green' ? 'hsl(var(--s-ok-bg))' : freshness.tier === 'amber' ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-er-bg))',
                               color: freshness.color,
-                              border: `1px solid ${freshness.tier === 'green' ? 'hsl(142 71% 45% / 0.3)' : freshness.tier === 'amber' ? 'hsl(45 93% 47% / 0.3)' : 'hsl(0 72% 51% / 0.3)'}`,
+                              border: `1px solid ${freshness.tier === 'green' ? 'hsl(var(--s-ok-bg))' : freshness.tier === 'amber' ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-er-bg))'}`,
                             }}>
                               {freshness.label} ({freshness.days}d)
                             </Badge>
@@ -436,9 +436,9 @@ export default function EvidenceSyncEngine() {
                           <Badge style={{
                             borderRadius: 0,
                             fontSize: 10,
-                            background: f.tier === 'green' ? 'hsl(142 71% 45% / 0.1)' : f.tier === 'amber' ? 'hsl(45 93% 47% / 0.1)' : 'hsl(0 72% 51% / 0.1)',
+                            background: f.tier === 'green' ? 'hsl(var(--s-ok-bg))' : f.tier === 'amber' ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-er-bg))',
                             color: f.color,
-                            border: `1px solid ${f.tier === 'green' ? 'hsl(142 71% 45% / 0.3)' : f.tier === 'amber' ? 'hsl(45 93% 47% / 0.3)' : 'hsl(0 72% 51% / 0.3)'}`,
+                            border: `1px solid ${f.tier === 'green' ? 'hsl(var(--s-ok-bg))' : f.tier === 'amber' ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-er-bg))'}`,
                           }}>
                             {f.label} ({f.days}d)
                           </Badge>

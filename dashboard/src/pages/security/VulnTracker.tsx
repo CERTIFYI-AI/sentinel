@@ -36,10 +36,10 @@ function MetricTile({ label, value, variant, icon, sub }: {
   label: string; value: string; variant: 'ok' | 'warn' | 'error' | 'info'; icon: React.ReactNode; sub?: string;
 }) {
   const vs = {
-    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(var(--s-ok-tx))' },
-    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(var(--s-wn-tx))' },
-    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(var(--destructive))' },
-    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))' },
+    ok: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+    warn: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+    error: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+    info: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
   };
   const s = vs[variant];
   return (
@@ -60,10 +60,10 @@ function MetricTile({ label, value, variant, icon, sub }: {
 
 function cvssBadge(cvss: number) {
   let bg: string, color: string, fontWeight = 400;
-  if (cvss >= 9.0) { bg = 'hsl(0 72% 51% / 0.18)'; color = 'hsl(var(--destructive))'; fontWeight = 700; }
-  else if (cvss >= 7.0) { bg = 'hsl(0 72% 51% / 0.12)'; color = 'hsl(var(--destructive))'; }
-  else if (cvss >= 4.0) { bg = 'hsl(45 93% 47% / 0.15)'; color = 'hsl(var(--s-wn-tx))'; }
-  else { bg = 'hsl(142 71% 45% / 0.12)'; color = 'hsl(var(--s-ok-tx))'; }
+  if (cvss >= 9.0) { bg = 'hsl(var(--s-er-bg))'; color = 'hsl(var(--destructive))'; fontWeight = 700; }
+  else if (cvss >= 7.0) { bg = 'hsl(var(--s-er-bg))'; color = 'hsl(var(--destructive))'; }
+  else if (cvss >= 4.0) { bg = 'hsl(var(--s-wn-bg))'; color = 'hsl(var(--s-wn-tx))'; }
+  else { bg = 'hsl(var(--s-ok-bg))'; color = 'hsl(var(--s-ok-tx))'; }
   return (
     <Badge style={{ background: bg, color, borderRadius: 0, fontSize: 11, fontWeight, fontFamily: 'monospace' }}>
       {cvss.toFixed(1)}
@@ -389,7 +389,7 @@ export default function VulnTracker() {
                       <Target size={14} style={{ color: 'hsl(var(--brand))' }} />
                       <span className="text-sm font-mono" style={{ color: 'hsl(var(--text-1))' }}>{selectedVuln.component}</span>
                     </div>
-                    <Badge style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>Primary</Badge>
+                    <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>Primary</Badge>
                   </div>
                   <p className="text-xs px-3" style={{ color: 'hsl(var(--text-4))' }}>Additional asset mapping requires integration with CMDB.</p>
                 </TabsContent>
@@ -423,7 +423,7 @@ export default function VulnTracker() {
                       </div>
                     </div>
                   ) : (
-                    <div className="flex items-start gap-3 p-3" style={{ background: 'hsl(45 93% 47% / 0.08)', border: '1px solid hsl(45 93% 47% / 0.3)', borderRadius: 0 }}>
+                    <div className="flex items-start gap-3 p-3" style={{ background: 'hsl(var(--s-wn-bg))', border: '1px solid hsl(var(--s-wn-bg))', borderRadius: 0 }}>
                       <Warning size={14} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} className="mt-0.5" />
                       <div>
                         <p className="text-xs font-medium" style={{ color: 'hsl(var(--s-wn-tx))' }}>Not yet patched</p>

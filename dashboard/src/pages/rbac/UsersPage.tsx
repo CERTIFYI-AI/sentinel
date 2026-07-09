@@ -12,20 +12,20 @@ import { fetchUsers as sbFetchUsers, fetchRoles as sbFetchRoles, fetchDepartment
 
 
 const STATUS_STYLE: Record<UserStatus, { bg: string; color: string }> = {
-  active:    { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
+  active:    { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
   inactive:  { bg: 'hsl(var(--border) / 0.5)', color: 'hsl(var(--text-4))' },
-  pending:   { bg: 'hsl(45 93% 47% / 0.12)',  color: 'hsl(45 85% 40%)' },
-  suspended: { bg: 'hsl(0 72% 51% / 0.12)',   color: 'hsl(var(--destructive))' },
+  pending:   { bg: 'hsl(var(--s-wn-bg))',  color: 'hsl(var(--s-wn-tx))' },
+  suspended: { bg: 'hsl(var(--s-er-bg))',   color: 'hsl(var(--destructive))' },
 }
 
 const COLOR_STYLES: Record<string, { bg: string; color: string }> = {
   zinc:    { bg: 'hsl(240 5% 64% / 0.15)',  color: 'hsl(240 5% 45%)' },
-  emerald: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
-  blue:    { bg: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))' },
-  amber:   { bg: 'hsl(45 93% 47% / 0.12)',  color: 'hsl(45 85% 40%)' },
-  red:     { bg: 'hsl(0 72% 51% / 0.12)',   color: 'hsl(var(--destructive))' },
-  purple:  { bg: 'hsl(280 67% 56% / 0.12)', color: 'hsl(280 60% 55%)' },
-  orange:  { bg: 'hsl(25 95% 53% / 0.12)',  color: 'hsl(25 90% 45%)' },
+  emerald: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  blue:    { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
+  amber:   { bg: 'hsl(var(--s-wn-bg))',  color: 'hsl(var(--s-wn-tx))' },
+  red:     { bg: 'hsl(var(--s-er-bg))',   color: 'hsl(var(--destructive))' },
+  purple:  { bg: 'hsl(var(--tag-purple-bg))', color: 'hsl(var(--tag-purple))' },
+  orange:  { bg: 'hsl(var(--s-wn-bg))',  color: 'hsl(25 90% 45%)' },
 }
 
 function Avatar({ user }: { user: ACUser }) {
@@ -260,7 +260,7 @@ export default function UsersPage() {
         {[
           { label: 'Total Users', value: users.length, color: 'hsl(var(--text-1))' },
           { label: 'Active', value: users.filter(u => u.status === 'active').length, color: 'hsl(var(--s-ok-tx))' },
-          { label: 'Pending', value: users.filter(u => u.status === 'pending').length, color: 'hsl(45 85% 40%)' },
+          { label: 'Pending', value: users.filter(u => u.status === 'pending').length, color: 'hsl(var(--s-wn-tx))' },
           { label: 'Suspended', value: users.filter(u => u.status === 'suspended').length, color: 'hsl(var(--destructive))' },
         ].map(s => (
           <div key={s.label} className="p-4 border" style={{ background: 'hsl(var(--bg-surface))', borderColor: 'hsl(var(--border))' }}>
@@ -441,8 +441,8 @@ export default function UsersPage() {
               </button>
               <button onClick={() => { setSuspendTarget(selectedUser); setSelected(null) }} className="flex items-center gap-1.5 px-4 py-2 text-sm border hover:opacity-80"
                 style={selectedUser.status === 'suspended'
-                  ? { borderColor: 'hsl(142 71% 45% / 0.3)', color: 'hsl(var(--s-ok-tx))' }
-                  : { borderColor: 'hsl(45 93% 47% / 0.3)', color: 'hsl(45 85% 40%)' }}>
+                  ? { borderColor: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' }
+                  : { borderColor: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' }}>
                 <Warning size={14} /> {selectedUser.status === 'suspended' ? 'Reactivate' : 'Suspend'}
               </button>
               <button onClick={() => { setDeleteTarget(selectedUser); setSelected(null) }} className="flex items-center gap-1.5 px-4 py-2 text-sm border hover:opacity-80" style={{ borderColor: 'hsl(var(--destructive) / 0.3)', color: 'hsl(var(--destructive))' }}>
@@ -569,7 +569,7 @@ export default function UsersPage() {
                         Effective Permissions Preview ({previewPerms.length} total)
                       </p>
                       {hasAdmin && (
-                        <div className="flex items-center gap-1.5 mb-2 text-[10px]" style={{ color: 'hsl(45 85% 40%)' }}>
+                        <div className="flex items-center gap-1.5 mb-2 text-[10px]" style={{ color: 'hsl(var(--s-wn-tx))' }}>
                           <Warning size={12} /> Combined roles grant admin-level access — review carefully.
                         </div>
                       )}
@@ -585,7 +585,7 @@ export default function UsersPage() {
               )}
 
               {formError && (
-                <div className="mt-4 text-xs px-3 py-2 border" style={{ background: 'hsl(0 72% 51% / 0.08)', borderColor: 'hsl(var(--destructive) / 0.3)', color: 'hsl(var(--destructive))' }}>
+                <div className="mt-4 text-xs px-3 py-2 border" style={{ background: 'hsl(var(--s-er-bg))', borderColor: 'hsl(var(--destructive) / 0.3)', color: 'hsl(var(--destructive))' }}>
                   {formError}
                 </div>
               )}

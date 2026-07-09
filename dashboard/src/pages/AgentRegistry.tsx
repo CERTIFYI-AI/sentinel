@@ -19,17 +19,17 @@ type AgentRegistryItem = AgentRecord
 
 
 const STATUS_STYLE: Record<AgentStatus, { bg: string; color: string }> = {
-  Active: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
-  Suspended: { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)' },
-  Quarantined: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))' },
+  Active: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  Suspended: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+  Quarantined: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
   Decommissioned: { bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--text-4))' },
-  'Pending Approval': { bg: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))' },
+  'Pending Approval': { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
 }
 const TIER_STYLE: Record<RiskTier, { bg: string; color: string }> = {
-  Critical: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
-  High: { bg: 'hsl(25 95% 53% / 0.12)', color: 'hsl(var(--s-wn-tx))' },
-  Medium: { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)' },
-  Low: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
+  Critical: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+  High: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+  Medium: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+  Low: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
 }
 
 const BLANK = {
@@ -217,7 +217,7 @@ export default function AgentRegistry() {
                 <td className="px-3 py-2.5">
                   <div className="flex items-center gap-1.5">
                     <div className="h-1.5 w-14 bg-raised rounded-full overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: `${a.trustScore}%`, background: a.trustScore >= 80 ? 'hsl(var(--s-ok-tx))' : a.trustScore >= 60 ? 'hsl(45 85% 40%)' : 'hsl(var(--destructive))' }} />
+                      <div className="h-full rounded-full" style={{ width: `${a.trustScore}%`, background: a.trustScore >= 80 ? 'hsl(var(--s-ok-tx))' : a.trustScore >= 60 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))' }} />
                     </div>
                     <span className="text-xs font-medium text-[hsl(var(--text-2))]">{a.trustScore}</span>
                   </div>
@@ -225,7 +225,7 @@ export default function AgentRegistry() {
                 <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-2))] font-medium">{a.dailyCallCount.toLocaleString()}</td>
                 <td className="px-3 py-2.5">
                   {a.killSwitchEnabled ? (
-                    <button onClick={() => toggleKillSwitch(a.id)} className={`flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded border ${a.status === 'Active' ? 'border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] hover:bg-[hsl(0_72%_51%/0.08)]' : 'border-[hsl(var(--s-ok-tx))] text-[hsl(var(--s-ok-tx))] hover:bg-[hsl(142_71%_45%/0.08)]'}`}>
+                    <button onClick={() => toggleKillSwitch(a.id)} className={`flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded border ${a.status === 'Active' ? 'border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] hover:bg-[hsl(var(--s-er-bg))]' : 'border-[hsl(var(--s-ok-tx))] text-[hsl(var(--s-ok-tx))] hover:bg-[hsl(var(--s-ok-bg))]'}`}>
                       <Power size={10} />{a.status === 'Active' ? 'Suspend' : 'Resume'}
                     </button>
                   ) : <span className="text-xs text-[hsl(var(--text-4))]">N/A</span>}
@@ -290,7 +290,7 @@ export default function AgentRegistry() {
                     <p className="text-xs text-[hsl(var(--text-4))] mb-1">Trust Score</p>
                     <div className="flex items-center gap-3">
                       <div className="flex-1 h-2 bg-raised rounded-full overflow-hidden">
-                        <div className="h-full rounded-full" style={{ width: `${selected.trustScore}%`, background: selected.trustScore >= 80 ? 'hsl(var(--s-ok-tx))' : selected.trustScore >= 60 ? 'hsl(45 85% 40%)' : 'hsl(var(--destructive))' }} />
+                        <div className="h-full rounded-full" style={{ width: `${selected.trustScore}%`, background: selected.trustScore >= 80 ? 'hsl(var(--s-ok-tx))' : selected.trustScore >= 60 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))' }} />
                       </div>
                       <span className="text-lg font-bold text-[hsl(var(--text-1))]">{selected.trustScore}</span>
                     </div>

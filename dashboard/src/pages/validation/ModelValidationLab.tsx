@@ -120,17 +120,17 @@ const SEED_REPORTS: ValidationReport[] = [
 ];
 
 const STATUS_COLORS: Record<ValStatus, { bg: string; color: string }> = {
-  Passed: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
-  Failed: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
-  'In Progress': { bg: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))' },
+  Passed: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  Failed: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+  'In Progress': { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
   Pending: { bg: 'hsl(220 14% 60% / 0.15)', color: 'hsl(var(--text-3))' },
-  Waived: { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(var(--s-wn-tx))' },
+  Waived: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
 };
 
 const REC_COLORS: Record<string, { bg: string; color: string }> = {
-  Approve: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
-  'Conditional Approval': { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(var(--s-wn-tx))' },
-  Reject: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
+  Approve: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  'Conditional Approval': { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+  Reject: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
   Pending: { bg: 'hsl(220 14% 60% / 0.15)', color: 'hsl(var(--text-3))' },
 };
 

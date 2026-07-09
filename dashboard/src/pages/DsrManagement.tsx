@@ -44,11 +44,11 @@ const BLANK: Omit<DSRRequest, 'id'> = {
 }
 
 const STATUS_STYLE: Record<DSRStatus, { bg: string; color: string }> = {
-  Pending: { bg: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))' },
-  'In Review': { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)' },
-  Completed: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
-  Rejected: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
-  Overdue: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))' },
+  Pending: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
+  'In Review': { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+  Completed: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  Rejected: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+  Overdue: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
 }
 const TYPE_TOKEN: Record<DSRType, { bg: string; tx: string; br: string }> = {
   Access:        { bg: 'hsl(var(--s-in-bg))', tx: 'hsl(var(--s-in-tx))', br: 'hsl(var(--s-in-br))' },
@@ -60,9 +60,9 @@ const TYPE_TOKEN: Record<DSRType, { bg: string; tx: string; br: string }> = {
 }
 const TYPE_FALLBACK = { bg: 'hsl(var(--bg-raised))', tx: 'hsl(var(--text-3))', br: 'hsl(var(--border))' }
 const PRIORITY_STYLE: Record<string, { bg: string; color: string }> = {
-  High: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(var(--destructive))' },
-  Medium: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(45 85% 40%)' },
-  Low: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(var(--s-ok-tx))' },
+  High: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+  Medium: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+  Low: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
 }
 
 export default function DsrManagement() {
@@ -378,7 +378,7 @@ export default function DsrManagement() {
                         <button onClick={() => toast.success('DSR exported as PDF')} className="w-full flex items-center gap-2 p-3 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
                           Export Compliance Evidence
                         </button>
-                        <button onClick={() => setDeleteTarget(selected.id)} className="w-full flex items-center gap-2 p-3 border border-[hsl(var(--destructive)/0.4)] text-sm text-[hsl(var(--destructive))] hover:bg-[hsl(0_72%_51%/0.05)]">
+                        <button onClick={() => setDeleteTarget(selected.id)} className="w-full flex items-center gap-2 p-3 border border-[hsl(var(--destructive)/0.4)] text-sm text-[hsl(var(--destructive))] hover:bg-[hsl(var(--s-er-bg))]">
                           <Trash size={14} /> Delete Request
                         </button>
                       </div>

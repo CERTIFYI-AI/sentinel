@@ -17,7 +17,7 @@ function exportCsv(rows: any[], filename: string) {
 }
 
 function scoreColor(s: number) {
-  return s >= 80 ? 'hsl(var(--s-ok-tx))' : s >= 70 ? 'hsl(45 85% 40%)' : 'hsl(var(--destructive))'
+  return s >= 80 ? 'hsl(var(--s-ok-tx))' : s >= 70 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))'
 }
 
 const RADAR_MODELS = (b: any) => [

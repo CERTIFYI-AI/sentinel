@@ -17,12 +17,12 @@ import {
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { bg: string; color: string }> = {
-    'Completed': { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
-    'In Progress': { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(var(--s-wn-tx))' },
-    'Under Review': { bg: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))' },
+    'Completed': { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+    'In Progress': { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+    'Under Review': { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
     'Not Started': { bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))' },
     'On Hold': { bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))' },
-    'Rejected': { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
+    'Rejected': { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
   };
   const style = map[status] || map['Not Started'];
   return <Badge style={{ background: style.bg, color: style.color, borderRadius: 0, fontSize: 10 }}>{status}</Badge>;
@@ -30,10 +30,10 @@ function StatusBadge({ status }: { status: string }) {
 
 function RiskBadge({ riskClass }: { riskClass: string }) {
   const map: Record<string, { bg: string; color: string }> = {
-    'High-Risk': { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
-    'Limited': { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(var(--s-wn-tx))' },
-    'Minimal': { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
-    'Prohibited': { bg: 'hsl(0 72% 51% / 0.25)', color: 'hsl(var(--destructive))' },
+    'High-Risk': { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+    'Limited': { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+    'Minimal': { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+    'Prohibited': { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
   };
   const style = map[riskClass] || map['Minimal'];
   return <Badge style={{ background: style.bg, color: style.color, borderRadius: 0, fontSize: 10 }}>{riskClass}</Badge>;
@@ -326,7 +326,7 @@ export default function UseCaseDetail() {
                         <td className="px-4 py-3 text-[hsl(var(--text-3))]">{r.category}</td>
                         <td className="px-4 py-3">
                           <Badge style={{
-                            background: r.severity === 'critical' ? 'hsl(0 72% 51% / 0.12)' : r.severity === 'high' ? 'hsl(45 93% 47% / 0.12)' : 'hsl(var(--s-nt-bg))',
+                            background: r.severity === 'critical' ? 'hsl(var(--s-er-bg))' : r.severity === 'high' ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-nt-bg))',
                             color: r.severity === 'critical' ? 'hsl(var(--destructive))' : r.severity === 'high' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-nt-tx))',
                             borderRadius: 0, fontSize: 10,
                           }}>{r.severity}</Badge>

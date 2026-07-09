@@ -198,7 +198,7 @@ export default function DatasetRegistry() {
                         </td>
                         <td className="px-4 py-3">
                           <Badge style={{
-                            background: d.sensitivity === 'PII' ? 'hsl(0 72% 51% / 0.15)' : d.sensitivity === 'confidential' ? 'hsl(45 93% 47% / 0.15)' : 'hsl(220 90% 56% / 0.15)',
+                            background: d.sensitivity === 'PII' ? 'hsl(var(--s-er-bg))' : d.sensitivity === 'confidential' ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-in-bg))',
                             color: d.sensitivity === 'PII' ? 'hsl(var(--destructive))' : d.sensitivity === 'confidential' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-in-tx))',
                             borderRadius: 0, fontSize: 10,
                           }}>
@@ -285,7 +285,7 @@ export default function DatasetRegistry() {
                     <Badge style={{ ...severityColor(selectedDataset.risk), borderRadius: 0, fontSize: 10 }}>{selectedDataset.risk}</Badge>
                     <Badge style={{ ...statusColor(selectedDataset.status), borderRadius: 0, fontSize: 10 }}>{selectedDataset.status}</Badge>
                     <Badge style={{
-                      background: selectedDataset.sensitivity === 'PII' ? 'hsl(0 72% 51% / 0.15)' : 'hsl(220 90% 56% / 0.15)',
+                      background: selectedDataset.sensitivity === 'PII' ? 'hsl(var(--s-er-bg))' : 'hsl(var(--s-in-bg))',
                       color: selectedDataset.sensitivity === 'PII' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
                       borderRadius: 0, fontSize: 10,
                     }}>{selectedDataset.sensitivity}</Badge>
@@ -312,7 +312,7 @@ export default function DatasetRegistry() {
                           <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{f.type}</span>
                         </div>
                         {f.pii && (
-                          <Badge style={{ background: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 9 }}>
+                          <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 9 }}>
                             PII
                           </Badge>
                         )}
@@ -380,7 +380,7 @@ export default function DatasetRegistry() {
                       <div className="flex items-center justify-between">
                         <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{formatDate(audit.date)}</p>
                         <Badge style={{
-                          background: audit.result === 'Pass' ? 'hsl(142 71% 45% / 0.15)' : 'hsl(45 93% 47% / 0.15)',
+                          background: audit.result === 'Pass' ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-wn-bg))',
                           color: audit.result === 'Pass' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))',
                           borderRadius: 0, fontSize: 10,
                         }}>{audit.result}</Badge>

@@ -43,16 +43,16 @@ const SEED: RTFinding[] = [
 const BLANK = { title: '', attackVector: 'Prompt Injection' as AttackVector, severity: 'Medium' as Severity, status: 'Open' as FindingStatus, model: 'Credit Scoring Model v2.1', discoveredDate: '', discoveredBy: '', cvssScore: 5.0, description: '', impact: '', recommendation: '', remediationOwner: '', daysOpen: 0 }
 
 const SEV: Record<Severity, { bg: string; color: string }> = {
-  Critical: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
-  High: { bg: 'hsl(25 95% 53% / 0.12)', color: 'hsl(var(--s-wn-tx))' },
-  Medium: { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)' },
-  Low: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
+  Critical: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+  High: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+  Medium: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+  Low: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
 }
 const STS: Record<FindingStatus, { bg: string; color: string }> = {
-  Open: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
-  'In Remediation': { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)' },
-  Resolved: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
-  'Accepted Risk': { bg: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))' },
+  Open: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+  'In Remediation': { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+  Resolved: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  'Accepted Risk': { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
 }
 
 export default function RedTeamFindings() {
@@ -122,8 +122,8 @@ export default function RedTeamFindings() {
         {[
           { label: 'Open Findings', value: stats.open, sub: 'Require remediation', color: 'hsl(var(--destructive))' },
           { label: 'Critical Severity', value: stats.critical, sub: 'CVSS ≥ 9.0', color: 'hsl(var(--destructive))' },
-          { label: 'In Remediation', value: stats.remediation, sub: 'Active work in progress', color: 'hsl(45 85% 40%)' },
-          { label: 'Avg CVSS Score', value: stats.avgCvss, sub: 'Across all findings', color: Number(stats.avgCvss) >= 7 ? 'hsl(var(--destructive))' : 'hsl(45 85% 40%)' },
+          { label: 'In Remediation', value: stats.remediation, sub: 'Active work in progress', color: 'hsl(var(--s-wn-tx))' },
+          { label: 'Avg CVSS Score', value: stats.avgCvss, sub: 'Across all findings', color: Number(stats.avgCvss) >= 7 ? 'hsl(var(--destructive))' : 'hsl(var(--s-wn-tx))' },
         ].map(s => (
           <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
             <p className="text-xs text-[hsl(var(--text-4))]">{s.label}</p>
@@ -167,7 +167,7 @@ export default function RedTeamFindings() {
                 </td>
                 <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))] whitespace-nowrap">{f.attackVector}</td>
                 <td className="px-3 py-2.5">
-                  <span className={`text-sm font-bold ${f.cvssScore >= 9 ? 'text-[hsl(var(--destructive))]' : f.cvssScore >= 7 ? 'text-[hsl(var(--s-wn-tx))]' : 'text-[hsl(45_85%_40%)]'}`}>{f.cvssScore}</span>
+                  <span className={`text-sm font-bold ${f.cvssScore >= 9 ? 'text-[hsl(var(--destructive))]' : f.cvssScore >= 7 ? 'text-[hsl(var(--s-wn-tx))]' : 'text-[hsl(var(--s-wn-tx))]'}`}>{f.cvssScore}</span>
                 </td>
                 <td className="px-3 py-2.5"><span className="px-2 py-0.5 rounded text-xs font-medium" style={SEV[f.severity]}>{f.severity}</span></td>
                 <td className="px-3 py-2.5"><span className="px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap" style={STS[f.status]}>{f.status}</span></td>

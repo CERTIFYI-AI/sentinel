@@ -191,7 +191,7 @@ export default function AgentDiscovery() {
             <TabsTrigger value="confirmed" style={{ borderRadius: 0 }}>Confirmed ({confirmedAgents})</TabsTrigger>
             <TabsTrigger value="shadow" style={{ borderRadius: 0 }}>
               Shadow AI
-              <Badge className="ml-1.5" style={{ background: 'hsl(0 72% 51% / 0.2)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10, padding: '0 4px' }}>
+              <Badge className="ml-1.5" style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10, padding: '0 4px' }}>
                 {shadowAgents}
               </Badge>
             </TabsTrigger>
@@ -232,7 +232,7 @@ export default function AgentDiscovery() {
                             className="hover:bg-muted/30 transition-colors"
                             style={{
                               borderBottom: '1px solid hsl(var(--border))',
-                              borderLeft: isShadow ? '4px solid hsl(0 72% 51%)' : '4px solid transparent',
+                              borderLeft: isShadow ? '4px solid hsl(var(--s-er-tx))' : '4px solid transparent',
                             }}
                           >
                             <td className="px-4 py-3 font-mono text-xs" style={{ color: 'hsl(var(--text-4))' }}>{a.id}</td>
@@ -240,7 +240,7 @@ export default function AgentDiscovery() {
                               <div className="flex items-center gap-2">
                                 <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{a.name}</span>
                                 {isShadow && (
-                                  <Badge style={{ background: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 9, fontWeight: 700 }}>
+                                  <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 9, fontWeight: 700 }}>
                                     SHADOW
                                   </Badge>
                                 )}
@@ -401,7 +401,7 @@ export default function AgentDiscovery() {
                   <div>
                     <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-4))' }}>Models Called</p>
                     <div className="flex gap-2 flex-wrap">
-                      <Badge style={{ background: 'hsl(220 90% 56% / 0.15)', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>
+                      <Badge style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>
                         {selectedAgent.model}
                       </Badge>
                     </div>
@@ -410,7 +410,7 @@ export default function AgentDiscovery() {
                     <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-4))' }}>Data Categories Transmitted</p>
                     <div className="flex gap-2 flex-wrap">
                       {selectedAgent.dataAccess.map(d => (
-                        <Badge key={d} style={{ background: 'hsl(45 93% 47% / 0.12)', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 10 }}>
+                        <Badge key={d} style={{ background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 10 }}>
                           {d.replace(/_/g, ' ')}
                         </Badge>
                       ))}

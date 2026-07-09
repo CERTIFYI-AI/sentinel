@@ -208,20 +208,20 @@ const AUDITS: Audit[] = [
 
 function statusStyle(s: string) {
   const map: Record<string, { bg: string; text: string }> = {
-    Planning: { bg: 'hsl(220 90% 56% / 0.12)', text: 'hsl(var(--s-in-tx))' },
-    'In Progress': { bg: 'hsl(45 93% 47% / 0.12)', text: 'hsl(var(--s-wn-tx))' },
+    Planning: { bg: 'hsl(var(--s-in-bg))', text: 'hsl(var(--s-in-tx))' },
+    'In Progress': { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))' },
     Review: { bg: 'hsl(280 60% 50% / 0.12)', text: 'hsl(280 60% 40%)' },
-    Closed: { bg: 'hsl(142 71% 45% / 0.12)', text: 'hsl(var(--s-ok-tx))' },
+    Closed: { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))' },
   };
   return map[s] || map.Planning;
 }
 
 function riskStyle(r: string) {
   const map: Record<string, { bg: string; text: string }> = {
-    Critical: { bg: 'hsl(0 72% 51% / 0.12)', text: 'hsl(var(--destructive))' },
-    High: { bg: 'hsl(25 95% 53% / 0.12)', text: 'hsl(25 95% 45%)' },
-    Medium: { bg: 'hsl(45 93% 47% / 0.12)', text: 'hsl(var(--s-wn-tx))' },
-    Low: { bg: 'hsl(142 71% 45% / 0.12)', text: 'hsl(var(--s-ok-tx))' },
+    Critical: { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--destructive))' },
+    High: { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(25 95% 45%)' },
+    Medium: { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))' },
+    Low: { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))' },
   };
   return map[r] || map.Low;
 }
@@ -242,10 +242,10 @@ function MetricTile({ label, value, variant, icon, sub }: {
   icon: React.ReactNode; sub?: string;
 }) {
   const vs: Record<string, { bg: string; color: string }> = {
-    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(var(--s-ok-tx))' },
-    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(var(--s-wn-tx))' },
-    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(var(--destructive))' },
-    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))' },
+    ok: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+    warn: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+    error: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+    info: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
   };
   const s = vs[variant];
   return (
@@ -601,7 +601,7 @@ export default function AuditManagement() {
                         <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{ev.name}</p>
                         <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{ev.type} · Uploaded by {ev.uploadedBy} · {formatDate(ev.date)}</p>
                       </div>
-                      <Badge style={{ background: ev.status === 'Accepted' ? 'hsl(142 71% 45% / 0.12)' : 'hsl(45 93% 47% / 0.12)', color: ev.status === 'Accepted' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 10 }}>{ev.status}</Badge>
+                      <Badge style={{ background: ev.status === 'Accepted' ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-wn-bg))', color: ev.status === 'Accepted' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 10 }}>{ev.status}</Badge>
                     </div>
                   ))}
                 </TabsContent>
@@ -618,7 +618,7 @@ export default function AuditManagement() {
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge style={{ background: ai.priority === 'High' ? 'hsl(0 72% 51% / 0.12)' : ai.priority === 'Medium' ? 'hsl(45 93% 47% / 0.12)' : 'hsl(142 71% 45% / 0.12)', color: ai.priority === 'High' ? 'hsl(var(--destructive))' : ai.priority === 'Medium' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))', borderRadius: 0, fontSize: 10 }}>{ai.priority}</Badge>
+                        <Badge style={{ background: ai.priority === 'High' ? 'hsl(var(--s-er-bg))' : ai.priority === 'Medium' ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-ok-bg))', color: ai.priority === 'High' ? 'hsl(var(--destructive))' : ai.priority === 'Medium' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))', borderRadius: 0, fontSize: 10 }}>{ai.priority}</Badge>
                         <Badge variant="outline" style={{ borderRadius: 0, fontSize: 9 }}>{ai.status}</Badge>
                       </div>
                     </div>

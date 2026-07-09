@@ -84,10 +84,10 @@ function MetricTile({ label, value, variant, icon, sub }: {
   label: string; value: string; variant: 'ok' | 'warn' | 'error' | 'info'; icon: React.ReactNode; sub?: string;
 }) {
   const vs = {
-    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(var(--s-ok-tx))' },
-    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(var(--s-wn-tx))' },
-    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(var(--destructive))' },
-    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))' },
+    ok: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+    warn: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+    error: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+    info: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
   };
   const s = vs[variant];
   return (
@@ -311,14 +311,14 @@ export default function TrustEngineDashboard() {
       {/* Live Alert Ticker */}
       <div className="overflow-hidden relative" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0, height: 28 }}>
         <div className="flex items-center h-full px-3">
-          <Badge style={{ background: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 9, marginRight: 8, flexShrink: 0 }}>LIVE</Badge>
+          <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 9, marginRight: 8, flexShrink: 0 }}>LIVE</Badge>
           <div ref={tickerRef} className="flex-1 overflow-hidden whitespace-nowrap">
             <div className="inline-block" style={{ animation: 'marquee 50s linear infinite' }}>
               {[...TICKER_MESSAGES, ...TICKER_MESSAGES].map((msg, i) => {
-                const chipBg = msg.type === 'critical' ? 'hsl(0 72% 51% / 0.18)'
-                  : msg.type === 'warning' ? 'hsl(45 93% 47% / 0.18)'
-                  : msg.type === 'ok' ? 'hsl(142 71% 45% / 0.18)'
-                  : 'hsl(220 90% 56% / 0.18)';
+                const chipBg = msg.type === 'critical' ? 'hsl(var(--s-er-bg))'
+                  : msg.type === 'warning' ? 'hsl(var(--s-wn-bg))'
+                  : msg.type === 'ok' ? 'hsl(var(--s-ok-bg))'
+                  : 'hsl(var(--s-in-bg))';
                 const tc = msg.type === 'critical' ? 'hsl(var(--s-er-tx))'
                   : msg.type === 'warning' ? 'hsl(var(--s-wn-tx))'
                   : msg.type === 'ok' ? 'hsl(var(--s-ok-tx))'
@@ -389,13 +389,13 @@ export default function TrustEngineDashboard() {
                         <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{p.name}</span>
                       </td>
                       <td className="px-4 py-3">
-                        <Badge style={{ background: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>{p.type}</Badge>
+                        <Badge style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>{p.type}</Badge>
                       </td>
                       <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{p.target}</td>
                       <td className="px-4 py-3">
                         <span className="text-sm font-bold" style={{ color: scoreColor }}>{p.trustScore}%</span>
                         {p.trustScore < 95 && (
-                          <Badge className="ml-2" style={{ background: 'hsl(45 93% 47% / 0.12)', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 9 }}>
+                          <Badge className="ml-2" style={{ background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 9 }}>
                             Below 95%
                           </Badge>
                         )}
@@ -407,7 +407,7 @@ export default function TrustEngineDashboard() {
                       <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{p.framework} {p.clause}</td>
                       <td className="px-4 py-3">
                         <Badge style={{
-                          background: p.status === 'active' ? 'hsl(142 71% 45% / 0.12)' : p.status === 'testing' ? 'hsl(220 90% 56% / 0.12)' : 'hsl(var(--s-nt-bg))',
+                          background: p.status === 'active' ? 'hsl(var(--s-ok-bg))' : p.status === 'testing' ? 'hsl(var(--s-in-bg))' : 'hsl(var(--s-nt-bg))',
                           color: p.status === 'active' ? 'hsl(var(--s-ok-tx))' : p.status === 'testing' ? 'hsl(var(--s-in-tx))' : 'hsl(var(--s-nt-tx))',
                           borderRadius: 0, fontSize: 10,
                         }}>
@@ -451,7 +451,7 @@ export default function TrustEngineDashboard() {
             <SheetTitle style={{ color: 'hsl(var(--text-1))' }}>Trust Score Breakdown — {trustScore}%</SheetTitle>
           </SheetHeader>
           <div className="space-y-4 mt-4">
-            <div className="p-3" style={{ background: 'hsl(220 90% 56% / 0.06)', border: '1px solid hsl(220 90% 56% / 0.2)', borderRadius: 0 }}>
+            <div className="p-3" style={{ background: 'hsl(var(--s-in-bg))', border: '1px solid hsl(var(--s-in-bg))', borderRadius: 0 }}>
               <p className="text-xs text-[hsl(var(--s-in-tx))]">
                 <Info size={12} className="inline mr-1" />
                 <strong>Weighted Methodology:</strong> The composite trust score is a weighted average where each policy's contribution is proportional to its evaluation volume. Policies with more evaluations have greater influence on the overall score.
@@ -552,7 +552,7 @@ export default function TrustEngineDashboard() {
                     style={{ width: 14, height: 14, accentColor: 'hsl(var(--brand))' }} />
                   <span style={{ fontSize: 13, color: 'hsl(var(--text-1))', textTransform: 'capitalize' }}>{ch}</span>
                   <Badge style={{
-                    background: alertConfig[ch] ? 'hsl(142 71% 45% / 0.12)' : 'hsl(var(--bg-muted))',
+                    background: alertConfig[ch] ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--bg-muted))',
                     color: alertConfig[ch] ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-4))',
                     borderRadius: 0, fontSize: 9, marginLeft: 'auto',
                   }}>

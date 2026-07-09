@@ -36,10 +36,10 @@ interface ConsentRecord {
 
 
 const STATUS_STYLE: Record<ConsentStatus, { bg: string; color: string }> = {
-  Active: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
-  Withdrawn: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
-  Expired: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(var(--destructive))' },
-  Pending: { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)' },
+  Active: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  Withdrawn: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+  Expired: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+  Pending: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
 }
 
 const BLANK: Omit<ConsentRecord, 'id'> = {
@@ -119,7 +119,7 @@ export default function ConsentManagement() {
         {[
           { label: 'Active Consents', value: stats.active, sub: 'Valid and processing', color: 'hsl(var(--s-ok-tx))' },
           { label: 'Withdrawn', value: stats.withdrawn, sub: 'Processing must cease', color: 'hsl(var(--destructive))' },
-          { label: 'Expired', value: stats.expired, sub: 'Require renewal', color: 'hsl(45 85% 40%)' },
+          { label: 'Expired', value: stats.expired, sub: 'Require renewal', color: 'hsl(var(--s-wn-tx))' },
           { label: 'Pending', value: stats.pending, sub: 'Awaiting confirmation', color: 'hsl(var(--s-in-tx))' },
         ].map(s => (
           <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
@@ -232,7 +232,7 @@ export default function ConsentManagement() {
                         ))}
                       </div>
                       {selected.withdrawalDate && (
-                        <div className="p-3 bg-[hsl(0_72%_51%/0.08)] border border-[hsl(var(--destructive)/0.2)]">
+                        <div className="p-3 bg-[hsl(var(--s-er-bg))] border border-[hsl(var(--destructive)/0.2)]">
                           <p className="text-xs font-semibold text-[hsl(var(--destructive))]">Consent Withdrawn — {selected.withdrawalDate}</p>
                           {selected.withdrawalReason && <p className="text-xs text-[hsl(var(--text-3))] mt-1">{selected.withdrawalReason}</p>}
                         </div>
@@ -277,7 +277,7 @@ export default function ConsentManagement() {
                         {selected.aiSystems.length === 0 && <p className="text-xs text-[hsl(var(--text-4))]">No AI systems linked</p>}
                       </div>
                       {selected.status === 'Withdrawn' && (
-                        <div className="p-3 bg-[hsl(0_72%_51%/0.06)] border border-[hsl(var(--destructive)/0.3)] mt-2">
+                        <div className="p-3 bg-[hsl(var(--s-er-bg))] border border-[hsl(var(--destructive)/0.3)] mt-2">
                           <p className="text-xs font-semibold text-[hsl(var(--destructive))] mb-1">Processing Must Cease</p>
                           <p className="text-xs text-[hsl(var(--text-2))]">All {selected.aiSystems.length} AI system(s) above must immediately stop processing data for this subject per GDPR Art. 7(3).</p>
                         </div>
@@ -313,7 +313,7 @@ export default function ConsentManagement() {
 
                   <div className="flex gap-2 pt-2 border-t border-[hsl(var(--border))]">
                     {selected.status === 'Active' && (
-                      <button onClick={() => handleWithdraw(selected.id)} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--destructive))] hover:bg-[hsl(0_72%_51%/0.05)]">
+                      <button onClick={() => handleWithdraw(selected.id)} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--destructive))] hover:bg-[hsl(var(--s-er-bg))]">
                         <Warning size={13} /> Withdraw
                       </button>
                     )}

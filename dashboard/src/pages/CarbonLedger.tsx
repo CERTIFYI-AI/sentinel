@@ -185,8 +185,8 @@ function CarbonLedgerInner({ entries: initialEntries, save, remove, chartTheme }
       {/* Budget threshold banner */}
       <div style={{
         padding: '12px 16px',
-        background: budgetPct >= 100 ? 'hsl(0 72% 51% / 0.08)' : budgetPct >= 80 ? 'hsl(45 93% 47% / 0.08)' : 'hsl(142 71% 45% / 0.06)',
-        border: `1px solid ${budgetPct >= 100 ? 'hsl(0 72% 51% / 0.4)' : budgetPct >= 80 ? 'hsl(45 93% 47% / 0.4)' : 'hsl(142 71% 45% / 0.3)'}`,
+        background: budgetPct >= 100 ? 'hsl(var(--s-er-bg))' : budgetPct >= 80 ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-ok-bg))',
+        border: `1px solid ${budgetPct >= 100 ? 'hsl(var(--s-er-bg))' : budgetPct >= 80 ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-ok-bg))'}`,
         display: 'flex', alignItems: 'center', gap: 12,
       }}>
         <Warning size={16} style={{ color: budgetPct >= 100 ? 'hsl(var(--s-er-tx))' : budgetPct >= 80 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-ok-tx))', flexShrink: 0 }} />
@@ -251,7 +251,7 @@ function CarbonLedgerInner({ entries: initialEntries, save, remove, chartTheme }
 
       {/* Recommendation chips */}
       {visibleRecs.length > 0 && (
-        <div style={{ border: '1px solid hsl(142 71% 45% / 0.25)', background: 'hsl(142 71% 45% / 0.04)', padding: '12px 16px' }}>
+        <div style={{ border: '1px solid hsl(var(--s-ok-bg))', background: 'hsl(var(--s-ok-bg))', padding: '12px 16px' }}>
           <div className="flex items-center gap-2 mb-3">
             <Lightbulb size={14} style={{ color: 'hsl(var(--s-ok-tx))' }} />
             <span className="text-xs font-semibold" style={{ color: 'hsl(var(--s-ok-tx))' }}>Carbon Reduction Recommendations</span>
@@ -260,7 +260,7 @@ function CarbonLedgerInner({ entries: initialEntries, save, remove, chartTheme }
             {visibleRecs.map(rec => (
               <div key={rec.id} className="flex items-center gap-2" style={{
                 background: 'hsl(var(--bg-surface))',
-                border: '1px solid hsl(142 71% 45% / 0.25)',
+                border: '1px solid hsl(var(--s-ok-bg))',
                 padding: '5px 10px',
               }}>
                 <rec.icon size={12} style={{ color: 'hsl(var(--s-ok-tx))', flexShrink: 0 }} />
@@ -288,7 +288,7 @@ function CarbonLedgerInner({ entries: initialEntries, save, remove, chartTheme }
               <YAxis tick={{ fontSize: 10, fill: chartTheme.tickColor }} />
               <Tooltip contentStyle={chartTheme.tooltipStyle} />
               <ReferenceLine y={budgetThreshold} stroke="#ef4444" strokeDasharray="4 2" label={{ value: `Budget ${budgetThreshold}`, fill: 'hsl(var(--s-er-tx))', fontSize: 10 }} />
-              <Area type="monotone" dataKey="emissions" stroke="hsl(var(--s-ok-tx))" fill="hsl(142 71% 45% / 0.15)" strokeWidth={2} />
+              <Area type="monotone" dataKey="emissions" stroke="hsl(var(--s-ok-tx))" fill="hsl(var(--s-ok-bg))" strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -371,7 +371,7 @@ function CarbonLedgerInner({ entries: initialEntries, save, remove, chartTheme }
                   <td className="px-3 py-3 text-xs font-mono text-[hsl(var(--brand))]">{e.offset}</td>
                   <td className="px-3 py-3 text-xs font-mono font-bold" style={{ color: e.netEmissions < 50 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))' }}>{Number(e.netEmissions).toFixed(1)}</td>
                   <td className="px-3 py-3">
-                    <span className="text-[10px] px-1.5 py-0.5" style={e.verified ? { background: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' } : { background: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)' }}>{e.verified ? 'Verified' : 'Pending'}</span>
+                    <span className="text-[10px] px-1.5 py-0.5" style={e.verified ? { background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' } : { background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' }}>{e.verified ? 'Verified' : 'Pending'}</span>
                   </td>
                   <td className="px-3 py-3"><Eye size={14} className="text-[hsl(var(--text-4))]" /></td>
                   <td className="px-3 py-3">

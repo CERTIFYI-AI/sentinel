@@ -16,24 +16,24 @@ import { useSettingsStore } from '../../stores/settingsStore';
 
 function criticality(v: Vendor) {
   const map: Record<string, { bg: string; color: string; label: string }> = {
-    critical: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))', label: 'Tier 1 · Critical' },
-    high: { bg: 'hsl(0 72% 51% / 0.08)', color: 'hsl(var(--destructive))', label: 'Tier 2 · High' },
-    moderate: { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(var(--s-wn-tx))', label: 'Tier 3 · Moderate' },
-    low: { bg: 'hsl(142 71% 45% / 0.08)', color: 'hsl(var(--s-ok-tx))', label: 'Tier 4 · Low' },
+    critical: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', label: 'Tier 1 · Critical' },
+    high: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', label: 'Tier 2 · High' },
+    moderate: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', label: 'Tier 3 · Moderate' },
+    low: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', label: 'Tier 4 · Low' },
   };
   return map[v.criticality] ?? map.moderate;
 }
 
 function slaStatusStyle(status: VendorSLA['status']) {
-  if (status === 'healthy') return { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))', label: 'Healthy' };
-  if (status === 'at_risk') return { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(var(--s-wn-tx))', label: 'At Risk' };
-  if (status === 'breached') return { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))', label: 'Breached' };
+  if (status === 'healthy') return { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', label: 'Healthy' };
+  if (status === 'at_risk') return { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', label: 'At Risk' };
+  if (status === 'breached') return { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', label: 'Breached' };
   return { bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--text-4))', label: status };
 }
 
 function issueStyle(sev: string) {
   if (sev === 'critical') return 'hsl(var(--destructive))';
-  if (sev === 'high') return 'hsl(0 72% 51% / 0.8)';
+  if (sev === 'high') return 'hsl(var(--s-er-bg))';
   if (sev === 'medium') return 'hsl(var(--s-wn-tx))';
   return 'hsl(var(--s-ok-tx))';
 }
@@ -86,9 +86,9 @@ export default function TPRMWorkspace() {
   });
 
   const tierGroups = [
-    { label: 'Tier 1 — Critical', vendors: criticalVendors, color: 'hsl(var(--destructive))', bg: 'hsl(0 72% 51% / 0.08)' },
-    { label: 'Tier 2 — High', vendors: highVendors, color: 'hsl(0 72% 51% / 0.8)', bg: 'hsl(0 72% 51% / 0.04)' },
-    { label: 'Tier 3 — Moderate', vendors: moderateVendors, color: 'hsl(var(--s-wn-tx))', bg: 'hsl(45 93% 47% / 0.04)' },
+    { label: 'Tier 1 — Critical', vendors: criticalVendors, color: 'hsl(var(--destructive))', bg: 'hsl(var(--s-er-bg))' },
+    { label: 'Tier 2 — High', vendors: highVendors, color: 'hsl(var(--s-er-bg))', bg: 'hsl(var(--s-er-bg))' },
+    { label: 'Tier 3 — Moderate', vendors: moderateVendors, color: 'hsl(var(--s-wn-tx))', bg: 'hsl(var(--s-wn-bg))' },
     { label: 'Tier 4 — Low', vendors: lowVendors, color: 'hsl(var(--s-ok-tx))', bg: 'transparent' },
   ];
 
@@ -117,7 +117,7 @@ export default function TPRMWorkspace() {
       {(breachedSLAs.length > 0 || criticalIssues.length > 0 || missingDPA.length > 0) && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {breachedSLAs.length > 0 && (
-            <div className="p-4 flex items-start gap-3 cursor-pointer" style={{ background: 'hsl(0 72% 51% / 0.08)', border: '1px solid hsl(0 72% 51% / 0.3)' }}
+            <div className="p-4 flex items-start gap-3 cursor-pointer" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-bg))' }}
               onClick={() => navigate('/vendors/sla')}>
               <XCircle size={20} style={{ color: 'hsl(var(--destructive))', flexShrink: 0, marginTop: 1 }} />
               <div>
@@ -128,7 +128,7 @@ export default function TPRMWorkspace() {
             </div>
           )}
           {criticalIssues.length > 0 && (
-            <div className="p-4 flex items-start gap-3 cursor-pointer" style={{ background: 'hsl(0 72% 51% / 0.08)', border: '1px solid hsl(0 72% 51% / 0.3)' }}
+            <div className="p-4 flex items-start gap-3 cursor-pointer" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-bg))' }}
               onClick={() => setActiveSection('issues')}>
               <Siren size={20} style={{ color: 'hsl(var(--destructive))', flexShrink: 0, marginTop: 1 }} />
               <div>
@@ -139,7 +139,7 @@ export default function TPRMWorkspace() {
             </div>
           )}
           {missingDPA.length > 0 && (
-            <div className="p-4 flex items-start gap-3 cursor-pointer" style={{ background: 'hsl(45 93% 47% / 0.08)', border: '1px solid hsl(45 93% 47% / 0.3)' }}
+            <div className="p-4 flex items-start gap-3 cursor-pointer" style={{ background: 'hsl(var(--s-wn-bg))', border: '1px solid hsl(var(--s-wn-bg))' }}
               onClick={() => navigate('/vendors')}>
               <Shield size={20} style={{ color: 'hsl(var(--s-wn-tx))', flexShrink: 0, marginTop: 1 }} />
               <div>
@@ -211,13 +211,13 @@ export default function TPRMWorkspace() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-                        {breachedVSLA > 0 && <Badge style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 9 }}>SLA Breach</Badge>}
-                        {v.dpaStatus === 'not_signed' && <Badge style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 9 }}>No DPA</Badge>}
+                        {breachedVSLA > 0 && <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 9 }}>SLA Breach</Badge>}
+                        {v.dpaStatus === 'not_signed' && <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 9 }}>No DPA</Badge>}
                         {vIssues.length > 0 && <span className="text-xs" style={{ color: 'hsl(var(--s-wn-tx))' }}>{vIssues.length} issue{vIssues.length > 1 ? 's' : ''}</span>}
                         <span className="text-xs font-bold" style={{ color: v.score >= 80 ? 'hsl(var(--s-ok-tx))' : v.score >= 60 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))' }}>{v.score}</span>
                         {lastAssessment && (
                           <Badge style={{
-                            background: lastAssessment.status === 'approved' ? 'hsl(142 71% 45% / 0.12)' : lastAssessment.status === 'approved_with_conditions' ? 'hsl(45 93% 47% / 0.12)' : 'hsl(0 72% 51% / 0.12)',
+                            background: lastAssessment.status === 'approved' ? 'hsl(var(--s-ok-bg))' : lastAssessment.status === 'approved_with_conditions' ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-er-bg))',
                             color: lastAssessment.status === 'approved' ? 'hsl(var(--s-ok-tx))' : lastAssessment.status === 'approved_with_conditions' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))',
                             borderRadius: 0, fontSize: 9,
                           }}>{assessmentStatusLabel(lastAssessment.status)}</Badge>
@@ -253,7 +253,7 @@ export default function TPRMWorkspace() {
                     <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{a.vendorName} — {a.assessmentType}</p>
                     <p className="text-xs" style={{ color: new Date(a.dueDate) < new Date() ? 'hsl(var(--destructive))' : 'hsl(var(--text-4))' }}>Due {formatDate(a.dueDate)}</p>
                   </div>
-                  <Badge style={{ background: 'hsl(45 93% 47% / 0.12)', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 9 }}>
+                  <Badge style={{ background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 9 }}>
                     {assessmentStatusLabel(a.status)}
                   </Badge>
                 </div>
@@ -343,7 +343,7 @@ export default function TPRMWorkspace() {
               <tbody>
                 {openIssues.map((issue, i) => (
                   <tr key={issue.id} className="hover:bg-muted/20 transition-colors"
-                    style={{ borderBottom: '1px solid hsl(var(--border))', background: issue.severity === 'critical' ? 'hsl(0 72% 51% / 0.03)' : 'transparent' }}>
+                    style={{ borderBottom: '1px solid hsl(var(--border))', background: issue.severity === 'critical' ? 'hsl(var(--s-er-bg))' : 'transparent' }}>
                     <td className="px-4 py-2.5">
                       <span className="text-xs font-mono" style={{ color: 'hsl(var(--text-2))' }}>{issue.id}</span>
                     </td>
@@ -363,7 +363,7 @@ export default function TPRMWorkspace() {
                     </td>
                     <td className="px-4 py-2.5">
                       <Badge style={{
-                        background: issue.status === 'in_progress' ? 'hsl(220 90% 56% / 0.12)' : 'hsl(var(--s-nt-bg))',
+                        background: issue.status === 'in_progress' ? 'hsl(var(--s-in-bg))' : 'hsl(var(--s-nt-bg))',
                         color: issue.status === 'in_progress' ? 'hsl(var(--s-in-tx))' : 'hsl(var(--text-3))',
                         borderRadius: 0, fontSize: 10,
                       }}>{issue.status.replace('_', ' ')}</Badge>

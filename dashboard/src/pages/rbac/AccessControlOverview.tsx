@@ -42,7 +42,7 @@ export default function AccessControlOverview() {
 
   const navCards = [
     { icon: Users, label: 'Users', desc: `${stats.totalUsers} total · ${stats.activeUsers} active`, path: '/access-control/users', color: 'hsl(var(--brand))' },
-    { icon: ShieldCheck, label: 'Roles', desc: `${stats.totalRoles} roles · ${stats.customRoles} custom`, path: '/access-control/roles', color: 'hsl(280 60% 55%)' },
+    { icon: ShieldCheck, label: 'Roles', desc: `${stats.totalRoles} roles · ${stats.customRoles} custom`, path: '/access-control/roles', color: 'hsl(var(--tag-purple))' },
     { icon: Buildings, label: 'Departments', desc: `${stats.totalDepts} total · ${stats.activeDepts} active`, path: '/access-control/departments', color: 'hsl(var(--s-ok-tx))' },
   ]
 
@@ -69,7 +69,7 @@ export default function AccessControlOverview() {
           { label: 'Total Users', value: stats.totalUsers, sub: `${stats.activeUsers} active`, color: 'hsl(var(--text-1))' },
           { label: 'Total Roles', value: stats.totalRoles, sub: `${stats.systemRoles} system · ${stats.customRoles} custom`, color: 'hsl(var(--brand))' },
           { label: 'Departments', value: stats.totalDepts, sub: `${stats.activeDepts} active`, color: 'hsl(var(--s-ok-tx))' },
-          { label: 'Pending Users', value: stats.pendingUsers, sub: 'Awaiting activation', color: 'hsl(45 85% 40%)' },
+          { label: 'Pending Users', value: stats.pendingUsers, sub: 'Awaiting activation', color: 'hsl(var(--s-wn-tx))' },
         ].map(s => (
           <div key={s.label} className="p-4 border" style={{ background: 'hsl(var(--bg-surface))', borderColor: 'hsl(var(--border))' }}>
             <p className="text-[11px] uppercase tracking-wide" style={{ color: 'hsl(var(--text-4))' }}>{s.label}</p>
@@ -81,12 +81,12 @@ export default function AccessControlOverview() {
 
       {/* Warning banner */}
       {stats.pendingUsers > 0 && (
-        <div className="flex items-center gap-3 p-3" style={{ background: 'hsl(45 93% 47% / 0.08)', border: '1px solid hsl(45 93% 47% / 0.2)' }}>
-          <Warning size={15} style={{ color: 'hsl(45 85% 40%)' }} />
-          <p className="text-sm flex-1" style={{ color: 'hsl(45 85% 40%)' }}>
+        <div className="flex items-center gap-3 p-3" style={{ background: 'hsl(var(--s-wn-bg))', border: '1px solid hsl(var(--s-wn-bg))' }}>
+          <Warning size={15} style={{ color: 'hsl(var(--s-wn-tx))' }} />
+          <p className="text-sm flex-1" style={{ color: 'hsl(var(--s-wn-tx))' }}>
             <strong>{stats.pendingUsers} user{stats.pendingUsers !== 1 ? 's' : ''}</strong> pending activation — review and approve access.
           </p>
-          <button onClick={() => navigate('/access-control/users')} className="text-xs px-3 py-1.5 border hover:opacity-80" style={{ borderColor: 'hsl(45 93% 47% / 0.3)', color: 'hsl(45 85% 40%)' }}>
+          <button onClick={() => navigate('/access-control/users')} className="text-xs px-3 py-1.5 border hover:opacity-80" style={{ borderColor: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' }}>
             Review Users
           </button>
         </div>
@@ -124,7 +124,7 @@ export default function AccessControlOverview() {
                 <Tooltip {...tooltipStyle} formatter={(v: number) => [`${v}%`, 'Coverage']} />
                 <Bar dataKey="pct" radius={0}>
                   {sectionCoverage.map((d, i) => (
-                    <Cell key={i} fill={d.pct >= 80 ? 'hsl(142 71% 45%)' : d.pct >= 50 ? 'hsl(var(--brand))' : 'hsl(45 93% 47%)'} />
+                    <Cell key={i} fill={d.pct >= 80 ? 'hsl(var(--s-ok-tx))' : d.pct >= 50 ? 'hsl(var(--brand))' : 'hsl(var(--s-wn-tx))'} />
                   ))}
                 </Bar>
               </BarChart>
@@ -148,9 +148,9 @@ export default function AccessControlOverview() {
                   <p className="text-[10px] truncate" style={{ color: 'hsl(var(--text-4))' }}>{u.email}</p>
                 </div>
                 <span className="text-[10px] px-1.5 py-0.5 whitespace-nowrap" style={
-                  u.status === 'active' ? { background: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' } :
-                  u.status === 'pending' ? { background: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)' } :
-                  u.status === 'suspended' ? { background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' } :
+                  u.status === 'active' ? { background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' } :
+                  u.status === 'pending' ? { background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' } :
+                  u.status === 'suspended' ? { background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' } :
                   { background: 'hsl(var(--bg-raised))', color: 'hsl(var(--text-4))' }}>
                   {u.status}
                 </span>
@@ -182,19 +182,19 @@ export default function AccessControlOverview() {
                 <tr key={r.id} style={{ borderBottom: '1px solid hsl(var(--border))' }}>
                   <td className="px-4 py-3">
                     <span className="text-[11px] px-2 py-0.5 font-medium" style={
-                      r.color === 'emerald' ? { background: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' } :
-                      r.color === 'purple'  ? { background: 'hsl(280 67% 56% / 0.12)', color: 'hsl(280 60% 55%)' } :
-                      r.color === 'blue'    ? { background: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))' } :
-                      r.color === 'amber'   ? { background: 'hsl(45 93% 47% / 0.12)',  color: 'hsl(45 85% 40%)' } :
-                      r.color === 'red'     ? { background: 'hsl(0 72% 51% / 0.12)',   color: 'hsl(var(--destructive))' } :
-                      r.color === 'orange'  ? { background: 'hsl(25 95% 53% / 0.12)',  color: 'hsl(25 90% 45%)' } :
+                      r.color === 'emerald' ? { background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' } :
+                      r.color === 'purple'  ? { background: 'hsl(var(--tag-purple-bg))', color: 'hsl(var(--tag-purple))' } :
+                      r.color === 'blue'    ? { background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' } :
+                      r.color === 'amber'   ? { background: 'hsl(var(--s-wn-bg))',  color: 'hsl(var(--s-wn-tx))' } :
+                      r.color === 'red'     ? { background: 'hsl(var(--s-er-bg))',   color: 'hsl(var(--destructive))' } :
+                      r.color === 'orange'  ? { background: 'hsl(var(--s-wn-bg))',  color: 'hsl(25 90% 45%)' } :
                       { background: 'hsl(240 5% 64% / 0.15)',  color: 'hsl(240 5% 45%)' }
                     }>{r.name}</span>
                   </td>
                   <td className="px-4 py-3 font-mono text-xs" style={{ color: 'hsl(var(--brand))' }}>{r.code}</td>
                   <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{r.permissions.length}</td>
                   <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{users.filter(u => u.roleIds.includes(r.id)).length}</td>
-                  <td className="px-4 py-3"><span className="text-[10px] px-1.5 py-0.5" style={{ background: 'hsl(280 67% 56% / 0.12)', color: 'hsl(280 60% 55%)' }}>System</span></td>
+                  <td className="px-4 py-3"><span className="text-[10px] px-1.5 py-0.5" style={{ background: 'hsl(var(--tag-purple-bg))', color: 'hsl(var(--tag-purple))' }}>System</span></td>
                 </tr>
               ))}
             </tbody>

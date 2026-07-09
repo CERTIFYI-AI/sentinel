@@ -39,7 +39,7 @@ export default function DatasetCreateModal() {
               Next Step
             </Button>
           ) : (
-            <Button size="sm" style={{ borderRadius: 0, background: 'hsl(142 71% 45%)', color: 'hsl(var(--bg-surface))' }}>
+            <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--s-ok-tx))', color: 'hsl(var(--bg-surface))' }}>
               Create Dataset
             </Button>
           )}

@@ -45,14 +45,14 @@ const CHAIN: ChainEntry[] = [
 ]
 
 const ACTION_COLOR: Record<ActionType, string> = {
-  'Control Assessment': 'hsl(220 90% 56%)',
-  'Evidence Upload':    'hsl(142 71% 45%)',
+  'Control Assessment': 'hsl(var(--s-in-tx))',
+  'Evidence Upload':    'hsl(var(--s-ok-tx))',
   'Bias Audit':         'hsl(280 70% 55%)',
-  'Risk Review':        'hsl(25 95% 53%)',
+  'Risk Review':        'hsl(var(--s-wn-tx))',
   'Policy Approval':    'hsl(var(--brand))',
   'DSR Processed':      'hsl(199 89% 48%)',
   'Incident Logged':    'hsl(var(--destructive))',
-  'Model Approved':     'hsl(142 71% 45%)',
+  'Model Approved':     'hsl(var(--s-ok-tx))',
 }
 
 export default function EvidenceChain() {
@@ -111,7 +111,7 @@ export default function EvidenceChain() {
       <div className="grid grid-cols-4 gap-4">
         {[
           { label: 'Chain Blocks', value: '847', sub: 'Total signed entries', color: 'hsl(var(--brand))' },
-          { label: 'Chain Integrity', value: '100%', sub: `${validEntries}/${totalEntries} verified valid`, color: 'hsl(142 71% 35%)' },
+          { label: 'Chain Integrity', value: '100%', sub: `${validEntries}/${totalEntries} verified valid`, color: 'hsl(var(--s-ok-tx))' },
           { label: 'Frameworks Covered', value: frameworks, sub: 'Active regulatory references', color: 'hsl(var(--text-1))' },
           { label: 'Last Block', value: '2m ago', sub: 'Auto-sealed every action', color: 'hsl(var(--text-1))' },
         ].map(s => (
@@ -123,13 +123,13 @@ export default function EvidenceChain() {
         ))}
       </div>
 
-      <div className="flex items-center gap-3 p-3 rounded border border-[hsl(142_71%_45%/0.3)] bg-[hsl(142_71%_45%/0.06)]">
-        <ShieldCheck size={16} className="text-[hsl(142_71%_35%)] flex-shrink-0" />
+      <div className="flex items-center gap-3 p-3 rounded border border-[hsl(var(--s-ok-bg))] bg-[hsl(var(--s-ok-bg))]">
+        <ShieldCheck size={16} className="text-[hsl(var(--s-ok-tx))] flex-shrink-0" />
         <div className="text-xs text-[hsl(var(--text-2))]">
-          <span className="font-semibold text-[hsl(142_71%_35%)]">Chain integrity confirmed.</span> All 847 blocks verified. SHA-256 hash chain intact from genesis block. Every entry is tamper-evident — any modification breaks the chain and triggers instant alert.
+          <span className="font-semibold text-[hsl(var(--s-ok-tx))]">Chain integrity confirmed.</span> All 847 blocks verified. SHA-256 hash chain intact from genesis block. Every entry is tamper-evident — any modification breaks the chain and triggers instant alert.
         </div>
-        <div className="ml-auto flex-shrink-0 flex items-center gap-1.5 text-[11px] text-[hsl(142_71%_35%)] font-medium">
-          <div className="w-2 h-2 rounded-full bg-[hsl(142_71%_45%)] animate-pulse" />
+        <div className="ml-auto flex-shrink-0 flex items-center gap-1.5 text-[11px] text-[hsl(var(--s-ok-tx))] font-medium">
+          <div className="w-2 h-2 rounded-full bg-[hsl(var(--s-ok-tx))] animate-pulse" />
           Live monitoring
         </div>
       </div>
@@ -160,8 +160,8 @@ export default function EvidenceChain() {
                         <span key={t} className="text-[10px] px-1.5 py-0.5 border border-[hsl(var(--border))] text-[hsl(var(--text-4))]">{t}</span>
                       ))}
                       <div className="flex items-center gap-1 ml-auto">
-                        <CheckCircle size={12} className="text-[hsl(142_71%_45%)]" />
-                        <span className="text-[10px] text-[hsl(142_71%_35%)] font-medium">Verified</span>
+                        <CheckCircle size={12} className="text-[hsl(var(--s-ok-tx))]" />
+                        <span className="text-[10px] text-[hsl(var(--s-ok-tx))] font-medium">Verified</span>
                       </div>
                     </div>
                     <p className="text-sm font-semibold text-[hsl(var(--text-1))]">{entry.entityName}</p>
@@ -261,20 +261,20 @@ export default function EvidenceChain() {
                     <p className="text-xs font-semibold text-[hsl(var(--text-1))]">Hash Chain Verification</p>
                     <p className="text-xs text-[hsl(var(--text-3))] leading-relaxed">Verify that this block's hash correctly links to the previous block and that the content has not been tampered with since recording.</p>
                     <div className="mt-3 space-y-1.5 text-[11px]">
-                      <div className="flex items-center gap-2"><CheckCircle size={12} className="text-[hsl(142_71%_45%)]" /><span className="text-[hsl(var(--text-2))]">Block signature: valid</span></div>
-                      <div className="flex items-center gap-2"><CheckCircle size={12} className="text-[hsl(142_71%_45%)]" /><span className="text-[hsl(var(--text-2))]">Previous hash link: intact</span></div>
-                      <div className="flex items-center gap-2"><CheckCircle size={12} className="text-[hsl(142_71%_45%)]" /><span className="text-[hsl(var(--text-2))]">Timestamp: within attestation window</span></div>
-                      <div className="flex items-center gap-2"><CheckCircle size={12} className="text-[hsl(142_71%_45%)]" /><span className="text-[hsl(var(--text-2))]">Actor credential: on record</span></div>
+                      <div className="flex items-center gap-2"><CheckCircle size={12} className="text-[hsl(var(--s-ok-tx))]" /><span className="text-[hsl(var(--text-2))]">Block signature: valid</span></div>
+                      <div className="flex items-center gap-2"><CheckCircle size={12} className="text-[hsl(var(--s-ok-tx))]" /><span className="text-[hsl(var(--text-2))]">Previous hash link: intact</span></div>
+                      <div className="flex items-center gap-2"><CheckCircle size={12} className="text-[hsl(var(--s-ok-tx))]" /><span className="text-[hsl(var(--text-2))]">Timestamp: within attestation window</span></div>
+                      <div className="flex items-center gap-2"><CheckCircle size={12} className="text-[hsl(var(--s-ok-tx))]" /><span className="text-[hsl(var(--text-2))]">Actor credential: on record</span></div>
                     </div>
                   </div>
                   <button onClick={() => handleVerify(selected)} disabled={verifying} className="w-full py-2.5 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90 disabled:opacity-60">
                     {verifying ? 'Verifying cryptographic chain…' : 'Run Full Verification'}
                   </button>
                   {verifyResult && (
-                    <div className={`p-4 rounded border ${verifyResult.valid ? 'bg-[hsl(142_71%_45%/0.08)] border-[hsl(142_71%_45%/0.3)]' : 'bg-[hsl(0_72%_51%/0.08)] border-[hsl(var(--destructive)/0.3)]'}`}>
+                    <div className={`p-4 rounded border ${verifyResult.valid ? 'bg-[hsl(var(--s-ok-bg))] border-[hsl(var(--s-ok-bg))]' : 'bg-[hsl(var(--s-er-bg))] border-[hsl(var(--destructive)/0.3)]'}`}>
                       <div className="flex items-center gap-2 mb-1">
-                        {verifyResult.valid ? <CheckCircle size={14} className="text-[hsl(142_71%_45%)]" /> : <Warning size={14} className="text-[hsl(var(--destructive))]" />}
-                        <p className={`text-sm font-semibold ${verifyResult.valid ? 'text-[hsl(142_71%_35%)]' : 'text-[hsl(var(--destructive))]'}`}>
+                        {verifyResult.valid ? <CheckCircle size={14} className="text-[hsl(var(--s-ok-tx))]" /> : <Warning size={14} className="text-[hsl(var(--destructive))]" />}
+                        <p className={`text-sm font-semibold ${verifyResult.valid ? 'text-[hsl(var(--s-ok-tx))]' : 'text-[hsl(var(--destructive))]'}`}>
                           {verifyResult.valid ? 'Block Verified — Cryptographically Valid' : 'TAMPER DETECTED — Chain Compromised'}
                         </p>
                       </div>
@@ -291,7 +291,7 @@ export default function EvidenceChain() {
                     <div className="space-y-2 text-[11px]">
                       {['Block detail PDF (signed)', 'SHA-256 hash certificate', 'Chain-of-custody transcript', 'Regulatory reference mapping', 'Actor credential attestation', 'Verification log'].map(item => (
                         <div key={item} className="flex items-center gap-2">
-                          <CheckCircle size={11} className="text-[hsl(142_71%_45%)]" />
+                          <CheckCircle size={11} className="text-[hsl(var(--s-ok-tx))]" />
                           <span className="text-[hsl(var(--text-2))]">{item}</span>
                         </div>
                       ))}

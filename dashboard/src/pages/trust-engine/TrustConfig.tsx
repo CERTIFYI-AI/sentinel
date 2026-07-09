@@ -116,9 +116,9 @@ const DEFAULT_PER_MODEL: PerModelConfig[] = [
 
 function actionBadge(action: GuardrailConfig['action']) {
   const map = {
-    block: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))' },
-    warn: { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(var(--s-wn-tx))' },
-    flag: { bg: 'hsl(220 90% 56% / 0.15)', color: 'hsl(var(--s-in-tx))' },
+    block: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+    warn: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+    flag: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
   };
   const s = map[action];
   return <Badge style={{ background: s.bg, color: s.color, borderRadius: 0, fontSize: 11 }}>{action.charAt(0).toUpperCase() + action.slice(1)}</Badge>;
@@ -126,9 +126,9 @@ function actionBadge(action: GuardrailConfig['action']) {
 
 function severityBadge(severity: AlertThreshold['severity']) {
   const map = {
-    critical: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))' },
-    high: { bg: 'hsl(25 95% 53% / 0.15)', color: 'hsl(var(--s-wn-tx))' },
-    medium: { bg: 'hsl(45 93% 47% / 0.15)', color: 'hsl(var(--s-wn-tx))' },
+    critical: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+    high: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+    medium: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
   };
   const s = map[severity];
   return <Badge style={{ background: s.bg, color: s.color, borderRadius: 0, fontSize: 11 }}>{severity.charAt(0).toUpperCase() + severity.slice(1)}</Badge>;
@@ -264,7 +264,7 @@ export default function TrustConfig() {
           <div>
             <div className="flex items-center gap-3 mb-1">
               <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Trust Configuration</h1>
-              <Badge style={{ background: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>PRODUCTION</Badge>
+              <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>PRODUCTION</Badge>
             </div>
             <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} · Guardrails, cost limits, fallback chains, alert thresholds</p>
           </div>
@@ -288,7 +288,7 @@ export default function TrustConfig() {
         </div>
 
         {/* Production Warning */}
-        <div className="flex items-center gap-2 px-4 py-2" style={{ background: 'hsl(0 72% 51% / 0.08)', border: '1px solid hsl(0 72% 51% / 0.3)', borderRadius: 0 }}>
+        <div className="flex items-center gap-2 px-4 py-2" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-bg))', borderRadius: 0 }}>
           <Warning size={14} className="text-destructive" />
           <p className="text-xs text-destructive">
             <strong>PRODUCTION environment.</strong> Changes take effect immediately. All saves create an immutable audit entry (SOC 2 CC6.1, ISO 27001 A.12.1.2).
@@ -510,7 +510,7 @@ export default function TrustConfig() {
                         {currentModelConfig.linkedPolicies.map(p => {
                           const policy = TRUST_POLICIES.find(tp => tp.id === p);
                           return (
-                            <Badge key={p} style={{ background: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>
+                            <Badge key={p} style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>
                               {policy?.name || p}
                             </Badge>
                           );
@@ -557,7 +557,7 @@ export default function TrustConfig() {
                         <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{th.framework}</td>
                         <td className="px-4 py-3">
                           <Badge style={{
-                            background: th.status === 'meets' ? 'hsl(142 71% 45% / 0.12)' : 'hsl(45 93% 47% / 0.12)',
+                            background: th.status === 'meets' ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-wn-bg))',
                             color: th.status === 'meets' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))',
                             borderRadius: 0, fontSize: 10,
                           }}>
@@ -630,7 +630,7 @@ export default function TrustConfig() {
                     <div className="flex items-center gap-3">
                       <Switch checked={int.connected} onCheckedChange={() => toggleIntegration(int.id)} />
                       <Badge style={{
-                        background: int.connected ? 'hsl(142 71% 45% / 0.12)' : 'hsl(var(--s-nt-bg))',
+                        background: int.connected ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-nt-bg))',
                         color: int.connected ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-nt-tx))',
                         borderRadius: 0, fontSize: 10,
                       }}>

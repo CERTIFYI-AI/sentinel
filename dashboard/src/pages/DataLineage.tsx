@@ -35,10 +35,10 @@ const SEED: LineageRecord[] = [
 ]
 
 const CLASS_STYLE: Record<string, { bg: string; color: string }> = {
-  Public: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
-  Internal: { bg: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))' },
-  Confidential: { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)' },
-  Restricted: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
+  Public: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  Internal: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
+  Confidential: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+  Restricted: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
 }
 
 const BLANK = {
@@ -166,7 +166,7 @@ export default function DataLineage() {
           { label: 'Tracked Datasets', value: stats.total, color: 'hsl(var(--text-1))' },
           { label: 'PII Datasets', value: stats.pii, color: 'hsl(var(--destructive))' },
           { label: 'Avg Quality Score', value: `${stats.avgQuality}%`, color: 'hsl(var(--s-ok-tx))' },
-          { label: 'Datasets with Issues', value: stats.issues, color: 'hsl(45 85% 40%)' },
+          { label: 'Datasets with Issues', value: stats.issues, color: 'hsl(var(--s-wn-tx))' },
         ].map(s => (
           <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
             <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
@@ -196,20 +196,20 @@ export default function DataLineage() {
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <span className="font-mono text-[10px] text-[hsl(var(--brand))]">{d.id}</span>
                   <span className="text-[11px] px-2 py-0.5 font-medium" style={CLASS_STYLE[d.dataClassification] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{d.dataClassification}</span>
-                  {d.piiPresent && <span className="text-[10px] px-1.5 py-0.5" style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' }}>PII</span>}
-                  {d.issues.length > 0 && <Warning size={12} className="text-[hsl(45_85%_40%)]" />}
+                  {d.piiPresent && <span className="text-[10px] px-1.5 py-0.5" style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' }}>PII</span>}
+                  {d.issues.length > 0 && <Warning size={12} className="text-[hsl(var(--s-wn-tx))]" />}
                 </div>
                 <h3 className="text-sm font-semibold text-[hsl(var(--text-1))]">{d.datasetName} <span className="text-[hsl(var(--text-4))] font-normal text-xs">{d.version}</span></h3>
                 <p className="text-xs text-[hsl(var(--text-4))] mt-0.5">{d.sourceSystem} · {d.ingestionMethod}</p>
               </div>
               <div className="flex items-center gap-3 flex-shrink-0">
                 <div className="text-right">
-                  <p className="text-sm font-bold" style={{ color: d.quality >= 95 ? 'hsl(var(--s-ok-tx))' : d.quality >= 85 ? 'hsl(45 85% 40%)' : 'hsl(var(--destructive))' }}>{d.quality}%</p>
+                  <p className="text-sm font-bold" style={{ color: d.quality >= 95 ? 'hsl(var(--s-ok-tx))' : d.quality >= 85 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))' }}>{d.quality}%</p>
                   <p className="text-[10px] text-[hsl(var(--text-4))]">Quality</p>
                 </div>
                 <div className="flex gap-1">
                   <button onClick={e => { e.stopPropagation(); openEdit(d) }} className="p-1.5 rounded text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))] hover:bg-raised"><Pencil size={13} /></button>
-                  <button onClick={e => { e.stopPropagation(); setDeleteTarget(d) }} className="p-1.5 rounded text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(0_72%_51%/0.06)]"><Trash size={13} /></button>
+                  <button onClick={e => { e.stopPropagation(); setDeleteTarget(d) }} className="p-1.5 rounded text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(var(--s-er-bg))]"><Trash size={13} /></button>
                 </div>
               </div>
             </div>
@@ -217,12 +217,12 @@ export default function DataLineage() {
             <div className="mt-3 flex items-center gap-2 overflow-x-auto pb-1">
               {d.upstreamSources.map((src, i) => (
                 <div key={i} className="flex items-center gap-1.5">
-                  <div className="flex-shrink-0 text-[10px] px-2 py-1 bg-[hsl(280_67%_56%/0.08)] border border-[hsl(280_67%_56%/0.25)] text-[hsl(280_60%_55%)] whitespace-nowrap">{src.split(' ')[0]}</div>
+                  <div className="flex-shrink-0 text-[10px] px-2 py-1 bg-[hsl(var(--tag-purple-bg))] border border-[hsl(var(--tag-purple-bg))] text-[hsl(var(--tag-purple))] whitespace-nowrap">{src.split(' ')[0]}</div>
                   {i < d.upstreamSources.length - 1 && <span className="text-[hsl(var(--text-4))] text-[10px]">+</span>}
                 </div>
               ))}
               <ArrowRight size={12} className="text-[hsl(var(--text-4))] flex-shrink-0" />
-              <div className="flex-shrink-0 text-[10px] px-2 py-1 bg-[hsl(220_90%_56%/0.1)] border border-[hsl(220_90%_56%/0.3)] text-[hsl(var(--s-in-tx))] whitespace-nowrap">{d.sourceSystem.split(' ')[0]}</div>
+              <div className="flex-shrink-0 text-[10px] px-2 py-1 bg-[hsl(var(--s-in-bg))] border border-[hsl(var(--s-in-bg))] text-[hsl(var(--s-in-tx))] whitespace-nowrap">{d.sourceSystem.split(' ')[0]}</div>
               <ArrowRight size={12} className="text-[hsl(var(--text-4))] flex-shrink-0" />
               <div className="flex-shrink-0 text-[10px] px-2 py-1 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-3))] whitespace-nowrap">{d.transformations.length} transforms</div>
               <ArrowRight size={12} className="text-[hsl(var(--text-4))] flex-shrink-0" />
@@ -232,9 +232,9 @@ export default function DataLineage() {
             </div>
 
             {d.issues.length > 0 && (
-              <div className="mt-2 flex items-start gap-1.5 p-2 bg-[hsl(45_93%_47%/0.06)] border border-[hsl(45_93%_47%/0.3)]">
-                <Warning size={11} className="text-[hsl(45_85%_40%)] flex-shrink-0 mt-0.5" />
-                <p className="text-[10px] text-[hsl(45_85%_40%)]">{d.issues[0]}</p>
+              <div className="mt-2 flex items-start gap-1.5 p-2 bg-[hsl(var(--s-wn-bg))] border border-[hsl(var(--s-wn-bg))]">
+                <Warning size={11} className="text-[hsl(var(--s-wn-tx))] flex-shrink-0 mt-0.5" />
+                <p className="text-[10px] text-[hsl(var(--s-wn-tx))]">{d.issues[0]}</p>
               </div>
             )}
           </div>
@@ -272,7 +272,7 @@ export default function DataLineage() {
                 <>
                   <div className="flex gap-2 flex-wrap">
                     <span className="text-[11px] px-2 py-0.5 font-medium" style={CLASS_STYLE[selected.dataClassification] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{selected.dataClassification}</span>
-                    {selected.piiPresent && <span className="text-[11px] px-2 py-0.5" style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' }}>Contains PII</span>}
+                    {selected.piiPresent && <span className="text-[11px] px-2 py-0.5" style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' }}>Contains PII</span>}
                     <span className="text-[11px] px-2 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{selected.version}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -303,18 +303,18 @@ export default function DataLineage() {
                       <p className="text-[11px] font-semibold text-[hsl(var(--destructive))] uppercase tracking-wide mb-2">PII Types Present</p>
                       <div className="flex flex-wrap gap-1">
                         {selected.piiTypes.map(t => (
-                          <span key={t} className="text-[10px] px-2 py-0.5 bg-[hsl(0_72%_51%/0.08)] border border-[hsl(var(--destructive)/0.3)] text-[hsl(var(--destructive))]">{t}</span>
+                          <span key={t} className="text-[10px] px-2 py-0.5 bg-[hsl(var(--s-er-bg))] border border-[hsl(var(--destructive)/0.3)] text-[hsl(var(--destructive))]">{t}</span>
                         ))}
                       </div>
                     </div>
                   )}
                   {selected.issues.length > 0 && (
                     <div>
-                      <p className="text-[11px] font-semibold text-[hsl(45_85%_40%)] uppercase tracking-wide mb-2">Open Issues</p>
+                      <p className="text-[11px] font-semibold text-[hsl(var(--s-wn-tx))] uppercase tracking-wide mb-2">Open Issues</p>
                       <div className="space-y-1">
                         {selected.issues.map(i => (
-                          <div key={i} className="flex items-start gap-1.5 text-xs text-[hsl(var(--text-2))] p-2 bg-[hsl(45_93%_47%/0.08)] border border-[hsl(45_93%_47%/0.3)]">
-                            <Warning size={11} className="text-[hsl(45_85%_40%)] flex-shrink-0 mt-0.5" />{i}
+                          <div key={i} className="flex items-start gap-1.5 text-xs text-[hsl(var(--text-2))] p-2 bg-[hsl(var(--s-wn-bg))] border border-[hsl(var(--s-wn-bg))]">
+                            <Warning size={11} className="text-[hsl(var(--s-wn-tx))] flex-shrink-0 mt-0.5" />{i}
                           </div>
                         ))}
                       </div>
@@ -329,8 +329,8 @@ export default function DataLineage() {
                     <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-3">Upstream Sources</p>
                     <div className="space-y-2">
                       {selected.upstreamSources.map((src, i) => (
-                        <div key={i} className="flex items-center gap-3 p-3 bg-[hsl(280_67%_56%/0.05)] border border-[hsl(280_67%_56%/0.2)]">
-                          <div className="w-2 h-2 rounded-full bg-[hsl(280_60%_55%)]" />
+                        <div key={i} className="flex items-center gap-3 p-3 bg-[hsl(var(--tag-purple-bg))] border border-[hsl(var(--tag-purple-bg))]">
+                          <div className="w-2 h-2 rounded-full bg-[hsl(var(--tag-purple))]" />
                           <p className="text-xs font-medium text-[hsl(var(--text-1))]">{src}</p>
                         </div>
                       ))}
@@ -378,7 +378,7 @@ export default function DataLineage() {
                     <div className="p-3 bg-raised border border-[hsl(var(--border))] space-y-2">
                       <p className="text-xs text-[hsl(var(--text-2))]">This dataset feeds <strong>{selected.downstreamModels.length}</strong> AI model{selected.downstreamModels.length !== 1 ? 's' : ''}. Any quality issue, PII breach, or schema change in this dataset will directly affect these models.</p>
                       {selected.piiPresent && (
-                        <div className="flex items-start gap-1.5 p-2 bg-[hsl(0_72%_51%/0.06)] border border-[hsl(var(--destructive)/0.3)]">
+                        <div className="flex items-start gap-1.5 p-2 bg-[hsl(var(--s-er-bg))] border border-[hsl(var(--destructive)/0.3)]">
                           <Warning size={11} className="text-[hsl(var(--destructive))] flex-shrink-0 mt-0.5" />
                           <p className="text-[10px] text-[hsl(var(--destructive))]">PII flows downstream — downstream models must comply with applicable privacy regulations for all PII types listed</p>
                         </div>
@@ -389,7 +389,7 @@ export default function DataLineage() {
                     <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Data Quality Score</p>
                     <div className="flex items-center gap-3 p-3 bg-raised border border-[hsl(var(--border))]">
                       <div className="flex-1 bg-[hsl(var(--bg-page))] h-3 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full" style={{ width: `${selected.quality}%`, background: selected.quality >= 95 ? 'hsl(var(--s-ok-tx))' : selected.quality >= 85 ? 'hsl(45 85% 40%)' : 'hsl(var(--destructive))' }} />
+                        <div className="h-full rounded-full" style={{ width: `${selected.quality}%`, background: selected.quality >= 95 ? 'hsl(var(--s-ok-tx))' : selected.quality >= 85 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))' }} />
                       </div>
                       <span className="text-sm font-bold text-[hsl(var(--text-1))]">{selected.quality}%</span>
                     </div>
@@ -405,7 +405,7 @@ export default function DataLineage() {
               <button onClick={() => toast.success(`Lineage for ${selected.datasetName} exported`)} className="flex-1 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90 flex items-center justify-center gap-1.5">
                 <Export size={13} /> Export Lineage
               </button>
-              <button onClick={() => { setDeleteTarget(selected); setSelected(null) }} className="px-3 py-2 border border-[hsl(var(--destructive)/0.3)] text-[hsl(var(--destructive))] hover:bg-[hsl(0_72%_51%/0.06)]">
+              <button onClick={() => { setDeleteTarget(selected); setSelected(null) }} className="px-3 py-2 border border-[hsl(var(--destructive)/0.3)] text-[hsl(var(--destructive))] hover:bg-[hsl(var(--s-er-bg))]">
                 <Trash size={14} />
               </button>
             </div>
@@ -492,7 +492,7 @@ export default function DataLineage() {
               {form.piiPresent && (
                 <div>
                   <label className="text-[10px] font-medium text-[hsl(var(--destructive))] uppercase tracking-wide mb-1 block">PII Types (comma-separated)</label>
-                  <input value={form.piiTypes} onChange={e => setForm(p => ({ ...p, piiTypes: e.target.value }))} placeholder="e.g. SSN (hashed), Account Number (tokenized)" className="w-full px-3 py-2 text-sm border border-[hsl(var(--destructive)/0.5)] bg-[hsl(0_72%_51%/0.04)] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--destructive))]" />
+                  <input value={form.piiTypes} onChange={e => setForm(p => ({ ...p, piiTypes: e.target.value }))} placeholder="e.g. SSN (hashed), Account Number (tokenized)" className="w-full px-3 py-2 text-sm border border-[hsl(var(--destructive)/0.5)] bg-[hsl(var(--s-er-bg))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--destructive))]" />
                 </div>
               )}
             </div>

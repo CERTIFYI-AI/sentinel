@@ -121,10 +121,10 @@ interface MetricTileProps {
 
 function MetricTile({ label, value, variant, icon, sub }: MetricTileProps) {
   const variantStyles = {
-    ok: { bg: 'hsl(142 71% 45% / 0.10)', border: 'hsl(142 71% 45% / 0.3)', color: 'hsl(var(--s-ok-tx))' },
-    warn: { bg: 'hsl(45 93% 47% / 0.10)', border: 'hsl(45 93% 47% / 0.3)', color: 'hsl(var(--s-wn-tx))' },
-    error: { bg: 'hsl(0 72% 51% / 0.10)', border: 'hsl(0 72% 51% / 0.3)', color: 'hsl(var(--destructive))' },
-    info: { bg: 'hsl(220 90% 56% / 0.10)', border: 'hsl(220 90% 56% / 0.3)', color: 'hsl(var(--s-in-tx))' },
+    ok: { bg: 'hsl(var(--s-ok-bg))', border: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+    warn: { bg: 'hsl(var(--s-wn-bg))', border: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+    error: { bg: 'hsl(var(--s-er-bg))', border: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+    info: { bg: 'hsl(var(--s-in-bg))', border: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
   };
   const s = variantStyles[variant];
   return (
@@ -354,12 +354,12 @@ export default function SecurityHome() {
           <TabsTrigger value="sbom" style={{ borderRadius: 0 }}>
             <Package size={13} className="mr-1.5" />AI SBOM
             {totalCVEs > 0 && (
-              <span style={{ marginLeft: 6, background: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))', fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 0 }}>{totalCVEs} CVEs</span>
+              <span style={{ marginLeft: 6, background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 0 }}>{totalCVEs} CVEs</span>
             )}
           </TabsTrigger>
           <TabsTrigger value="red-team" style={{ borderRadius: 0 }}>
             <Sword size={13} className="mr-1.5" />Red Team
-            <span style={{ marginLeft: 6, background: 'hsl(25 95% 53% / 0.15)', color: 'hsl(var(--s-wn-tx))', fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 0 }}>5 findings</span>
+            <span style={{ marginLeft: 6, background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 0 }}>5 findings</span>
           </TabsTrigger>
         </TabsList>
 
@@ -465,7 +465,7 @@ export default function SecurityHome() {
           </div>
 
           {/* Generate SBOM Banner */}
-          <div className="flex items-center justify-between px-4 py-3" style={{ background: 'hsl(220 90% 56% / 0.08)', border: '1px solid hsl(220 90% 56% / 0.25)', borderRadius: 0 }}>
+          <div className="flex items-center justify-between px-4 py-3" style={{ background: 'hsl(var(--s-in-bg))', border: '1px solid hsl(var(--s-in-bg))', borderRadius: 0 }}>
             <div className="flex items-center gap-3">
               <Package size={18} style={{ color: 'hsl(var(--s-in-tx))' }} />
               <div>
@@ -520,7 +520,7 @@ export default function SecurityHome() {
                         <td className="px-3 py-2.5 text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{entry.component}</td>
                         <td className="px-3 py-2.5 text-xs font-mono" style={{ color: 'hsl(var(--text-4))' }}>{entry.version}</td>
                         <td className="px-3 py-2.5">
-                          <Badge style={{ background: 'hsl(220 90% 56% / 0.1)', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>{entry.type}</Badge>
+                          <Badge style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>{entry.type}</Badge>
                         </td>
                         <td className="px-3 py-2.5 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{entry.supplier}</td>
                         <td className="px-3 py-2.5 text-xs font-mono" style={{ color: 'hsl(var(--text-4))' }}>{entry.license}</td>
@@ -528,7 +528,7 @@ export default function SecurityHome() {
                           {entry.cveCount === 0 ? (
                             <span className="text-xs font-mono" style={{ color: 'hsl(var(--s-ok-tx))' }}>None</span>
                           ) : (
-                            <Badge style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>{entry.cveCount} CVEs</Badge>
+                            <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>{entry.cveCount} CVEs</Badge>
                           )}
                         </td>
                         <td className="px-3 py-2.5 text-xs font-mono" style={{ color: entry.cvssMax && entry.cvssMax >= 7 ? 'hsl(var(--destructive))' : entry.cvssMax ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-4))' }}>
@@ -553,14 +553,14 @@ export default function SecurityHome() {
         {/* ── Red Team Tab ─────────────────────────────────────────────────────── */}
         <TabsContent value="red-team" className="space-y-4">
           {/* Red Team Score Banner */}
-          <div className="flex items-center gap-6 px-5 py-4" style={{ background: 'hsl(0 72% 51% / 0.07)', border: '1px solid hsl(0 72% 51% / 0.25)', borderRadius: 0 }}>
+          <div className="flex items-center gap-6 px-5 py-4" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-bg))', borderRadius: 0 }}>
             <div>
               <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Red Team Resilience Score</p>
               <p className="text-4xl font-bold" style={{ color: 'hsl(var(--destructive))' }}>61<span className="text-base font-normal">/100</span></p>
               <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Adversarial robustness — Below 70% threshold</p>
             </div>
             <div className="flex-1 h-2" style={{ background: 'hsl(var(--border))', borderRadius: 0 }}>
-              <div style={{ width: '61%', height: '100%', background: 'hsl(0 72% 51%)', borderRadius: 0 }} />
+              <div style={{ width: '61%', height: '100%', background: 'hsl(var(--s-er-tx))', borderRadius: 0 }} />
             </div>
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
@@ -599,10 +599,10 @@ export default function SecurityHome() {
                   {RED_TEAM_FINDINGS.map(f => {
                     const sc = severityColor(f.severity as any);
                     const statusStyle = f.status === 'Remediated'
-                      ? { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' }
+                      ? { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' }
                       : f.status === 'In Progress'
-                      ? { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(var(--s-wn-tx))' }
-                      : { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' };
+                      ? { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' }
+                      : { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' };
                     return (
                       <tr key={f.id} style={{ borderBottom: '1px solid hsl(var(--border))' }} className="hover:bg-muted/30">
                         <td className="px-3 py-2.5 text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{f.id}</td>

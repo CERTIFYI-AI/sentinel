@@ -200,7 +200,7 @@ export default function DocumentManagement() {
                 <td className="px-3 py-2" onClick={e=>e.stopPropagation()}>
                   <div className="flex gap-1">
                     <button onClick={()=>openEdit(doc)} className="p-1 hover:bg-raised" title="Edit"><PencilSimple size={14} style={{color:'hsl(var(--text-4))'}} /></button>
-                    <button onClick={()=>setDeleteTarget(doc)} className="p-1 hover:bg-[hsl(var(--s-er-bg))]" title="Delete"><Trash size={14} style={{color:'hsl(0 72% 51%)'}} /></button>
+                    <button onClick={()=>setDeleteTarget(doc)} className="p-1 hover:bg-[hsl(var(--s-er-bg))]" title="Delete"><Trash size={14} style={{color:'hsl(var(--s-er-tx))'}} /></button>
                   </div>
                 </td>
               </tr>

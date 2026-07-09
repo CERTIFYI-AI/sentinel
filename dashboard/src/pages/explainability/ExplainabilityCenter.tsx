@@ -79,10 +79,10 @@ function MetricTile({ label, value, variant, icon, sub }: {
   label: string; value: string; variant: 'ok' | 'warn' | 'error' | 'info'; icon: React.ReactNode; sub?: string;
 }) {
   const vs = {
-    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(var(--s-ok-tx))' },
-    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(var(--s-wn-tx))' },
-    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(var(--destructive))' },
-    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))' },
+    ok: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+    warn: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+    error: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+    info: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
   };
   const s = vs[variant];
   return (
@@ -196,7 +196,7 @@ export default function ExplainabilityCenter() {
       </div>
 
       {/* Regulatory Context Banner */}
-      <div className="p-3" style={{ background: 'hsl(220 90% 56% / 0.06)', border: '1px solid hsl(220 90% 56% / 0.2)', borderRadius: 0 }}>
+      <div className="p-3" style={{ background: 'hsl(var(--s-in-bg))', border: '1px solid hsl(var(--s-in-bg))', borderRadius: 0 }}>
         <p className="text-xs" style={{ color: 'hsl(var(--s-in-tx))' }}>
           <Info size={12} className="inline mr-1" />
           <strong>Regulatory Context:</strong> Explainability reports are required by GDPR Art. 22 (automated decisions) and EU AI Act Art. 13 (transparency). {gdprGap} models require updated reports.
@@ -268,7 +268,7 @@ export default function ExplainabilityCenter() {
                     <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{f.label}</span>
                     {f.label === 'Status' ? (
                       <Badge style={{
-                        background: f.value === 'Complete' ? 'hsl(142 71% 45% / 0.12)' : 'hsl(45 93% 47% / 0.12)',
+                        background: f.value === 'Complete' ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-wn-bg))',
                         color: f.value === 'Complete' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))',
                         borderRadius: 0, fontSize: 10,
                       }}>{f.value}</Badge>
@@ -313,7 +313,7 @@ export default function ExplainabilityCenter() {
                       <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{formatDate(d.date)}</td>
                       <td className="px-4 py-3">
                         <Badge style={{
-                          background: d.status === 'Explained' ? 'hsl(142 71% 45% / 0.12)' : 'hsl(45 93% 47% / 0.12)',
+                          background: d.status === 'Explained' ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-wn-bg))',
                           color: d.status === 'Explained' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))',
                           borderRadius: 0, fontSize: 10,
                         }}>{d.status}</Badge>
@@ -353,12 +353,12 @@ export default function ExplainabilityCenter() {
                     <td className="px-4 py-3 text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{r.id}</td>
                     <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-1))' }}>{r.modelName}</td>
                     <td className="px-4 py-3">
-                      <Badge style={{ background: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>{r.method}</Badge>
+                      <Badge style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>{r.method}</Badge>
                     </td>
                     <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{formatDate(r.date)}</td>
                     <td className="px-4 py-3">
                       <Badge style={{
-                        background: r.status === 'Complete' ? 'hsl(142 71% 45% / 0.12)' : 'hsl(45 93% 47% / 0.12)',
+                        background: r.status === 'Complete' ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-wn-bg))',
                         color: r.status === 'Complete' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))',
                         borderRadius: 0, fontSize: 10,
                       }}>{r.status}</Badge>
@@ -424,9 +424,9 @@ export default function ExplainabilityCenter() {
                     <span className="text-[10px] w-28 truncate" style={{ color: 'hsl(var(--text-3))' }}>{f.feature}</span>
                     <div className="flex-1 flex items-center">
                       {f.dir > 0 ? (
-                        <div className="h-2 ml-auto" style={{ width: `${f.weight * 100}%`, background: 'hsl(142 71% 45% / 0.7)', maxWidth: '100%' }} />
+                        <div className="h-2 ml-auto" style={{ width: `${f.weight * 100}%`, background: 'hsl(var(--s-ok-bg))', maxWidth: '100%' }} />
                       ) : (
-                        <div className="h-2 mr-auto" style={{ width: `${f.weight * 100}%`, background: 'hsl(0 72% 51% / 0.7)', maxWidth: '100%' }} />
+                        <div className="h-2 mr-auto" style={{ width: `${f.weight * 100}%`, background: 'hsl(var(--s-er-bg))', maxWidth: '100%' }} />
                       )}
                     </div>
                     <span className="text-[10px] font-mono w-8 text-right" style={{ color: f.dir > 0 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))' }}>
@@ -481,7 +481,7 @@ export default function ExplainabilityCenter() {
                     </div>
                   ))}
                 </div>
-                <div className="mt-2 p-2 text-[10px]" style={{ background: 'hsl(142 71% 45% / 0.08)', border: '1px solid hsl(var(--s-ok-br))' }}>
+                <div className="mt-2 p-2 text-[10px]" style={{ background: 'hsl(var(--s-ok-bg))', border: '1px solid hsl(var(--s-ok-br))' }}>
                   <span style={{ color: 'hsl(var(--s-ok-tx))' }}>Result: Decision flips to <strong>APPROVE</strong> with 3 minimal changes</span>
                 </div>
               </div>
@@ -576,7 +576,7 @@ export default function ExplainabilityCenter() {
                     <div className="h-1.5" style={{ background: 'hsl(var(--border))' }}>
                       <div className="h-full" style={{
                         width: `${c.score}%`,
-                        background: c.score >= 85 ? 'hsl(142 71% 45%)' : c.score >= 75 ? 'hsl(45 93% 47%)' : 'hsl(0 72% 51%)',
+                        background: c.score >= 85 ? 'hsl(var(--s-ok-tx))' : c.score >= 75 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-er-tx))',
                       }} />
                     </div>
                   </div>
@@ -588,7 +588,7 @@ export default function ExplainabilityCenter() {
                   <p className="text-4xl font-bold mt-1" style={{ color: 'hsl(var(--s-ok-tx))' }}>86</p>
                   <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>/ 100 — Good</p>
                 </div>
-                <div className="p-3" style={{ border: '1px solid hsl(45 93% 47% / 0.4)', background: 'hsl(45 93% 47% / 0.06)' }}>
+                <div className="p-3" style={{ border: '1px solid hsl(var(--s-wn-bg))', background: 'hsl(var(--s-wn-bg))' }}>
                   <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--s-wn-tx))' }}>Improvement Recommendations</p>
                   <ul className="space-y-1 text-[10px]" style={{ color: 'hsl(var(--text-3))' }}>
                     <li>→ Add contrastive statements ("approved because X, not Y")</li>
@@ -743,7 +743,7 @@ export default function ExplainabilityCenter() {
                             <td className="px-3 py-2 text-xs font-bold" style={{ color: d.score >= 0.9 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))' }}>{(d.score * 100).toFixed(0)}%</td>
                             <td className="px-3 py-2">
                               <Badge style={{
-                                background: d.status === 'Explained' ? 'hsl(142 71% 45% / 0.12)' : 'hsl(45 93% 47% / 0.12)',
+                                background: d.status === 'Explained' ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-wn-bg))',
                                 color: d.status === 'Explained' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))',
                                 borderRadius: 0, fontSize: 10,
                               }}>{d.status}</Badge>
@@ -768,7 +768,7 @@ export default function ExplainabilityCenter() {
                           <span className="text-xs ml-2" style={{ color: 'hsl(var(--text-4))' }}>— {item.title}</span>
                         </div>
                         <Badge style={{
-                          background: item.status === 'Compliant' ? 'hsl(142 71% 45% / 0.12)' : item.status === 'Pending Review' ? 'hsl(45 93% 47% / 0.12)' : 'hsl(0 72% 51% / 0.12)',
+                          background: item.status === 'Compliant' ? 'hsl(var(--s-ok-bg))' : item.status === 'Pending Review' ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-er-bg))',
                           color: item.status === 'Compliant' ? 'hsl(var(--s-ok-tx))' : item.status === 'Pending Review' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))',
                           borderRadius: 0, fontSize: 10,
                         }}>{item.status}</Badge>

@@ -133,21 +133,21 @@ const SEED_COMMITTEES: Committee[] = [
 ];
 
 const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
-  Active: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
+  Active: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
   Inactive: { bg: 'hsl(220 14% 60% / 0.15)', color: 'hsl(var(--text-3))' },
 };
 
 const ACTION_COLORS: Record<string, { bg: string; color: string }> = {
-  Open: { bg: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))' },
-  'In Progress': { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(var(--s-wn-tx))' },
-  Completed: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
-  Overdue: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
+  Open: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
+  'In Progress': { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+  Completed: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  Overdue: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
 };
 
 const VOTE_COLORS: Record<string, { bg: string; color: string }> = {
-  Approved: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
-  Rejected: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
-  Deferred: { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(var(--s-wn-tx))' },
+  Approved: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  Rejected: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+  Deferred: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
 };
 
 export default function CommitteeManagement() {
@@ -302,12 +302,12 @@ export default function CommitteeManagement() {
                   </div>
                   <div className="flex items-center gap-2">
                     {overdueActs > 0 && (
-                      <Badge style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>
+                      <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>
                         {overdueActs} overdue
                       </Badge>
                     )}
                     {openActs > 0 && (
-                      <Badge style={{ background: 'hsl(45 93% 47% / 0.12)', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 10 }}>
+                      <Badge style={{ background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 10 }}>
                         {openActs} open
                       </Badge>
                     )}
@@ -361,7 +361,7 @@ export default function CommitteeManagement() {
                         <p className="text-sm font-medium text-[hsl(var(--text-1))]">{m.name}</p>
                         <p className="text-xs text-[hsl(var(--text-3))]">{m.role} · {m.department}</p>
                       </div>
-                      <Badge style={{ background: m.votingRight ? 'hsl(142 71% 45% / 0.12)' : 'hsl(220 14% 60% / 0.15)', color: m.votingRight ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-3))', borderRadius: 0, fontSize: 10 }}>
+                      <Badge style={{ background: m.votingRight ? 'hsl(var(--s-ok-bg))' : 'hsl(220 14% 60% / 0.15)', color: m.votingRight ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-3))', borderRadius: 0, fontSize: 10 }}>
                         {m.votingRight ? 'Voting' : 'Observer'}
                       </Badge>
                     </div>

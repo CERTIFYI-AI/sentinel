@@ -62,10 +62,10 @@ function MetricTile({ label, value, variant, icon, sub }: {
   label: string; value: string; variant: 'ok' | 'warn' | 'error' | 'info'; icon: React.ReactNode; sub?: string;
 }) {
   const vs = {
-    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(var(--s-ok-tx))' },
-    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(var(--s-wn-tx))' },
-    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(var(--destructive))' },
-    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))' },
+    ok: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+    warn: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+    error: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+    info: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
   };
   const s = vs[variant];
   return (
@@ -312,7 +312,7 @@ export default function AttackSurface() {
                       <line
                         key={`ie-${n.id}`}
                         x1={INET.x} y1={INET.y + 14} x2={n.x} y2={n.y - 14}
-                        stroke={n.risk === 'critical' || n.risk === 'high' ? 'hsl(0 72% 51% / 0.4)' : 'hsl(var(--border-mid))'}
+                        stroke={n.risk === 'critical' || n.risk === 'high' ? 'hsl(var(--s-er-bg))' : 'hsl(var(--border-mid))'}
                         strokeWidth={n.risk === 'critical' ? 2.5 : 1.5}
                         strokeDasharray={n.risk === 'critical' ? '4 2' : 'none'}
                         markerEnd="url(#arrowhead)"
@@ -340,8 +340,8 @@ export default function AttackSurface() {
                       <rect
                         x={INET.x - 40} y={INET.y - 14}
                         width={80} height={28}
-                        fill="hsl(220 90% 56% / 0.12)"
-                        stroke="hsl(220 90% 56% / 0.5)"
+                        fill="hsl(var(--s-in-bg))"
+                        stroke="hsl(var(--s-in-bg))"
                         strokeWidth={1.5}
                       />
                       <text x={INET.x} y={INET.y + 4} textAnchor="middle" fontSize={10} fontWeight={700} fill="hsl(var(--s-in-tx))">
@@ -483,7 +483,7 @@ export default function AttackSurface() {
                     <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Restricted</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <div style={{ width: 16, height: 2, borderTop: '2px solid hsl(0 72% 51% / 0.6)' }} />
+                    <div style={{ width: 16, height: 2, borderTop: '2px solid hsl(var(--s-er-bg))' }} />
                     <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>High-risk flow</span>
                   </div>
                   <span className="text-xs ml-auto" style={{ color: 'hsl(var(--text-4))' }}>Click any node to inspect</span>
@@ -533,7 +533,7 @@ export default function AttackSurface() {
                       key={a.id}
                       style={{
                         borderBottom: '1px solid hsl(var(--border))',
-                        borderLeft: isCrit ? '4px solid hsl(0 72% 51%)' : undefined,
+                        borderLeft: isCrit ? '4px solid hsl(var(--s-er-tx))' : undefined,
                       }}
                       className="hover:bg-muted/30"
                     >
@@ -543,7 +543,7 @@ export default function AttackSurface() {
                       <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{a.type}</td>
                       <td className="px-4 py-3">
                         <Badge style={{
-                          background: a.exposure === 'public' ? 'hsl(0 72% 51% / 0.12)' : a.exposure === 'restricted' ? 'hsl(45 93% 47% / 0.12)' : 'hsl(220 90% 56% / 0.12)',
+                          background: a.exposure === 'public' ? 'hsl(var(--s-er-bg))' : a.exposure === 'restricted' ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-in-bg))',
                           color: a.exposure === 'public' ? 'hsl(var(--destructive))' : a.exposure === 'restricted' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-in-tx))',
                           borderRadius: 0, fontSize: 10,
                         }}>
@@ -789,7 +789,7 @@ export default function AttackSurface() {
                       <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>Unauthorized access attempts</p>
                       <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>THR-004 linked</p>
                     </div>
-                    <Badge style={{ background: 'hsl(25 95% 53% / 0.12)', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 10 }}>HIGH</Badge>
+                    <Badge style={{ background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 10 }}>HIGH</Badge>
                   </div>
                   {selected.exposure === 'public' && (
                     <div className="flex items-center justify-between p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
@@ -797,7 +797,7 @@ export default function AttackSurface() {
                         <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>DDoS / resource exhaustion</p>
                         <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Public exposure risk</p>
                       </div>
-                      <Badge style={{ background: 'hsl(45 93% 47% / 0.12)', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 10 }}>MEDIUM</Badge>
+                      <Badge style={{ background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 10 }}>MEDIUM</Badge>
                     </div>
                   )}
                 </TabsContent>

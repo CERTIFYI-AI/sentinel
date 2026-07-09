@@ -56,16 +56,16 @@ const CHAINS: ProvenanceChain[] = [
 
 const NODE_COLORS: Record<string, string> = {
   Model: 'hsl(var(--brand))',
-  Dataset: 'hsl(142 71% 45%)',
-  Pipeline: 'hsl(220 90% 56%)',
-  Vendor: 'hsl(280 67% 56%)',
-  Code: 'hsl(45 93% 47%)',
+  Dataset: 'hsl(var(--s-ok-tx))',
+  Pipeline: 'hsl(var(--s-in-tx))',
+  Vendor: 'hsl(var(--tag-purple))',
+  Code: 'hsl(var(--s-wn-tx))',
 }
 
 const RISK_STYLE: Record<string, { bg: string; color: string }> = {
-  Low: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
-  Medium: { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)' },
-  High: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
+  Low: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  Medium: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+  High: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
 }
 
 function ProvenanceTree({ chain }: { chain: ProvenanceChain }) {
@@ -165,9 +165,9 @@ export default function ProvenanceGraph() {
         </div>
         <div className="flex items-center gap-2">
           {selected.complianceFlags.map(f => (
-            <span key={f} className="text-[10px] px-2 py-0.5" style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' }}>{f}</span>
+            <span key={f} className="text-[10px] px-2 py-0.5" style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' }}>{f}</span>
           ))}
-          <span className="text-[11px] px-2 py-0.5 font-medium" style={selected.verified ? { background: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' } : { background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' }}>
+          <span className="text-[11px] px-2 py-0.5 font-medium" style={selected.verified ? { background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' } : { background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' }}>
             {selected.verified ? 'Provenance Verified' : 'Verification Pending'}
           </span>
         </div>

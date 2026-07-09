@@ -241,10 +241,10 @@ export default function BiasAuditWizard() {
                   contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, borderRadius: 0, color: ct.tooltipText, fontSize: 12 }}
                 />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <ReferenceLine y={0.80} stroke="hsl(45 93% 47%)" strokeDasharray="6 3" label={{ value: 'Threshold 0.80', fill: 'hsl(var(--s-wn-tx))', fontSize: 10 }} />
-                <Line type="monotone" dataKey="MDL-001" stroke="hsl(0 72% 51%)" strokeWidth={2} dot={{ r: 3 }} name="MDL-001 (Credit Risk)" />
-                <Line type="monotone" dataKey="MDL-002" stroke="hsl(142 71% 45%)" strokeWidth={2} dot={{ r: 3 }} name="MDL-002 (Fraud Detection)" />
-                <Line type="monotone" dataKey="MDL-004" stroke="hsl(220 90% 56%)" strokeWidth={2} dot={{ r: 3 }} name="MDL-004 (Loan Assistant)" />
+                <ReferenceLine y={0.80} stroke="hsl(var(--s-wn-tx))" strokeDasharray="6 3" label={{ value: 'Threshold 0.80', fill: 'hsl(var(--s-wn-tx))', fontSize: 10 }} />
+                <Line type="monotone" dataKey="MDL-001" stroke="hsl(var(--s-er-tx))" strokeWidth={2} dot={{ r: 3 }} name="MDL-001 (Credit Risk)" />
+                <Line type="monotone" dataKey="MDL-002" stroke="hsl(var(--s-ok-tx))" strokeWidth={2} dot={{ r: 3 }} name="MDL-002 (Fraud Detection)" />
+                <Line type="monotone" dataKey="MDL-004" stroke="hsl(var(--s-in-tx))" strokeWidth={2} dot={{ r: 3 }} name="MDL-004 (Loan Assistant)" />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -390,7 +390,7 @@ export default function BiasAuditWizard() {
                 <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Intersectional Bias Analysis</p>
                 <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>Cross-cutting protected attributes — fairness scores at attribute intersections (Loan Approval Model v3.0)</p>
               </div>
-              <Badge style={{ background: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>MDL-001</Badge>
+              <Badge style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>MDL-001</Badge>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs border-collapse">
@@ -418,7 +418,7 @@ export default function BiasAuditWizard() {
                             <span style={{ color: 'hsl(var(--text-4))' }}>—</span>
                           ) : (
                             <span className="font-mono font-bold text-xs px-2 py-0.5" style={{
-                              background: score >= 0.85 ? 'hsl(142 71% 45% / 0.15)' : score >= 0.75 ? 'hsl(45 93% 47% / 0.15)' : 'hsl(0 72% 51% / 0.15)',
+                              background: score >= 0.85 ? 'hsl(var(--s-ok-bg))' : score >= 0.75 ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-er-bg))',
                               color: score >= 0.85 ? 'hsl(var(--s-ok-tx))' : score >= 0.75 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))',
                             }}>{score.toFixed(2)}</span>
                           )}
@@ -430,9 +430,9 @@ export default function BiasAuditWizard() {
               </table>
             </div>
             <div className="flex items-center gap-4 mt-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>
-              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3" style={{ background: 'hsl(142 71% 45% / 0.3)' }} />≥ 0.85 Pass</span>
-              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3" style={{ background: 'hsl(45 93% 47% / 0.3)' }} />0.75–0.84 Warning</span>
-              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3" style={{ background: 'hsl(0 72% 51% / 0.3)' }} />&lt; 0.75 Fail</span>
+              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3" style={{ background: 'hsl(var(--s-ok-bg))' }} />≥ 0.85 Pass</span>
+              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3" style={{ background: 'hsl(var(--s-wn-bg))' }} />0.75–0.84 Warning</span>
+              <span className="flex items-center gap-1"><span className="inline-block w-3 h-3" style={{ background: 'hsl(var(--s-er-bg))' }} />&lt; 0.75 Fail</span>
               <span className="ml-auto font-semibold text-[hsl(var(--destructive))]">⚠ 3 critical intersections detected (Race/Ethnicity × Income = 0.65)</span>
             </div>
           </CardContent>
@@ -502,7 +502,7 @@ export default function BiasAuditWizard() {
                       <td className="px-2 py-2 font-mono" style={{ color: 'hsl(var(--text-3))' }}>{r.p}</td>
                       <td className="px-2 py-2">
                         <Badge style={{
-                          background: r.sig ? 'hsl(0 72% 51% / 0.12)' : 'hsl(142 71% 45% / 0.12)',
+                          background: r.sig ? 'hsl(var(--s-er-bg))' : 'hsl(var(--s-ok-bg))',
                           color: r.sig ? 'hsl(var(--destructive))' : 'hsl(var(--s-ok-tx))',
                           borderRadius: 0, fontSize: 9,
                         }}>{r.sig ? 'Significant (α=0.05)' : 'Not significant'}</Badge>
@@ -556,14 +556,14 @@ export default function BiasAuditWizard() {
                   { id: 'CF-004', attr: 'Gender: F → M', orig: 0.61, cf: 0.74, changed: true, issue: 'Reject → Approval' },
                   { id: 'CF-005', attr: 'Race: Black → Asian', orig: 0.68, cf: 0.71, changed: false, issue: 'None' },
                 ].map(r => (
-                  <tr key={r.id} style={{ borderBottom: '1px solid hsl(var(--border))', background: r.changed ? 'hsl(0 72% 51% / 0.04)' : 'transparent' }}>
+                  <tr key={r.id} style={{ borderBottom: '1px solid hsl(var(--border))', background: r.changed ? 'hsl(var(--s-er-bg))' : 'transparent' }}>
                     <td className="px-3 py-2 font-mono" style={{ color: 'hsl(var(--brand))' }}>{r.id}</td>
                     <td className="px-3 py-2" style={{ color: 'hsl(var(--text-1))' }}>{r.attr}</td>
                     <td className="px-3 py-2 font-mono" style={{ color: 'hsl(var(--text-3))' }}>{r.orig.toFixed(2)}</td>
                     <td className="px-3 py-2 font-mono font-bold" style={{ color: r.cf < r.orig ? 'hsl(var(--destructive))' : 'hsl(var(--s-ok-tx))' }}>{r.cf.toFixed(2)}</td>
                     <td className="px-3 py-2">
                       <Badge style={{
-                        background: r.changed ? 'hsl(0 72% 51% / 0.12)' : 'hsl(142 71% 45% / 0.12)',
+                        background: r.changed ? 'hsl(var(--s-er-bg))' : 'hsl(var(--s-ok-bg))',
                         color: r.changed ? 'hsl(var(--destructive))' : 'hsl(var(--s-ok-tx))',
                         borderRadius: 0, fontSize: 9,
                       }}>{r.changed ? 'Yes — Unfair' : 'No — Fair'}</Badge>
@@ -614,12 +614,12 @@ export default function BiasAuditWizard() {
                 },
               ].map(item => (
                 <div key={item.issue} className="p-3" style={{
-                  border: `1px solid ${item.priority === 'Critical' ? 'hsl(0 72% 51% / 0.3)' : item.priority === 'High' ? 'hsl(45 93% 47% / 0.3)' : 'hsl(var(--border))'}`,
-                  borderLeft: `4px solid ${item.priority === 'Critical' ? 'hsl(0 72% 51%)' : item.priority === 'High' ? 'hsl(45 93% 47%)' : 'hsl(var(--brand))'}`,
+                  border: `1px solid ${item.priority === 'Critical' ? 'hsl(var(--s-er-bg))' : item.priority === 'High' ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--border))'}`,
+                  borderLeft: `4px solid ${item.priority === 'Critical' ? 'hsl(var(--s-er-tx))' : item.priority === 'High' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--brand))'}`,
                 }}>
                   <div className="flex items-center gap-2 mb-2">
                     <Badge style={{
-                      background: item.priority === 'Critical' ? 'hsl(0 72% 51% / 0.12)' : item.priority === 'High' ? 'hsl(45 93% 47% / 0.12)' : 'hsl(220 90% 56% / 0.12)',
+                      background: item.priority === 'Critical' ? 'hsl(var(--s-er-bg))' : item.priority === 'High' ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-in-bg))',
                       color: item.priority === 'Critical' ? 'hsl(var(--destructive))' : item.priority === 'High' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-in-tx))',
                       borderRadius: 0, fontSize: 9,
                     }}>{item.priority}</Badge>
@@ -667,14 +667,14 @@ export default function BiasAuditWizard() {
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-2">
                         <div className="flex-1 h-1.5" style={{ background: 'hsl(var(--border))', maxWidth: 80 }}>
-                          <div className="h-full" style={{ width: `${r.coverage}%`, background: r.coverage >= 80 ? 'hsl(142 71% 45%)' : r.coverage >= 65 ? 'hsl(45 93% 47%)' : 'hsl(0 72% 51%)' }} />
+                          <div className="h-full" style={{ width: `${r.coverage}%`, background: r.coverage >= 80 ? 'hsl(var(--s-ok-tx))' : r.coverage >= 65 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-er-tx))' }} />
                         </div>
                         <span className="font-mono" style={{ color: 'hsl(var(--text-3))' }}>{r.coverage}%</span>
                       </div>
                     </td>
                     <td className="px-3 py-2">
                       <Badge style={{
-                        background: r.status === 'Compliant' ? 'hsl(142 71% 45% / 0.12)' : r.status === 'Partial' ? 'hsl(45 93% 47% / 0.12)' : 'hsl(0 72% 51% / 0.12)',
+                        background: r.status === 'Compliant' ? 'hsl(var(--s-ok-bg))' : r.status === 'Partial' ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-er-bg))',
                         color: r.status === 'Compliant' ? 'hsl(var(--s-ok-tx))' : r.status === 'Partial' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))',
                         borderRadius: 0, fontSize: 9,
                       }}>{r.status}</Badge>

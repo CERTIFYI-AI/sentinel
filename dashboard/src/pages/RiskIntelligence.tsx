@@ -97,24 +97,24 @@ const TIMELINE_DATA = [
 ]
 
 const STATUS_STYLE: Record<RegStatus, React.CSSProperties> = {
-  Compliant:      { background: 'hsl(142 71% 45% / 0.12)', color: 'hsl(142 71% 35%)' },
-  'Gap Identified':{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
-  'Under Review': { background: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)' },
+  Compliant:      { background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  'Gap Identified':{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+  'Under Review': { background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
   'Not Assessed': { background: 'hsl(220 13% 50% / 0.12)', color: 'hsl(var(--text-4))' },
 }
 
 const OB_STYLE: Record<ObStatus, React.CSSProperties> = {
-  Mapped:   { background: 'hsl(142 71% 45% / 0.12)', color: 'hsl(142 71% 35%)' },
-  Unmapped: { background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
-  Partial:  { background: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)' },
+  Mapped:   { background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  Unmapped: { background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+  Partial:  { background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
   Exempt:   { background: 'hsl(220 13% 50% / 0.12)', color: 'hsl(var(--text-4))' },
 }
 
 const URGENCY_DOT: Record<Urgency, string> = {
   Critical: 'hsl(var(--destructive))',
-  High:     'hsl(45 85% 40%)',
-  Medium:   'hsl(220 90% 56%)',
-  Low:      'hsl(142 71% 45%)',
+  High:     'hsl(var(--s-wn-tx))',
+  Medium:   'hsl(var(--s-in-tx))',
+  Low:      'hsl(var(--s-ok-tx))',
 }
 
 export default function RegulatoryIntelligenceEngine() {
@@ -207,8 +207,8 @@ export default function RegulatoryIntelligenceEngine() {
                         <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[reg.status] || { background: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{reg.status}</span>
                         <span className="text-[10px] px-1.5 py-0.5 border border-[hsl(var(--border))] text-[hsl(var(--text-4))]">{reg.jurisdiction}</span>
                         <span className="text-[10px] px-1.5 py-0.5 font-medium" style={{ background: URGENCY_DOT[reg.aiImpact] + '20', color: URGENCY_DOT[reg.aiImpact] }}>AI Impact: {reg.aiImpact}</span>
-                        {isUrgent && <span className="text-[10px] px-1.5 py-0.5 bg-[hsl(0_72%_51%/0.12)] text-[hsl(var(--destructive))] font-semibold animate-pulse">{reg.daysUntil}d</span>}
-                        {reg.daysUntil < 0 && <span className="text-[10px] px-1.5 py-0.5 bg-[hsl(142_71%_45%/0.12)] text-[hsl(142_71%_35%)]">Effective</span>}
+                        {isUrgent && <span className="text-[10px] px-1.5 py-0.5 bg-[hsl(var(--s-er-bg))] text-[hsl(var(--destructive))] font-semibold animate-pulse">{reg.daysUntil}d</span>}
+                        {reg.daysUntil < 0 && <span className="text-[10px] px-1.5 py-0.5 bg-[hsl(var(--s-ok-bg))] text-[hsl(var(--s-ok-tx))]">Effective</span>}
                       </div>
                       <h3 className="text-sm font-semibold text-[hsl(var(--text-1))]">{reg.name}</h3>
                       <p className="text-xs text-[hsl(var(--text-4))] mt-0.5 line-clamp-2">{reg.summary}</p>
@@ -216,7 +216,7 @@ export default function RegulatoryIntelligenceEngine() {
                     <div className="text-right flex-shrink-0 space-y-1">
                       <p className="text-xs text-[hsl(var(--text-4))]">Effective: {reg.effectiveDate}</p>
                       <p className="text-xs text-[hsl(var(--text-3))]">{reg.obligationCount} obligations</p>
-                      <p className="text-xs font-semibold" style={{ color: pct >= 80 ? 'hsl(142 71% 35%)' : pct >= 50 ? 'hsl(45 85% 40%)' : 'hsl(var(--destructive))' }}>{pct}% mapped</p>
+                      <p className="text-xs font-semibold" style={{ color: pct >= 80 ? 'hsl(var(--s-ok-tx))' : pct >= 50 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))' }}>{pct}% mapped</p>
                     </div>
                   </div>
                   <div className="mt-3">
@@ -225,7 +225,7 @@ export default function RegulatoryIntelligenceEngine() {
                       <p className="text-[10px] text-[hsl(var(--text-4))]">{reg.unmappedCount} gaps</p>
                     </div>
                     <div className="h-1.5 bg-[hsl(var(--border))] rounded-full overflow-hidden">
-                      <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: pct >= 80 ? 'hsl(142 71% 45%)' : pct >= 50 ? 'hsl(45 85% 40%)' : 'hsl(var(--destructive))' }} />
+                      <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: pct >= 80 ? 'hsl(var(--s-ok-tx))' : pct >= 50 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))' }} />
                     </div>
                   </div>
                   <div className="flex items-center gap-4 mt-2 pt-2 border-t border-[hsl(var(--border))]">
@@ -275,7 +275,7 @@ export default function RegulatoryIntelligenceEngine() {
                   <td className="px-4 py-3 text-xs text-[hsl(var(--text-3))]">{ob.dueDate}</td>
                   <td className="px-4 py-3">
                     {ob.automatable
-                      ? <span className="text-[10px] px-1.5 py-0.5 bg-[hsl(142_71%_45%/0.12)] text-[hsl(142_71%_35%)] font-medium">Auto</span>
+                      ? <span className="text-[10px] px-1.5 py-0.5 bg-[hsl(var(--s-ok-bg))] text-[hsl(var(--s-ok-tx))] font-medium">Auto</span>
                       : <span className="text-[10px] text-[hsl(var(--text-4))]">Manual</span>}
                   </td>
                 </tr>
@@ -293,19 +293,19 @@ export default function RegulatoryIntelligenceEngine() {
 
       {tab === 'gaps' && (
         <div className="space-y-4">
-          <div className="flex items-center gap-3 p-3 rounded border border-[hsl(0_72%_51%/0.3)] bg-[hsl(0_72%_51%/0.06)]">
+          <div className="flex items-center gap-3 p-3 rounded border border-[hsl(var(--s-er-bg))] bg-[hsl(var(--s-er-bg))]">
             <Warning size={16} className="text-[hsl(var(--destructive))] flex-shrink-0" />
             <p className="text-sm text-[hsl(var(--text-2))]">
               <span className="font-semibold text-[hsl(var(--destructive))]">{PREDICTED_GAPS.filter(g => g.urgency === 'Critical').length} Critical</span> compliance gaps predicted with high confidence based on your current posture vs. regulatory requirements and industry enforcement data.
             </p>
           </div>
           {PREDICTED_GAPS.map(gap => (
-            <div key={gap.id} className="rounded border bg-surface p-5" style={{ borderColor: gap.urgency === 'Critical' ? 'hsl(var(--destructive) / 0.35)' : gap.urgency === 'High' ? 'hsl(45 93% 47% / 0.4)' : 'hsl(var(--border))' }}>
+            <div key={gap.id} className="rounded border bg-surface p-5" style={{ borderColor: gap.urgency === 'Critical' ? 'hsl(var(--destructive) / 0.35)' : gap.urgency === 'High' ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--border))' }}>
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <div className="flex items-center gap-1.5">
-                      <div className="text-sm font-bold" style={{ color: gap.urgency === 'Critical' ? 'hsl(var(--destructive))' : 'hsl(45 85% 40%)' }}>{gap.probability}%</div>
+                      <div className="text-sm font-bold" style={{ color: gap.urgency === 'Critical' ? 'hsl(var(--destructive))' : 'hsl(var(--s-wn-tx))' }}>{gap.probability}%</div>
                       <div className="text-xs text-[hsl(var(--text-4))]">probability</div>
                     </div>
                     <span className="text-[10px] px-1.5 py-0.5 font-semibold" style={{ background: URGENCY_DOT[gap.urgency] + '20', color: URGENCY_DOT[gap.urgency] }}>{gap.urgency}</span>
@@ -323,10 +323,10 @@ export default function RegulatoryIntelligenceEngine() {
                     <svg viewBox="0 0 36 36" className="w-16 h-16 -rotate-90">
                       <circle cx="18" cy="18" r="15.9" fill="none" stroke="hsl(var(--border))" strokeWidth="3" />
                       <circle cx="18" cy="18" r="15.9" fill="none" strokeWidth="3" strokeDasharray={`${gap.probability} ${100 - gap.probability}`}
-                        stroke={gap.urgency === 'Critical' ? 'hsl(var(--destructive))' : 'hsl(45 85% 40%)'} strokeLinecap="round" />
+                        stroke={gap.urgency === 'Critical' ? 'hsl(var(--destructive))' : 'hsl(var(--s-wn-tx))'} strokeLinecap="round" />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-xs font-bold" style={{ color: gap.urgency === 'Critical' ? 'hsl(var(--destructive))' : 'hsl(45 85% 40%)' }}>{gap.probability}%</span>
+                      <span className="text-xs font-bold" style={{ color: gap.urgency === 'Critical' ? 'hsl(var(--destructive))' : 'hsl(var(--s-wn-tx))' }}>{gap.probability}%</span>
                     </div>
                   </div>
                   <p className="text-[10px] text-[hsl(var(--text-4))] mt-1">Gap probability</p>
@@ -386,11 +386,11 @@ export default function RegulatoryIntelligenceEngine() {
                     </div>
                     <div className="flex-1">
                       <div className="h-2 bg-[hsl(var(--border))] rounded-full overflow-hidden">
-                        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: pct >= 80 ? 'hsl(142 71% 45%)' : pct >= 50 ? 'hsl(45 85% 40%)' : 'hsl(var(--destructive))' }} />
+                        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: pct >= 80 ? 'hsl(var(--s-ok-tx))' : pct >= 50 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))' }} />
                       </div>
                     </div>
                     <div className="w-24 text-right flex-shrink-0">
-                      <span className="text-xs font-bold" style={{ color: pct >= 80 ? 'hsl(142 71% 35%)' : pct >= 50 ? 'hsl(45 85% 40%)' : 'hsl(var(--destructive))' }}>{pct}%</span>
+                      <span className="text-xs font-bold" style={{ color: pct >= 80 ? 'hsl(var(--s-ok-tx))' : pct >= 50 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))' }}>{pct}%</span>
                       <span className="text-[10px] text-[hsl(var(--text-4))] ml-1">({r.mappedCount}/{r.obligationCount})</span>
                     </div>
                     <span className="text-[11px] px-2 py-0.5 font-medium flex-shrink-0 w-28 text-center" style={STATUS_STYLE[r.status] || { background: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{r.status}</span>
@@ -443,7 +443,7 @@ export default function RegulatoryIntelligenceEngine() {
                     ))}
                   </div>
                   {selected.daysUntil > 0 && selected.daysUntil <= 120 && (
-                    <div className="p-3 bg-[hsl(0_72%_51%/0.06)] border border-[hsl(var(--destructive)/0.3)]">
+                    <div className="p-3 bg-[hsl(var(--s-er-bg))] border border-[hsl(var(--destructive)/0.3)]">
                       <div className="flex items-center gap-2">
                         <Clock size={14} className="text-[hsl(var(--destructive))]" />
                         <p className="text-xs font-semibold text-[hsl(var(--destructive))]">{selected.daysUntil} days until effective — action required</p>
@@ -462,7 +462,7 @@ export default function RegulatoryIntelligenceEngine() {
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-mono text-[10px] text-[hsl(var(--brand))]">{ob.article}</span>
                           <span className="text-[10px] px-1.5 py-0.5 font-medium" style={OB_STYLE[ob.status] || { background: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{ob.status}</span>
-                          {ob.automatable && <span className="text-[10px] px-1.5 py-0.5 bg-[hsl(142_71%_45%/0.12)] text-[hsl(142_71%_35%)]">Automatable</span>}
+                          {ob.automatable && <span className="text-[10px] px-1.5 py-0.5 bg-[hsl(var(--s-ok-bg))] text-[hsl(var(--s-ok-tx))]">Automatable</span>}
                         </div>
                         <p className="text-xs text-[hsl(var(--text-2))] leading-relaxed">{ob.text}</p>
                         {ob.mappedControls.length > 0 && (
@@ -486,14 +486,14 @@ export default function RegulatoryIntelligenceEngine() {
                   <div className="p-4 bg-raised border border-[hsl(var(--border))] space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-[hsl(var(--text-2))]">Mapped obligations</span>
-                      <span className="text-xs font-bold text-[hsl(142_71%_35%)]">{selected.mappedCount}</span>
+                      <span className="text-xs font-bold text-[hsl(var(--s-ok-tx))]">{selected.mappedCount}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-[hsl(var(--text-2))]">Unmapped obligations</span>
                       <span className="text-xs font-bold text-[hsl(var(--destructive))]">{selected.unmappedCount}</span>
                     </div>
                     <div className="h-1.5 bg-[hsl(var(--border))] rounded-full overflow-hidden">
-                      <div className="h-full bg-[hsl(142_71%_45%)]" style={{ width: `${Math.round((selected.mappedCount / selected.obligationCount) * 100)}%` }} />
+                      <div className="h-full bg-[hsl(var(--s-ok-tx))]" style={{ width: `${Math.round((selected.mappedCount / selected.obligationCount) * 100)}%` }} />
                     </div>
                   </div>
                   <button onClick={() => toast.success('Gap analysis report generated')} className="w-full py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">

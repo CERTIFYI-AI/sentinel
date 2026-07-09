@@ -23,7 +23,7 @@ export default function DatasetPreviewDrawer() {
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-lg font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Customer Support QA v2</h1>
-            <Badge style={{ background: 'hsl(142 71% 45% / 0.15)', color: 'hsl(142 71% 45%)', borderRadius: 0, fontSize: 10 }}>Production</Badge>
+            <Badge style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', borderRadius: 0, fontSize: 10 }}>Production</Badge>
           </div>
           <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>1,204 rows • Last updated 2 days ago</p>
         </div>

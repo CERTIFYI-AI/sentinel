@@ -36,18 +36,18 @@ const SEED: Attestation[] = [
 ]
 
 const STATUS_STYLE: Record<AttestationStatus, { bg: string; color: string }> = {
-  Valid: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
-  Expired: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
-  Pending: { bg: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))' },
-  Rejected: { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))' },
-  'Under Review': { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)' },
+  Valid: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  Expired: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+  Pending: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
+  Rejected: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+  'Under Review': { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
 }
 
 const SUBJECT_COLOR: Record<SubjectType, string> = {
   Model: 'hsl(var(--brand))',
-  Dataset: 'hsl(142 71% 45%)',
-  Vendor: 'hsl(280 67% 56%)',
-  Pipeline: 'hsl(220 90% 56%)',
+  Dataset: 'hsl(var(--s-ok-tx))',
+  Vendor: 'hsl(var(--tag-purple))',
+  Pipeline: 'hsl(var(--s-in-tx))',
 }
 
 const BLANK = {
@@ -172,7 +172,7 @@ export default function SupplyChainAttestations() {
           { label: 'Total Attestations', value: stats.total, color: 'hsl(var(--text-1))' },
           { label: 'Valid', value: stats.valid, color: 'hsl(var(--s-ok-tx))' },
           { label: 'Expired', value: stats.expired, color: 'hsl(var(--destructive))' },
-          { label: 'Under Review', value: stats.underReview, color: 'hsl(45 85% 40%)' },
+          { label: 'Under Review', value: stats.underReview, color: 'hsl(var(--s-wn-tx))' },
         ].map(s => (
           <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
             <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
@@ -380,7 +380,7 @@ export default function SupplyChainAttestations() {
                     </div>
                   </div>
                   {(selected.status === 'Expired' || selected.status === 'Under Review') && (
-                    <div className="p-3 bg-[hsl(0_72%_51%/0.06)] border border-[hsl(var(--destructive)/0.3)]">
+                    <div className="p-3 bg-[hsl(var(--s-er-bg))] border border-[hsl(var(--destructive)/0.3)]">
                       <p className="text-xs font-semibold text-[hsl(var(--destructive))] mb-1">Action Required</p>
                       <p className="text-xs text-[hsl(var(--text-2))]">
                         {selected.status === 'Expired' ? 'This attestation has expired and must be renewed before this component can be considered compliant.' : 'This attestation is under review. Findings are pending — do not assume compliance until review is complete.'}
@@ -407,7 +407,7 @@ export default function SupplyChainAttestations() {
               <button onClick={() => { toast.success('Renewal workflow initiated'); setSelected(null) }} className="flex-1 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90 flex items-center justify-center gap-1.5">
                 <ArrowClockwise size={13} /> Renew
               </button>
-              <button onClick={() => { setDeleteTarget(selected); setSelected(null) }} className="px-3 py-2 border border-[hsl(var(--destructive)/0.3)] text-[hsl(var(--destructive))] hover:bg-[hsl(0_72%_51%/0.06)]">
+              <button onClick={() => { setDeleteTarget(selected); setSelected(null) }} className="px-3 py-2 border border-[hsl(var(--destructive)/0.3)] text-[hsl(var(--destructive))] hover:bg-[hsl(var(--s-er-bg))]">
                 <Trash size={14} />
               </button>
             </div>

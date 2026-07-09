@@ -60,8 +60,8 @@ export default function MetricStudio() {
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm font-medium truncate" style={{ color: 'hsl(var(--text-1))' }}>{metric.name}</span>
                 <Badge style={{ 
-                  background: metric.status === 'Published' ? 'hsl(142 71% 45% / 0.15)' : 'hsl(var(--bg-muted))', 
-                  color: metric.status === 'Published' ? 'hsl(142 71% 45%)' : 'hsl(var(--text-3))',
+                  background: metric.status === 'Published' ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--bg-muted))', 
+                  color: metric.status === 'Published' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-3))',
                   borderRadius: 0, fontSize: 10 
                 }}>
                   {metric.status}
@@ -169,9 +169,9 @@ export default function MetricStudio() {
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-semibold uppercase" style={{ color: 'hsl(var(--text-3))' }}>Result Score</span>
                     {testResult >= 0.8 ? (
-                      <CheckCircle size={18} weight="fill" style={{ color: 'hsl(142 71% 45%)' }} />
+                      <CheckCircle size={18} weight="fill" style={{ color: 'hsl(var(--s-ok-tx))' }} />
                     ) : (
-                      <Warning size={18} weight="fill" style={{ color: 'hsl(45 93% 47%)' }} />
+                      <Warning size={18} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />
                     )}
                   </div>
                   <div className="text-3xl font-mono font-bold" style={{ color: 'hsl(var(--text-1))' }}>

@@ -12,12 +12,12 @@ import { fetchRoles as sbFetchRoles, fetchUsers as sbFetchUsers, createRole as s
 
 const COLOR_STYLES: Record<RoleColor, { bg: string; color: string }> = {
   zinc:    { bg: 'hsl(240 5% 64% / 0.15)',  color: 'hsl(240 5% 45%)' },
-  emerald: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
-  blue:    { bg: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))' },
-  amber:   { bg: 'hsl(45 93% 47% / 0.12)',  color: 'hsl(45 85% 40%)' },
-  red:     { bg: 'hsl(0 72% 51% / 0.12)',   color: 'hsl(var(--destructive))' },
-  purple:  { bg: 'hsl(280 67% 56% / 0.12)', color: 'hsl(280 60% 55%)' },
-  orange:  { bg: 'hsl(25 95% 53% / 0.12)',  color: 'hsl(25 90% 45%)' },
+  emerald: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  blue:    { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
+  amber:   { bg: 'hsl(var(--s-wn-bg))',  color: 'hsl(var(--s-wn-tx))' },
+  red:     { bg: 'hsl(var(--s-er-bg))',   color: 'hsl(var(--destructive))' },
+  purple:  { bg: 'hsl(var(--tag-purple-bg))', color: 'hsl(var(--tag-purple))' },
+  orange:  { bg: 'hsl(var(--s-wn-bg))',  color: 'hsl(25 90% 45%)' },
 }
 
 const COLORS: RoleColor[] = ['zinc', 'emerald', 'blue', 'amber', 'red', 'purple', 'orange']
@@ -121,7 +121,7 @@ function PermissionTree({ selected, onChange, readOnly }: {
                       )}
                       <span className="text-[11px] font-semibold" style={{ color: 'hsl(var(--text-2))' }}>{module}</span>
                       {isModuleFull(module) && <Check size={11} style={{ color: 'hsl(var(--s-ok-tx))' }} />}
-                      {isModulePartial(module) && <span className="text-[10px]" style={{ color: 'hsl(45 85% 40%)' }}>partial</span>}
+                      {isModulePartial(module) && <span className="text-[10px]" style={{ color: 'hsl(var(--s-wn-tx))' }}>partial</span>}
                     </div>
                     <div className="flex flex-wrap gap-1.5 pl-5">
                       {modPerms.map(p => (
@@ -332,7 +332,7 @@ export default function RolesPage() {
                 <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{r.userCount}</td>
                 <td className="px-4 py-3">
                   {r.isSystem
-                    ? <span className="text-[10px] px-1.5 py-0.5" style={{ background: 'hsl(280 67% 56% / 0.12)', color: 'hsl(280 60% 55%)' }}>System</span>
+                    ? <span className="text-[10px] px-1.5 py-0.5" style={{ background: 'hsl(var(--tag-purple-bg))', color: 'hsl(var(--tag-purple))' }}>System</span>
                     : <span className="text-[10px] px-1.5 py-0.5" style={{ background: 'hsl(var(--bg-raised))', color: 'hsl(var(--text-4))' }}>Custom</span>}
                 </td>
                 <td className="px-4 py-3">
@@ -405,7 +405,7 @@ export default function RolesPage() {
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-[10px] font-medium uppercase tracking-wide" style={{ color: 'hsl(var(--text-4))' }}>Permissions *</label>
                   {editTarget?.isSystem && (
-                    <span className="text-[10px] px-2 py-0.5 flex items-center gap-1" style={{ background: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)' }}>
+                    <span className="text-[10px] px-2 py-0.5 flex items-center gap-1" style={{ background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' }}>
                       <Warning size={11} /> System roles cannot have permissions edited
                     </span>
                   )}
@@ -413,7 +413,7 @@ export default function RolesPage() {
                 <PermissionTree selected={form.permissions} onChange={perms => setForm(p => ({ ...p, permissions: perms }))} readOnly={editTarget?.isSystem} />
               </div>
               {formError && (
-                <p className="text-xs px-3 py-2 border" style={{ background: 'hsl(0 72% 51% / 0.08)', borderColor: 'hsl(var(--destructive) / 0.3)', color: 'hsl(var(--destructive))' }}>{formError}</p>
+                <p className="text-xs px-3 py-2 border" style={{ background: 'hsl(var(--s-er-bg))', borderColor: 'hsl(var(--destructive) / 0.3)', color: 'hsl(var(--destructive))' }}>{formError}</p>
               )}
             </div>
             <div className="flex justify-end gap-2 px-5 py-4 flex-shrink-0" style={{ borderTop: '1px solid hsl(var(--border))' }}>
@@ -435,7 +435,7 @@ export default function RolesPage() {
               <div>
                 <div className="flex items-center gap-2 mb-0.5">
                   <RoleBadge role={selected} />
-                  {selected.isSystem && <span className="text-[10px] px-1.5 py-0.5" style={{ background: 'hsl(280 67% 56% / 0.12)', color: 'hsl(280 60% 55%)' }}>System</span>}
+                  {selected.isSystem && <span className="text-[10px] px-1.5 py-0.5" style={{ background: 'hsl(var(--tag-purple-bg))', color: 'hsl(var(--tag-purple))' }}>System</span>}
                 </div>
                 <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
                   <span className="font-mono">{selected.code}</span> · {selected.permissions.length} permissions · {roleUsers.length} users

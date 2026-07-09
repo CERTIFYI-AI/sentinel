@@ -71,10 +71,10 @@ function MetricTile({ label, value, variant, icon, sub }: {
   label: string; value: string; variant: 'ok' | 'warn' | 'error' | 'info'; icon: React.ReactNode; sub?: string;
 }) {
   const vs = {
-    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(var(--s-ok-tx))' },
-    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(var(--s-wn-tx))' },
-    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(var(--destructive))' },
-    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))' },
+    ok: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+    warn: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+    error: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+    info: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
   };
   const s = vs[variant];
   return (
@@ -326,7 +326,7 @@ export default function ThreatFeed() {
                       <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{threat.source}</td>
                       <td className="px-4 py-3">
                         {threat.mitreId ? (
-                          <Badge style={{ background: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10, fontFamily: 'monospace' }}>
+                          <Badge style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10, fontFamily: 'monospace' }}>
                             {threat.mitreId}
                           </Badge>
                         ) : <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>—</span>}
@@ -457,7 +457,7 @@ export default function ThreatFeed() {
                           <Target size={14} style={{ color: 'hsl(var(--brand))' }} />
                           <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{m}</span>
                         </div>
-                        <Badge style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>Impacted</Badge>
+                        <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>Impacted</Badge>
                       </div>
                     ))
                   ) : (

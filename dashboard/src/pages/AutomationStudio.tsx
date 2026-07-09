@@ -118,16 +118,16 @@ const ACTION_ICONS: Record<ActionType, React.ElementType> = {
 }
 
 const STATUS_STYLE: Record<WorkflowStatus, React.CSSProperties> = {
-  Active: { background: 'hsl(142 71% 45% / 0.12)', color: 'hsl(142 71% 35%)' },
-  Paused: { background: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)' },
+  Active: { background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  Paused: { background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
   Draft: { background: 'hsl(220 13% 50% / 0.12)', color: 'hsl(var(--text-4))' },
-  Error: { background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
+  Error: { background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
 }
 
 const NODE_COLOR: Record<NodeType, string> = {
-  trigger: 'hsl(220 90% 56%)',
-  condition: 'hsl(45 85% 40%)',
-  action: 'hsl(142 71% 45%)',
+  trigger: 'hsl(var(--s-in-tx))',
+  condition: 'hsl(var(--s-wn-tx))',
+  action: 'hsl(var(--s-ok-tx))',
 }
 
 const INTEGRATIONS = [
@@ -249,9 +249,9 @@ function showToast(msg: string, type: 'success' | 'error' | 'info' = 'success') 
   el.textContent = msg
   Object.assign(el.style, {
     position: 'fixed', bottom: '24px', right: '24px', zIndex: '9999',
-    background: type === 'success' ? 'hsl(142 71% 45% / 0.15)' : type === 'error' ? 'hsl(0 72% 51% / 0.15)' : 'hsl(var(--bg-surface))',
-    color: type === 'success' ? 'hsl(142 71% 35%)' : type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--text-1))',
-    border: `1px solid ${type === 'success' ? 'hsl(142 71% 45% / 0.3)' : type === 'error' ? 'hsl(var(--destructive)/0.3)' : 'hsl(var(--border))'}`,
+    background: type === 'success' ? 'hsl(var(--s-ok-bg))' : type === 'error' ? 'hsl(var(--s-er-bg))' : 'hsl(var(--bg-surface))',
+    color: type === 'success' ? 'hsl(var(--s-ok-tx))' : type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--text-1))',
+    border: `1px solid ${type === 'success' ? 'hsl(var(--s-ok-bg))' : type === 'error' ? 'hsl(var(--destructive)/0.3)' : 'hsl(var(--border))'}`,
     padding: '10px 20px', fontSize: '13px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
   })
   document.body.appendChild(el)
@@ -594,10 +594,10 @@ export default function AutomationStudio() {
       {/* KPIs */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: 'Active Workflows', value: activeCount, sub: 'Running automations', color: 'hsl(142 71% 35%)' },
+          { label: 'Active Workflows', value: activeCount, sub: 'Running automations', color: 'hsl(var(--s-ok-tx))' },
           { label: 'Total Executions', value: totalRuns.toLocaleString(), sub: 'Across all workflows', color: 'hsl(var(--brand))' },
           { label: 'Integrations', value: INTEGRATIONS.filter(i => i.status === 'Connected').length, sub: 'CI/CD + ITSM connected', color: 'hsl(var(--text-1))' },
-          { label: 'Deployments Gated', value: '847', sub: 'Blocked via CI/CD', color: 'hsl(45 85% 40%)' },
+          { label: 'Deployments Gated', value: '847', sub: 'Blocked via CI/CD', color: 'hsl(var(--s-wn-tx))' },
         ].map(s => (
           <div key={s.label} className="border p-4" style={{ background: 'hsl(var(--bg-surface))', borderColor: 'hsl(var(--border))' }}>
             <p className="text-[10px] uppercase tracking-wide" style={{ color: 'hsl(var(--text-4))' }}>{s.label}</p>
@@ -621,10 +621,10 @@ export default function AutomationStudio() {
       {tab === 'workflows' && (
         <>
           <div className="flex items-center gap-2 p-3 border"
-            style={{ borderColor: 'hsl(220 90% 56% / 0.3)', background: 'hsl(220 90% 56% / 0.06)' }}>
-            <Lightning size={14} style={{ color: 'hsl(220 90% 56%)' }} className="flex-shrink-0" />
+            style={{ borderColor: 'hsl(var(--s-in-bg))', background: 'hsl(var(--s-in-bg))' }}>
+            <Lightning size={14} style={{ color: 'hsl(var(--s-in-tx))' }} className="flex-shrink-0" />
             <p className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>
-              <span className="font-semibold" style={{ color: 'hsl(220 90% 56%)' }}>Sentinel as CI/CD Gate:</span>{' '}
+              <span className="font-semibold" style={{ color: 'hsl(var(--s-in-tx))' }}>Sentinel as CI/CD Gate:</span>{' '}
               Workflows with "CI/CD Gate" trigger block deployments that fail AI governance checks directly in GitHub Actions, GitLab CI, or Azure DevOps — before code reaches production.
             </p>
           </div>
@@ -649,7 +649,7 @@ export default function AutomationStudio() {
           <div className="space-y-2.5">
             {filtered.map(wf => (
               <div key={wf.id} className="border transition-colors hover:border-[hsl(var(--brand)/0.3)]"
-                style={{ background: 'hsl(var(--bg-surface))', borderColor: 'hsl(var(--border))', borderLeft: `3px solid ${wf.status === 'Active' ? 'hsl(142 71% 45%)' : wf.status === 'Error' ? 'hsl(var(--destructive))' : 'transparent'}` }}>
+                style={{ background: 'hsl(var(--bg-surface))', borderColor: 'hsl(var(--border))', borderLeft: `3px solid ${wf.status === 'Active' ? 'hsl(var(--s-ok-tx))' : wf.status === 'Error' ? 'hsl(var(--destructive))' : 'transparent'}` }}>
                 <div className="flex items-start gap-4 p-4">
                   <div className="flex-1 min-w-0 cursor-pointer" onClick={() => { setSelected(wf); setDrawerTab('overview') }}>
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -658,7 +658,7 @@ export default function AutomationStudio() {
                       <span className="text-[10px] px-1.5 py-0.5 border" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }}>{wf.category}</span>
                       {wf.trigger === 'CI/CD Gate' && (
                         <span className="text-[10px] px-1.5 py-0.5 font-semibold"
-                          style={{ background: 'hsl(220 90% 56% / 0.12)', color: 'hsl(220 90% 56%)' }}>CI/CD Gate</span>
+                          style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' }}>CI/CD Gate</span>
                       )}
                     </div>
                     <h3 className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{wf.name}</h3>
@@ -667,7 +667,7 @@ export default function AutomationStudio() {
                       <span>Trigger: <span className="font-medium" style={{ color: 'hsl(var(--text-3))' }}>{wf.trigger}</span></span>
                       <span>{wf.actions.length} action{wf.actions.length !== 1 ? 's' : ''}</span>
                       <span>{wf.runCount > 0 ? `${wf.runCount.toLocaleString()} runs` : 'Not run'}</span>
-                      {wf.runCount > 0 && <span className="font-medium" style={{ color: 'hsl(142 71% 35%)' }}>{wf.successRate}% success</span>}
+                      {wf.runCount > 0 && <span className="font-medium" style={{ color: 'hsl(var(--s-ok-tx))' }}>{wf.successRate}% success</span>}
                       {wf.lastRun !== 'Never' && <span>Last: {wf.lastRun.slice(0, 10)}</span>}
                     </div>
                     <div className="flex gap-1 mt-2 flex-wrap">
@@ -692,8 +692,8 @@ export default function AutomationStudio() {
                     <button onClick={() => toggleStatus(wf)}
                       className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium border transition-colors"
                       style={wf.status === 'Active'
-                        ? { borderColor: 'hsl(45 93% 47% / 0.4)', color: 'hsl(45 85% 40%)' }
-                        : { borderColor: 'hsl(142 71% 45% / 0.4)', color: 'hsl(142 71% 35%)' }}>
+                        ? { borderColor: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' }
+                        : { borderColor: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' }}>
                       {wf.status === 'Active' ? <><Pause size={11} /> Pause</> : <><Play size={11} /> Activate</>}
                     </button>
                     <button onClick={() => setDeleteTarget(wf)} className="p-2 border hover:bg-[hsl(var(--s-er-bg))]"
@@ -715,10 +715,10 @@ export default function AutomationStudio() {
       {tab === 'integrations' && (
         <>
           <div className="flex items-center gap-2 p-3 border"
-            style={{ borderColor: 'hsl(220 90% 56% / 0.3)', background: 'hsl(220 90% 56% / 0.06)' }}>
-            <FlowArrow size={14} style={{ color: 'hsl(220 90% 56%)' }} className="flex-shrink-0" />
+            style={{ borderColor: 'hsl(var(--s-in-bg))', background: 'hsl(var(--s-in-bg))' }}>
+            <FlowArrow size={14} style={{ color: 'hsl(var(--s-in-tx))' }} className="flex-shrink-0" />
             <p className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>
-              <span className="font-semibold" style={{ color: 'hsl(220 90% 56%)' }}>Sentinel as Workflow Mirror:</span>{' '}
+              <span className="font-semibold" style={{ color: 'hsl(var(--s-in-tx))' }}>Sentinel as Workflow Mirror:</span>{' '}
               When connected to Jira and ServiceNow, every compliance finding, risk update, and incident automatically creates tickets in your existing toolchain — and vice versa.
             </p>
           </div>
@@ -739,7 +739,7 @@ export default function AutomationStudio() {
                   <div className="flex-shrink-0">
                     {int.status === 'Connected'
                       ? <span className="text-[11px] px-2 py-0.5 flex items-center gap-1 font-medium"
-                        style={{ background: 'hsl(142 71% 45% / 0.12)', color: 'hsl(142 71% 35%)' }}>
+                        style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' }}>
                         <CheckCircle size={10} /> Connected
                       </span>
                       : <button onClick={() => showToast(`${int.name} integration initiated — follow OAuth flow`)}
@@ -911,7 +911,7 @@ export default function AutomationStudio() {
                         <div key={i} className="p-3 border flex items-start gap-3"
                           style={{ background: 'hsl(var(--bg-raised))', borderColor: 'hsl(var(--border))' }}>
                           <div className={`w-2 h-2 rounded-full flex-shrink-0 mt-1`}
-                            style={{ background: run.status === 'Success' ? 'hsl(142 71% 45%)' : run.status === 'Running' ? 'hsl(220 90% 56%)' : 'hsl(var(--destructive))' }} />
+                            style={{ background: run.status === 'Success' ? 'hsl(var(--s-ok-tx))' : run.status === 'Running' ? 'hsl(var(--s-in-tx))' : 'hsl(var(--destructive))' }} />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
                               <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{run.status}</p>
@@ -1000,8 +1000,8 @@ export default function AutomationStudio() {
             </div>
 
             {newForm.trigger && (
-              <div className="p-3 border" style={{ background: 'hsl(220 90% 56% / 0.06)', borderColor: 'hsl(220 90% 56% / 0.25)' }}>
-                <p className="text-[10px] font-semibold uppercase mb-1.5" style={{ color: 'hsl(220 90% 56%)' }}>Default Trigger Config</p>
+              <div className="p-3 border" style={{ background: 'hsl(var(--s-in-bg))', borderColor: 'hsl(var(--s-in-bg))' }}>
+                <p className="text-[10px] font-semibold uppercase mb-1.5" style={{ color: 'hsl(var(--s-in-tx))' }}>Default Trigger Config</p>
                 {Object.entries(TRIGGER_DEFAULT_CONFIG[newForm.trigger]).map(([k, v]) => (
                   <div key={k} className="flex items-center gap-2 text-[10px]">
                     <span className="w-28 flex-shrink-0" style={{ color: 'hsl(var(--text-4))' }}>{k}</span>

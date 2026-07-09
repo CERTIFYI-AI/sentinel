@@ -69,10 +69,10 @@ function formatText(text: string) {
 }
 
 const SEVERITY_STYLES: Record<string, { bg: string; color: string }> = {
-  Critical: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
-  High: { bg: 'hsl(25 95% 53% / 0.12)', color: 'hsl(var(--s-wn-tx))' },
-  Medium: { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)' },
-  Low: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
+  Critical: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+  High: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+  Medium: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+  Low: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
 }
 
 const FILTERS = ["All", "Critical", "High", "Medium", "Policy Gap", "Bias Risk", "Compliance", "Vendor Risk", "Incident"]
@@ -139,12 +139,12 @@ export default function AiAdvisor() {
           </div>
           <div className="flex items-center gap-3 text-xs text-[hsl(var(--text-4))]">
             {criticalCount > 0 && (
-              <span className="flex items-center gap-1 px-2 py-1" style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' }}>
+              <span className="flex items-center gap-1 px-2 py-1" style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' }}>
                 <Warning size={12} /> {criticalCount} Critical
               </span>
             )}
             {highCount > 0 && (
-              <span className="flex items-center gap-1 px-2 py-1" style={{ background: 'hsl(25 95% 53% / 0.12)', color: 'hsl(var(--s-wn-tx))' }}>
+              <span className="flex items-center gap-1 px-2 py-1" style={{ background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' }}>
                 <ShieldWarning size={12} /> {highCount} High
               </span>
             )}

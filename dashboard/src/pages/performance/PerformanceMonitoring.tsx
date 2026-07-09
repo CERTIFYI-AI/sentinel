@@ -108,17 +108,17 @@ const ENDPOINTS: ModelEndpoint[] = [
 ];
 
 const STATUS_COLORS: Record<string, { bg: string; color: string; dot: string }> = {
-  healthy: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))', dot: 'hsl(var(--s-ok-tx))' },
-  degraded: { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(var(--s-wn-tx))', dot: 'hsl(var(--s-wn-tx))' },
-  down: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))', dot: 'hsl(var(--s-er-tx))' },
+  healthy: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', dot: 'hsl(var(--s-ok-tx))' },
+  degraded: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', dot: 'hsl(var(--s-wn-tx))' },
+  down: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', dot: 'hsl(var(--s-er-tx))' },
 };
 const STATUS_COLOR_FALLBACK = { bg: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))', dot: 'hsl(var(--text-4))' };
 const statusColors = (k: string) => STATUS_COLORS[k] ?? STATUS_COLOR_FALLBACK;
 
 const ALERT_COLORS: Record<AlertSeverity, { bg: string; color: string }> = {
-  critical: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
-  warning: { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(var(--s-wn-tx))' },
-  info: { bg: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))' },
+  critical: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+  warning: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+  info: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
 };
 
 interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info' }

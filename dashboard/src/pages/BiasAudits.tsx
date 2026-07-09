@@ -207,7 +207,7 @@ export default function BiasAudits() {
                       <div className="flex items-center justify-end gap-1">
                         <button onClick={() => { setViewItem(item); setModal("view"); }} className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"><Eye size={14} /></button>
                         <button onClick={() => openEdit(item)} className="p-1.5 hover:bg-raised text-[hsl(var(--text-3))]"><PencilSimple size={14} /></button>
-                        <button onClick={() => setDeleteTarget(item)} className="p-1.5 hover:bg-[hsl(var(--s-er-bg))] text-[hsl(0_72%_51%)]"><Trash size={14} /></button>
+                        <button onClick={() => setDeleteTarget(item)} className="p-1.5 hover:bg-[hsl(var(--s-er-bg))] text-[hsl(var(--s-er-tx))]"><Trash size={14} /></button>
                       </div>
                     </td>
                   </tr>

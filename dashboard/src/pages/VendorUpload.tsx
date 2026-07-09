@@ -29,10 +29,10 @@ const SEED: UploadSubmission[] = [
 ]
 
 const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
-  'Pending Review': { bg: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))' },
-  Accepted: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
-  Rejected: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
-  'Under Review': { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)' },
+  'Pending Review': { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
+  Accepted: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  Rejected: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+  'Under Review': { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
 }
 
 export default function VendorUpload() {
@@ -113,7 +113,7 @@ export default function VendorUpload() {
           { label: 'Total Submissions', value: submissions.length, color: 'hsl(var(--text-1))' },
           { label: 'Accepted', value: submissions.filter(s => s.status === 'Accepted').length, color: 'hsl(var(--s-ok-tx))' },
           { label: 'Pending Review', value: submissions.filter(s => s.status === 'Pending Review').length, color: 'hsl(var(--s-in-tx))' },
-          { label: 'Expiring < 90 days', value: 2, color: 'hsl(45 85% 40%)' },
+          { label: 'Expiring < 90 days', value: 2, color: 'hsl(var(--s-wn-tx))' },
         ].map(s => (
           <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
             <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
@@ -159,7 +159,7 @@ export default function VendorUpload() {
                 <td className="px-4 py-3 text-xs text-[hsl(var(--text-3))]">{s.reviewedBy ?? '—'}</td>
                 <td className="px-4 py-3"><span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[s.status] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{s.status}</span></td>
                 <td className="px-4 py-3" onClick={ev => ev.stopPropagation()}>
-                  <button onClick={() => setDeleteTarget(s)} className="p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(0_72%_51%/0.05)]"><Trash size={13} /></button>
+                  <button onClick={() => setDeleteTarget(s)} className="p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(var(--s-er-bg))]"><Trash size={13} /></button>
                 </td>
               </tr>
             ))}
@@ -200,7 +200,7 @@ export default function VendorUpload() {
             {(selected.status === 'Pending Review' || selected.status === 'Under Review') && (
               <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
                 <button onClick={() => handleAccept(selected.id)} className="flex-1 py-2 bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90">Accept</button>
-                <button onClick={() => setRejectTarget(selected)} className="flex-1 py-2 border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] text-sm font-medium hover:bg-[hsl(0_72%_51%/0.05)]">Reject</button>
+                <button onClick={() => setRejectTarget(selected)} className="flex-1 py-2 border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] text-sm font-medium hover:bg-[hsl(var(--s-er-bg))]">Reject</button>
               </div>
             )}
             <div className="px-4 pb-4">

@@ -34,10 +34,10 @@ const SEED: KillSwitchEvent[] = [
 ]
 
 const STATUS_STYLE: Record<KSStatus, { bg: string; color: string }> = {
-  'Active — Agent Suspended': { bg: 'hsl(0 72% 51% / 0.15)', color: 'hsl(var(--destructive))' },
-  Resolved: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
-  'Under Investigation': { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)' },
-  Escalated: { bg: 'hsl(280 67% 56% / 0.12)', color: 'hsl(280 60% 55%)' },
+  'Active — Agent Suspended': { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+  Resolved: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  'Under Investigation': { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+  Escalated: { bg: 'hsl(var(--tag-purple-bg))', color: 'hsl(var(--tag-purple))' },
 }
 
 export default function KillSwitchEvents() {
@@ -81,7 +81,7 @@ export default function KillSwitchEvents() {
           <button
             onClick={() => { setKillAllOpen(true); setKillAllStep('confirm'); setKillAllCode(''); setMfaInput(''); }}
             className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-[hsl(var(--bg-surface))] hover:opacity-90"
-            style={{ background: 'hsl(0 72% 51%)' }}>
+            style={{ background: 'hsl(var(--s-er-tx))' }}>
             <Siren size={14} /> KILL ALL AGENTS
           </button>
         </div>
@@ -126,7 +126,7 @@ export default function KillSwitchEvents() {
           { label: 'Total Events', value: stats.total, color: 'hsl(var(--text-1))' },
           { label: 'Active Suspensions', value: stats.active, color: 'hsl(var(--destructive))' },
           { label: 'Resolved', value: stats.resolved, color: 'hsl(var(--s-ok-tx))' },
-          { label: 'Reg. Notification Pending', value: stats.pendingNotification, color: 'hsl(45 85% 40%)' },
+          { label: 'Reg. Notification Pending', value: stats.pendingNotification, color: 'hsl(var(--s-wn-tx))' },
         ].map(s => (
           <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
             <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
@@ -136,7 +136,7 @@ export default function KillSwitchEvents() {
       </div>
 
       {stats.active > 0 && (
-        <div className="flex items-center gap-3 p-3 border border-[hsl(var(--destructive)/0.4)] bg-[hsl(0_72%_51%/0.06)]">
+        <div className="flex items-center gap-3 p-3 border border-[hsl(var(--destructive)/0.4)] bg-[hsl(var(--s-er-bg))]">
           <Power size={16} className="text-[hsl(var(--destructive))] flex-shrink-0" weight="fill" />
           <p className="text-sm text-[hsl(var(--text-2))]"><span className="font-semibold text-[hsl(var(--destructive))]">{stats.active} agent(s) currently suspended.</span> Review suspension reasons and coordinate remediation before resuming.</p>
         </div>
@@ -164,7 +164,7 @@ export default function KillSwitchEvents() {
                     <span className="text-[11px] px-2 py-0.5 font-medium" style={ss}>{e.status}</span>
                     <span className="text-[10px] px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-4))]">{e.trigger}</span>
                     {e.regulatoryNotificationRequired && (
-                      <span className="text-[10px] px-1.5 py-0.5" style={{ background: 'hsl(280 67% 56% / 0.12)', color: 'hsl(280 60% 55%)' }}>Reg. Required</span>
+                      <span className="text-[10px] px-1.5 py-0.5" style={{ background: 'hsl(var(--tag-purple-bg))', color: 'hsl(var(--tag-purple))' }}>Reg. Required</span>
                     )}
                   </div>
                   <h3 className="text-sm font-semibold text-[hsl(var(--text-1))]">{e.agentName} <span className="text-[hsl(var(--text-4))] font-normal font-mono text-xs">({e.agentId})</span></h3>
@@ -210,8 +210,8 @@ export default function KillSwitchEvents() {
       {killAllOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/60" onClick={() => setKillAllOpen(false)} />
-          <div className="relative w-[480px] bg-surface border border-[hsl(var(--destructive)/0.5)]" style={{ boxShadow: '0 0 40px hsl(0 72% 51% / 0.3)' }}>
-            <div className="p-5 border-b border-[hsl(var(--destructive)/0.3)] bg-[hsl(0_72%_51%/0.08)]">
+          <div className="relative w-[480px] bg-surface border border-[hsl(var(--destructive)/0.5)]" style={{ boxShadow: '0 0 40px hsl(var(--s-er-bg))' }}>
+            <div className="p-5 border-b border-[hsl(var(--destructive)/0.3)] bg-[hsl(var(--s-er-bg))]">
               <div className="flex items-center gap-3">
                 <Siren size={22} className="text-[hsl(var(--destructive))]" weight="fill" />
                 <div>
@@ -252,7 +252,7 @@ export default function KillSwitchEvents() {
                       disabled={killAllCode !== 'KILLALL'}
                       onClick={() => setKillAllStep('mfa')}
                       className="flex-1 py-2 text-sm font-bold text-[hsl(var(--bg-surface))] hover:opacity-90 disabled:opacity-40"
-                      style={{ background: 'hsl(0 72% 51%)' }}>
+                      style={{ background: 'hsl(var(--s-er-tx))' }}>
                       Continue to MFA →
                     </button>
                   </div>
@@ -298,7 +298,7 @@ export default function KillSwitchEvents() {
                         setTimeout(() => setKillAllOpen(false), 2000);
                       }}
                       className="flex-1 py-2 text-sm font-bold text-[hsl(var(--bg-surface))] hover:opacity-90 disabled:opacity-40"
-                      style={{ background: 'hsl(0 72% 51%)' }}>
+                      style={{ background: 'hsl(var(--s-er-tx))' }}>
                       EXECUTE KILL ALL
                     </button>
                   </div>
@@ -377,9 +377,9 @@ export default function KillSwitchEvents() {
                   </div>
                 ))}
               </div>
-              <div><p className="text-[11px] font-semibold text-[hsl(var(--destructive))] uppercase tracking-wide mb-1">Suspension Reason</p><p className="text-sm text-[hsl(var(--text-2))] p-3 bg-[hsl(0_72%_51%/0.06)] border border-[hsl(var(--destructive)/0.3)] leading-relaxed">{selected.reason}</p></div>
+              <div><p className="text-[11px] font-semibold text-[hsl(var(--destructive))] uppercase tracking-wide mb-1">Suspension Reason</p><p className="text-sm text-[hsl(var(--text-2))] p-3 bg-[hsl(var(--s-er-bg))] border border-[hsl(var(--destructive)/0.3)] leading-relaxed">{selected.reason}</p></div>
               <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Impacted Systems</p><div className="space-y-1">{selected.impactedSystems.map(s => <div key={s} className="text-xs text-[hsl(var(--text-2))] p-2 bg-raised border border-[hsl(var(--border))]">{s}</div>)}</div></div>
-              {selected.resolutionNotes && <div><p className="text-[11px] font-semibold text-[hsl(var(--s-ok-tx))] uppercase tracking-wide mb-1">Resolution Notes</p><p className="text-sm text-[hsl(var(--text-2))] p-3 bg-[hsl(142_71%_45%/0.06)] border border-[hsl(var(--s-ok-tx)/0.3)] leading-relaxed">{selected.resolutionNotes}</p></div>}
+              {selected.resolutionNotes && <div><p className="text-[11px] font-semibold text-[hsl(var(--s-ok-tx))] uppercase tracking-wide mb-1">Resolution Notes</p><p className="text-sm text-[hsl(var(--text-2))] p-3 bg-[hsl(var(--s-ok-bg))] border border-[hsl(var(--s-ok-tx)/0.3)] leading-relaxed">{selected.resolutionNotes}</p></div>}
             </div>
             {selected.status === 'Active — Agent Suspended' && (
               <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">

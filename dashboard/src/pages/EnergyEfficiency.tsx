@@ -28,7 +28,7 @@ const BLANK = {
 }
 
 function effColor(s: number) {
-  return s >= 80 ? 'hsl(var(--s-ok-tx))' : s >= 60 ? 'hsl(45 85% 40%)' : 'hsl(var(--destructive))'
+  return s >= 80 ? 'hsl(var(--s-ok-tx))' : s >= 60 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))'
 }
 
 export default function EnergyEfficiency() {
@@ -70,10 +70,10 @@ function EnergyEfficiencyInner({ readings: initialReadings, save, remove, chartT
   }, [initialReadings, localReadings, deletedIds])
 
   const RECOMMENDATIONS = [
-    { id: 1, model: 'Fraud Detection Engine v4.2', action: 'Apply 8-bit quantization', saving: '~20%', effort: 'Medium', effortColor: 'hsl(45 85% 40%)' },
+    { id: 1, model: 'Fraud Detection Engine v4.2', action: 'Apply 8-bit quantization', saving: '~20%', effort: 'Medium', effortColor: 'hsl(var(--s-wn-tx))' },
     { id: 2, model: 'Loan Approval Model v3.0', action: 'Switch to GCP us-central1 region (97% renewable)', saving: '~14 tCO₂/mo', effort: 'Low', effortColor: 'hsl(var(--s-ok-tx))' },
     { id: 3, model: 'Fraud Detection Engine v4.2', action: 'Batch inference requests (reduce cold starts)', saving: '~18% energy', effort: 'High', effortColor: 'hsl(var(--destructive))' },
-    { id: 4, model: 'Loan Approval Model v3.0', action: 'Enable inference caching for repeated patterns', saving: '~12%', effort: 'Medium', effortColor: 'hsl(45 85% 40%)' },
+    { id: 4, model: 'Loan Approval Model v3.0', action: 'Enable inference caching for repeated patterns', saving: '~12%', effort: 'Medium', effortColor: 'hsl(var(--s-wn-tx))' },
     { id: 5, model: 'Customer Churn Predictor v2.3', action: 'Prune model to reduce params by 30%', saving: '~8% energy', effort: 'High', effortColor: 'hsl(var(--destructive))' },
   ]
 
@@ -162,7 +162,7 @@ function EnergyEfficiencyInner({ readings: initialReadings, save, remove, chartT
     { key: 'period', header: 'Period', sortable: true },
     { key: 'gpuHours', header: 'GPU Hours', sortable: true, render: (r: any) => <span className="font-mono text-xs">{Number(r.gpuHours).toLocaleString()}h</span> },
     { key: 'kwh', header: 'kWh', sortable: true, render: (r: any) => <span className="font-mono text-xs">{Number(r.kwh).toLocaleString()}</span> },
-    { key: 'renewablePercent', header: 'Renewable', sortable: true, render: (r: any) => <span className="font-mono text-xs" style={{ color: r.renewablePercent >= 85 ? 'hsl(var(--s-ok-tx))' : 'hsl(45 85% 40%)' }}>{r.renewablePercent}%</span> },
+    { key: 'renewablePercent', header: 'Renewable', sortable: true, render: (r: any) => <span className="font-mono text-xs" style={{ color: r.renewablePercent >= 85 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))' }}>{r.renewablePercent}%</span> },
     { key: 'efficiencyScore', header: 'Efficiency', sortable: true, render: (r: any) => <span className="font-bold text-sm" style={{ color: effColor(r.efficiencyScore) }}>{r.efficiencyScore}/100</span> },
     { key: 'computeProvider', header: 'Provider' },
   ]
@@ -188,7 +188,7 @@ function EnergyEfficiencyInner({ readings: initialReadings, save, remove, chartT
         {[
           { label: 'Total kWh', value: stats.totalKwh.toLocaleString(), sub: 'Across all models', color: 'hsl(var(--brand))' },
           { label: 'Avg Efficiency Score', value: `${stats.avgEfficiency}/100`, sub: stats.avgEfficiency >= 70 ? 'On track' : '⚠ Below target', color: effColor(stats.avgEfficiency) },
-          { label: 'Avg Renewable Energy', value: `${stats.avgRenewable}%`, sub: 'Target: 90% by EOY', color: stats.avgRenewable >= 85 ? 'hsl(var(--s-ok-tx))' : 'hsl(45 85% 40%)' },
+          { label: 'Avg Renewable Energy', value: `${stats.avgRenewable}%`, sub: 'Target: 90% by EOY', color: stats.avgRenewable >= 85 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))' },
           { label: 'Total GPU Hours', value: stats.totalGpuHours.toLocaleString(), sub: 'Aggregate', color: 'hsl(var(--text-1))' },
         ].map(s => (
           <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
@@ -266,14 +266,14 @@ function EnergyEfficiencyInner({ readings: initialReadings, save, remove, chartT
               <div key={r.region} className="p-3 bg-raised border border-[hsl(var(--border))]">
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-xs font-medium text-[hsl(var(--text-1))]">{r.region}</span>
-                  <span className="text-sm font-bold" style={{ color: r.score >= 85 ? 'hsl(var(--s-ok-tx))' : r.score >= 70 ? 'hsl(45 85% 40%)' : 'hsl(var(--destructive))' }}>{r.score}/100</span>
+                  <span className="text-sm font-bold" style={{ color: r.score >= 85 ? 'hsl(var(--s-ok-tx))' : r.score >= 70 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))' }}>{r.score}/100</span>
                 </div>
                 <div className="flex gap-4 text-[10px] text-[hsl(var(--text-4))]">
                   <span>PUE: {r.pue}</span>
                   <span>Renewable: {r.renewable}%</span>
                 </div>
                 <div className="mt-2 h-1 bg-[hsl(var(--border))]">
-                  <div className="h-1" style={{ width: `${r.score}%`, background: r.score >= 85 ? 'hsl(var(--s-ok-tx))' : r.score >= 70 ? 'hsl(45 85% 40%)' : 'hsl(var(--destructive))' }} />
+                  <div className="h-1" style={{ width: `${r.score}%`, background: r.score >= 85 ? 'hsl(var(--s-ok-tx))' : r.score >= 70 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))' }} />
                 </div>
               </div>
             ))}

@@ -14,7 +14,7 @@ export default function NotFound() {
           boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
         }}
       >
-        <div className="w-16 h-16 rounded-full flex items-center justify-center mb-6" style={{ background: 'hsl(0 72% 51% / 0.1)', color: 'hsl(0 72% 51%)' }}>
+        <div className="w-16 h-16 rounded-full flex items-center justify-center mb-6" style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))' }}>
           <WarningCircle size={32} weight="fill" />
         </div>
         <h1 className="text-3xl font-bold mb-2 text-sentinel-text">404 - Not Found</h1>

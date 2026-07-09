@@ -272,7 +272,7 @@ export default function IncidentPlaybooks() {
                       <p className="text-xs text-[hsl(var(--text-3))]">{pb.category}</p>
                     </div>
                   </div>
-                  <Badge style={{ background: pb.status === 'Active' ? 'hsl(142 71% 45% / 0.12)' : 'hsl(220 14% 60% / 0.15)', color: pb.status === 'Active' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-3))', borderRadius: 0, fontSize: 10 }}>{pb.status}</Badge>
+                  <Badge style={{ background: pb.status === 'Active' ? 'hsl(var(--s-ok-bg))' : 'hsl(220 14% 60% / 0.15)', color: pb.status === 'Active' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-3))', borderRadius: 0, fontSize: 10 }}>{pb.status}</Badge>
                 </div>
                 <p className="text-xs text-[hsl(var(--text-3))] line-clamp-2">{pb.description}</p>
                 <div className="grid grid-cols-2 gap-2 text-xs">
@@ -308,7 +308,7 @@ export default function IncidentPlaybooks() {
                     <SheetTitle className="text-base">{selected.name}</SheetTitle>
                     <p className="text-xs text-[hsl(var(--text-3))] mt-1">{selected.category} · {selected.version} · Last updated: {formatDate(selected.lastUpdated)}</p>
                   </div>
-                  <Badge style={{ background: selected.status === 'Active' ? 'hsl(142 71% 45% / 0.12)' : 'hsl(220 14% 60% / 0.15)', color: selected.status === 'Active' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-3))', borderRadius: 0, fontSize: 10 }}>{selected.status}</Badge>
+                  <Badge style={{ background: selected.status === 'Active' ? 'hsl(var(--s-ok-bg))' : 'hsl(220 14% 60% / 0.15)', color: selected.status === 'Active' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-3))', borderRadius: 0, fontSize: 10 }}>{selected.status}</Badge>
                 </div>
                 <p className="text-xs text-[hsl(var(--text-3))] border-l-2 border-[hsl(var(--brand))] pl-3 py-1">{selected.description}</p>
               </SheetHeader>
@@ -333,7 +333,7 @@ export default function IncidentPlaybooks() {
                     <p className="text-xs font-medium text-[hsl(var(--text-3))] mb-2">TRIGGER CONDITIONS</p>
                     <div className="flex flex-wrap gap-2">
                       {selected.triggerConditions.map(tc => (
-                        <Badge key={tc} style={{ background: 'hsl(0 72% 51% / 0.1)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>{tc}</Badge>
+                        <Badge key={tc} style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>{tc}</Badge>
                       ))}
                     </div>
                   </div>
@@ -400,7 +400,7 @@ export default function IncidentPlaybooks() {
                     <div key={i} className="border border-[hsl(var(--border))] p-4 space-y-2">
                       <div className="flex items-start justify-between gap-2">
                         <p className="text-sm font-semibold text-[hsl(var(--text-1))]">{n.authority}</p>
-                        <Badge style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>
+                        <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>
                           <Clock size={10} className="mr-1" />{n.deadline}
                         </Badge>
                       </div>

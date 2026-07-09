@@ -72,9 +72,9 @@ function fullTimestamp(isoDate: string): string {
 
 function statusBadge(status: Trace['status']) {
   const map = {
-    success: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))', label: 'Success' },
-    blocked: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))', label: 'Blocked' },
-    fallback: { bg: 'hsl(25 95% 53% / 0.15)', color: 'hsl(var(--s-wn-tx))', label: 'Fallback' },
+    success: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', label: 'Success' },
+    blocked: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', label: 'Blocked' },
+    fallback: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', label: 'Fallback' },
   };
   const s = map[status];
   return <Badge style={{ background: s.bg, color: s.color, borderRadius: 0, fontSize: 10 }}>{s.label}</Badge>;
@@ -86,10 +86,10 @@ function MetricTile({ label, value, variant, icon, sub }: {
   label: string; value: string; variant: 'ok' | 'warn' | 'error' | 'info'; icon: React.ReactNode; sub?: string;
 }) {
   const vs = {
-    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(var(--s-ok-tx))' },
-    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(var(--s-wn-tx))' },
-    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(var(--destructive))' },
-    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))' },
+    ok: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+    warn: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+    error: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+    info: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
   };
   const s = vs[variant];
   return (
@@ -140,15 +140,15 @@ function SpanWaterfall({ trace }: { trace: Trace }) {
   const spans = generateSpans(trace);
   const total = Math.max(trace.latencyMs, 1);
   const typeColors: Record<ChildSpan['type'], string> = {
-    policy: 'hsl(220 90% 56% / 0.7)',
+    policy: 'hsl(var(--s-in-bg))',
     model: 'hsl(var(--brand) / 0.8)',
-    tool: 'hsl(142 71% 45% / 0.7)',
-    guardrail: 'hsl(25 95% 53% / 0.7)',
+    tool: 'hsl(var(--s-ok-bg))',
+    guardrail: 'hsl(var(--s-wn-bg))',
   };
   const statusOverride: Record<ChildSpan['status'], string | null> = {
     ok: null,
-    blocked: 'hsl(0 72% 51% / 0.8)',
-    warn: 'hsl(45 93% 47% / 0.7)',
+    blocked: 'hsl(var(--s-er-bg))',
+    warn: 'hsl(var(--s-wn-bg))',
   };
   const costPerToken = 0.000015;
   const estimatedCost = trace.tokens > 0 ? (trace.tokens * costPerToken).toFixed(4) : '0.0000';
@@ -306,7 +306,7 @@ export default function LiveTraceFeed() {
               <Lightning size={22} weight="fill" style={{ color: 'hsl(var(--brand))' }} />
               <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Live Trace Feed</h1>
               <Badge style={{
-                background: paused ? 'hsl(45 93% 47% / 0.15)' : 'hsl(142 71% 45% / 0.15)',
+                background: paused ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-ok-bg))',
                 color: paused ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))',
                 borderRadius: 0, fontSize: 10,
               }}>
@@ -464,7 +464,7 @@ export default function LiveTraceFeed() {
                               <td className="px-3 py-2.5">{statusBadge(trace.status)}</td>
                               <td className="px-3 py-2.5">
                                 {trace.status === 'fallback' ? (
-                                  <Badge style={{ background: 'hsl(25 95% 53% / 0.15)', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 10 }}>{trace.action}</Badge>
+                                  <Badge style={{ background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 10 }}>{trace.action}</Badge>
                                 ) : (
                                   <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{trace.action}</span>
                                 )}
@@ -694,7 +694,7 @@ export default function LiveTraceFeed() {
                           </div>
                           <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{policy?.description || 'Policy evaluation details'}</p>
                           <div className="mt-2 flex items-center gap-2">
-                            <Badge style={{ background: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 9 }}>
+                            <Badge style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 9 }}>
                               Score: {policy?.trustScore || '—'}%
                             </Badge>
                             <Badge style={{ background: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))', borderRadius: 0, fontSize: 9 }}>

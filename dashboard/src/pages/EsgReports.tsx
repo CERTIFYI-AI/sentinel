@@ -15,10 +15,10 @@ function exportCsv(rows: any[], filename: string) {
 }
 
 const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
-  Published: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
-  Draft: { bg: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))' },
-  'Under Review': { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)' },
-  Approved: { bg: 'hsl(142 71% 45% / 0.15)', color: 'hsl(var(--s-ok-tx))' },
+  Published: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  Draft: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
+  'Under Review': { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+  Approved: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
 }
 
 const FRAMEWORKS = ['GRI / SASB', 'GRI / SASB / EU CSRD', 'GRI / SASB / EU CSRD / TCFD', 'TCFD Only', 'ISSB (IFRS S1/S2)', 'CDP + SASB', 'GRI Only']
@@ -182,7 +182,7 @@ function EsgReportsInner({ reports: initialReports, save, remove, chartTheme }: 
           {[
             { label: 'Environmental Score', value: `${latest.environmentalScore}/100`, color: 'hsl(var(--s-ok-tx))' },
             { label: 'Social Score', value: `${latest.socialScore}/100`, color: 'hsl(var(--brand))' },
-            { label: 'Governance Score', value: `${latest.governanceScore}/100`, color: 'hsl(220 90% 56%)' },
+            { label: 'Governance Score', value: `${latest.governanceScore}/100`, color: 'hsl(var(--s-in-tx))' },
             { label: 'Overall ESG Score', value: `${latest.overallScore}/100`, color: 'hsl(var(--text-1))' },
           ].map(s => (
             <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
@@ -220,9 +220,9 @@ function EsgReportsInner({ reports: initialReports, save, remove, chartTheme }: 
                   <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: chartTheme.tickColor }} />
                   <Tooltip contentStyle={chartTheme.tooltipStyle} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Bar dataKey="env" name="Environmental" fill="hsl(142 71% 45% / 0.7)" />
+                  <Bar dataKey="env" name="Environmental" fill="hsl(var(--s-ok-bg))" />
                   <Bar dataKey="social" name="Social" fill="hsl(var(--brand) / 0.7)" />
-                  <Bar dataKey="gov" name="Governance" fill="hsl(220 90% 56% / 0.7)" />
+                  <Bar dataKey="gov" name="Governance" fill="hsl(var(--s-in-bg))" />
                 </BarChart>
               </ResponsiveContainer>
             </div>

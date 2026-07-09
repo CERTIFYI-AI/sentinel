@@ -12,9 +12,9 @@ type MaturityLevel = 'Not Started' | 'Planned' | 'In Progress' | 'Implemented';
 
 const MATURITY_COLORS: Record<MaturityLevel, { bg: string; color: string; dot: string }> = {
   'Not Started':  { bg: 'hsl(0 0% 50% / 0.10)',  color: 'hsl(var(--text-4))',      dot: 'hsl(var(--text-4))' },
-  'Planned':      { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)',         dot: '#eab308' },
-  'In Progress':  { bg: 'hsl(220 90% 56% / 0.12)',color: 'hsl(var(--s-in-tx))',     dot: '#3b82f6' },
-  'Implemented':  { bg: 'hsl(142 71% 45% / 0.12)',color: 'hsl(var(--s-ok-tx))',     dot: '#22c55e' },
+  'Planned':      { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))',         dot: '#eab308' },
+  'In Progress':  { bg: 'hsl(var(--s-in-bg))',color: 'hsl(var(--s-in-tx))',     dot: '#3b82f6' },
+  'Implemented':  { bg: 'hsl(var(--s-ok-bg))',color: 'hsl(var(--s-ok-tx))',     dot: '#22c55e' },
 };
 const MATURITY_WEIGHT: Record<MaturityLevel, number> = {
   'Not Started': 0, 'Planned': 0.25, 'In Progress': 0.6, 'Implemented': 1,
@@ -148,7 +148,7 @@ export default function GovernanceFramework() {
           </div>
           <div className="flex items-center gap-4">
             <div className="text-center">
-              <p className="text-3xl font-black" style={{ color: score >= 70 ? 'hsl(var(--s-ok-tx))' : score >= 40 ? 'hsl(45 85% 40%)' : 'hsl(var(--destructive))' }}>
+              <p className="text-3xl font-black" style={{ color: score >= 70 ? 'hsl(var(--s-ok-tx))' : score >= 40 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))' }}>
                 {score}%
               </p>
               <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Overall Maturity</p>

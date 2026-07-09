@@ -137,8 +137,8 @@ const BLANK: Omit<Workflow, 'id' | 'totalCompleted' | 'avgCycleTime' | 'steps' |
 }
 
 const STATUS_STYLE: Record<WFStatus, { bg: string; color: string }> = {
-  Active: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
-  Paused: { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)' },
+  Active: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  Paused: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
   Disabled: { bg: 'hsl(0 0% 50% / 0.10)', color: 'hsl(var(--text-4))' },
 }
 
@@ -264,7 +264,7 @@ export default function ApprovalWorkflows() {
         {[
           { label: 'Total Workflows', value: stats.total, color: 'hsl(var(--text-1))' },
           { label: 'Active', value: stats.active, color: 'hsl(var(--s-ok-tx))' },
-          { label: 'Pending Approvals', value: stats.pending, color: 'hsl(45 85% 40%)' },
+          { label: 'Pending Approvals', value: stats.pending, color: 'hsl(var(--s-wn-tx))' },
           { label: 'Avg Cycle Time', value: stats.avgCycle, color: 'hsl(var(--brand))' },
         ].map(s => (
           <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
@@ -276,10 +276,10 @@ export default function ApprovalWorkflows() {
 
       {/* Pending Approvals Banner */}
       {totalPending > 0 && (
-        <div className="flex items-center gap-3 px-4 py-3 border border-[hsl(45_93%_47%/0.4)] bg-[hsl(45_93%_47%/0.06)] rounded">
-          <Clock size={16} className="text-[hsl(45_85%_40%)] flex-shrink-0" />
+        <div className="flex items-center gap-3 px-4 py-3 border border-[hsl(var(--s-wn-bg))] bg-[hsl(var(--s-wn-bg))] rounded">
+          <Clock size={16} className="text-[hsl(var(--s-wn-tx))] flex-shrink-0" />
           <p className="text-sm text-[hsl(var(--text-2))]">
-            <span className="font-semibold text-[hsl(45_85%_40%)]">{totalPending} approval(s) pending</span> — review and action items below each workflow.
+            <span className="font-semibold text-[hsl(var(--s-wn-tx))]">{totalPending} approval(s) pending</span> — review and action items below each workflow.
           </p>
         </div>
       )}
@@ -313,7 +313,7 @@ export default function ApprovalWorkflows() {
                       <span className="font-mono text-[10px] text-[hsl(var(--text-4))]">{r.id}</span>
                       <span className="text-[10px] px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-4))]">{r.type}</span>
                       <span className="text-[11px] px-2 py-0.5 font-medium" style={ss}>{r.status}</span>
-                      {r.pending > 0 && <span className="text-[10px] px-1.5 py-0.5 font-semibold text-[hsl(var(--bg-surface))]" style={{ background: 'hsl(45 85% 40%)' }}>{r.pending} pending</span>}
+                      {r.pending > 0 && <span className="text-[10px] px-1.5 py-0.5 font-semibold text-[hsl(var(--bg-surface))]" style={{ background: 'hsl(var(--s-wn-tx))' }}>{r.pending} pending</span>}
                     </div>
                     <p className="text-sm font-semibold text-[hsl(var(--text-1))] truncate">{r.name}</p>
                     <p className="text-xs text-[hsl(var(--text-4))]">Approvers: {r.approvers} · SLA: {r.sla} · Completed: {r.totalCompleted}</p>
@@ -331,7 +331,7 @@ export default function ApprovalWorkflows() {
 
               {/* Pending Approvals Inline */}
               {r.pendingApprovals.length > 0 && (
-                <div className="border-t border-[hsl(var(--border))] bg-[hsl(45_93%_47%/0.04)]">
+                <div className="border-t border-[hsl(var(--border))] bg-[hsl(var(--s-wn-bg))]">
                   {r.pendingApprovals.map(pa => (
                     <div key={pa.id} className="flex items-center justify-between px-4 py-2.5 border-b border-[hsl(var(--border))] last:border-b-0">
                       <div className="flex items-center gap-3 min-w-0">
@@ -434,7 +434,7 @@ export default function ApprovalWorkflows() {
                         <div>
                           <div className="flex items-center gap-2 mb-0.5">
                             <span className="font-mono text-[10px] text-[hsl(var(--brand))]">{pa.id}</span>
-                            {pa.urgent && <span className="text-[10px] px-1.5 py-0.5 font-medium" style={{ background: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' }}>Urgent</span>}
+                            {pa.urgent && <span className="text-[10px] px-1.5 py-0.5 font-medium" style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' }}>Urgent</span>}
                           </div>
                           <p className="text-sm font-medium text-[hsl(var(--text-1))]">{pa.title}</p>
                           <p className="text-xs text-[hsl(var(--text-4))]">{pa.currentStep} · {pa.requestedBy} · Due: {pa.dueAt}</p>

@@ -47,10 +47,10 @@ function MetricTile({ label, value, variant, icon, sub }: {
   label: string; value: string; variant: 'ok' | 'warn' | 'error' | 'info'; icon: React.ReactNode; sub?: string;
 }) {
   const vs = {
-    ok: { bg: 'hsl(142 71% 45% / 0.10)', color: 'hsl(var(--s-ok-tx))' },
-    warn: { bg: 'hsl(45 93% 47% / 0.10)', color: 'hsl(var(--s-wn-tx))' },
-    error: { bg: 'hsl(0 72% 51% / 0.10)', color: 'hsl(var(--destructive))' },
-    info: { bg: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))' },
+    ok: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+    warn: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+    error: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+    info: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
   };
   const s = vs[variant];
   return (
@@ -76,9 +76,9 @@ function scoreColor(score: number): string {
 }
 
 function scoreBg(score: number): string {
-  if (score >= 80) return 'hsl(142 71% 45% / 0.12)';
-  if (score >= 60) return 'hsl(45 93% 47% / 0.12)';
-  return 'hsl(0 72% 51% / 0.12)';
+  if (score >= 80) return 'hsl(var(--s-ok-bg))';
+  if (score >= 60) return 'hsl(var(--s-wn-bg))';
+  return 'hsl(var(--s-er-bg))';
 }
 
 // ── Main Component ───────────────────────────────────────────────────────────
@@ -190,7 +190,7 @@ export default function ConformityAssessment() {
       </div>
 
       {/* Info Banner */}
-      <div className="p-3" style={{ background: 'hsl(220 90% 56% / 0.06)', border: '1px solid hsl(220 90% 56% / 0.2)', borderRadius: 0 }}>
+      <div className="p-3" style={{ background: 'hsl(var(--s-in-bg))', border: '1px solid hsl(var(--s-in-bg))', borderRadius: 0 }}>
         <p className="text-xs" style={{ color: 'hsl(var(--s-in-tx))' }}>
           <Info size={12} className="inline mr-1" />
           <strong>Regulatory Requirement:</strong> Conformity assessments are mandatory for high-risk AI systems under EU AI Act Annex IV. {inProgress} assessment{inProgress !== 1 ? 's' : ''} in progress, {notStarted} overdue.
@@ -233,9 +233,9 @@ export default function ConformityAssessment() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <Badge style={{ background: 'hsl(220 90% 56% / 0.10)', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>{ca.framework}</Badge>
+                  <Badge style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>{ca.framework}</Badge>
                   <Badge style={{
-                    background: ca.status === 'Complete' ? 'hsl(142 71% 45% / 0.12)' : ca.status === 'In Progress' ? 'hsl(45 93% 47% / 0.12)' : 'hsl(0 72% 51% / 0.12)',
+                    background: ca.status === 'Complete' ? 'hsl(var(--s-ok-bg))' : ca.status === 'In Progress' ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-er-bg))',
                     color: ca.status === 'Complete' ? 'hsl(var(--s-ok-tx))' : ca.status === 'In Progress' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))',
                     borderRadius: 0, fontSize: 10,
                   }}>{ca.status}</Badge>
@@ -336,7 +336,7 @@ export default function ConformityAssessment() {
                         <h3 className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Step {step.id}: {step.title}</h3>
                         <div className="flex items-center gap-3 mt-1">
                           <Badge style={{
-                            background: step.complete ? 'hsl(142 71% 45% / 0.12)' : 'hsl(45 93% 47% / 0.12)',
+                            background: step.complete ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-wn-bg))',
                             color: step.complete ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))',
                             borderRadius: 0, fontSize: 10,
                           }}>{step.complete ? 'Complete' : 'In Progress'}</Badge>

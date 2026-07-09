@@ -88,15 +88,15 @@ const SEED: GuardrailRule[] = [
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const ACTION_STYLE: Record<RuleAction, { bg: string; color: string; label: string }> = {
-  block: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))', label: 'BLOCK' },
-  warn: { bg: 'hsl(45 93% 47% / 0.12)', color: 'hsl(45 85% 40%)', label: 'WARN' },
-  flag: { bg: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))', label: 'FLAG' },
-  allow: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))', label: 'ALLOW' },
+  block: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', label: 'BLOCK' },
+  warn: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', label: 'WARN' },
+  flag: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', label: 'FLAG' },
+  allow: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', label: 'ALLOW' },
 }
 const STATUS_STYLE: Record<RuleStatus, { bg: string; color: string }> = {
-  active: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
+  active: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
   disabled: { bg: 'hsl(var(--border))', color: 'hsl(var(--text-4))' },
-  testing: { bg: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))' },
+  testing: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
 }
 const TYPE_ICON: Record<RuleType, React.ReactNode> = {
   Privacy: <Lock size={12} />,

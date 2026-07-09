@@ -32,10 +32,10 @@ const SEED: FinancialRiskItem[] = [
 ]
 
 const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
-  Critical: { bg: 'hsl(0 72% 51% / 0.12)', color: 'hsl(var(--destructive))' },
-  Elevated: { bg: 'hsl(25 95% 53% / 0.12)', color: 'hsl(var(--s-wn-tx))' },
-  Monitored: { bg: 'hsl(220 90% 56% / 0.12)', color: 'hsl(var(--s-in-tx))' },
-  Mitigated: { bg: 'hsl(142 71% 45% / 0.12)', color: 'hsl(var(--s-ok-tx))' },
+  Critical: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+  Elevated: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+  Monitored: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
+  Mitigated: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
 }
 
 function formatCurrency(n: number): string {
@@ -131,7 +131,7 @@ export default function FinancialRisk() {
         {[
           { label: 'Total Annual Expected Loss', value: formatCurrency(totalAEL), sub: 'Probability-weighted AEL across all AI risks', color: 'hsl(var(--destructive))' },
           { label: 'Residual Risk (Post-Controls)', value: formatCurrency(totalResidual), sub: `${Math.round((totalResidual / totalAEL) * 100)}% of gross risk remains`, color: 'hsl(var(--s-wn-tx))' },
-          { label: 'Worst-Case Scenario', value: formatCurrency(worstCase), sub: '95th percentile annual loss estimate', color: 'hsl(45 85% 40%)' },
+          { label: 'Worst-Case Scenario', value: formatCurrency(worstCase), sub: '95th percentile annual loss estimate', color: 'hsl(var(--s-wn-tx))' },
         ].map(s => (
           <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
             <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
@@ -149,7 +149,7 @@ export default function FinancialRisk() {
             <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--text-4))' }} />
             <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--text-4))' }} tickFormatter={v => `$${v}M`} />
             <Tooltip formatter={(v: any) => [`$${Number(v).toFixed(2)}M`]} contentStyle={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }} />
-            <Bar dataKey="ael" name="Gross AEL" fill="hsl(0 72% 51% / 0.7)" />
+            <Bar dataKey="ael" name="Gross AEL" fill="hsl(var(--s-er-bg))" />
             <Bar dataKey="residual" name="Residual Risk" fill="hsl(var(--brand) / 0.7)" />
           </BarChart>
         </ResponsiveContainer>
@@ -189,7 +189,7 @@ export default function FinancialRisk() {
                 <td className="px-4 py-3" onClick={ev => ev.stopPropagation()}>
                   <div className="flex items-center gap-1">
                     <button onClick={() => openEdit(r)} className="p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))] hover:bg-raised"><PencilSimple size={13} /></button>
-                    <button onClick={() => setDeleteTarget(r)} className="p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(0_72%_51%/0.05)]"><Trash size={13} /></button>
+                    <button onClick={() => setDeleteTarget(r)} className="p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(var(--s-er-bg))]"><Trash size={13} /></button>
                   </div>
                 </td>
               </tr>
@@ -331,7 +331,7 @@ export default function FinancialRisk() {
               { category: 'Autonomous Decision Error', gross: '$1.5M', policy: 'No applicable policy', limit: '—', deductible: '—', gap: '$1.5M', covered: false },
               { category: 'Reputational Damage', gross: '$0.7M', policy: 'No applicable policy', limit: '—', deductible: '—', gap: '$0.7M', covered: false },
             ].map(r => (
-              <tr key={r.category} style={{ borderBottom: '1px solid hsl(var(--border))', background: !r.covered ? 'hsl(0 72% 51% / 0.04)' : 'transparent' }}>
+              <tr key={r.category} style={{ borderBottom: '1px solid hsl(var(--border))', background: !r.covered ? 'hsl(var(--s-er-bg))' : 'transparent' }}>
                 <td className="px-3 py-2 font-medium text-[hsl(var(--text-1))]">{r.category}</td>
                 <td className="px-3 py-2 font-mono font-bold text-[hsl(var(--destructive))]">{r.gross}</td>
                 <td className="px-3 py-2 text-[hsl(var(--text-3))]">{r.policy}</td>
@@ -340,7 +340,7 @@ export default function FinancialRisk() {
                 <td className="px-3 py-2 font-mono font-bold" style={{ color: r.gap !== '$0M' && r.gap !== '—' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-4))' }}>{r.gap}</td>
                 <td className="px-3 py-2">
                   <span className="text-[9px] px-2 py-0.5 font-medium" style={{
-                    background: r.covered ? 'hsl(142 71% 45% / 0.12)' : 'hsl(0 72% 51% / 0.12)',
+                    background: r.covered ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-er-bg))',
                     color: r.covered ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))',
                   }}>{r.covered ? 'Partially Covered' : 'UNINSURED GAP'}</span>
                 </td>
@@ -348,7 +348,7 @@ export default function FinancialRisk() {
             ))}
           </tbody>
         </table>
-        <div className="p-3 border border-[hsl(45_93%_47%/0.4)] bg-[hsl(45_93%_47%/0.06)]">
+        <div className="p-3 border border-[hsl(var(--s-wn-bg))] bg-[hsl(var(--s-wn-bg))]">
           <p className="text-xs font-semibold text-[hsl(var(--s-wn-tx))] mb-1">⚠ Coverage Gap Recommendations</p>
           <ul className="space-y-1 text-xs text-[hsl(var(--text-3))]">
             <li>→ Negotiate <strong>Autonomous AI Decision</strong> rider with existing E&O carrier — est. $45K/yr premium for $2M coverage</li>
@@ -392,7 +392,7 @@ export default function FinancialRisk() {
             </div>
             <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
               <button onClick={() => openEdit(selected)} className="flex-1 flex items-center justify-center gap-1.5 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised"><PencilSimple size={13} /> Edit</button>
-              <button onClick={() => setDeleteTarget(selected)} className="px-4 py-2 border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] text-sm hover:bg-[hsl(0_72%_51%/0.05)]"><Trash size={13} /></button>
+              <button onClick={() => setDeleteTarget(selected)} className="px-4 py-2 border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] text-sm hover:bg-[hsl(var(--s-er-bg))]"><Trash size={13} /></button>
             </div>
           </div>
         </div>
