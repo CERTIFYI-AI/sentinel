@@ -1,3 +1,7 @@
+## 1.35.0 (2026-07-10)
+
+* feat(dashboard): wire seed-fallback pages to Supabase doc-jsonb tables (batch 1) ([46dcd7e](https://github.com/CERTIFYI-AI/sentinel/commit/46dcd7e))
+
 ## <small>1.34.4 (2026-07-10)</small>
 
 * fix(compliance): make normalize_intervention_level importable from sentinel.models ([37e1a4b](https://github.com/CERTIFYI-AI/sentinel/commit/37e1a4b))
