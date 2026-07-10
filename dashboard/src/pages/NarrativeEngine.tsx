@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Card, CardContent } from '../components/ui/card';
+import { PageHeader } from '../components/ui/PageHeader';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
@@ -121,19 +122,10 @@ export default function NarrativeEngine() {
   return (
     <TooltipProvider>
       <div className="space-y-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Executive AI Narrative Engine</h1>
-              <Badge style={{ borderRadius: 0, fontSize: 9, background: 'hsl(var(--brand) / 0.12)', color: 'hsl(var(--brand))', border: '1px solid hsl(var(--brand) / 0.3)' }}>
-                PROPRIETARY AI
-              </Badge>
-            </div>
-            <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>
-              {orgName} · AI-generated board, regulatory, and technical narratives calibrated to your organization's risk appetite, terminology, and communication style
-            </p>
-          </div>
-        </div>
+        <PageHeader
+          title="Executive AI Narrative Engine"
+          subtitle={`${orgName} · AI-generated board, regulatory, and technical narratives calibrated to your organization's risk appetite, terminology, and communication style`}
+        />
 
         <div className="p-3 flex items-start gap-3" style={{ border: '1px solid hsl(var(--brand) / 0.3)', background: 'hsl(var(--brand) / 0.04)' }}>
           <Brain size={16} style={{ color: 'hsl(var(--brand))', flexShrink: 0, marginTop: 2 }} />

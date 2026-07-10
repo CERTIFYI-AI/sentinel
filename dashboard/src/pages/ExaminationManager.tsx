@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Card, CardContent } from '../components/ui/card';
+import { PageHeader } from '../components/ui/PageHeader';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
@@ -168,23 +169,16 @@ export default function ExaminationManager() {
   return (
     <TooltipProvider>
       <div className="space-y-5">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Regulatory Examination Manager</h1>
-              <Badge style={{ borderRadius: 0, fontSize: 9, background: 'hsl(var(--brand) / 0.12)', color: 'hsl(var(--brand))', border: '1px solid hsl(var(--brand) / 0.3)' }}>
-                FINANCIAL SERVICES
-              </Badge>
-            </div>
-            <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>
-              {orgName} · Fed, OCC, FCA, FFIEC examination tracking · Document request workflows · Findings management
-            </p>
-          </div>
-          <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
-            onClick={() => toast.success('New examination registered')}>
-            <Plus size={13} />Register Examination
-          </Button>
-        </div>
+        <PageHeader
+          title="Regulatory Examination Manager"
+          subtitle={`${orgName} · Fed, OCC, FCA, FFIEC examination tracking · Document request workflows · Findings management`}
+          actions={
+            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
+              onClick={() => toast.success('New examination registered')}>
+              <Plus size={13} />Register Examination
+            </Button>
+          }
+        />
 
         {/* Status Strip */}
         <div className="grid grid-cols-4 gap-2">

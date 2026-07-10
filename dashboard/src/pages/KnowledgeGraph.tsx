@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Card, CardContent } from '../components/ui/card';
+import { PageHeader } from '../components/ui/PageHeader';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
@@ -134,22 +135,15 @@ export default function KnowledgeGraph() {
   return (
     <TooltipProvider>
       <div className="space-y-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Enterprise AI Knowledge Graph</h1>
-              <Badge style={{ borderRadius: 0, fontSize: 9, background: 'hsl(var(--brand) / 0.12)', color: 'hsl(var(--brand))', border: '1px solid hsl(var(--brand) / 0.3)' }}>
-                PROPRIETARY INTELLIGENCE
-              </Badge>
-            </div>
-            <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>
-              {orgName} · Semantic graph connecting all AI models, regulations, controls, incidents, vendors, and policies with causal inference
-            </p>
-          </div>
-          <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-            <ChartBar size={13} />Export Graph
-          </Button>
-        </div>
+        <PageHeader
+          title="Enterprise AI Knowledge Graph"
+          subtitle={`${orgName} · Semantic graph connecting all AI models, regulations, controls, incidents, vendors, and policies with causal inference`}
+          actions={
+            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
+              <ChartBar size={13} />Export Graph
+            </Button>
+          }
+        />
 
         <div className="p-3 flex items-start gap-3" style={{ border: '1px solid hsl(var(--brand) / 0.3)', background: 'hsl(var(--brand) / 0.04)' }}>
           <Info size={16} style={{ color: 'hsl(var(--brand))', flexShrink: 0, marginTop: 2 }} />

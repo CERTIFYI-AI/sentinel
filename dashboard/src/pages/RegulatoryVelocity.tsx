@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Card, CardContent } from '../components/ui/card';
+import { PageHeader } from '../components/ui/PageHeader';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
@@ -80,23 +81,16 @@ export default function RegulatoryVelocity() {
   return (
     <TooltipProvider>
       <div className="space-y-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Regulatory Velocity Engine</h1>
-              <Badge style={{ borderRadius: 0, fontSize: 9, background: 'hsl(var(--brand) / 0.12)', color: 'hsl(var(--brand))', border: '1px solid hsl(var(--brand) / 0.3)' }}>
-                PREDICTIVE INTELLIGENCE
-              </Badge>
-            </div>
-            <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>
-              {orgName} · AI-powered regulatory change velocity scoring with automatic model impact mapping and deadline intelligence
-            </p>
-          </div>
-          <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
-            onClick={() => toast.success('Regulatory scan triggered — results in 30s')}>
-            <Lightning size={13} />Run Regulatory Scan
-          </Button>
-        </div>
+        <PageHeader
+          title="Regulatory Velocity Engine"
+          subtitle={`${orgName} · AI-powered regulatory change velocity scoring with automatic model impact mapping and deadline intelligence`}
+          actions={
+            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
+              onClick={() => toast.success('Regulatory scan triggered — results in 30s')}>
+              <Lightning size={13} />Run Regulatory Scan
+            </Button>
+          }
+        />
 
         <div className="grid grid-cols-4 gap-3">
           {[
