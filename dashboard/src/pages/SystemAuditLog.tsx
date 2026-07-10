@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Notepad, MagnifyingGlass, Export, Eye, X, ShieldCheck, User, Gear, Warning } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -108,12 +109,18 @@ export default function SystemAuditLog() {
           <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search events…" className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]" />
         </div>
-        <select value={sevFilter} onChange={e => setSevFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
-          {['All', 'Info', 'Warning', 'Error', 'Critical'].map(s => <option key={s}>{s}</option>)}
-        </select>
-        <select value={catFilter} onChange={e => setCatFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:outline-none">
-          {['All', 'Authentication', 'Authorization', 'Data Access', 'Configuration', 'AI System', 'Policy', 'Compliance', 'Security'].map(c => <option key={c}>{c}</option>)}
-        </select>
+        <Select value={sevFilter} onValueChange={setSevFilter}>
+          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            {['All', 'Info', 'Warning', 'Error', 'Critical'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={catFilter} onValueChange={setCatFilter}>
+          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            {['All', 'Authentication', 'Authorization', 'Data Access', 'Configuration', 'AI System', 'Policy', 'Compliance', 'Security'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="rounded border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] overflow-hidden">

@@ -1,4 +1,5 @@
 import logger from '@/lib/logger';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { Buildings, MagnifyingGlass, Plus, PencilSimple, Trash, Users, X, CaretDown, CaretUp, Export } from '@phosphor-icons/react'
 import { PageSkeleton } from '../../components/ui/PageSkeleton'
@@ -197,11 +198,14 @@ export default function DepartmentsPage() {
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name or code…"
             className="w-full pl-8 pr-3 py-2 text-sm border outline-none" style={{ background: 'hsl(var(--bg-surface))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-1))' }} />
         </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as typeof statusFilter)} className="px-3 py-2 text-sm border outline-none" style={{ background: 'hsl(var(--bg-surface))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-1))' }}>
-          <option value="All">All Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
+        <Select value={statusFilter} onValueChange={v => setStatusFilter(v as typeof statusFilter)}>
+          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            <SelectItem value="All">All Status</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="inactive">Inactive</SelectItem>
+          </SelectContent>
+        </Select>
         <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
       </div>
 
@@ -300,11 +304,13 @@ export default function DepartmentsPage() {
                 </div>
                 <div>
                   <label className="text-[10px] font-medium uppercase tracking-wide mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Status</label>
-                  <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value as 'active' | 'inactive' }))}
-                    className="w-full px-3 py-2 text-sm border outline-none" style={{ background: 'hsl(var(--bg-raised))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-1))' }}>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
+                  <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v as 'active' | 'inactive' }))}>
+                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               {formError && <p className="text-xs px-3 py-2 border" style={{ background: 'hsl(var(--s-er-bg))', borderColor: 'hsl(var(--destructive) / 0.3)', color: 'hsl(var(--destructive))' }}>{formError}</p>}
