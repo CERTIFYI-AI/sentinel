@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import {
   Briefcase, Warning, ShieldCheck, ListChecks, Clock,
   ChartLineUp, Gear, Plus, DownloadSimple, User, GlobeHemisphereWest,
-  Buildings, FileText, Cpu, Database, Eye, MagnifyingGlass
+  Buildings, FileText, Cpu, Database, Eye, MagnifyingGlass, Trash
 } from '@phosphor-icons/react';
 
 function StatusBadge({ status }: { status: string }) {
@@ -549,28 +549,42 @@ export default function UseCaseDetail() {
 
           {/* TAB 8: SETTINGS */}
           <TabsContent value="settings" className="mt-0">
-             <div className="bg-surface border border-[hsl(var(--border))] max-w-2xl">
-              <div className="p-4 border-b border-[hsl(var(--border))]">
-                <h3 className="font-semibold text-[hsl(var(--s-er-tx))]">Danger Zone</h3>
-              </div>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
+            <div className="max-w-2xl space-y-6">
+              {/* Ownership & Access */}
+              <div className="bg-surface border border-[hsl(var(--border))] p-6">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-[hsl(var(--text-3))] mb-4">Ownership &amp; Access</h3>
+                <div className="flex items-center justify-between gap-4">
                   <div>
-                    <h4 className="text-sm font-bold">Transfer Ownership</h4>
-                    <p className="text-xs text-[hsl(var(--text-4))] mt-1">Assign this use case to another user.</p>
+                    <h4 className="text-sm font-semibold text-[hsl(var(--text-1))]">Transfer ownership</h4>
+                    <p className="text-xs text-[hsl(var(--text-4))] mt-1">
+                      Currently owned by <span className="font-medium text-[hsl(var(--text-2))]">{uc.owner}</span>. Reassign this use case to another user.
+                    </p>
                   </div>
-                  <Button variant="outline" size="sm" style={{ borderRadius: 0 }} onClick={handleTransfer}>Transfer</Button>
-                </div>
-                <hr className="border-[hsl(var(--border))]" />
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-bold text-[hsl(var(--s-er-tx))]">Delete Use Case</h4>
-                    <p className="text-xs text-[hsl(var(--text-4))] mt-1">Permanently delete this use case and all assessments.</p>
-                  </div>
-                  <Button variant="outline" size="sm" style={{ borderRadius: 0, color: 'hsl(var(--s-er-tx))', borderColor: 'hsl(var(--s-er-br))' }} onClick={() => setConfirmDelete(true)}>Delete</Button>
+                  <Button variant="outline" size="sm" className="shrink-0" style={{ borderRadius: 0 }} onClick={handleTransfer}>
+                    <User size={14} /> Transfer
+                  </Button>
                 </div>
               </div>
-             </div>
+
+              {/* Danger Zone */}
+              <div className="border border-[hsl(var(--s-er-br))]" style={{ background: 'hsl(var(--bg-surface))' }}>
+                <div className="flex items-center gap-2 px-6 py-3 border-b border-[hsl(var(--s-er-br))]" style={{ background: 'hsl(var(--s-er-bg))' }}>
+                  <Warning size={16} weight="fill" style={{ color: 'hsl(var(--destructive))' }} />
+                  <h3 className="text-sm font-bold uppercase tracking-widest" style={{ color: 'hsl(var(--destructive))' }}>Danger Zone</h3>
+                </div>
+                <div className="flex items-center justify-between gap-4 p-6">
+                  <div>
+                    <h4 className="text-sm font-semibold text-[hsl(var(--text-1))]">Delete use case</h4>
+                    <p className="text-xs text-[hsl(var(--text-4))] mt-1">
+                      Permanently delete <span className="font-medium text-[hsl(var(--text-2))]">{uc.title}</span> and all its assessments. This action cannot be undone.
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" className="shrink-0" style={{ borderRadius: 0, color: 'hsl(var(--destructive))', borderColor: 'hsl(var(--s-er-br))' }} onClick={() => setConfirmDelete(true)}>
+                    <Trash size={14} /> Delete
+                  </Button>
+                </div>
+              </div>
+            </div>
           </TabsContent>
 
         </div>
