@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { GitBranch, ChevronRight, Clock, CheckCircle2, AlertTriangle, XCircle, PlayCircle, ArrowRight, Check, X, Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
@@ -300,9 +301,12 @@ function TransitionDialog({ open, onOpenChange, model, currentIdx, onSubmit }: {
           </div>
           <div>
             <label className="text-xs font-semibold" style={{ color: "hsl(var(--text-4))" }}>Target stage *</label>
-            <select value={target} onChange={e => setTarget(e.target.value as Stage)} className="mt-1 w-full h-9 text-sm px-2" style={{ borderRadius: 0, background: "hsl(var(--bg-surface))", border: "1px solid hsl(var(--border))", color: "hsl(var(--text-1))" }}>
-              {STAGES.map(s => <option key={s} value={s}>{cap(s)}{s === STAGES[currentIdx + 1] ? " (next)" : ""}</option>)}
-            </select>
+            <Select value={target} onValueChange={v => setTarget(v as Stage)}>
+              <SelectTrigger className="mt-1 w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+              <SelectContent style={{ borderRadius: 0 }}>
+                {STAGES.map(s => <SelectItem key={s} value={s}>{cap(s)}{s === STAGES[currentIdx + 1] ? " (next)" : ""}</SelectItem>)}
+              </SelectContent>
+            </Select>
             <p className="text-[11px] mt-1" style={{ color: "hsl(var(--text-4))" }}>{STAGE_GUIDE[target]}</p>
           </div>
           {isBackward && (

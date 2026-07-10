@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { Card, CardContent } from '../components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -504,10 +505,12 @@ export default function EvidenceVault() {
             ))}
             <div>
               <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Type</label>
-              <select value={formData.type} onChange={e => setFormData(prev => ({ ...prev, type: e.target.value }))}
-                style={{ width: '100%', ...sxSel }}>
-                {['Report', 'Log', 'Validation', 'Agreement', 'Certificate'].map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
+              <Select value={formData.type} onValueChange={v => setFormData(prev => ({ ...prev, type: v }))}>
+                <SelectTrigger style={{ width: '100%', borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  {['Report', 'Log', 'Validation', 'Agreement', 'Certificate'].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>

@@ -9,6 +9,7 @@ import {
   Scales, Warning, Info, CheckCircle, ShieldCheck,
 } from '@phosphor-icons/react';
 import { Card, CardContent } from '../components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -619,10 +620,12 @@ export default function AIRiskTiering() {
               )}
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-[hsl(var(--text-2))] uppercase tracking-wide">Assign Owner *</label>
-                <select className="w-full text-sm border p-3 rounded-none border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none"
-                  value={wOwner} onChange={e => setWOwner(e.target.value)}>
-                  {['Sarah Chen', 'James Patel', 'Maria Santos', 'David Kim', 'Emma Wilson'].map(u => <option key={u}>{u}</option>)}
-                </select>
+                <Select value={wOwner} onValueChange={setWOwner}>
+                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue placeholder="Select owner…" /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {['Sarah Chen', 'James Patel', 'Maria Santos', 'David Kim', 'Emma Wilson'].map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           )}
