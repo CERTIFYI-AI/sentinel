@@ -21,7 +21,15 @@ export function useSupabaseTable<T extends { id?: string }>(tableName: string, i
           return;
         }
         if (dbData && dbData.length > 0) {
-          if (isMounted) setData(dbData as T[]);
+          // Uniform doc-jsonb pattern: rows are { id, doc }, where `doc` holds the
+          // full UI-shaped record. Unwrap it so the shape round-trips exactly.
+          // Backward compatible: if a row has no `doc` column, use it as-is.
+          const rows = (dbData as any[]).map(r =>
+            r && typeof r === 'object' && 'doc' in r && r.doc
+              ? { ...(r.doc as object), id: r.id }
+              : r
+          );
+          if (isMounted) setData(rows as T[]);
         } else {
           // If table is empty, seed it (optional) or just use local state for now
           if (isMounted) setData(initialSeed);
@@ -62,7 +70,9 @@ export function useSupabaseTable<T extends { id?: string }>(tableName: string, i
     });
     
     if (supabase) {
-      await supabase.from(tableName).upsert(item).catch(() => {});
+      // Persist as the uniform doc-jsonb row shape: { id, doc: <full record> }.
+      const row = { id: (item as any).id, doc: item, updated_at: new Date().toISOString() };
+      await supabase.from(tableName).upsert(row).catch(() => {});
     }
   };
 
