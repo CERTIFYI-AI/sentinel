@@ -1,3 +1,9 @@
+## <small>1.34.3 (2026-07-10)</small>
+
+* fix(compliance): consolidate framework IDs, wire posture signals, fix intervention-level bug ([fbd3b16](https://github.com/CERTIFYI-AI/sentinel/commit/fbd3b16))
+* fix(compliance): consolidate third intervention-level format (L0-L3) onto InterventionLevel ([2662d24](https://github.com/CERTIFYI-AI/sentinel/commit/2662d24))
+* refactor(ui): Phase 2 (batch 2) — PageHeader for System Audit Log + 3 variants ([6607d1d](https://github.com/CERTIFYI-AI/sentinel/commit/6607d1d))
+
 ## <small>1.34.2 (2026-07-09)</small>
 
 * fix(ui): Phase 5 (batch 1) — wire fake "Exported" toasts to real CSV export ([b1e6156](https://github.com/CERTIFYI-AI/sentinel/commit/b1e6156))
