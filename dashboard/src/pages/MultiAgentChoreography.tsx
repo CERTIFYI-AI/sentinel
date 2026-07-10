@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { exportCsv } from '@/lib/exportUtils';
 import { Swap, Plus, Eye, X, Export, CheckCircle, Warning, Clock, ArrowRight, MagnifyingGlass } from '@phosphor-icons/react'
 import { toast } from 'sonner'
@@ -117,9 +118,12 @@ export default function MultiAgentChoreography() {
           <MagnifyingGlass size={14} className="text-[hsl(var(--text-4))] flex-shrink-0" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search workflows…" className="flex-1 py-2 text-sm bg-transparent text-[hsl(var(--text-1))] placeholder-[hsl(var(--text-4))] focus:outline-none" />
         </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
-          {['All', 'Running', 'Completed', 'Failed', 'Paused', 'Awaiting Approval'].map(s => <option key={s}>{s}</option>)}
-        </select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            {['All', 'Running', 'Completed', 'Failed', 'Paused', 'Awaiting Approval'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="space-y-3">
@@ -399,10 +403,12 @@ export default function MultiAgentChoreography() {
               </div>
               <div>
                 <label className="text-xs text-[hsl(var(--text-4))]">Trigger</label>
-                <select value={newWfTrigger} onChange={e => setNewWfTrigger(e.target.value)}
-                  className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
-                  {['Manual', 'Scheduled', 'Event-driven', 'API', 'Webhook'].map(t => <option key={t}>{t}</option>)}
-                </select>
+                <Select value={newWfTrigger} onValueChange={setNewWfTrigger}>
+                  <SelectTrigger className="w-full mt-0.5" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {['Manual', 'Scheduled', 'Event-driven', 'API', 'Webhook'].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="flex gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">

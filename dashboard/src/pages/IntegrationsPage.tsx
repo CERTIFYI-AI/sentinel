@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Plugs, Plus, X, Warning, ArrowClockwise, Trash } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
@@ -234,15 +235,21 @@ export default function IntegrationsPage() {
               </div>
               <div>
                 <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Category *</label>
-                <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value as IntegrationCategory }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
-                  {['AI Provider', 'Data Source', 'Compliance Tool', 'Monitoring', 'Identity', 'Notification', 'Ticketing'].map(c => <option key={c}>{c}</option>)}
-                </select>
+                <Select value={form.category} onValueChange={v => setForm(p => ({ ...p, category: v as IntegrationCategory }))}>
+                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {['AI Provider', 'Data Source', 'Compliance Tool', 'Monitoring', 'Identity', 'Notification', 'Ticketing'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Auth Method</label>
-                <select value={form.authMethod} onChange={e => setForm(p => ({ ...p, authMethod: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
-                  {['API Key', 'OAuth 2.0', 'Service Account Token', 'mTLS Certificate', 'IAM Role', 'SAML 2.0', 'Integration Key'].map(a => <option key={a}>{a}</option>)}
-                </select>
+                <Select value={form.authMethod} onValueChange={v => setForm(p => ({ ...p, authMethod: v }))}>
+                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {['API Key', 'OAuth 2.0', 'Service Account Token', 'mTLS Certificate', 'IAM Role', 'SAML 2.0', 'Integration Key'].map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Description</label>
