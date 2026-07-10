@@ -7,6 +7,7 @@ import {
 } from '@phosphor-icons/react';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
+import { PageHeader } from '../components/ui/PageHeader';
 import { Input } from '../components/ui/input';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
@@ -180,15 +181,15 @@ export default function DataQuality() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Data Quality Assessment</h1>
-          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>EU AI Act Article 10 — validate training data for high-risk AI systems</p>
-        </div>
-        <Button onClick={() => setCreateOpen(true)} style={{ borderRadius: 0 }}>
-          <Plus size={15} /> Run Assessment
-        </Button>
-      </div>
+      <PageHeader
+        title="Data Quality Assessment"
+        subtitle="EU AI Act Article 10 — validate training data for high-risk AI systems"
+        actions={
+          <Button onClick={() => setCreateOpen(true)} style={{ borderRadius: 0 }}>
+            <Plus size={15} /> Run Assessment
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricTile label="Datasets Assessed" value={assessed} variant="default" />

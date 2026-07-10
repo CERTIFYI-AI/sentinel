@@ -5,6 +5,7 @@ import {
 } from '@phosphor-icons/react';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
+import { PageHeader } from '../components/ui/PageHeader';
 import { Input } from '../components/ui/input';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -185,23 +186,23 @@ export default function FrameworkMappingPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Cross-Framework Control Mapping</h1>
-          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>Map controls across frameworks to eliminate redundancy and identify gaps</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setGapPanelOpen(true)}>
-            <Warning size={14} /> Gap Analysis
-          </Button>
-          <Button variant="outline" style={{ borderRadius: 0 }} onClick={runAutoMap} disabled={autoMapping}>
-            <Sparkle size={14} /> {autoMapping ? 'Analyzing...' : 'Auto-Map'}
-          </Button>
-          <Button onClick={() => setAddOpen(true)} style={{ borderRadius: 0 }}>
-            <Plus size={15} /> Add Mapping
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Cross-Framework Control Mapping"
+        subtitle="Map controls across frameworks to eliminate redundancy and identify gaps"
+        actions={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setGapPanelOpen(true)}>
+              <Warning size={14} /> Gap Analysis
+            </Button>
+            <Button variant="outline" style={{ borderRadius: 0 }} onClick={runAutoMap} disabled={autoMapping}>
+              <Sparkle size={14} /> {autoMapping ? 'Analyzing...' : 'Auto-Map'}
+            </Button>
+            <Button onClick={() => setAddOpen(true)} style={{ borderRadius: 0 }}>
+              <Plus size={15} /> Add Mapping
+            </Button>
+          </div>
+        }
+      />
 
       {/* Efficiency banner */}
       <div className="px-4 py-3 border" style={{ background: 'hsl(var(--brand-subtle))', borderColor: 'hsl(var(--brand)/30%)', borderRadius: 0 }}>

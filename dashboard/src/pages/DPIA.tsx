@@ -9,6 +9,7 @@ import {
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
+import { PageHeader } from '../components/ui/PageHeader';
 import { Input } from '../components/ui/input';
 import { Progress } from '../components/ui/progress';
 import {
@@ -175,16 +176,15 @@ export default function DPIAPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Data Protection Impact Assessments</h1>
-          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>GDPR Article 35 — required for high-risk AI processing of personal data</p>
-        </div>
-        <Button onClick={() => { resetWizard(); setWizardOpen(true); }} style={{ borderRadius: 0 }}>
-          <Plus size={15} /> Start DPIA
-        </Button>
-      </div>
+      <PageHeader
+        title="Data Protection Impact Assessments"
+        subtitle="GDPR Article 35 — required for high-risk AI processing of personal data"
+        actions={
+          <Button onClick={() => { resetWizard(); setWizardOpen(true); }} style={{ borderRadius: 0 }}>
+            <Plus size={15} /> Start DPIA
+          </Button>
+        }
+      />
 
       {/* Metric tiles */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
