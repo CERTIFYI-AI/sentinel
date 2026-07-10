@@ -26,6 +26,53 @@ class InterventionLevel(enum.IntEnum):
     HITL = 3
 
 
+_INTERVENTION_NAME_ALIASES: dict[str, "InterventionLevel"] = {
+    "NONE": InterventionLevel.NONE,
+    "REGENERATE": InterventionLevel.REGENERATE,
+    "UPGRADE": InterventionLevel.UPGRADE,
+    "HITL": InterventionLevel.HITL,
+    "BLOCKED": InterventionLevel.HITL,  # no such member; closest real one
+    # Legacy tier-string format previously used across
+    # sentinel/compliance/frameworks/*.py (eu_ai_act, gdpr, iso42001,
+    # nist_ai_rmf, hipaa, oecd_principles) before the 2026-07 consolidation.
+    "L0": InterventionLevel.NONE,
+    "L1": InterventionLevel.REGENERATE,
+    "L2": InterventionLevel.UPGRADE,
+    "L3": InterventionLevel.HITL,
+}
+
+
+def normalize_intervention_level(raw: Any) -> "InterventionLevel | None":
+    """Coerce a raw intervention-level value to InterventionLevel.
+
+    Single source of truth for interpreting intervention levels across the
+    codebase. Historically three shapes were used interchangeably: the real
+    int (0-3) stored in audit_log / AuditEntryInput, a legacy string enum-name
+    format ("NONE"/"REGENERATE"/"UPGRADE"/"HITL"), and a "L0".."L3" tier-string
+    format used in sentinel/compliance/frameworks/. Accepts all of them;
+    returns None if the value can't be interpreted so callers can report
+    PENDING/unknown instead of guessing.
+    """
+    if isinstance(raw, InterventionLevel):
+        return raw
+    if isinstance(raw, bool):
+        return None  # bool is an int subclass in Python; not a valid level
+    if isinstance(raw, int):
+        try:
+            return InterventionLevel(raw)
+        except ValueError:
+            return None
+    if isinstance(raw, str):
+        name = raw.strip().upper()
+        if name in _INTERVENTION_NAME_ALIASES:
+            return _INTERVENTION_NAME_ALIASES[name]
+        try:
+            return InterventionLevel(int(name))
+        except (TypeError, ValueError):
+            return None
+    return None
+
+
 # -- Sanitizer -----------------------------------------------------
 
 
