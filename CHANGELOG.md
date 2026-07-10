@@ -1,3 +1,7 @@
+## 1.36.0 (2026-07-10)
+
+* feat(dashboard): wire 31 CRUD pages to Supabase doc-jsonb tables (batch 2) ([49dcb5a](https://github.com/CERTIFYI-AI/sentinel/commit/49dcb5a))
+
 ## 1.35.0 (2026-07-10)
 
 * feat(dashboard): wire seed-fallback pages to Supabase doc-jsonb tables (batch 1) ([46dcd7e](https://github.com/CERTIFYI-AI/sentinel/commit/46dcd7e))
