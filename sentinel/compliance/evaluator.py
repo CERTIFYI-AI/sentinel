@@ -63,7 +63,7 @@ _SIGNAL_FIELD: dict[str, str] = {
 
 # Intervention levels that pass / warn / fail.
 #
-# InterventionLevel (sentinel/models.py) is an IntEnum: NONE=0,
+# InterventionLevel (sentinel/models) is an IntEnum: NONE=0,
 # REGENERATE=1, UPGRADE=2, HITL=3. The audit_log field this maps to
 # (intervention_level) stores that int directly — it was never a string
 # enum name, so the previous `str(raw).upper()` comparison against

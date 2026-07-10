@@ -61,3 +61,10 @@ scripts/__pycache__/
 *.py
 __pycache__/
 *.pyc
+
+# Local tooling / stray root artifacts (project lives in dashboard/)
+.venv/
+.claude/
+/package.json
+/pnpm-lock.yaml
+/tsconfig.json

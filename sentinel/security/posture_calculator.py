@@ -237,7 +237,7 @@ _TRUST_SCORE_SEVERITY: list[tuple[float, Severity]] = [
 ]
 
 # InterventionLevel is NONE=0, REGENERATE=1, UPGRADE=2, HITL=3
-# (sentinel/models.py). HITL/UPGRADE/REGENERATE all represent the pipeline
+# (sentinel/models). HITL/UPGRADE/REGENERATE all represent the pipeline
 # stepping in, in increasing order of severity.
 _INTERVENTION_SEVERITY: dict[int, Severity] = {
     3: Severity.CRITICAL,  # HITL
