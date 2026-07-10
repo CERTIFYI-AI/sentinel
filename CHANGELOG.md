@@ -1,3 +1,9 @@
+## <small>1.34.4 (2026-07-10)</small>
+
+* fix(compliance): make normalize_intervention_level importable from sentinel.models ([37e1a4b](https://github.com/CERTIFYI-AI/sentinel/commit/37e1a4b))
+* fix(ui): rework use-case Settings tab UI/UX ([11bb865](https://github.com/CERTIFYI-AI/sentinel/commit/11bb865))
+* refactor(ui): remove 40 unreachable page files + 4 dead imports ([f6ce610](https://github.com/CERTIFYI-AI/sentinel/commit/f6ce610))
+
 ## <small>1.34.3 (2026-07-10)</small>
 
 * fix(compliance): consolidate framework IDs, wire posture signals, fix intervention-level bug ([fbd3b16](https://github.com/CERTIFYI-AI/sentinel/commit/fbd3b16))
