@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { useState } from 'react';
 import {
   ArrowLeft, Warning, FileText, CheckCircle, Clock, User, CalendarBlank,
@@ -540,13 +541,12 @@ export default function PolicyDetail() {
             ))}
             <div>
               <label style={{ fontSize: 12, fontWeight: 500, color: 'hsl(var(--text-2))', display: 'block', marginBottom: 4 }}>Status</label>
-              <select
-                value={(editData.status ?? policy.status)}
-                onChange={e => setEditData(prev => ({ ...prev, status: e.target.value }))}
-                style={{ width: '100%', padding: '8px 10px', fontSize: 13, background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', borderRadius: 0, outline: 'none' }}
-              >
-                {['published', 'in_review', 'draft'].map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
-              </select>
+              <Select value={(editData.status ?? policy.status)} onValueChange={v => setEditData(prev => ({ ...prev, status: v }))}>
+                <SelectTrigger style={{ width: '100%', borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  {['published', 'in_review', 'draft'].map(s => <SelectItem key={s} value={s}>{s.replace('_', ' ')}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <label style={{ fontSize: 12, fontWeight: 500, color: 'hsl(var(--text-2))', display: 'block', marginBottom: 4 }}>Description</label>

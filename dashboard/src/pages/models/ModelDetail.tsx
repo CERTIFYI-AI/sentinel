@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
@@ -933,9 +934,12 @@ export default function ModelDetail() {
                 <p style={{ fontSize: 11, color: 'hsl(var(--text-4))', marginBottom: 8 }}>Link a document from your DMS / evidence store (SharePoint, S3, Confluence…). The registry references it — the file is not copied.</p>
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8, marginBottom: 8 }}>
                   <Input value={dForm.title} onChange={e => setDForm({ ...dForm, title: e.target.value })} placeholder="Document title *" style={{ borderRadius: 0 }} />
-                  <select value={dForm.type} onChange={e => setDForm({ ...dForm, type: e.target.value })} style={{ height: 36, borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', fontSize: 13, padding: '0 8px' }}>
-                    {['PDF', 'HTML', 'MD', 'DOCX', 'XLSX', 'JSON', 'ZIP', 'LINK'].map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
+                  <Select value={dForm.type} onValueChange={v => setDForm({ ...dForm, type: v })}>
+                    <SelectTrigger style={{ height: 36, borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {['PDF', 'HTML', 'MD', 'DOCX', 'XLSX', 'JSON', 'ZIP', 'LINK'].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <Input value={dForm.url} onChange={e => setDForm({ ...dForm, url: e.target.value })} placeholder="Document URL / reference *" style={{ borderRadius: 0, marginBottom: 8 }} />
                 <Input value={dForm.desc} onChange={e => setDForm({ ...dForm, desc: e.target.value })} placeholder="Short description (optional)" style={{ borderRadius: 0, marginBottom: 8 }} />

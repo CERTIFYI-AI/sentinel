@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useState, useMemo } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { Target, Plus, MagnifyingGlass, Eye, PencilSimple, Trash, Export, X, Users, CheckCircle } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
@@ -112,10 +113,13 @@ export default function TabletopExercises() {
           <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-3))]" size={15} />
           <Input placeholder="Search exercises..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9" />
         </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="h-9 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface))] text-sm px-2 text-[hsl(var(--text-2))]">
-          <option value="all">All Statuses</option>
-          {STATUSES.map(s => <option key={s}>{s}</option>)}
-        </select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            <SelectItem value="all">All Statuses</SelectItem>
+            {STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
         {(search || statusFilter !== "all") && (
           <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setStatusFilter("all"); }} className="gap-1 text-[hsl(var(--text-3))]"><X size={14} />Clear all</Button>
         )}

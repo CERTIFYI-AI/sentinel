@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { useState } from 'react';
 import {
   ArrowLeft, Warning, TrendUp, TrendDown, Minus, Shield, Brain,
@@ -620,13 +621,12 @@ export default function RiskDetail() {
             ))}
             <div>
               <label style={{ fontSize: 12, fontWeight: 500, color: 'hsl(var(--text-2))', display: 'block', marginBottom: 4 }}>Status</label>
-              <select
-                value={(editData.status ?? risk.status) as string}
-                onChange={e => setEditData(prev => ({ ...prev, status: e.target.value as RiskStatus }))}
-                style={{ width: '100%', padding: '8px 10px', fontSize: 13, background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', borderRadius: 0, outline: 'none' }}
-              >
-                {(['open', 'mitigated', 'accepted', 'closed'] as RiskStatus[]).map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
+              <Select value={(editData.status ?? risk.status) as string} onValueChange={v => setEditData(prev => ({ ...prev, status: v as RiskStatus }))}>
+                <SelectTrigger style={{ width: '100%', borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  {(['open', 'mitigated', 'accepted', 'closed'] as RiskStatus[]).map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <label style={{ fontSize: 12, fontWeight: 500, color: 'hsl(var(--text-2))', display: 'block', marginBottom: 4 }}>Description</label>
