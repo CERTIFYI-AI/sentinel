@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Settings as SettingsIcon, User, Shield, Bell, Key, Users, Database, Globe } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { PageHeader } from "../components/ui/PageHeader";
 
 type Tab = "general" | "team" | "api-keys" | "notifications" | "compliance" | "integrations";
 
@@ -42,13 +43,10 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-[hsl(var(--bg-muted))] rounded-lg"><SettingsIcon size={20} className="text-[hsl(var(--text-3))]" /></div>
-        <div>
-          <h1 className="text-xl font-bold text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))]">Settings</h1>
-          <p className="text-sm text-[hsl(var(--text-3))]">Platform configuration and team management</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Settings"
+        subtitle="Platform configuration and team management"
+      />
 
       <div className="flex gap-6">
         {/* Sidebar */}
