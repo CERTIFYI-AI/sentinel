@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertTriangle, Filter, Plus, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -150,10 +151,13 @@ export default function RiskMatrix() {
         <>
           <div className="flex items-center gap-2">
             <Filter size={14} className="text-[hsl(var(--text-4))]" />
-            <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="text-sm border border-[hsl(var(--border))] rounded-lg px-3 py-2 bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-2))]">
-              <option value="all">All Categories</option>
-              {categories.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+              <SelectContent style={{ borderRadius: 0 }}>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
           <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
             <CardContent className="p-0">

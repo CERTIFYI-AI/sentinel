@@ -130,9 +130,12 @@ export default function AgentIAM() {
           <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search identities…" className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]" />
         </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
-          {['All', 'Active', 'Pending Rotation', 'Revoked', 'Expired'].map(s => <option key={s}>{s}</option>)}
-        </select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            {['All', 'Active', 'Pending Rotation', 'Revoked', 'Expired'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="rounded border border-[hsl(var(--border))] bg-surface overflow-hidden">

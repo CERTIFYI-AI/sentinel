@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, CartesianGrid, LineChart, Line, Legend } from 'recharts'
 import { Globe, Lightning, Warning, CheckCircle, Clock, ArrowRight, MagnifyingGlass, Bell, ArrowUp, ArrowDown, Minus, FileText, Target, Shield, Download, Plus, X, TrendUp } from '@phosphor-icons/react'
 import { toast } from 'sonner'
@@ -189,9 +190,12 @@ export default function RegulatoryIntelligenceEngine() {
               <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search regulations…" className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]" />
             </div>
-            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
-              {['All', 'Compliant', 'Gap Identified', 'Under Review', 'Not Assessed'].map(s => <option key={s}>{s}</option>)}
-            </select>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+              <SelectContent style={{ borderRadius: 0 }}>
+                {['All', 'Compliant', 'Gap Identified', 'Under Review', 'Not Assessed'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-3">

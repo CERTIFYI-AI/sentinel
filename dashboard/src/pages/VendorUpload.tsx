@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { CloudArrowUp, FileText, CheckCircle, Warning, X, Eye, Clock, MagnifyingGlass, Trash } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
@@ -127,9 +128,12 @@ export default function VendorUpload() {
           <MagnifyingGlass size={14} className="text-[hsl(var(--text-4))] flex-shrink-0" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search vendors, files…" className="flex-1 py-2 text-sm bg-transparent text-[hsl(var(--text-1))] placeholder-[hsl(var(--text-4))] focus:outline-none" />
         </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
-          {['All', 'Pending Review', 'Under Review', 'Accepted', 'Rejected'].map(s => <option key={s}>{s}</option>)}
-        </select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            {['All', 'Pending Review', 'Under Review', 'Accepted', 'Rejected'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="rounded border border-[hsl(var(--border))] bg-surface overflow-hidden">
