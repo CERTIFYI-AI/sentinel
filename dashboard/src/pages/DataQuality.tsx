@@ -8,6 +8,7 @@ import {
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { PageHeader } from '../components/ui/PageHeader';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Input } from '../components/ui/input';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
@@ -416,11 +417,12 @@ export default function DataQuality() {
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Linked Model *</label>
-                <select className="w-full text-sm border p-2" style={{ borderRadius: 0, borderColor: 'hsl(var(--border))', background: 'hsl(var(--bg-surface))', color: 'hsl(var(--text-1))' }}
-                  value={wModel} onChange={e => setWModel(e.target.value)}>
-                  <option value="">Select model...</option>
-                  {['Credit Risk Scorer', 'Fraud Detection Engine', 'Loan Approval Assistant', 'HR Screening System', 'Customer Service Chatbot'].map(m => <option key={m}>{m}</option>)}
-                </select>
+                <Select value={wModel || undefined} onValueChange={setWModel}>
+                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue placeholder="Select model..." /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {['Credit Risk Scorer', 'Fraud Detection Engine', 'Loan Approval Assistant', 'HR Screening System', 'Customer Service Chatbot'].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="space-y-1">

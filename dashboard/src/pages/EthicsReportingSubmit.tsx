@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { ShieldCheck, CheckCircle } from '@phosphor-icons/react';
 
 
@@ -88,13 +89,12 @@ export default function EthicsReportingSubmit() {
           {/* Category */}
           <div className="space-y-2">
             <label className="text-sm font-medium" style={{ color: 'hsl(var(--text-2))' }}>Category *</label>
-            <select
-              className="w-full text-sm border p-3"
-              style={{ borderRadius: 0, borderColor: errors.category ? 'hsl(var(--s-er-tx))' : 'hsl(var(--border))', background: 'hsl(var(--bg-surface))', color: 'hsl(var(--text-1))' }}
-              value={category} onChange={e => { setCategory(e.target.value); setErrors(prev => ({ ...prev, category: '' })); }}>
-              <option value="">Select category...</option>
-              {CATEGORIES.map(c => <option key={c}>{c}</option>)}
-            </select>
+            <Select value={category || undefined} onValueChange={v => { setCategory(v); setErrors(prev => ({ ...prev, category: '' })); }}>
+              <SelectTrigger className="w-full" style={{ borderRadius: 0, borderColor: errors.category ? 'hsl(var(--s-er-tx))' : 'hsl(var(--border))' }}><SelectValue placeholder="Select category..." /></SelectTrigger>
+              <SelectContent style={{ borderRadius: 0 }}>
+                {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
             {errors.category && <p className="text-xs" style={{ color: 'hsl(var(--s-er-tx))' }}>{errors.category}</p>}
           </div>
 

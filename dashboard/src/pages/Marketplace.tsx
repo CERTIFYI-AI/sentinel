@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import {
   Storefront, MagnifyingGlass, CheckCircle, Clock, Warning,
   Download, Plus, X, Eye, Star, ArrowRight, Shield,
@@ -370,10 +371,12 @@ export default function Marketplace() {
             ))}
             <div>
               <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Attestation Type</label>
-              <select value={submitForm.type} onChange={e => setSubmitForm(p => ({ ...p, type: e.target.value }))}
-                className="w-full px-3 py-2 text-sm" style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-raised))', color: 'hsl(var(--text-1))', borderRadius: 0 }}>
-                {ALL_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
+              <Select value={submitForm.type} onValueChange={v => setSubmitForm(p => ({ ...p, type: v }))}>
+                <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  {ALL_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex flex-col items-center justify-center py-6 cursor-pointer"
               style={{ border: '2px dashed hsl(var(--border))', background: 'hsl(var(--bg-raised))' }}>

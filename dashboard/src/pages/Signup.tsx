@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import {
@@ -229,10 +230,12 @@ export default function Signup() {
             {/* Role */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'hsl(var(--text-4))' }}>Your Role</label>
-              <select value={form.role} onChange={e => set('role', e.target.value)} className={ic(false)} style={{ ...s0, appearance: 'none' }}>
-                <option value="">Select your role…</option>
-                {ROLES.map(r => <option key={r}>{r}</option>)}
-              </select>
+              <Select value={form.role || undefined} onValueChange={v => set('role', v)}>
+                <SelectTrigger className={ic(false)} style={{ ...s0 }}><SelectValue placeholder="Select your role…" /></SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  {ROLES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Password */}
