@@ -2,6 +2,7 @@ import { useState } from "react";
 import { FileText, Plus, Edit3, Save, X, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { PageHeader } from "../components/ui/PageHeader";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 
 interface Policy { id: string; name: string; framework: string; version: string; updated: string; content: string; status: "active" | "draft" | "archived"; }
 
@@ -81,9 +82,12 @@ export default function PolicyEditor() {
               </div>
               <div>
                 <label className="block text-xs font-medium text-[hsl(var(--text-3))] mb-1">Framework</label>
-                <select value={form.framework} onChange={e => setForm({...form, framework: e.target.value})} className="w-full border border-[hsl(var(--border))] rounded-lg px-3 py-2 text-sm bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))]">
-                  {Object.keys(fwColor).map(f => <option key={f}>{f}</option>)}
-                </select>
+                <Select value={form.framework} onValueChange={v => setForm({...form, framework: v})}>
+                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {Object.keys(fwColor).map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <label className="block text-xs font-medium text-[hsl(var(--text-3))] mb-1">Policy Content *</label>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertTriangle, Plus, Search, Filter } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -121,15 +122,21 @@ export default function IncidentLog() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-[hsl(var(--text-3))] mb-1">Severity</label>
-                  <select value={form.severity} onChange={e => setForm({...form, severity: e.target.value as any})} className="w-full border border-[hsl(var(--border))] rounded-lg px-3 py-2 text-sm bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))]">
-                    {SEVERITIES.map(s => <option key={s}>{s}</option>)}
-                  </select>
+                  <Select value={form.severity} onValueChange={v => setForm({...form, severity: v as any})}>
+                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {SEVERITIES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-[hsl(var(--text-3))] mb-1">Assigned Team</label>
-                  <select value={form.team} onChange={e => setForm({...form, team: e.target.value})} className="w-full border border-[hsl(var(--border))] rounded-lg px-3 py-2 text-sm bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))]">
-                    {TEAMS.map(t => <option key={t}>{t}</option>)}
-                  </select>
+                  <Select value={form.team} onValueChange={v => setForm({...form, team: v})}>
+                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {TEAMS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div>

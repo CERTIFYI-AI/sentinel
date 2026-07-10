@@ -4,6 +4,7 @@
 // GenAIRisks — Generative AI-specific risk catalogue (NIST AI 600-1).
 
 import { useState, useMemo } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
@@ -528,18 +529,21 @@ export default function GenAIRisks() {
           <div className="space-y-4 mt-2">
             <div className="space-y-1">
               <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Linked Model *</label>
-              <select className="w-full text-sm border p-2" style={{ borderRadius: 0, borderColor: 'hsl(var(--border))', background: 'hsl(var(--bg-surface))', color: 'hsl(var(--text-1))' }}
-                value={wModel} onChange={e => setWModel(e.target.value)}>
-                <option value="">Select model...</option>
-                {['Loan Approval Assistant', 'Customer Service Chatbot', 'Credit Risk Scorer', 'Fraud Detection Engine', 'HR Screening System'].map(m => <option key={m}>{m}</option>)}
-              </select>
+              <Select value={wModel || undefined} onValueChange={setWModel}>
+                <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue placeholder="Select model..." /></SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  {['Loan Approval Assistant', 'Customer Service Chatbot', 'Credit Risk Scorer', 'Fraud Detection Engine', 'HR Screening System'].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1">
               <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>NIST 600-1 Risk Category *</label>
-              <select className="w-full text-sm border p-2" style={{ borderRadius: 0, borderColor: 'hsl(var(--border))', background: 'hsl(var(--bg-surface))', color: 'hsl(var(--text-1))' }}
-                value={wCategory} onChange={e => setWCategory(e.target.value)}>
-                {NIST_600_1_RISKS.map(r => <option key={r.num} value={r.name}>#{r.num} — {r.name}</option>)}
-              </select>
+              <Select value={wCategory} onValueChange={setWCategory}>
+                <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  {NIST_600_1_RISKS.map(r => <SelectItem key={r.num} value={r.name}>#{r.num} — {r.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1">
               <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Severity *</label>

@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useState, useMemo } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { UserList, Plus, MagnifyingGlass, Eye, PencilSimple, Trash, Export, X, Warning, CheckCircle, XCircle } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
@@ -141,14 +142,20 @@ export default function IGA() {
             <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-3))]" size={15} />
             <Input placeholder="Search identities..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9" />
           </div>
-          <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="h-9 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface))] text-sm px-2 text-[hsl(var(--text-2))]">
-            <option value="all">All Types</option>
-            {IDENTITY_TYPES.map(t => <option key={t}>{t}</option>)}
-          </select>
-          <select value={reviewFilter} onChange={e => setReviewFilter(e.target.value)} className="h-9 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--surface))] text-sm px-2 text-[hsl(var(--text-2))]">
-            <option value="all">All Review Statuses</option>
-            {REVIEW_STATUSES.map(r => <option key={r}>{r}</option>)}
-          </select>
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+            <SelectContent style={{ borderRadius: 0 }}>
+              <SelectItem value="all">All Types</SelectItem>
+              {IDENTITY_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={reviewFilter} onValueChange={setReviewFilter}>
+            <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+            <SelectContent style={{ borderRadius: 0 }}>
+              <SelectItem value="all">All Review Statuses</SelectItem>
+              {REVIEW_STATUSES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+            </SelectContent>
+          </Select>
           {(search || typeFilter !== "all" || reviewFilter !== "all") && (
             <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setTypeFilter("all"); setReviewFilter("all"); }} className="gap-1 text-[hsl(var(--text-3))]"><X size={14} />Clear all</Button>
           )}

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Leaf, Export, Plus, Eye, X, Warning, Lightbulb, ArrowDown, Trash } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, ReferenceLine } from 'recharts'
@@ -437,9 +438,12 @@ function CarbonLedgerInner({ entries: initialEntries, save, remove, chartTheme }
                 </div>
                 <div>
                   <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Period *</label>
-                  <select value={form.period} onChange={e => setForm(p => ({ ...p, period: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
-                    {['2026-Q1', '2026-Q2', '2025-Q4', '2025-Q3'].map(p => <option key={p}>{p}</option>)}
-                  </select>
+                  <Select value={form.period} onValueChange={v => setForm(p => ({ ...p, period: v }))}>
+                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {['2026-Q1', '2026-Q2', '2025-Q4', '2025-Q3'].map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Training Emissions (tCO₂e)</label>
@@ -459,10 +463,12 @@ function CarbonLedgerInner({ entries: initialEntries, save, remove, chartTheme }
                 </div>
                 <div>
                   <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Compute Provider *</label>
-                  <select value={form.computeProvider} onChange={e => setForm(p => ({ ...p, computeProvider: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
-                    <option value="">Select provider...</option>
-                    {['AWS us-east-1', 'AWS us-west-2', 'Azure East US', 'GCP us-central1', 'OpenAI API', 'On-premise'].map(p => <option key={p}>{p}</option>)}
-                  </select>
+                  <Select value={form.computeProvider || undefined} onValueChange={v => setForm(p => ({ ...p, computeProvider: v }))}>
+                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue placeholder="Select provider..." /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {['AWS us-east-1', 'AWS us-west-2', 'Azure East US', 'GCP us-central1', 'OpenAI API', 'On-premise'].map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Carbon Offset (tCO₂e)</label>

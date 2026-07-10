@@ -636,11 +636,12 @@ export default function AutomationStudio() {
                 className="w-full pl-9 pr-3 py-2 text-sm border bg-surface text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]"
                 style={{ borderColor: 'hsl(var(--border))' }} />
             </div>
-            <select value={catFilter} onChange={e => setCatFilter(e.target.value)}
-              className="px-3 py-2 text-sm border bg-surface text-[hsl(var(--text-1))] focus:outline-none"
-              style={{ borderColor: 'hsl(var(--border))' }}>
-              {categories.map(c => <option key={c}>{c}</option>)}
-            </select>
+            <Select value={catFilter} onValueChange={setCatFilter}>
+              <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+              <SelectContent style={{ borderRadius: 0 }}>
+                {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
             <span className="flex items-center text-xs ml-auto" style={{ color: 'hsl(var(--text-4))' }}>
               {filtered.length} of {workflows.length}
             </span>
