@@ -7,6 +7,7 @@ import {
   UserCircleCheck,
 } from '@phosphor-icons/react';
 import { Card, CardContent } from '../components/ui/card';
+import { PageHeader } from '../components/ui/PageHeader';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import {
@@ -177,12 +178,11 @@ export default function EthicsReporting() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Ethics & Whistleblower Reporting</h1>
-          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>Anonymous AI ethics reporting channel — EU AI Act Art.83 + corporate governance</p>
-        </div>
-        <div className="flex items-center gap-2">
+      <PageHeader
+        title="Ethics & Whistleblower Reporting"
+        subtitle="Anonymous AI ethics reporting channel — EU AI Act Art.83 + corporate governance"
+        actions={
+          <div className="flex items-center gap-2">
           <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => {
             if (!filtered.length) return;
             const keys = Object.keys(filtered[0]);
@@ -198,7 +198,8 @@ export default function EthicsReporting() {
             <UserCircleCheck size={15} /> Log Report
           </Button>
         </div>
-      </div>
+        }
+      />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricTile label="Total Reports" value={total} variant="default" />
