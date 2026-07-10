@@ -6,6 +6,7 @@ import {
   Database, Robot, Brain, Cpu, ChartLine,
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { PageHeader } from '../components/ui/PageHeader';
 import { useSettingsStore } from '../stores/settingsStore';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -187,26 +188,20 @@ export default function SupplyChainGraph() {
   return (
     <div className="space-y-4">
       {/* ── Header ── */}
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <TreeStructure size={22} style={{ color: 'hsl(var(--brand))' }} />
-            <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>AI Supply Chain Graph</h1>
-            <span className="px-2 py-0.5 text-xs font-bold" style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--brand))', border: '1px solid hsl(var(--s-ok-br))' }}>ENTERPRISE</span>
+      <PageHeader
+        title="AI Supply Chain Graph"
+        subtitle={`${orgName} · Interactive provenance graph — Data Sources → Datasets → Models → Agents → Use Cases`}
+        actions={
+          <div className="flex gap-2">
+            <button onClick={() => toast.success('AIBOM exported as CycloneDX JSON')} className="flex items-center gap-1.5 px-3 py-2 text-sm border" style={{ border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-2))' }}>
+              <Export size={14} /> Export AIBOM
+            </button>
+            <button onClick={() => toast.success('Graph exported as SVG')} className="flex items-center gap-1.5 px-3 py-2 text-sm border" style={{ border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-2))' }}>
+              <Export size={14} /> Export Graph
+            </button>
           </div>
-          <p className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>
-            {orgName} · Interactive provenance graph — Data Sources → Datasets → Models → Agents → Use Cases
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={() => toast.success('AIBOM exported as CycloneDX JSON')} className="flex items-center gap-1.5 px-3 py-2 text-sm border" style={{ border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-2))' }}>
-            <Export size={14} /> Export AIBOM
-          </button>
-          <button onClick={() => toast.success('Graph exported as SVG')} className="flex items-center gap-1.5 px-3 py-2 text-sm border" style={{ border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-2))' }}>
-            <Export size={14} /> Export Graph
-          </button>
-        </div>
-      </div>
+        }
+      />
 
       {/* ── Metric tiles ── */}
       <div className="grid grid-cols-4 gap-4">

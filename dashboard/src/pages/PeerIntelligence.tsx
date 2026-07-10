@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Card, CardContent } from '../components/ui/card';
+import { PageHeader } from '../components/ui/PageHeader';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
@@ -86,28 +87,21 @@ export default function PeerIntelligence() {
   return (
     <TooltipProvider>
       <div className="space-y-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Peer Intelligence Benchmarking</h1>
-              <Badge style={{ borderRadius: 0, fontSize: 9, background: 'hsl(var(--brand) / 0.12)', color: 'hsl(var(--brand))', border: '1px solid hsl(var(--brand) / 0.3)' }}>
-                NETWORK INTELLIGENCE
-              </Badge>
+        <PageHeader
+          title="Peer Intelligence Benchmarking"
+          subtitle={`${orgName} · Anonymous cross-sector AI risk benchmarking powered by 47 financial services peers`}
+          actions={
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 text-xs px-2 py-1" style={{ border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-4))' }}>
+                <Lock size={11} />
+                <span>All peer data fully anonymized · Zero PII shared</span>
+              </div>
+              <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
+                Export Benchmarks
+              </Button>
             </div>
-            <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>
-              {orgName} · Anonymous cross-sector AI risk benchmarking powered by 47 financial services peers
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 text-xs px-2 py-1" style={{ border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-4))' }}>
-              <Lock size={11} />
-              <span>All peer data fully anonymized · Zero PII shared</span>
-            </div>
-            <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-              Export Benchmarks
-            </Button>
-          </div>
-        </div>
+          }
+        />
 
         <div className="grid grid-cols-4 gap-3">
           {NET_STATS.map(s => <MetricTile key={s.label} label={s.label} value={s.value} icon={s.icon} highlight={s.label.includes('Percentile')} />)}

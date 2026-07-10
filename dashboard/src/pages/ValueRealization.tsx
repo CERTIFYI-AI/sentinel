@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent } from '../components/ui/card';
+import { PageHeader } from '../components/ui/PageHeader';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
@@ -191,23 +192,16 @@ export default function ValueRealization() {
   return (
     <TooltipProvider>
       <div className="space-y-5">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>ROI & Value Realization</h1>
-              <Badge style={{ borderRadius: 0, fontSize: 9, background: 'hsl(var(--brand) / 0.12)', color: 'hsl(var(--brand))', border: '1px solid hsl(var(--brand) / 0.3)' }}>
-                CFO DASHBOARD
-              </Badge>
-            </div>
-            <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>
-              {orgName} · Quantified business value: fine avoidance, automation savings, audit efficiency, and 3-year TCO vs. alternatives
-            </p>
-          </div>
-          <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
-            onClick={() => toast.success('CFO ROI report generating — 12-page PDF with methodology')}>
-            <FileText size={13} />Export CFO Report
-          </Button>
-        </div>
+        <PageHeader
+          title="ROI & Value Realization"
+          subtitle={`${orgName} · Quantified business value: fine avoidance, automation savings, audit efficiency, and 3-year TCO vs. alternatives`}
+          actions={
+            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
+              onClick={() => toast.success('CFO ROI report generating — 12-page PDF with methodology')}>
+              <FileText size={13} />Export CFO Report
+            </Button>
+          }
+        />
 
         {/* Hero ROI Strip */}
         <div className="grid grid-cols-4 gap-2">

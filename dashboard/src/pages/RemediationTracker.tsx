@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { PageHeader } from '../components/ui/PageHeader';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import {
@@ -93,13 +94,10 @@ export default function RemediationTracker() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Remediation Timeline Tracker</h1>
-          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>
-            {orgName} · Gantt-style timeline for remediation plans
-          </p>
-        </div>
+      <PageHeader
+        title="Remediation Timeline Tracker"
+        subtitle={`${orgName} · Gantt-style timeline for remediation plans`}
+        actions={
         <div className="flex items-center gap-2">
           {/* Legend */}
           <div className="flex items-center gap-4 mr-4">
@@ -129,7 +127,8 @@ export default function RemediationTracker() {
             <List size={14} /> List
           </Button>
         </div>
-      </div>
+        }
+      />
 
       {/* Filters */}
       <div className="flex items-center gap-3">
