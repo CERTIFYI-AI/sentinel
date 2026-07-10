@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -179,7 +180,7 @@ export default function ModelRiskCommittee() {
   const [mtgType, setMtgType] = useState('Quarterly Review');
   const [mtgAttendees, setMtgAttendees] = useState(MRC_MEMBERS.filter(m => m.quorum).map(m => m.name).join(', '));
   const [mtgAgenda, setMtgAgenda] = useState('');
-  const [members, setMembers] = useState(MRC_MEMBERS);
+  const { data: members, setData: setMembers } = useSupabaseTable('modelriskcommittee_table', MRC_MEMBERS);
   const [showAddMember, setShowAddMember] = useState(false);
   const [newMemberId, setNewMemberId] = useState('');
   const [newMemberRole, setNewMemberRole] = useState('Committee Member');

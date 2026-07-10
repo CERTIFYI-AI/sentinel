@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import {
   ShieldCheck, Eye, PencilSimple, Trash, Plus, Copy, Play, Pause,
   Warning, CheckCircle, ArrowUp, ArrowDown, TrendUp, TrendDown,
@@ -160,7 +161,7 @@ export default function TrustEngineDashboard() {
   const ct = useChartTheme();
   const { items: trustTraces, isLoading: tracesLoading, save: saveTrace, remove: removeTrace } = useTrustTraceData();
   // Use DB data if available, fallback to EXTENDED_POLICIES for display shape
-  const [policies, setPolicies] = useState<ExtPolicy[]>(EXTENDED_POLICIES);
+  const { data: policies, setData: setPolicies } = useSupabaseTable('trustenginedashboard_table', EXTENDED_POLICIES);
   const [selectedPolicy, setSelectedPolicy] = useState<ExtPolicy | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [breakdownOpen, setBreakdownOpen] = useState(false);

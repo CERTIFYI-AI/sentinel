@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { useCommitteesData } from '../../hooks/useCommitteesData';
 import { PageSkeleton } from '../../components/ui/PageSkeleton';
 import { toast } from 'sonner';
@@ -153,7 +154,7 @@ const VOTE_COLORS: Record<string, { bg: string; color: string }> = {
 export default function CommitteeManagement() {
   const { items: liveCommittees, isLoading, save, remove } = useCommitteesData();
   const [search, setSearch] = useState('');
-  const [committees, setCommittees] = useState<Committee[]>(SEED_COMMITTEES);
+  const { data: committees, setData: setCommittees } = useSupabaseTable('committeemanagement_table', SEED_COMMITTEES);
 
   // Sync Supabase data; keep SEED as fallback for nested fields
   useEffect(() => {

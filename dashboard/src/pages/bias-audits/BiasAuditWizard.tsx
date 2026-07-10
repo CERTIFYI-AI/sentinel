@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useState, useMemo } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import {
   Eye, Trash, Plus, Warning, ArrowRight, ArrowLeft,
   Play, ShieldCheck, Scales, Brain, Check, CaretRight,
@@ -90,7 +91,7 @@ const DIMENSIONS = ['Gender', 'Age', 'Race/Ethnicity', 'Disability', 'Geography'
 export default function BiasAuditWizard() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
-  const [audits, setAudits] = useState<any[]>(BIAS_AUDITS as any[]);
+  const { data: audits, setData: setAudits } = useSupabaseTable('biasauditwizard_table', BIAS_AUDITS as any[]);
   const [search, setSearch] = useState('');
   const [cfRunning, setCfRunning] = useState(false);
   const [cfDone, setCfDone] = useState(false);

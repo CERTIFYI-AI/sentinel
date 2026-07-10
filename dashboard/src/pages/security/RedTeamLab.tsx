@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import {
   Sword, Eye, PencilSimple, Trash, Plus, ShieldWarning, Fire,
   CheckCircle, Warning, Lightning, Target, Clock, Flask,
@@ -163,7 +164,7 @@ function MetricTile({ label, value, variant, icon, sub }: {
 export default function RedTeamLab() {
   const { orgName } = useSettingsStore();
   const { items: redTeamFindings, isLoading: rtLoading, error, saveRedTeamFindings, removeRedTeamFindings } = useRedTeamFindingsData();
-  const [exercises, setExercises] = useState<ExtExercise[]>(EXTENDED_EXERCISES);
+  const { data: exercises, setData: setExercises } = useSupabaseTable('redteamlab_table', EXTENDED_EXERCISES);
 
   React.useEffect(() => {
     if (redTeamFindings && redTeamFindings.length > 0) {

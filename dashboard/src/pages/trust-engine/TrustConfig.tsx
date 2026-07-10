@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { trustConfigCrud } from '@/hooks/queries/useTrustEngineCrud';
 import {
   FloppyDisk, ArrowCounterClockwise, Warning, ShieldCheck,
@@ -138,7 +139,7 @@ function severityBadge(severity: AlertThreshold['severity']) {
 
 export default function TrustConfig() {
   const { orgName } = useSettingsStore();
-  const [guardrails, setGuardrails] = useState<GuardrailConfig[]>(DEFAULT_GUARDRAILS);
+  const { data: guardrails, setData: setGuardrails } = useSupabaseTable('trustconfig_table', DEFAULT_GUARDRAILS);
   const [costLimits, setCostLimits] = useState<CostLimit[]>(DEFAULT_COST_LIMITS);
   const [fallbackChains, setFallbackChains] = useState<FallbackChain[]>(DEFAULT_FALLBACK_CHAINS);
   const [alertThresholds, setAlertThresholds] = useState<AlertThreshold[]>(DEFAULT_ALERT_THRESHOLDS);

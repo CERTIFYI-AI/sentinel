@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import {
   ArrowsClockwise, Eye, Warning, CheckCircle, Fire, Clock,
   Lightning, Export, MagnifyingGlass, Funnel, Info, Link, UserCircleGear, Archive,
@@ -85,7 +86,7 @@ const EXTENDED_ENTRIES: ExtFallback[] = FALLBACK_LOG.map(fb => {
 
 export default function FallbackLog() {
   const { orgName } = useSettingsStore();
-  const [entries, setEntries] = useState<ExtFallback[]>(EXTENDED_ENTRIES);
+  const { data: entries, setData: setEntries } = useSupabaseTable('fallbacklog_table', EXTENDED_ENTRIES);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [selectedEntry, setSelectedEntry] = useState<ExtFallback | null>(null);

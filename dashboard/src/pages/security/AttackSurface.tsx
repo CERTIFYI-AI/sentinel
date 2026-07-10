@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import {
   Globe, Eye, PencilSimple, Trash, Plus, Scan, Fire,
   CheckCircle, Warning, Clock, Target, ShieldWarning,
@@ -103,7 +104,7 @@ function ChartTooltipContent({ active, payload, label }: any) {
 export default function AttackSurface() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
-  const [assets, setAssets] = useState<AttackSurfaceAsset[]>([...ATTACK_SURFACE]);
+  const { data: assets, setData: setAssets } = useSupabaseTable('attacksurface_table', [...ATTACK_SURFACE]);
   const [search, setSearch] = useState('');
   const [filterExposure, setFilterExposure] = useState<string>('all');
   const [selected, setSelected] = useState<AttackSurfaceAsset | null>(null);

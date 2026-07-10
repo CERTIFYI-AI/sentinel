@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
@@ -49,7 +50,7 @@ export default function RegRadar() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
 
-  const [regulations, setRegulations] = useState<Regulation[]>(REGULATIONS);
+  const { data: regulations, setData: setRegulations } = useSupabaseTable('regradar_table', REGULATIONS);
   const [filterImpact, setFilterImpact] = useState('all');
   const [filterJurisdiction, setFilterJurisdiction] = useState('all');
 

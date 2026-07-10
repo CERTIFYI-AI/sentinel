@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import {
   Eye, DownloadSimple, Clock, ChartBar, ShieldCheck,
   Warning, Siren, Scales, Brain, Gavel, ChartLine,
@@ -198,7 +199,7 @@ export default function Reporting() {
   const [scheduleTime, setScheduleTime] = useState('09:00');
 
   // Scheduled reports state
-  const [scheduledReports, setScheduledReports] = useState(SCHEDULED_REPORTS);
+  const { data: scheduledReports, setData: setScheduledReports } = useSupabaseTable('reporting_table', SCHEDULED_REPORTS);
 
   // ── Metrics ───────────────────────────────────────────────────────────────
   const generatedThisMonth = GENERATION_HISTORY.filter(g => {

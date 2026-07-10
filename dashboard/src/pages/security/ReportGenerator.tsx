@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -95,7 +96,7 @@ export default function ReportGenerator() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
 
-  const [templates, setTemplates] = useState<ReportTemplate[]>(REPORT_TEMPLATES);
+  const { data: templates, setData: setTemplates } = useSupabaseTable('reportgenerator_table', REPORT_TEMPLATES);
   const [history, setHistory] = useState<ReportHistory[]>(REPORT_HISTORY);
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');

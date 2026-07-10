@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { useTaskData } from '../hooks/useTaskData';
 import { PageSkeleton } from '../components/ui/PageSkeleton';
 import { PageHeader } from '../components/ui/PageHeader';
@@ -381,7 +382,7 @@ const emptyForm = {
 
 export default function Tasks() {
   const { tasks: liveTasks, isLoading, save, remove } = useTaskData();
-  const [tasks, setTasks] = useState<Task[]>(TASKS);
+  const { data: tasks, setData: setTasks } = useSupabaseTable('tasks_table', TASKS);
 
   useEffect(() => {
     if (liveTasks.length > 0) setTasks(liveTasks as any[])

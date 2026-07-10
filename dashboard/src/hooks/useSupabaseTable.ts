@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
-export function useSupabaseTable<T extends { id?: string }>(tableName: string, initialSeed: T[] = []) {
+export function useSupabaseTable<T = any>(tableName: string, initialSeed: T[] = []) {
   const [data, setData] = useState<T[]>(initialSeed);
   const [isLoading, setIsLoading] = useState(false);
   

@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import {
   Eye, PencilSimple, Trash, Plus, ClipboardText,
   Warning, CheckCircle, Info, ArrowRight, ArrowLeft,
@@ -84,7 +85,7 @@ function scoreBg(score: number): string {
 // ── Main Component ───────────────────────────────────────────────────────────
 
 export default function ConformityAssessment() {
-  const [assessments, setAssessments] = useState<CA[]>(CONFORMITY_ASSESSMENTS as CA[]);
+  const { data: assessments, setData: setAssessments } = useSupabaseTable('conformityassessment_table', CONFORMITY_ASSESSMENTS as CA[]);
   const [selectedCA, setSelectedCA] = useState<CA | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [activeStep, setActiveStep] = useState(0);

@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
@@ -58,7 +59,7 @@ function mockVersionHistory(e: Evidence): VersionEntry[] {
 export default function EvidenceHub() {
   const { orgName } = useSettingsStore();
 
-  const [evidence, setEvidence] = useState<Evidence[]>(EVIDENCE);
+  const { data: evidence, setData: setEvidence } = useSupabaseTable('evidencehub_table', EVIDENCE);
   const [tab, setTab] = useState('all');
   const [search, setSearch] = useState('');
   const [syncingAll, setSyncingAll] = useState(false);

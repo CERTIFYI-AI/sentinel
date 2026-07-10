@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -80,7 +81,7 @@ export default function PolicyFirewall() {
   const ct = useChartTheme();
 
   const { data: supabaseRules = [] } = useGuardrails()
-  const [rules, setRules] = useState<FirewallRule[]>(MOCK_RULES);
+  const { data: rules, setData: setRules } = useSupabaseTable('policyfirewall_table', MOCK_RULES);
   useEffect(() => { if (supabaseRules.length > 0) setRules(supabaseRules as any) }, [supabaseRules]);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('all');

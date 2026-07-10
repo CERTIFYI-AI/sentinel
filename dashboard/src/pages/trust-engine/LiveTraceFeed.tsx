@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import {
   Eye, Play, Pause, Warning, Lightning, Clock,
   CheckCircle, ShieldCheck, MagnifyingGlass, Funnel,
@@ -211,7 +212,7 @@ function SpanWaterfall({ trace }: { trace: Trace }) {
 
 export default function LiveTraceFeed() {
   const { orgName } = useSettingsStore();
-  const [traces, setTraces] = useState<Trace[]>([...TRACES]);
+  const { data: traces, setData: setTraces } = useSupabaseTable('livetracefeed_table', [...TRACES]);
   const [paused, setPaused] = useState(false);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');

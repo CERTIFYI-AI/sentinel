@@ -1,5 +1,6 @@
 import { useModelsData } from "@/hooks/useModelsData";
 import { useState, useCallback, useEffect } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { useNavigate } from 'react-router-dom';
 import {
   Eye, PencilSimple, Trash, Plus, Brain, CheckCircle, Warning,
@@ -182,7 +183,7 @@ export default function ModelInventoryPage() {
   const ct = useChartTheme();
   const navigate = useNavigate();
 
-  const [models, setModels] = useState<Model[]>(MODELS);
+  const { data: models, setData: setModels } = useSupabaseTable('modelinventory_table', MODELS);
   const { models: supabaseModels, isLoading: isLoadingModels } = useModelsData();
   useEffect(() => { if (supabaseModels.length > 0) setModels(supabaseModels.map(recordToModel)); }, [supabaseModels]);
   const [search, setSearch] = useState('');

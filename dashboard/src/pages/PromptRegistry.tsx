@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, type ReactNode } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { toast } from 'sonner';
 import {
   ChatTeardropText, Plus, MagnifyingGlass, PencilSimple, Trash,
@@ -641,7 +642,7 @@ function EditSheet({ record, open, onClose, onSave }: {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function PromptRegistry() {
-  const [records, setRecords] = useState<PromptRecord[]>(PROMPT_REGISTRY);
+  const { data: records, setData: setRecords } = useSupabaseTable('promptregistry_table', PROMPT_REGISTRY);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<PromptStatus | 'all'>('all');
   const [filterCategory, setFilterCategory] = useState<PromptCategory | 'all'>('all');

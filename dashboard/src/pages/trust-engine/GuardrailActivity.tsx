@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import {
   Eye, PencilSimple, Export, Funnel, MagnifyingGlass, Flag,
   Warning, GearSix, CheckCircle, ArrowRight, Lightning, Plus,
@@ -125,7 +126,7 @@ function MetricTile({ label, value, variant, icon, sub }: {
 export default function GuardrailActivity() {
   const { orgName } = useSettingsStore();
   const { items: firewallRules, isLoading: firewallLoading, savePolicyFirewall, removePolicyFirewall } = usePolicyFirewallData();
-  const [events, setEvents] = useState<ExtGuardrailEvent[]>(EXTENDED_EVENTS);
+  const { data: events, setData: setEvents } = useSupabaseTable('guardrailactivity_table', EXTENDED_EVENTS);
   const [search, setSearch] = useState('');
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
   const [filterAction, setFilterAction] = useState<string>('all');

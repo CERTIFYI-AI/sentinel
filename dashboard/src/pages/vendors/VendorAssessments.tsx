@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { useNavigate } from 'react-router-dom';
 import {
   ClipboardText, Plus, MagnifyingGlass, Funnel, Eye, Export,
@@ -80,7 +81,7 @@ const BLANK_FORM: CreateForm = {
 export default function VendorAssessments() {
   const { orgName } = useSettingsStore();
   const navigate = useNavigate();
-  const [assessments, setAssessments] = useState<VendorAssessment[]>(VENDOR_ASSESSMENTS);
+  const { data: assessments, setData: setAssessments } = useSupabaseTable('vendorassessments_table', VENDOR_ASSESSMENTS);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');

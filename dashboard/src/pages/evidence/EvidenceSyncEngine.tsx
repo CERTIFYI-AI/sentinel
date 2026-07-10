@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import {
   Eye, PencilSimple, Trash, Plus, ArrowsClockwise, Warning,
   Upload, CaretRight, CaretDown, Link as LinkIcon,
@@ -85,7 +86,7 @@ function MetricTile({ label, value, variant }: {
 // ═════════════════════════════════════════════════════════════════════════════
 export default function EvidenceSyncEngine() {
   const { orgName } = useSettingsStore();
-  const [evidence, setEvidence] = useState<Evidence[]>(EVIDENCE);
+  const { data: evidence, setData: setEvidence } = useSupabaseTable('evidencesyncengine_table', EVIDENCE);
   const [search, setSearch] = useState('');
   const [gapPanelOpen, setGapPanelOpen] = useState(true);
 

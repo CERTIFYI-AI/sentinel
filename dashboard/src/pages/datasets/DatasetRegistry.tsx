@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import {
   Eye, PencilSimple, Trash, Plus, Database, MagnifyingGlass, Funnel,
   Warning, CheckCircle, ShieldWarning, Lock, CalendarBlank, ListChecks,
@@ -41,7 +42,7 @@ function daysSinceAudit(lastAudit: string): number {
 
 export default function DatasetRegistry() {
   const { orgName } = useSettingsStore();
-  const [datasets, setDatasets] = useState<Dataset[]>(DATASETS);
+  const { data: datasets, setData: setDatasets } = useSupabaseTable('datasetregistry_table', DATASETS);
   const [search, setSearch] = useState('');
   const [sensitivityFilter, setSensitivityFilter] = useState('all');
   const [selectedDataset, setSelectedDataset] = useState<Dataset | null>(null);

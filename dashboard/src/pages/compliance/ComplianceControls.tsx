@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
@@ -42,7 +43,7 @@ export default function ComplianceControls() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
 
-  const [controls, setControls] = useState<Control[]>(LIBRARY_CONTROLS);
+  const { data: controls, setData: setControls } = useSupabaseTable('compliancecontrols_table', LIBRARY_CONTROLS);
   const [search, setSearch] = useState('');
   const [filterFramework, setFilterFramework] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');

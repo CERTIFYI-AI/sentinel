@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import {
   Eye, PencilSimple, Trash, Plus, MagnifyingGlass, Briefcase,
   Warning, CheckCircle, Info, Clock, ArrowsClockwise, Prohibit,
@@ -110,7 +111,7 @@ const REG_TAG_ROWS = [
 
 export default function UseCasePage() {
   const navigate = useNavigate();
-  const [useCases, setUseCases] = useState<UseCase[]>(USE_CASES as UseCase[]);
+  const { data: useCases, setData: setUseCases } = useSupabaseTable('usecase_table', USE_CASES as UseCase[]);
   const [activeTab, setActiveTab] = useState('All');
   const [search, setSearch] = useState('');
   const [riskFilter, setRiskFilter] = useState('all');

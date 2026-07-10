@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
 import { useState, useCallback } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -111,7 +112,7 @@ export default function EvidenceVault() {
   const { orgName } = useSettingsStore();
   const { evidence, isLoading, save: saveEvidence, remove: removeEvidence } = useEvidenceData();
   const [_localEvidence, _setLocalEvidence] = useState<Evidence[]>([]);
-  const [chain, setChain] = useState<ChainEntry[]>(CHAIN_ENTRIES);
+  const { data: chain, setData: setChain } = useSupabaseTable('evidencevault_table', CHAIN_ENTRIES);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [viewItem, setViewItem] = useState<Evidence | null>(null);

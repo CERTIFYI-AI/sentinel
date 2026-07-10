@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -120,7 +121,7 @@ const STATUS_ICON: Record<string, React.ElementType> = {
 
 export default function EvalTechniques() {
   const { orgName } = useSettingsStore();
-  const [techniques, setTechniques] = useState<Technique[]>(TECHNIQUES_SEED);
+  const { data: techniques, setData: setTechniques } = useSupabaseTable('evaltechniques_table', TECHNIQUES_SEED);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
 

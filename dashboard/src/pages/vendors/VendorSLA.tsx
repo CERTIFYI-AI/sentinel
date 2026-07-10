@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { useNavigate } from 'react-router-dom';
 import {
   Gauge, Plus, MagnifyingGlass, Funnel, Eye, Export, Trash,
@@ -64,7 +65,7 @@ const BLANK_FORM: CreateForm = {
 export default function VendorSLA() {
   const { orgName } = useSettingsStore();
   const navigate = useNavigate();
-  const [slas, setSlas] = useState<VendorSLARecord[]>(VENDOR_SLAS);
+  const { data: slas, setData: setSlas } = useSupabaseTable('vendorsla_table', VENDOR_SLAS);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');

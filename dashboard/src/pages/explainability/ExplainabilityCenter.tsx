@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import {
   Eye, PencilSimple, Trash, Plus, MagnifyingGlass, Brain,
   Warning, CheckCircle, Info, Lightning, ArrowRight,
@@ -118,7 +119,7 @@ function ChartTooltipContent({ active, payload, label }: any) {
 
 export default function ExplainabilityCenter() {
   const ct = useChartTheme();
-  const [reports, setReports] = useState(EXPLAINABILITY_REPORTS);
+  const { data: reports, setData: setReports } = useSupabaseTable('explainabilitycenter_table', EXPLAINABILITY_REPORTS);
   const [selectedModel, setSelectedModel] = useState(EXPLAINABILITY_REPORTS[0]?.modelId || '');
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState<typeof EXPLAINABILITY_REPORTS[0] | null>(null);

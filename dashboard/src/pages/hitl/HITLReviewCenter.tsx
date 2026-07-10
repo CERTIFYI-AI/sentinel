@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import {
   Eye, MagnifyingGlass, Funnel, Clock, Warning, CheckCircle,
   XCircle, Queue, Plus, Info, ArrowRight, User, Flag, UsersThree,
@@ -86,7 +87,7 @@ function slaDisplay(item: HITLItem) {
 
 export default function HITLReviewCenter() {
   const { orgName } = useSettingsStore();
-  const [items, setItems] = useState<HITLItem[]>(HITL_ITEMS);
+  const { data: items, setData: setItems } = useSupabaseTable('hitlreviewcenter_table', HITL_ITEMS);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [entityTypeFilter, setEntityTypeFilter] = useState('all');

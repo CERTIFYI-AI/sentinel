@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -47,7 +48,7 @@ export default function QualityMetrics() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
 
-  const [models, setModels] = useState<Model[]>(MODELS);
+  const { data: models, setData: setModels } = useSupabaseTable('qualitymetrics_table', MODELS);
   const [search, setSearch] = useState('');
   const [filterDrift, setFilterDrift] = useState('all');
 
