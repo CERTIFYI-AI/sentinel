@@ -6,6 +6,7 @@ import {
   Plus, Eye, Trash, MagnifyingGlass, ArrowRight, DownloadSimple, Globe,
 } from '@phosphor-icons/react';
 import { Card, CardContent } from '../components/ui/card';
+import { PageHeader } from '../components/ui/PageHeader';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import {
@@ -162,15 +163,15 @@ export default function TransparencyReports() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>AI Transparency Reports</h1>
-          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>Public transparency disclosures per EU AI Act Articles 13 and 52</p>
-        </div>
-        <Button onClick={() => setWizardOpen(true)} style={{ borderRadius: 0 }}>
-          <Plus size={15} /> Generate Report
-        </Button>
-      </div>
+      <PageHeader
+        title="AI Transparency Reports"
+        subtitle="Public transparency disclosures per EU AI Act Articles 13 and 52"
+        actions={
+          <Button onClick={() => setWizardOpen(true)} style={{ borderRadius: 0 }}>
+            <Plus size={15} /> Generate Report
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricTile label="Total Reports" value={total} variant="default" />
