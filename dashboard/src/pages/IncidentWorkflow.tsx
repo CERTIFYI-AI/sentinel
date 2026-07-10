@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { PageHeader } from '../components/ui/PageHeader';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
@@ -297,19 +298,18 @@ export default function IncidentWorkflow() {
     <div>
       <Breadcrumbs />
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'hsl(var(--text-1))', marginBottom: 4 }}>Incident Workflow</h1>
-          <p style={{ fontSize: 13, color: 'hsl(var(--text-3))' }}>AI incident response — ISO 27001 Annex A.16 / NIST IR workflow state machine</p>
-        </div>
-        <button
-          onClick={() => setShowCreate(true)}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'hsl(var(--brand))', border: 'none', cursor: 'pointer', color: 'hsl(var(--bg-surface))', fontSize: 13, fontWeight: 600 }}
-        >
-          <Plus size={14} /> Report Incident
-        </button>
-      </div>
+      <PageHeader
+        title="Incident Workflow"
+        subtitle="AI incident response — ISO 27001 Annex A.16 / NIST IR workflow state machine"
+        actions={
+          <button
+            onClick={() => setShowCreate(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'hsl(var(--brand))', border: 'none', cursor: 'pointer', color: 'hsl(var(--bg-surface))', fontSize: 13, fontWeight: 600 }}
+          >
+            <Plus size={14} /> Report Incident
+          </button>
+        }
+      />
 
       {/* KPI tiles */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>

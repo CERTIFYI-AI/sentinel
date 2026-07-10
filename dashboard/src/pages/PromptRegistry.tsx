@@ -8,6 +8,7 @@ import {
   ShieldCheck, Scales, Lock, Sparkle, Copy,
 } from '@phosphor-icons/react';
 import { Card, CardContent } from '../components/ui/card';
+import { PageHeader } from '../components/ui/PageHeader';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import Breadcrumbs from '../components/Breadcrumbs';
@@ -738,24 +739,17 @@ export default function PromptRegistry() {
       {/* Page Header */}
       <div className="px-6 py-3 border-b border-[hsl(var(--border))] bg-surface flex-shrink-0">
         <Breadcrumbs className="mb-2" />
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-[hsl(var(--brand-subtle))] flex items-center justify-center">
-              <ChatTeardropText size={16} className="text-[hsl(var(--brand))]" weight="fill" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold text-[hsl(var(--text-1))]">Prompt Registry</h1>
-              <p className="text-xs text-[hsl(var(--text-4))]">
-                Version-controlled governance for system prompts · {records.length} registered
-              </p>
-            </div>
-          </div>
-          <Button size="sm" onClick={openNew}
-            style={{ background: 'hsl(var(--brand))', color: 'white' }}
-            className="flex items-center gap-2">
-            <Plus size={14} weight="bold" /> New Prompt
-          </Button>
-        </div>
+        <PageHeader
+          title="Prompt Registry"
+          subtitle={`Version-controlled governance for system prompts · ${records.length} registered`}
+          actions={
+            <Button size="sm" onClick={openNew}
+              style={{ background: 'hsl(var(--brand))', color: 'white' }}
+              className="flex items-center gap-2">
+              <Plus size={14} weight="bold" /> New Prompt
+            </Button>
+          }
+        />
       </div>
 
       {/* Body */}

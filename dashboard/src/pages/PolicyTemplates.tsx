@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog'
 import { Button } from '../components/ui/button'
+import { PageHeader } from '../components/ui/PageHeader'
 
 
 const TEMPLATES = [
@@ -75,13 +76,13 @@ export default function PolicyTemplates() {
 
   return (
     <div className="flex flex-col gap-4 p-4 bg-background text-foreground h-full">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold">Policy Templates</h1>
-          <p className="text-sm text-muted-foreground">{filtered.length} templates across EU AI Act, NIST AI RMF, ISO 42001 and more</p>
-        </div>
-        <button onClick={() => toast('Export all', { description: 'Exporting all templates...' })} className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90">Export All</button>
-      </div>
+      <PageHeader
+        title="Policy Templates"
+        subtitle={`${filtered.length} templates across EU AI Act, NIST AI RMF, ISO 42001 and more`}
+        actions={
+          <button onClick={() => toast('Export all', { description: 'Exporting all templates...' })} className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90">Export All</button>
+        }
+      />
       <div className="flex flex-wrap gap-2">
         <input
           className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary w-64"
