@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FileText, Plus, Edit3, Save, X, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { PageHeader } from "../components/ui/PageHeader";
 
 interface Policy { id: string; name: string; framework: string; version: string; updated: string; content: string; status: "active" | "draft" | "archived"; }
 
@@ -58,18 +59,15 @@ export default function PolicyEditor() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-[hsl(var(--s-in-bg))] rounded-lg"><FileText size={20} className="text-[hsl(var(--s-in-tx))]" /></div>
-          <div>
-            <h1 className="text-xl font-bold text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))]">Policy Editor</h1>
-            <p className="text-sm text-[hsl(var(--text-3))]">Create and manage governance policies across all compliance frameworks</p>
-          </div>
-        </div>
-        <button onClick={() => setShowNew(true)} className="flex items-center gap-2 bg-[hsl(var(--s-ok-tx))] hover:bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))] px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-          <Plus size={14} /> New Policy
-        </button>
-      </div>
+      <PageHeader
+        title="Policy Editor"
+        subtitle="Create and manage governance policies across all compliance frameworks"
+        actions={
+          <button onClick={() => setShowNew(true)} className="flex items-center gap-2 bg-[hsl(var(--s-ok-tx))] hover:bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))] px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+            <Plus size={14} /> New Policy
+          </button>
+        }
+      />
 
       {/* New Policy Modal */}
       {showNew && (

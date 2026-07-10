@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { BarChart3, ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { PageHeader } from "../components/ui/PageHeader";
 
 interface BenchmarkResult {
   model: string;
@@ -89,16 +90,13 @@ export default function Benchmark() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-[hsl(var(--s-in-bg))] rounded-lg"><BarChart3 size={20} className="text-[hsl(var(--s-in-tx))]" /></div>
-          <div>
-            <h1 className="text-xl font-bold text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))]">Benchmarks</h1>
-            <p className="text-sm text-[hsl(var(--text-3))]">AI safety, accuracy, and fairness benchmarking across all registered models</p>
-          </div>
-        </div>
-        <button className="bg-[hsl(var(--s-ok-tx))] hover:bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))] px-4 py-2 rounded-lg text-sm font-medium transition-colors">Run Benchmark Suite</button>
-      </div>
+      <PageHeader
+        title="Benchmarks"
+        subtitle="AI safety, accuracy, and fairness benchmarking across all registered models"
+        actions={
+          <button className="bg-[hsl(var(--s-ok-tx))] hover:bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))] px-4 py-2 rounded-lg text-sm font-medium transition-colors">Run Benchmark Suite</button>
+        }
+      />
 
       {/* Model Selector */}
       <div className="flex gap-3 overflow-x-auto pb-1">

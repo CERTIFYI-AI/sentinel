@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
+import { PageHeader } from '../components/ui/PageHeader';
 import { Input } from '../components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
@@ -138,18 +139,15 @@ export default function Frameworks() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Compliance Frameworks</h1>
-          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>
-            {orgName} · {frameworks.length} active frameworks
-          </p>
-        </div>
-        <Button size="sm" onClick={() => { setFormData(EMPTY_FRAMEWORK); setCreateOpen(true); }}>
-          <Plus size={14} /> Add Framework
-        </Button>
-      </div>
+      <PageHeader
+        title="Compliance Frameworks"
+        subtitle={`${orgName} · ${frameworks.length} active frameworks`}
+        actions={
+          <Button size="sm" onClick={() => { setFormData(EMPTY_FRAMEWORK); setCreateOpen(true); }}>
+            <Plus size={14} /> Add Framework
+          </Button>
+        }
+      />
 
       {/* Color threshold legend */}
       <div className="flex items-center gap-6 p-3" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))' }}>
