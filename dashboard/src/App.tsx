@@ -35,7 +35,6 @@ const ControlDrift = lazy(() => import('./pages/compliance/ControlDrift'));
 const FrameworkCatalog = lazy(() => import('./pages/compliance/FrameworkCatalog'));
 const EvidenceHub = lazy(() => import('./pages/compliance/EvidenceHub'));
 const ComplianceDashboard = lazy(() => import('./pages/ComplianceDashboard'));
-const PolicyManagement = lazy(() => import('./pages/PolicyManagement'));
 const RiskMatrix = lazy(() => import('./pages/RiskMatrix'));
 const Overview = lazy(() => import('./pages/Overview'));
 const Policies = lazy(() => import('./pages/Policies'));
@@ -91,7 +90,6 @@ const AiAdvisor = lazy(() => import('./pages/AiAdvisor'))
 const PolicyTemplates = lazy(() => import('./pages/PolicyTemplates'))
 const BiasAuditWizard = lazy(() => import('./pages/bias-audits/BiasAuditWizard'));
 const BiasAuditResults = lazy(() => import('./pages/bias-audits/BiasAuditResults'));
-const ControlsList = lazy(() => import('./pages/Controls'));
 const ControlDetail = lazy(() => import('./pages/controls/ControlDetail'));
 const DatasetRegistry = lazy(() => import('./pages/datasets/DatasetRegistry'));
 const DatasetDetail = lazy(() => import('./pages/datasets/DatasetDetail'));
@@ -108,8 +106,6 @@ const ExplainabilityCenterNew = lazy(() => import('./pages/explainability/Explai
 const ConformityAssessmentNew = lazy(() => import('./pages/conformity/ConformityAssessment'));
 const DataGovernancePage = lazy(() => import('./pages/data-governance/DataGovernancePage'));
 const StakeholderNotifications = lazy(() => import('./pages/notifications/StakeholderNotifications'));
-const ExplainabilityCenter = lazy(() => import('./pages/ExplainabilityCenter'));
-const ConformityAssessment = lazy(() => import('./pages/ConformityAssessment'));
 const IncidentWorkflow = lazy(() => import('./pages/IncidentWorkflow'));
 const RiskDetail = lazy(() => import('./pages/risk/RiskDetail'));
 const ModelDetail = lazy(() => import('./pages/models/ModelDetail'));
