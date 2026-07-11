@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useState, useMemo } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { toast } from 'sonner';
 import {
@@ -462,10 +463,12 @@ export default function DPIAPage() {
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Legal Basis *</label>
-                <select className="w-full text-sm border p-2" style={{ borderRadius: 0, borderColor: 'hsl(var(--border))', background: 'hsl(var(--bg-surface))', color: 'hsl(var(--text-1))' }}
-                  value={wLegalBasis} onChange={e => setWLegalBasis(e.target.value)}>
-                  {['Art.6(1)(a) — Consent', 'Art.6(1)(b) — Contract', 'Art.6(1)(c) — Legal obligation', 'Art.6(1)(f) — Legitimate interests'].map(b => <option key={b}>{b}</option>)}
-                </select>
+                <Select value={wLegalBasis} onValueChange={setWLegalBasis}>
+                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {['Art.6(1)(a) — Consent', 'Art.6(1)(b) — Contract', 'Art.6(1)(c) — Legal obligation', 'Art.6(1)(f) — Legitimate interests'].map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Due Date</label>
@@ -501,10 +504,12 @@ export default function DPIAPage() {
               <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-2))' }}>Step 4 — DPO Consultation</p>
               <div className="space-y-1">
                 <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Assign DPO *</label>
-                <select className="w-full text-sm border p-2" style={{ borderRadius: 0, borderColor: 'hsl(var(--border))', background: 'hsl(var(--bg-surface))', color: 'hsl(var(--text-1))' }}
-                  value={wDpo} onChange={e => setWDpo(e.target.value)}>
-                  {['James Patel', 'Sarah Chen', 'Emma Wilson'].map(u => <option key={u}>{u}</option>)}
-                </select>
+                <Select value={wDpo} onValueChange={setWDpo}>
+                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {['James Patel', 'Sarah Chen', 'Emma Wilson'].map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>DPO Opinion</label>

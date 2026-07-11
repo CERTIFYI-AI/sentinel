@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { exportCsv } from '@/lib/exportUtils';
 import { FlowArrow, Plus, Eye, X, Trash, PencilSimple, Export, CheckCircle, Clock, Warning, MagnifyingGlass, ArrowRight, Pause, Play, User, ClipboardText } from '@phosphor-icons/react'
 import { toast } from 'sonner'
@@ -291,9 +292,12 @@ export default function ApprovalWorkflows() {
           <MagnifyingGlass size={14} className="text-[hsl(var(--text-4))] flex-shrink-0" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search workflows…" className="flex-1 py-2 text-sm bg-transparent text-[hsl(var(--text-1))] placeholder-[hsl(var(--text-4))] focus:outline-none" />
         </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
-          {['All', 'Active', 'Paused', 'Disabled'].map(s => <option key={s}>{s}</option>)}
-        </select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            {['All', 'Active', 'Paused', 'Disabled'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Workflow Cards */}
@@ -468,14 +472,20 @@ export default function ApprovalWorkflows() {
                   <input value={form.name} onChange={e => sf('name', e.target.value)} className={INPUT_CLS} placeholder="e.g. Model Deployment Approval" />
                 </Field>
                 <Field label="Type">
-                  <select value={form.type} onChange={e => sf('type', e.target.value as WFType)} className={INPUT_CLS}>
-                    {['Model Release', 'Policy Update', 'Vendor', 'Exception', 'Access Control', 'Incident', 'Audit Finding', 'Risk Acceptance'].map(v => <option key={v}>{v}</option>)}
-                  </select>
+                  <Select value={form.type} onValueChange={v => sf('type', v as WFType)}>
+                    <SelectTrigger className={INPUT_CLS}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {['Model Release', 'Policy Update', 'Vendor', 'Exception', 'Access Control', 'Incident', 'Audit Finding', 'Risk Acceptance'].map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </Field>
                 <Field label="Status">
-                  <select value={form.status} onChange={e => sf('status', e.target.value as WFStatus)} className={INPUT_CLS}>
-                    {['Active', 'Paused', 'Disabled'].map(v => <option key={v}>{v}</option>)}
-                  </select>
+                  <Select value={form.status} onValueChange={v => sf('status', v as WFStatus)}>
+                    <SelectTrigger className={INPUT_CLS}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {['Active', 'Paused', 'Disabled'].map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </Field>
                 <Field label="SLA">
                   <input value={form.sla} onChange={e => sf('sla', e.target.value)} className={INPUT_CLS} placeholder="e.g. 48h" />

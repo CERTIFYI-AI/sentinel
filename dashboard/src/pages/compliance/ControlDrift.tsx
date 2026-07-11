@@ -11,6 +11,7 @@
 // 5-run trend from the seeded library so the capability is fully demonstrable.
 
 import { useMemo, useState } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/button';
 import { CONTROLS, FRAMEWORKS, FRAMEWORK_NAME, frameworksImpactedBy, type ControlDef, type Severity } from '@/data/complianceLibrary';
@@ -149,14 +150,20 @@ export default function ControlDrift() {
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search controls…"
             className="w-full pl-8 pr-2 py-1.5 text-sm" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))' }} />
         </div>
-        <select value={fw} onChange={e => setFw(e.target.value)} className="text-sm px-2 py-1.5" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-2))' }}>
-          <option value="all">All frameworks</option>
-          {FRAMEWORKS.map(f => <option key={f.code} value={f.code}>{f.name}</option>)}
-        </select>
-        <select value={sev} onChange={e => setSev(e.target.value)} className="text-sm px-2 py-1.5" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-2))' }}>
-          <option value="all">All drift levels</option>
-          {(['CRITICAL', 'WARNING', 'WATCH', 'NONE'] as DriftSeverity[]).map(d => <option key={d} value={d}>{DRIFT_STYLE[d].label}</option>)}
-        </select>
+        <Select value={fw} onValueChange={setFw}>
+          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            <SelectItem value="all">All frameworks</SelectItem>
+            {FRAMEWORKS.map(f => <SelectItem key={f.code} value={f.code}>{f.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={sev} onValueChange={setSev}>
+          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            <SelectItem value="all">All drift levels</SelectItem>
+            {(['CRITICAL', 'WARNING', 'WATCH', 'NONE'] as DriftSeverity[]).map(d => <SelectItem key={d} value={d}>{DRIFT_STYLE[d].label}</SelectItem>)}
+          </SelectContent>
+        </Select>
         <span className="text-xs font-mono ml-auto" style={{ color: 'hsl(var(--text-4))' }}>{filtered.length}/{rows.length}</span>
       </div>
 

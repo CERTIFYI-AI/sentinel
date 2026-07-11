@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ChartLine, Export, X, ArrowRight, Warning, Plus, MagnifyingGlass, Pencil, Trash, Database, ArrowsDownUp, GitBranch } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
@@ -180,9 +181,12 @@ export default function DataLineage() {
           <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search datasets…" className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]" />
         </div>
-        <select value={classFilter} onChange={e => setClassFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
-          {['All', 'Public', 'Internal', 'Confidential', 'Restricted'].map(c => <option key={c}>{c}</option>)}
-        </select>
+        <Select value={classFilter} onValueChange={setClassFilter}>
+          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            {['All', 'Public', 'Internal', 'Confidential', 'Restricted'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="space-y-3">
@@ -442,15 +446,21 @@ export default function DataLineage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Ingestion Method</label>
-                  <select value={form.ingestionMethod} onChange={e => setForm(p => ({ ...p, ingestionMethod: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
-                    {['Batch ETL · Daily', 'Batch ETL · Nightly', 'Streaming · Real-time', 'API Pull · Weekly', 'Manual upload', 'Event-driven'].map(m => <option key={m}>{m}</option>)}
-                  </select>
+                  <Select value={form.ingestionMethod} onValueChange={v => setForm(p => ({ ...p, ingestionMethod: v }))}>
+                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {['Batch ETL · Daily', 'Batch ETL · Nightly', 'Streaming · Real-time', 'API Pull · Weekly', 'Manual upload', 'Event-driven'].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Classification</label>
-                  <select value={form.dataClassification} onChange={e => setForm(p => ({ ...p, dataClassification: e.target.value as any }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
-                    {['Public', 'Internal', 'Confidential', 'Restricted'].map(c => <option key={c}>{c}</option>)}
-                  </select>
+                  <Select value={form.dataClassification} onValueChange={v => setForm(p => ({ ...p, dataClassification: v as any }))}>
+                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {['Public', 'Internal', 'Confidential', 'Restricted'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div>
