@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { UserList, MagnifyingGlass, Plus, Eye, X, Export, Funnel, Pencil, Trash, Clock, CheckCircle, Warning } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { useDsrRequestsData } from '@/hooks/useDsrRequestsData'
@@ -162,14 +163,18 @@ export default function DsrManagement() {
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by subject, email, or ID…"
             className="w-full pl-7 pr-2 py-1.5 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-xs text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] outline-none focus:border-[hsl(var(--brand))]" />
         </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-          className="px-2 py-1.5 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-xs text-[hsl(var(--text-2))] outline-none">
-          {['All', 'Pending', 'In Review', 'Completed', 'Rejected', 'Overdue'].map(s => <option key={s}>{s}</option>)}
-        </select>
-        <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}
-          className="px-2 py-1.5 border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] text-xs text-[hsl(var(--text-2))] outline-none">
-          {['All', 'Access', 'Erasure', 'Rectification', 'Portability', 'Objection', 'Restriction'].map(t => <option key={t}>{t}</option>)}
-        </select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            {['All', 'Pending', 'In Review', 'Completed', 'Rejected', 'Overdue'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            {['All', 'Access', 'Erasure', 'Rectification', 'Portability', 'Objection', 'Restriction'].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+          </SelectContent>
+        </Select>
         <span className="text-[10px] font-mono text-[hsl(var(--text-4))]">{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
       </div>
 
@@ -403,10 +408,12 @@ export default function DsrManagement() {
                     ))}
                     <div>
                       <label className="text-xs text-[hsl(var(--text-4))]">Status</label>
-                      <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value as DSRStatus }))}
-                        className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
-                        {['Pending', 'In Review', 'Completed', 'Rejected', 'Overdue'].map(s => <option key={s}>{s}</option>)}
-                      </select>
+                      <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v as DSRStatus }))}>
+                        <SelectTrigger className="w-full mt-0.5" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                        <SelectContent style={{ borderRadius: 0 }}>
+                          {['Pending', 'In Review', 'Completed', 'Rejected', 'Overdue'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
                       <label className="text-xs text-[hsl(var(--text-4))]">Notes</label>
@@ -450,17 +457,21 @@ export default function DsrManagement() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Request Type</label>
-                  <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value as DSRType }))}
-                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
-                    {['Access', 'Erasure', 'Rectification', 'Portability', 'Objection', 'Restriction'].map(t => <option key={t}>{t}</option>)}
-                  </select>
+                  <Select value={form.type} onValueChange={v => setForm(p => ({ ...p, type: v as DSRType }))}>
+                    <SelectTrigger className="w-full mt-0.5" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {['Access', 'Erasure', 'Rectification', 'Portability', 'Objection', 'Restriction'].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Regulation</label>
-                  <select value={form.regulation} onChange={e => setForm(p => ({ ...p, regulation: e.target.value }))}
-                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
-                    {['GDPR Art. 15', 'GDPR Art. 16', 'GDPR Art. 17', 'GDPR Art. 20', 'GDPR Art. 21', 'GDPR Art. 18', 'CCPA § 1798.110', 'CCPA § 1798.105', 'EU AI Act Art. 14'].map(r => <option key={r}>{r}</option>)}
-                  </select>
+                  <Select value={form.regulation} onValueChange={v => setForm(p => ({ ...p, regulation: v }))}>
+                    <SelectTrigger className="w-full mt-0.5" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {['GDPR Art. 15', 'GDPR Art. 16', 'GDPR Art. 17', 'GDPR Art. 20', 'GDPR Art. 21', 'GDPR Art. 18', 'CCPA § 1798.110', 'CCPA § 1798.105', 'EU AI Act Art. 14'].map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -471,18 +482,22 @@ export default function DsrManagement() {
                 </div>
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Priority</label>
-                  <select value={form.priority} onChange={e => setForm(p => ({ ...p, priority: e.target.value as any }))}
-                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
-                    {['High', 'Medium', 'Low'].map(p => <option key={p}>{p}</option>)}
-                  </select>
+                  <Select value={form.priority} onValueChange={v => setForm(p => ({ ...p, priority: v as any }))}>
+                    <SelectTrigger className="w-full mt-0.5" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {['High', 'Medium', 'Low'].map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div>
                 <label className="text-xs text-[hsl(var(--text-4))]">Assignee</label>
-                <select value={form.assignee} onChange={e => setForm(p => ({ ...p, assignee: e.target.value }))}
-                  className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
-                  {['Unassigned', 'Maria Santos', 'Sarah Chen', 'Marcus Johnson', 'James Liu'].map(a => <option key={a}>{a}</option>)}
-                </select>
+                <Select value={form.assignee} onValueChange={v => setForm(p => ({ ...p, assignee: v }))}>
+                  <SelectTrigger className="w-full mt-0.5" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {['Unassigned', 'Maria Santos', 'Sarah Chen', 'Marcus Johnson', 'James Liu'].map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <label className="text-xs text-[hsl(var(--text-4))]">Notes</label>
