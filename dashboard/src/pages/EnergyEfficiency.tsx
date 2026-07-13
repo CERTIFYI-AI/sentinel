@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { Lightning, Export, Plus, X, Lightbulb, CheckCircle, ArrowDown, Leaf, Cpu, Trash, Eye, PencilSimple } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, ScatterChart, Scatter, CartesianGrid } from 'recharts'
@@ -347,10 +348,12 @@ function EnergyEfficiencyInner({ readings: initialReadings, save, remove, chartT
                 </div>
                 <div>
                   <label className="text-[11px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Period *</label>
-                  <select value={form.period} onChange={e => setForm(p => ({ ...p, period: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
-                    <option value="">Select period...</option>
-                    {['2026-Q1', '2026-Q2', '2025-Q4', '2025-Q3'].map(p => <option key={p}>{p}</option>)}
-                  </select>
+                  <Select value={form.period || undefined} onValueChange={v => setForm(p => ({ ...p, period: v }))}>
+                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue placeholder="Select period..." /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {['2026-Q1', '2026-Q2', '2025-Q4', '2025-Q3'].map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-[11px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">GPU Hours *</label>
@@ -370,16 +373,21 @@ function EnergyEfficiencyInner({ readings: initialReadings, save, remove, chartT
                 </div>
                 <div>
                   <label className="text-[11px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Compute Provider *</label>
-                  <select value={form.computeProvider} onChange={e => setForm(p => ({ ...p, computeProvider: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
-                    <option value="">Select provider...</option>
-                    {['AWS us-east-1', 'AWS us-west-2', 'Azure East US', 'GCP us-central1', 'OpenAI API', 'Anthropic API', 'On-premise'].map(p => <option key={p}>{p}</option>)}
-                  </select>
+                  <Select value={form.computeProvider || undefined} onValueChange={v => setForm(p => ({ ...p, computeProvider: v }))}>
+                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue placeholder="Select provider..." /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {['AWS us-east-1', 'AWS us-west-2', 'Azure East US', 'GCP us-central1', 'OpenAI API', 'Anthropic API', 'On-premise'].map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-[11px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Measurement Source</label>
-                  <select value={form.measurementSource} onChange={e => setForm(p => ({ ...p, measurementSource: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
-                    {['Cloud Console', 'API Usage Report', 'Smart Meter', 'Estimated', 'Third-party Audit'].map(s => <option key={s}>{s}</option>)}
-                  </select>
+                  <Select value={form.measurementSource} onValueChange={v => setForm(p => ({ ...p, measurementSource: v }))}>
+                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {['Cloud Console', 'API Usage Report', 'Smart Meter', 'Estimated', 'Third-party Audit'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div>

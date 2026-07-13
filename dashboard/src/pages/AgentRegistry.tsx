@@ -5,6 +5,7 @@
 // Provides lifecycle tracking, permissions, trust scoring, and kill-switch controls.
 
 import { useState } from 'react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Plus, Eye, X, Export, Warning, Power, Pencil, Trash, Shield, IdentificationCard, Pulse } from '@phosphor-icons/react'
 import { toast } from 'sonner'
@@ -368,17 +369,21 @@ export default function AgentRegistry() {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs text-[hsl(var(--text-4))]">Status</label>
-                      <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value as AgentStatus }))}
-                        className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
-                        {['Active', 'Suspended', 'Quarantined', 'Decommissioned', 'Pending Approval'].map(s => <option key={s}>{s}</option>)}
-                      </select>
+                      <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v as AgentStatus }))}>
+                        <SelectTrigger className="w-full mt-0.5" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                        <SelectContent style={{ borderRadius: 0 }}>
+                          {['Active', 'Suspended', 'Quarantined', 'Decommissioned', 'Pending Approval'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
                       <label className="text-xs text-[hsl(var(--text-4))]">Risk Tier</label>
-                      <select value={form.riskTier} onChange={e => setForm(p => ({ ...p, riskTier: e.target.value as RiskTier }))}
-                        className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
-                        {['Critical', 'High', 'Medium', 'Low'].map(t => <option key={t}>{t}</option>)}
-                      </select>
+                      <Select value={form.riskTier} onValueChange={v => setForm(p => ({ ...p, riskTier: v as RiskTier }))}>
+                        <SelectTrigger className="w-full mt-0.5" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                        <SelectContent style={{ borderRadius: 0 }}>
+                          {['Critical', 'High', 'Medium', 'Low'].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                   <div>
@@ -422,17 +427,21 @@ export default function AgentRegistry() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Type</label>
-                  <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value as AgentType }))}
-                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
-                    {['Autonomous', 'Semi-Autonomous', 'Tool-Using', 'Multi-Modal', 'Orchestrator', 'Worker'].map(t => <option key={t}>{t}</option>)}
-                  </select>
+                  <Select value={form.type} onValueChange={v => setForm(p => ({ ...p, type: v as AgentType }))}>
+                    <SelectTrigger className="w-full mt-0.5" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {['Autonomous', 'Semi-Autonomous', 'Tool-Using', 'Multi-Modal', 'Orchestrator', 'Worker'].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Risk Tier</label>
-                  <select value={form.riskTier} onChange={e => setForm(p => ({ ...p, riskTier: e.target.value as RiskTier }))}
-                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
-                    {['Critical', 'High', 'Medium', 'Low'].map(t => <option key={t}>{t}</option>)}
-                  </select>
+                  <Select value={form.riskTier} onValueChange={v => setForm(p => ({ ...p, riskTier: v as RiskTier }))}>
+                    <SelectTrigger className="w-full mt-0.5" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {['Critical', 'High', 'Medium', 'Low'].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -448,10 +457,12 @@ export default function AgentRegistry() {
               </div>
               <div>
                 <label className="text-xs text-[hsl(var(--text-4))]">LLM / Model</label>
-                <select value={form.model} onChange={e => setForm(p => ({ ...p, model: e.target.value }))}
-                  className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
-                  {['GPT-4o via OpenAI', 'GPT-4o-mini via OpenAI', 'Claude 3.5 Sonnet via Anthropic', 'Claude 3 Haiku via Anthropic', 'GPT-4 via Azure OpenAI', 'Llama 3 70B via Groq'].map(m => <option key={m}>{m}</option>)}
-                </select>
+                <Select value={form.model} onValueChange={v => setForm(p => ({ ...p, model: v }))}>
+                  <SelectTrigger className="w-full mt-0.5" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {['GPT-4o via OpenAI', 'GPT-4o-mini via OpenAI', 'Claude 3.5 Sonnet via Anthropic', 'Claude 3 Haiku via Anthropic', 'GPT-4 via Azure OpenAI', 'Llama 3 70B via Groq'].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <label className="text-xs text-[hsl(var(--text-4))]">Purpose</label>
