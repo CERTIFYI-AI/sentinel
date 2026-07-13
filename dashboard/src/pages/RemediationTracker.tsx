@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Badge } from '../components/ui/badge';
@@ -135,23 +136,21 @@ export default function RemediationTracker() {
         <FunnelSimple size={14} style={{ color: 'hsl(var(--text-3))' }} />
         <div className="flex items-center gap-2">
           <User size={14} style={{ color: 'hsl(var(--text-3))' }} />
-          <select
-            value={filterAssignee}
-            onChange={e => setFilterAssignee(e.target.value)}
-            style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', fontSize: 13, borderRadius: 0 }}
-          >
-            <option value="all">All Assignees</option>
-            {ASSIGNEES.map(a => <option key={a} value={a}>{a}</option>)}
-          </select>
+          <Select value={filterAssignee} onValueChange={setFilterAssignee}>
+            <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+            <SelectContent style={{ borderRadius: 0 }}>
+              <SelectItem value="all">All Assignees</SelectItem>
+              {ASSIGNEES.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
-        <select
-          value={filterPriority}
-          onChange={e => setFilterPriority(e.target.value)}
-          style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', fontSize: 13, borderRadius: 0 }}
-        >
-          <option value="all">All Priorities</option>
-          {['critical', 'high', 'medium', 'low'].map(s => <option key={s}>{s}</option>)}
-        </select>
+        <Select value={filterPriority} onValueChange={setFilterPriority}>
+          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            <SelectItem value="all">All Priorities</SelectItem>
+            {['critical', 'high', 'medium', 'low'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
         <span className="text-xs ml-auto" style={{ color: 'hsl(var(--text-3))' }}>{filtered.length} plans</span>
       </div>
 

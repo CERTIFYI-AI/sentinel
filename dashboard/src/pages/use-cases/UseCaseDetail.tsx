@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
@@ -602,15 +603,21 @@ export default function UseCaseDetail() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-semibold text-[hsl(var(--text-4))]">Category</label>
-                <select value={riskForm.category} onChange={e => setRiskForm({ ...riskForm, category: e.target.value })} className="mt-1 w-full h-9 px-2 text-sm" style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))' }}>
-                  {['Fairness', 'Privacy', 'Security', 'Robustness', 'Transparency', 'Safety', 'Operational'].map(c => <option key={c}>{c}</option>)}
-                </select>
+                <Select value={riskForm.category} onValueChange={v => setRiskForm({ ...riskForm, category: v })}>
+                  <SelectTrigger className="mt-1 w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {['Fairness', 'Privacy', 'Security', 'Robustness', 'Transparency', 'Safety', 'Operational'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <label className="text-xs font-semibold text-[hsl(var(--text-4))]">Severity</label>
-                <select value={riskForm.severity} onChange={e => setRiskForm({ ...riskForm, severity: e.target.value })} className="mt-1 w-full h-9 px-2 text-sm" style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))' }}>
-                  {['critical', 'high', 'medium', 'low'].map(s => <option key={s}>{s}</option>)}
-                </select>
+                <Select value={riskForm.severity} onValueChange={v => setRiskForm({ ...riskForm, severity: v })}>
+                  <SelectTrigger className="mt-1 w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {['critical', 'high', 'medium', 'low'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div>

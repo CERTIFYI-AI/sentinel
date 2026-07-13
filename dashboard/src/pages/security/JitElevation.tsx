@@ -1,6 +1,7 @@
 // Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
 // AC-06 + WS4 — JIT Elevation: request temporary privileged access with MFA gate.
 import { useState, useEffect } from 'react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select'
 import { supabase } from '../../lib/supabase'
 import { useRequiredOrgId } from '../../hooks/useTenant'
 import { Button } from '../../components/ui/button'
@@ -98,18 +99,21 @@ export default function JitElevation() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="text-xs font-medium text-[hsl(var(--text-3))]" htmlFor="jit-role">Requested Role</label>
-              <select id="jit-role" value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
-                className="w-full border border-[hsl(var(--border))] rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#368F4D]">
-                <option value="">Select role...</option>
-                {roles.map(r => <option key={r.slug} value={r.slug}>{r.display_name} (Tier {r.tier})</option>)}
-              </select>
+              <Select value={form.role || undefined} onValueChange={v => setForm(f => ({ ...f, role: v }))}>
+                <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue placeholder="Select role..." /></SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  {roles.map(r => <SelectItem key={r.slug} value={r.slug}>{r.display_name} (Tier {r.tier})</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1">
               <label className="text-xs font-medium text-[hsl(var(--text-3))]" htmlFor="jit-duration">Duration (minutes)</label>
-              <select id="jit-duration" value={form.duration} onChange={e => setForm(f => ({ ...f, duration: +e.target.value }))}
-                className="w-full border border-[hsl(var(--border))] rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#368F4D]">
-                {[15, 30, 60, 120, 240, 480].map(d => <option key={d} value={d}>{d} min {d >= 60 ? `(${d/60}h)` : ''}</option>)}
-              </select>
+              <Select value={String(form.duration)} onValueChange={v => setForm(f => ({ ...f, duration: +v }))}>
+                <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  {[15, 30, 60, 120, 240, 480].map(d => <SelectItem key={d} value={String(d)}>{d} min {d >= 60 ? `(${d/60}h)` : ''}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div className="space-y-1">
