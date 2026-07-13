@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { Package, MagnifyingGlass, Plus, Eye, X, Export, Warning, CheckCircle, Trash, ShieldWarning, Scales, ListChecks, ArrowLeft, ArrowRight, DownloadSimple, Seal, FloppyDisk, Spinner, CaretRight } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
@@ -440,18 +441,23 @@ export default function AibomRegistry() {
                     </div>
                     <div>
                       <label className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide block mb-1">AIBOM Format</label>
-                      <select value={form.format} onChange={e => setForm(p => ({ ...p, format: e.target.value as any }))}
-                        className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
-                        <option>Sentinel-AIBOM</option><option>CycloneDX</option><option>SPDX</option>
-                      </select>
+                      <Select value={form.format} onValueChange={v => setForm(p => ({ ...p, format: v as any }))}>
+                        <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                        <SelectContent style={{ borderRadius: 0 }}>
+                          <SelectItem value="Sentinel-AIBOM">Sentinel-AIBOM</SelectItem>
+                          <SelectItem value="CycloneDX">CycloneDX</SelectItem>
+                          <SelectItem value="SPDX">SPDX</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
                       <label className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide block mb-1">Owner Team</label>
-                      <select value={form.owner} onChange={e => setForm(p => ({ ...p, owner: e.target.value }))}
-                        className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
-                        <option value="">Select owner…</option>
-                        {['ML Engineering', 'Security AI', 'Customer Analytics', 'Risk & Compliance', 'Data Science'].map(o => <option key={o}>{o}</option>)}
-                      </select>
+                      <Select value={form.owner || undefined} onValueChange={v => setForm(p => ({ ...p, owner: v }))}>
+                        <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue placeholder="Select owner…" /></SelectTrigger>
+                        <SelectContent style={{ borderRadius: 0 }}>
+                          {['ML Engineering', 'Security AI', 'Customer Analytics', 'Risk & Compliance', 'Data Science'].map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
                       <label className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide block mb-1">Base Model *</label>
@@ -460,10 +466,12 @@ export default function AibomRegistry() {
                     </div>
                     <div>
                       <label className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide block mb-1">Base Model Provider</label>
-                      <select value={form.baseModelProvider} onChange={e => setForm(p => ({ ...p, baseModelProvider: e.target.value }))}
-                        className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
-                        {['Open Source', 'OpenAI', 'Anthropic', 'Google DeepMind', 'Meta', 'Hugging Face', 'Microsoft', 'Internal'].map(p => <option key={p}>{p}</option>)}
-                      </select>
+                      <Select value={form.baseModelProvider} onValueChange={v => setForm(p => ({ ...p, baseModelProvider: v }))}>
+                        <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                        <SelectContent style={{ borderRadius: 0 }}>
+                          {['Open Source', 'OpenAI', 'Anthropic', 'Google DeepMind', 'Meta', 'Hugging Face', 'Microsoft', 'Internal'].map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                   <div>
@@ -485,10 +493,12 @@ export default function AibomRegistry() {
                         className="px-2 py-1.5 text-xs border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none" />
                       <input value={newDs.version} onChange={e => setNewDs(p => ({ ...p, version: e.target.value }))} placeholder="Version / Date"
                         className="px-2 py-1.5 text-xs border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none" />
-                      <select value={newDs.license} onChange={e => setNewDs(p => ({ ...p, license: e.target.value }))}
-                        className="px-2 py-1.5 text-xs border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
-                        {['Proprietary', 'Public Domain', 'Commercial', 'CC BY 4.0', 'MIT', 'Apache-2.0', 'Research Only'].map(l => <option key={l}>{l}</option>)}
-                      </select>
+                      <Select value={newDs.license} onValueChange={v => setNewDs(p => ({ ...p, license: v }))}>
+                        <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                        <SelectContent style={{ borderRadius: 0 }}>
+                          {['Proprietary', 'Public Domain', 'Commercial', 'CC BY 4.0', 'MIT', 'Apache-2.0', 'Research Only'].map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <button onClick={() => { if (newDs.name) { setWizardDatasets(p => [...p, { ...newDs }]); setNewDs({ ...BLANK_DS }) } }}
                       disabled={!newDs.name}
@@ -541,14 +551,20 @@ export default function AibomRegistry() {
                           className="px-2 py-1.5 text-xs border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none" />
                         <input value={newDep.version} onChange={e => setNewDep(p => ({ ...p, version: e.target.value }))} placeholder="Version"
                           className="px-2 py-1.5 text-xs border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none" />
-                        <select value={newDep.license} onChange={e => setNewDep(p => ({ ...p, license: e.target.value }))}
-                          className="px-2 py-1.5 text-xs border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
-                          {['MIT', 'Apache-2.0', 'BSD-3', 'GPL-3.0', 'LGPL', 'Proprietary'].map(l => <option key={l}>{l}</option>)}
-                        </select>
-                        <select value={newDep.risk} onChange={e => setNewDep(p => ({ ...p, risk: e.target.value as any }))}
-                          className="px-2 py-1.5 text-xs border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
-                          <option>Low</option><option>Medium</option><option>High</option>
-                        </select>
+                        <Select value={newDep.license} onValueChange={v => setNewDep(p => ({ ...p, license: v }))}>
+                          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                          <SelectContent style={{ borderRadius: 0 }}>
+                            {['MIT', 'Apache-2.0', 'BSD-3', 'GPL-3.0', 'LGPL', 'Proprietary'].map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <Select value={newDep.risk} onValueChange={v => setNewDep(p => ({ ...p, risk: v as any }))}>
+                          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                          <SelectContent style={{ borderRadius: 0 }}>
+                            <SelectItem value="Low">Low</SelectItem>
+                            <SelectItem value="Medium">Medium</SelectItem>
+                            <SelectItem value="High">High</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                       <button onClick={() => { if (newDep.name) { setWizardDeps(p => [...p, { ...newDep }]); setNewDep({ ...BLANK_DEP }) }}}
                         disabled={!newDep.name}
