@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { Globe, Export, Plus, Eye, X, CheckCircle, Clock, Trash, Warning, ChartBar } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts'
@@ -382,31 +383,40 @@ function EsgReportsInner({ reports: initialReports, save, remove, chartTheme }: 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[11px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Reporting Period *</label>
-                  <select value={form.period} onChange={e => setForm(p => ({ ...p, period: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
-                    <option value="">Select period...</option>
-                    {PERIODS.map(p => <option key={p}>{p}</option>)}
-                  </select>
+                  <Select value={form.period || undefined} onValueChange={v => setForm(p => ({ ...p, period: v }))}>
+                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue placeholder="Select period..." /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {PERIODS.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-[11px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Framework *</label>
-                  <select value={form.framework} onChange={e => setForm(p => ({ ...p, framework: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
-                    <option value="">Select framework...</option>
-                    {FRAMEWORKS.map(f => <option key={f}>{f}</option>)}
-                  </select>
+                  <Select value={form.framework || undefined} onValueChange={v => setForm(p => ({ ...p, framework: v }))}>
+                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue placeholder="Select framework..." /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {FRAMEWORKS.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-[11px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Lead Author *</label>
-                  <select value={form.author} onChange={e => setForm(p => ({ ...p, author: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
-                    <option value="">Select author...</option>
-                    {AUTHORS.map(a => <option key={a}>{a}</option>)}
-                  </select>
+                  <Select value={form.author || undefined} onValueChange={v => setForm(p => ({ ...p, author: v }))}>
+                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue placeholder="Select author..." /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {AUTHORS.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-[11px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Initial Status</label>
-                  <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
-                    <option value="Draft">Draft</option>
-                    <option value="Under Review">Under Review</option>
-                  </select>
+                  <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v }))}>
+                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      <SelectItem value="Draft">Draft</SelectItem>
+                      <SelectItem value="Under Review">Under Review</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div>

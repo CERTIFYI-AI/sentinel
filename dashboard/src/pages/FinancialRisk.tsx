@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { exportCsv } from '@/lib/exportUtils';
 import { HandCoins, MagnifyingGlass, Plus, Eye, X, Export, TrendUp, TrendDown, ChartLine, Calculator, Target, Sliders, PencilSimple, Trash } from '@phosphor-icons/react'
 import { toast } from 'sonner'
@@ -161,9 +162,12 @@ export default function FinancialRisk() {
           <MagnifyingGlass size={14} className="text-[hsl(var(--text-4))] flex-shrink-0" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search risks…" className="flex-1 py-2 text-sm bg-transparent text-[hsl(var(--text-1))] placeholder-[hsl(var(--text-4))] focus:outline-none" />
         </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
-          {['All', 'Critical', 'Elevated', 'Monitored', 'Mitigated'].map(s => <option key={s}>{s}</option>)}
-        </select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            {['All', 'Critical', 'Elevated', 'Monitored', 'Mitigated'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="rounded border border-[hsl(var(--border))] bg-surface overflow-hidden">
@@ -416,15 +420,21 @@ export default function FinancialRisk() {
                 </div>
                 <div>
                   <label className="text-xs font-medium text-[hsl(var(--text-2))] block mb-1">Category</label>
-                  <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
-                    {CATEGORIES.map(c => <option key={c}>{c}</option>)}
-                  </select>
+                  <Select value={form.category} onValueChange={v => setForm(p => ({ ...p, category: v }))}>
+                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-xs font-medium text-[hsl(var(--text-2))] block mb-1">Status</label>
-                  <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value as FinancialRiskItem['status'] }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
-                    {['Monitored', 'Elevated', 'Critical', 'Mitigated'].map(s => <option key={s}>{s}</option>)}
-                  </select>
+                  <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v as FinancialRiskItem['status'] }))}>
+                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {['Monitored', 'Elevated', 'Critical', 'Mitigated'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="col-span-2">
                   <label className="text-xs font-medium text-[hsl(var(--text-2))] block mb-1">AI System *</label>
@@ -452,9 +462,12 @@ export default function FinancialRisk() {
                 </div>
                 <div>
                   <label className="text-xs font-medium text-[hsl(var(--text-2))] block mb-1">Owner</label>
-                  <select value={form.owner} onChange={e => setForm(p => ({ ...p, owner: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
-                    {OWNERS.map(o => <option key={o}>{o}</option>)}
-                  </select>
+                  <Select value={form.owner} onValueChange={v => setForm(p => ({ ...p, owner: v }))}>
+                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {OWNERS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="col-span-2">
                   <label className="text-xs font-medium text-[hsl(var(--text-2))] block mb-1">Notes</label>
