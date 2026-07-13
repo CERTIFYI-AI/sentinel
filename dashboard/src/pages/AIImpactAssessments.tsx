@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { exportCsv } from '@/lib/exportUtils';
 import { FileMagnifyingGlass, Plus, Eye, X, Trash, PencilSimple, Export, Warning, CheckCircle, Clock, MagnifyingGlass, ArrowRight } from '@phosphor-icons/react'
 import { toast } from 'sonner'
@@ -281,12 +282,18 @@ export default function AIImpactAssessments() {
             className="pl-9 bg-surface border-[hsl(var(--border))] rounded-none h-9" 
           />
         </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] rounded-none h-9 focus:outline-none">
-          {['All', 'Draft', 'In Progress', 'Pending Review', 'Approved', 'Rejected', 'Completed'].map(s => <option key={s}>{s}</option>)}
-        </select>
-        <select value={riskFilter} onChange={e => setRiskFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] rounded-none h-9 focus:outline-none">
-          {['All', 'Critical', 'High', 'Medium', 'Low', 'Minimal'].map(s => <option key={s}>{s}</option>)}
-        </select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="h-9" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            {['All', 'Draft', 'In Progress', 'Pending Review', 'Approved', 'Rejected', 'Completed'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={riskFilter} onValueChange={setRiskFilter}>
+          <SelectTrigger className="h-9" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            {['All', 'Critical', 'High', 'Medium', 'Low', 'Minimal'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Table */}
@@ -508,14 +515,20 @@ export default function AIImpactAssessments() {
                   <Input value={form.owner} onChange={e => sf('owner', e.target.value)} className="rounded-none bg-raised" placeholder="e.g. Sarah Chen" />
                 </FormField>
                 <FormField label="Risk Level">
-                  <select value={form.risk} onChange={e => sf('risk', e.target.value as RiskLevel)} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] text-sm focus:outline-none rounded-none h-10">
-                    {['Critical', 'High', 'Medium', 'Low', 'Minimal'].map(v => <option key={v}>{v}</option>)}
-                  </select>
+                  <Select value={form.risk} onValueChange={v => sf('risk', v as RiskLevel)}>
+                    <SelectTrigger className="w-full h-10" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {['Critical', 'High', 'Medium', 'Low', 'Minimal'].map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </FormField>
                 <FormField label="Status">
-                  <select value={form.status} onChange={e => sf('status', e.target.value as AIIAStatus)} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] text-sm focus:outline-none rounded-none h-10">
-                    {['Draft', 'In Progress', 'Pending Review', 'Approved', 'Rejected', 'Completed'].map(v => <option key={v}>{v}</option>)}
-                  </select>
+                  <Select value={form.status} onValueChange={v => sf('status', v as AIIAStatus)}>
+                    <SelectTrigger className="w-full h-10" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {['Draft', 'In Progress', 'Pending Review', 'Approved', 'Rejected', 'Completed'].map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </FormField>
                 <FormField label="Framework">
                   <Input value={form.framework} onChange={e => sf('framework', e.target.value)} className="rounded-none bg-raised" placeholder="e.g. EU AI Act Art. 9" />

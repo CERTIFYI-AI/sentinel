@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { CheckSquare, MagnifyingGlass, Plus, Eye, X, Export, Users, Warning, Pencil, Trash } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { useConsentRecordsData } from '@/hooks/useConsentRecordsData'
@@ -136,9 +137,12 @@ export default function ConsentManagement() {
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by subject, email, or ID…"
             className="w-full pl-8 pr-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
         </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
-          {['All', 'Active', 'Withdrawn', 'Expired', 'Pending'].map(s => <option key={s}>{s}</option>)}
-        </select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            {['All', 'Active', 'Withdrawn', 'Expired', 'Pending'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
         <span className="text-xs text-[hsl(var(--text-4))]">{filtered.length} record{filtered.length !== 1 ? 's' : ''}</span>
       </div>
 
@@ -338,10 +342,12 @@ export default function ConsentManagement() {
                   ))}
                   <div>
                     <label className="text-xs text-[hsl(var(--text-4))]">Status</label>
-                    <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value as ConsentStatus }))}
-                      className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
-                      {['Active', 'Withdrawn', 'Expired', 'Pending'].map(s => <option key={s}>{s}</option>)}
-                    </select>
+                    <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v as ConsentStatus }))}>
+                      <SelectTrigger className="w-full mt-0.5" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                      <SelectContent style={{ borderRadius: 0 }}>
+                        {['Active', 'Withdrawn', 'Expired', 'Pending'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="flex gap-2">
                     <button onClick={handleEdit} className="flex-1 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm">Save</button>
@@ -391,17 +397,21 @@ export default function ConsentManagement() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Legal Basis</label>
-                  <select value={form.legalBasis} onChange={e => setForm(p => ({ ...p, legalBasis: e.target.value as LegalBasis }))}
-                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
-                    {['Consent', 'Legitimate Interest', 'Contract', 'Legal Obligation', 'Vital Interest', 'Public Task'].map(b => <option key={b}>{b}</option>)}
-                  </select>
+                  <Select value={form.legalBasis} onValueChange={v => setForm(p => ({ ...p, legalBasis: v as LegalBasis }))}>
+                    <SelectTrigger className="w-full mt-0.5" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {['Consent', 'Legitimate Interest', 'Contract', 'Legal Obligation', 'Vital Interest', 'Public Task'].map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Channel</label>
-                  <select value={form.channel} onChange={e => setForm(p => ({ ...p, channel: e.target.value }))}
-                    className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none">
-                    {['Web Portal', 'Mobile App', 'Branch', 'API', 'Email', 'Phone'].map(c => <option key={c}>{c}</option>)}
-                  </select>
+                  <Select value={form.channel} onValueChange={v => setForm(p => ({ ...p, channel: v }))}>
+                    <SelectTrigger className="w-full mt-0.5" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {['Web Portal', 'Mobile App', 'Branch', 'API', 'Email', 'Phone'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div>
