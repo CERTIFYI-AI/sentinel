@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { toast } from 'sonner';
 import {
   Plus, ArrowsLeftRight, MagnifyingGlass, DownloadSimple, Sparkle, X, Warning,
@@ -398,19 +399,22 @@ export default function FrameworkMappingPage() {
           <div className="space-y-4 mt-2">
             <div className="space-y-1">
               <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Control *</label>
-              <select className="w-full text-sm border p-2" style={{ borderRadius: 0, borderColor: 'hsl(var(--border))', background: 'hsl(var(--bg-surface))', color: 'hsl(var(--text-1))' }}
-                value={wControl} onChange={e => setWControl(e.target.value)}>
-                <option value="">Select control...</option>
-                {SEED.map(m => <option key={m.id} value={m.id}>{m.id} — {m.control}</option>)}
-              </select>
+              <Select value={wControl || undefined} onValueChange={setWControl}>
+                <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue placeholder="Select control..." /></SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  {SEED.map(m => <SelectItem key={m.id} value={m.id}>{m.id} — {m.control}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Framework *</label>
-                <select className="w-full text-sm border p-2" style={{ borderRadius: 0, borderColor: 'hsl(var(--border))', background: 'hsl(var(--bg-surface))', color: 'hsl(var(--text-1))' }}
-                  value={wFramework} onChange={e => setWFramework(e.target.value)}>
-                  {FRAMEWORKS.map(f => <option key={f}>{f}</option>)}
-                </select>
+                <Select value={wFramework} onValueChange={setWFramework}>
+                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {FRAMEWORKS.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Clause/Article *</label>

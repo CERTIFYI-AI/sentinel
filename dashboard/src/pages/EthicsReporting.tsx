@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { useEthicsReportsData } from '../hooks/useEthicsReportsData';
 import { PageSkeleton } from '../components/ui/PageSkeleton';
 import { toast } from 'sonner';
@@ -431,10 +432,12 @@ export default function EthicsReporting() {
             </div>
             <div className="space-y-1">
               <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Category *</label>
-              <select className="w-full text-sm border p-2" style={{ borderRadius: 0, borderColor: 'hsl(var(--border))', background: 'hsl(var(--bg-surface))', color: 'hsl(var(--text-1))' }}
-                value={wCategory} onChange={e => setWCategory(e.target.value as ReportCategory)}>
-                {REPORT_CATEGORIES.map(c => <option key={c}>{c}</option>)}
-              </select>
+              <Select value={wCategory} onValueChange={v => setWCategory(v as ReportCategory)}>
+                <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  {REPORT_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1">
               <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Severity *</label>
@@ -468,10 +471,12 @@ export default function EthicsReporting() {
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Assign Investigator *</label>
-                <select className="w-full text-sm border p-2" style={{ borderRadius: 0, borderColor: 'hsl(var(--border))', background: 'hsl(var(--bg-surface))', color: 'hsl(var(--text-1))' }}
-                  value={wInvestigator} onChange={e => setWInvestigator(e.target.value)}>
-                  {INVESTIGATORS.map(u => <option key={u}>{u}</option>)}
-                </select>
+                <Select value={wInvestigator} onValueChange={setWInvestigator}>
+                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {INVESTIGATORS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="space-y-1">

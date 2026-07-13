@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Package, Search, Filter, Plus, ExternalLink, AlertTriangle, CheckCircle2, Clock, XCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { useModelsData } from "@/hooks/useModelsData";
@@ -152,19 +153,25 @@ export default function ModelInventory() {
         </div>
         <div className="flex items-center gap-2">
           <Filter size={14} className="text-[hsl(var(--text-4))]" />
-          <select value={riskFilter} onChange={e => setRiskFilter(e.target.value)} className="text-sm border border-[hsl(var(--border))] px-3 py-2 bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-2))]">
-            <option value="all">All Risk Tiers</option>
-            <option value="high">High Risk</option>
-            <option value="limited">Limited Risk</option>
-            <option value="minimal">Minimal Risk</option>
-          </select>
-          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="text-sm border border-[hsl(var(--border))] px-3 py-2 bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-2))]">
-            <option value="all">All Statuses</option>
-            <option value="production">Production</option>
-            <option value="staging">Staging</option>
-            <option value="review">Under Review</option>
-            <option value="deprecated">Deprecated</option>
-          </select>
+          <Select value={riskFilter} onValueChange={setRiskFilter}>
+            <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+            <SelectContent style={{ borderRadius: 0 }}>
+              <SelectItem value="all">All Risk Tiers</SelectItem>
+              <SelectItem value="high">High Risk</SelectItem>
+              <SelectItem value="limited">Limited Risk</SelectItem>
+              <SelectItem value="minimal">Minimal Risk</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+            <SelectContent style={{ borderRadius: 0 }}>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="production">Production</SelectItem>
+              <SelectItem value="staging">Staging</SelectItem>
+              <SelectItem value="review">Under Review</SelectItem>
+              <SelectItem value="deprecated">Deprecated</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useState, useMemo } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { toast } from 'sonner';
 import {
@@ -359,17 +360,21 @@ export default function TransparencyReports() {
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Report Type *</label>
-                <select className="w-full text-sm border p-2" style={{ borderRadius: 0, borderColor: 'hsl(var(--border))', background: 'hsl(var(--bg-surface))', color: 'hsl(var(--text-1))' }}
-                  value={wType} onChange={e => setWType(e.target.value as ReportType)}>
-                  {REPORT_TYPES.map(t => <option key={t}>{t}</option>)}
-                </select>
+                <Select value={wType} onValueChange={v => setWType(v as ReportType)}>
+                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {REPORT_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Target Audience *</label>
-                <select className="w-full text-sm border p-2" style={{ borderRadius: 0, borderColor: 'hsl(var(--border))', background: 'hsl(var(--bg-surface))', color: 'hsl(var(--text-1))' }}
-                  value={wAudience} onChange={e => setWAudience(e.target.value)}>
-                  {AUDIENCES.map(a => <option key={a}>{a}</option>)}
-                </select>
+                <Select value={wAudience} onValueChange={setWAudience}>
+                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {AUDIENCES.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Version</label>

@@ -1,4 +1,5 @@
 import { toast } from 'sonner';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { useState, useMemo } from 'react';
 import {
   Plus, Eye, Trash, MagnifyingGlass, Warning, Bell, ArrowsClockwise,
@@ -463,11 +464,12 @@ export default function PostMarket() {
             </div>
             <div className="space-y-1">
               <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Linked Model *</label>
-              <select className="w-full text-sm border p-2" style={{ borderRadius: 0, borderColor: 'hsl(var(--border))', background: 'hsl(var(--bg-surface))', color: 'hsl(var(--text-1))' }}
-                value={wModel} onChange={e => setWModel(e.target.value)}>
-                <option value="">Select model...</option>
-                {['Credit Risk Scorer', 'Fraud Detection Engine', 'Loan Approval Assistant', 'AML Transaction Monitor', 'HR Screening System', 'Customer Service Chatbot'].map(m => <option key={m}>{m}</option>)}
-              </select>
+              <Select value={wModel || undefined} onValueChange={setWModel}>
+                <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue placeholder="Select model..." /></SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  {['Credit Risk Scorer', 'Fraud Detection Engine', 'Loan Approval Assistant', 'AML Transaction Monitor', 'HR Screening System', 'Customer Service Chatbot'].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1">
               <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Monitoring Frequency *</label>
@@ -483,10 +485,12 @@ export default function PostMarket() {
             </div>
             <div className="space-y-1">
               <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Responsible Person *</label>
-              <select className="w-full text-sm border p-2" style={{ borderRadius: 0, borderColor: 'hsl(var(--border))', background: 'hsl(var(--bg-surface))', color: 'hsl(var(--text-1))' }}
-                value={wOwner} onChange={e => setWOwner(e.target.value)}>
-                {['Sarah Chen', 'James Patel', 'Maria Santos', 'David Kim', 'Emma Wilson'].map(u => <option key={u}>{u}</option>)}
-              </select>
+              <Select value={wOwner} onValueChange={setWOwner}>
+                <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  {['Sarah Chen', 'James Patel', 'Maria Santos', 'David Kim', 'Emma Wilson'].map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex items-center justify-between p-3 border" style={{ borderColor: 'hsl(var(--border))', borderRadius: 0 }}>
               <span className="text-sm" style={{ color: 'hsl(var(--text-2))' }}>User feedback collection</span>
