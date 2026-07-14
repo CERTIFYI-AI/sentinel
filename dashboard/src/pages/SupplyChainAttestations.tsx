@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { Certificate, MagnifyingGlass, Plus, X, Export, Trash, ShieldCheck, FileText, ArrowClockwise, Pencil } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
@@ -186,13 +187,19 @@ export default function SupplyChainAttestations() {
           <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search attestations…" className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]" />
         </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
-          {['All', 'Valid', 'Expired', 'Pending', 'Under Review', 'Rejected'].map(s => <option key={s}>{s}</option>)}
-        </select>
-        <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none">
-          <option>All</option>
-          {allTypes.map(t => <option key={t}>{t}</option>)}
-        </select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            {['All', 'Valid', 'Expired', 'Pending', 'Under Review', 'Rejected'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            <SelectItem value="All">All</SelectItem>
+            {allTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="rounded border border-[hsl(var(--border))] bg-surface overflow-hidden">
@@ -434,15 +441,21 @@ export default function SupplyChainAttestations() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Subject Type</label>
-                  <select value={form.subjectType} onChange={e => setForm(p => ({ ...p, subjectType: e.target.value as SubjectType }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
-                    {['Model', 'Dataset', 'Vendor', 'Pipeline'].map(t => <option key={t}>{t}</option>)}
-                  </select>
+                  <Select value={form.subjectType} onValueChange={v => setForm(p => ({ ...p, subjectType: v as SubjectType }))}>
+                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {['Model', 'Dataset', 'Vendor', 'Pipeline'].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Attestation Type</label>
-                  <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value as AttestationType }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
-                    {['Data Provenance', 'Model Integrity', 'Security Review', 'Bias Audit', 'Privacy Assessment', 'SBOM/AIBOM Verification'].map(t => <option key={t}>{t}</option>)}
-                  </select>
+                  <Select value={form.type} onValueChange={v => setForm(p => ({ ...p, type: v as AttestationType }))}>
+                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {['Data Provenance', 'Model Integrity', 'Security Review', 'Bias Audit', 'Privacy Assessment', 'SBOM/AIBOM Verification'].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">

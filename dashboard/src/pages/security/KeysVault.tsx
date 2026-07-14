@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
@@ -211,16 +212,20 @@ export default function KeysVault() {
           <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--text-3))' }} />
           <Input placeholder="Search keys..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8" style={{ borderRadius: 0 }} />
         </div>
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-          style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', fontSize: 13, borderRadius: 0 }}>
-          <option value="all">All Statuses</option>
-          {['active', 'rotated', 'expired', 'revoked'].map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
-        <select value={filterProvider} onChange={e => setFilterProvider(e.target.value)}
-          style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', fontSize: 13, borderRadius: 0 }}>
-          <option value="all">All Providers</option>
-          {providers.map(p => <option key={p} value={p}>{p}</option>)}
-        </select>
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            <SelectItem value="all">All Statuses</SelectItem>
+            {['active', 'rotated', 'expired', 'revoked'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={filterProvider} onValueChange={setFilterProvider}>
+          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            <SelectItem value="all">All Providers</SelectItem>
+            {providers.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+          </SelectContent>
+        </Select>
         <span className="text-xs ml-auto" style={{ color: 'hsl(var(--text-3))' }}>{filtered.length} of {keys.length} keys</span>
       </div>
 
@@ -397,10 +402,12 @@ export default function KeysVault() {
               ))}
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Status</label>
-                <select value={editItem.status} onChange={e => setEditItem(prev => prev ? { ...prev, status: e.target.value as any } : null)}
-                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                  {['active', 'rotated', 'expired', 'revoked'].map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
+                <Select value={editItem.status} onValueChange={v => setEditItem(prev => prev ? { ...prev, status: v as any } : null)}>
+                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {['active', 'rotated', 'expired', 'revoked'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           )}
@@ -425,10 +432,12 @@ export default function KeysVault() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Provider</label>
-                <select value={formData.provider} onChange={e => setFormData(prev => ({ ...prev, provider: e.target.value }))}
-                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                  {['OpenAI', 'Anthropic', 'AWS', 'Azure', 'GCP', 'Pinecone', 'HuggingFace', 'LangChain', 'Cohere', 'Other'].map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
+                <Select value={formData.provider} onValueChange={v => setFormData(prev => ({ ...prev, provider: v }))}>
+                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {['OpenAI', 'Anthropic', 'AWS', 'Azure', 'GCP', 'Pinecone', 'HuggingFace', 'LangChain', 'Cohere', 'Other'].map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Expires At</label>
