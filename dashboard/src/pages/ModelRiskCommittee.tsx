@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../components/ui/card';
@@ -631,9 +632,12 @@ export default function ModelRiskCommittee() {
             </div>
             <div>
               <label className="text-xs font-semibold mb-1 block uppercase tracking-wide text-[hsl(var(--text-2))]">Meeting Type</label>
-              <select value={mtgType} onChange={e => setMtgType(e.target.value)} className="w-full h-10 rounded-none border border-[hsl(var(--border))] bg-raised px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[hsl(var(--brand))] text-[hsl(var(--text-1))]">
-                {['Quarterly Review', 'Emergency Session', 'Model Approval', 'Annual Review', 'Ad Hoc'].map(t => <option key={t}>{t}</option>)}
-              </select>
+              <Select value={mtgType} onValueChange={setMtgType}>
+                <SelectTrigger className="w-full h-10" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  {['Quarterly Review', 'Emergency Session', 'Model Approval', 'Annual Review', 'Ad Hoc'].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <label className="text-xs font-semibold mb-1 block uppercase tracking-wide text-[hsl(var(--text-2))]">Attendees</label>
@@ -671,17 +675,22 @@ export default function ModelRiskCommittee() {
             </p>
             <div>
               <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Organization user *</label>
-              <select value={newMemberId} onChange={e => setNewMemberId(e.target.value)} className="mt-1 w-full h-9 px-2 text-sm" style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))' }}>
-                <option value="">Select a user…</option>
-                {availableUsers.map(u => <option key={u.id} value={u.id}>{u.name} — {u.role} · {u.department}</option>)}
-              </select>
+              <Select value={newMemberId || undefined} onValueChange={setNewMemberId}>
+                <SelectTrigger className="mt-1 w-full h-9" style={{ borderRadius: 0 }}><SelectValue placeholder="Select a user…" /></SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  {availableUsers.map(u => <SelectItem key={u.id} value={u.id}>{u.name} — {u.role} · {u.department}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Committee role</label>
-                <select value={newMemberRole} onChange={e => setNewMemberRole(e.target.value)} className="mt-1 w-full h-9 px-2 text-sm" style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))' }}>
-                  {['Committee Member', 'Model Risk Manager', 'Risk Analyst', 'Internal Auditor', 'Voting Member', 'Observer', 'Secretary'].map(r => <option key={r}>{r}</option>)}
-                </select>
+                <Select value={newMemberRole} onValueChange={setNewMemberRole}>
+                  <SelectTrigger className="mt-1 w-full h-9" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {['Committee Member', 'Model Risk Manager', 'Risk Analyst', 'Internal Auditor', 'Voting Member', 'Observer', 'Secretary'].map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="flex items-end pb-1.5">
                 <label className="flex items-center gap-2 cursor-pointer">

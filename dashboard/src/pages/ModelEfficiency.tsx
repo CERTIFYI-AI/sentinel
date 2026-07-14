@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { useNavigate } from 'react-router-dom'
 import { Speedometer, Export, Eye, X, Plus, Trash, CheckCircle, Gauge, Cpu } from '@phosphor-icons/react'
 import { toast } from 'sonner'
@@ -183,16 +184,22 @@ function ModelEfficiencyInner({ benchmarks: initialBenchmarks, save, remove, cha
           <div className="flex items-center gap-6 mb-4">
             <div className="flex items-center gap-2">
               <div className="w-4 h-1 bg-[hsl(var(--brand))]" />
-              <select value={cA} onChange={e => setCompareA(e.target.value)} className="text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] px-2 py-1 focus:outline-none">
-                {benchmarks.map((b: any) => <option key={b.id} value={b.id}>{b.model} {b.version}</option>)}
-              </select>
+              <Select value={cA} onValueChange={setCompareA}>
+                <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  {benchmarks.map((b: any) => <SelectItem key={b.id} value={b.id}>{b.model} {b.version}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <span className="text-xs text-[hsl(var(--text-4))]">vs</span>
             <div className="flex items-center gap-2">
               <div className="w-4 h-1 bg-[hsl(var(--destructive))]" />
-              <select value={cB} onChange={e => setCompareB(e.target.value)} className="text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] px-2 py-1 focus:outline-none">
-                {benchmarks.map((b: any) => <option key={b.id} value={b.id}>{b.model} {b.version}</option>)}
-              </select>
+              <Select value={cB} onValueChange={setCompareB}>
+                <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  {benchmarks.map((b: any) => <SelectItem key={b.id} value={b.id}>{b.model} {b.version}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div className="flex gap-6">
@@ -348,10 +355,12 @@ function ModelEfficiencyInner({ benchmarks: initialBenchmarks, save, remove, cha
                     </div>
                     <div>
                       <label className="text-[10px] text-[hsl(var(--text-4))] mb-1 block">Task *</label>
-                      <select value={form.task} onChange={e => setForm(p => ({ ...p, task: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]">
-                        <option value="">Select task...</option>
-                        {['Binary Classification', 'Multi-class Classification', 'Regression', 'Anomaly Detection', 'NLP / Text', 'Time Series Forecasting'].map(t => <option key={t}>{t}</option>)}
-                      </select>
+                      <Select value={form.task || undefined} onValueChange={v => setForm(p => ({ ...p, task: v }))}>
+                        <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue placeholder="Select task..." /></SelectTrigger>
+                        <SelectContent style={{ borderRadius: 0 }}>
+                          {['Binary Classification', 'Multi-class Classification', 'Regression', 'Anomaly Detection', 'NLP / Text', 'Time Series Forecasting'].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 </div>

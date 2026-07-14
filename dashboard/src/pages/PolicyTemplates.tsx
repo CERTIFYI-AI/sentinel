@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog'
 import { Button } from '../components/ui/button'
@@ -90,15 +91,24 @@ export default function PolicyTemplates() {
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
-        <select className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm" value={filterFramework} onChange={e => setFilterFramework(e.target.value)}>
-          {frameworks.map(f => <option key={f}>{f}</option>)}
-        </select>
-        <select className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-          {statuses.map(s => <option key={s}>{s}</option>)}
-        </select>
-        <select className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm" value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
-          {categories.map(c => <option key={c}>{c}</option>)}
-        </select>
+        <Select value={filterFramework} onValueChange={setFilterFramework}>
+          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            {frameworks.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            {statuses.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={filterCategory} onValueChange={setFilterCategory}>
+          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 overflow-y-auto">
         {filtered.map(t => (

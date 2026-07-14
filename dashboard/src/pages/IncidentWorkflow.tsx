@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Badge } from '../components/ui/badge';
@@ -231,10 +232,12 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (in
           </div>
           <div>
             <label style={{ fontSize: 12, fontWeight: 600, color: 'hsl(var(--text-2))', display: 'block', marginBottom: 5 }}>Severity</label>
-            <select value={severity} onChange={e => setSeverity(e.target.value as any)}
-              style={{ width: '100%', padding: '7px 10px', background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', fontSize: 13 }}>
-              {(['critical', 'high', 'medium', 'low']).map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
+            <Select value={severity} onValueChange={v => setSeverity(v as any)}>
+              <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+              <SelectContent style={{ borderRadius: 0 }}>
+                {(['critical', 'high', 'medium', 'low']).map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
           <div>
             <label style={{ fontSize: 12, fontWeight: 600, color: 'hsl(var(--text-2))', display: 'block', marginBottom: 5 }}>Description</label>
@@ -243,10 +246,12 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (in
           </div>
           <div>
             <label style={{ fontSize: 12, fontWeight: 600, color: 'hsl(var(--text-2))', display: 'block', marginBottom: 5 }}>Assignee</label>
-            <select value={assignee} onChange={e => setAssignee(e.target.value)}
-              style={{ width: '100%', padding: '7px 10px', background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', fontSize: 13 }}>
-              {USERS.map(u => <option key={u.id} value={u.name}>{u.name} ({u.role})</option>)}
-            </select>
+            <Select value={assignee} onValueChange={setAssignee}>
+              <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+              <SelectContent style={{ borderRadius: 0 }}>
+                {USERS.map(u => <SelectItem key={u.id} value={u.name}>{u.name} ({u.role})</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
           <div style={{ display: 'flex', gap: 10, paddingTop: 6 }}>
             <button onClick={onClose} style={{ flex: 1, padding: 9, background: 'none', border: '1px solid hsl(var(--border))', cursor: 'pointer', color: 'hsl(var(--text-2))', fontSize: 13 }}>Cancel</button>
@@ -347,16 +352,15 @@ export default function IncidentWorkflow() {
           <CardHeader className="pb-2">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <CardTitle style={{ fontSize: 13, color: 'hsl(var(--text-1))' }}>Incident Queue ({filtered.length})</CardTitle>
-              <select
-                value={filterStatus}
-                onChange={e => setFilterStatus(e.target.value as any)}
-                style={{ padding: '4px 8px', background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-2))', fontSize: 12 }}
-              >
-                <option value="all">All Statuses</option>
-                {(Object.keys(WORKFLOW) as IncidentStatus[]).map(s => (
-                  <option key={s} value={s}>{workflowState(s).label}</option>
-                ))}
-              </select>
+              <Select value={filterStatus} onValueChange={v => setFilterStatus(v as any)}>
+                <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  {(Object.keys(WORKFLOW) as IncidentStatus[]).map(s => (
+                    <SelectItem key={s} value={s}>{workflowState(s).label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </CardHeader>
           <CardContent style={{ padding: 0 }}>

@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -512,10 +513,12 @@ export default function EvidenceHub() {
               ))}
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Status</label>
-                <select value={editItem.status} onChange={e => setEditItem(prev => prev ? { ...prev, status: e.target.value as EvidenceStatus } : null)}
-                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                  {['synced', 'pending', 'expired', 'failed'].map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
+                <Select value={editItem.status} onValueChange={v => setEditItem(prev => prev ? { ...prev, status: v as EvidenceStatus } : null)}>
+                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {['synced', 'pending', 'expired', 'failed'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           )}
@@ -549,17 +552,21 @@ export default function EvidenceHub() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Type</label>
-                <select value={formData.type} onChange={e => setFormData(prev => ({ ...prev, type: e.target.value }))}
-                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                  {['Report', 'Log', 'Validation', 'Agreement', 'Certificate'].map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
+                <Select value={formData.type} onValueChange={v => setFormData(prev => ({ ...prev, type: v }))}>
+                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {['Report', 'Log', 'Validation', 'Agreement', 'Certificate'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Status</label>
-                <select value={formData.status} onChange={e => setFormData(prev => ({ ...prev, status: e.target.value as EvidenceStatus }))}
-                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                  {['pending', 'synced'].map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
+                <Select value={formData.status} onValueChange={v => setFormData(prev => ({ ...prev, status: v as EvidenceStatus }))}>
+                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {['pending', 'synced'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
