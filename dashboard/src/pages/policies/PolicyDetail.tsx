@@ -12,9 +12,10 @@ import { Button } from '../../components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
 import {
-  POLICIES, CONTROLS, EVIDENCE, AUDIT_LOG, GAPS, FRAMEWORKS,
+  CONTROLS, EVIDENCE, AUDIT_LOG, GAPS, FRAMEWORKS, POLICIES as SEED_POLICIES,
   statusColor, formatDate, Policy,
 } from '../../data/seed';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useSettingsStore } from '../../stores/settingsStore';
 
@@ -100,7 +101,8 @@ export default function PolicyDetail() {
   const navigate = useNavigate();
   const { orgName } = useSettingsStore();
 
-  const policy = POLICIES.find(p => p.id === id);
+  const { data: policies, setData: setPolicies } = useSupabaseTable<Policy>('policies_table', SEED_POLICIES);
+  const policy = policies.find(p => p.id === id);
   const [editOpen, setEditOpen] = useState(false);
   const [editData, setEditData] = useState<Partial<Policy>>({});
 
@@ -562,7 +564,13 @@ export default function PolicyDetail() {
             <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setEditOpen(false)}>
               <X size={13} style={{ marginRight: 4 }} /> Cancel
             </Button>
-            <Button style={{ borderRadius: 0 }} onClick={() => setEditOpen(false)}>
+            <Button style={{ borderRadius: 0 }} onClick={() => {
+              if (editData && policy) {
+                const updated = { ...policy, ...editData };
+                setPolicies(prev => prev.map(p => p.id === policy.id ? updated : p));
+              }
+              setEditOpen(false);
+            }}>
               <FloppyDisk size={13} style={{ marginRight: 4 }} /> Save Changes
             </Button>
           </DialogFooter>

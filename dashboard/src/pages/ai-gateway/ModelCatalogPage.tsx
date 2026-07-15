@@ -178,7 +178,7 @@ function LifecycleStepper({ status }: { status: string }) {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-export default function ModelInventoryPage() {
+export default function ModelCatalogPage() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
   const navigate = useNavigate();
@@ -259,9 +259,9 @@ export default function ModelInventoryPage() {
       </div>
 
       <PageHeader
-        title="Model Inventory"
-        subtitle={`${orgName} · EU AI Act compliant AI model registry`}
-        breadcrumbs={[{ label: 'Home', href: '/overview' }, { label: 'Models' }]}
+        title="Models Catalog"
+        subtitle={`${orgName} · AI Gateway Models & Endpoints`}
+        breadcrumbs={[{ label: 'Home', href: '/overview' }, { label: 'AI Gateway', href: '#' }, { label: 'Models Catalog' }]}
         actions={
           <Button onClick={() => setRegisterOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
             <Plus className="h-4 w-4" />Register Model

@@ -21,6 +21,7 @@ import {
   MODELS, BIAS_AUDITS, INCIDENTS,
   formatDate, Model,
 } from '../../data/seed';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useChartTheme } from '../../hooks/useChartTheme';
 
@@ -194,7 +195,8 @@ export default function ModelDetail() {
   const [showDriftModal, setShowDriftModal] = useState(false);
   const [copiedHash, setCopiedHash] = useState(false);
 
-  const model = MODELS.find(m => m.id === id) || MODELS[0];
+  const { data: models, setData: setModels } = useSupabaseTable<Model>('modelinventory_table', MODELS);
+  const model = models.find(m => m.id === id) || models[0];
 
   // Technical documentation — linked from the DMS/evidence store. Seed set +
   // any docs linked during this session (real platform persists to Supabase).

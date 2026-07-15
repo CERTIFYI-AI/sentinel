@@ -3,6 +3,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { exportCsv } from '@/lib/exportUtils';
 import { FileMagnifyingGlass, Plus, Eye, X, Trash, PencilSimple, Export, Warning, CheckCircle, Clock, MagnifyingGlass, ArrowRight } from '@phosphor-icons/react'
 import { toast } from 'sonner'
+import { useSupabaseTable } from '@/hooks/useSupabaseTable'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { StatCardRow, StatCardRowItem } from '../components/ui/StatCardRow'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
@@ -174,7 +175,7 @@ const FINDING_SEV: Record<string, { bg: string; color: string, border: string }>
 }
 
 export default function AIImpactAssessments() {
-  const [records, setRecords] = useState<AIIA[]>(SEED)
+  const { data: records, setData: setRecords } = useSupabaseTable<AIIA>('ai_impact_assessments', SEED)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
   const [riskFilter, setRiskFilter] = useState('All')

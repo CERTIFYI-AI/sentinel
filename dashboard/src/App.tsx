@@ -48,8 +48,9 @@ const ExportCenter = lazy(() => import('./pages/ExportCenter'));
 const GapAnalysis = lazy(() => import('./pages/GapAnalysis'));
 const IncidentLog = lazy(() => import('./pages/IncidentLog'));
 const ModelInventory = lazy(() => import('./pages/ModelInventory'));
-const ModelInventoryPage = lazy(() => import('./pages/models/ModelInventoryPage'));
-const ModelLifecycle = lazy(() => import('./pages/ModelLifecycle'));
+const ModelRegistryPage = lazy(() => import('./pages/models/ModelRegistryPage'));
+const ModelCatalogPage = lazy(() => import('./pages/ai-gateway/ModelCatalogPage'));
+const ModelDetail = lazy(() => import('./pages/models/ModelDetail'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const PolicyEditor = lazy(() => import('./pages/PolicyEditor'));
 const Remediation = lazy(() => import('./pages/Remediation'));
@@ -108,7 +109,6 @@ const DataGovernancePage = lazy(() => import('./pages/data-governance/DataGovern
 const StakeholderNotifications = lazy(() => import('./pages/notifications/StakeholderNotifications'));
 const IncidentWorkflow = lazy(() => import('./pages/IncidentWorkflow'));
 const RiskDetail = lazy(() => import('./pages/risk/RiskDetail'));
-const ModelDetail = lazy(() => import('./pages/models/ModelDetail'));
 const PolicyDetail = lazy(() => import('./pages/policies/PolicyDetail'));
 
 // ── New Sidebar Modules ─────────────────────────────────────────────────────
@@ -356,7 +356,7 @@ export default function App() {
           <Route path="/incidents" element={<Navigate to="/risk/incidents" replace />} />
           <Route path="/risk/remediation" element={<Remediation />} />
           <Route path="/models" element={<ModelInventory />} />
-          <Route path="/models/inventory" element={<ModelInventoryPage />} />
+          <Route path="/models/inventory" element={<ModelRegistryPage />} />
           <Route path="/models/inventory/:id" element={<ModelDetail />} />
           <Route path="/models/lifecycle" element={<ModelLifecycle />} />
           <Route path="/audit-log" element={<AuditLog />} />
@@ -566,7 +566,7 @@ export default function App() {
             <Route path="/ai-gateway/guardrails" element={<Suspense fallback={<Loading />}><GuardrailActivity /></Suspense>} />
             <Route path="/ai-gateway/logs" element={<Suspense fallback={<Loading />}><LiveTraceFeed /></Suspense>} />
             <Route path="/ai-gateway/keys" element={<Suspense fallback={<Loading />}><KeysVault /></Suspense>} />
-            <Route path="/ai-gateway/models" element={<Suspense fallback={<Loading />}><ModelInventoryPage /></Suspense>} />
+            <Route path="/ai-gateway/models" element={<Suspense fallback={<Loading />}><ModelCatalogPage /></Suspense>} />
             <Route path="/ai-gateway/settings" element={<Suspense fallback={<Loading />}><TrustConfig /></Suspense>} />
 
             {/* MCP Gateway Modules */}
