@@ -1,3 +1,16 @@
+## 1.38.0 (2026-07-15)
+
+* feat: split ModelRegistry and ModelCatalog, wire-up mocked pages ([896176d](https://github.com/CERTIFYI-AI/sentinel/commit/896176d))
+* refactor(ui): Phase 5 — native <select> to Radix Select (AibomRegistry) ([7d04803](https://github.com/CERTIFYI-AI/sentinel/commit/7d04803))
+* refactor(ui): Phase 5 — native <select> to Radix Select (AIImpactAssessments, ConsentManagement) ([fad473c](https://github.com/CERTIFYI-AI/sentinel/commit/fad473c))
+* refactor(ui): Phase 5 — native <select> to Radix Select (DsrManagement) ([a529af0](https://github.com/CERTIFYI-AI/sentinel/commit/a529af0))
+* refactor(ui): Phase 5 — native <select> to Radix Select (EnergyEfficiency, AgentRegistry) ([196d85d](https://github.com/CERTIFYI-AI/sentinel/commit/196d85d))
+* refactor(ui): Phase 5 — native <select> to Radix Select (EthicsReporting, FrameworkMapping, ModelInv ([96d72f4](https://github.com/CERTIFYI-AI/sentinel/commit/96d72f4))
+* refactor(ui): Phase 5 — native <select> to Radix Select (FinancialRisk, EsgReports) ([841e479](https://github.com/CERTIFYI-AI/sentinel/commit/841e479))
+* refactor(ui): Phase 5 — native <select> to Radix Select (PolicyTemplates, IncidentWorkflow, ModelEff ([6ce1c18](https://github.com/CERTIFYI-AI/sentinel/commit/6ce1c18))
+* refactor(ui): Phase 5 — native <select> to Radix Select (RemediationTracker, JitElevation, UseCaseDe ([9206051](https://github.com/CERTIFYI-AI/sentinel/commit/9206051))
+* refactor(ui): Phase 5 — native <select> to Radix Select (SupplyChainAttestations, KeysVault) ([758476a](https://github.com/CERTIFYI-AI/sentinel/commit/758476a))
+
 ## 1.37.0 (2026-07-11)
 
 * feat(dashboard): make CRUD persist to Supabase across all wired pages (Phase 1) ([5ae1650](https://github.com/CERTIFYI-AI/sentinel/commit/5ae1650))
