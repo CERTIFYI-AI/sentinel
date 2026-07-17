@@ -1,3 +1,7 @@
+## 1.40.0 (2026-07-17)
+
+* feat(dashboard): wire 6 more unwired CRUD pages to Supabase (Phase 1 batch 2) ([37e1127](https://github.com/CERTIFYI-AI/sentinel/commit/37e1127))
+
 ## 1.39.0 (2026-07-17)
 
 * feat(dashboard): wire 6 unwired CRUD pages to Supabase (Phase 1 batch 1) ([cee2b05](https://github.com/CERTIFYI-AI/sentinel/commit/cee2b05))
