@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { usePolicies, useUpsertPolicy, useDeletePolicy } from '@/hooks/queries/usePolicies';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -191,10 +192,13 @@ export default function Policies() {
           <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--text-3))' }} />
           <Input placeholder="Search policies..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8" style={{ borderRadius: 0 }} />
         </div>
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={selectStyle}>
-          <option value="all">All Statuses</option>
-          {['published', 'in_review', 'draft'].map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            <SelectItem value="all">All Statuses</SelectItem>
+            {['published', 'in_review', 'draft'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
         <span className="text-xs ml-auto" style={{ color: 'hsl(var(--text-3))' }}>{filtered.length} of {policies.length}</span>
       </div>
 
@@ -326,17 +330,21 @@ export default function Policies() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Status</label>
-                  <select value={editItem.status} onChange={e => setEditItem(prev => prev ? { ...prev, status: e.target.value } : null)}
-                    style={{ width: '100%', ...{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 } }}>
-                    {['published', 'in_review', 'draft'].map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
+                  <Select value={editItem.status} onValueChange={v => setEditItem(prev => prev ? { ...prev, status: v } : null)}>
+                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {['published', 'in_review', 'draft'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Category</label>
-                  <select value={editItem.category} onChange={e => setEditItem(prev => prev ? { ...prev, category: e.target.value } : null)}
-                    style={{ width: '100%', ...{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 } }}>
-                    {['AI Usage', 'Risk', 'Data Privacy', 'AI Ethics', 'Regulatory', 'Vendor', 'Security', 'Governance'].map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
+                  <Select value={editItem.category} onValueChange={v => setEditItem(prev => prev ? { ...prev, category: v } : null)}>
+                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {['AI Usage', 'Risk', 'Data Privacy', 'AI Ethics', 'Regulatory', 'Vendor', 'Security', 'Governance'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
@@ -369,17 +377,21 @@ export default function Policies() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Status</label>
-                <select value={formData.status} onChange={e => setFormData(prev => ({ ...prev, status: e.target.value }))}
-                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                  {['draft', 'in_review', 'published'].map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
+                <Select value={formData.status} onValueChange={v => setFormData(prev => ({ ...prev, status: v }))}>
+                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {['draft', 'in_review', 'published'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Category</label>
-                <select value={formData.category} onChange={e => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                  {['AI Usage', 'Risk', 'Data Privacy', 'AI Ethics', 'Regulatory', 'Vendor', 'Security', 'Governance'].map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
+                <Select value={formData.category} onValueChange={v => setFormData(prev => ({ ...prev, category: v }))}>
+                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {['AI Usage', 'Risk', 'Data Privacy', 'AI Ethics', 'Regulatory', 'Vendor', 'Security', 'Governance'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>

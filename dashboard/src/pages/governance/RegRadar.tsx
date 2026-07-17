@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -152,17 +153,23 @@ export default function RegRadar() {
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-2))' }}>Impact:</span>
-          <select value={filterImpact} onChange={e => setFilterImpact(e.target.value)} style={selectStyle}>
-            <option value="all">All Impact Levels</option>
-            {['critical', 'high', 'medium', 'low'].map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
+          <Select value={filterImpact} onValueChange={setFilterImpact}>
+            <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+            <SelectContent style={{ borderRadius: 0 }}>
+              <SelectItem value="all">All Impact Levels</SelectItem>
+              {['critical', 'high', 'medium', 'low'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-2))' }}>Jurisdiction:</span>
-          <select value={filterJurisdiction} onChange={e => setFilterJurisdiction(e.target.value)} style={selectStyle}>
-            <option value="all">All Jurisdictions</option>
-            {jurisdictions.map(j => <option key={j} value={j}>{j}</option>)}
-          </select>
+          <Select value={filterJurisdiction} onValueChange={setFilterJurisdiction}>
+            <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+            <SelectContent style={{ borderRadius: 0 }}>
+              <SelectItem value="all">All Jurisdictions</SelectItem>
+              {jurisdictions.map(j => <SelectItem key={j} value={j}>{j}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <span className="text-xs ml-auto" style={{ color: 'hsl(var(--text-3))' }}>
           {filtered.length} of {regulations.length} regulations
@@ -429,17 +436,21 @@ export default function RegRadar() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Impact</label>
-                  <select value={editItem.impact} onChange={e => setEditItem(prev => prev ? { ...prev, impact: e.target.value as Severity } : null)}
-                    style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                    {['critical', 'high', 'medium', 'low'].map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
+                  <Select value={editItem.impact} onValueChange={v => setEditItem(prev => prev ? { ...prev, impact: v as Severity } : null)}>
+                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {['critical', 'high', 'medium', 'low'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Status</label>
-                  <select value={editItem.status} onChange={e => setEditItem(prev => prev ? { ...prev, status: e.target.value } : null)}
-                    style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                    {['monitoring', 'preparing', 'effective'].map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
+                  <Select value={editItem.status} onValueChange={v => setEditItem(prev => prev ? { ...prev, status: v } : null)}>
+                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {['monitoring', 'preparing', 'effective'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
@@ -471,10 +482,12 @@ export default function RegRadar() {
             ))}
             <div>
               <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Impact</label>
-              <select value={formData.impact} onChange={e => setFormData(prev => ({ ...prev, impact: e.target.value as Severity }))}
-                style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                {['critical', 'high', 'medium', 'low'].map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
+              <Select value={formData.impact} onValueChange={v => setFormData(prev => ({ ...prev, impact: v as Severity }))}>
+                <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  {['critical', 'high', 'medium', 'low'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>

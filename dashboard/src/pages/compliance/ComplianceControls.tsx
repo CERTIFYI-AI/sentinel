@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -143,14 +144,20 @@ export default function ComplianceControls() {
           <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--text-3))' }} />
           <Input placeholder="Search controls..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8" style={{ borderRadius: 0 }} />
         </div>
-        <select value={filterFramework} onChange={e => setFilterFramework(e.target.value)} style={selectStyle}>
-          <option value="all">All Frameworks</option>
-          {frameworks.sort().map(f => <option key={f} value={f}>{f}</option>)}
-        </select>
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={selectStyle}>
-          <option value="all">All Statuses</option>
-          {['implemented', 'partial', 'planned', 'not_applicable'].map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
+        <Select value={filterFramework} onValueChange={setFilterFramework}>
+          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            <SelectItem value="all">All Frameworks</SelectItem>
+            {frameworks.sort().map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            <SelectItem value="all">All Statuses</SelectItem>
+            {['implemented', 'partial', 'planned', 'not_applicable'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
         <span className="text-xs ml-auto font-mono" style={{ color: 'hsl(var(--text-3))' }}>{filtered.length} of {controls.length}</span>
       </div>
 
@@ -323,10 +330,12 @@ export default function ComplianceControls() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Status</label>
-                  <select value={editItem.status} onChange={e => setEditItem(prev => prev ? { ...prev, status: e.target.value as ControlStatus } : null)}
-                    style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                    {['implemented', 'partial', 'planned', 'not_applicable'].map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
+                  <Select value={editItem.status} onValueChange={v => setEditItem(prev => prev ? { ...prev, status: v as ControlStatus } : null)}>
+                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {['implemented', 'partial', 'planned', 'not_applicable'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Score</label>
@@ -365,17 +374,21 @@ export default function ComplianceControls() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Framework</label>
-                <select value={formData.framework} onChange={e => setFormData(prev => ({ ...prev, framework: e.target.value }))}
-                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                  {FRAMEWORKS.map(fw => <option key={fw.id} value={fw.name}>{fw.name}</option>)}
-                </select>
+                <Select value={formData.framework} onValueChange={v => setFormData(prev => ({ ...prev, framework: v }))}>
+                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {FRAMEWORKS.map(fw => <SelectItem key={fw.id} value={fw.name}>{fw.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Status</label>
-                <select value={formData.status} onChange={e => setFormData(prev => ({ ...prev, status: e.target.value as ControlStatus }))}
-                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                  {['planned', 'partial', 'implemented'].map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
+                <Select value={formData.status} onValueChange={v => setFormData(prev => ({ ...prev, status: v as ControlStatus }))}>
+                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {['planned', 'partial', 'implemented'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
