@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -355,16 +356,20 @@ export default function ScanCenter() {
               <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--text-3))' }} />
               <Input placeholder="Search scans..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8" style={{ borderRadius: 0 }} />
             </div>
-            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-              style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', fontSize: 13, borderRadius: 0 }}>
-              <option value="all">All Statuses</option>
-              {['completed', 'running', 'scheduled', 'failed'].map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-            <select value={filterType} onChange={e => setFilterType(e.target.value)}
-              style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', fontSize: 13, borderRadius: 0 }}>
-              <option value="all">All Types</option>
-              {scanTypes.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+              <SelectContent style={{ borderRadius: 0 }}>
+                <SelectItem value="all">All Statuses</SelectItem>
+                {['completed', 'running', 'scheduled', 'failed'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={filterType} onValueChange={setFilterType}>
+              <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+              <SelectContent style={{ borderRadius: 0 }}>
+                <SelectItem value="all">All Types</SelectItem>
+                {scanTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+              </SelectContent>
+            </Select>
             <span className="text-xs ml-auto" style={{ color: 'hsl(var(--text-3))' }}>{filtered.length} of {scanList.length} scans</span>
           </div>
 
@@ -528,17 +533,21 @@ export default function ScanCenter() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Type</label>
-                  <select value={editItem.type} onChange={e => setEditItem(prev => prev ? { ...prev, type: e.target.value } : null)}
-                    style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                    {['DAST', 'SAST', 'SCA', 'Network', 'AI Security', 'Configuration'].map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
+                  <Select value={editItem.type} onValueChange={v => setEditItem(prev => prev ? { ...prev, type: v } : null)}>
+                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {['DAST', 'SAST', 'SCA', 'Network', 'AI Security', 'Configuration'].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Schedule</label>
-                  <select value={editItem.schedule} onChange={e => setEditItem(prev => prev ? { ...prev, schedule: e.target.value } : null)}
-                    style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                    {['Daily', 'Weekly', 'Bi-weekly', 'Monthly', 'Manual'].map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
+                  <Select value={editItem.schedule} onValueChange={v => setEditItem(prev => prev ? { ...prev, schedule: v } : null)}>
+                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {['Daily', 'Weekly', 'Bi-weekly', 'Monthly', 'Manual'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
@@ -564,17 +573,21 @@ export default function ScanCenter() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Scan Type</label>
-                <select value={formData.type} onChange={e => setFormData(prev => ({ ...prev, type: e.target.value }))}
-                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                  {['DAST', 'SAST', 'SCA', 'Network', 'AI Security', 'Configuration'].map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
+                <Select value={formData.type} onValueChange={v => setFormData(prev => ({ ...prev, type: v }))}>
+                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {['DAST', 'SAST', 'SCA', 'Network', 'AI Security', 'Configuration'].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Schedule</label>
-                <select value={formData.schedule} onChange={e => setFormData(prev => ({ ...prev, schedule: e.target.value }))}
-                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                  {['Daily', 'Weekly', 'Bi-weekly', 'Monthly', 'Manual'].map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
+                <Select value={formData.schedule} onValueChange={v => setFormData(prev => ({ ...prev, schedule: v }))}>
+                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {['Daily', 'Weekly', 'Bi-weekly', 'Monthly', 'Manual'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>

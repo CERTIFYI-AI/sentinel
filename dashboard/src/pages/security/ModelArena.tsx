@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -190,16 +191,18 @@ export default function ModelArena() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Security Radar</CardTitle>
-              <select
+              <Select
                 value={selectedModel.id}
-                onChange={e => {
-                  const m = models.find(m => m.id === e.target.value);
+                onValueChange={v => {
+                  const m = models.find(m => m.id === v);
                   if (m) setSelectedModel(m);
                 }}
-                style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '4px 8px', fontSize: 12, borderRadius: 0 }}
               >
-                {models.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-              </select>
+                <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  {models.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
           </CardHeader>
           <CardContent>
@@ -242,11 +245,13 @@ export default function ModelArena() {
           <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--text-3))' }} />
           <Input placeholder="Search models..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8" style={{ borderRadius: 0 }} />
         </div>
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-          style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', fontSize: 13, borderRadius: 0 }}>
-          <option value="all">All Statuses</option>
-          {['production', 'staging', 'evaluation', 'deprecated'].map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            <SelectItem value="all">All Statuses</SelectItem>
+            {['production', 'staging', 'evaluation', 'deprecated'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
         <span className="text-xs ml-auto" style={{ color: 'hsl(var(--text-3))' }}>{filtered.length} of {models.length} models</span>
       </div>
 
@@ -406,17 +411,21 @@ export default function ModelArena() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Provider</label>
-                  <select value={editItem.provider} onChange={e => setEditItem(prev => prev ? { ...prev, provider: e.target.value } : null)}
-                    style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                    {['OpenAI', 'Anthropic', 'Google', 'Meta', 'Mistral AI', 'Cohere', 'Other'].map(p => <option key={p} value={p}>{p}</option>)}
-                  </select>
+                  <Select value={editItem.provider} onValueChange={v => setEditItem(prev => prev ? { ...prev, provider: v } : null)}>
+                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {['OpenAI', 'Anthropic', 'Google', 'Meta', 'Mistral AI', 'Cohere', 'Other'].map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Status</label>
-                  <select value={editItem.status} onChange={e => setEditItem(prev => prev ? { ...prev, status: e.target.value as any } : null)}
-                    style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                    {['production', 'staging', 'evaluation', 'deprecated'].map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
+                  <Select value={editItem.status} onValueChange={v => setEditItem(prev => prev ? { ...prev, status: v as any } : null)}>
+                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {['production', 'staging', 'evaluation', 'deprecated'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-3">
@@ -454,17 +463,21 @@ export default function ModelArena() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Provider</label>
-                <select value={formData.provider} onChange={e => setFormData(prev => ({ ...prev, provider: e.target.value }))}
-                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                  {['OpenAI', 'Anthropic', 'Google', 'Meta', 'Mistral AI', 'Cohere', 'Other'].map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
+                <Select value={formData.provider} onValueChange={v => setFormData(prev => ({ ...prev, provider: v }))}>
+                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {['OpenAI', 'Anthropic', 'Google', 'Meta', 'Mistral AI', 'Cohere', 'Other'].map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Status</label>
-                <select value={formData.status} onChange={e => setFormData(prev => ({ ...prev, status: e.target.value as any }))}
-                  style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                  {['production', 'staging', 'evaluation', 'deprecated'].map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
+                <Select value={formData.status} onValueChange={v => setFormData(prev => ({ ...prev, status: v as any }))}>
+                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {['production', 'staging', 'evaluation', 'deprecated'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
