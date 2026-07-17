@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useSupabaseTable } from '@/hooks/useSupabaseTable'
 import {
   Lightning, Plus, X, Play, Pause, Copy, MagnifyingGlass,
   CheckCircle, Warning, Clock, ArrowRight, Gear, FlowArrow,
@@ -357,7 +358,7 @@ export default function AutomationStudio() {
   const [catFilter, setCatFilter] = useState('All')
   const [selected, setSelected] = useState<Workflow | null>(null)
   const [drawerTab, setDrawerTab] = useState<'overview' | 'builder' | 'logs'>('overview')
-  const [workflows, setWorkflows] = useState<Workflow[]>(SEED_WORKFLOWS)
+  const { data: workflows, setData: setWorkflows } = useSupabaseTable<Workflow>('automationstudio_table', SEED_WORKFLOWS)
 
   // New Workflow dialog
   const [newOpen, setNewOpen] = useState(false)

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSupabaseTable } from '@/hooks/useSupabaseTable'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Plugs, Plus, X, Warning, ArrowClockwise, Trash } from '@phosphor-icons/react'
 import { toast } from 'sonner'
@@ -62,7 +63,7 @@ const CAT_COLORS: Record<IntegrationCategory, string> = {
 const BLANK_INT = { name: '', category: 'AI Provider' as IntegrationCategory, description: '', authMethod: 'API Key', apiVersion: '', }
 
 export default function IntegrationsPage() {
-  const [integrations, setIntegrations] = useState<Integration[]>(SEED)
+  const { data: integrations, setData: setIntegrations } = useSupabaseTable<Integration>('integrations_table', SEED)
   const [selected, setSelected] = useState<Integration | null>(null)
   const [catFilter, setCatFilter] = useState<string>('All')
   const [showCreate, setShowCreate] = useState(false)

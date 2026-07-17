@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSupabaseTable } from "@/hooks/useSupabaseTable";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertTriangle, Plus, Search, Filter } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
@@ -37,7 +38,7 @@ const statusConfig: Record<string, { color: string; dot: string }> = {
 };
 
 export default function IncidentLog() {
-  const [incidents, setIncidents] = useState<Incident[]>(INITIAL);
+  const { data: incidents, setData: setIncidents } = useSupabaseTable<Incident>('incidentlog_table', INITIAL);
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState("");
   const [sevFilter, setSevFilter] = useState("all");

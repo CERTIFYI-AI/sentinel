@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useSupabaseTable } from '@/hooks/useSupabaseTable'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { exportCsv } from '@/lib/exportUtils';
 import { HandCoins, MagnifyingGlass, Plus, Eye, X, Export, TrendUp, TrendDown, ChartLine, Calculator, Target, Sliders, PencilSimple, Trash } from '@phosphor-icons/react'
@@ -50,7 +51,7 @@ const CATEGORIES = ['Regulatory', 'Operational', 'Third-Party', 'Fraud', 'Legal'
 const OWNERS = ['Sarah Chen', 'James Liu', 'Marcus Johnson', 'Maria Santos']
 
 export default function FinancialRisk() {
-  const [items, setItems] = useState<FinancialRiskItem[]>(SEED)
+  const { data: items, setData: setItems } = useSupabaseTable<FinancialRiskItem>('financialrisk_table', SEED)
   const [selected, setSelected] = useState<FinancialRiskItem | null>(null)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSupabaseTable } from '@/hooks/useSupabaseTable'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { exportCsv } from '@/lib/exportUtils';
 import { FlowArrow, Plus, Eye, X, Trash, PencilSimple, Export, CheckCircle, Clock, Warning, MagnifyingGlass, ArrowRight, Pause, Play, User, ClipboardText } from '@phosphor-icons/react'
@@ -156,7 +157,7 @@ const TYPE_COLOR: Record<WFType, string> = {
 }
 
 export default function ApprovalWorkflows() {
-  const [records, setRecords] = useState<Workflow[]>(SEED)
+  const { data: records, setData: setRecords } = useSupabaseTable<Workflow>('approvalworkflows_table', SEED)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
   const [selected, setSelected] = useState<Workflow | null>(null)

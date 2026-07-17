@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSupabaseTable } from '@/hooks/useSupabaseTable'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ChartLine, Export, X, ArrowRight, Warning, Plus, MagnifyingGlass, Pencil, Trash, Database, ArrowsDownUp, GitBranch } from '@phosphor-icons/react'
 import { toast } from 'sonner'
@@ -50,7 +51,7 @@ const BLANK = {
 }
 
 export default function DataLineage() {
-  const [records, setRecords] = useState<LineageRecord[]>(SEED)
+  const { data: records, setData: setRecords } = useSupabaseTable<LineageRecord>('datalineage_table', SEED)
   const [selected, setSelected] = useState<LineageRecord | null>(null)
   const [drawerTab, setDrawerTab] = useState<'overview' | 'upstream' | 'downstream'>('overview')
   const [search, setSearch] = useState('')
