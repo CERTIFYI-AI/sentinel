@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSupabaseTable } from '@/hooks/useSupabaseTable'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { Certificate, MagnifyingGlass, Plus, X, Export, Trash, ShieldCheck, FileText, ArrowClockwise, Pencil } from '@phosphor-icons/react'
 import { toast } from 'sonner'
@@ -58,7 +59,7 @@ const BLANK = {
 }
 
 export default function SupplyChainAttestations() {
-  const [attestations, setAttestations] = useState<Attestation[]>(SEED)
+  const { data: attestations, setData: setAttestations } = useSupabaseTable<Attestation>('supplychainattestations_table', SEED)
   const [selected, setSelected] = useState<Attestation | null>(null)
   const [drawerTab, setDrawerTab] = useState<'overview' | 'document' | 'verification' | 'renewal'>('overview')
   const [search, setSearch] = useState('')

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSupabaseTable } from '@/hooks/useSupabaseTable'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { Package, MagnifyingGlass, Plus, Eye, X, Export, Warning, CheckCircle, Trash, ShieldWarning, Scales, ListChecks, ArrowLeft, ArrowRight, DownloadSimple, Seal, FloppyDisk, Spinner, CaretRight } from '@phosphor-icons/react'
 import { toast } from 'sonner'
@@ -43,7 +44,7 @@ const BLANK_DS = { name: '', version: '', license: 'Proprietary' }
 const BLANK_DEP = { name: '', version: '', license: 'MIT', risk: 'Low' as 'Low' | 'Medium' | 'High' }
 
 export default function AibomRegistry() {
-  const [records, setRecords] = useState<AIBOMRecord[]>(SEED)
+  const { data: records, setData: setRecords } = useSupabaseTable<AIBOMRecord>('aibomregistry_table', SEED)
   const [selected, setSelected] = useState<AIBOMRecord | null>(null)
   const [drawerTab, setDrawerTab] = useState<'overview' | 'components' | 'vulnerabilities' | 'compliance'>('overview')
   const [search, setSearch] = useState('')

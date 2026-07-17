@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import {
   Storefront, MagnifyingGlass, CheckCircle, Clock, Warning,
@@ -125,7 +126,7 @@ const ALL_CATEGORIES: VendorCategory[] = ['Foundation Model', 'Infrastructure', 
 
 export default function Marketplace() {
   const { orgName } = useSettingsStore();
-  const [vendors, setVendors] = useState<MarketplaceVendor[]>(VENDORS);
+  const { data: vendors, setData: setVendors } = useSupabaseTable<MarketplaceVendor>('marketplace_table', VENDORS);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<AttestationType | 'All'>('All');
   const [catFilter, setCatFilter] = useState<VendorCategory | 'All'>('All');

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSupabaseTable } from '@/hooks/useSupabaseTable'
 import { Bug, MagnifyingGlass, Plus, Eye, X, Export, ShieldWarning, CheckCircle, Pencil, Trash, Warning } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
@@ -56,7 +57,7 @@ const STS: Record<FindingStatus, { bg: string; color: string }> = {
 }
 
 export default function RedTeamFindings() {
-  const [findings, setFindings] = useState<RTFinding[]>(SEED)
+  const { data: findings, setData: setFindings } = useSupabaseTable<RTFinding>('redteamfindings_table', SEED)
   const [search, setSearch] = useState('')
   const [sevFilter, setSevFilter] = useState('All')
   const [statusFilter, setStatusFilter] = useState('All')

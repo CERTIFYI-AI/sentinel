@@ -1,4 +1,5 @@
 import { toast } from 'sonner';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { useState, useMemo } from 'react';
 import {
@@ -117,7 +118,7 @@ function eventColor(sev: 'info' | 'warn' | 'error') {
 
 export default function PostMarket() {
   const ct = useChartTheme();
-  const [plans, setPlans] = useState<SurveillancePlan[]>(SEED_PLANS);
+  const { data: plans, setData: setPlans } = useSupabaseTable<SurveillancePlan>('postmarket_table', SEED_PLANS);
   const [events] = useState<SurveillanceEvent[]>(SEED_EVENTS);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<SurveillancePlan | null>(null);

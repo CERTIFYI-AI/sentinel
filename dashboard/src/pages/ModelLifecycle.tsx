@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSupabaseTable } from "@/hooks/useSupabaseTable";
 import { useNavigate } from "react-router-dom";
 import { GitBranch, ChevronRight, Clock, CheckCircle2, AlertTriangle, XCircle, PlayCircle, ArrowRight, Check, X, Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
@@ -100,7 +101,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 export default function ModelLifecycle() {
   const navigate = useNavigate();
-  const [models, setModels] = useState<LifecycleModel[]>(LIFECYCLE_MODELS);
+  const { data: models, setData: setModels } = useSupabaseTable<LifecycleModel>('modellifecycle_table', LIFECYCLE_MODELS);
   const [selectedId, setSelectedId] = useState<string>(LIFECYCLE_MODELS[0].id);
   const [transitionOpen, setTransitionOpen] = useState(false);
 
