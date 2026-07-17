@@ -1,3 +1,9 @@
+## 1.39.0 (2026-07-17)
+
+* feat(dashboard): wire 6 unwired CRUD pages to Supabase (Phase 1 batch 1) ([cee2b05](https://github.com/CERTIFYI-AI/sentinel/commit/cee2b05))
+* refactor(ui): Phase 5 — native <select> to Radix Select (Policies, ComplianceControls, RegRadar) ([be6ecba](https://github.com/CERTIFYI-AI/sentinel/commit/be6ecba))
+* refactor(ui): Phase 5 — native <select> to Radix Select (ScanCenter, ModelArena) ([1db1327](https://github.com/CERTIFYI-AI/sentinel/commit/1db1327))
+
 ## 1.38.0 (2026-07-15)
 
 * feat: split ModelRegistry and ModelCatalog, wire-up mocked pages ([896176d](https://github.com/CERTIFYI-AI/sentinel/commit/896176d))
