@@ -51,6 +51,7 @@ const ModelInventory = lazy(() => import('./pages/ModelInventory'));
 const ModelRegistryPage = lazy(() => import('./pages/models/ModelRegistryPage'));
 const ModelCatalogPage = lazy(() => import('./pages/ai-gateway/ModelCatalogPage'));
 const ModelDetail = lazy(() => import('./pages/models/ModelDetail'));
+const ModelLifecycle = lazy(() => import('./pages/ModelLifecycle'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const PolicyEditor = lazy(() => import('./pages/PolicyEditor'));
 const Remediation = lazy(() => import('./pages/Remediation'));
