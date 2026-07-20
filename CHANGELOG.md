@@ -1,3 +1,7 @@
+## <small>1.40.1 (2026-07-20)</small>
+
+* fix: add missing ModelLifecycle import in App.tsx ([094d928](https://github.com/CERTIFYI-AI/sentinel/commit/094d928))
+
 ## 1.40.0 (2026-07-17)
 
 * feat(dashboard): wire 6 more unwired CRUD pages to Supabase (Phase 1 batch 2) ([37e1127](https://github.com/CERTIFYI-AI/sentinel/commit/37e1127))
