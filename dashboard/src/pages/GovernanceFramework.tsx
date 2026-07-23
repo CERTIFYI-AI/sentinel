@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { useNavigate } from 'react-router-dom';
 import {
   ShieldCheck, Warning, ChartBar, Eye, Globe, Lock,
@@ -75,6 +76,14 @@ const CERTIFIED_ORGS = [
 
 const MATURITY_LEVELS: MaturityLevel[] = ['Not Started', 'Planned', 'In Progress', 'Implemented'];
 
+interface MaturityRow { id: string; level: MaturityLevel }
+
+const MATURITY_SEED: MaturityRow[] = [
+  { id: '1', level: 'In Progress' }, { id: '2', level: 'Implemented' },
+  { id: '3', level: 'In Progress' }, { id: '4', level: 'Planned' },
+  { id: '5', level: 'In Progress' }, { id: '6', level: 'Planned' },
+];
+
 const FRAMEWORK_STATS = [
   { label: 'Regulatory Articles Mapped', value: '87' },
   { label: 'ISO 42001 Controls', value: '42' },
@@ -86,12 +95,18 @@ export default function GovernanceFramework() {
   const navigate = useNavigate();
   const { orgName } = useSettingsStore();
 
-  const [maturity, setMaturity] = useState<Record<number, MaturityLevel>>({
-    1: 'In Progress', 2: 'Implemented', 3: 'In Progress',
-    4: 'Planned', 5: 'In Progress', 6: 'Planned',
-  });
+  // Maturity is persisted one row per pillar so the doc-jsonb table stays
+  // aggregate-root shaped; the Record below is just the render-time view.
+  const { data: maturityRows, setData: setMaturityRows } =
+    useSupabaseTable<MaturityRow>('governanceframework_table', MATURITY_SEED);
 
-  const setLevel = (id: number, level: MaturityLevel) => setMaturity(prev => ({ ...prev, [id]: level }));
+  const maturity = useMemo(
+    () => Object.fromEntries(maturityRows.map(r => [Number(r.id), r.level])) as Record<number, MaturityLevel>,
+    [maturityRows]
+  );
+
+  const setLevel = (id: number, level: MaturityLevel) =>
+    setMaturityRows(prev => prev.map(r => (Number(r.id) === id ? { ...r, level } : r)));
 
   const score = Math.round(
     (Object.values(maturity).reduce((acc, l) => acc + MATURITY_WEIGHT[l], 0) / PILLARS.length) * 100

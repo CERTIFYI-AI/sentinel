@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { PageHeader } from '../components/ui/PageHeader';
@@ -89,6 +90,16 @@ const WORKFLOW_FALLBACK: WorkflowState = {
   color: 'hsl(var(--text-3))', bgColor: 'hsl(var(--bg-muted))', nextStates: [], slaHours: 0,
 };
 const workflowState = (s: string): WorkflowState => WORKFLOW[s as IncidentStatus] ?? WORKFLOW_FALLBACK;
+
+// Module-level so the reference is stable for useSupabaseTable's effect deps.
+// Assignee is round-robin rather than random so a re-seed is reproducible.
+const INCIDENT_SEED: any[] = INCIDENTS.map((inc: any, i: number) => ({
+  ...inc,
+  status2: (inc.resolved ? 'resolved' : 'investigating') as IncidentStatus,
+  createdDate: inc.date,
+  slaHours: inc.severity === 'critical' ? 1 : inc.severity === 'high' ? 2 : 8,
+  assignee: USERS[i % USERS.length].name,
+}));
 
 type LocalIncident = typeof INCIDENTS[0] & {
   status2: IncidentStatus;
@@ -267,15 +278,8 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (in
 }
 
 export default function IncidentWorkflow() {
-  const [incidents, setIncidents] = useState<any[]>(() =>
-    INCIDENTS.map((inc: any) => ({
-      ...inc,
-      status2: (inc.resolved ? 'resolved' : 'investigating') as IncidentStatus,
-      createdDate: inc.date,
-      slaHours: inc.severity === 'critical' ? 1 : inc.severity === 'high' ? 2 : 8,
-      assignee: USERS[Math.floor(Math.random() * USERS.length)].name,
-    }))
-  );
+  const { data: incidents, setData: setIncidents } =
+    useSupabaseTable<any>('incidentworkflow_table', INCIDENT_SEED);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [filterStatus, setFilterStatus] = useState<IncidentStatus | 'all'>('all');

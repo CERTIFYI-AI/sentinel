@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { FileText, Plus, Edit3, Save, X, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { PageHeader } from "../components/ui/PageHeader";
@@ -35,7 +36,7 @@ const statusBadge: Record<string, string> = {
 };
 
 export default function PolicyEditor() {
-  const [policies, setPolicies] = useState(TEMPLATES);
+  const { data: policies, setData: setPolicies } = useSupabaseTable<Policy>('policyeditor_table', TEMPLATES);
   const [selected, setSelected] = useState<string | null>("p1");
   const [showNew, setShowNew] = useState(false);
   const [form, setForm] = useState({ name: "", framework: "EU AI Act", content: "" });

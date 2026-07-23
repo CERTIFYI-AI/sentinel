@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -97,7 +98,7 @@ const sevColor = (s: string) => {
 export default function ComplianceAutopilot() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
-  const [agents, setAgents] = useState(AUTOPILOT_AGENTS);
+  const { data: agents, setData: setAgents } = useSupabaseTable<typeof AUTOPILOT_AGENTS[number]>('complianceautopilot_table', AUTOPILOT_AGENTS);
   const [tab, setTab] = useState('agents');
 
   const running = agents.filter(a => a.status === 'running').length;
