@@ -318,8 +318,8 @@ The **core platform** is licensed under Apache-2.0 (see [`LICENSE`](./LICENSE)).
 
 <div align="center">
 
-Built by [Dignep Group](https://dignep.com) · Powering AI Governance for Regulated Industries
+Built by [Dignep Group Pvt.Ltd.](https://dignep.com.np/) · Powering AI Governance for Regulated Industries
 
-**[certifyi.ai](https://certifyi.ai)** · [LinkedIn](https://linkedin.com/company/certifyi) · [Twitter/X](https://x.com/certifyi_ai)
+[certifyi.ai](https://certifyi.ai/) · [LinkedIn](https://linkedin.com/company/certifyi) · [Twitter/X](https://x.com/getcertifyi) · [Facebook](https://www.facebook.com/certifyi) · [Instagram](https://www.instagram.com/certifyi) · [YouTube](https://www.youtube.com/@certifyi)
 
 </div>
