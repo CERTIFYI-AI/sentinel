@@ -1,3 +1,9 @@
+## 1.41.0 (2026-08-09)
+
+* Merge branch 'feat/wire-crud-batch3' ([bf87602](https://github.com/CERTIFYI-AI/sentinel/commit/bf87602))
+* feat: Add comprehensive contextual User Guides across all modules ([d153bf8](https://github.com/CERTIFYI-AI/sentinel/commit/d153bf8))
+* feat(dashboard): wire final 7 unwired CRUD pages to Supabase (Phase 1 batch 3) ([0f41561](https://github.com/CERTIFYI-AI/sentinel/commit/0f41561))
+
 ## <small>1.40.1 (2026-07-20)</small>
 
 * fix: add missing ModelLifecycle import in App.tsx ([094d928](https://github.com/CERTIFYI-AI/sentinel/commit/094d928))
