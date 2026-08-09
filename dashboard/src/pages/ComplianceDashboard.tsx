@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { Scale, Download, ChevronDown, ExternalLink } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatCardRow, type StatCardRowItem } from "@/components/ui/StatCardRow";
@@ -30,7 +31,7 @@ const scoreColor = (s: number) => s >= 85 ? 'hsl(var(--s-ok-tx))' : s >= 70 ? 'h
 const barBg = (s: number) => s >= 85 ? 'hsl(var(--s-ok-tx))' : s >= 70 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-er-tx))';
 
 export default function ComplianceDashboard() {
-  const [frameworks, setFrameworks] = useState(FRAMEWORKS);
+  const { data: frameworks, setData: setFrameworks } = useSupabaseTable<typeof FRAMEWORKS[number]>('compliancedashboard_table', FRAMEWORKS);
   const [generating, setGenerating] = useState(false);
   const [reportReady, setReportReady] = useState(false);
   const [selectedFw, setSelectedFw] = useState<string | null>(null);

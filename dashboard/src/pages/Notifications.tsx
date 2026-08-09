@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { Bell, AlertTriangle, Shield, CheckCircle2, Clock, Info, Filter, CheckCheck } from "lucide-react";
 import { Card, CardContent } from "../components/ui/card";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -35,7 +36,7 @@ const typeConfig: Record<string, { color: string; bg: string; borderColor: strin
 };
 
 export default function Notifications() {
-  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
+  const { data: notifications, setData: setNotifications } = useSupabaseTable<Notification>('notifications_table', INITIAL_NOTIFICATIONS);
   const [typeFilter, setTypeFilter] = useState("all");
 
   const unreadCount = notifications.filter(n => !n.read).length;

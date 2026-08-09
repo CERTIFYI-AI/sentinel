@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { toast } from 'sonner';
 import {
@@ -150,7 +151,7 @@ function pctColor(pct: number) {
 }
 
 export default function FrameworkMappingPage() {
-  const [mappings, setMappings] = useState<FrameworkMapping[]>(SEED);
+  const { data: mappings, setData: setMappings } = useSupabaseTable<FrameworkMapping>('frameworkmapping_table', SEED);
   const [search, setSearch] = useState('');
   const [selectedFrameworks, setSelectedFrameworks] = useState<string[]>(['EU AI Act', 'ISO 42001', 'NIST AI RMF', 'GDPR']);
   const [addOpen, setAddOpen] = useState(false);
