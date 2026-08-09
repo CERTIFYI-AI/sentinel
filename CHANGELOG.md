@@ -1,3 +1,7 @@
+## 1.43.0 (2026-08-09)
+
+* feat: implement hierarchical article-based user guide with rich markdown-style content ([852dd88](https://github.com/CERTIFYI-AI/sentinel/commit/852dd88))
+
 ## 1.42.0 (2026-08-09)
 
 * feat: implement persistent right sidebar for module guides ([fce7af3](https://github.com/CERTIFYI-AI/sentinel/commit/fce7af3))
