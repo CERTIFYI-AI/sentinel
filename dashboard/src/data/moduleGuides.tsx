@@ -94,24 +94,7 @@ export const COLLECTIONS: Collection[] = [
                   <li><strong>ISO 27001</strong> — Information security controls mapped to AI-specific concerns</li>
                   <li><strong>NIST AI RMF</strong> — The 4 functions (Govern, Map, Measure, Manage) with subcategory tracking</li>
                 </ul>
-                <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">You can also install additional frameworks (SOC 2, GDPR, HIPAA and others) through the plugin system.</p>
               </>
-            )
-          },
-          {
-            id: 'other-things-included',
-            title: 'Other things included',
-            content: (
-              <ul className="list-disc pl-5 space-y-2 text-sm text-[hsl(var(--text-2))] leading-relaxed">
-                <li>Policy manager with versioning, approval workflows and status tracking</li>
-                <li>Evidence hub for uploading and organizing compliance documentation</li>
-                <li>AI trust center that generates a public transparency page</li>
-                <li>Training registry to assign courses and track staff completion</li>
-                <li>Incident management for logging AI-related incidents and corrective actions</li>
-                <li>Role-based access (Admin, Reviewer, Editor, Auditor) with organization-level isolation</li>
-                <li>Event tracker with a full audit trail of who did what and when</li>
-                <li>Integrations with Slack, MLflow, and custom webhooks via automations</li>
-              </ul>
             )
           },
           {
@@ -127,23 +110,7 @@ export const COLLECTIONS: Collection[] = [
                   <h4 className="font-semibold text-[hsl(var(--text-1))] text-sm mb-1">Kubernetes</h4>
                   <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Helm chart for production clusters with horizontal scaling.</p>
                 </div>
-                <div>
-                  <h4 className="font-semibold text-[hsl(var(--text-1))] text-sm mb-1">Cloud VMs</h4>
-                  <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Works on any Linux VM (AWS, GCP, Azure, Render, DigitalOcean).</p>
-                </div>
-                <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed mt-4">The stack runs on PostgreSQL and Redis. Authentication supports email/password, Google OAuth2 and Microsoft Entra ID.</p>
               </div>
-            )
-          },
-          {
-            id: 'next-steps',
-            title: 'Where to go from here',
-            content: (
-              <ul className="list-disc pl-5 space-y-2 text-sm text-[hsl(var(--text-2))] leading-relaxed">
-                <li><strong>Install</strong> — Get the platform running in your environment (20-30 minutes)</li>
-                <li><strong>Dashboard tour</strong> — Understand the layout, sidebar and key metrics</li>
-                <li><strong>Quick start</strong> — Create your first AI use case and upload evidence in under 10 minutes</li>
-              </ul>
             )
           }
         ]
@@ -159,68 +126,102 @@ export const COLLECTIONS: Collection[] = [
       {
         id: 'ai-risk-tiering',
         title: 'AI Risk Tiering & Matrix',
-        description: 'Automated classification of AI risks.',
+        description: 'Automated classification of AI risks and visual matrix plotting.',
         sections: [
           {
             id: 'tiering',
             title: 'Automated Risk Tiering',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Sentinel automatically analyzes model metadata and use cases to assign a risk tier (e.g., Unacceptable, High, Limited, Minimal) based on guidelines like the EU AI Act.</p>
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Sentinel automatically analyzes model metadata, intended use cases, and input parameters to assign a strict risk tier (e.g., Unacceptable, High, Limited, Minimal). This classification dictates the level of governance required, preventing high-risk models from bypassing crucial compliance checks.</p>
           },
           {
             id: 'matrix',
             title: 'Visual Risk Matrix',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Risks are plotted on a 5x5 matrix comparing Likelihood vs. Impact. This provides a visual heatmap, instantly highlighting critical risks in the top-right quadrant that require immediate mitigation.</p>
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">A dynamic 5x5 matrix visually plots identified risks based on their Likelihood and Impact scores. This instantly highlights critical vulnerabilities in the top-right quadrant, allowing risk officers to prioritize immediate mitigation strategies.</p>
           }
         ]
       },
       {
         id: 'risk-register',
-        title: 'Risk Register & Intelligence',
-        description: 'Centralized repository and insights for AI risks.',
+        title: 'Risk Register',
+        description: 'Centralized repository for all identified AI risks.',
         sections: [
           {
-            id: 'register',
-            title: 'The Risk Register',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">A central ledger where all identified AI risks are documented. You can score them, assign owners, track mitigations, and monitor the residual risk score over time as controls are applied.</p>
+            id: 'repository',
+            title: 'Central Repository',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">The Risk Register serves as the single source of truth for all AI-related risks across the enterprise. Users can log risks, categorize them by domain (e.g., Security, Privacy, Bias), assign dedicated owners, and link them to specific models or business units.</p>
           },
           {
-            id: 'intelligence',
-            title: 'Risk Intelligence',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Aggregated dashboards that provide insights and scoring on your organization's overall risk posture, helping executives understand exposure trends.</p>
+            id: 'mitigation',
+            title: 'Mitigation Tracking',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Track the status of mitigation plans and observe the live calculation of Residual Risk scores as compensating controls are successfully implemented.</p>
+          }
+        ]
+      },
+      {
+        id: 'risk-intelligence',
+        title: 'Risk Intelligence',
+        description: 'Dashboards for aggregated risk insights and scoring.',
+        sections: [
+          {
+            id: 'dashboards',
+            title: 'Aggregated Dashboards',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Provides high-level insights and quantitative scoring on the organization's overall risk posture. Visualizes risk distribution across departments, highlights recurring systemic vulnerabilities, and tracks risk velocity over time.</p>
           }
         ]
       },
       {
         id: 'specialized-assessments',
-        title: 'Specialized Assessments',
-        description: 'Conduct deep-dive impact assessments (DPIA, TIA, BIA, AIIA).',
+        title: 'Specialized Assessments (DPIA, TIA, BIA, AIIA)',
+        description: 'Conduct deep-dive impact assessments.',
         sections: [
           {
             id: 'dpia',
-            title: 'Data Protection (DPIA)',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Workflows for Data Protection Impact Assessments to ensure compliance with GDPR Article 35 when processing personal data in AI models.</p>
+            title: 'Data Protection Impact Assessments (DPIA)',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Structured workflows to evaluate the privacy impacts of AI systems processing personal data, ensuring strict adherence to GDPR Article 35.</p>
+          },
+          {
+            id: 'tia',
+            title: 'Transfer Impact Assessments (TIA)',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Assess the risks associated with transferring data across borders, especially when utilizing cloud-based LLM APIs hosted in foreign jurisdictions.</p>
+          },
+          {
+            id: 'bia',
+            title: 'Business Impact Assessments (BIA)',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Evaluate the operational and financial consequences of an AI system failure, determining the required resilience and recovery time objectives.</p>
           },
           {
             id: 'aiia',
             title: 'AI Impact Assessments (AIIA)',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Comprehensive evaluations specific to AI systems, assessing potential harms, biases, and operational impacts before a high-risk model is deployed.</p>
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Comprehensive, AI-specific evaluations assessing potential societal harms, algorithmic biases, and fundamental rights impacts before deploying a high-risk model.</p>
           }
         ]
       },
       {
-        id: 'genai-financial-risk',
-        title: 'GenAI & Financial Risk',
-        description: 'Track generative AI vulnerabilities and financial exposure.',
+        id: 'genai-risks',
+        title: 'GenAI Risks & Red Teaming',
+        description: 'Track Generative AI vulnerabilities and attack findings.',
         sections: [
           {
-            id: 'genai',
-            title: 'GenAI Risks',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Specific tracking for Generative AI vulnerabilities (like the OWASP LLM Top 10), including prompt injection and data leakage, alongside findings from Red Team exercises.</p>
+            id: 'tracking',
+            title: 'Vulnerability Tracking',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Specific tracking for Generative AI risks, including the OWASP LLM Top 10 (Prompt Injection, Data Leakage, Insecure Output Handling).</p>
           },
           {
-            id: 'financial',
-            title: 'Financial Risk Modeling',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Tools to model and track the potential financial exposure or losses related to AI system failures, regulatory fines, or operational downtime.</p>
+            id: 'red-teaming',
+            title: 'Red Team Findings',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Log and manage findings from adversarial testing (Red Teaming) exercises, ensuring that discovered jailbreaks or model bypasses are rapidly patched.</p>
+          }
+        ]
+      },
+      {
+        id: 'financial-risk',
+        title: 'Financial Risk Modeling',
+        description: 'Track the financial exposure related to AI failures.',
+        sections: [
+          {
+            id: 'modeling',
+            title: 'Exposure Calculation',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Tools to quantify the potential financial losses stemming from AI failures, regulatory fines, IP infringement claims, or operational downtime. Helps in determining the ROI of implementing specific governance controls.</p>
           }
         ]
       }
@@ -228,53 +229,96 @@ export const COLLECTIONS: Collection[] = [
   },
   {
     id: 'governance',
-    title: 'Governance & Compliance',
+    title: 'Governance, Policies & Compliance',
     description: 'Manage policies, map controls to regulatory frameworks, and automate compliance gap analysis.',
     icon: ShieldCheck,
     articles: [
       {
         id: 'policy-management',
         title: 'Policy Management',
-        description: 'Author and track governance policies.',
+        description: 'Built-in Policy Editor, Templates, and tracking.',
         sections: [
           {
             id: 'editor',
-            title: 'Policy Editor & Templates',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Use the built-in rich text Policy Editor and standardized Policy Templates to draft, review, and publish AI governance policies. Track version history and enforce approval workflows before policies go live.</p>
+            title: 'Policy Editor',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">A robust rich-text editor for authoring AI governance policies directly within the platform. Supports versioning, redlining, and mandatory approval workflows.</p>
+          },
+          {
+            id: 'templates',
+            title: 'Policy Templates',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Jumpstart your governance program using built-in, expert-drafted templates for Acceptable AI Use, Model Development Standards, and Data Handling Policies.</p>
           }
         ]
       },
       {
         id: 'framework-mapping',
-        title: 'Frameworks & Gap Analysis',
-        description: 'Align internal controls with external regulations.',
+        title: 'Framework Mapping',
+        description: 'Map internal controls directly to external frameworks.',
         sections: [
           {
             id: 'mapping',
-            title: 'Framework Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Directly map your internal controls to requirements in frameworks like the EU AI Act, NIST AI RMF, and ISO 42001.</p>
-          },
-          {
-            id: 'autopilot',
-            title: 'Compliance Autopilot & Gap Analysis',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">The Autopilot automatically identifies gaps in your compliance coverage against selected frameworks, highlighting areas where new controls must be implemented to achieve certification.</p>
+            title: 'Control Alignment',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Directly link your internal technical and organizational controls to specific clauses in external regulations like the EU AI Act, NIST AI RMF, and ISO 42001. This ensures a "test once, comply many" approach.</p>
           }
         ]
       },
       {
-        id: 'regulatory',
-        title: 'Regulatory Radar & Filings',
-        description: 'Monitor regulatory changes and generate required reports.',
+        id: 'compliance-autopilot',
+        title: 'Compliance Autopilot',
+        description: 'Automated mapping of controls and identification of compliance gaps.',
         sections: [
           {
-            id: 'radar',
-            title: 'Regulatory Velocity',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Track upcoming global regulatory changes and measure their velocity and potential impact on your existing control landscape.</p>
-          },
+            id: 'autopilot',
+            title: 'Automated Gap Discovery',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">The Autopilot engine scans your current control implementations and automatically identifies missing requirements against your selected regulatory frameworks, generating actionable alerts.</p>
+          }
+        ]
+      },
+      {
+        id: 'gap-analysis',
+        title: 'Gap Analysis',
+        description: 'Tools to identify missing controls against selected frameworks.',
+        sections: [
           {
-            id: 'filings',
-            title: 'Filings & Transparency',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Automate the generation of Transparency Reports and official Regulator Filings required by laws like the EU AI Act.</p>
+            id: 'analysis',
+            title: 'Structured Auditing',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Perform structured internal audits to identify exactly which policies, tests, or technical controls are missing to achieve full certification for a specific framework.</p>
+          }
+        ]
+      },
+      {
+        id: 'regulatory-velocity',
+        title: 'Regulatory Velocity',
+        description: 'Tracking of upcoming regulatory changes and their impact.',
+        sections: [
+          {
+            id: 'velocity',
+            title: 'Monitoring Changes',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Stay ahead of the curve by tracking pending legislation globally. The module assesses how new laws will impact your existing AI portfolio and control structure.</p>
+          }
+        ]
+      },
+      {
+        id: 'regulator-filings',
+        title: 'Regulator Filings & Transparency Reports',
+        description: 'Automated generation of reports required by external regulators.',
+        sections: [
+          {
+            id: 'reports',
+            title: 'Automated Reporting',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Instantly compile and format mandatory transparency reports and regulatory filings (e.g., EU AI Act conformity declarations) pulling live data directly from your inventory and evidence vault.</p>
+          }
+        ]
+      },
+      {
+        id: 'governance-mesh',
+        title: 'Governance Mesh',
+        description: 'Visualizing the interconnected governance structures.',
+        sections: [
+          {
+            id: 'mesh',
+            title: 'Interconnected Visualization',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">A graphical representation showing the complex relationships between Models, Risks, Controls, Policies, and Vendors, providing a holistic view of your governance architecture.</p>
           }
         ]
       }
@@ -287,48 +331,74 @@ export const COLLECTIONS: Collection[] = [
     icon: Brain,
     articles: [
       {
-        id: 'model-lifecycle',
-        title: 'Inventory & Lifecycle',
-        description: 'End-to-end tracking of AI models.',
+        id: 'model-inventory',
+        title: 'Model Inventory & Lifecycle',
+        description: 'End-to-end tracking of models from development to retirement.',
         sections: [
           {
             id: 'tracking',
-            title: 'Lifecycle Tracking',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Manage models from initial development through staging, production, and eventual retirement. Progression through stages requires passing specific approval gates.</p>
+            title: 'Lifecycle Management',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">A comprehensive registry for all AI systems. Track a model's journey through ideation, development, testing, deployment, and eventual retirement, enforcing mandatory stage-gate approvals before progression.</p>
           }
         ]
       },
       {
-        id: 'bom-provenance',
-        title: 'BOM & Data Provenance',
-        description: 'Track dependencies and data origins.',
+        id: 'ai-bom',
+        title: 'AI BOM Registry',
+        description: 'AI Bill of Materials tracking.',
         sections: [
           {
-            id: 'aibom',
-            title: 'AI BOM Registry',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Maintain an AI Bill of Materials (BOM) tracking the foundational models, weights, datasets, and open-source libraries your AI systems depend on.</p>
-          },
+            id: 'bom',
+            title: 'Dependency Tracking',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Maintain an exhaustive Software Bill of Materials specific to AI (AI BOM). Track foundational model dependencies, open-source libraries, specific weight versions, and underlying architectures.</p>
+          }
+        ]
+      },
+      {
+        id: 'prompt-registry',
+        title: 'Prompt Registry',
+        description: 'Version control and risk assessment of LLM prompts.',
+        sections: [
+          {
+            id: 'registry',
+            title: 'Version Control',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">A dedicated vault for system prompts and user templates. Version control prompt changes, tag them with risk levels, and track how prompt engineering impacts model output safety and accuracy.</p>
+          }
+        ]
+      },
+      {
+        id: 'datasets',
+        title: 'Datasets & Data Quality',
+        description: 'Tracking of training/testing datasets and data quality metrics.',
+        sections: [
+          {
+            id: 'quality',
+            title: 'Dataset Tracking',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Inventory the specific datasets used for fine-tuning and evaluation. Monitor data quality metrics, distribution drift, and ensure the data used aligns with the model's intended purpose.</p>
+          }
+        ]
+      },
+      {
+        id: 'data-lineage',
+        title: 'Data Lineage & Provenance Graph',
+        description: 'Visual graphing of where data came from and how it moves through models.',
+        sections: [
           {
             id: 'lineage',
-            title: 'Data Lineage & Provenance Graph',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Visually graph where training data originated and how it flows through your models, ensuring full traceability and data quality.</p>
+            title: 'Provenance Tracking',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">A visual mapping tool that traces the exact origin of training data, highlighting its journey through preprocessing pipelines and into the final model, ensuring copyright and licensing compliance.</p>
           }
         ]
       },
       {
-        id: 'prompts-efficiency',
-        title: 'Prompts & Efficiency',
-        description: 'Manage LLM prompts and track compute metrics.',
+        id: 'model-efficiency',
+        title: 'Model Efficiency',
+        description: 'Tracking model compute and performance metrics.',
         sections: [
           {
-            id: 'prompts',
-            title: 'Prompt Registry',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Version control your LLM prompts, assign risk tags, and track how prompt engineering changes affect model output and security.</p>
-          },
-          {
-            id: 'efficiency',
-            title: 'Model Efficiency',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Monitor compute utilization, token costs, and performance metrics to ensure models are running efficiently in production.</p>
+            id: 'metrics',
+            title: 'Compute Monitoring',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Monitor the operational efficiency of deployed models, tracking metrics such as inference latency, token utilization costs, and GPU compute requirements.</p>
           }
         ]
       }
@@ -342,35 +412,61 @@ export const COLLECTIONS: Collection[] = [
     articles: [
       {
         id: 'agent-registry',
-        title: 'Agent Registry & IAM',
-        description: 'Inventory and access control for AI agents.',
+        title: 'Agent Registry',
+        description: 'Inventory of all deployed autonomous agents.',
         sections: [
           {
             id: 'registry',
             title: 'Agent Discovery',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Automatically discover and inventory all deployed autonomous agents operating in your environment, flagging unapproved "Shadow AI".</p>
-          },
-          {
-            id: 'iam',
-            title: 'Agent IAM',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Manage Identity and Access Management specifically for non-human identities, ensuring agents operate under strict least-privilege principles.</p>
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Automatically discover and catalog all autonomous, agentic AI systems operating within the enterprise network, preventing the unchecked spread of "Shadow Agents".</p>
           }
         ]
       },
       {
-        id: 'automation',
-        title: 'Choreography & Automation',
-        description: 'Manage multi-agent workflows and emergency controls.',
+        id: 'agent-iam',
+        title: 'Agent IAM',
+        description: 'Identity and Access Management specifically for AI agents.',
         sections: [
           {
-            id: 'choreography',
-            title: 'Multi-Agent Choreography',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Design and monitor complex workflows that involve multiple autonomous agents interacting with each other.</p>
-          },
+            id: 'iam',
+            title: 'Non-Human Identities',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Manage the specific permissions and API keys granted to autonomous agents. Enforce strict least-privilege access to ensure agents cannot perform unauthorized actions on backend systems.</p>
+          }
+        ]
+      },
+      {
+        id: 'choreography',
+        title: 'Multi-Agent Choreography',
+        description: 'Managing workflows that involve multiple interacting agents.',
+        sections: [
           {
-            id: 'kill-switch',
-            title: 'Kill Switch Events',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Emergency shutoff capabilities to halt rogue models or agents, with full tracking of who executed the kill switch and why.</p>
+            id: 'workflows',
+            title: 'Agent Interaction',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Design, monitor, and secure complex processes where multiple AI agents collaborate, hand-off tasks, and share context, ensuring there are no security breaks during handovers.</p>
+          }
+        ]
+      },
+      {
+        id: 'automation-studio',
+        title: 'Automation Studio',
+        description: 'Workflow builder for governance automations.',
+        sections: [
+          {
+            id: 'studio',
+            title: 'No-Code Workflows',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">A drag-and-drop interface to build automated governance workflows. Trigger security scans, send Slack approvals, or update Jira tickets automatically when a model changes stage.</p>
+          }
+        ]
+      },
+      {
+        id: 'kill-switch',
+        title: 'Kill Switch Events',
+        description: 'Emergency shutoff tracking and execution for rogue models.',
+        sections: [
+          {
+            id: 'emergency',
+            title: 'Emergency Shutoff',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Provides administrators with instant "Kill Switch" capabilities to sever an agent's or model's access to production systems if rogue behavior is detected. Fully tracks who initiated the shutoff and why.</p>
           }
         ]
       }
@@ -378,58 +474,91 @@ export const COLLECTIONS: Collection[] = [
   },
   {
     id: 'audit',
-    title: 'Audit, Testing & Evidence',
+    title: 'Audit, Testing & Evidence Management',
     description: 'Maintain immutable logs, collect cryptographic evidence, and run control tests.',
     icon: FileText,
     articles: [
       {
         id: 'audit-trails',
-        title: 'Audit Trails & Incident Logging',
-        description: 'System logs and incident response.',
+        title: 'Audit Trails & Explorers',
+        description: 'Immutable system logs, decision logs, and an Audit Log Explorer to search them.',
         sections: [
           {
-            id: 'trail',
-            title: 'Audit Log Explorer',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">An immutable, append-only log of all system and decision events. Use the Explorer to search logs for forensics and chain-of-custody verification.</p>
-          },
-          {
-            id: 'incidents',
-            title: 'Incident Workflow',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">End-to-end management of AI incidents, from initial logging through to resolution and post-mortem playbooks.</p>
+            id: 'logs',
+            title: 'Immutable Logging',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Maintains a secure, append-only ledger of every critical action taken within the platform. The Explorer interface allows security teams to rapidly search and filter logs during forensic investigations.</p>
           }
         ]
       },
       {
-        id: 'evidence-testing',
-        title: 'Evidence & Control Testing',
-        description: 'Secure evidence storage and testing.',
+        id: 'incident-logging',
+        title: 'Incident Logging & Workflow',
+        description: 'End-to-end incident response management and tracking.',
+        sections: [
+          {
+            id: 'response',
+            title: 'Incident Management',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">A dedicated workflow for reporting AI-related incidents (e.g., a data leak via an LLM). Track the incident from initial triage through containment, eradication, and post-mortem review.</p>
+          }
+        ]
+      },
+      {
+        id: 'evidence-vault',
+        title: 'Evidence Vault & Chain of Custody',
+        description: 'Secure storage for compliance evidence with cryptographic tracking.',
         sections: [
           {
             id: 'vault',
-            title: 'Evidence Vault',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">A secure repository for compliance documentation. Every piece of evidence is cryptographically hashed to ensure a verifiable chain of custody.</p>
-          },
-          {
-            id: 'testing',
-            title: 'Control Testing & Exams',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Manage automated and manual tests of your governance controls, and use the Examination Manager to coordinate external audits.</p>
+            title: 'Secure Evidence',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Upload and store PDF reports, screenshots, and architecture diagrams. Every uploaded file is cryptographically hashed to prove it has not been tampered with since creation, ensuring a strict chain of custody.</p>
           }
         ]
       },
       {
-        id: 'evals',
-        title: 'Bias Audits & Evals',
-        description: 'Test models for fairness and quality.',
+        id: 'control-testing',
+        title: 'Control Testing',
+        description: 'Automated and manual testing of governance controls.',
         sections: [
           {
-            id: 'bias',
-            title: 'Bias Audits',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Dedicated modules for testing models against protected attributes to ensure fairness and prevent algorithmic discrimination.</p>
-          },
+            id: 'testing',
+            title: 'Validating Controls',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Schedule and execute tests to verify that required governance controls (e.g., "Is MFA enforced for Model Deployers?") are actually functioning as designed.</p>
+          }
+        ]
+      },
+      {
+        id: 'examination-manager',
+        title: 'Examination Manager',
+        description: 'Workflows for managing external audits and regulatory examinations.',
+        sections: [
           {
-            id: 'quality',
-            title: 'Model Evaluations',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Run benchmark datasets to score models on metrics like hallucination rate, relevance, and faithfulness.</p>
+            id: 'manager',
+            title: 'Audit Coordination',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">A dedicated portal for coordinating with external auditors or regulators. Securely package and share scoped evidence, policies, and control test results without granting full system access.</p>
+          }
+        ]
+      },
+      {
+        id: 'tabletop-exercises',
+        title: 'Tabletop Exercises',
+        description: 'Simulations for incident response preparedness.',
+        sections: [
+          {
+            id: 'simulations',
+            title: 'Preparedness Drills',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Run simulated AI catastrophe scenarios (e.g., "Prompt injection leads to PII leak") to test your team's incident response playbooks and identify process gaps.</p>
+          }
+        ]
+      },
+      {
+        id: 'bias-audits',
+        title: 'Bias Audits & Evals',
+        description: 'Dedicated modules for fairness testing and model evaluations.',
+        sections: [
+          {
+            id: 'audits',
+            title: 'Fairness Testing',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Upload test datasets to evaluate models against protected attributes (Age, Gender, Race), calculating metrics like Disparate Impact to ensure algorithmic fairness.</p>
           }
         ]
       }
@@ -442,24 +571,38 @@ export const COLLECTIONS: Collection[] = [
     icon: Buildings,
     articles: [
       {
-        id: 'vendors',
+        id: 'vendor-management',
         title: 'Vendor Management',
-        description: 'Oversight for third-party AI providers.',
+        description: 'Tracking third-party AI vendors and tools.',
         sections: [
           {
-            id: 'registry',
-            title: 'Vendor Registry',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Maintain a catalog of all third-party AI vendors (e.g., OpenAI, Anthropic), tracking their active contracts, SLA breaches, and overall risk scores.</p>
-          },
-          {
-            id: 'attestations',
-            title: 'Supply Chain Attestations',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Dispatch security questionnaires to vendors and track their signed compliance attestations.</p>
-          },
+            id: 'management',
+            title: 'Third-Party Oversight',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Maintain a comprehensive registry of all external AI vendors (e.g., OpenAI, Anthropic, HuggingFace). Track active contracts, SLA compliance, and overall vendor risk scores.</p>
+          }
+        ]
+      },
+      {
+        id: 'supply-chain-graph',
+        title: 'Supply Chain Graph',
+        description: 'Visual mapping of the AI supply chain and dependencies.',
+        sections: [
           {
             id: 'graph',
-            title: 'Supply Chain Graph',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">A visual dependency map showing exactly which internal models rely on which external vendor APIs, highlighting single points of failure.</p>
+            title: 'Dependency Mapping',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">A dynamic visualization showing exactly which internal applications rely on which external vendor APIs, instantly highlighting cascading risks and single points of failure in your AI supply chain.</p>
+          }
+        ]
+      },
+      {
+        id: 'supply-chain-attestations',
+        title: 'Supply Chain Attestations',
+        description: 'Management of vendor security questionnaires and attestations.',
+        sections: [
+          {
+            id: 'attestations',
+            title: 'Security Questionnaires',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Dispatch standardized security questionnaires (like the SIG or custom AI-specific templates) to vendors and track their completed compliance attestations.</p>
           }
         ]
       }
@@ -472,36 +615,62 @@ export const COLLECTIONS: Collection[] = [
     icon: Leaf,
     articles: [
       {
-        id: 'privacy',
-        title: 'Privacy & Data Rights',
-        description: 'GDPR compliance and consent tracking.',
+        id: 'consent-management',
+        title: 'Consent Management',
+        description: 'Tracking user consent for data used in AI training.',
         sections: [
           {
             id: 'consent',
-            title: 'Consent & DSR Management',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Track user consent for data used in AI training, and manage Data Subject Rights (DSR) requests like the right to erasure.</p>
-          },
-          {
-            id: 'ropa',
-            title: 'RoPA',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Maintain Records of Processing Activities (RoPA) specifically tailored for AI data flows to ensure GDPR Article 30 compliance.</p>
+            title: 'Tracking Consent',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Ensure that any personal data utilized in model training or fine-tuning has documented, explicit user consent, mitigating massive GDPR and CCPA violation risks.</p>
           }
         ]
       },
       {
-        id: 'ethics-esg',
-        title: 'Ethics & ESG',
-        description: 'Whistleblower workflows and environmental tracking.',
+        id: 'dsr-management',
+        title: 'DSR Management',
+        description: 'Handling Data Subject Rights requests.',
         sections: [
           {
-            id: 'ethics',
-            title: 'Ethics Reporting',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Secure, anonymous submission workflows for internal employees or external users to report AI ethics violations or concerns.</p>
-          },
+            id: 'dsr',
+            title: 'Right to be Forgotten',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Workflows to handle Data Subject Rights (DSR) requests, ensuring that when a user exercises their right to erasure, their data is provably purged from both training datasets and active models.</p>
+          }
+        ]
+      },
+      {
+        id: 'ropa',
+        title: 'RoPA',
+        description: 'Records of Processing Activities for GDPR compliance.',
+        sections: [
           {
-            id: 'esg',
-            title: 'ESG & Carbon Ledger',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Track the energy consumption and carbon footprint of massive model training runs and daily inference workloads for sustainability reporting.</p>
+            id: 'processing',
+            title: 'GDPR Article 30',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Maintain detailed Records of Processing Activities specifically tailored for complex AI data flows, satisfying the strict documentation requirements of GDPR.</p>
+          }
+        ]
+      },
+      {
+        id: 'ethics-reporting',
+        title: 'Ethics Reporting',
+        description: 'Whistleblower and ethics violation submission and tracking.',
+        sections: [
+          {
+            id: 'whistleblower',
+            title: 'Anonymous Submissions',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Provide a secure, anonymous portal for internal employees to report potential AI ethics violations, biased model outputs, or unsafe development practices directly to the governance team.</p>
+          }
+        ]
+      },
+      {
+        id: 'esg-ledger',
+        title: 'ESG & Carbon Ledger',
+        description: 'Tracking energy efficiency and carbon footprints of AI model training/inference.',
+        sections: [
+          {
+            id: 'carbon',
+            title: 'Sustainability Tracking',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Calculate and log the massive energy consumption and carbon emissions resulting from training large language models and daily inference operations, feeding directly into corporate ESG reporting.</p>
           }
         ]
       }
@@ -514,41 +683,86 @@ export const COLLECTIONS: Collection[] = [
     icon: Clock,
     articles: [
       {
-        id: 'dashboards',
-        title: 'Executive Dashboards',
-        description: 'Command centers for leadership.',
+        id: 'executive-center',
+        title: 'Executive Center & Overview',
+        description: 'High-level dashboards for the C-suite (CRO/CISO).',
         sections: [
           {
-            id: 'executive',
-            title: 'Executive Center',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">High-level, aggregated dashboards designed for the C-suite (CRO/CISO) to instantly understand portfolio risk and compliance health.</p>
-          },
-          {
-            id: 'committee',
-            title: 'Model Risk Committee',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Dedicated views for governance committees to review high-risk deployments and cast formal votes of approval.</p>
+            id: 'dashboards',
+            title: 'C-Suite Visibility',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Roll-up dashboards designed for Chief Risk Officers and CISOs, providing an instant, high-level view of the organization's total AI risk exposure, compliance readiness, and incident metrics.</p>
           }
         ]
       },
       {
-        id: 'workflows',
-        title: 'Workflows & Tasks',
-        description: 'Manage tasks and human reviews.',
+        id: 'model-risk-committee',
+        title: 'Model Risk Committee',
+        description: 'Dedicated views for committee reviews and voting.',
         sections: [
           {
-            id: 'approvals',
-            title: 'Approval Workflows',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Multi-stage sign-off workflows that prevent models from moving to production without required security and compliance checks.</p>
-          },
+            id: 'committee',
+            title: 'Governance Voting',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">A specialized portal for the Model Risk Committee to review high-risk deployments. Members can view bundled evidence, discuss concerns, and cast cryptographically signed votes to approve or reject a model.</p>
+          }
+        ]
+      },
+      {
+        id: 'approval-workflows',
+        title: 'Approval Workflows',
+        description: 'Multi-stage sign-offs for model deployments.',
+        sections: [
+          {
+            id: 'sign-offs',
+            title: 'Stage-Gate Controls',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Enforce strict stage-gates requiring multi-departmental sign-off (e.g., Legal, Security, Data Science) before an AI system can be moved from staging into production environments.</p>
+          }
+        ]
+      },
+      {
+        id: 'tasks-remediation',
+        title: 'Tasks & Remediation Tracker',
+        description: 'Task management for fixing identified vulnerabilities or gaps.',
+        sections: [
           {
             id: 'tasks',
-            title: 'Tasks & Remediation Tracker',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Centralized task management for assigning and tracking the remediation of identified vulnerabilities or compliance gaps.</p>
-          },
+            title: 'Fixing Vulnerabilities',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">A centralized Kanban board and task manager for assigning, tracking, and verifying the remediation of vulnerabilities found during Red Teaming, Bias Audits, or Gap Analyses.</p>
+          }
+        ]
+      },
+      {
+        id: 'hitl',
+        title: 'Human-In-The-Loop (HITL)',
+        description: 'Workflows requiring human review of AI decisions.',
+        sections: [
           {
-            id: 'hitl',
-            title: 'Human-In-The-Loop (HITL)',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">A queue for managing AI decisions that were flagged (e.g., due to low confidence) and require manual human review and approval before execution.</p>
+            id: 'review',
+            title: 'Manual Oversight',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">A dedicated queue for routing low-confidence or highly sensitive AI decisions to human reviewers. Ensures compliance with regulations requiring human oversight for automated decision-making.</p>
+          }
+        ]
+      },
+      {
+        id: 'marketplace',
+        title: 'Marketplace & Integrations',
+        description: 'Integration management for external tools.',
+        sections: [
+          {
+            id: 'integrations',
+            title: 'Connecting Tools',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Manage API connections and webhooks to external operational tools like Jira, Slack, MLflow, AWS SageMaker, and Azure ML, pulling governance data directly from where development happens.</p>
+          }
+        ]
+      },
+      {
+        id: 'peer-intelligence',
+        title: 'Peer Intelligence',
+        description: 'Benchmarking risk posture against industry peers.',
+        sections: [
+          {
+            id: 'benchmarking',
+            title: 'Industry Benchmarking',
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Opt-in, anonymized data sharing that allows you to benchmark your organization's AI risk posture, control maturity, and incident frequency against peers in the same industry vertical.</p>
           }
         ]
       }
