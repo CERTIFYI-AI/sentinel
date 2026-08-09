@@ -1,3 +1,12 @@
+## 1.44.0 (2026-08-09)
+
+* feat: update AI Governance docs and Help Center ([9c1f522](https://github.com/CERTIFYI-AI/sentinel/commit/9c1f522))
+* docs: generate detailed articles for all 11 domains in the sidebar ([e4e5982](https://github.com/CERTIFYI-AI/sentinel/commit/e4e5982))
+* docs: generate detailed comprehensive guides for all 8 major modules ([9934c60](https://github.com/CERTIFYI-AI/sentinel/commit/9934c60))
+* docs: heavily expand article content with detailed explanations of module workings ([ad0f734](https://github.com/CERTIFYI-AI/sentinel/commit/ad0f734))
+* docs: integrate exact regulatory and auditor mapping text ([812662e](https://github.com/CERTIFYI-AI/sentinel/commit/812662e))
+* docs: strictly map every single sub-feature to an individual documentation article ([d7ad53c](https://github.com/CERTIFYI-AI/sentinel/commit/d7ad53c))
+
 ## 1.43.0 (2026-08-09)
 
 * feat: implement hierarchical article-based user guide with rich markdown-style content ([852dd88](https://github.com/CERTIFYI-AI/sentinel/commit/852dd88))
