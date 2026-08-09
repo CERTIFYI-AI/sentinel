@@ -1,3 +1,7 @@
+## 1.42.0 (2026-08-09)
+
+* feat: implement persistent right sidebar for module guides ([fce7af3](https://github.com/CERTIFYI-AI/sentinel/commit/fce7af3))
+
 ## 1.41.0 (2026-08-09)
 
 * Merge branch 'feat/wire-crud-batch3' ([bf87602](https://github.com/CERTIFYI-AI/sentinel/commit/bf87602))
