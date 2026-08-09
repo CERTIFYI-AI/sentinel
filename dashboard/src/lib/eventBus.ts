@@ -34,6 +34,6 @@ export const eventBus = {
     // Update event status
     const failed = results.filter((r) => r.status === "rejected").length;
     const status = failed === 0 ? "completed" : failed === results.length ? "failed" : "completed";
-    console.log(`[EventBus] ${type}: ${results.length} agents, ${failed} failed, status=${status}`);
+    // console.log(`[EventBus] ${type}: ${results.length} agents, ${failed} failed, status=${status}`);
   },
 };

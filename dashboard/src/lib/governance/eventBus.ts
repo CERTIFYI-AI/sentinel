@@ -212,7 +212,7 @@ async function dispatchAgents(event: GovernanceEvent, traceId: string) {
       orgId: event.org_id,
       traceId,
       now: () => Date.now(),
-      log: (msg, extra) => console.log(`[${name}] ${msg}`, extra ?? {}),
+      log: () => {}, // Disabled for production
       emit: async <P>(type: GovernanceEventType, module: string, payload: P) => {
         const child = await emitEvent(type as string, module, payload as Record<string, unknown>, event.org_id, {
           correlationId: event.correlation_id ?? traceId,
