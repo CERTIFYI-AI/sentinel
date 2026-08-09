@@ -5,7 +5,6 @@ import { MagnifyingGlass, Bell, ArrowsClockwise, Sun, Moon, Monitor, User, Gear,
 import { Button } from './ui/button'
 import { CommandPalette } from './ui/CommandPalette'
 import { NotificationDrawer } from './ui/NotificationDrawer'
-import { UserGuideDrawer } from './ui/UserGuideDrawer'
 import { useTheme } from '../providers/theme'
 import { getStoredAccent, setAccent, type Accent } from '../store/accentStore'
 import { useAuthStore } from '../store/authStore'
@@ -144,7 +143,6 @@ export default function TopHeader() {
   const [notifOpen, setNotifOpen] = useState(false)
   const [colorOpen, setColorOpen] = useState(false)
   const [themeOpen, setThemeOpen] = useState(false)
-  const [guideOpen, setGuideOpen] = useState(false)
   const [accent, setAccentState] = useState<Accent>(getStoredAccent)
 
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -373,18 +371,6 @@ export default function TopHeader() {
             <ArrowsClockwise size={16} className='text-[hsl(var(--text-3))]' />
           </Button>
 
-          {/* User Guide */}
-          <Button
-            variant='ghost'
-            size='icon'
-            className='h-8 w-8'
-            onClick={() => setGuideOpen(v => !v)}
-            title='Module Guide'
-            aria-label='Module Guide'
-          >
-            <Question size={16} className='text-[hsl(var(--text-3))]' />
-          </Button>
-
           {/* Notification bell */}
           <Button
             variant='ghost'
@@ -477,7 +463,6 @@ export default function TopHeader() {
       {/* Global overlays */}
       <CommandPalette open={searchOpen} onOpenChange={setSearchOpen} />
       <NotificationDrawer open={notifOpen} onOpenChange={setNotifOpen} />
-      <UserGuideDrawer open={guideOpen} onOpenChange={setGuideOpen} />
     </>
   )
 }

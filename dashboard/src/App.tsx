@@ -15,6 +15,7 @@ import { useRealtimeInvalidation } from './hooks/useRealtimeInvalidation';
 import { useAuthStore } from './store/authStore';
 import { initSessionGuard, destroySessionGuard } from './lib/sessionGuard';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { RightSidebar } from './components/shell/RightSidebar';
 
 const SecurityHome = lazy(() => import('./pages/security/SecurityHome'));
 const ThreatFeed = lazy(() => import('./pages/security/ThreatFeed'));
@@ -279,14 +280,17 @@ function ProtectedLayout() {
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <TopHeader />
-        {/* Main landmark — WCAG 2.4.1 Bypass Blocks / 1.3.1 Info & Relationships */}
-        <main id="main-content" role="main" tabIndex={-1} className="flex-1 overflow-auto bg-sentinel-background p-4 lg:p-5 focus:outline-none">
-        <ErrorBoundary>
-          <Suspense fallback={<PageSkeleton />}>
-            <Outlet />
-          </Suspense>
-        </ErrorBoundary>
-      </main>
+        <div className="flex-1 flex overflow-hidden">
+          {/* Main landmark — WCAG 2.4.1 Bypass Blocks / 1.3.1 Info & Relationships */}
+          <main id="main-content" role="main" tabIndex={-1} className="flex-1 overflow-auto bg-sentinel-background p-4 lg:p-5 focus:outline-none">
+            <ErrorBoundary>
+              <Suspense fallback={<PageSkeleton />}>
+                <Outlet />
+              </Suspense>
+            </ErrorBoundary>
+          </main>
+          <RightSidebar />
+        </div>
       </div>
     </div>
   );
