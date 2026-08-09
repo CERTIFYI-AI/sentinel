@@ -246,16 +246,71 @@ export function RightSidebar() {
 
             {/* OTHER TABS */}
             {activeTab === 'whatsNew' && (
-               <div className="flex flex-col items-center justify-center h-full text-[hsl(var(--text-4))]">
-                  <Sparkle size={32} className="mb-2" />
-                  <p className="text-sm">No new updates right now.</p>
+               <div className="flex flex-col items-start p-6 pb-20">
+                  <h3 className="text-lg font-semibold text-[hsl(var(--text-1))] mb-6 flex items-center gap-2">
+                    <Sparkle size={20} className="text-[hsl(var(--brand))]" /> What's New
+                  </h3>
+                  <div className="space-y-4 w-full">
+                    <div className="bg-surface border border-[hsl(var(--border))] p-5 rounded-lg w-full shadow-sm">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="font-semibold text-[hsl(var(--text-1))] text-base">Sentinel v1.43.0</span>
+                        <span className="text-xs text-[hsl(var(--text-3))] font-mono bg-raised px-2 py-1 rounded">2 hours ago</span>
+                      </div>
+                      <p className="text-sm text-[hsl(var(--text-2))] mb-4 leading-relaxed">
+                        We've just rolled out version 1.43.0 (Release 57). Check out the release notes to see all the latest platform updates, UI improvements, and new AI governance capabilities.
+                      </p>
+                      <a href="https://github.com/CERTIFYI-AI/sentinel/releases/tag/v1.43.0" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm font-medium text-[hsl(var(--brand))] hover:underline">
+                        View Release Notes <ArrowSquareOut size={14} weight="bold" />
+                      </a>
+                    </div>
+                  </div>
                </div>
             )}
             
             {activeTab === 'help' && (
-               <div className="flex flex-col items-center justify-center h-full text-[hsl(var(--text-4))]">
-                  <Question size={32} className="mb-2" />
-                  <p className="text-sm">Help center integration coming soon.</p>
+               <div className="flex flex-col items-start p-6 pb-20">
+                  <h3 className="text-lg font-semibold text-[hsl(var(--text-1))] mb-6 flex items-center gap-2">
+                    <Question size={20} className="text-[hsl(var(--brand))]" /> Help Center
+                  </h3>
+                  <div className="space-y-6 w-full">
+                    
+                    {/* Platform Info */}
+                    <div className="bg-surface border border-[hsl(var(--border))] p-5 rounded-lg w-full shadow-sm">
+                      <h4 className="font-semibold text-[hsl(var(--text-1))] mb-2 text-base">Certifyi AI GRC Platform</h4>
+                      <p className="text-sm text-[hsl(var(--text-2))] mb-4 leading-relaxed">
+                        Achieve ISO 42001 & SOC 2 compliance in 8-12 Weeks. Turn AI and compliance risk into audit-ready trust with our done-with-you automation.
+                      </p>
+                      <a href="https://certifyi.ai/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm font-medium text-[hsl(var(--brand))] hover:underline">
+                        Visit Certifyi.ai <ArrowSquareOut size={14} weight="bold" />
+                      </a>
+                    </div>
+
+                    {/* Contact Info */}
+                    <div className="bg-surface border border-[hsl(var(--border))] p-5 rounded-lg w-full shadow-sm">
+                      <h4 className="font-semibold text-[hsl(var(--text-1))] mb-4 text-base">Contact Us</h4>
+                      <p className="text-sm text-[hsl(var(--text-2))] mb-4">
+                        For questions, requests, or complaints:
+                      </p>
+                      
+                      <div className="space-y-3 mb-4">
+                        <div className="flex flex-col">
+                          <span className="text-xs font-semibold text-[hsl(var(--text-3))] uppercase tracking-wider mb-1">Phone</span>
+                          <a href="tel:+9779851334787" className="text-sm text-[hsl(var(--text-1))] hover:text-[hsl(var(--brand))]">+977-9851334787</a>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-xs font-semibold text-[hsl(var(--text-3))] uppercase tracking-wider mb-1">Email</span>
+                          <a href="mailto:get@certifyi.ai" className="text-sm text-[hsl(var(--text-1))] hover:text-[hsl(var(--brand))]">get@certifyi.ai</a>
+                        </div>
+                      </div>
+
+                      <div className="pt-4 border-t border-[hsl(var(--border))]">
+                        <p className="text-xs text-[hsl(var(--text-3))] leading-relaxed">
+                          <strong>Note:</strong> This policy complies with Nepal's data protection framework. If you are subject to other jurisdictions (e.g., GDPR for EU users), additional terms may apply.
+                        </p>
+                      </div>
+                    </div>
+
+                  </div>
                </div>
             )}
           </div>

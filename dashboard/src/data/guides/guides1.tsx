@@ -167,7 +167,7 @@ export const guides1: Collection[] = [
       }
     ]
   },
-  {
+    {
     id: 'ai-governance',
     title: 'AI Governance',
     description: 'Core operational system defining model baselines and assessments.',
@@ -179,64 +179,110 @@ export const guides1: Collection[] = [
         description: 'Registry, Lifecycle, DNA Lineage, and Prompt Registry.',
         sections: [
           {
-            id: 'registry-core',
-            title: 'Model Registry - Core Architecture & Functionality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">System of record for all first-party, fine-tuned, and third-party AI models deployed across the enterprise. Captures metadata including model owner, framework, version history, deployment environment, hardware allocation, and API bindings.</p>
+            id: 'registry-overview',
+            title: 'Model Registry - Overview',
+            content: <div className="space-y-4">
+              <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">The Model Inventory serves as the central, authoritative registry for all AI/ML models utilized within the enterprise. It tracks Foundation LLMs, Embedding Models, custom-trained classifiers, and third-party APIs alongside their respective risk tiers and trust scores.</p>
+            </div>
           },
           {
-            id: 'registry-regulatory',
-            title: 'Model Registry - Regulatory & Standard Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">ISO 42001 (Control A.6.2 Inventory of AI Systems); EU AI Act (Article 49 - EU Database Registration for High-Risk Systems); NIST AI RMF (Map 1.1).</p>
+            id: 'registry-dashboard',
+            title: 'Model Registry - Main Dashboard & Metrics',
+            content: <div className="space-y-4">
+              <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">The inventory provides a macro-level view of your AI ecosystem:</p>
+              <ul className="list-disc pl-5 text-sm text-[hsl(var(--text-2))] space-y-1">
+                <li><strong>Total Models:</strong> The complete count of registered assets.</li>
+                <li><strong>In Production:</strong> Models actively serving requests.</li>
+                <li><strong>High Risk:</strong> Models flagged under the EU AI Act requiring enhanced oversight.</li>
+                <li><strong>Avg Trust Score:</strong> Aggregate reliability and safety score across the portfolio.</li>
+              </ul>
+            </div>
           },
           {
-            id: 'registry-auditor',
-            title: 'Model Registry - Auditor Reality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Auditors cross-reference active cloud infrastructure (AWS SageMaker, Azure AI, GCP Vertex) against the Model Registry to ensure zero uninventoried models exist in production.</p>
+            id: 'registry-list',
+            title: 'Model Registry - List View',
+            content: <div className="space-y-4">
+              <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">The main registry table displays critical telemetry for each model:</p>
+              <ul className="list-disc pl-5 text-sm text-[hsl(var(--text-2))] space-y-1">
+                <li><strong>Model Details:</strong> Name, version, and unique Model ID.</li>
+                <li><strong>Risk Tier:</strong> Visual badges indicating UNACCEPTABLE, HIGH, LIMITED, or MINIMAL risk.</li>
+                <li><strong>Status:</strong> The current lifecycle stage.</li>
+              </ul>
+              <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed mt-2"><strong>Interacting with the Table:</strong> Clicking on a row opens a quick-look detail panel underneath the table. Clicking the External Link icon navigates to the full Model Card.</p>
+            </div>
           },
           {
-            id: 'lifecycle-core',
-            title: 'Model Lifecycle - Core Architecture & Functionality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">State machine enforcing formal promotion gates (Idea -&gt; Assessment -&gt; Development -&gt; Validation -&gt; MRC Approval -&gt; Production -&gt; Deprecation -&gt; Sunset). Models cannot progress to production without satisfying automated governance policy checks.</p>
+            id: 'lifecycle-overview',
+            title: 'Model Lifecycle - Overview',
+            content: <div className="space-y-4">
+              <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">The Model Lifecycle module manages the formal promotion and deployment governance of your AI models. It acts as an operational pipeline enforcing approval gates before a model can transition from development into production environments.</p>
+            </div>
           },
           {
-            id: 'lifecycle-regulatory',
-            title: 'Model Lifecycle - Regulatory & Standard Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">ISO 42001 (Control A.8 AI System Lifecycle Management); NIST AI RMF (Govern 4.1).</p>
+            id: 'lifecycle-pipeline',
+            title: 'Model Lifecycle - The Lifecycle Pipeline',
+            content: <div className="space-y-4">
+              <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">The pipeline consists of strictly defined stages:</p>
+              <ol className="list-decimal pl-5 text-sm text-[hsl(var(--text-2))] space-y-1">
+                <li><strong>Development:</strong> Model is being built/trained. No production data.</li>
+                <li><strong>Testing:</strong> Functional, bias, robustness, and red-team testing phase.</li>
+                <li><strong>Staging:</strong> Pre-production validation on prod-like data.</li>
+                <li><strong>Production:</strong> Live serving.</li>
+                <li><strong>Monitoring:</strong> In production with continuous drift/fairness monitoring.</li>
+                <li><strong>Deprecated:</strong> Usage frozen pending retirement.</li>
+                <li><strong>Retired:</strong> Fully decommissioned. Endpoints removed.</li>
+              </ol>
+            </div>
           },
           {
-            id: 'lifecycle-auditor',
-            title: 'Model Lifecycle - Auditor Reality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Inspected via audit logs to verify that production deployments were preceded by authorized stage transitions and signed digital approvals.</p>
+            id: 'lifecycle-transition',
+            title: 'Model Lifecycle - Requesting a Transition',
+            content: <div className="space-y-4">
+              <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">To move a model to the next stage, a formal transition must be requested:</p>
+              <ul className="list-disc pl-5 text-sm text-[hsl(var(--text-2))] space-y-1">
+                <li><strong>Target Stage:</strong> Select the destination stage.</li>
+                <li><strong>Approver / Body:</strong> Define who holds the authority to approve this movement (e.g., Risk Committee, CISO).</li>
+                <li><strong>Effective Date:</strong> Specify when the transition should execute.</li>
+                <li><strong>Justification:</strong> A mandatory text field explaining why the transition is warranted.</li>
+              </ul>
+            </div>
           },
           {
-            id: 'dna-core',
-            title: 'Model DNA & Lineage - Core Architecture & Functionality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Deep dependency graph recording base model weights, fine-tuning techniques (LoRA, QLoRA, RLHF), hyperparameter configurations, exact training dataset hashes, dependency libraries, and parent-child model relationships.</p>
+            id: 'lifecycle-history',
+            title: 'Model Lifecycle - Approval Gate History',
+            content: <div className="space-y-4">
+              <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Every transition creates an auditable "gate". The history logs the exact stage, the transition kind, the status, and the assigned approver. Approving or rejecting a gate forces the user to input decision remarks. These remarks are permanently appended to the transition log for audit purposes.</p>
+            </div>
           },
           {
-            id: 'dna-regulatory',
-            title: 'Model DNA & Lineage - Regulatory & Standard Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">EU AI Act (Article 10 - Data and Data Governance & Article 11 Technical Documentation); ISO 42001 (Control A.7.2 Provenance of Data).</p>
+            id: 'prompt-overview',
+            title: 'Prompt Registry - Overview',
+            content: <div className="space-y-4">
+              <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Version-controlled governance and testing for AI system prompts, ensuring token budgets and safety guardrails are monitored.</p>
+            </div>
           },
           {
-            id: 'dna-auditor',
-            title: 'Model DNA & Lineage - Auditor Reality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Evaluated by tracing a production model back to its exact training data commit hash, base model release, and data cleaning pipeline logs.</p>
+            id: 'prompt-creating',
+            title: 'Prompt Registry - Creating/Initializing',
+            content: <div className="space-y-4">
+              <ul className="list-disc pl-5 text-sm text-[hsl(var(--text-2))] space-y-1">
+                <li><strong>Required Fields:</strong> Prompt Name, Owner, Prompt Content.</li>
+                <li><strong>Optional Fields:</strong> Category (System, User, Tool Call, Safety, Chain of Thought), Status, Model (e.g., GPT-4o, Claude-3), Description, Tags, Used By, Initial Version/Change Note.</li>
+              </ul>
+            </div>
           },
           {
-            id: 'prompt-core',
-            title: 'Prompt Registry - Core Architecture & Functionality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Version-controlled database storing, managing, and auditing system prompts, task prompts, and RAG templates. Tracks prompt history, embedded variables, safety instruction additions, and approval signatures.</p>
-          },
-          {
-            id: 'prompt-regulatory',
-            title: 'Prompt Registry - Regulatory & Standard Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">NIST AI RMF (Measure 2.6); OWASP GenAI Top 10 (LLM01: Prompt Injection Controls).</p>
-          },
-          {
-            id: 'prompt-auditor',
-            title: 'Prompt Registry - Auditor Reality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Tested by reviewing prompt change logs to ensure system prompts containing enterprise security instructions cannot be updated without formal review.</p>
+            id: 'prompt-details',
+            title: 'Prompt Registry - Inside the module',
+            content: <div className="space-y-4">
+              <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Prompts open in a detailed right-side sheet with the following tabs:</p>
+              <ul className="list-disc pl-5 text-sm text-[hsl(var(--text-2))] space-y-1">
+                <li><strong>Content:</strong> Displays raw prompt text, tags, and approval signatures.</li>
+                <li><strong>Test:</strong> Allows users to inject variables into templates, view the rendered prompt, and run it against the target model.</li>
+                <li><strong>Safety Analysis:</strong> Automated scan results for Prompt Injection Risk, PII Leakage Risk, Jailbreak Resistance, Data Exfiltration Pattern, and a Toxicity Score.</li>
+                <li><strong>Version History:</strong> Audit log of all versions, authors, timestamps, and change notes.</li>
+              </ul>
+            </div>
           }
         ]
       },
@@ -246,64 +292,95 @@ export const guides1: Collection[] = [
         description: 'Impact Assessments, Use Cases, Risk Classification, and MRC.',
         sections: [
           {
-            id: 'aiia-core',
-            title: 'Impact Assessments (AIIA) - Core Architecture & Functionality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Dynamic questionnaire and analytical workflow system executing Algorithmic and AI Impact Assessments (AIIA). Evaluates fundamental rights impacts, privacy considerations, health and safety risks, societal harm, and business operational impacts.</p>
+            id: 'use-case-overview',
+            title: 'Use Case Registry - Overview',
+            content: <div className="space-y-4">
+              <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">A use case is the foundational container that describes an AI system and its business purpose within the organization. It ties together everything from compliance frameworks, linked models, risk registers, and assessments.</p>
+            </div>
           },
           {
-            id: 'aiia-regulatory',
-            title: 'Impact Assessments (AIIA) - Regulatory & Standard Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">EU AI Act (Article 27 - Fundamental Rights Impact Assessment for High-Risk AI); ISO 42001 (Control A.5 AI Impact Assessment); NIST AI RMF (Map 2.1).</p>
+            id: 'use-case-creating',
+            title: 'Use Case Registry - Creating a Use Case',
+            content: <div className="space-y-4">
+              <p className="text-sm font-semibold text-[hsl(var(--text-1))]">Required Details</p>
+              <ul className="list-disc pl-5 text-sm text-[hsl(var(--text-2))] space-y-1">
+                <li><strong>Title:</strong> A short, identifiable name for the use case (e.g., "Resume Screening Automation"). Max 64 characters.</li>
+                <li><strong>Owner:</strong> The email or name of the primary assignee accountable for the system.</li>
+                <li><strong>Goal:</strong> A concise description of what the AI system aims to accomplish.</li>
+                <li><strong>AI Risk Classification:</strong> Selected from Prohibited, High risk, Limited risk, or Minimal risk.</li>
+                <li><strong>Geography & Industry:</strong> Where the system will operate and its target sector.</li>
+              </ul>
+            </div>
           },
           {
-            id: 'aiia-auditor',
-            title: 'Impact Assessments (AIIA) - Auditor Reality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">A primary artifact request during regulatory audits; must demonstrate completed, signed impact assessments conducted prior to model deployment.</p>
+            id: 'use-case-details',
+            title: 'Use Case Registry - Inside a Use Case',
+            content: <div className="space-y-4">
+              <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Clicking a use case opens its detailed dossier containing multiple tabs:</p>
+              <ul className="list-disc pl-5 text-sm text-[hsl(var(--text-2))] space-y-1">
+                <li><strong>Overview Tab:</strong> Displays primary properties alongside a visual progress bar for each attached framework.</li>
+                <li><strong>Use Case Risks Tab:</strong> A risk register scoped exclusively to this use case.</li>
+                <li><strong>Linked Models Tab:</strong> Displays all AI models currently bound to this use case.</li>
+                <li><strong>Frameworks & Regulations Tab:</strong> Tracks implementation progress and houses questionnaire-style evaluations.</li>
+                <li><strong>CE Marking Tab:</strong> A dedicated compliance checklist for high-risk systems under the EU AI Act.</li>
+                <li><strong>Monitoring Tab:</strong> Provides post-market surveillance data for the linked models against defined thresholds.</li>
+              </ul>
+            </div>
           },
           {
-            id: 'use-case-core',
-            title: 'Use Case Registry - Core Architecture & Functionality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Central catalog documenting intended business outcomes, target user groups, operational contexts, and restricted deployment boundaries for every proposed AI application.</p>
+            id: 'aiia-overview',
+            title: 'Impact Assessments (AIIA) - Overview',
+            content: <div className="space-y-4">
+              <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Documents and reviews the impact of AI systems on individuals and society, ensuring compliance with frameworks like EU AI Act Art. 9.</p>
+            </div>
           },
           {
-            id: 'use-case-regulatory',
-            title: 'Use Case Registry - Regulatory & Standard Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">ISO 42001 (Control A.6.1 Intended Use Definition); NIST AI RMF (Map 1.2).</p>
+            id: 'aiia-details',
+            title: 'Impact Assessments (AIIA) - Inside the Module',
+            content: <div className="space-y-4">
+              <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Assessments open in a side drawer containing:</p>
+              <ul className="list-disc pl-5 text-sm text-[hsl(var(--text-2))] space-y-1">
+                <li><strong>Header:</strong> Displays Assessment ID, Name, Status Badge, Risk Badge, and Actions (Edit, Submit for Review, Approve, Delete).</li>
+                <li><strong>Overview Tab:</strong> Displays metadata (AI System, Dept, Owner, Framework, Version, Dates), Description, Purpose of Use, Data Categories, Affected Groups, Human Oversight details.</li>
+                <li><strong>Mitigations & Findings Tab:</strong> Lists risk mitigations (Area, Measure, Status) and specific findings (Severity, Status, Description).</li>
+              </ul>
+            </div>
           },
           {
-            id: 'use-case-auditor',
-            title: 'Use Case Registry - Auditor Reality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Examined to verify that models are operating strictly within their documented scope and not being repurposed for unassessed, high-risk operational contexts.</p>
+            id: 'aiia-workflows',
+            title: 'Impact Assessments (AIIA) - Workflows',
+            content: <div className="space-y-4">
+              <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed"><strong>States:</strong> Draft, In Progress, Pending Review, Approved, Rejected, Completed.</p>
+              <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed"><strong>Approval Flow:</strong> Draft -{'>'} Submit for Review -{'>'} Approve (stamps reviewedAt date).</p>
+            </div>
           },
           {
-            id: 'risk-class-core',
-            title: 'Risk Classification - Core Architecture & Functionality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Automated classification engine that evaluates model use-case parameters against legal criteria (e.g., EU AI Act Annex III high-risk domains: critical infrastructure, employment, credit scoring, law enforcement) to automatically tier systems into Unacceptable, High, Limited, or Minimal Risk.</p>
+            id: 'mrc-overview',
+            title: 'Model Risk Committee (MRC) - Overview',
+            content: <div className="space-y-4">
+              <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Provides model approval governance, voting records, and committee oversight per SR 11-7 and EU AI Act Art. 9.</p>
+            </div>
           },
           {
-            id: 'risk-class-regulatory',
-            title: 'Risk Classification - Regulatory & Standard Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">EU AI Act (Articles 5, 6, & Annex III); NIST AI RMF (Map 2.2).</p>
+            id: 'mrc-details',
+            title: 'Model Risk Committee (MRC) - Inside the Module',
+            content: <div className="space-y-4">
+              <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Organized through multi-tab navigation:</p>
+              <ul className="list-disc pl-5 text-sm text-[hsl(var(--text-2))] space-y-1">
+                <li><strong>Current Agenda:</strong> Displays cards of agenda items under review. Members can click Cast Vote on pending items. Voting dialog requires a documented rationale.</li>
+                <li><strong>Decision History:</strong> Table of past meetings detailing Date, Type, Items discussed, Outcomes, and Quorum tracking.</li>
+                <li><strong>Committee Members:</strong> Grid view of members highlighting their Role, Department, Chair status, and Quorum requirement.</li>
+                <li><strong>SR 11-7 Policy Library:</strong> Cards indicating compliance status for various SR 11-7 sections and linked documents.</li>
+              </ul>
+            </div>
           },
           {
-            id: 'risk-class-auditor',
-            title: 'Risk Classification - Auditor Reality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Tested by feeding edge-case scenarios into the system to confirm accurate automated categorization into correct regulatory risk tiers.</p>
-          },
-          {
-            id: 'mrc-core',
-            title: 'Model Risk Committee (MRC) - Core Architecture & Functionality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Governance portal for cross-functional governance review boards (Legal, Risk, CISO, Ethics, Engineering). Facilitates agenda management, digital voting, risk sign-offs, conditional approvals, and formal dissent recording.</p>
-          },
-          {
-            id: 'mrc-regulatory',
-            title: 'Model Risk Committee (MRC) - Regulatory & Standard Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">NIST AI RMF (Govern 1.2); ISO 42001 (Clause 5.3 Organizational Roles, Responsibilities, and Authorities).</p>
-          },
-          {
-            id: 'mrc-auditor',
-            title: 'Model Risk Committee (MRC) - Auditor Reality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Reviewed via meeting minutes, digital signature records, and decision logs to prove effective human oversight over AI deployment decisions.</p>
+            id: 'mrc-workflows',
+            title: 'Model Risk Committee (MRC) - Workflows',
+            content: <div className="space-y-4">
+              <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed"><strong>Item States:</strong> Pending, Approved, Rejected, Conditional, Deferred.</p>
+              <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed"><strong>Governance Flow:</strong> Ensure quorum is met (tracked via a Quorum Progress Bar highlighting present members) before casting binding votes.</p>
+            </div>
           }
         ]
       },
@@ -313,124 +390,46 @@ export const guides1: Collection[] = [
         description: 'Quantitative testing, explainability, and dataset management.',
         sections: [
           {
-            id: 'val-lab-core',
-            title: 'Validation Lab - Core Architecture & Functionality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Automated testing environment where models undergo pre-deployment verification across performance benchmarks, safety suites, edge-case evaluations, and robustness testing under simulated operational noise.</p>
+            id: 'validation-overview',
+            title: 'Validation Lab - Overview',
+            content: <div className="space-y-4">
+              <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">The Validation Lab provides enterprise-grade independent model validation records compliant with frameworks such as SR 11-7 / OCC 2011-12, EU AI Act, NIST AI RMF, and ISO 42001. Workflow advancements are strictly gated by RBAC and segregation of duties.</p>
+            </div>
           },
           {
-            id: 'val-lab-regulatory',
-            title: 'Validation Lab - Regulatory & Standard Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">EU AI Act (Article 15 - Accuracy, Robustness, and Cybersecurity); NIST AI RMF (Measure 2.1).</p>
+            id: 'validation-details',
+            title: 'Validation Lab - Inside the Module',
+            content: <div className="space-y-4">
+              <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">The detailed view of a Validation Run includes multiple tabs:</p>
+              <ul className="list-disc pl-5 text-sm text-[hsl(var(--text-2))] space-y-1">
+                <li><strong>Scope & assumptions:</strong> Displays Scope & intended use and lists Key limitations.</li>
+                <li><strong>Coverage matrix:</strong> Test coverage matrix mapping suites against risk dimensions.</li>
+                <li><strong>Backtesting:</strong> Challenger comparison and Backtesting suites performance.</li>
+                <li><strong>Adversarial:</strong> Adversarial robustness table showing Attack, Success rate, Baseline, and Verdict.</li>
+                <li><strong>Residual risk & sign-off:</strong> Residual risk rating with rationale, and Sign-offs from Business, Risk, and Compliance stakeholders.</li>
+              </ul>
+            </div>
           },
           {
-            id: 'val-lab-auditor',
-            title: 'Validation Lab - Auditor Reality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Evaluated by reviewing execution logs of test suites run against candidate models prior to production release authorization.</p>
+            id: 'bias-overview',
+            title: 'Bias Audits - Overview',
+            content: <div className="space-y-4">
+              <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Bias Audits provide fairness assessments per model, dataset, and framework. It covers intersectional metrics, pre- vs post-deployment drift, counterfactual fairness, remediation plans, and regulatory mapping (EU AI Act, ECOA, NIST MEASURE, ISO 42001, GDPR).</p>
+            </div>
           },
           {
-            id: 'explain-core',
-            title: 'Explainability Center - Core Architecture & Functionality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Suite of model interpretability tools generating feature importance scores, SHAP/LIME visualizers, integrated gradients, and chain-of-thought rationale extraction for black-box model decisions.</p>
-          },
-          {
-            id: 'explain-regulatory',
-            title: 'Explainability Center - Regulatory & Standard Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">EU AI Act (Article 13 - Transparency and Provision of Information); ISO 42001 (Control A.9.3 Explainability of AI Systems); NIST AI RMF (Measure 2.4).</p>
-          },
-          {
-            id: 'explain-auditor',
-            title: 'Explainability Center - Auditor Reality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Crucial for credit, hiring, and insurance models; auditors review explainability outputs generated for flagged or rejected end-user decisions.</p>
-          },
-          {
-            id: 'bias-core',
-            title: 'Bias Audits - Core Architecture & Functionality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Statistical engine running disparate impact analyses, equalized odds metrics, demographic parity checks, and toxic stereotyped response evaluations across protected demographic classes (gender, race, age, disability status).</p>
-          },
-          {
-            id: 'bias-regulatory',
-            title: 'Bias Audits - Regulatory & Standard Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">EU AI Act (Article 10 - Data Quality and Bias Mitigation); NIST AI RMF (Measure 2.5); EEOC AI Guidance.</p>
-          },
-          {
-            id: 'bias-auditor',
-            title: 'Bias Audits - Auditor Reality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Inspected for evidence that quantitative bias testing is routinely performed on both base models and RAG data pipelines.</p>
-          },
-          {
-            id: 'metric-core',
-            title: 'Metric Studio - Core Architecture & Functionality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Custom metric configuration builder allowing risk teams to define domain-specific evaluation metrics (e.g., medical term accuracy, financial regulatory compliance score, brand-tone adherence rate).</p>
-          },
-          {
-            id: 'metric-regulatory',
-            title: 'Metric Studio - Regulatory & Standard Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">NIST AI RMF (Measure 1.1); ISO 42001 (Clause 9.1).</p>
-          },
-          {
-            id: 'metric-auditor',
-            title: 'Metric Studio - Auditor Reality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Assessed to confirm that performance evaluations reflect domain-specific requirements rather than generic public benchmarks.</p>
-          },
-          {
-            id: 'dataset-core',
-            title: 'Dataset Wizard - Core Architecture & Functionality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Tooling for constructing gold-standard evaluation datasets, generating synthetic test edge cases, and managing ground-truth benchmark versioning.</p>
-          },
-          {
-            id: 'dataset-regulatory',
-            title: 'Dataset Wizard - Regulatory & Standard Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">ISO 42001 (Control A.7.3 Data Quality for AI Systems); EU AI Act (Article 10.3).</p>
-          },
-          {
-            id: 'dataset-auditor',
-            title: 'Dataset Wizard - Auditor Reality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Evaluated to ensure that validation datasets are independent of training datasets and free of ground-truth bias.</p>
-          },
-          {
-            id: 'explorer-core',
-            title: 'Data Explorer - Core Architecture & Functionality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Data inspection interface enabling auditors and validation engineers to query, slice, visualize, and inspect raw evaluation pairs, embedding spaces, and data distribution maps.</p>
-          },
-          {
-            id: 'explorer-regulatory',
-            title: 'Data Explorer - Regulatory & Standard Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">ISO 42001 (Control A.7.1 Data Governance); NIST AI RMF (Map 1.5).</p>
-          },
-          {
-            id: 'explorer-auditor',
-            title: 'Data Explorer - Auditor Reality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Used during live audit sessions to manually inspect flagged data records and verify edge-case annotations.</p>
-          },
-          {
-            id: 'scenario-core',
-            title: 'Scenario Editor - Core Architecture & Functionality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Visual suite for authoring complex multi-turn conversation flows, adversarial interaction scenarios, and stress-test suites designed to probe model boundaries.</p>
-          },
-          {
-            id: 'scenario-regulatory',
-            title: 'Scenario Editor - Regulatory & Standard Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">NIST AI RMF (Measure 2.7 - Adversarial Robustness); OWASP GenAI Top 10.</p>
-          },
-          {
-            id: 'scenario-auditor',
-            title: 'Scenario Editor - Auditor Reality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Reviewed to ensure that testing includes realistic, multi-step attack vectors rather than static single-prompt checks.</p>
-          },
-          {
-            id: 'trace-viewer-core',
-            title: 'Session Trace Viewer - Core Architecture & Functionality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Granular execution inspector providing step-by-step breakdown of LLM reasoning loops, tool call invocations, context retrieval scores, and raw prompt/completion payloads for specific sessions.</p>
-          },
-          {
-            id: 'trace-viewer-regulatory',
-            title: 'Session Trace Viewer - Regulatory & Standard Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">EU AI Act (Article 12 - Record-Keeping); ISO 42001 (Control A.9.2 Logging).</p>
-          },
-          {
-            id: 'trace-viewer-auditor',
-            title: 'Session Trace Viewer - Auditor Reality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Used to conduct root-cause analysis on anomalous or harmful outputs reported in production environments.</p>
+            id: 'bias-details',
+            title: 'Bias Audits - Inside the Module',
+            content: <div className="space-y-4">
+              <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">The Bias Audit detail page and Wizard provide deep analytics on model fairness:</p>
+              <ul className="list-disc pl-5 text-sm text-[hsl(var(--text-2))] space-y-1">
+                <li><strong>Failed Banner:</strong> If an audit fails, a banner indicates model promotion is blocked.</li>
+                <li><strong>Fairness metrics:</strong> Group fairness metrics against targets, and the Protected attribute catalog.</li>
+                <li><strong>Intersectional:</strong> Heatmap showing fairness scores at attribute intersections (e.g., Race/Ethnicity x Income).</li>
+                <li><strong>Counterfactual:</strong> Testing showing if decisions change when only the protected attribute is flipped.</li>
+                <li><strong>Remediation / Recommendation Engine:</strong> Remediation plan with specific tasks, owners, and due dates.</li>
+              </ul>
+            </div>
           }
         ]
       },
@@ -440,226 +439,68 @@ export const guides1: Collection[] = [
         description: 'Discovery, IAM, and Kill Switches for autonomous agents.',
         sections: [
           {
-            id: 'shadow-core',
-            title: 'Shadow AI Discovery - Core Architecture & Functionality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Network traffic monitoring agent, API gateway scanner, and CASB integration module that detects unauthorized employee usage of external LLM endpoints, unvetted AI Chrome extensions, and unapproved internal models.</p>
+            id: 'agent-registry-overview',
+            title: 'Agent Registry - Overview',
+            content: <div className="space-y-4">
+              <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Provides an inventory and observability suite for managing autonomous AI agents. Facilitates agent discovery, tracking of authorized ("confirmed") vs unauthorized ("shadow") agents, real-time observability of telemetry/logs, and detailed risk and IAM assessments.</p>
+            </div>
           },
           {
-            id: 'shadow-regulatory',
-            title: 'Shadow AI Discovery - Regulatory & Standard Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">ISO 42001 (Control A.6.2 Inventory); NIST AI RMF (Govern 1.1); ISO 27001 (Control A.8.7 Protection Against Malware/Unauthorized Software).</p>
+            id: 'agent-registry-details',
+            title: 'Agent Registry - Inside the Module',
+            content: <div className="space-y-4">
+              <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed"><strong>Agent Detail View Tabs:</strong></p>
+              <ul className="list-disc pl-5 text-sm text-[hsl(var(--text-2))] space-y-1">
+                <li><strong>Risk Assessment:</strong> Displays risk factors with category, description, and risk level.</li>
+                <li><strong>IAM & Permissions:</strong> Displays a matrix mapping resources (e.g., Model Registry, Customer PII, Audit Logs) to permissions (Read, Write, Execute, Admin).</li>
+                <li><strong>Topology:</strong> Visualizes the agent's communication path using a node graph.</li>
+                <li><strong>Live Telemetry Stream:</strong> Displays real-time streaming execution logs.</li>
+              </ul>
+              <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed mt-2"><strong>Shadow AI Details (Investigate Drawer):</strong> Focuses on unapproved agents, tracking Evidence Collected (Network traffic analysis, Model usage) and Data Categories Accessed.</p>
+            </div>
           },
           {
-            id: 'shadow-auditor',
-            title: 'Shadow AI Discovery - Auditor Reality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Auditors inspect discovery logs to confirm the platform detects and alerts on unapproved AI usage across enterprise networks.</p>
+            id: 'choreography-overview',
+            title: 'Multi-Agent Choreography - Overview',
+            content: <div className="space-y-4">
+              <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Provides a live view of multi-agent workflows, orchestration states, and human-in-the-loop (HITL) intervention points. It tracks end-to-end automated pipelines coordinated by orchestrator agents and worker agents.</p>
+            </div>
           },
           {
-            id: 'agent-reg-core',
-            title: 'Agent Registry - Core Architecture & Functionality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Specialized catalog detailing autonomous AI agents, their underlying system prompts, accessible tools/APIs, allowed operational memory boundaries, and assigned deployment tiers.</p>
+            id: 'choreography-details',
+            title: 'Multi-Agent Choreography - Inside the Module',
+            content: <div className="space-y-4">
+              <ul className="list-disc pl-5 text-sm text-[hsl(var(--text-2))] space-y-1">
+                <li><strong>Agents:</strong> Orchestrator details, list of Worker Agents, and an Agent Chain Visualization showing flow from orchestrator to workers.</li>
+                <li><strong>Execution:</strong> Progress bar (completed steps vs total steps), Token & Cost Usage, and Timeline.</li>
+                <li><strong>HITL (Human-in-the-Loop):</strong> Workflows can pause and enter an "Awaiting Approval" state (e.g., decision score below threshold). Operators review output and can "Approve & Resume" or "Terminate" the workflow.</li>
+              </ul>
+            </div>
           },
           {
-            id: 'agent-reg-regulatory',
-            title: 'Agent Registry - Regulatory & Standard Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">ISO 42001 (Control A.6.2); NIST AI RMF (Govern 4.2 - Autonomous Decision-Making).</p>
+            id: 'killswitch-overview',
+            title: 'Emergency Kill Switch - Overview',
+            content: <div className="space-y-4">
+              <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">An audit log and control center for all agent suspension events—manual, automated, and regulatory. Allows operators to view historical kill switch triggers, assess blast radius, and execute emergency "Kill All Agents" functionality.</p>
+            </div>
           },
           {
-            id: 'agent-reg-auditor',
-            title: 'Agent Registry - Auditor Reality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Examined to ensure that every autonomous agent operating in production has defined limits and clear human ownership.</p>
-          },
-          {
-            id: 'agent-iam-core',
-            title: 'Agent Permissions (IAM) - Core Architecture & Functionality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Fine-grained access control engine enforcing Role-Based and Attribute-Based Access Control (RBAC/ABAC) over agent tool execution, API calls, database read/write capabilities, and system modification rights.</p>
-          },
-          {
-            id: 'agent-iam-regulatory',
-            title: 'Agent Permissions (IAM) - Regulatory & Standard Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">ISO 27001 (Control A.9 Access Control); OWASP GenAI Top 10 (LLM08: Excessive Agency).</p>
-          },
-          {
-            id: 'agent-iam-auditor',
-            title: 'Agent Permissions (IAM) - Auditor Reality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Assessed by testing whether an agent can perform unpermitted actions (e.g., executing a database DELETE or calling an unauthorized third-party API) outside its assigned permission boundary.</p>
-          },
-          {
-            id: 'choreography-core',
-            title: 'Choreography Canvas - Core Architecture & Functionality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Visual orchestration map depicting multi-agent interactions, communication channels, state handoffs, and feedback loops to prevent infinite logic loops, cascading errors, and unauthorized inter-agent task delegation.</p>
-          },
-          {
-            id: 'choreography-regulatory',
-            title: 'Choreography Canvas - Regulatory & Standard Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">NIST AI RMF (Manage 1.2 - System Interdependencies).</p>
-          },
-          {
-            id: 'choreography-auditor',
-            title: 'Choreography Canvas - Auditor Reality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Evaluated during system safety assessments to verify that complex agent workflows contain systemic circuit breakers.</p>
-          },
-          {
-            id: 'kill-switch-core',
-            title: 'Emergency Kill Switch - Core Architecture & Functionality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Immediate operational control mechanism providing instant programmatic revocation of agent execution rights, API access, system credentials, and active process execution across cloud environments.</p>
-          },
-          {
-            id: 'kill-switch-regulatory',
-            title: 'Emergency Kill Switch - Regulatory & Standard Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">EU AI Act (Article 14.4 - Human Oversight Kill Switch); ISO 42001 (Control A.9.1 Operational Control).</p>
-          },
-          {
-            id: 'kill-switch-auditor',
-            title: 'Emergency Kill Switch - Auditor Reality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Tested via live exercises to verify that pressing the kill switch instantly terminates agent actions without leaving hanging process states.</p>
-          }
-        ]
-      },
-      {
-        id: 'runtime-trust',
-        title: 'Runtime Trust',
-        description: 'Performance monitoring, active guardrails, and fallback management.',
-        sections: [
-          {
-            id: 'perf-mon-core',
-            title: 'Performance Monitoring - Core Architecture & Functionality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Real-time telemetry dashboard tracking model responsiveness, throughput, token generation speed, HTTP status codes, and service availability SLAs.</p>
-          },
-          {
-            id: 'perf-mon-regulatory',
-            title: 'Performance Monitoring - Regulatory & Standard Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">ISO 42001 (Clause 9.1); NIST AI RMF (Manage 1.1).</p>
-          },
-          {
-            id: 'perf-mon-auditor',
-            title: 'Performance Monitoring - Auditor Reality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Verified to ensure model operational disruptions do not cause downstream compliance failures or safety hazards.</p>
-          },
-          {
-            id: 'model-eff-core',
-            title: 'Model Efficiency - Core Architecture & Functionality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Analytics engine calculating compute density, hardware deployment efficiency, parameter utilization ratios, and inference optimization metrics.</p>
-          },
-          {
-            id: 'model-eff-regulatory',
-            title: 'Model Efficiency - Regulatory & Standard Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">ISO 42001 (Control A.10.1 Resource Utilization).</p>
-          },
-          {
-            id: 'model-eff-auditor',
-            title: 'Model Efficiency - Auditor Reality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Evaluated to ensure production models operate within sustainable, optimized hardware profiles.</p>
-          },
-          {
-            id: 'genai-risk-core',
-            title: 'GenAI Risk Profiles - Core Architecture & Functionality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Dynamic risk score calculation engine updating real-time risk scores for deployed models based on live hallucination rates, toxicity scores, PII leakage events, and user feedback signals.</p>
-          },
-          {
-            id: 'genai-risk-regulatory',
-            title: 'GenAI Risk Profiles - Regulatory & Standard Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">NIST AI RMF (Measure 2.2, Manage 2.1).</p>
-          },
-          {
-            id: 'genai-risk-auditor',
-            title: 'GenAI Risk Profiles - Auditor Reality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Reviewed to confirm that live risk scores accurately reflect changes in operational risk context.</p>
-          },
-          {
-            id: 'active-guard-core',
-            title: 'Active Guardrails - Core Architecture & Functionality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Low-latency inline filtering layer evaluating incoming user prompts and outgoing model responses against regex patterns, semantic vector classifiers, toxicity models, and custom business logic rules.</p>
-          },
-          {
-            id: 'active-guard-regulatory',
-            title: 'Active Guardrails - Regulatory & Standard Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">EU AI Act (Article 15); OWASP GenAI Top 10 (LLM01, LLM02, LLM06); NIST AI RMF (Manage 2.4).</p>
-          },
-          {
-            id: 'active-guard-auditor',
-            title: 'Active Guardrails - Auditor Reality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Auditors run jailbreak attempts against live endpoints to confirm active guardrails catch and block malicious inputs before model processing.</p>
-          },
-          {
-            id: 'live-trace-core',
-            title: 'Live Inference Traces - Core Architecture & Functionality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Distributed tracing infrastructure (OpenTelemetry-compliant) capturing end-to-end execution paths of every request—including raw input, system prompt state, retrieved RAG context vectors, model completions, guardrail interventions, and latency metrics.</p>
-          },
-          {
-            id: 'live-trace-regulatory',
-            title: 'Live Inference Traces - Regulatory & Standard Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">EU AI Act (Article 12 - Automatic Record-Keeping); ISO 42001 (Control A.9.2).</p>
-          },
-          {
-            id: 'live-trace-auditor',
-            title: 'Live Inference Traces - Auditor Reality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Evaluated by pulling historical trace logs for specific user requests to verify complete end-to-end auditability.</p>
-          },
-          {
-            id: 'trust-costs-core',
-            title: 'Trust Costs & Tokens - Core Architecture & Functionality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Financial tracking system mapping token consumption rates, model API expenditures, and trust infrastructure costs (guardrail processing, evaluation calls) directly to business units, models, and applications.</p>
-          },
-          {
-            id: 'trust-costs-regulatory',
-            title: 'Trust Costs & Tokens - Regulatory & Standard Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Operational governance supporting ISO 42001 (Clause 6.2 Objectives and Planning).</p>
-          },
-          {
-            id: 'trust-costs-auditor',
-            title: 'Trust Costs & Tokens - Auditor Reality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Reviewed to verify that financial expenditures align with authorized enterprise budget limits.</p>
-          },
-          {
-            id: 'fallback-core',
-            title: 'Fallback Failovers - Core Architecture & Functionality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Automated routing engine that redirects incoming traffic to secondary models, cached responses, or safe rule-based defaults when primary models experience drift, high latency, guardrail triggers, or service outages.</p>
-          },
-          {
-            id: 'fallback-regulatory',
-            title: 'Fallback Failovers - Regulatory & Standard Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">EU AI Act (Article 15.4 - Resilience); NIST AI RMF (Manage 1.3 - Reliability).</p>
-          },
-          {
-            id: 'fallback-auditor',
-            title: 'Fallback Failovers - Auditor Reality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Tested by simulating primary model endpoint failures to verify graceful degradation without service interruption or security compromise.</p>
-          },
-          {
-            id: 'tool-monitor-core',
-            title: 'Tool Monitor - Core Architecture & Functionality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Interception proxy tracking all third-party API calls, database queries, code execution environments, and external web searches initiated by model tool calls during inference.</p>
-          },
-          {
-            id: 'tool-monitor-regulatory',
-            title: 'Tool Monitor - Regulatory & Standard Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">OWASP GenAI Top 10 (LLM08 Excessive Agency); ISO 27001 (Control A.13.1 Network Controls).</p>
-          },
-          {
-            id: 'tool-monitor-auditor',
-            title: 'Tool Monitor - Auditor Reality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Examined to ensure model tool execution cannot bypass enterprise firewall rules or execute unauthorized remote procedures.</p>
-          },
-          {
-            id: 'config-core',
-            title: 'Configuration - Core Architecture & Functionality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Centralized admin portal for configuring runtime trust parameters, adjusting guardrail strictness thresholds, setting token limits, and tuning alert criteria across operational model endpoints.</p>
-          },
-          {
-            id: 'config-regulatory',
-            title: 'Configuration - Regulatory & Standard Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">ISO 42001 (Control A.9.1); NIST AI RMF (Govern 5.1).</p>
-          },
-          {
-            id: 'config-auditor',
-            title: 'Configuration - Auditor Reality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Audited via change logs to verify that changes to security thresholds follow formal change control procedures.</p>
+            id: 'killswitch-details',
+            title: 'Emergency Kill Switch - Workflows & Actions',
+            content: <div className="space-y-4">
+              <ul className="list-disc pl-5 text-sm text-[hsl(var(--text-2))] space-y-1">
+                <li><strong>Agent Suspension:</strong> Triggered Manually, Automatically (Trust Score, Error Rate, Bias Threshold), by Regulatory Order, or Security Incident.</li>
+                <li><strong>KILL ALL AGENTS:</strong> Emergency shutdown of all active agents with MFA verification. Suspends all active agents, creates an INC-EMERGENCY incident, and queues regulatory notifications.</li>
+                <li><strong>Approve Resumption:</strong> Resumes the agent, marks the event as 'Resolved', and sets a resumption timestamp.</li>
+                <li><strong>Post-mortem:</strong> Generates a structured report for resolved incidents with Incident Summary, Root Cause Analysis, and Corrective Actions.</li>
+              </ul>
+            </div>
           }
         ]
       }
     ]
   },
+
   {
     id: 'ai-gateway',
     title: 'AI Gateway',
