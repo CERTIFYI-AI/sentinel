@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, type ReactNode } from 'react';
-import { useSupabaseTable } from '@/hooks/useSupabaseTable';
+import { usePromptRegistryData } from '@/hooks/usePromptRegistryData';
 import { toast } from 'sonner';
 import {
   ChatTeardropText, Plus, MagnifyingGlass, PencilSimple, Trash,
@@ -20,7 +20,7 @@ import {
 } from '../components/ui/select';
 import {
 
-  PROMPT_REGISTRY, type PromptRecord, type PromptStatus, type PromptCategory, formatDate,
+  type PromptRecord, type PromptStatus, type PromptCategory, formatDate,
 } from '../data/seed';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -643,7 +643,7 @@ function EditSheet({ record, open, onClose, onSave }: {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function PromptRegistry() {
-  const { data: records, setData: setRecords } = useSupabaseTable('promptregistry_table', PROMPT_REGISTRY);
+  const { records, isLoading, save: savePrompt, remove: removePrompt } = usePromptRegistryData();
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<PromptStatus | 'all'>('all');
   const [filterCategory, setFilterCategory] = useState<PromptCategory | 'all'>('all');
@@ -699,7 +699,7 @@ export default function PromptRegistry() {
         approvedBy: null, approvalDate: null,
         versions: [{ version: '1.0.0', content: data.content ?? '', author: data.owner ?? '', changedAt: now, changeNote: data.changeNote || 'Initial version.' }],
       };
-      setRecords(p => [rec, ...p]);
+      savePrompt(rec).catch(() => toast('Failed to save prompt', 'error'));
       toast(`Created "${rec.name}" (v1.0.0)`);
     } else {
       const existing = records.find(r => r.id === (data as PromptRecord).id);
@@ -721,18 +721,24 @@ export default function PromptRegistry() {
         approvedBy: null, approvalDate: null,
         versions: [{ version: newVer, content: data.content ?? existing.content, author: data.owner ?? existing.owner, changedAt: now, changeNote: data.changeNote || 'Updated.' }, ...existing.versions],
       };
-      setRecords(p => p.map(r => r.id === updated.id ? updated : r));
+      savePrompt(updated).catch(() => toast('Failed to save prompt', 'error'));
       toast(`Updated "${updated.name}" → v${newVer}`);
     }
     setEditOpen(false);
-  }, [records, toast]);
+  }, [records, toast, savePrompt]);
 
   const handleDelete = useCallback(() => {
     if (!deleteTarget) return;
-    setRecords(p => p.filter(r => r.id !== deleteTarget.id));
-    toast(`Deleted "${deleteTarget.name}"`, 'info');
+    const target = deleteTarget;
     setDeleteTarget(null);
-  }, [deleteTarget, toast]);
+    removePrompt(target.id)
+      .then(() => toast(`Deleted "${target.name}"`, 'info'))
+      .catch(() => toast('Failed to delete prompt', 'error'));
+  }, [deleteTarget, toast, removePrompt]);
+
+  if (isLoading && records.length === 0) {
+    return <div className="p-6 text-sm" style={{ color: 'hsl(var(--text-4))' }}>Loading prompts…</div>;
+  }
 
   return (
     <div className="flex flex-col h-full bg-[hsl(var(--bg-page))]">
