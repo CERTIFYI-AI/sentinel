@@ -161,5 +161,5 @@ Your Golden Source is empty. Run Step 3 again. A Trust Score of 0.5 means Sentin
 
 - [Golden Source Setup](golden-source-setup.md) — Populate with your own verified facts.
 - [Provider Configuration](provider-configuration.md) — Add multiple LLM providers.
-- [Configuration](../configuration.md) — Tune thresholds for your use case.
+- [Configuration](../getting-started/configuration.md) — Tune thresholds for your use case.
 - [Dashboard Guide](dashboard-guide.md) — Navigate the monitoring interface.

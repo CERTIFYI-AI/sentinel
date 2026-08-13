@@ -51,6 +51,6 @@ This document maps Sentinel's runtime controls to the AICPA Trust Services Crite
 
 ## Related Documents
 
-- [Audit Log Schema](./audit-log-schema.md)
-- [Evidence Export](./evidence-export.md)
-- [Security Model](../security-model.md)
+- [Audit Log Schema](audit-log-schema.md)
+- [Evidence Export](evidence-export.md)
+- [Security Model](../security/security-model.md)

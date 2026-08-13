@@ -126,6 +126,6 @@ The response shows matched chunks with similarity scores. A similarity score abo
 
 ## Next Steps
 
-- [Configuration](../configuration.md) — Tune `golden_source_similarity_threshold` and `chunk_size`.
+- [Configuration](../getting-started/configuration.md) — Tune `golden_source_similarity_threshold` and `chunk_size`.
 - [Trust Score Reference](../reference/trust-score.md) — Understand how Golden Source quality affects scoring.
-- [How It Works](../how-it-works.md) — See where Golden Source fits in the pipeline.
+- [How It Works](../architecture/how-it-works.md) — See where Golden Source fits in the pipeline.

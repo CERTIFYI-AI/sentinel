@@ -1,69 +1,48 @@
-# Sentinel AI GRC — Documentation
+# Sentinel Documentation
 
-> The Trust Layer for Production AI — Apache 2.0, enterprise-grade governance, risk, and compliance for organisations deploying AI in regulated environments.
+Sentinel is an AI risk, governance and compliance platform: a policy-enforcing
+proxy in front of LLM providers plus a governed dashboard over a Supabase
+backend.
 
-## Getting Started
-- [Getting Started](getting-started.md)
-- [Setup](SETUP.md)
-- [Quickstart guide](guides/quickstart.md)
-- [Configuration](configuration.md) · [Environment variables](reference/environment-variables.md)
-- [Deployment](deployment.md) · [Deployment guide (AWS/GCP/bare metal)](deployment-guide.md)
+This directory is the documentation root. Every page lives in one of the
+sections below; each section has its own `README.md` index.
 
-## How Sentinel Works
-- [How it works](how-it-works.md) — request lifecycle, policy pipeline
-- [Architecture](ARCHITECTURE.md) · [High-level architecture](architecture.md)
-- [Architecture deep-dives (Interlinks, Supabase, Activation)](architecture/README.md)
-- [Backend](BACKEND.md) — Supabase schema, RLS, evidence chain
-- [API reference](API.md) · [Extended API reference](api-reference.md)
-- [SDK guide](sdk-guide.md)
-- [Security model](security-model.md)
+## Sections
 
-## Modules (per-feature reference)
-- [Modules overview](MODULES.md)
-- [Modules directory](modules/README.md)
-  - Asset Management, IGA, RoPA, TIA, BIA, Tabletop, Regulator Filings
-  - Vendor Risk, HITL, Policy Firewall, Red Team & Evals
-  - Model Inventory, Trust Engine, Incident, DSR/Consent, Bias & Fairness
-- [Security Intelligence module](SECURITY_MODULE.md)
-- [Policy Templates](POLICY_TEMPLATES.md) · [Policy language](policy-language.md) · [Changelog](CHANGELOG_POLICIES.md)
-- [Guardrails](guardrails.md)
-- [UI component reference](ui-component-reference.md)
+| Section | What's in it |
+|---|---|
+| [Getting started](getting-started/README.md) | Install, configure, seed data, troubleshoot |
+| [Architecture](architecture/README.md) | How the system is built: pipeline, backend, interlinks, ADRs |
+| [Modules](modules/README.md) | Per-module reference for every GRC module in the product |
+| [API](api/README.md) | HTTP API reference, SDK, OpenAPI spec, webhooks & integrations |
+| [Operations](operations/README.md) | Deployment, monitoring, scaling, backup, runbooks, release engineering |
+| [Security](security/README.md) | Security model, guardrails, policy language, RBAC, tenancy, SSO |
+| [Compliance](compliance/README.md) | Framework mappings (EU AI Act, ISO 42001, SOC 2, GDPR/HIPAA) and evidence |
+| [Guides](guides/README.md) | Task-oriented walkthroughs for operators and administrators |
+| [Reference](reference/README.md) | Glossary, metrics, error codes, environment variables, trust score |
+| [Contributing](contributing/README.md) | Test harness, UI component library, accessibility and i18n |
+| [Archive](archive/README.md) | Historical engineering working notes — not product documentation |
 
-## Compliance Frameworks
-- [Frameworks overview](compliance/overview.md) · [All frameworks](compliance/frameworks.md)
-- [EU AI Act mapping](compliance/eu-ai-act-mapping.md)
-- [ISO/IEC 42001 mapping](compliance/iso-42001-mapping.md)
-- [SOC 2 mapping](compliance/soc2-mapping.md)
-- [GDPR / HIPAA / PII](compliance/gdpr-hipaa-pii.md)
-- [Audit log schema](compliance/audit-log-schema.md) · [Evidence export](compliance/evidence-export.md)
+## Start here
 
-## Operational Guides
-- [Quickstart](guides/quickstart.md)
-- [Dashboard guide](guides/dashboard-guide.md)
-- [Auth guide](guides/auth-guide.md) · [Settings guide](guides/settings-guide.md)
-- [Provider configuration](guides/provider-configuration.md)
-- [Writing policies](guides/writing-policies.md)
-- [Model inventory guide](guides/model-inventory-guide.md)
-- [Audit trail guide](guides/audit-trail-guide.md)
-- [Golden-source setup](guides/golden-source-setup.md)
-- [CI/CD integration](guides/ci-cd-integration.md)
+- New to Sentinel: [How it works](architecture/how-it-works.md) →
+  [Installation](getting-started/installation.md) →
+  [Quickstart](guides/quickstart.md)
+- Deploying it: [Deployment guide](operations/deployment.md) →
+  [Production checklist](operations/production-checklist.md) →
+  [Monitoring](operations/monitoring.md)
+- Integrating with it: [API reference](api/api-reference.md) →
+  [SDK guide](api/sdk-guide.md)
+- Evaluating it for compliance: [Compliance overview](compliance/overview.md) →
+  [Security model](security/security-model.md)
+- Contributing code: [Architecture overview](architecture/overview.md) →
+  [Testing](contributing/testing/ARCHITECTURE.md) →
+  [`CONTRIBUTING.md`](../CONTRIBUTING.md)
 
-## Operations
-- [Monitoring](ops/monitoring-guide.md)
-- [Scaling](ops/scaling-guide.md)
-- [Backup & restore](ops/backup-restore.md)
-- [Production checklist](ops/production-checklist.md)
-- [Troubleshooting](troubleshooting.md)
+## Repository-level documents
 
-## Reference
-- [Glossary](reference/glossary.md)
-- [Metric definitions](reference/metric-definitions.md)
-- [Trust score](reference/trust-score.md)
-- [Error codes](reference/error-codes.md)
-- [Circuit breaker](reference/circuit-breaker.md)
-
-## Audit & Governance
-- [Audit report](AUDIT_REPORT.md)
-
-## Contributing
-See top-level [`CONTRIBUTING.md`](../CONTRIBUTING.md), [`CODE_OF_CONDUCT.md`](../CODE_OF_CONDUCT.md), and [`SECURITY.md`](../SECURITY.md).
+Kept at the repository root, outside this directory:
+[`README.md`](../README.md), [`CONTRIBUTING.md`](../CONTRIBUTING.md),
+[`SECURITY.md`](../SECURITY.md), [`SUPPORT.md`](../SUPPORT.md),
+[`CHANGELOG.md`](../CHANGELOG.md), [`RELEASE_NOTES.md`](../RELEASE_NOTES.md),
+[`CODE_OF_CONDUCT.md`](../CODE_OF_CONDUCT.md) and [`LICENSE`](../LICENSE).

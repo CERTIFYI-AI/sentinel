@@ -306,6 +306,6 @@ If a deployment fails the smoke test:
 
 ## Next Steps
 
-- [Monitoring](../ops/monitoring.md) — Set up alerts for failed deployments.
-- [Scaling](../ops/scaling.md) — Configure auto-scaling based on CI metrics.
+- [Monitoring](../operations/monitoring.md) — Set up alerts for failed deployments.
+- [Scaling](../operations/scaling.md) — Configure auto-scaling based on CI metrics.
 - [Writing Policies](writing-policies.md) — Create policies to validate in your pipeline.

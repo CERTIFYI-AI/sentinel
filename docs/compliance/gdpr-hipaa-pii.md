@@ -88,6 +88,6 @@ Note: The original PII values are **never** logged unless `log_original: true` i
 
 ## Related Documents
 
-- [Audit Log Schema](./audit-log-schema.md)
-- [Security Model](../security-model.md)
+- [Audit Log Schema](audit-log-schema.md)
+- [Security Model](../security/security-model.md)
 - [SECURITY.md](../../SECURITY.md)

@@ -169,4 +169,4 @@ Treat exports as confidential. Store them in access-controlled storage.
 
 - [Audit Log Schema](audit-log-schema.md) — Understand every field in the export.
 - [Frameworks](frameworks.md) — Map exported evidence to compliance requirements.
-- [Backup and Restore](../ops/backup-restore.md) — Archive exports for long-term retention.
+- [Backup and Restore](../operations/backup-restore.md) — Archive exports for long-term retention.

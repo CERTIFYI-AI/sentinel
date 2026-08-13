@@ -96,4 +96,4 @@ See [Evidence Export](evidence-export.md) for format details and automation.
 
 - [Audit Log Schema](audit-log-schema.md) — Understand every field in the audit log.
 - [Evidence Export](evidence-export.md) — Automate compliance report generation.
-- [Security Model](../security-model.md) — Review threat model and data protection.
+- [Security Model](../security/security-model.md) — Review threat model and data protection.

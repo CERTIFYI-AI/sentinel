@@ -6,10 +6,10 @@ Sentinel is designed from the ground up to support AI governance and compliance 
 
 | Framework | Coverage | Mapping Document |
 |-----------|----------|------------------|
-| ISO 42001 | Full clause mapping | [iso-42001-mapping.md](./iso-42001-mapping.md) |
-| EU AI Act | Article-by-article | [eu-ai-act-mapping.md](./eu-ai-act-mapping.md) |
-| SOC 2 Type II | Trust Services Criteria | [soc2-mapping.md](./soc2-mapping.md) |
-| GDPR / HIPAA | PII handling controls | [gdpr-hipaa-pii.md](./gdpr-hipaa-pii.md) |
+| ISO 42001 | Full clause mapping | [iso-42001-mapping.md](iso-42001-mapping.md) |
+| EU AI Act | Article-by-article | [eu-ai-act-mapping.md](eu-ai-act-mapping.md) |
+| SOC 2 Type II | Trust Services Criteria | [soc2-mapping.md](soc2-mapping.md) |
+| GDPR / HIPAA | PII handling controls | [gdpr-hipaa-pii.md](gdpr-hipaa-pii.md) |
 
 ## How Sentinel Supports Compliance
 
@@ -26,7 +26,7 @@ Every request processed by Sentinel produces a tamper-proof audit log entry. The
 
 ### Evidence Export
 
-Sentinel can export audit evidence in formats accepted by auditors. See [evidence-export.md](./evidence-export.md) for export procedures and the [audit-log-schema.md](./audit-log-schema.md) for the full schema.
+Sentinel can export audit evidence in formats accepted by auditors. See [evidence-export.md](evidence-export.md) for export procedures and the [audit-log-schema.md](audit-log-schema.md) for the full schema.
 
 ## Compliance by Use Case
 
@@ -51,10 +51,10 @@ Sentinel can export audit evidence in formats accepted by auditors. See [evidenc
 
 ## Audit Log Schema
 
-See [audit-log-schema.md](./audit-log-schema.md) for the complete schema definition including all fields, their types, and compliance relevance.
+See [audit-log-schema.md](audit-log-schema.md) for the complete schema definition including all fields, their types, and compliance relevance.
 
 ## Related Documents
 
-- [Security Model](../security-model.md)
-- [Architecture](../architecture.md)
+- [Security Model](../security/security-model.md)
+- [Architecture](../architecture/overview.md)
 - [SECURITY.md](../../SECURITY.md)

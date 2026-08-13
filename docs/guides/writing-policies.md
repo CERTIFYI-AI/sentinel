@@ -204,4 +204,4 @@ curl http://localhost:8000/api/audit?request_id=req_abc123 \
 
 - [Golden Source Setup](golden-source-setup.md) — Upload documents for Trust Score verification.
 - [CI/CD Integration](ci-cd-integration.md) — Validate policies in your deployment pipeline.
-- [Monitoring](../ops/monitoring.md) — Track Trust Score distributions to tune thresholds.
+- [Monitoring](../operations/monitoring.md) — Track Trust Score distributions to tune thresholds.

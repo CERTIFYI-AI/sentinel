@@ -252,6 +252,6 @@ rate(sentinel_pii_detections_total[5m])
 
 ## Next Steps
 
-- [Monitoring](../ops/monitoring.md) — Set up Grafana dashboards with these metrics.
-- [Scaling](../ops/scaling.md) — Use metrics to determine scaling decisions.
+- [Monitoring](../operations/monitoring.md) — Set up Grafana dashboards with these metrics.
+- [Scaling](../operations/scaling.md) — Use metrics to determine scaling decisions.
 - [Error Codes](error-codes.md) — Error types that appear in error metrics.

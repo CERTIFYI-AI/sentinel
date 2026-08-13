@@ -13,7 +13,7 @@ A single record in the audit log representing one request/response cycle, includ
 ## C
 
 **Circuit Breaker**
-The four-level escalation system (L0–L3) that determines what action to take when a response's trust score falls below configured thresholds. See [circuit-breaker.md](./circuit-breaker.md).
+The four-level escalation system (L0–L3) that determines what action to take when a response's trust score falls below configured thresholds. See [circuit-breaker.md](circuit-breaker.md).
 
 **Claims**
 Factual assertions extracted from an LLM response by the verifier. Each claim is checked individually against the golden source.
@@ -91,7 +91,7 @@ Service Organization Control 2 — an auditing framework for service providers. 
 ## T
 
 **Trust Score**
-A 0.0–1.0 composite score representing the factual reliability of an LLM response. Composed of RAG entailment (40%), N-cross-check agreement (30%), PII cleanliness (15%), and semantic drift (15%). See [trust-score.md](./trust-score.md).
+A 0.0–1.0 composite score representing the factual reliability of an LLM response. Composed of RAG entailment (40%), N-cross-check agreement (30%), PII cleanliness (15%), and semantic drift (15%). See [trust-score.md](trust-score.md).
 
 ## V
 

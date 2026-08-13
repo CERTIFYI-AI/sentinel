@@ -229,4 +229,4 @@ Audit log entries cannot be deleted. For storage management:
 
 - [Evidence Export](evidence-export.md) — Export audit data for compliance reports.
 - [Frameworks](frameworks.md) — Map audit fields to compliance requirements.
-- [Monitoring](../ops/monitoring.md) — Set up alerts on audit log patterns.
+- [Monitoring](../operations/monitoring.md) — Set up alerts on audit log patterns.

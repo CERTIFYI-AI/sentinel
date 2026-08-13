@@ -51,7 +51,7 @@ Per-module reference for the Sentinel AI GRC platform. Each page covers purpose,
 - [Training & Awareness](training-awareness.md)
 
 ## Security
-- [Security Intelligence](security-intelligence.md) (see also `../SECURITY_MODULE.md`)
+- [Security Intelligence](security-intelligence.md)
 
 ## Sustainability & Finance
 - [ESG & Sustainability (Carbon, Energy, Financial)](esg-sustainability.md)
@@ -62,10 +62,32 @@ Per-module reference for the Sentinel AI GRC platform. Each page covers purpose,
 - [Integrations Platform](integrations-platform.md)
 - [RBAC, Admin, Departments, Committees, Settings](rbac-organization.md)
 
+## Policy Library
+- [Policy Management & Templates](policy-management.md) — module reference and the
+  70-template starter library
+- [Policy template changelog](policy-management-changelog.md) — release history of
+  the policy templates module
+
+## Planned (V2)
+
+Not shipped. Listed here so the roadmap is visible alongside the module reference.
+
+- **Sentinel Agent** — Wazuh-compatible host agent for FIM, vulnerability
+  detection and AI telemetry (prompt sampling, PII detection, jailbreak
+  signatures), with OpenTelemetry export.
+- **Patch Management** — CVE-to-asset linkage with SLA-based patching deadlines
+  and auto-close on scan verification.
+- **Audit Requests / Auditor Portal** — external auditor read-only workspace,
+  evidence request tracker, secure package delivery.
+- **Integration Framework** — first-class connector framework: SIEM (Splunk,
+  Elastic, MS Sentinel), ITSM (Jira, ServiceNow), cloud posture (AWS Security
+  Hub, GCP SCC, Azure Defender), AI safety (Lakera, Garak, PyRIT), identity
+  (Okta, Entra).
+
 ## See Also
-- Framework mappings: `../compliance/`
-- Operational guides: `../guides/`
-- Reference and glossary: `../reference/`
-- Architecture: `../ARCHITECTURE.md`
-- API reference: `../api-reference.md`
-- Top-level index: `../README.md`
+- Framework mappings: [`../compliance/`](../compliance/README.md)
+- Operational guides: [`../guides/`](../guides/README.md)
+- Reference and glossary: [`../reference/`](../reference/README.md)
+- Architecture: [`../architecture/overview.md`](../architecture/overview.md)
+- API reference: [`../api/api-reference.md`](../api/api-reference.md)
+- Top-level index: [`../README.md`](../README.md)

@@ -106,6 +106,6 @@ Error responses include these headers when available:
 
 ## Next Steps
 
-- [API Reference](../api-reference.md) — Full API documentation.
-- [Troubleshooting](../troubleshooting.md) — Common issues and solutions.
-- [Monitoring](../ops/monitoring.md) — Set up alerts on error rates.
+- [API Reference](../api/api-reference.md) — Full API documentation.
+- [Troubleshooting](../getting-started/troubleshooting.md) — Common issues and solutions.
+- [Monitoring](../operations/monitoring.md) — Set up alerts on error rates.

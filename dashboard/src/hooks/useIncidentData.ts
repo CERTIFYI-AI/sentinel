@@ -15,7 +15,9 @@ export function useDeleteIncident() {
   return useMutation({ mutationFn: deleteIncident, onSuccess: () => qc.invalidateQueries({ queryKey: ['incidents'] }) })
 }
 
-// Standard hook matching AGENT_CONTEXT.md pattern
+// Standard data hook: React Query wrapper that invalidates on mutation.
+// See CLAUDE.md ("Established patterns to follow") and docs/architecture/INTERLINKS.md.
+// Historical note: docs/archive/AGENT_CONTEXT.md.
 export function useIncidentData(filters: Record<string, any> = {}) {
   const qc = useQueryClient()
 

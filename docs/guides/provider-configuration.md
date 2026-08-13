@@ -126,6 +126,6 @@ verifier:
 
 ## Related Documents
 
-- [Configuration Reference](../configuration.md)
+- [Configuration Reference](../getting-started/configuration.md)
 - [Environment Variables](../reference/environment-variables.md)
-- [Architecture](../architecture.md)
+- [Architecture](../architecture/overview.md)

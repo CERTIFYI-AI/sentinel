@@ -96,6 +96,6 @@ In the dashboard, navigate to **Monitoring > Circuit Breaker** to see:
 
 ## Related Documents
 
-- [Trust Score](./trust-score.md)
-- [Troubleshooting](../ops/troubleshooting.md)
-- [Architecture](../architecture.md)
+- [Trust Score](trust-score.md)
+- [Troubleshooting](../getting-started/troubleshooting.md)
+- [Architecture](../architecture/overview.md)

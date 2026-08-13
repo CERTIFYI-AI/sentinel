@@ -134,5 +134,5 @@ This checks:
 ## Next Steps
 
 - [Error Codes](error-codes.md) — HTTP error codes and their meanings.
-- [Configuration](../configuration.md) — Runtime configuration via API.
-- [Deployment Guide](../deployment-guide.md) — Environment setup for production.
+- [Configuration](../getting-started/configuration.md) — Runtime configuration via API.
+- [Deployment Guide](../operations/deployment.md) — Environment setup for production.
