@@ -11,12 +11,14 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, ResponsiveContainer,
   RadarChart, PolarGrid, PolarAngleAxis, Radar, ReferenceLine,
 } from 'recharts'
+import { Warning } from '@phosphor-icons/react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Stat, Section, StateBadge, VerdictBadge, AuditTimeline } from '@/components/evals/primitives'
 import { metricProfileHooks } from '@/hooks/queries/useEvalsCrud'
+import { useModelOptions } from '@/hooks/useAiiaData'
 import { useChartTheme } from '@/hooks/useChartTheme'
 import type { MetricThresholdConfig } from '@/types/evals'
 
@@ -31,11 +33,13 @@ export default function MetricProfileDetail() {
   const { id } = useParams()
   const nav = useNavigate()
   const { data: mp } = metricProfileHooks.useGet(id)
+  const { models } = useModelOptions()
   const ct = useChartTheme()
   const [tab, setTab] = useState('overview')
 
   if (!mp) return <div className="p-4 text-sm text-[hsl(var(--text-3))]">Loading metric profile…</div>
 
+  const model = models.find((m) => m.id === mp.modelId)
   const radarData = Object.entries(mp.objectives).map(([k, v]) => ({ dim: k, value: v as number }))
 
   return (
@@ -47,8 +51,19 @@ export default function MetricProfileDetail() {
         onBack={() => nav('/evals/metric-studio')}
         actions={
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" title="Validation runs for this model" onClick={() => nav('/model-validation')}>Validation</Button>
-            <Button variant="ghost" size="sm" title="Bias audits for this model" onClick={() => nav('/bias-audits')}>Bias audits</Button>
+            {model ? (
+              <button title={`Open ${model.name}`} onClick={() => nav(`/models/inventory/${mp.modelId}`)}
+                className="inline-flex items-center border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] px-2 py-[3px] text-[12px] font-medium text-[hsl(var(--brand))] hover:border-[hsl(var(--brand))] hover:underline">
+                {model.name}
+              </button>
+            ) : (
+              <span title="Linked model is not in the registry"
+                className="inline-flex items-center gap-1 border border-[hsl(var(--s-er-br))] bg-[hsl(var(--s-er-bg))] px-2 py-[3px] text-[12px] font-medium text-[hsl(var(--s-er-tx))]">
+                <Warning size={11} weight="fill" />Unavailable
+              </span>
+            )}
+            <Button variant="ghost" size="sm" title="Validation runs for this model" onClick={() => nav(`/model-validation?model=${mp.modelId}`)}>Validation</Button>
+            <Button variant="ghost" size="sm" title="Bias audits for this model" onClick={() => nav(`/bias-audits?model=${mp.modelId}`)}>Bias audits</Button>
           </div>
         }
       />
