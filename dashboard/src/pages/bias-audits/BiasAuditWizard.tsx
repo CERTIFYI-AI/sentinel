@@ -120,7 +120,7 @@ export default function BiasAuditWizard() {
   // ── Filtering ─────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
     return audits.filter(a => {
-      if (search && !a.modelName.toLowerCase().includes(search.toLowerCase()) && !a.id.toLowerCase().includes(search.toLowerCase())) return false;
+      if (search && !(a.modelName ?? '').toLowerCase().includes(search.toLowerCase()) && !(a.id ?? '').toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
   }, [audits, search]);
@@ -309,7 +309,7 @@ export default function BiasAuditWizard() {
                         </td>
                         <td className="px-3 py-2">
                           <Badge style={{ background: sc.bg, color: sc.text, borderRadius: 0, fontSize: 12, fontWeight: 700 }}>
-                            {audit.overallScore.toFixed(2)}
+                            {typeof audit.overallScore === 'number' ? audit.overallScore.toFixed(2) : '—'}
                           </Badge>
                         </td>
                         <td className="px-3 py-2">
@@ -323,11 +323,15 @@ export default function BiasAuditWizard() {
                         </td>
                         <td className="px-3 py-2">
                           <div className="flex flex-wrap gap-1">
-                            {audit.protectedAttributes.map(attr => (
-                              <Badge key={attr.name} className="text-[10px] px-1 py-0" style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0 }}>
-                                {attr.name}
-                              </Badge>
-                            ))}
+                            {(audit.protectedAttributes ?? []).map(attr => {
+                              // Attribute may be a plain string (wizard-created) or an object (seed).
+                              const label = typeof attr === 'string' ? attr : attr?.name ?? '—';
+                              return (
+                                <Badge key={label} className="text-[10px] px-1 py-0" style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0 }}>
+                                  {label}
+                                </Badge>
+                              );
+                            })}
                           </div>
                         </td>
                         <td className="px-3 py-2">
@@ -738,7 +742,7 @@ export default function BiasAuditWizard() {
                           const sc = scoreColor(selectedAudit.overallScore);
                           return (
                             <Badge style={{ background: sc.bg, color: sc.text, borderRadius: 0, fontSize: 16, fontWeight: 700 }}>
-                              {selectedAudit.overallScore.toFixed(2)}
+                              {typeof selectedAudit.overallScore === 'number' ? selectedAudit.overallScore.toFixed(2) : '—'}
                             </Badge>
                           );
                         })()}
@@ -761,17 +765,20 @@ export default function BiasAuditWizard() {
                       </div>
                       <div className="space-y-1">
                         <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Status</p>
-                        <Badge style={{ background: statusColor(selectedAudit.status).bg, color: statusColor(selectedAudit.status).text, borderRadius: 0 }}>
-                          {selectedAudit.status.replace(/_/g, ' ')}
+                        <Badge style={{ background: statusColor(selectedAudit.status ?? '').bg, color: statusColor(selectedAudit.status ?? '').text, borderRadius: 0 }}>
+                          {(selectedAudit.status ?? '—').replace(/_/g, ' ')}
                         </Badge>
                       </div>
                     </div>
                     <div className="space-y-1">
                       <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Protected Attributes</p>
                       <div className="flex flex-wrap gap-1">
-                        {selectedAudit.protectedAttributes.map(a => (
-                          <Badge key={a} style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 11 }}>{a}</Badge>
-                        ))}
+                        {(selectedAudit.protectedAttributes ?? []).map(a => {
+                          const label = typeof a === 'string' ? a : a?.name ?? '—';
+                          return (
+                            <Badge key={label} style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 11 }}>{label}</Badge>
+                          );
+                        })}
                       </div>
                     </div>
                   </TabsContent>
@@ -787,7 +794,7 @@ export default function BiasAuditWizard() {
                         </tr>
                       </thead>
                       <tbody>
-                        {selectedAudit.dimensions.map((dim) => {
+                        {(selectedAudit.dimensions ?? []).map((dim) => {
                           const dimSc = scoreColor(dim.score);
                           return (
                             <tr
@@ -804,18 +811,18 @@ export default function BiasAuditWizard() {
                                 <div className="flex items-center gap-2">
                                   <div className="flex-1 max-w-[80px]">
                                     <Progress
-                                      value={dim.score * 100}
+                                      value={(dim.score ?? 0) * 100}
                                       className="h-1.5"
                                       style={{}}
                                     />
                                   </div>
                                   <Badge style={{ background: dimSc.bg, color: dimSc.text, borderRadius: 0, fontSize: 11, fontWeight: 700 }}>
-                                    {dim.score.toFixed(2)}
+                                    {typeof dim.score === 'number' ? dim.score.toFixed(2) : '—'}
                                   </Badge>
                                 </div>
                               </td>
                               <td className="px-2 py-2">
-                                <span className="text-xs font-mono" style={{ color: 'hsl(var(--text-4))' }}>≥ {dim.threshold.toFixed(2)}</span>
+                                <span className="text-xs font-mono" style={{ color: 'hsl(var(--text-4))' }}>{typeof dim.threshold === 'number' ? `≥ ${dim.threshold.toFixed(2)}` : '—'}</span>
                               </td>
                               <td className="px-2 py-2">
                                 <Badge style={{
@@ -836,7 +843,7 @@ export default function BiasAuditWizard() {
                   {/* Remediation */}
                   <TabsContent value="remediation" className="space-y-4 mt-4">
                     <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Recommendations</p>
-                    {selectedAudit.recommendations.map((rec, i) => (
+                    {(selectedAudit.recommendations ?? []).map((rec, i) => (
                       <div key={i} className="flex items-start gap-2 p-2" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                         <CaretRight size={12} style={{ color: 'hsl(var(--brand))', marginTop: 2 }} />
                         <span className="text-sm" style={{ color: 'hsl(var(--text-1))' }}>{rec}</span>

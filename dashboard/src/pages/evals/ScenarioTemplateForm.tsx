@@ -35,17 +35,34 @@ const EMPTY: ScenarioTemplate = {
   guardrailChecks: [], policiesReferenced: [], riskTags: [], campaignIds: [], auditTrail: [],
 }
 
+/** Normalize a (possibly partial) stored doc so the controlled editor never crashes. */
+function seed(i?: ScenarioTemplate | null): ScenarioTemplate {
+  if (!i) return EMPTY
+  return {
+    ...EMPTY,
+    ...i,
+    name: i.name ?? '',
+    description: i.description ?? '',
+    turns: Array.isArray(i.turns) && i.turns.length ? i.turns.map((t) => ({ ...t, content: t?.content ?? '' })) : [{ role: 'user', content: '' }],
+    guardrailChecks: i.guardrailChecks ?? [],
+    policiesReferenced: i.policiesReferenced ?? [],
+    riskTags: i.riskTags ?? [],
+    campaignIds: i.campaignIds ?? [],
+    auditTrail: i.auditTrail ?? [],
+  }
+}
+
 export function ScenarioTemplateForm({ open, onOpenChange, initial }: {
   open: boolean; onOpenChange: (o: boolean) => void; initial?: ScenarioTemplate | null
 }) {
   const upsert = scenarioTemplateHooks.useUpsert()
   const { models, loading: modelsLoading } = useModelOptions()
   const actor = useAuthStore((s) => s.user?.name ?? 'Unknown')
-  const [form, setForm] = useState<ScenarioTemplate>(initial ?? EMPTY)
+  const [form, setForm] = useState<ScenarioTemplate>(seed(initial))
   const isEdit = !!initial
 
   const [seededFor, setSeededFor] = useState<string | undefined>(initial?.id)
-  if (open && (initial?.id ?? '') !== (seededFor ?? '')) { setForm(initial ?? EMPTY); setSeededFor(initial?.id) }
+  if (open && (initial?.id ?? '') !== (seededFor ?? '')) { setForm(seed(initial)); setSeededFor(initial?.id) }
 
   const set = <K extends keyof ScenarioTemplate>(k: K, v: ScenarioTemplate[K]) => setForm((f) => ({ ...f, [k]: v }))
   const toggle = (k: 'guardrailChecks' | 'riskTags', v: string) =>

@@ -24,15 +24,36 @@ const EMPTY: DatasetCatalogEntry = {
   slices: [], governanceTags: [], auditTrail: [],
 }
 
+/** Normalize a (possibly partial) stored doc so the controlled form never crashes. */
+function seed(i?: DatasetCatalogEntry | null): DatasetCatalogEntry {
+  if (!i) return EMPTY
+  return {
+    ...EMPTY,
+    ...i,
+    datasetId: i.datasetId ?? '',
+    name: i.name ?? '',
+    datasetVersion: i.datasetVersion ?? '',
+    lawfulBasis: i.lawfulBasis ?? '',
+    retention: i.retention ?? '',
+    allowedPurposes: i.allowedPurposes ?? [],
+    lineage: {
+      source: i.lineage?.source ?? '',
+      transform: i.lineage?.transform ?? '',
+      upstreamIds: i.lineage?.upstreamIds ?? [],
+    },
+    auditTrail: i.auditTrail ?? [],
+  }
+}
+
 export function DatasetCatalogForm({ open, onOpenChange, initial }: {
   open: boolean; onOpenChange: (o: boolean) => void; initial?: DatasetCatalogEntry | null
 }) {
   const upsert = datasetCatalogHooks.useUpsert()
-  const [form, setForm] = useState<DatasetCatalogEntry>(initial ?? EMPTY)
+  const [form, setForm] = useState<DatasetCatalogEntry>(seed(initial))
   const isEdit = !!initial
 
   const [seededFor, setSeededFor] = useState<string | undefined>(initial?.id)
-  if (open && (initial?.id ?? '') !== (seededFor ?? '')) { setForm(initial ?? EMPTY); setSeededFor(initial?.id) }
+  if (open && (initial?.id ?? '') !== (seededFor ?? '')) { setForm(seed(initial)); setSeededFor(initial?.id) }
 
   const set = <K extends keyof DatasetCatalogEntry>(k: K, v: DatasetCatalogEntry[K]) => setForm((f) => ({ ...f, [k]: v }))
   const valid = form.datasetId.trim() && form.name.trim() && form.lawfulBasis.trim()

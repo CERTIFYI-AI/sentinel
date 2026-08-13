@@ -40,13 +40,15 @@ export default function MetricProfileDetail() {
   if (!mp) return <div className="p-4 text-sm text-[hsl(var(--text-3))]">Loading metric profile…</div>
 
   const model = models.find((m) => m.id === mp.modelId)
-  const radarData = Object.entries(mp.objectives).map(([k, v]) => ({ dim: k, value: v as number }))
+  const radarData = Object.entries(mp.objectives ?? {})
+    .filter(([, v]) => typeof v === 'number')
+    .map(([k, v]) => ({ dim: k, value: v as number }))
 
   return (
     <div>
       <PageHeader
         title={`${mp.modelName} — Metrics`}
-        subtitle={`${mp.modelVersion} · owner ${mp.owner}`}
+        subtitle={`${mp.modelVersion || '—'} · owner ${mp.owner || '—'}`}
         badge={<StateBadge s={mp.state} />}
         onBack={() => nav('/evals/metric-studio')}
         actions={
@@ -70,7 +72,7 @@ export default function MetricProfileDetail() {
 
       <Card className="mb-4">
         <CardContent className="grid grid-cols-2 gap-4 p-4 sm:grid-cols-3 lg:grid-cols-6">
-          {Object.entries(mp.current).map(([k, v]) => <Stat key={k} label={k} value={(v as number).toFixed(3)} mono />)}
+          {Object.entries(mp.current ?? {}).map(([k, v]) => <Stat key={k} label={k} value={typeof v === 'number' ? v.toFixed(3) : '—'} mono />)}
         </CardContent>
       </Card>
 
@@ -86,8 +88,8 @@ export default function MetricProfileDetail() {
             <table className="w-full text-sm">
               <thead><tr className="text-left text-[11px] uppercase tracking-wide text-[hsl(var(--text-4))]"><th className="py-2 pr-3 font-medium">Metric</th><th className="py-2 pr-3 font-medium">Current</th><th className="py-2 pr-3 font-medium">Warn</th><th className="py-2 pr-3 font-medium">Fail</th><th className="py-2 pr-3 font-medium">Breach action</th><th className="py-2 font-medium">Status</th></tr></thead>
               <tbody>
-                {mp.thresholds.map((t) => {
-                  const cur = mp.current[t.metric]
+                {(mp.thresholds ?? []).map((t) => {
+                  const cur = (mp.current ?? {})[t.metric]
                   return (
                     <tr key={t.id} className="border-t border-[hsl(var(--border))]">
                       <td className="py-2 pr-3 text-[hsl(var(--text-1))]">{t.metric}</td>
@@ -109,12 +111,12 @@ export default function MetricProfileDetail() {
             <table className="w-full text-sm">
               <thead><tr className="text-left text-[11px] uppercase tracking-wide text-[hsl(var(--text-4))]"><th className="py-2 pr-3 font-medium">Role</th><th className="py-2 pr-3 font-medium">Model</th><th className="py-2 pr-3 font-medium">Version</th><th className="py-2 font-medium">Metrics</th></tr></thead>
               <tbody>
-                {mp.benchmarks.map((b) => (
+                {(mp.benchmarks ?? []).map((b) => (
                   <tr key={b.id} className="border-t border-[hsl(var(--border))]">
-                    <td className="py-2 pr-3 capitalize text-[hsl(var(--text-1))]">{b.role.replace('_', ' ')}</td>
+                    <td className="py-2 pr-3 capitalize text-[hsl(var(--text-1))]">{(b.role ?? '—').replace('_', ' ')}</td>
                     <td className="py-2 pr-3 font-mono text-[hsl(var(--text-2))]">{b.modelId}</td>
                     <td className="py-2 pr-3 font-mono text-[hsl(var(--text-3))]">{b.modelVersion}</td>
-                    <td className="py-2 font-mono text-[hsl(var(--text-3))]">{Object.entries(b.metrics).map(([k, v]) => `${k} ${v}`).join(' · ')}</td>
+                    <td className="py-2 font-mono text-[hsl(var(--text-3))]">{Object.entries(b.metrics ?? {}).map(([k, v]) => `${k} ${v}`).join(' · ') || '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -123,10 +125,10 @@ export default function MetricProfileDetail() {
         </TabsContent>
 
         <TabsContent value="drift" className="mt-4 grid gap-4 lg:grid-cols-2">
-          {mp.timeseries.map((s) => (
+          {(mp.timeseries ?? []).map((s) => (
             <Section key={s.metric} title={`${s.metric} — trend`}>
               <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={s.points} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                <LineChart data={s.points ?? []} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
                   <CartesianGrid stroke={ct.grid} strokeDasharray="3 3" />
                   <XAxis dataKey="at" tick={{ fill: ct.axis, fontSize: 11 }} />
                   <YAxis tick={{ fill: ct.axis, fontSize: 11 }} domain={['auto', 'auto']} />
@@ -155,7 +157,7 @@ export default function MetricProfileDetail() {
         </TabsContent>
 
         <TabsContent value="activity" className="mt-4">
-          <Section title="Audit trail"><AuditTimeline entries={mp.auditTrail} /></Section>
+          <Section title="Audit trail"><AuditTimeline entries={mp.auditTrail ?? []} /></Section>
         </TabsContent>
       </Tabs>
     </div>

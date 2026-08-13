@@ -133,7 +133,7 @@ export default function EvalTechniques() {
 
   const filtered = techniques.filter(t => {
     const q = search.toLowerCase();
-    const matchSearch = !q || t.name.toLowerCase().includes(q) || t.id.toLowerCase().includes(q);
+    const matchSearch = !q || (t.name ?? '').toLowerCase().includes(q) || (t.id ?? '').toLowerCase().includes(q);
     const matchStatus = filterStatus === 'all' || t.status === filterStatus;
     return matchSearch && matchStatus;
   });
@@ -202,8 +202,9 @@ export default function EvalTechniques() {
       {/* Card Grid */}
       <div className="grid grid-cols-2 gap-4">
         {filtered.map(t => {
-          const sc = statusColor(t.status);
-          const IconComp = t.icon;
+          const sc = statusColor(t.status ?? '');
+          // Stored docs round-trip through JSON, so the icon component may be absent.
+          const IconComp = typeof t.icon === 'function' ? t.icon : TestTube;
           const StatusIcon = STATUS_ICON[t.status] || Clock;
           return (
             <Card
@@ -234,7 +235,7 @@ export default function EvalTechniques() {
                 <div>
                   <p className="text-xs font-semibold mb-1.5" style={{ color: 'hsl(var(--text-3))' }}>Applicable Model Types</p>
                   <div className="flex flex-wrap gap-1">
-                    {t.applicableTypes.map(type => (
+                    {(t.applicableTypes ?? []).map(type => (
                       <Badge key={type} variant="outline" style={{ borderRadius: 0, fontSize: 10 }}>{type}</Badge>
                     ))}
                   </div>
@@ -282,7 +283,7 @@ export default function EvalTechniques() {
               <div>
                 <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-2))' }}>Applicable Model Types</p>
                 <div className="flex flex-wrap gap-1">
-                  {viewItem.applicableTypes.map(type => (
+                  {(viewItem.applicableTypes ?? []).map(type => (
                     <Badge key={type} variant="outline" style={{ borderRadius: 0, fontSize: 11 }}>{type}</Badge>
                   ))}
                 </div>
@@ -308,12 +309,12 @@ export default function EvalTechniques() {
             <div className="space-y-3">
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Name</label>
-                <Input value={editItem.name} onChange={e => setEditItem(p => p ? { ...p, name: e.target.value } : null)} style={{ borderRadius: 0 }} />
+                <Input value={editItem.name ?? ''} onChange={e => setEditItem(p => p ? { ...p, name: e.target.value } : null)} style={{ borderRadius: 0 }} />
               </div>
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Description</label>
                 <textarea
-                  value={editItem.description}
+                  value={editItem.description ?? ''}
                   onChange={e => setEditItem(p => p ? { ...p, description: e.target.value } : null)}
                   rows={3}
                   style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', fontSize: 13, borderRadius: 0, resize: 'vertical' }}

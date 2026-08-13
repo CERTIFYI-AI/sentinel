@@ -24,17 +24,37 @@ const EMPTY: BiasAudit = {
   counterfactual: { flipRate: 0, cases: [] }, snapshots: [], regMappings: [], auditTrail: [],
 }
 
+/** Normalize a (possibly partial) stored doc so the controlled form never crashes. */
+function seed(i?: BiasAudit | null): BiasAudit {
+  if (!i) return EMPTY
+  return {
+    ...EMPTY,
+    ...i,
+    auditId: i.auditId ?? '',
+    modelId: i.modelId ?? '',
+    modelName: i.modelName ?? '',
+    datasetId: i.datasetId ?? '',
+    auditor: i.auditor ?? '',
+    protectedAttributes: i.protectedAttributes ?? [],
+    intersections: i.intersections ?? [],
+    counterfactual: i.counterfactual ?? { flipRate: 0, cases: [] },
+    snapshots: i.snapshots ?? [],
+    regMappings: i.regMappings ?? [],
+    auditTrail: i.auditTrail ?? [],
+  }
+}
+
 export function BiasAuditForm({ open, onOpenChange, initial }: {
   open: boolean; onOpenChange: (o: boolean) => void; initial?: BiasAudit | null
 }) {
   const upsert = biasAuditHooks.useUpsert()
   const { models, loading: modelsLoading } = useModelOptions()
   const { data: datasets, isLoading: datasetsLoading } = datasetCatalogHooks.useList()
-  const [form, setForm] = useState<BiasAudit>(initial ?? EMPTY)
+  const [form, setForm] = useState<BiasAudit>(seed(initial))
   const isEdit = !!initial
 
   const [seededFor, setSeededFor] = useState<string | undefined>(initial?.id)
-  if (open && (initial?.id ?? '') !== (seededFor ?? '')) { setForm(initial ?? EMPTY); setSeededFor(initial?.id) }
+  if (open && (initial?.id ?? '') !== (seededFor ?? '')) { setForm(seed(initial)); setSeededFor(initial?.id) }
 
   const set = <K extends keyof BiasAudit>(k: K, v: BiasAudit[K]) => setForm((f) => ({ ...f, [k]: v }))
   const toggleAttr = (id: string) => set('protectedAttributes',

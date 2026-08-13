@@ -60,23 +60,26 @@ export default function QualityMetrics() {
 
   const filtered = models.filter(m => {
     const q = search.toLowerCase();
-    const matchSearch = !q || m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q) || m.type.toLowerCase().includes(q);
+    const matchSearch = !q || (m.name ?? '').toLowerCase().includes(q) || (m.id ?? '').toLowerCase().includes(q) || (m.type ?? '').toLowerCase().includes(q);
     const matchDrift = filterDrift === 'all' || m.driftStatus === filterDrift;
     return matchSearch && matchDrift;
   });
 
-  const avgAccuracy = (models.reduce((s, m) => s + m.accuracy, 0) / models.length).toFixed(1);
-  const avgFairness = (models.reduce((s, m) => s + m.fairnessScore, 0) / models.length).toFixed(1);
+  // Average only over measured values; show an honest '—' when nothing is measured.
+  const accuracyVals = models.map(m => m.accuracy).filter((v): v is number => typeof v === 'number');
+  const fairnessVals = models.map(m => m.fairnessScore).filter((v): v is number => typeof v === 'number');
+  const avgAccuracy = accuracyVals.length ? `${(accuracyVals.reduce((s, v) => s + v, 0) / accuracyVals.length).toFixed(1)}%` : '—';
+  const avgFairness = fairnessVals.length ? `${(fairnessVals.reduce((s, v) => s + v, 0) / fairnessVals.length).toFixed(1)}%` : '—';
 
   const stats = [
     { label: 'Models Evaluated', value: 6, icon: Brain },
-    { label: 'Avg Accuracy', value: `${avgAccuracy}%`, icon: ChartBar },
-    { label: 'Avg Fairness', value: `${avgFairness}%`, icon: CheckCircle },
+    { label: 'Avg Accuracy', value: avgAccuracy, icon: ChartBar },
+    { label: 'Avg Fairness', value: avgFairness, icon: CheckCircle },
     { label: 'Tests This Month', value: 45, icon: ArrowUp },
   ];
 
-  const accuracyData = models.map(m => ({ name: m.id.replace('MDL-', 'M-'), fullName: m.name, accuracy: m.accuracy }));
-  const fairnessData = models.map(m => ({ name: m.id.replace('MDL-', 'M-'), fullName: m.name, fairness: m.fairnessScore }));
+  const accuracyData = models.map(m => ({ name: (m.id ?? '').replace('MDL-', 'M-'), fullName: m.name, accuracy: m.accuracy }));
+  const fairnessData = models.map(m => ({ name: (m.id ?? '').replace('MDL-', 'M-'), fullName: m.name, fairness: m.fairnessScore }));
 
   function handleCreate() {
     const id = `MDL-${String(models.length + 1).padStart(3, '0')}`;
@@ -249,15 +252,15 @@ export default function QualityMetrics() {
                   <td className="p-3 text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{m.name}</td>
                   <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{m.type}</td>
                   <td className="p-3">
-                    <span className="text-sm font-semibold" style={{ color: m.accuracy >= 90 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--r-hi-tx))' }}>{m.accuracy}%</span>
+                    <span className="text-sm font-semibold" style={{ color: (m.accuracy ?? 0) >= 90 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--r-hi-tx))' }}>{typeof m.accuracy === 'number' ? `${m.accuracy}%` : '—'}</span>
                   </td>
-                  <td className="p-3 text-sm" style={{ color: 'hsl(var(--text-2))' }}>{m.latencyMs}ms</td>
+                  <td className="p-3 text-sm" style={{ color: 'hsl(var(--text-2))' }}>{typeof m.latencyMs === 'number' ? `${m.latencyMs}ms` : '—'}</td>
                   <td className="p-3">
                     <div className="flex items-center gap-2">
                       <div style={{ width: 60, height: 6, background: 'hsl(var(--bg-muted))', borderRadius: 0 }}>
-                        <div style={{ width: `${m.fairnessScore}%`, height: '100%', background: m.fairnessScore >= 85 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--r-hi-tx))' }} />
+                        <div style={{ width: `${m.fairnessScore ?? 0}%`, height: '100%', background: (m.fairnessScore ?? 0) >= 85 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--r-hi-tx))' }} />
                       </div>
-                      <span className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>{m.fairnessScore}</span>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>{m.fairnessScore ?? '—'}</span>
                     </div>
                   </td>
                   <td className="p-3">
@@ -309,9 +312,9 @@ export default function QualityMetrics() {
                   { label: 'Department', value: viewItem.department },
                   { label: 'Framework', value: viewItem.framework },
                   { label: 'Status', value: viewItem.status },
-                  { label: 'Accuracy', value: viewItem.accuracy + '%' },
-                  { label: 'Latency', value: viewItem.latencyMs + 'ms' },
-                  { label: 'Fairness Score', value: viewItem.fairnessScore },
+                  { label: 'Accuracy', value: typeof viewItem.accuracy === 'number' ? viewItem.accuracy + '%' : '—' },
+                  { label: 'Latency', value: typeof viewItem.latencyMs === 'number' ? viewItem.latencyMs + 'ms' : '—' },
+                  { label: 'Fairness Score', value: viewItem.fairnessScore ?? '—' },
                   { label: 'Monthly Inferences', value: viewItem.monthlyInferences },
                   { label: 'Last Validated', value: formatDate(viewItem.lastValidated) },
                   { label: 'Risk Tier', value: viewItem.riskTier },
@@ -365,7 +368,7 @@ export default function QualityMetrics() {
                   <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Accuracy (%)</label>
                   <Input
                     type="number"
-                    value={editItem.accuracy}
+                    value={editItem.accuracy ?? ''}
                     onChange={e => setEditItem(prev => prev ? { ...prev, accuracy: parseFloat(e.target.value) } : null)}
                     style={{ borderRadius: 0 }}
                   />
@@ -374,7 +377,7 @@ export default function QualityMetrics() {
                   <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Fairness Score</label>
                   <Input
                     type="number"
-                    value={editItem.fairnessScore}
+                    value={editItem.fairnessScore ?? ''}
                     onChange={e => setEditItem(prev => prev ? { ...prev, fairnessScore: parseFloat(e.target.value) } : null)}
                     style={{ borderRadius: 0 }}
                   />

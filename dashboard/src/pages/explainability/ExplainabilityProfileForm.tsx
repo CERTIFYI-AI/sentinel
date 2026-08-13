@@ -31,16 +31,38 @@ const EMPTY: ExplainabilityProfile = {
   jurisdictions: ['GDPR'], reports: [], templates: [], regMappings: [], auditTrail: [],
 }
 
+/** Normalize a (possibly partial) stored doc so the controlled form never crashes. */
+function seed(i?: ExplainabilityProfile | null): ExplainabilityProfile {
+  if (!i) return EMPTY
+  return {
+    ...EMPTY,
+    ...i,
+    modelId: i.modelId ?? '',
+    modelName: i.modelName ?? '',
+    modelVersion: i.modelVersion ?? '',
+    owner: i.owner ?? '',
+    framework: i.framework ?? EMPTY.framework,
+    global: { ...EMPTY.global, ...(i.global ?? {}) },
+    localMethods: i.localMethods ?? [],
+    adequacyPolicy: i.adequacyPolicy ?? EMPTY.adequacyPolicy,
+    jurisdictions: i.jurisdictions ?? [],
+    reports: i.reports ?? [],
+    templates: i.templates ?? [],
+    regMappings: i.regMappings ?? [],
+    auditTrail: i.auditTrail ?? [],
+  }
+}
+
 export function ExplainabilityProfileForm({ open, onOpenChange, initial }: {
   open: boolean; onOpenChange: (o: boolean) => void; initial?: ExplainabilityProfile | null
 }) {
   const upsert = explainProfileHooks.useUpsert()
   const { models, loading: modelsLoading } = useModelOptions()
-  const [form, setForm] = useState<ExplainabilityProfile>(initial ?? EMPTY)
+  const [form, setForm] = useState<ExplainabilityProfile>(seed(initial))
   const isEdit = !!initial
 
   const [seededFor, setSeededFor] = useState<string | undefined>(initial?.id)
-  if (open && (initial?.id ?? '') !== (seededFor ?? '')) { setForm(initial ?? EMPTY); setSeededFor(initial?.id) }
+  if (open && (initial?.id ?? '') !== (seededFor ?? '')) { setForm(seed(initial)); setSeededFor(initial?.id) }
 
   const set = <K extends keyof ExplainabilityProfile>(k: K, v: ExplainabilityProfile[K]) => setForm((f) => ({ ...f, [k]: v }))
   const toggleJur = (j: Jurisdiction) => set('jurisdictions',

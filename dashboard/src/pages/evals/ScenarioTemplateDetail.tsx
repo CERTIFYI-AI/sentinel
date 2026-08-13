@@ -50,7 +50,7 @@ export default function ScenarioTemplateDetail() {
               </span>
             )
           )}
-          {sc.riskTags.map((t) => (
+          {(sc.riskTags ?? []).map((t) => (
             <span key={t} className="inline-flex items-center border border-[hsl(var(--r-hi-br))] bg-[hsl(var(--r-hi-bg))] px-2 py-[2px] text-[11px] font-medium text-[hsl(var(--r-hi-tx))]">{t}</span>
           ))}
         </CardContent>
@@ -66,7 +66,7 @@ export default function ScenarioTemplateDetail() {
         <TabsContent value="script" className="mt-4">
           <Section title="Multi-turn conversation script">
             <ol className="space-y-3">
-              {sc.turns.map((t, i) => (
+              {(sc.turns ?? []).map((t, i) => (
                 <li key={i} className="border-l-2 border-[hsl(var(--border))] pl-3">
                   <div className="text-[11px] uppercase tracking-wide text-[hsl(var(--text-4))]">{t.role}</div>
                   {t.content && <p className="text-sm text-[hsl(var(--text-1))]">{t.content}</p>}
@@ -80,21 +80,21 @@ export default function ScenarioTemplateDetail() {
         <TabsContent value="guardrails" className="mt-4 grid gap-4 lg:grid-cols-2">
           <Section title="Guardrail checks (per turn)">
             <ul className="space-y-1">
-              {sc.guardrailChecks.map((g) => <li key={g} className="font-mono text-[13px] text-[hsl(var(--text-2))]">{g}</li>)}
+              {(sc.guardrailChecks ?? []).map((g) => <li key={g} className="font-mono text-[13px] text-[hsl(var(--text-2))]">{g}</li>)}
             </ul>
           </Section>
           <Section title="Policies referenced">
             <ul className="space-y-1">
-              {sc.policiesReferenced.map((p) => <li key={p} className="text-[13px] text-[hsl(var(--text-2))]">{p}</li>)}
+              {(sc.policiesReferenced ?? []).map((p) => <li key={p} className="text-[13px] text-[hsl(var(--text-2))]">{p}</li>)}
             </ul>
           </Section>
         </TabsContent>
 
         <TabsContent value="campaigns" className="mt-4">
           <Section title="Linked test campaigns">
-            {sc.campaignIds.length ? (
+            {(sc.campaignIds ?? []).length ? (
               <ul className="space-y-1">
-                {sc.campaignIds.map((c) => (
+                {(sc.campaignIds ?? []).map((c) => (
                   <li key={c} className="flex items-center gap-2">
                     <span className="font-mono text-sm text-[hsl(var(--text-1))]">{c}</span>
                     <button onClick={() => nav(`/evals/conversation?scenario=${sc.id}`)} className="text-[12px] text-[hsl(var(--brand))] hover:underline">view captured traces →</button>
@@ -106,7 +106,7 @@ export default function ScenarioTemplateDetail() {
         </TabsContent>
 
         <TabsContent value="activity" className="mt-4">
-          <Section title="Audit trail"><AuditTimeline entries={sc.auditTrail} /></Section>
+          <Section title="Audit trail"><AuditTimeline entries={sc.auditTrail ?? []} /></Section>
         </TabsContent>
       </Tabs>
     </div>

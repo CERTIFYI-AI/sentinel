@@ -142,11 +142,11 @@ export default function ExplainabilityCenter() {
   const reviewRequired = reports.filter(r => r.status === 'Review Required').length;
   const gdprGap = 2; // Models requiring updated reports
 
-  // Feature chart data for current model
-  const featureData = currentReport?.topFeatures.map(f => ({
+  // Feature chart data for current model (stored docs may be partial)
+  const featureData = (currentReport?.topFeatures ?? []).map(f => ({
     name: f.name,
     importance: f.importance,
-  })) || [];
+  }));
 
   const handleGenerate = () => {
     setGenerating(true);
@@ -262,7 +262,7 @@ export default function ExplainabilityCenter() {
                   { label: 'Date', value: formatDate(currentReport.date) },
                   { label: 'Owner', value: currentReport.owner },
                   { label: 'Framework', value: currentReport.framework },
-                  { label: 'Audit Trail', value: `${currentReport.auditTrailCount.toLocaleString()} decisions` },
+                  { label: 'Audit Trail', value: typeof currentReport.auditTrailCount === 'number' ? `${currentReport.auditTrailCount.toLocaleString()} decisions` : '—' },
                   { label: 'Status', value: currentReport.status },
                 ].map(f => (
                   <div key={f.label} className="flex items-center justify-between py-1.5" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
@@ -398,8 +398,8 @@ export default function ExplainabilityCenter() {
               <div className="flex gap-2">
                 {['LIME', 'Anchors', 'Counterfactual'].map(m => (
                   <button key={m} className="px-3 py-1 text-xs font-medium border" style={{
-                    background: currentReport.method === m || (m === 'LIME' && currentReport.method.includes('SHAP')) ? 'hsl(var(--brand))' : 'hsl(var(--bg-raised))',
-                    color: currentReport.method === m || (m === 'LIME' && currentReport.method.includes('SHAP')) ? 'hsl(var(--bg-surface))' : 'hsl(var(--text-2))',
+                    background: currentReport.method === m || (m === 'LIME' && (currentReport.method ?? '').includes('SHAP')) ? 'hsl(var(--brand))' : 'hsl(var(--bg-raised))',
+                    color: currentReport.method === m || (m === 'LIME' && (currentReport.method ?? '').includes('SHAP')) ? 'hsl(var(--bg-surface))' : 'hsl(var(--text-2))',
                     borderColor: 'hsl(var(--border))',
                   }}
                     onClick={() => toast(`${m} explanation generated`, 'info')}>
@@ -529,8 +529,8 @@ export default function ExplainabilityCenter() {
                   <p><strong>Decision date:</strong> {new Date().toLocaleDateString()}</p>
                   <p><strong>Framework:</strong> {currentReport.framework}</p>
                   <p className="mt-2"><strong>Top contributing features:</strong></p>
-                  {currentReport.topFeatures.slice(0, 3).map(f => (
-                    <p key={f.name}>• {f.name}: {(f.importance * 100).toFixed(0)}% contribution</p>
+                  {(currentReport.topFeatures ?? []).slice(0, 3).map(f => (
+                    <p key={f.name}>• {f.name}: {typeof f.importance === 'number' ? `${(f.importance * 100).toFixed(0)}%` : '—'} contribution</p>
                   ))}
                   <p className="mt-2"><strong>Recourse available:</strong> Yes — human review, appeal process documented.</p>
                   <p><strong>Right to explanation:</strong> This notice satisfies GDPR Art. 22(3) and EU AI Act Art. 13 obligations.</p>
@@ -628,13 +628,13 @@ export default function ExplainabilityCenter() {
                   <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selectedDecision.inputSummary}</p>
                 </div>
                 <div className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-1))' }}>Feature Breakdown</div>
-                {currentReport.topFeatures.map(f => (
+                {(currentReport.topFeatures ?? []).map(f => (
                   <div key={f.name} className="flex items-center gap-3">
                     <span className="text-xs w-36 truncate" style={{ color: 'hsl(var(--text-4))' }}>{f.name}</span>
                     <div className="flex-1 h-2" style={{ background: 'hsl(var(--border))', borderRadius: 0 }}>
-                      <div className="h-full" style={{ width: `${f.importance * 100}%`, background: 'hsl(var(--brand))', borderRadius: 0 }} />
+                      <div className="h-full" style={{ width: `${(f.importance ?? 0) * 100}%`, background: 'hsl(var(--brand))', borderRadius: 0 }} />
                     </div>
-                    <span className="text-xs font-mono w-12 text-right" style={{ color: 'hsl(var(--text-1))' }}>{(f.importance * 100).toFixed(0)}%</span>
+                    <span className="text-xs font-mono w-12 text-right" style={{ color: 'hsl(var(--text-1))' }}>{typeof f.importance === 'number' ? `${(f.importance * 100).toFixed(0)}%` : '—'}</span>
                   </div>
                 ))}
                 <div className="grid grid-cols-2 gap-3 mt-4">
@@ -677,7 +677,7 @@ export default function ExplainabilityCenter() {
                 {/* Feature Importance */}
                 <TabsContent value="features" className="mt-4 space-y-4">
                   <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={selectedReport.topFeatures.map(f => ({ name: f.name, importance: f.importance }))} layout="vertical" margin={{ top: 8, right: 24, left: 120, bottom: 0 }}>
+                    <BarChart data={(selectedReport.topFeatures ?? []).map(f => ({ name: f.name, importance: f.importance }))} layout="vertical" margin={{ top: 8, right: 24, left: 120, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} horizontal={false} />
                       <XAxis type="number" domain={[0, 0.5]} tick={{ fill: ct.axis, fontSize: 11 }} axisLine={{ stroke: ct.grid }} tickLine={false} tickFormatter={(v: number) => `${(v * 100).toFixed(0)}%`} />
                       <YAxis type="category" dataKey="name" tick={{ fill: ct.axis, fontSize: 11 }} axisLine={{ stroke: ct.grid }} tickLine={false} width={110} />
@@ -694,10 +694,10 @@ export default function ExplainabilityCenter() {
                         </tr>
                       </thead>
                       <tbody>
-                        {selectedReport.topFeatures.map(f => (
+                        {(selectedReport.topFeatures ?? []).map(f => (
                           <tr key={f.name} style={{ borderBottom: '1px solid hsl(var(--border))' }}>
                             <td className="px-3 py-2 text-xs" style={{ color: 'hsl(var(--text-1))' }}>{f.name}</td>
-                            <td className="px-3 py-2 text-xs font-bold" style={{ color: 'hsl(var(--brand))' }}>{(f.importance * 100).toFixed(0)}%</td>
+                            <td className="px-3 py-2 text-xs font-bold" style={{ color: 'hsl(var(--brand))' }}>{typeof f.importance === 'number' ? `${(f.importance * 100).toFixed(0)}%` : '—'}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -759,7 +759,7 @@ export default function ExplainabilityCenter() {
                 {/* Regulatory Mapping */}
                 <TabsContent value="regulatory" className="mt-4 space-y-3">
                   {[
-                    { reg: 'GDPR Art. 22', title: 'Automated Decision-Making', status: selectedReport.framework.includes('GDPR') ? 'Compliant' : 'Gap Identified', desc: 'Requires meaningful explanation of automated decisions affecting data subjects.' },
+                    { reg: 'GDPR Art. 22', title: 'Automated Decision-Making', status: (selectedReport.framework ?? '').includes('GDPR') ? 'Compliant' : 'Gap Identified', desc: 'Requires meaningful explanation of automated decisions affecting data subjects.' },
                     { reg: 'EU AI Act Art. 13', title: 'Transparency Requirements', status: selectedReport.status === 'Complete' ? 'Compliant' : 'Pending Review', desc: 'High-risk AI systems must provide sufficient transparency for users to interpret output.' },
                   ].map(item => (
                     <div key={item.reg} className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>

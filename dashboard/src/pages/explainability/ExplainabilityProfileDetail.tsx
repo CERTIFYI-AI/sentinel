@@ -30,7 +30,7 @@ export default function ExplainabilityProfileDetail() {
   const [jur, setJur] = useState<Jurisdiction | 'all'>('all')
 
   const reports = useMemo(
-    () => (p?.reports ?? []).filter(() => jur === 'all' || p?.jurisdictions.includes(jur as Jurisdiction)),
+    () => (p?.reports ?? []).filter(() => jur === 'all' || (p?.jurisdictions ?? []).includes(jur as Jurisdiction)),
     [p, jur],
   )
 
@@ -53,14 +53,14 @@ export default function ExplainabilityProfileDetail() {
   const resolvedModelName = models.find((m) => m.id === p.modelId)?.name
   const displayModelName = resolvedModelName ?? (modelsLoading ? p.modelName : 'Unavailable')
   const topFeatures = p.global?.topFeatures ?? []
-  const maxImp = Math.max(...topFeatures.map((f) => f.importance), 0.01)
+  const maxImp = Math.max(...topFeatures.map((f) => f.importance ?? 0), 0.01)
   const firstReport = p.reports?.[0]
 
   return (
     <div>
       <PageHeader
         title={`${displayModelName} — Explainability`}
-        subtitle={`${p.modelVersion || '—'} · ${p.framework} · owner ${p.owner}`}
+        subtitle={`${p.modelVersion || '—'} · ${p.framework || '—'} · owner ${p.owner || '—'}`}
         badge={<StateBadge s={p.state} />}
         onBack={() => nav('/explainability')}
         actions={
@@ -69,7 +69,7 @@ export default function ExplainabilityProfileDetail() {
               className="border border-[hsl(var(--border))] px-2 py-1 text-[11px] text-[hsl(var(--text-3))] hover:text-[hsl(var(--text-1))]">Validation</button>
             <button onClick={() => nav(`/bias-audits?model=${p.modelId}`)} title="Bias audits for this model"
               className="mr-2 border border-[hsl(var(--border))] px-2 py-1 text-[11px] text-[hsl(var(--text-3))] hover:text-[hsl(var(--text-1))]">Bias audits</button>
-            {(['all', ...p.jurisdictions] as (Jurisdiction | 'all')[]).map((j) => (
+            {(['all', ...(p.jurisdictions ?? [])] as (Jurisdiction | 'all')[]).map((j) => (
               <button key={j} onClick={() => setJur(j)}
                 className={cn('border px-2 py-1 text-[11px]', jur === j
                   ? 'border-[hsl(var(--brand))] bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))]'
@@ -116,9 +116,9 @@ export default function ExplainabilityProfileDetail() {
                   <div key={f.feature} className="flex items-center gap-3">
                     <span className="w-48 shrink-0 font-mono text-[13px] text-[hsl(var(--text-2))]">{f.feature}</span>
                     <div className="h-3 flex-1 bg-[hsl(var(--bg-sunken))]">
-                      <div className="h-3 bg-[hsl(var(--brand))]" style={{ width: `${(f.importance / maxImp) * 100}%` }} />
+                      <div className="h-3 bg-[hsl(var(--brand))]" style={{ width: `${((f.importance ?? 0) / maxImp) * 100}%` }} />
                     </div>
-                    <span className="w-12 text-right font-mono text-[13px] text-[hsl(var(--text-1))]">{f.importance.toFixed(2)}</span>
+                    <span className="w-12 text-right font-mono text-[13px] text-[hsl(var(--text-1))]">{typeof f.importance === 'number' ? f.importance.toFixed(2) : '—'}</span>
                   </div>
                 ))}
               </div>
@@ -135,9 +135,9 @@ export default function ExplainabilityProfileDetail() {
                   {(p.localMethods ?? []).map((m) => (
                     <tr key={m.method} className="border-t border-[hsl(var(--border))]">
                       <td className="py-2 pr-3 text-[hsl(var(--text-1))]">{m.method}</td>
-                      <td className="py-2 pr-3 font-mono text-[hsl(var(--text-2))]">{m.fidelity.toFixed(2)}</td>
-                      <td className="py-2 pr-3 font-mono text-[hsl(var(--text-2))]">{m.coverage.toFixed(2)}</td>
-                      <td className="py-2 font-mono text-[hsl(var(--text-2))]">{m.stability.toFixed(2)}</td>
+                      <td className="py-2 pr-3 font-mono text-[hsl(var(--text-2))]">{typeof m.fidelity === 'number' ? m.fidelity.toFixed(2) : '—'}</td>
+                      <td className="py-2 pr-3 font-mono text-[hsl(var(--text-2))]">{typeof m.coverage === 'number' ? m.coverage.toFixed(2) : '—'}</td>
+                      <td className="py-2 font-mono text-[hsl(var(--text-2))]">{typeof m.stability === 'number' ? m.stability.toFixed(2) : '—'}</td>
                     </tr>
                   ))}
                 </tbody>

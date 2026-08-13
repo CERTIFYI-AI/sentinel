@@ -54,18 +54,18 @@ export default function SessionTraceDetail() {
 
       <Card className="mb-4">
         <CardContent className="grid grid-cols-2 gap-4 p-4 sm:grid-cols-4">
-          <Stat label="Turns" value={tr.turns.length} mono />
-          <Stat label="Policy checks" value={tr.policyResults.length} mono />
-          <Stat label="Decision points" value={tr.decisionPoints.length} mono />
-          <Stat label="Overrides" value={tr.decisionPoints.filter((d) => d.overridden).length} mono />
+          <Stat label="Turns" value={(tr.turns ?? []).length} mono />
+          <Stat label="Policy checks" value={(tr.policyResults ?? []).length} mono />
+          <Stat label="Decision points" value={(tr.decisionPoints ?? []).length} mono />
+          <Stat label="Overrides" value={(tr.decisionPoints ?? []).filter((d) => d.overridden).length} mono />
         </CardContent>
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Section title="Conversation timeline" className="lg:col-span-2">
           <ol className="space-y-3">
-            {tr.turns.map((t) => {
-              const checks = tr.policyResults.filter((p) => p.turnIndex === t.index)
+            {(tr.turns ?? []).map((t) => {
+              const checks = (tr.policyResults ?? []).filter((p) => p.turnIndex === t.index)
               const isUser = t.role === 'user'
               return (
                 <li key={t.index} className={cn('border p-2', isUser ? 'border-[hsl(var(--border))] bg-[hsl(var(--bg-sunken))]' : 'border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))]')}>
@@ -92,7 +92,7 @@ export default function SessionTraceDetail() {
 
         <Section title="Decision points & interventions">
           <ol className="space-y-2">
-            {tr.decisionPoints.map((d, i) => (
+            {(tr.decisionPoints ?? []).map((d, i) => (
               <li key={i} className="border-b border-[hsl(var(--border))] pb-2">
                 <div className="text-sm text-[hsl(var(--text-1))]">{d.decision}</div>
                 <div className="text-[11px] text-[hsl(var(--text-4))]">turn {d.turnIndex}{d.actor ? ` · ${d.actor}` : ''}{d.overridden ? ' · overridden' : ''}</div>

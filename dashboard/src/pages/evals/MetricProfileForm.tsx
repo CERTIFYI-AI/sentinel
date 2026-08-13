@@ -24,13 +24,30 @@ const EMPTY: MetricProfile = {
   auditTrail: [],
 }
 
-/** Seed with a concrete metrics list: stored list, else the metric names already in use. */
+/** Seed with a concrete metrics list: stored list, else the metric names already in use.
+ * Tolerant of partial docs — missing collections become empty, never crash the editor. */
 function seed(p: MetricProfile | null | undefined): MetricProfile {
   if (!p) return EMPTY
+  const current = p.current ?? {}
+  const thresholds = p.thresholds ?? []
   const metrics = p.metrics && p.metrics.length
     ? p.metrics
-    : Array.from(new Set([...Object.keys(p.current), ...p.thresholds.map((t) => t.metric)]))
-  return { ...p, metrics }
+    : Array.from(new Set([...Object.keys(current), ...thresholds.map((t) => t.metric)]))
+  return {
+    ...EMPTY,
+    ...p,
+    modelId: p.modelId ?? '',
+    modelName: p.modelName ?? '',
+    modelVersion: p.modelVersion ?? '',
+    owner: p.owner ?? '',
+    current,
+    thresholds,
+    metrics,
+    benchmarks: p.benchmarks ?? [],
+    timeseries: p.timeseries ?? [],
+    objectives: p.objectives ?? EMPTY.objectives,
+    auditTrail: p.auditTrail ?? [],
+  }
 }
 
 export function MetricProfileForm({ open, onOpenChange, initial }: {
