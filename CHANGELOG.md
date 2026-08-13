@@ -1,3 +1,8 @@
+## <small>1.44.2 (2026-08-13)</small>
+
+* Merge PR #61: fix(ui): eliminate duplicate breadcrumbs across the platform ([5ca1ca5](https://github.com/CERTIFYI-AI/sentinel/commit/5ca1ca5))
+* fix(ui): eliminate duplicate breadcrumbs across the platform ([e47d484](https://github.com/CERTIFYI-AI/sentinel/commit/e47d484))
+
 ## <small>1.44.1 (2026-08-13)</small>
 
 * Merge PR #60: Full module audit + dead-code cleanup + P0 backend fixes ([ecb579e](https://github.com/CERTIFYI-AI/sentinel/commit/ecb579e))
