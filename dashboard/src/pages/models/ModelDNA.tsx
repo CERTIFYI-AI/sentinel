@@ -11,102 +11,16 @@ import {
   Copy, Check, Link, Cube, Robot, Fingerprint, ListChecks,
   SealCheck, Prohibit, Sparkle, ArrowUpRight,
 } from '@phosphor-icons/react';
-import { MODELS } from '../../data/seed';
+import { useModelDnaData } from '@/hooks/useModelDnaData';
+import type { DnaRecord, ProvenanceStage } from '@/services/modelDnaService';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
+import { Input } from '../../components/ui/input';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { PageHeader } from '../../components/ui/PageHeader';
 
-/* ─── Extend seed MODELS with DNA data ────────────────────────────────── */
-const DNA_EXTRA: Record<string, {
-  sha256: string; trainingDataHash: string; registeredAt: string;
-  registeredBy: string; lastVerified: string; tamperAlert: boolean;
-  provenance: { stage: string; dataset: string; hash: string; date: string; by: string }[];
-  auditChain: { id: string; event: string; actor: string; ts: string; hash: string; prev: string }[];
-}> = {
-  'MDL-001': {
-    sha256: 'a3f8c12e9b74d1056e82cc74abc01234567890abcdef1234567890abcdef1234',
-    trainingDataHash: 'sha256:f4d9e8b2a1c037854d6e2f0b8c1a39e7f53d21ab',
-    registeredAt: '2026-01-15T09:22:11Z', registeredBy: 'Dr. Nina Okafor',
-    lastVerified: '2026-04-10T08:00:00Z', tamperAlert: false,
-    provenance: [
-      { stage: 'Raw Data Ingestion', dataset: 'LoanApplications-2019-2023', hash: '8f3a…c91d', date: '2025-09-01', by: 'Data Engineering' },
-      { stage: 'Data Preprocessing', dataset: 'Cleaned-LA-v4', hash: 'b12e…44af', date: '2025-09-08', by: 'Data Science' },
-      { stage: 'Feature Engineering', dataset: 'Features-LA-v2', hash: 'c9d2…71bc', date: '2025-09-12', by: 'Data Science' },
-      { stage: 'Model Training (v3.1)', dataset: 'Training-Split-80', hash: 'e4f0…0a33', date: '2025-10-01', by: 'ML Platform' },
-      { stage: 'Model Training (v3.2)', dataset: 'Training-Split-80-rebal', hash: '1a2b…f9cc', date: '2025-11-20', by: 'ML Platform' },
-      { stage: 'Validation & Testing', dataset: 'Holdout-Test-20', hash: '5c6d…b811', date: '2025-11-22', by: 'Model Validation' },
-      { stage: 'Bias Audit Passed', dataset: 'BiasAudit-BA-009', hash: '9e0f…3a47', date: '2025-12-05', by: 'Sentinel AI GRC' },
-      { stage: 'Production Deployment', dataset: 'MDL-001-v3.2', hash: 'a3f8…1234', date: '2026-01-15', by: 'MLOps' },
-    ],
-    auditChain: [
-      { id: 'ACH-0001', event: 'Model registered', actor: 'Dr. Nina Okafor', ts: '2026-01-15 09:22', hash: 'block:0001::7ab3c…', prev: 'GENESIS' },
-      { id: 'ACH-0002', event: 'Bias audit linked (BA-009)', actor: 'Sentinel Autopilot', ts: '2026-01-15 09:25', hash: 'block:0002::2cd1e…', prev: '7ab3c…' },
-      { id: 'ACH-0003', event: 'Production approved by CISO', actor: 'James Patel', ts: '2026-01-16 11:00', hash: 'block:0003::5ef4a…', prev: '2cd1e…' },
-      { id: 'ACH-0004', event: 'Monthly fingerprint verification', actor: 'Sentinel Monitor', ts: '2026-02-15 08:00', hash: 'block:0004::9gh7b…', prev: '5ef4a…' },
-      { id: 'ACH-0005', event: 'Monthly fingerprint verification', actor: 'Sentinel Monitor', ts: '2026-03-15 08:00', hash: 'block:0005::0ij8c…', prev: '9gh7b…' },
-      { id: 'ACH-0006', event: 'Monthly fingerprint verification', actor: 'Sentinel Monitor', ts: '2026-04-10 08:00', hash: 'block:0006::3kl2d…', prev: '0ij8c…' },
-    ],
-  },
-  'MDL-002': {
-    sha256: 'b5e2d49f8c301247a9f1ee85bcd89012345678901234567890abcdef56789012',
-    trainingDataHash: 'sha256:a1c3f52b9e0487d6c2f1a3e09b7d4c8f2a051e6c',
-    registeredAt: '2025-11-02T14:10:33Z', registeredBy: 'Raj Mehta',
-    lastVerified: '2026-04-10T08:00:00Z', tamperAlert: false,
-    provenance: [
-      { stage: 'Raw Transaction Data', dataset: 'TXN-Archive-2020-2024', hash: '3a1b…d9e0', date: '2025-07-01', by: 'Data Engineering' },
-      { stage: 'Anomaly Labeling', dataset: 'Labeled-Fraud-v7', hash: '7c8d…a11f', date: '2025-08-01', by: 'Fraud Analytics' },
-      { stage: 'LSTM Training', dataset: 'Training-Seq-70', hash: '2f4e…bc90', date: '2025-09-15', by: 'ML Platform' },
-      { stage: 'Validation & Testing', dataset: 'Holdout-Seq-30', hash: '6g7h…de12', date: '2025-10-01', by: 'Model Validation' },
-      { stage: 'Production Deployment', dataset: 'MDL-002-v1.8', hash: 'b5e2…9012', date: '2025-11-02', by: 'MLOps' },
-    ],
-    auditChain: [
-      { id: 'ACH-0010', event: 'Model registered', actor: 'Raj Mehta', ts: '2025-11-02 14:10', hash: 'block:0010::f1a2b…', prev: 'GENESIS' },
-      { id: 'ACH-0011', event: 'Production approved by CISO', actor: 'Sarah Chen', ts: '2025-11-03 09:30', hash: 'block:0011::b3c4d…', prev: 'f1a2b…' },
-      { id: 'ACH-0012', event: 'Monthly fingerprint verification', actor: 'Sentinel Monitor', ts: '2025-12-15 08:00', hash: 'block:0012::e5f6g…', prev: 'b3c4d…' },
-      { id: 'ACH-0013', event: 'Monthly fingerprint verification', actor: 'Sentinel Monitor', ts: '2026-01-15 08:00', hash: 'block:0013::h7i8j…', prev: 'e5f6g…' },
-    ],
-  },
-  'MDL-003': {
-    sha256: 'c9d7e123f4567890abcdef1234567890abcdef1234567890abcdef1234567890',
-    trainingDataHash: 'sha256:d2e4f6a8b0c1d3e5f7a9b1c3d5e7f9a1b3c5d7e9',
-    registeredAt: '2026-02-01T10:00:00Z', registeredBy: 'Emma Wilson',
-    lastVerified: '2026-04-01T08:00:00Z', tamperAlert: false,
-    provenance: [
-      { stage: 'HR Data Pipeline', dataset: 'HR-Records-2021-2025', hash: '4a5b…e0f1', date: '2025-12-01', by: 'Data Engineering' },
-      { stage: 'NLP Preprocessing', dataset: 'Tokenized-HR-v3', hash: '8c9d…12ab', date: '2025-12-10', by: 'NLP Team' },
-      { stage: 'BERT Fine-tuning', dataset: 'Training-HR-80', hash: '3e4f…56cd', date: '2025-12-20', by: 'ML Platform' },
-      { stage: 'Production Deployment', dataset: 'MDL-003-v1.1', hash: 'c9d7…7890', date: '2026-02-01', by: 'MLOps' },
-    ],
-    auditChain: [
-      { id: 'ACH-0020', event: 'Model registered', actor: 'Emma Wilson', ts: '2026-02-01 10:00', hash: 'block:0020::k1l2m…', prev: 'GENESIS' },
-      { id: 'ACH-0021', event: 'EU AI Act high-risk classification confirmed', actor: 'Sentinel Autopilot', ts: '2026-02-01 10:05', hash: 'block:0021::n3o4p…', prev: 'k1l2m…' },
-      { id: 'ACH-0022', event: 'Staging approval', actor: 'James Patel', ts: '2026-02-10 14:30', hash: 'block:0022::q5r6s…', prev: 'n3o4p…' },
-    ],
-  },
-};
-
-/* ─── Derived model list with DNA ─────────────────────────────────────── */
-const MODEL_DNA_LIST = MODELS.map(m => ({
-  ...m,
-  ...(DNA_EXTRA[m.id] || {
-    sha256: `${m.id.toLowerCase().replace('-', '')}${'0'.repeat(48)}abcdef1234`,
-    trainingDataHash: `sha256:${m.id.toLowerCase()}${'a1b2c3d4'.repeat(3)}`,
-    registeredAt: m.lastValidated + 'T09:00:00Z',
-    registeredBy: m.owner,
-    lastVerified: '2026-04-10T08:00:00Z',
-    tamperAlert: false,
-    provenance: [
-      { stage: 'Data Ingestion', dataset: `Dataset-${m.id}`, hash: `a1b2…c3d4`, date: m.lastValidated, by: 'Data Engineering' },
-      { stage: 'Model Training', dataset: `Training-${m.id}`, hash: `e5f6…g7h8`, date: m.lastValidated, by: 'ML Platform' },
-      { stage: 'Production Deployment', dataset: `${m.id}-${m.version}`, hash: `i9j0…k1l2`, date: m.lastValidated, by: 'MLOps' },
-    ],
-    auditChain: [
-      { id: `ACH-${m.id}`, event: 'Model registered', actor: m.owner, ts: m.lastValidated + ' 09:00', hash: `block:AUTO::${m.id}…`, prev: 'GENESIS' },
-    ],
-  }),
-}));
-
 /* ─── Provenance Timeline Graph ───────────────────────────────────────── */
-function ProvenanceTimeline({ stages }: { stages: typeof MODEL_DNA_LIST[0]['provenance'] }) {
+function ProvenanceTimeline({ stages }: { stages: ProvenanceStage[] }) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   return (
     <div style={{ overflowX: 'auto', paddingBottom: 8 }}>
@@ -173,22 +87,80 @@ function CopyButton({ text }: { text: string }) {
 /* ─── Main Component ───────────────────────────────────────────────────── */
 export default function ModelDNA() {
   const { orgName } = useSettingsStore();
-  const [selectedModelId, setSelectedModelId] = useState(MODEL_DNA_LIST[0].id);
+  const { records, isLoading, saveDna, deleteDna } = useModelDnaData();
+  const [selectedModelId, setSelectedModelId] = useState('');
   const [tab, setTab] = useState('fingerprint');
+  const [registerOpen, setRegisterOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
-  const model = useMemo(() =>
-    MODEL_DNA_LIST.find(m => m.id === selectedModelId) || MODEL_DNA_LIST[0],
-    [selectedModelId]
-  );
+  const selectedId = records.some(r => r.id === selectedModelId) ? selectedModelId : (records[0]?.id ?? '');
+  const model = useMemo(() => records.find(m => m.id === selectedId) ?? null, [records, selectedId]);
 
   const verificationDates = useMemo(() => {
-    const base = new Date(model.lastVerified);
+    const base = model ? new Date(model.lastVerified) : new Date();
     return [0, 1, 2, 3].map(i => {
       const d = new Date(base);
       d.setMonth(d.getMonth() - i);
       return d.toISOString().split('T')[0];
     });
   }, [model]);
+
+  const registerDna = (id: string, name: string, owner: string, baseModel: string) => {
+    const now = new Date().toISOString();
+    const rec: DnaRecord = {
+      id, name, type: '—', version: 'v1.0', riskTier: 'limited', owner: owner || '—',
+      framework: '—', department: '—',
+      sha256: '', trainingDataHash: '', registeredAt: now, registeredBy: owner || 'You',
+      lastVerified: now, tamperAlert: false, baseModel: baseModel || undefined, parentModelId: null,
+      provenance: [{ stage: 'Model registered', dataset: id, hash: '—', date: now.slice(0, 10), by: owner || 'You' }],
+      auditChain: [{ id: 'ACH-0001', event: 'DNA record created', actor: owner || 'You', ts: now.slice(0, 16).replace('T', ' '), hash: 'block:0001', prev: 'GENESIS' }],
+    };
+    saveDna(rec).then(() => { toast.success(`DNA record created for ${name}`); setSelectedModelId(id); })
+      .catch(() => toast.error('Failed to create DNA record'));
+    setRegisterOpen(false);
+  };
+
+  const removeDna = () => {
+    setDeleteOpen(false);
+    if (!model?._rowId) return;
+    const target = model;
+    deleteDna(target._rowId!).then(() => toast.success(`DNA record for ${target.name} removed`))
+      .catch(() => toast.error('Failed to remove DNA record'));
+  };
+
+  const exportCert = () => {
+    if (!model) return;
+    const cert = {
+      model: model.name, id: model.id, fingerprint: model.sha256,
+      trainingDataHash: model.trainingDataHash, registeredAt: model.registeredAt,
+      registeredBy: model.registeredBy, lastVerified: model.lastVerified,
+      tamperAlert: model.tamperAlert, provenance: model.provenance, auditChain: model.auditChain,
+    };
+    const blob = new Blob([JSON.stringify(cert, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `model-dna-${model.id}.json`; a.click(); URL.revokeObjectURL(url);
+    toast.success(`Integrity certificate for ${model.name} exported`);
+  };
+
+  if (isLoading) {
+    return <div style={{ padding: 24, fontSize: 13, color: 'hsl(var(--text-4))' }}>Loading model DNA…</div>;
+  }
+  if (!model) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <PageHeader title="Model DNA & Provenance Chain"
+          subtitle={`${orgName} · Immutable fingerprinting & provenance`}
+          actions={<Button size="sm" onClick={() => setRegisterOpen(true)}>Register DNA</Button>} />
+        <Card><CardContent style={{ padding: 48, textAlign: 'center', color: 'hsl(var(--text-4))' }}>
+          <Fingerprint size={28} style={{ opacity: 0.4, margin: '0 auto 8px' }} />
+          <p style={{ fontSize: 13 }}>No model DNA records yet. Register one to start fingerprint &amp; lineage tracking.</p>
+          <Button size="sm" style={{ marginTop: 12 }} onClick={() => setRegisterOpen(true)}>Register DNA</Button>
+        </CardContent></Card>
+        <RegisterDnaDialog open={registerOpen} onOpenChange={setRegisterOpen} onRegister={registerDna} />
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -202,12 +174,12 @@ export default function ModelDNA() {
         }
         actions={
           <>
-            <Select value={selectedModelId} onValueChange={setSelectedModelId}>
+            <Select value={selectedId} onValueChange={setSelectedModelId}>
               <SelectTrigger style={{ width: 220, borderRadius: 0 }}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent style={{ borderRadius: 0 }}>
-                {MODEL_DNA_LIST.map(m => (
+                {records.map(m => (
                   <SelectItem key={m.id} value={m.id}>
                     <span style={{ fontFamily: 'monospace', fontSize: 11 }}>{m.id}</span>
                     {' — '}
@@ -216,7 +188,9 @@ export default function ModelDNA() {
                 ))}
               </SelectContent>
             </Select>
-            <Button variant="outline" size="sm" leftIcon={<DownloadSimple size={13} />} onClick={() => toast.success(`Integrity certificate for ${model.name} downloaded`)}>
+            <Button variant="outline" size="sm" onClick={() => setRegisterOpen(true)}>Register DNA</Button>
+            <Button variant="outline" size="sm" onClick={() => setDeleteOpen(true)}>Delete</Button>
+            <Button variant="outline" size="sm" leftIcon={<DownloadSimple size={13} />} onClick={exportCert}>
               Export Certificate
             </Button>
           </>
@@ -574,14 +548,17 @@ export default function ModelDNA() {
                   <Button
                     variant="outline"
                     style={{ borderRadius: 0 }}
-                    onClick={() => toast.success('Certificate JSON copied to clipboard')}
+                    onClick={() => {
+                      navigator.clipboard.writeText(JSON.stringify({ model: model.name, id: model.id, fingerprint: model.sha256, provenance: model.provenance, auditChain: model.auditChain }, null, 2));
+                      toast.success('Certificate JSON copied to clipboard');
+                    }}
                   >
                     <Copy size={13} style={{ marginRight: 5 }} />
                     Copy JSON
                   </Button>
                   <Button
                     style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
-                    onClick={() => toast.success(`Downloading signed PDF certificate for ${model.name}…`)}
+                    onClick={exportCert}
                   >
                     <DownloadSimple size={13} style={{ marginRight: 5 }} />
                     Download Signed PDF Certificate
@@ -592,6 +569,60 @@ export default function ModelDNA() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <RegisterDnaDialog open={registerOpen} onOpenChange={setRegisterOpen} onRegister={registerDna} />
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Delete DNA record?"
+        description={`The fingerprint, lineage and audit chain for “${model.name}” will be permanently removed.`}
+        confirmLabel="Delete"
+        isDestructive
+        onConfirm={removeDna}
+      />
     </div>
+  );
+}
+
+// ── Register DNA dialog ───────────────────────────────────────────────────────
+function RegisterDnaDialog({ open, onOpenChange, onRegister }: {
+  open: boolean; onOpenChange: (o: boolean) => void;
+  onRegister: (id: string, name: string, owner: string, baseModel: string) => void;
+}) {
+  const [id, setId] = useState('');
+  const [name, setName] = useState('');
+  const [owner, setOwner] = useState('');
+  const [baseModel, setBaseModel] = useState('');
+  const canSubmit = Boolean(id.trim() && name.trim());
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent style={{ borderRadius: 0 }}>
+        <DialogHeader><DialogTitle>Register model DNA</DialogTitle></DialogHeader>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '4px 0' }}>
+          <div>
+            <label style={{ fontSize: 11, fontWeight: 600, color: 'hsl(var(--text-4))' }}>Model ID</label>
+            <Input value={id} onChange={e => setId(e.target.value)} placeholder="MDL-010" style={{ borderRadius: 0, marginTop: 4 }} />
+          </div>
+          <div>
+            <label style={{ fontSize: 11, fontWeight: 600, color: 'hsl(var(--text-4))' }}>Name</label>
+            <Input value={name} onChange={e => setName(e.target.value)} placeholder="Model name" style={{ borderRadius: 0, marginTop: 4 }} />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'hsl(var(--text-4))' }}>Owner</label>
+              <Input value={owner} onChange={e => setOwner(e.target.value)} placeholder="Team / owner" style={{ borderRadius: 0, marginTop: 4 }} />
+            </div>
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'hsl(var(--text-4))' }}>Base model</label>
+              <Input value={baseModel} onChange={e => setBaseModel(e.target.value)} placeholder="e.g. BERT-base" style={{ borderRadius: 0, marginTop: 4 }} />
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button disabled={!canSubmit} onClick={() => onRegister(id.trim(), name.trim(), owner.trim(), baseModel.trim())}>Register</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
