@@ -59,23 +59,107 @@ const MODULE_GUIDES: Record<string, GuideContent> = {
     ]
   },
   '/models': {
-    title: 'AI Model Governance',
-    description: 'Manage the complete lifecycle, inventory, and architectural DNA of your AI models.',
+    title: 'Model Governance',
+    description: 'Model Governance is the system of record for every AI/ML model in your organisation — the foundation the rest of the platform builds on. It answers the questions a regulator, an auditor, or your own board will ask: which models are in production, who owns them, how risky are they, how were they built, and can you prove it? It is organised into four connected areas — Model Registry (what you have), Model Lifecycle (how it moves to production), Model DNA & Lineage (how it was built and that it hasn\'t been tampered with), and Prompt Registry (the versioned instructions your models run on).',
     features: [
       {
-        title: 'Model Inventory',
-        description: 'A centralized registry of all deployed AI models, tracking ownership, risk tiers, and deployment status.',
-        icon: Robot,
+        title: 'Why it matters',
+        description: 'The EU AI Act, ISO 42001 and NIST AI RMF all require a maintained inventory, documented risk classification, human-oversight evidence and traceable provenance. Model Governance turns those obligations into living records instead of a spreadsheet you scramble to rebuild at audit time.',
+        icon: ShieldCheck,
       },
       {
-        title: 'Model Lifecycle',
-        description: 'Track a model\'s progression from Development to Staging, Production, and eventual Retirement.',
+        title: 'How it works',
+        description: 'Each area is backed by its own governed, tenant-isolated database table. Registering a model creates the authoritative record; promoting it through the lifecycle attaches approval gates; its DNA record fingerprints the build; and every prompt it uses is version-controlled — so the four views always agree.',
         icon: ChartBar,
       },
       {
-        title: 'AI Bill of Materials (BOM)',
-        description: 'Manage the supply chain dependencies, weights, and foundational models underlying your deployments.',
+        title: 'How to use it',
+        description: 'Start in Model Registry — register your models and classify their risk. Move each through Model Lifecycle with the right approvals. Capture a DNA/provenance record for high-risk models, and register the production prompts. Revisit as models change; the records are your audit trail.',
+        icon: BookOpenText,
+      }
+    ]
+  },
+  '/models/inventory': {
+    title: 'Model Registry',
+    description: 'The Model Registry is the single, authoritative inventory of every AI/ML model your organisation builds, buys, or embeds — foundation LLMs, fine-tunes, classifiers and third-party APIs alike. If a model is not in the Registry, from a governance standpoint it does not exist. It is the entry point for the whole Model Governance workflow and the source the KPIs, drift alerts and EU AI Act risk counts are computed from.',
+    features: [
+      {
+        title: 'Why it matters',
+        description: 'You cannot govern what you cannot see. Regulators expect a complete, current inventory with a documented risk tier, an accountable owner and evidence of human oversight for high-risk systems. The Registry is that inventory, and the red "Art. 9 obligations" banner flags models that legally require review.',
+        icon: ShieldCheck,
+      },
+      {
+        title: 'How it works',
+        description: 'Every model is a governed record (name, type, version, provider, risk tier, fairness %, drift status, owner, EU AI Act class). Records are tenant-isolated and persisted — create, edit and delete write straight to the registry, and the KPI cards (Total / Production / Drift / High-Risk) recompute live.',
+        icon: Robot,
+      },
+      {
+        title: 'How to use it',
+        description: 'Click "Register Model" and complete the EU AI Act-aligned form (high-risk automatically forces human oversight). Use the filters and search to triage, open a row to see the full model passport, and "Export CSV" to hand a snapshot to auditors. Keep versions and owners current — everything downstream keys off this record.',
+        icon: BookOpenText,
+      }
+    ]
+  },
+  '/models/lifecycle': {
+    title: 'Model Lifecycle',
+    description: 'Model Lifecycle is the controlled pathway a model travels from Development to Production and, eventually, Retirement. Rather than letting models slip into production informally, it enforces approval "gates" at each stage transition — each requiring an accountable reviewer and a recorded justification — so promotion becomes a documented, defensible decision, not a deployment accident.',
+    features: [
+      {
+        title: 'Why it matters',
+        description: 'EU AI Act Article 9 and sound MRM practice require that high-risk models are reviewed and signed off before deployment. The gate history is the evidence that the right people approved the right model at the right time — the first thing an examiner asks to see.',
+        icon: ShieldCheck,
+      },
+      {
+        title: 'How it works',
+        description: 'Each tracked model has a current stage and an append-only trail of gates (promotion / rollback / decommission) with approver, date, decision and notes. Requesting a transition opens a pending gate; approving or rejecting it advances the model and writes an immutable entry to the audit trail.',
+        icon: ChartBar,
+      },
+      {
+        title: 'How to use it',
+        description: 'Pick a model, then "Request Transition" to the next stage with a justification. Reviewers approve or reject the pending gate (recording remarks). Use "Track a model" to onboard a model into the pipeline, and resolve pending gates before requesting further transitions.',
+        icon: BookOpenText,
+      }
+    ]
+  },
+  '/models/dna': {
+    title: 'Model DNA & Lineage',
+    description: 'Model DNA & Lineage is the tamper-evident "birth certificate" of a model. It captures the cryptographic fingerprint of the model and its training data, the full provenance chain of how it was built (data → preprocessing → training → validation → deployment), and a hash-linked audit chain of every governance event. Together they let you prove a production model is exactly the one that was reviewed and approved.',
+    features: [
+      {
+        title: 'Why it matters',
+        description: 'Reproducibility and provenance are explicit expectations of the EU AI Act (Annex IV technical documentation) and ISO 42001. If a model drifts, is retrained, or is silently swapped, the fingerprint changes — giving you tamper-evidence and a defensible chain of custody for regulators and incident response.',
+        icon: ShieldCheck,
+      },
+      {
+        title: 'How it works',
+        description: 'Each DNA record stores a SHA-256 fingerprint, training-data hash, base/parent model, a provenance timeline and a blockchain-style audit chain (each block references the previous hash). Records are persisted per model, and the integrity status flags any tampering.',
+        icon: Brain,
+      },
+      {
+        title: 'How to use it',
+        description: 'Select a model to inspect its fingerprint, training lineage, and audit chain. Use "Register DNA" to create a provenance record for a new model, and "Export Certificate" to download a signed integrity certificate (JSON) for an audit or a regulatory submission.',
+        icon: BookOpenText,
+      }
+    ]
+  },
+  '/prompt-registry': {
+    title: 'Prompt Registry',
+    description: 'The Prompt Registry brings version control and governance to the prompts that drive your LLM systems. In production AI, the system prompt is as consequential as model weights — it defines behaviour, guardrails and compliance posture — yet it is often edited ad hoc with no history. The Registry makes every prompt a governed, versioned, reviewable asset.',
+    features: [
+      {
+        title: 'Why it matters',
+        description: 'A single prompt change can introduce bias, leak PII, or break a regulatory control. Version history, approvals and ownership give you change control and an audit trail over the instructions your models actually run — closing a gap most GRC programmes miss entirely.',
+        icon: ShieldCheck,
+      },
+      {
+        title: 'How it works',
+        description: 'Each prompt is a governed record with a category, status (draft / under review / active / deprecated), owner, token count, linked models and a full version history — every save creates a new immutable version with an author and change note. Records are tenant-isolated and persisted.',
         icon: FileText,
+      },
+      {
+        title: 'How to use it',
+        description: 'Use "New Prompt" to register a prompt (v1.0.0). Edit to publish a new version with a change note; move it through draft → review → active as it is approved. Search by name, content, owner or tag, and open a prompt to review its version history and metadata before promotion.',
+        icon: BookOpenText,
       }
     ]
   },
