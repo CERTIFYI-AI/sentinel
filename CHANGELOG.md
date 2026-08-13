@@ -1,3 +1,14 @@
+## <small>1.44.1 (2026-08-13)</small>
+
+* Merge PR #60: Full module audit + dead-code cleanup + P0 backend fixes ([ecb579e](https://github.com/CERTIFYI-AI/sentinel/commit/ecb579e))
+* ci: authenticate Trivy action download to avoid setup rate-limit failures ([8c4ee77](https://github.com/CERTIFYI-AI/sentinel/commit/8c4ee77))
+* ci: fix Semgrep action resolution and 006_core.sql escaped quotes ([8de74c7](https://github.com/CERTIFYI-AI/sentinel/commit/8de74c7))
+* audit(db): live Supabase audit + additive RLS policies for unpoliced live tables ([66ed509](https://github.com/CERTIFYI-AI/sentinel/commit/66ed509))
+* fix(backend): resolve P0 correctness & security findings from audit ([20ac73a](https://github.com/CERTIFYI-AI/sentinel/commit/20ac73a))
+* chore: cleanup unnecessary code and trailing artifacts ([ed8c4fb](https://github.com/CERTIFYI-AI/sentinel/commit/ed8c4fb))
+* chore: full module audit report + dead-code cleanup ([d94671a](https://github.com/CERTIFYI-AI/sentinel/commit/d94671a))
+* docs: update README footer links ([8143a4c](https://github.com/CERTIFYI-AI/sentinel/commit/8143a4c))
+
 ## 1.44.0 (2026-08-09)
 
 * feat: update AI Governance docs and Help Center ([9c1f522](https://github.com/CERTIFYI-AI/sentinel/commit/9c1f522))
