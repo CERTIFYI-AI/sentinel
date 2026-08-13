@@ -1,3 +1,8 @@
+## 1.50.0 (2026-08-13)
+
+* Merge PR #68: real-time Model Detail analytics (Performance/Bias/Explainability/Lineage) ([b94222c](https://github.com/CERTIFYI-AI/sentinel/commit/b94222c))
+* feat(model-detail): real-time analytics for Performance/Bias/Explainability/Lineage ([450c262](https://github.com/CERTIFYI-AI/sentinel/commit/450c262))
+
 ## 1.49.0 (2026-08-13)
 
 * Merge PR #67: Model Governance QA fixes + Model Detail backend wiring ([d8000cd](https://github.com/CERTIFYI-AI/sentinel/commit/d8000cd))
