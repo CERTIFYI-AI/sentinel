@@ -1,3 +1,8 @@
+## 1.46.0 (2026-08-13)
+
+* Merge PR #63: Model Lifecycle — real CRUD to model_lifecycle_stages (Module 2) ([76a5250](https://github.com/CERTIFYI-AI/sentinel/commit/76a5250))
+* feat(model-lifecycle): wire real CRUD to model_lifecycle_stages (Module 2) ([c2d0174](https://github.com/CERTIFYI-AI/sentinel/commit/c2d0174))
+
 ## 1.45.0 (2026-08-13)
 
 * Merge PR #62: Model Registry — real ai_models CRUD + auth fix (Module 1) ([8b9e8d3](https://github.com/CERTIFYI-AI/sentinel/commit/8b9e8d3))
