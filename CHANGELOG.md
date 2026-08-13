@@ -1,3 +1,8 @@
+## 1.47.0 (2026-08-13)
+
+* Merge PR #64: Model DNA & Lineage — real CRUD to model_dna + NepBERTa (Module 3) ([e75d10e](https://github.com/CERTIFYI-AI/sentinel/commit/e75d10e))
+* feat(model-dna): wire real CRUD to model_dna + register NepBERTa (Module 3) ([3e65f76](https://github.com/CERTIFYI-AI/sentinel/commit/3e65f76))
+
 ## 1.46.0 (2026-08-13)
 
 * Merge PR #63: Model Lifecycle — real CRUD to model_lifecycle_stages (Module 2) ([76a5250](https://github.com/CERTIFYI-AI/sentinel/commit/76a5250))
