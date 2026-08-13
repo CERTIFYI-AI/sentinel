@@ -1,6 +1,5 @@
 import { useModelsData } from "@/hooks/useModelsData";
-import { useState, useCallback, useEffect } from 'react';
-import { useSupabaseTable } from '@/hooks/useSupabaseTable';
+import { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Eye, PencilSimple, Trash, Plus, Brain, CheckCircle, Warning,
@@ -25,7 +24,7 @@ import {
   Tooltip as RechartsTooltip, ResponsiveContainer, ReferenceLine,
 } from 'recharts';
 import {
-  MODELS, Model, severityColor, statusColor, formatDate,
+  Model, severityColor, statusColor, formatDate,
 } from '../../data/seed';
 import type { ModelRecord } from '../../services/modelService';
 import { useSettingsStore } from '../../stores/settingsStore';
@@ -40,19 +39,64 @@ const LIFECYCLE_TO_STATUS: Record<string, Model['status']> = {
   dev: 'development', development: 'development',
   deprecated: 'retired', retired: 'retired',
 };
+const DRIFT_STATES = ['stable', 'warning', 'critical'] as const;
 function recordToModel(r: ModelRecord): Model {
   const tier = (r.risk_tier ?? '').toLowerCase();
   const stage = (r.lifecycle_stage ?? '').toLowerCase();
+  const drift = (r.drift_status ?? '').toLowerCase();
+  const meta = r.metadata ?? {};
   return {
     id: r.id, name: r.name, version: r.version ?? '—', type: r.model_type ?? '—',
     owner: r.business_owner ?? r.technical_owner ?? '—',
     status: LIFECYCLE_TO_STATUS[stage] ?? 'production',
     riskTier: (RISK_TIERS as readonly string[]).includes(tier) ? (tier as Model['riskTier']) : 'limited',
-    fairnessScore: 0, driftStatus: 'stable', lastValidated: (r.updated_at ?? r.created_at ?? '').slice(0, 10),
-    framework: r.framework ?? '—', department: '—', description: r.description ?? '',
-    accuracy: 0, latencyMs: 0, monthlyInferences: '—', euAiActArticle: '—',
+    fairnessScore: r.fairness_score ?? 0,
+    driftStatus: (DRIFT_STATES as readonly string[]).includes(drift) ? (drift as Model['driftStatus']) : 'stable',
+    lastValidated: (r.updated_at ?? r.created_at ?? '').slice(0, 10),
+    framework: r.framework ?? (meta.euAiActArticle ? 'EU AI Act' : '—'),
+    department: meta.department ?? '—', description: r.description ?? '',
+    accuracy: 0, latencyMs: 0, monthlyInferences: '—', euAiActArticle: meta.euAiActArticle ?? '—',
     biasMetrics: [], performanceHistory: [], guardrails: [], complianceMapping: [], incidents: [],
     lifecyclePhase: r.lifecycle_stage ?? '—', daysInPhase: 0, lifecycleProgress: 0,
+  };
+}
+
+// Reverse map: UI Model → `ai_models` columns. Extended governance fields the
+// table doesn't have dedicated columns for are folded into `metadata` (jsonb).
+// `id` is intentionally omitted here — callers add it only for updates so that
+// creates get a DB-generated uuid (the UI's `MDL-NNN` display id is not a uuid).
+const STATUS_TO_LIFECYCLE: Record<Model['status'], string> = {
+  production: 'production', staging: 'staging', development: 'development', retired: 'deprecated',
+};
+function slugify(s: string): string {
+  return (s || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'model';
+}
+function modelToRecord(m: Model): Partial<ModelRecord> {
+  const mx = m as Model & Record<string, any>;
+  return {
+    name: m.name,
+    slug: slugify(`${m.name}-${m.version ?? ''}`),
+    version: m.version,
+    model_type: m.type,
+    provider: mx.provider || undefined,
+    lifecycle_stage: STATUS_TO_LIFECYCLE[m.status] ?? 'development',
+    risk_tier: m.riskTier,
+    business_owner: mx.businessOwner || m.owner,
+    technical_owner: mx.technicalOwner || undefined,
+    deployment_env: mx.deploymentEnv || undefined,
+    framework: m.framework && m.framework !== '—' ? m.framework : undefined,
+    description: m.description || undefined,
+    fairness_score: m.fairnessScore || undefined,
+    drift_status: m.driftStatus || 'stable',
+    metadata: {
+      department: m.department && m.department !== '—' ? m.department : undefined,
+      dataClassification: mx.dataClassification,
+      intendedPurpose: mx.intendedPurpose,
+      knownLimitations: mx.knownLimitations,
+      trainingDataSources: mx.trainingDataSources,
+      humanOversight: mx.humanOversight,
+      euAiActArticle: m.euAiActArticle && m.euAiActArticle !== '—' ? m.euAiActArticle : undefined,
+    },
   };
 }
 import { useChartTheme } from '../../hooks/useChartTheme';
@@ -183,9 +227,8 @@ export default function ModelRegistryPage() {
   const ct = useChartTheme();
   const navigate = useNavigate();
 
-  const { data: models, setData: setModels } = useSupabaseTable('modelinventory_table', MODELS);
-  const { models: supabaseModels, isLoading: isLoadingModels } = useModelsData();
-  useEffect(() => { if (supabaseModels.length > 0) setModels(supabaseModels.map(recordToModel)); }, [supabaseModels]);
+  const { models: records, isLoading, saveModel, deleteModel: deleteModelRecord } = useModelsData();
+  const models = useMemo<Model[]>(() => records.map(recordToModel), [records]);
   const [search, setSearch] = useState('');
   const [riskFilter, setRiskFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -195,7 +238,6 @@ export default function ModelRegistryPage() {
   const [deleteTarget, setDeleteTarget] = useState<Model | null>(null);
   const [registerOpen, setRegisterOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
-  const [isLoading] = useState(false);
 
   const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
     const id = Date.now();
@@ -219,12 +261,37 @@ export default function ModelRegistryPage() {
     return matchSearch && matchRisk && matchStatus;
   });
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteTarget) return;
-    setModels(prev => prev.filter(m => m.id !== deleteTarget.id));
-    toast(`${deleteTarget.id} ${deleteTarget.name} removed`, 'error');
+    const target = deleteTarget;
     setDeleteTarget(null);
+    try {
+      await deleteModelRecord(target.id);
+      toast(`${target.name} removed`, 'error');
+    } catch {
+      toast('Failed to remove model', 'error');
+    }
   };
+
+  // CSV export of the (filtered) registry — real file download, not a stub.
+  const exportCsv = useCallback(() => {
+    const cols: Array<[string, (m: Model) => string]> = [
+      ['ID', m => m.id], ['Name', m => m.name], ['Type', m => m.type], ['Version', m => m.version],
+      ['Risk Tier', m => m.riskTier], ['Fairness %', m => String(m.fairnessScore)],
+      ['Drift', m => m.driftStatus], ['Status', m => m.status], ['Owner', m => m.owner],
+      ['Last Validated', m => m.lastValidated],
+    ];
+    const esc = (v: string) => `"${(v ?? '').replace(/"/g, '""')}"`;
+    const rows = [cols.map(c => c[0]).join(',')].concat(
+      filtered.map(m => cols.map(c => esc(c[1](m))).join(',')),
+    );
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `model-registry-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+    toast(`Exported ${filtered.length} models to CSV`, 'success');
+  }, [filtered, toast]);
 
   // Drift performance data for the detail chart (12 months)
   const monthLabels = ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'];
@@ -262,9 +329,15 @@ export default function ModelRegistryPage() {
         title="Model Registry"
         subtitle={`${orgName} · Enterprise AI Model Governance Registry`}
         actions={
-          <Button onClick={() => setRegisterOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-            <Plus className="h-4 w-4" />Register Model
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={exportCsv} disabled={filtered.length === 0}
+              style={{ borderRadius: 0 }} title="Export current view to CSV">
+              <Export className="h-4 w-4" />Export CSV
+            </Button>
+            <Button onClick={() => setRegisterOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
+              <Plus className="h-4 w-4" />Register Model
+            </Button>
+          </div>
         }
       />
 
@@ -335,9 +408,19 @@ export default function ModelRegistryPage() {
       <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
         <CardContent className="p-0">
           {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12" style={{ color: 'hsl(var(--text-4))' }}>
+            <div className="flex flex-col items-center justify-center py-12 text-center" style={{ color: 'hsl(var(--text-4))' }}>
               <Brain size={32} className="mb-2 opacity-40" />
-              <p className="text-sm">No models match your filters</p>
+              {models.length === 0 ? (
+                <>
+                  <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-2))' }}>No models registered yet</p>
+                  <p className="text-xs mt-1">Register your first AI model to begin governance tracking.</p>
+                  <Button onClick={() => setRegisterOpen(true)} className="mt-3" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
+                    <Plus className="h-4 w-4" />Register Model
+                  </Button>
+                </>
+              ) : (
+                <p className="text-sm">No models match your filters</p>
+              )}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -701,10 +784,14 @@ export default function ModelRegistryPage() {
           {editModel && (
             <EditModelForm
               model={editModel}
-              onSave={(updated) => {
-                setModels(prev => prev.map(m => m.id === updated.id ? updated : m));
-                toast(`${updated.id} updated`);
+              onSave={async (updated) => {
                 setEditModel(null);
+                try {
+                  await saveModel({ ...modelToRecord(updated), id: updated.id });
+                  toast(`${updated.name} updated`);
+                } catch {
+                  toast('Failed to update model', 'error');
+                }
               }}
             />
           )}
@@ -719,10 +806,15 @@ export default function ModelRegistryPage() {
             <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>EU AI Act compliant model registration</p>
           </DialogHeader>
           <RegisterModelForm
-            onSubmit={(newModel) => {
-              setModels(prev => [...prev, newModel]);
-              toast(`${newModel.id} ${newModel.name} registered`);
+            onSubmit={async (newModel) => {
               setRegisterOpen(false);
+              try {
+                // Omit the UI display id so the DB generates a uuid on insert.
+                await saveModel(modelToRecord(newModel));
+                toast(`${newModel.name} registered`);
+              } catch {
+                toast('Failed to register model', 'error');
+              }
             }}
             nextId={`MDL-${String(models.length + 1).padStart(3, '0')}`}
           />
