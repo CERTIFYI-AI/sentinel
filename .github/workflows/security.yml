@@ -35,7 +35,6 @@ jobs:
             --source /repo \
             --config /repo/.gitleaks.toml \
             --verbose
-        continue-on-error: true
 
   dependencies:
     name: Dependency Audit (npm)
@@ -49,7 +48,7 @@ jobs:
         with:
           node-version: '20'
       - name: Dependency Audit
-        run: npm audit --audit-level=critical || true
+        run: npm audit --audit-level=high
 
   semgrep:
     name: SAST (Semgrep)
@@ -60,7 +59,6 @@ jobs:
       - uses: actions/checkout@v6
       - name: Run SAST (Semgrep)
         run: semgrep scan --config auto --error --exclude='node_modules' --exclude='dist' --exclude='.next' --exclude='*.min.js' --exclude='*.lock'
-        continue-on-error: true
 
   codeql:
     name: CodeQL (JavaScript/TypeScript)
@@ -80,6 +78,9 @@ jobs:
         uses: github/codeql-action/analyze@v4
         with:
           category: codeql-js
+        # Intentionally non-blocking: pre-existing CodeQL findings are being
+        # triaged and tracked separately; results still upload to the
+        # Security tab. Flip to blocking once the backlog is cleared.
         continue-on-error: true
 
   trivy:
@@ -108,4 +109,7 @@ jobs:
           scan-ref: .
           severity: HIGH,CRITICAL
           exit-code: '1'
+        # Intentionally non-blocking: pre-existing IaC/config findings are
+        # tracked for remediation; the filesystem vuln scan above remains
+        # blocking. Flip to blocking once the backlog is cleared.
         continue-on-error: true

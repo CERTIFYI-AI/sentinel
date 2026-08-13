@@ -94,7 +94,11 @@ CREATE TABLE IF NOT EXISTS transfer_impact_assessments (
   transfer_mechanism text CHECK (transfer_mechanism IN ('SCCs','BCRs','Adequacy','DPF','Derogation','Other')),
   status text DEFAULT 'draft' CHECK (status IN ('draft','in_progress','completed','approved','rejected')),
   risk_level text DEFAULT 'medium',
-  vendor_id text REFERENCES vendors(id),
+  -- No inline FK on vendor_id: the vendors table is created in a later
+  -- (lexically ordered) migration and its id is uuid, so a from-zero replay
+  -- would fail here. Referential integrity to vendors is enforced
+  -- app-side/deferred instead.
+  vendor_id text,
   dataset_ids uuid[] DEFAULT '{}', model_ids uuid[] DEFAULT '{}',
   adequacy_confirmed boolean DEFAULT false, supplementary_measures text,
   dpo_approved boolean DEFAULT false,

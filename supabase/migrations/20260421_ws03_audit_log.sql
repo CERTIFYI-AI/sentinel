@@ -36,18 +36,38 @@ create table if not exists public.audit_log (
   created_at      timestamptz not null default now()
 );
 
-create unique index if not exists audit_log_org_sequence_uq
-  on public.audit_log (org_id, sequence_no);
+-- On a from-zero replay, 006_core.sql may have created audit_log first with
+-- a different shape (no sequence_no / occurred_at columns); the CREATE TABLE
+-- IF NOT EXISTS above is then a no-op. Guard index creation on the columns
+-- actually existing so replay never breaks.
+do $do$
+begin
+  if exists (
+    select 1 from information_schema.columns
+     where table_schema = 'public' and table_name = 'audit_log'
+       and column_name = 'sequence_no'
+  ) then
+    create unique index if not exists audit_log_org_sequence_uq
+      on public.audit_log (org_id, sequence_no);
+  end if;
 
-create index if not exists audit_log_org_occurred_at_idx
-  on public.audit_log (org_id, occurred_at desc);
+  if exists (
+    select 1 from information_schema.columns
+     where table_schema = 'public' and table_name = 'audit_log'
+       and column_name = 'occurred_at'
+  ) then
+    create index if not exists audit_log_org_occurred_at_idx
+      on public.audit_log (org_id, occurred_at desc);
 
-create index if not exists audit_log_org_actor_idx
-  on public.audit_log (org_id, actor_id, occurred_at desc)
-  where actor_id is not null;
+    create index if not exists audit_log_org_actor_idx
+      on public.audit_log (org_id, actor_id, occurred_at desc)
+      where actor_id is not null;
 
-create index if not exists audit_log_org_action_idx
-  on public.audit_log (org_id, action, occurred_at desc);
+    create index if not exists audit_log_org_action_idx
+      on public.audit_log (org_id, action, occurred_at desc);
+  end if;
+end
+$do$;
 
 alter table public.audit_log enable row level security;
 

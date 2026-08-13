@@ -1,7 +1,7 @@
 """Sentinel AI Compliance Platform - Main FastAPI Application."""
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse, Response
 from contextlib import asynccontextmanager
 import logging
 import asyncio
@@ -9,6 +9,10 @@ import os
 import httpx
 
 from sentinel.config import cors_config
+# Imported at module top level ON PURPOSE: sentinel.api.deps fails fast at
+# import time when no JWT secret is configured (outside explicit dev mode),
+# so the app refuses to start rather than serving unauthenticated traffic.
+from sentinel.api.deps import get_current_user_id
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -53,6 +57,48 @@ app = FastAPI(
 )
 
 app.add_middleware(CORSMiddleware, **cors_config())
+
+
+# ── Global API authentication ────────────────────────────────────────────────
+# Every /api route requires a valid Bearer JWT, EXCEPT:
+#   - health/liveness/readiness/startup probes (/api/health/*)
+#   - the auth endpoints themselves (/api/auth/* — login/refresh)
+#   - interactive docs and the OpenAPI schema
+# Enforced as an HTTP middleware (rather than per-router dependencies) so a
+# newly added router can never ship unauthenticated by omission.
+_AUTH_EXEMPT_PREFIXES = (
+    "/api/auth",          # login / token issuance
+    "/api/health",        # k8s + LB probes: /health, /live, /ready, /startup
+    "/api/docs",          # swagger UI (+ oauth2-redirect)
+    "/api/redoc",
+    "/api/openapi.json",
+)
+
+
+def _is_auth_exempt(path: str) -> bool:
+    return any(
+        path == prefix or path.startswith(prefix + "/")
+        for prefix in _AUTH_EXEMPT_PREFIXES
+    )
+
+
+@app.middleware("http")
+async def _require_api_auth(request: Request, call_next):
+    path = request.url.path
+    # CORS preflight requests never carry credentials; let CORSMiddleware
+    # (which runs after this middleware) answer them.
+    if request.method == "OPTIONS":
+        return await call_next(request)
+    if (path == "/api" or path.startswith("/api/")) and not _is_auth_exempt(path):
+        try:
+            get_current_user_id(request)
+        except HTTPException as exc:
+            return JSONResponse(
+                status_code=exc.status_code,
+                content={"detail": exc.detail},
+                headers=exc.headers or None,
+            )
+    return await call_next(request)
 
 # ---- Auth ----
 try:
