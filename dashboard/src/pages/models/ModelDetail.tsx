@@ -21,7 +21,8 @@ import {
   MODELS, BIAS_AUDITS, INCIDENTS,
   formatDate, Model,
 } from '../../data/seed';
-import { useSupabaseTable } from '@/hooks/useSupabaseTable';
+import { useModelsData } from '@/hooks/useModelsData';
+import { recordToModel } from '@/lib/modelMapping';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useChartTheme } from '../../hooks/useChartTheme';
 
@@ -187,16 +188,40 @@ function DriftAlertModal({ model, onClose }: { model: typeof MODELS[0]; onClose:
 }
 
 /* ─── Main Component ───────────────────────────────────────────────── */
+// Data wrapper: resolve the real model by id (from ai_models) and gate on
+// loading / not-found so the view below always gets a concrete model.
 export default function ModelDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { models: records, isLoading } = useModelsData();
+  const model = useMemo(
+    () => records.map(recordToModel).find(m => m.id === id) ?? null,
+    [records, id],
+  );
+
+  if (isLoading) {
+    return <div className="p-6 text-sm" style={{ color: 'hsl(var(--text-4))' }}>Loading model…</div>;
+  }
+  if (!model) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center" style={{ color: 'hsl(var(--text-4))' }}>
+        <p className="text-base font-semibold" style={{ color: 'hsl(var(--text-2))' }}>Model not found</p>
+        <p className="text-sm mt-1">No model exists for id “{id}”. It may have been removed.</p>
+        <Button className="mt-4" style={{ borderRadius: 0 }} onClick={() => navigate('/models/inventory')}>
+          Back to Model Registry
+        </Button>
+      </div>
+    );
+  }
+  return <ModelDetailView model={model} />;
+}
+
+function ModelDetailView({ model }: { model: Model }) {
   const navigate = useNavigate();
   const ct = useChartTheme();
   const [tab, setTab] = useState<Tab>('Model Card');
   const [showDriftModal, setShowDriftModal] = useState(false);
   const [copiedHash, setCopiedHash] = useState(false);
-
-  const { data: models, setData: setModels } = useSupabaseTable<Model>('modelinventory_table', MODELS);
-  const model = models.find(m => m.id === id) || models[0];
 
   // Technical documentation — linked from the DMS/evidence store. Seed set +
   // any docs linked during this session (real platform persists to Supabase).
