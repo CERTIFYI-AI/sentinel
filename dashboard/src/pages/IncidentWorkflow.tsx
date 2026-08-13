@@ -10,7 +10,6 @@ import {
   Bell, Warning, ArrowRight, CheckCircle, Clock, Plus, X, User,
   Siren, ShieldCheck, ArrowSquareOut, CaretRight,
 } from '@phosphor-icons/react';
-import Breadcrumbs from '../components/Breadcrumbs';
 import { INCIDENTS, USERS, severityColor, formatDate } from '../data/seed';
 
 
@@ -305,8 +304,6 @@ export default function IncidentWorkflow() {
 
   return (
     <div>
-      <Breadcrumbs />
-
       <PageHeader
         title="Incident Workflow"
         subtitle="AI incident response — ISO 27001 Annex A.16 / NIST IR workflow state machine"

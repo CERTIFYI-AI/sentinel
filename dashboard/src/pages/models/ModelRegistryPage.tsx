@@ -27,6 +27,8 @@ import {
   Model, severityColor, statusColor, formatDate,
 } from '../../data/seed';
 import { recordToModel, modelToRecord } from '@/lib/modelMapping';
+import { logModelActivity } from '@/services/modelDetailService';
+import { useAuthStore } from '../../store/authStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 
 import { useChartTheme } from '../../hooks/useChartTheme';
@@ -156,6 +158,7 @@ export default function ModelRegistryPage() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
   const navigate = useNavigate();
+  const actor = useAuthStore(s => s.user?.name || s.user?.email || 'You');
 
   const { models: records, isLoading, saveModel, deleteModel: deleteModelRecord } = useModelsData();
   const models = useMemo<Model[]>(() => records.map(recordToModel), [records]);
@@ -190,6 +193,18 @@ export default function ModelRegistryPage() {
     const matchStatus = statusFilter === 'all' || m.status === statusFilter;
     return matchSearch && matchRisk && matchStatus;
   });
+
+  // Persist a real review action: record it on the model's activity log, then
+  // open the model so the reviewer lands where the governance actions live.
+  const initiateReview = async (m: Model) => {
+    try {
+      await logModelActivity({ modelId: m.id, event: 'Compliance review initiated', actor, kind: 'warning' });
+      toast(`Review initiated for ${m.name}`, 'info');
+      navigate(`/models/inventory/${m.id}`);
+    } catch {
+      toast('Failed to initiate review', 'error');
+    }
+  };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -429,16 +444,18 @@ export default function ModelRegistryPage() {
                               <Eye size={14} />
                             </Button>
                             <Button variant="ghost" size="sm" className="h-7 w-7 p-0"
+                              title="Edit model" aria-label={`Edit ${m.name}`}
                               onClick={() => setEditModel(m)}>
                               <PencilSimple size={14} />
                             </Button>
                             <Button variant="ghost" size="sm" className="h-7 w-7 p-0"
+                              title="Delete model" aria-label={`Delete ${m.name}`}
                               onClick={() => setDeleteTarget(m)}>
                               <Trash size={14} />
                             </Button>
                             {isCritical && (
                               <Button size="sm" className="h-7 px-2 text-xs" style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: 'hsl(var(--bg-surface))' }}
-                                onClick={() => toast(`Review initiated for ${m.name}`, 'info')}>
+                                onClick={() => initiateReview(m)}>
                                 Initiate Review
                               </Button>
                             )}

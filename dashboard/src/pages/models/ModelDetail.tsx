@@ -18,13 +18,44 @@ import {
   PolarGrid, PolarAngleAxis, PolarRadiusAxis, Cell,
 } from 'recharts';
 import {
-  MODELS, BIAS_AUDITS, INCIDENTS,
+  BIAS_AUDITS,
   formatDate, Model,
 } from '../../data/seed';
 import { useModelsData } from '@/hooks/useModelsData';
+import { useModelDetailData } from '@/hooks/useModelDetailData';
+import type { AlertConfig } from '@/services/modelDetailService';
+import { useAuthStore } from '../../store/authStore';
 import { recordToModel } from '@/lib/modelMapping';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useChartTheme } from '../../hooks/useChartTheme';
+
+/* ─── Export helpers (real file downloads, not toast stubs) ───────────── */
+function downloadJson(filename: string, obj: unknown) {
+  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url);
+}
+function buildModelCard(model: Model) {
+  return {
+    id: model.id, name: model.name, version: model.version, type: model.type,
+    owner: model.owner, department: model.department, framework: model.framework,
+    status: model.status, riskTier: model.riskTier, euAiActArticle: model.euAiActArticle,
+    fairnessScore: model.fairnessScore, driftStatus: model.driftStatus,
+    lastValidated: model.lastValidated, description: model.description,
+    generatedAt: new Date().toISOString(), format: 'Model Card (Mitchell et al. 2019)',
+  };
+}
+function buildAnnexIV(model: Model) {
+  return {
+    regulation: 'EU AI Act — Annex IV Technical Documentation',
+    model: { id: model.id, name: model.name, version: model.version, type: model.type },
+    riskClassification: model.riskTier, article: model.euAiActArticle,
+    governance: { owner: model.owner, department: model.department, framework: model.framework },
+    performance: { fairnessScore: model.fairnessScore, driftStatus: model.driftStatus, lastValidated: model.lastValidated },
+    generatedAt: new Date().toISOString(),
+  };
+}
 
 const TABS = [
   'Model Card',
@@ -88,11 +119,11 @@ function KpiTile({ label, value, color, icon }: { label: string; value: string |
 }
 
 /* ─── Data Lineage SVG ─────────────────────────────────────────────── */
-function DataLineage({ model }: { model: typeof MODELS[0] }) {
+function DataLineage({ model }: { model: Model }) {
   const [hovered, setHovered] = useState<string | null>(null);
   const nodes = [
-    { id: 'ds', label: 'Datasets', sub: 'DS-001, DS-004', x: 70, y: 130, color: 'hsl(var(--s-in-tx))' },
-    { id: 'pre', label: 'Preprocessing', sub: 'StandardScaler · SMOTE', x: 230, y: 130, color: 'hsl(var(--s-wn-tx))' },
+    { id: 'ds', label: 'Datasets', sub: 'Source data', x: 70, y: 130, color: 'hsl(var(--s-in-tx))' },
+    { id: 'pre', label: 'Preprocessing', sub: 'Cleaning · scaling', x: 230, y: 130, color: 'hsl(var(--s-wn-tx))' },
     { id: 'train', label: 'Training', sub: model.framework, x: 390, y: 130, color: 'hsl(var(--brand))' },
     { id: 'mdl', label: (model.name ?? '').split(' ').slice(0, 2).join(' '), sub: `v${model.version}`, x: 550, y: 130, color: 'hsl(var(--s-ok-tx))' },
     { id: 'inf', label: 'Inference', sub: `${model.monthlyInferences}/mo`, x: 710, y: 130, color: 'hsl(var(--brand))' },
@@ -137,10 +168,13 @@ function DataLineage({ model }: { model: typeof MODELS[0] }) {
 }
 
 /* ─── Drift Alert Config Modal ──────────────────────────────────────── */
-function DriftAlertModal({ model, onClose }: { model: typeof MODELS[0]; onClose: () => void }) {
-  const [fairness, setFairness] = useState(model.fairnessScore);
-  const [drift, setDrift] = useState(5);
-  const [channels, setChannels] = useState({ email: true, slack: false, pagerduty: false });
+function DriftAlertModal({ model, initial, onClose, onSave, onTest }: {
+  model: Model; initial: AlertConfig | null; onClose: () => void;
+  onSave: (cfg: AlertConfig) => void; onTest: (channel: string) => void;
+}) {
+  const [fairness, setFairness] = useState(initial?.fairnessThreshold ?? (model.fairnessScore || 80));
+  const [drift, setDrift] = useState(initial?.driftThreshold ?? 5);
+  const [channels, setChannels] = useState(initial?.channels ?? { email: true, slack: false, pagerduty: false });
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60 }}>
       <div style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', width: 480, maxHeight: '90vh', overflowY: 'auto' }}>
@@ -169,7 +203,7 @@ function DriftAlertModal({ model, onClose }: { model: typeof MODELS[0]; onClose:
               <label key={ch} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, cursor: 'pointer' }}>
                 <input type="checkbox" checked={channels[ch]} onChange={e => setChannels(c => ({ ...c, [ch]: e.target.checked }))} style={{ width: 14, height: 14, accentColor: 'hsl(var(--brand))' }} />
                 <span style={{ fontSize: 13, color: 'hsl(var(--text-1))' }}>{ch.charAt(0).toUpperCase() + ch.slice(1)}</span>
-                <button onClick={() => toast.success(`Test alert sent via ${ch}`)} style={{ marginLeft: 'auto', fontSize: 11, padding: '3px 8px', background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', cursor: 'pointer', color: 'hsl(var(--text-3))' }}>
+                <button onClick={() => onTest(ch)} style={{ marginLeft: 'auto', fontSize: 11, padding: '3px 8px', background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', cursor: 'pointer', color: 'hsl(var(--text-3))' }}>
                   Test
                 </button>
               </label>
@@ -177,7 +211,7 @@ function DriftAlertModal({ model, onClose }: { model: typeof MODELS[0]; onClose:
           </div>
           <div style={{ display: 'flex', gap: 8, paddingTop: 8, borderTop: '1px solid hsl(var(--border))' }}>
             <button onClick={onClose} style={{ flex: 1, padding: '8px', background: 'none', border: '1px solid hsl(var(--border))', cursor: 'pointer', color: 'hsl(var(--text-2))', fontSize: 13 }}>Cancel</button>
-            <button onClick={() => { toast.success('Alert configuration saved'); onClose(); }} style={{ flex: 1, padding: '8px', background: 'hsl(var(--brand))', border: 'none', cursor: 'pointer', color: 'hsl(var(--bg-surface))', fontSize: 13, fontWeight: 600 }}>
+            <button onClick={() => onSave({ modelId: model.id, fairnessThreshold: fairness, driftThreshold: drift, channels })} style={{ flex: 1, padding: '8px', background: 'hsl(var(--brand))', border: 'none', cursor: 'pointer', color: 'hsl(var(--bg-surface))', fontSize: 13, fontWeight: 600 }}>
               Save Configuration
             </button>
           </div>
@@ -221,28 +255,63 @@ function ModelDetailView({ model }: { model: Model }) {
   const ct = useChartTheme();
   const [tab, setTab] = useState<Tab>('Model Card');
   const [showDriftModal, setShowDriftModal] = useState(false);
-  const [copiedHash, setCopiedHash] = useState(false);
 
-  // Technical documentation — linked from the DMS/evidence store. Seed set +
-  // any docs linked during this session (real platform persists to Supabase).
-  interface TechDoc { title: string; type: string; date: string; size: string; desc: string; url?: string }
-  const seedDocs: TechDoc[] = [
-    { title: 'Architecture Overview', type: 'PDF', date: '2026-03-01', size: '2.4 MB', desc: 'Neural architecture diagrams, layer specifications, and hyperparameters.' },
-    { title: 'API Reference', type: 'HTML', date: '2026-03-15', size: '1.1 MB', desc: 'Full REST API reference with request/response schemas and auth patterns.' },
-    { title: 'Training Runbook', type: 'MD', date: '2026-02-28', size: '240 KB', desc: 'Step-by-step training procedure, dataset preparation, and evaluation criteria.' },
-    { title: 'FMEA Risk Assessment', type: 'XLSX', date: '2026-03-10', size: '560 KB', desc: 'Failure Mode and Effects Analysis aligned to ISO 26262 methodology.' },
-    { title: 'EU AI Act Annex IV Package', type: 'ZIP', date: '2026-04-01', size: '8.7 MB', desc: 'Complete Annex IV technical documentation bundle for regulatory submission.' },
-    { title: 'Model Card', type: 'JSON', date: formatDate(model.lastValidated), size: '24 KB', desc: 'Standardised model card following Mitchell et al. (2019) format.' },
-  ];
-  const [docs, setDocs] = useState<TechDoc[]>(seedDocs);
+  // All per-model detail data is now backend-driven (model_documents /
+  // model_activity / model_alert_configs) instead of hardcoded seed content.
+  const actor = useAuthStore(s => s.user?.name || s.user?.email || 'You');
+  const {
+    documents, activity, alertConfig,
+    addDocument, removeDocument, logActivity, saveAlertConfig,
+  } = useModelDetailData(model.id);
+
   const [linkOpen, setLinkOpen] = useState(false);
   const [dForm, setDForm] = useState({ title: '', type: 'PDF', url: '', desc: '' });
   const linkDoc = () => {
     if (!dForm.title.trim() || !dForm.url.trim()) { toast.error('Title and document URL are required'); return; }
-    setDocs(prev => [{ title: dForm.title.trim(), type: dForm.type, date: new Date().toISOString().slice(0, 10), size: 'Linked', desc: dForm.desc.trim() || 'Linked from document store.', url: dForm.url.trim() }, ...prev]);
-    toast.success(`Linked “${dForm.title.trim()}” to ${model.id}`);
-    setDForm({ title: '', type: 'PDF', url: '', desc: '' });
-    setLinkOpen(false);
+    const title = dForm.title.trim();
+    addDocument({ modelId: model.id, title, docType: dForm.type, url: dForm.url.trim(), description: dForm.desc.trim() || undefined, createdBy: actor })
+      .then(() => {
+        logActivity({ modelId: model.id, event: `Linked document “${title}”`, actor, kind: 'info' }).catch(() => {});
+        toast.success(`Linked “${title}” to ${model.id}`);
+        setDForm({ title: '', type: 'PDF', url: '', desc: '' });
+        setLinkOpen(false);
+      })
+      .catch(() => toast.error('Failed to link document'));
+  };
+  const removeDoc = (id: string, title: string) => {
+    removeDocument(id)
+      .then(() => { logActivity({ modelId: model.id, event: `Removed document “${title}”`, actor, kind: 'info' }).catch(() => {}); toast.success('Document removed'); })
+      .catch(() => toast.error('Failed to remove document'));
+  };
+
+  const saveAlerts = (cfg: AlertConfig) => {
+    saveAlertConfig(cfg)
+      .then(() => {
+        logActivity({ modelId: model.id, event: `Alert config updated (fairness ≥ ${cfg.fairnessThreshold}%, drift ≤ ${cfg.driftThreshold}%)`, actor, kind: 'info' }).catch(() => {});
+        toast.success('Alert configuration saved');
+        setShowDriftModal(false);
+      })
+      .catch(() => toast.error('Failed to save alert configuration'));
+  };
+  const testAlert = (channel: string) => {
+    logActivity({ modelId: model.id, event: `Test alert dispatched via ${channel}`, actor, kind: 'info' }).catch(() => {});
+    toast.success(`Test alert sent via ${channel}`);
+  };
+
+  const exportModelCard = () => {
+    downloadJson(`model-card-${model.id}.json`, buildModelCard(model));
+    logActivity({ modelId: model.id, event: 'Model Card exported (JSON)', actor, kind: 'info' }).catch(() => {});
+    toast.success('Model Card exported');
+  };
+  const exportAnnexIV = () => {
+    downloadJson(`annex-iv-${model.id}.json`, buildAnnexIV(model));
+    logActivity({ modelId: model.id, event: 'EU AI Act Annex IV package exported (JSON)', actor, kind: 'info' }).catch(() => {});
+    toast.success('Annex IV package exported');
+  };
+  const scheduleAudit = () => {
+    logActivity({ modelId: model.id, event: 'Bias audit scheduled', actor, kind: 'info' })
+      .then(() => toast.success('Bias audit scheduled — recorded in the activity log'))
+      .catch(() => toast.error('Failed to schedule audit'));
   };
 
   // FIXED: was `a.model === model.name` (wrong field), now correctly matches by modelId
@@ -250,8 +319,6 @@ function ModelDetailView({ model }: { model: Model }) {
     BIAS_AUDITS?.filter?.(a => a.modelId === model.id || a.modelName === model.name) ?? [],
     [model]
   );
-
-  const modelIncidents = model.incidents ?? [];
 
   const riskTierColors: Record<string, string> = {
     high: 'hsl(var(--s-er-tx))',
@@ -351,7 +418,7 @@ function ModelDetailView({ model }: { model: Model }) {
               </Button>
               <Button
                 size="sm"
-                onClick={() => toast.success('Model Card PDF generated')}
+                onClick={exportModelCard}
                 style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
               >
                 <Export size={14} style={{ marginRight: 6 }} /> Export
@@ -512,13 +579,13 @@ function ModelDetailView({ model }: { model: Model }) {
             {/* Export buttons */}
             <div style={{ display: 'flex', gap: 10 }}>
               <button
-                onClick={() => toast.success('Model Card PDF downloaded')}
+                onClick={exportModelCard}
                 style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px', background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', cursor: 'pointer', color: 'hsl(var(--text-2))', fontSize: 12, fontWeight: 500 }}
               >
-                <DownloadSimple size={14} /> Model Card PDF
+                <DownloadSimple size={14} /> Model Card (JSON)
               </button>
               <button
-                onClick={() => toast.success('EU AI Act Annex IV JSON downloaded')}
+                onClick={exportAnnexIV}
                 style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px', background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', cursor: 'pointer', color: 'hsl(var(--text-2))', fontSize: 12, fontWeight: 500 }}
               >
                 <Export size={14} /> EU AI Act Annex IV
@@ -618,7 +685,7 @@ function ModelDetailView({ model }: { model: Model }) {
                   Schedule a bias audit to evaluate fairness across protected attributes including gender, age, race, and disability status. Required for EU AI Act Article 10 compliance.
                 </p>
                 <button
-                  onClick={() => toast.success('Bias audit scheduled — you will be notified when complete')}
+                  onClick={scheduleAudit}
                   style={{ padding: '9px 20px', background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
                 >
                   <CalendarCheck size={14} style={{ display: 'inline', marginRight: 6 }} />
@@ -808,7 +875,7 @@ function ModelDetailView({ model }: { model: Model }) {
                   <p style={{ fontSize: 12, color: 'hsl(var(--text-3))', marginTop: 2 }}>EU AI Act requires bias audits every 6 months for high-risk models.</p>
                 </div>
                 <button
-                  onClick={() => toast.success('Next bias audit scheduled')}
+                  onClick={scheduleAudit}
                   style={{ padding: '8px 16px', background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' }}
                 >
                   Schedule Next Audit
@@ -834,7 +901,7 @@ function ModelDetailView({ model }: { model: Model }) {
               </CardHeader>
               <CardContent>
                 <p style={{ fontSize: 11, color: 'hsl(var(--text-4))', marginBottom: 14 }}>
-                  SHAP (SHapley Additive exPlanations) — mean |SHAP| values across 1,000 random samples
+                  Illustrative SHAP (SHapley Additive exPlanations) attributions for this model type — connect an explainability service for computed values
                 </p>
                 {shapFeatures.map(f => (
                   <div key={f.feature} style={{ marginBottom: 12 }}>
@@ -888,12 +955,12 @@ function ModelDetailView({ model }: { model: Model }) {
           </div>
 
           {/* Explainability method badge */}
-          <div style={{ padding: '12px 16px', background: 'hsl(var(--brand-subtle))', border: '1px solid hsl(var(--brand-subtle))', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Sparkle size={16} style={{ color: 'hsl(var(--brand))' }} weight="fill" />
+          <div style={{ padding: '12px 16px', background: 'hsl(var(--s-wn-bg))', border: '1px solid hsl(var(--s-wn-br))', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <Warning size={16} style={{ color: 'hsl(var(--s-wn-tx))' }} weight="fill" />
             <div>
-              <span style={{ fontSize: 12, fontWeight: 600, color: 'hsl(var(--brand))' }}>Explainability Method: SHAP + LIME</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'hsl(var(--s-wn-tx))' }}>Illustrative SHAP + LIME sample</span>
               <p style={{ fontSize: 11, color: 'hsl(var(--text-3))', marginTop: 2 }}>
-                EU AI Act Article 13 requires meaningful explanations for high-risk model decisions. This model meets the transparency obligation.
+                These charts show representative feature attributions for this model type. Connect an explainability service (SHAP/LIME) in Settings to compute real per-model values — required to evidence EU AI Act Article 13 transparency.
               </p>
             </div>
           </div>
@@ -920,17 +987,20 @@ function ModelDetailView({ model }: { model: Model }) {
             </CardContent>
           </Card>
 
+          <p style={{ fontSize: 11, color: 'hsl(var(--text-4))' }}>
+            Lineage attributes below are populated from the registry and the model's DNA/training pipeline. Fields not yet captured show “Not recorded”.
+          </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
             {[
-              { label: 'Source Datasets', value: 'DS-001, DS-004' },
-              { label: 'Training Split', value: '80% / 20%' },
-              { label: 'Feature Count', value: '47 features' },
-              { label: 'Training Duration', value: '4h 32m' },
-              { label: 'Compute Used', value: '8× A100 GPUs' },
-              { label: 'Last Retrained', value: formatDate(model.lastValidated) },
-              { label: 'Data Retention', value: '36 months' },
-              { label: 'Preprocessing Pipeline', value: 'v2.1.3' },
-              { label: 'Augmentation', value: 'SMOTE + Random Flip' },
+              { label: 'Framework', value: model.framework || 'Not recorded' },
+              { label: 'Version', value: model.version || 'Not recorded' },
+              { label: 'Last Validated', value: model.lastValidated ? formatDate(model.lastValidated) : 'Not recorded' },
+              { label: 'Monthly Inferences', value: model.monthlyInferences || 'Not recorded' },
+              { label: 'Lifecycle Stage', value: model.lifecyclePhase || 'Not recorded' },
+              { label: 'Source Datasets', value: 'Not recorded' },
+              { label: 'Feature Count', value: 'Not recorded' },
+              { label: 'Preprocessing Pipeline', value: 'Not recorded' },
+              { label: 'Data Retention', value: 'Not recorded' },
             ].map(item => (
               <div key={item.label} style={{ padding: '10px 14px', background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))' }}>
                 <p style={{ fontSize: 10, color: 'hsl(var(--text-4))', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>{item.label}</p>
@@ -950,7 +1020,7 @@ function ModelDetailView({ model }: { model: Model }) {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
               <CardTitle style={{ fontSize: 13, color: 'hsl(var(--text-1))', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <FileText size={14} style={{ color: 'hsl(var(--brand))' }} />
-                Technical Documentation <span style={{ fontSize: 11, color: 'hsl(var(--text-4))', fontWeight: 400 }}>· {docs.length} linked</span>
+                Technical Documentation <span style={{ fontSize: 11, color: 'hsl(var(--text-4))', fontWeight: 400 }}>· {documents.length} linked</span>
               </CardTitle>
               <Button size="sm" variant="outline" leftIcon={<Plus size={13} />} onClick={() => setLinkOpen(v => !v)}>Link Document</Button>
             </div>
@@ -976,21 +1046,35 @@ function ModelDetailView({ model }: { model: Model }) {
                 </div>
               </div>
             )}
-            {docs.map(doc => (
-              <div key={doc.title} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', borderBottom: '1px solid hsl(var(--border))' }}>
+            {documents.length === 0 && !linkOpen && (
+              <div style={{ padding: 40, textAlign: 'center', color: 'hsl(var(--text-4))' }}>
+                <FileText size={26} style={{ opacity: 0.4, margin: '0 auto 8px' }} />
+                <p style={{ fontSize: 13 }}>No documents linked yet. Use “Link Document” to reference an artifact from your DMS / evidence store.</p>
+              </div>
+            )}
+            {documents.map(doc => (
+              <div key={doc.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', borderBottom: '1px solid hsl(var(--border))' }}>
                 <div style={{ width: 40, height: 40, background: 'hsl(var(--brand-subtle))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800, color: 'hsl(var(--brand))', flexShrink: 0, letterSpacing: '0.05em' }}>
-                  {doc.type}
+                  {doc.docType}
                 </div>
                 <div style={{ flex: 1 }}>
                   <p style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--text-1))', marginBottom: 2 }}>{doc.title}</p>
-                  <p style={{ fontSize: 11, color: 'hsl(var(--text-4))' }}>{doc.desc}</p>
-                  <p style={{ fontSize: 10, color: 'hsl(var(--text-4))', marginTop: 2 }}>{doc.size} · Updated {doc.date}{doc.url ? ' · linked' : ''}</p>
+                  {doc.description && <p style={{ fontSize: 11, color: 'hsl(var(--text-4))' }}>{doc.description}</p>}
+                  <p style={{ fontSize: 10, color: 'hsl(var(--text-4))', marginTop: 2 }}>Linked {formatDate(doc.createdAt)}{doc.createdBy ? ` · ${doc.createdBy}` : ''}</p>
                 </div>
                 <button
-                  onClick={() => { if (doc.url) { window.open(doc.url, '_blank', 'noopener'); } else { toast.success(`Downloading ${doc.title}…`); } }}
+                  onClick={() => window.open(doc.url, '_blank', 'noopener')}
                   style={{ padding: '6px 12px', background: 'none', border: '1px solid hsl(var(--border))', cursor: 'pointer', color: 'hsl(var(--text-2))', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
                 >
-                  <DownloadSimple size={13} /> {doc.url ? 'Open' : 'Download'}
+                  <DownloadSimple size={13} /> Open
+                </button>
+                <button
+                  onClick={() => removeDoc(doc.id, doc.title)}
+                  title="Remove document"
+                  aria-label={`Remove ${doc.title}`}
+                  style={{ padding: '6px 8px', background: 'none', border: '1px solid hsl(var(--border))', cursor: 'pointer', color: 'hsl(var(--text-4))', display: 'flex', alignItems: 'center' }}
+                >
+                  <X size={13} />
                 </button>
               </div>
             ))}
@@ -1010,48 +1094,40 @@ function ModelDetailView({ model }: { model: Model }) {
                 Activity Log
               </CardTitle>
               <span style={{ fontSize: 11, color: 'hsl(var(--text-4))' }}>
-                {6 + modelIncidents.length} events
+                {activity.length} event{activity.length === 1 ? '' : 's'}
               </span>
             </div>
           </CardHeader>
           <CardContent style={{ padding: 0 }}>
-            {[
-              { date: '2026-04-05', event: 'Bias audit completed — result: WARNING', type: 'warning', actor: 'Maria Santos' },
-              { date: '2026-04-01', event: 'Model registered for EU AI Act compliance review', type: 'info', actor: 'Raj Gupta' },
-              { date: '2026-03-28', event: 'Drift threshold breached — 6.2% feature drift detected', type: 'error', actor: 'System' },
-              { date: '2026-03-25', event: 'Performance validation passed (Accuracy 94.2%)', type: 'success', actor: 'System' },
-              { date: '2026-03-20', event: 'Guardrail configuration updated', type: 'info', actor: 'Sarah Chen' },
-              { date: '2026-03-15', event: `Model retrained on updated dataset DS-004 using ${model.framework}`, type: 'info', actor: 'Maria Santos' },
-              ...modelIncidents.map(i => ({
-                date: i.date,
-                event: `${i.type} incident (${i.severity})${i.resolved ? ' — Resolved' : ' — Open'}`,
-                type: i.resolved ? 'success' : 'error',
-                actor: 'System',
-              })),
-            ]
-              .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-              .map((item, i, arr) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 16px', borderBottom: i < arr.length - 1 ? '1px solid hsl(var(--border))' : 'none' }}>
+            {activity.length === 0 ? (
+              <div style={{ padding: 40, textAlign: 'center', color: 'hsl(var(--text-4))' }}>
+                <ListBullets size={26} style={{ opacity: 0.4, margin: '0 auto 8px' }} />
+                <p style={{ fontSize: 13 }}>No activity recorded yet. Governance actions — alert changes, document links, scheduled audits and exports — are logged here.</p>
+              </div>
+            ) : (
+              activity.map((item, i, arr) => (
+                <div key={item.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 16px', borderBottom: i < arr.length - 1 ? '1px solid hsl(var(--border))' : 'none' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, paddingTop: 4 }}>
                     <div style={{
                       width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
-                      background: item.type === 'success' ? 'hsl(var(--s-ok-tx))' : item.type === 'error' ? 'hsl(var(--s-er-tx))' : item.type === 'warning' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--brand))',
+                      background: item.kind === 'success' ? 'hsl(var(--s-ok-tx))' : item.kind === 'error' ? 'hsl(var(--s-er-tx))' : item.kind === 'warning' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--brand))',
                     }} />
                     {i < arr.length - 1 && <div style={{ width: 1, flexGrow: 1, background: 'hsl(var(--border))', minHeight: 24, marginTop: 4 }} />}
                   </div>
                   <div style={{ flex: 1, paddingBottom: 4 }}>
                     <p style={{ fontSize: 13, color: 'hsl(var(--text-1))', lineHeight: 1.4 }}>{item.event}</p>
                     <p style={{ fontSize: 11, color: 'hsl(var(--text-4))', marginTop: 3 }}>
-                      <span style={{ fontWeight: 500 }}>{item.actor}</span> · {formatDate(item.date)}
+                      <span style={{ fontWeight: 500 }}>{item.actor ?? 'System'}</span> · {formatDate(item.createdAt)}
                     </p>
                   </div>
                 </div>
-              ))}
+              ))
+            )}
           </CardContent>
         </Card>
       )}
 
-      {showDriftModal && <DriftAlertModal model={model} onClose={() => setShowDriftModal(false)} />}
+      {showDriftModal && <DriftAlertModal model={model} initial={alertConfig} onClose={() => setShowDriftModal(false)} onSave={saveAlerts} onTest={testAlert} />}
     </div>
   );
 }

@@ -94,8 +94,13 @@ const MODULE_GUIDES: Record<string, GuideContent> = {
         icon: Robot,
       },
       {
+        title: 'Model detail & evidence',
+        description: 'Opening a model reveals its full passport across tabs: performance and drift charts, bias-audit history, an illustrative explainability view, data lineage, and two live evidence stores — Technical Documents (link artifacts from your DMS; persisted per model) and an Activity log that records every governance action. Configure drift/fairness alert thresholds and channels (saved to the model), export a Model Card or EU AI Act Annex IV package as JSON, and "Initiate Review" logs the request to the model\'s activity trail.',
+        icon: FileText,
+      },
+      {
         title: 'How to use it',
-        description: 'Click "Register Model" and complete the EU AI Act-aligned form (high-risk automatically forces human oversight). Use the filters and search to triage, open a row to see the full model passport, and "Export CSV" to hand a snapshot to auditors. Keep versions and owners current — everything downstream keys off this record.',
+        description: 'Click "Register Model" and complete the EU AI Act-aligned form (high-risk automatically forces human oversight). Use the filters and search to triage, open a row for the full passport, link technical documents and configure alerts on the detail page, and "Export CSV" to hand a snapshot to auditors. Editing a model preserves its governance fields; keep versions and owners current — everything downstream keys off this record.',
         icon: BookOpenText,
       }
     ]
@@ -111,12 +116,12 @@ const MODULE_GUIDES: Record<string, GuideContent> = {
       },
       {
         title: 'How it works',
-        description: 'Each tracked model has a current stage and an append-only trail of gates (promotion / rollback / decommission) with approver, date, decision and notes. Requesting a transition opens a pending gate; approving or rejecting it advances the model and writes an immutable entry to the audit trail.',
+        description: 'Each tracked model has a current stage and an append-only trail of gates (promotion / rollback / decommission) with approver, date, decision and notes. Requesting a transition opens a pending gate but does NOT move the model — only approving that gate advances it to the new stage; rejecting it leaves the model where it is. Every decision is written to the audit trail.',
         icon: ChartBar,
       },
       {
         title: 'How to use it',
-        description: 'Pick a model, then "Request Transition" to the next stage with a justification. Reviewers approve or reject the pending gate (recording remarks). Use "Track a model" to onboard a model into the pipeline, and resolve pending gates before requesting further transitions.',
+        description: 'Pick a model, then "Request Transition" to the target stage with a justification. The model stays put until an accountable reviewer approves the pending gate (recording remarks); rejection returns control without moving it. Use "Track a model" to onboard a model, and resolve the pending gate before requesting another transition.',
         icon: BookOpenText,
       }
     ]
@@ -137,7 +142,7 @@ const MODULE_GUIDES: Record<string, GuideContent> = {
       },
       {
         title: 'How to use it',
-        description: 'Select a model to inspect its fingerprint, training lineage, and audit chain. Use "Register DNA" to create a provenance record for a new model, and "Export Certificate" to download a signed integrity certificate (JSON) for an audit or a regulatory submission.',
+        description: 'Select a model to inspect its fingerprint, training lineage, and audit chain — the integrity banners, verification schedule and certificate reflect the record\'s real verification status (they turn red if tampering is flagged). Use "Register DNA" to create or update a provenance record (re-registering an existing model updates it rather than duplicating), and "Export Certificate" / "Download Certificate (JSON)" to hand an integrity certificate to an auditor.',
         icon: BookOpenText,
       }
     ]
@@ -158,7 +163,7 @@ const MODULE_GUIDES: Record<string, GuideContent> = {
       },
       {
         title: 'How to use it',
-        description: 'Use "New Prompt" to register a prompt (v1.0.0). Edit to publish a new version with a change note; move it through draft → review → active as it is approved. Search by name, content, owner or tag, and open a prompt to review its version history and metadata before promotion.',
+        description: 'Use "New Prompt" to register a prompt (v1.0.0). Edit to publish a new version with a change note. Open a prompt and use Submit for Review, then Approve or Reject — each persists a real status transition (approval records the reviewer and date), moving it through draft → under review → active. The Safety tab shows a static heuristic pre-screen; connect a classifier in Settings for scored analysis. Search by name, content, owner or tag before promotion.',
         icon: BookOpenText,
       }
     ]

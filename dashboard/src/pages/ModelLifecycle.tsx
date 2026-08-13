@@ -30,48 +30,6 @@ interface LifecycleModel {
   _rowId?: string;
 }
 
-const LIFECYCLE_MODELS: LifecycleModel[] = [
-  {
-    id: "MDL-001", name: "GPT-4o", provider: "OpenAI", stage: "monitoring", owner: "ML Platform",
-    lastTransition: "2025-01-10", nextReview: "2025-02-10",
-    approvals: [
-      { stage: "Development", kind: "promotion", approver: "Alice Chen", date: "2024-11-15", status: "approved", note: "Initial build signed off; scope limited to internal eval." },
-      { stage: "Testing", kind: "promotion", approver: "Bob Kim", date: "2024-12-01", status: "approved", note: "Passed functional + red-team test suite (0 criticals)." },
-      { stage: "Staging", kind: "promotion", approver: "Risk Committee", date: "2024-12-15", status: "approved", note: "Bias metrics within threshold; DPIA completed." },
-      { stage: "Production", kind: "promotion", approver: "CISO", date: "2025-01-05", status: "approved", note: "Go-live approved with human-oversight control active." },
-      { stage: "Monitoring", kind: "promotion", approver: "System", date: "2025-01-10", status: "approved", note: "Continuous drift + fairness monitoring enabled." },
-    ],
-  },
-  {
-    id: "MDL-003", name: "Claude 3.5 Sonnet", provider: "Anthropic", stage: "production", owner: "Legal Tech",
-    lastTransition: "2025-01-08", nextReview: "2025-02-08",
-    approvals: [
-      { stage: "Development", kind: "promotion", approver: "Carol Davis", date: "2024-11-20", status: "approved", note: "Contract-analysis prototype approved." },
-      { stage: "Testing", kind: "promotion", approver: "Dave Wilson", date: "2024-12-10", status: "approved", note: "Accuracy 94.5% on hold-out; hallucination guardrail added." },
-      { stage: "Staging", kind: "promotion", approver: "Ethics Board", date: "2024-12-28", status: "approved", note: "Legal review passed; confidentiality controls verified." },
-      { stage: "Production", kind: "promotion", approver: "CTO", date: "2025-01-08", status: "approved", note: "Production release approved for Legal dept only." },
-    ],
-  },
-  {
-    id: "MDL-007", name: "Mistral Large 2", provider: "Mistral AI", stage: "testing", owner: "Innovation Lab",
-    lastTransition: "2025-01-12", nextReview: "2025-01-22",
-    approvals: [
-      { stage: "Development", kind: "promotion", approver: "Eve Martinez", date: "2025-01-02", status: "approved", note: "Code-gen PoC approved for sandbox." },
-      { stage: "Testing", kind: "promotion", approver: "Security Team", requestedBy: "Eve Martinez", date: "2025-01-12", status: "pending", note: "Awaiting prompt-injection test results before staging." },
-    ],
-  },
-  {
-    id: "MDL-008", name: "DALL-E 3", provider: "OpenAI", stage: "deprecated", owner: "Marketing",
-    lastTransition: "2025-01-14", nextReview: "2025-03-01",
-    approvals: [
-      { stage: "Development", kind: "promotion", approver: "Frank Liu", date: "2024-06-10", status: "approved", note: "Marketing asset generation PoC." },
-      { stage: "Testing", kind: "promotion", approver: "QA Team", date: "2024-07-01", status: "approved", note: "Passed content-safety review." },
-      { stage: "Production", kind: "promotion", approver: "VP Eng", date: "2024-07-15", status: "approved", note: "Live for marketing use." },
-      { stage: "Deprecated", kind: "decommission", approver: "Risk Committee", date: "2025-01-14", status: "approved", note: "Superseded by internal model; usage frozen, 90-day retention before retirement." },
-    ],
-  },
-];
-
 const STAGES: Stage[] = ["development", "testing", "staging", "production", "monitoring", "deprecated", "retired"];
 
 // Senior-GRC reference: what each lifecycle stage means + the gate to enter it.
@@ -152,10 +110,10 @@ export default function ModelLifecycle() {
   const update = (fn: (m: LifecycleModel) => LifecycleModel) => { persist(fn(model)); };
 
   const submitTransition = (target: Stage, kind: GateKind, approver: string, effective: string, note: string) => {
+    // A requested transition does NOT move the model — it only opens a pending
+    // gate. The stage advances only once that gate is approved (see setGate).
     update(m => ({
       ...m,
-      stage: target,
-      lastTransition: effective,
       approvals: [...m.approvals, { stage: cap(target), kind, approver, requestedBy: "You", date: effective, status: "pending", note }],
     }));
     toast.success(`Transition to ${target} requested — gate pending ${approver}'s approval`);
@@ -165,8 +123,17 @@ export default function ModelLifecycle() {
   const setGate = (idx: number, status: GateStatus) => {
     const decision = status === "approved" ? window.prompt("Approval remarks (recorded on the audit trail):", "Approved — criteria met.") : window.prompt("Rejection reason (required):", "");
     if (status === "rejected" && !decision) { toast.error("A rejection reason is required."); return; }
-    update(m => ({ ...m, approvals: m.approvals.map((a, i) => (i === idx ? { ...a, status, date: today(), note: decision ? `${a.note ? a.note + " — " : ""}${status === "approved" ? "APPROVED" : "REJECTED"}: ${decision}` : a.note } : a)) }));
-    toast.success(status === "approved" ? "Gate approved (logged)" : "Gate rejected (logged)");
+    // On approval, advance the model into the gate's target stage; on rejection
+    // the stage is left unchanged (nothing to roll back, since request no longer moves it).
+    const gate = model.approvals[idx];
+    const targetStage = (gate?.stage ?? "").toLowerCase() as Stage;
+    const advance = status === "approved" && STAGES.includes(targetStage);
+    update(m => ({
+      ...m,
+      ...(advance ? { stage: targetStage, lastTransition: gate?.date || today() } : {}),
+      approvals: m.approvals.map((a, i) => (i === idx ? { ...a, status, date: today(), note: decision ? `${a.note ? a.note + " — " : ""}${status === "approved" ? "APPROVED" : "REJECTED"}: ${decision}` : a.note } : a)),
+    }));
+    toast.success(status === "approved" ? (advance ? `Gate approved — ${model.name} advanced to ${cap(targetStage)}` : "Gate approved (logged)") : "Gate rejected (logged)");
   };
 
   const removeModel = () => {
@@ -179,7 +146,6 @@ export default function ModelLifecycle() {
   const counts = {
     production: models.filter(m => m.stage === "production" || m.stage === "monitoring").length,
     pending: models.reduce((n, m) => n + m.approvals.filter(a => a.status === "pending").length, 0),
-    review: models.filter(m => m.stage === "deprecated" || m.stage === "retired").length,
   };
 
   return (
@@ -317,7 +283,9 @@ export default function ModelLifecycle() {
               </div>
             ))}
             <div className="pt-2.5" style={{ borderTop: "1px solid hsl(var(--border))" }}>
-              <Button variant="outline" size="sm" fullWidth onClick={() => navigate(`/models/inventory/${model.id}`)}>View Full Model Card</Button>
+              {/* Lifecycle model.id is a business id (e.g. MDL-001), not the ai_models
+                  uuid the detail route resolves by, so link to the registry list. */}
+              <Button variant="outline" size="sm" fullWidth onClick={() => navigate('/models/inventory')}>Open in Model Registry</Button>
             </div>
           </CardContent>
         </Card>

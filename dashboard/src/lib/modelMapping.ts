@@ -44,7 +44,9 @@ export function recordToModel(r: ModelRecord): Model {
     id: r.id, name: r.name, version: r.version ?? '—',
     type: TYPE_TO_LABEL[(r.model_type ?? '').toLowerCase()] ?? r.model_type ?? '—',
     owner: r.business_owner ?? r.technical_owner ?? '—',
-    status: LIFECYCLE_TO_STATUS[stage] ?? 'production',
+    // Unknown/empty lifecycle stage must NOT default to production — that would
+    // over-count the "Production" KPI and mislabel new models. Default to dev.
+    status: LIFECYCLE_TO_STATUS[stage] ?? 'development',
     riskTier: DB_RISK_TO_UI[tier] ?? 'limited',
     fairnessScore: r.fairness_score ?? 0,
     driftStatus: (DRIFT_STATES as readonly string[]).includes(drift) ? (drift as Model['driftStatus']) : 'stable',
@@ -54,7 +56,18 @@ export function recordToModel(r: ModelRecord): Model {
     accuracy: 0, latencyMs: 0, monthlyInferences: '—', euAiActArticle: meta.euAiActArticle ?? '—',
     biasMetrics: [], performanceHistory: [], guardrails: [], complianceMapping: [], incidents: [],
     lifecyclePhase: r.lifecycle_stage ?? '—', daysInPhase: 0, lifecycleProgress: 0,
-  }
+    // Round-trip the extended governance fields so editing a model (which rebuilds
+    // the record via modelToRecord) preserves them instead of blanking them.
+    provider: r.provider ?? undefined,
+    businessOwner: r.business_owner ?? undefined,
+    technicalOwner: r.technical_owner ?? undefined,
+    deploymentEnv: r.deployment_env ?? undefined,
+    dataClassification: meta.dataClassification,
+    intendedPurpose: meta.intendedPurpose,
+    knownLimitations: meta.knownLimitations,
+    trainingDataSources: meta.trainingDataSources,
+    humanOversight: meta.humanOversight,
+  } as Model
 }
 
 function slugify(s: string): string {

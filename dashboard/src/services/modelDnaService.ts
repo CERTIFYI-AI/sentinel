@@ -77,27 +77,22 @@ function dnaToRow(x: DnaRecord): Record<string, any> {
 
 export async function fetchModelDna(): Promise<DnaRecord[]> {
   if (!isSupabaseConfigured() || !supabase) return []
-  try {
-    const { data, error } = await supabase.from('model_dna').select('*').order('created_at', { ascending: false })
-    if (error) { console.warn('[modelDnaService] fetch:', error.message); return [] }
-    return (data ?? []).map(rowToDna)
-  } catch { return [] }
+  const { data, error } = await supabase.from('model_dna').select('*').order('created_at', { ascending: false })
+  if (error) { console.warn('[modelDnaService] fetch:', error.message); throw new Error(error.message) }
+  return (data ?? []).map(rowToDna)
 }
 
-export async function upsertModelDna(x: DnaRecord): Promise<DnaRecord | null> {
-  if (!isSupabaseConfigured() || !supabase) return null
-  try {
-    const { data, error } = await supabase.from('model_dna').upsert(dnaToRow(x)).select().single()
-    if (error) { console.warn('[modelDnaService] upsert:', error.message); return null }
-    return rowToDna(data)
-  } catch { return null }
+// Writes throw on failure so the UI reports a real error rather than a false
+// "DNA record created" success. Never swallow to null.
+export async function upsertModelDna(x: DnaRecord): Promise<DnaRecord> {
+  if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase is not configured — cannot save DNA record.')
+  const { data, error } = await supabase.from('model_dna').upsert(dnaToRow(x)).select().single()
+  if (error) { console.warn('[modelDnaService] upsert:', error.message); throw new Error(error.message) }
+  return rowToDna(data)
 }
 
-export async function deleteModelDna(rowId: string): Promise<boolean> {
-  if (!isSupabaseConfigured() || !supabase) return false
-  try {
-    const { error } = await supabase.from('model_dna').delete().eq('id', rowId)
-    if (error) { console.warn('[modelDnaService] delete:', error.message); return false }
-    return true
-  } catch { return false }
+export async function deleteModelDna(rowId: string): Promise<void> {
+  if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase is not configured — cannot delete DNA record.')
+  const { error } = await supabase.from('model_dna').delete().eq('id', rowId)
+  if (error) { console.warn('[modelDnaService] delete:', error.message); throw new Error(error.message) }
 }

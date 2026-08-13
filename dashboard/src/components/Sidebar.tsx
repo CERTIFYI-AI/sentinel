@@ -60,8 +60,9 @@ const NAV: NavSection[] = [
     items: [
       { label: 'Dashboard',             to: '/overview',          icon: SquaresFour },
       { label: 'Tasks',                 to: '/tasks',             icon: CheckSquare },
-      { label: 'Notifications',         to: '/notifications',     icon: Bell },
-      { label: 'Reporting',             to: '/reporting',         icon: ChartPieSlice },
+      // Hidden from the sidebar (routes remain available directly):
+      // { label: 'Notifications',         to: '/notifications',     icon: Bell },
+      // { label: 'Reporting',             to: '/reporting',         icon: ChartPieSlice },
       {
         label: 'CISO Dashboard', to: '/ciso', icon: ShieldStar,
         children: [
@@ -69,7 +70,7 @@ const NAV: NavSection[] = [
         ],
       },
       { label: 'Executive Center',      to: '/executive-center',  icon: PresentationChart },
-      { label: 'ROI & Value',           to: '/roi',               icon: HandCoins },
+      // { label: 'ROI & Value',           to: '/roi',               icon: HandCoins },
     ],
   },
   {

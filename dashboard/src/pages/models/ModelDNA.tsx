@@ -107,6 +107,9 @@ export default function ModelDNA() {
 
   const registerDna = (id: string, name: string, owner: string, baseModel: string) => {
     const now = new Date().toISOString();
+    // If a DNA record for this model id already exists, carry its DB _rowId so we
+    // UPDATE it instead of inserting a duplicate row for the same model.
+    const existing = records.find(r => r.id === id);
     const rec: DnaRecord = {
       id, name, type: '—', version: 'v1.0', riskTier: 'limited', owner: owner || '—',
       framework: '—', department: '—',
@@ -114,6 +117,7 @@ export default function ModelDNA() {
       lastVerified: now, tamperAlert: false, baseModel: baseModel || undefined, parentModelId: null,
       provenance: [{ stage: 'Model registered', dataset: id, hash: '—', date: now.slice(0, 10), by: owner || 'You' }],
       auditChain: [{ id: 'ACH-0001', event: 'DNA record created', actor: owner || 'You', ts: now.slice(0, 16).replace('T', ' '), hash: 'block:0001', prev: 'GENESIS' }],
+      _rowId: existing?._rowId,
     };
     saveDna(rec).then(() => { toast.success(`DNA record created for ${name}`); setSelectedModelId(id); })
       .catch(() => toast.error('Failed to create DNA record'));
@@ -339,19 +343,19 @@ export default function ModelDNA() {
                 ))}
               </div>
 
-              {/* Verification banner */}
-              <div style={{ marginTop: 16, padding: '12px 14px', border: '1px solid hsl(var(--s-ok-br))', background: 'hsl(var(--s-ok-bg))', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                <SealCheck size={18} weight="fill" style={{ color: 'hsl(var(--s-ok-tx))', flexShrink: 0, marginTop: 1 }} />
+              {/* Verification banner — reflects the record's real tamperAlert flag */}
+              <div style={{ marginTop: 16, padding: '12px 14px', border: `1px solid ${model.tamperAlert ? 'hsl(var(--s-er-br))' : 'hsl(var(--s-ok-br))'}`, background: model.tamperAlert ? 'hsl(var(--s-er-bg))' : 'hsl(var(--s-ok-bg))', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                {model.tamperAlert
+                  ? <Warning size={18} weight="fill" style={{ color: 'hsl(var(--s-er-tx))', flexShrink: 0, marginTop: 1 }} />
+                  : <SealCheck size={18} weight="fill" style={{ color: 'hsl(var(--s-ok-tx))', flexShrink: 0, marginTop: 1 }} />}
                 <div>
-                  <p style={{ fontSize: 12, fontWeight: 700, color: 'hsl(var(--s-ok-tx))', marginBottom: 3 }}>
-                    Fingerprint verification PASSED — model artifact matches registered hash
+                  <p style={{ fontSize: 12, fontWeight: 700, color: model.tamperAlert ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-ok-tx))', marginBottom: 3 }}>
+                    {model.tamperAlert
+                      ? 'Fingerprint verification FAILED — artifact hash does not match the registered value'
+                      : 'Fingerprint verification PASSED — model artifact matches registered hash'}
                   </p>
                   <p style={{ fontSize: 11, color: 'hsl(var(--text-4))' }}>
-                    Last verified: {new Date(model.lastVerified).toLocaleString()} · Next scheduled: {verificationDates[0].replace(/(\d{4}-\d{2})/, (_, m) => {
-                      const [y, mo] = m.split('-');
-                      const next = new Date(parseInt(y), parseInt(mo), 1);
-                      return `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`;
-                    })}-10
+                    Last verified: {new Date(model.lastVerified).toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -363,21 +367,30 @@ export default function ModelDNA() {
             <CardHeader className="pb-2">
               <CardTitle style={{ fontSize: 13, color: 'hsl(var(--text-1))', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Clock size={14} style={{ color: 'hsl(var(--brand))' }} />
-                Verification History
+                Verification Schedule
               </CardTitle>
             </CardHeader>
             <CardContent style={{ padding: 0 }}>
-              {verificationDates.map((date, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px', borderBottom: i < verificationDates.length - 1 ? '1px solid hsl(var(--border))' : 'none' }}>
-                  <CheckCircle size={14} weight="fill" style={{ color: 'hsl(var(--s-ok-tx))', flexShrink: 0 }} />
-                  <span style={{ fontSize: 12, fontFamily: 'monospace', color: 'hsl(var(--text-3))' }}>{date} 08:00 UTC</span>
-                  <span style={{ fontSize: 12, color: 'hsl(var(--text-2))', flex: 1 }}>Automated SHA-256 artifact verification</span>
-                  <span style={{ fontSize: 11, color: 'hsl(var(--text-4))' }}>{model.registeredBy}</span>
-                  <Badge style={{ borderRadius: 0, fontSize: 9, background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', border: '1px solid hsl(var(--s-ok-br))' }}>
-                    ✓ PASSED
-                  </Badge>
-                </div>
-              ))}
+              <p style={{ fontSize: 11, color: 'hsl(var(--text-4))', padding: '10px 16px 0' }}>
+                Automated monthly SHA-256 artifact checks, anchored to the last verification. The most recent check reflects the current integrity status.
+              </p>
+              {verificationDates.map((date, i) => {
+                // i === 0 is the latest check → reflect the real tamperAlert flag.
+                const failed = i === 0 && model.tamperAlert;
+                return (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px', borderBottom: i < verificationDates.length - 1 ? '1px solid hsl(var(--border))' : 'none' }}>
+                    {failed
+                      ? <Warning size={14} weight="fill" style={{ color: 'hsl(var(--s-er-tx))', flexShrink: 0 }} />
+                      : <CheckCircle size={14} weight="fill" style={{ color: 'hsl(var(--s-ok-tx))', flexShrink: 0 }} />}
+                    <span style={{ fontSize: 12, fontFamily: 'monospace', color: 'hsl(var(--text-3))' }}>{date} 08:00 UTC</span>
+                    <span style={{ fontSize: 12, color: 'hsl(var(--text-2))', flex: 1 }}>Automated SHA-256 artifact verification</span>
+                    <span style={{ fontSize: 11, color: 'hsl(var(--text-4))' }}>{model.registeredBy}</span>
+                    <Badge style={{ borderRadius: 0, fontSize: 9, background: failed ? 'hsl(var(--s-er-bg))' : 'hsl(var(--s-ok-bg))', color: failed ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-ok-tx))', border: `1px solid ${failed ? 'hsl(var(--s-er-br))' : 'hsl(var(--s-ok-br))'}` }}>
+                      {failed ? '⚠ FAILED' : '✓ PASSED'}
+                    </Badge>
+                  </div>
+                );
+              })}
             </CardContent>
           </Card>
         </TabsContent>
@@ -443,11 +456,15 @@ export default function ModelDNA() {
                 Every event is hashed and linked to the previous block. Any modification to a past event invalidates all subsequent hashes — making tampering immediately detectable.
               </p>
 
-              {/* Chain integrity banner */}
-              <div style={{ padding: '10px 14px', marginBottom: 16, border: '1px solid hsl(var(--s-ok-br))', background: 'hsl(var(--s-ok-bg))', display: 'flex', alignItems: 'center', gap: 10 }}>
-                <SealCheck size={16} weight="fill" style={{ color: 'hsl(var(--s-ok-tx))' }} />
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'hsl(var(--s-ok-tx))' }}>
-                  Chain integrity: VALID — {model.auditChain.length} blocks verified, hash chain intact
+              {/* Chain integrity banner — reflects the record's real tamperAlert flag */}
+              <div style={{ padding: '10px 14px', marginBottom: 16, border: `1px solid ${model.tamperAlert ? 'hsl(var(--s-er-br))' : 'hsl(var(--s-ok-br))'}`, background: model.tamperAlert ? 'hsl(var(--s-er-bg))' : 'hsl(var(--s-ok-bg))', display: 'flex', alignItems: 'center', gap: 10 }}>
+                {model.tamperAlert
+                  ? <Warning size={16} weight="fill" style={{ color: 'hsl(var(--s-er-tx))' }} />
+                  : <SealCheck size={16} weight="fill" style={{ color: 'hsl(var(--s-ok-tx))' }} />}
+                <span style={{ fontSize: 12, fontWeight: 600, color: model.tamperAlert ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-ok-tx))' }}>
+                  {model.tamperAlert
+                    ? `Chain integrity: COMPROMISED — tamper detected across ${model.auditChain.length} blocks`
+                    : `Chain integrity: VALID — ${model.auditChain.length} blocks verified, hash chain intact`}
                 </span>
               </div>
 
@@ -513,9 +530,13 @@ export default function ModelDNA() {
                   <p style={{ fontSize: 12, color: 'hsl(var(--text-4))', margin: 0 }}>
                     Sentinel AI GRC Platform · Issued {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}
                   </p>
-                  <div style={{ marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', background: 'hsl(var(--s-ok-bg))', border: '1px solid hsl(var(--s-ok-br))' }}>
-                    <SealCheck size={13} weight="fill" style={{ color: 'hsl(var(--s-ok-tx))' }} />
-                    <span style={{ fontSize: 11, fontWeight: 700, color: 'hsl(var(--s-ok-tx))' }}>CRYPTOGRAPHIC INTEGRITY VERIFIED</span>
+                  <div style={{ marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', background: model.tamperAlert ? 'hsl(var(--s-er-bg))' : 'hsl(var(--s-ok-bg))', border: `1px solid ${model.tamperAlert ? 'hsl(var(--s-er-br))' : 'hsl(var(--s-ok-br))'}` }}>
+                    {model.tamperAlert
+                      ? <Warning size={13} weight="fill" style={{ color: 'hsl(var(--s-er-tx))' }} />
+                      : <SealCheck size={13} weight="fill" style={{ color: 'hsl(var(--s-ok-tx))' }} />}
+                    <span style={{ fontSize: 11, fontWeight: 700, color: model.tamperAlert ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-ok-tx))' }}>
+                      {model.tamperAlert ? 'INTEGRITY COMPROMISED — TAMPER DETECTED' : 'CRYPTOGRAPHIC INTEGRITY VERIFIED'}
+                    </span>
                   </div>
                 </div>
 
@@ -533,7 +554,7 @@ export default function ModelDNA() {
                     ['Provenance Stages', `${model.provenance.length} cryptographically linked stages`],
                     ['Audit Chain Blocks', `${model.auditChain.length} immutable events`],
                     ['Last Verification', new Date(model.lastVerified).toLocaleString()],
-                    ['Verification Result', 'PASSED — No tampering detected'],
+                    ['Verification Result', model.tamperAlert ? 'FAILED — Tampering detected' : 'PASSED — No tampering detected'],
                     ['Certificate Issuer', 'Sentinel AI GRC · Automated Integrity Monitor'],
                   ].map(([label, value], i) => (
                     <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid hsl(var(--border))' }}>
@@ -561,7 +582,7 @@ export default function ModelDNA() {
                     onClick={exportCert}
                   >
                     <DownloadSimple size={13} style={{ marginRight: 5 }} />
-                    Download Signed PDF Certificate
+                    Download Certificate (JSON)
                   </Button>
                 </div>
               </div>
