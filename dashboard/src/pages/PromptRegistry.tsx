@@ -11,7 +11,6 @@ import { Card, CardContent } from '../components/ui/card';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
-import Breadcrumbs from '../components/Breadcrumbs';
 import { Input } from '../components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/sheet';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
@@ -744,7 +743,6 @@ export default function PromptRegistry() {
     <div className="flex flex-col h-full bg-[hsl(var(--bg-page))]">
       {/* Page Header */}
       <div className="px-6 py-3 border-b border-[hsl(var(--border))] bg-surface flex-shrink-0">
-        <Breadcrumbs className="mb-2" />
         <PageHeader
           title="Prompt Registry"
           subtitle={`Version-controlled governance for system prompts · ${records.length} registered`}
