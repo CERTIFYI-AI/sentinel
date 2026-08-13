@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useSupabaseTable } from "@/hooks/useSupabaseTable";
+import { useLifecycleData } from "@/hooks/useLifecycleData";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useNavigate } from "react-router-dom";
 import { GitBranch, ChevronRight, Clock, CheckCircle2, AlertTriangle, XCircle, PlayCircle, ArrowRight, Check, X, Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
@@ -26,6 +27,7 @@ interface Gate {
 interface LifecycleModel {
   id: string; name: string; provider: string; stage: Stage;
   approvals: Gate[]; lastTransition: string; nextReview: string; owner: string;
+  _rowId?: string;
 }
 
 const LIFECYCLE_MODELS: LifecycleModel[] = [
@@ -101,16 +103,53 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 export default function ModelLifecycle() {
   const navigate = useNavigate();
-  const { data: models, setData: setModels } = useSupabaseTable<LifecycleModel>('modellifecycle_table', LIFECYCLE_MODELS);
-  const [selectedId, setSelectedId] = useState<string>(LIFECYCLE_MODELS[0].id);
+  const { models: rawModels, isLoading, saveModel: saveLifecycle, deleteModel: deleteLifecycle } = useLifecycleData();
+  const models = rawModels as LifecycleModel[];
+  const [selectedIdState, setSelectedId] = useState<string>("");
   const [transitionOpen, setTransitionOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
-  const model = models.find(m => m.id === selectedId)!;
+  const persist = (updated: LifecycleModel) => {
+    saveLifecycle(updated).catch(() => toast.error("Failed to save lifecycle change"));
+  };
+
+  const addModel = (id: string, name: string, provider: string, owner: string) => {
+    const rec: LifecycleModel = {
+      id, name, provider, owner, stage: "development", lastTransition: today(), nextReview: "",
+      approvals: [{ stage: "Development", kind: "promotion", approver: owner || "Owner", requestedBy: "You", date: today(), status: "pending", note: "Onboarded to lifecycle tracking." }],
+    };
+    saveLifecycle(rec).then(() => { toast.success(`${name} added to lifecycle`); setSelectedId(id); })
+      .catch(() => toast.error("Failed to add model"));
+    setAddOpen(false);
+  };
+
+  if (isLoading) {
+    return <div className="p-6 text-sm" style={{ color: "hsl(var(--text-4))" }}>Loading lifecycle…</div>;
+  }
+
+  const selectedId = models.some(m => m.id === selectedIdState) ? selectedIdState : (models[0]?.id ?? "");
+  const model = models.find(m => m.id === selectedId) ?? null;
+
+  if (!model) {
+    return (
+      <div className="space-y-4">
+        <PageHeader title="Model Lifecycle" subtitle="No models tracked yet" icon={GitBranch}
+          actions={<Button onClick={() => setAddOpen(true)}>Track a model</Button>} />
+        <Card><CardContent className="py-16 text-center" style={{ color: "hsl(var(--text-4))" }}>
+          <GitBranch className="mx-auto mb-2 opacity-40" />
+          <p className="text-sm">No models are being tracked through the lifecycle yet.</p>
+          <Button className="mt-3" onClick={() => setAddOpen(true)}>Track a model</Button>
+        </CardContent></Card>
+        <AddModelDialog open={addOpen} onOpenChange={setAddOpen} onAdd={addModel} />
+      </div>
+    );
+  }
+
   const currentStageIdx = STAGES.indexOf(model.stage);
   const hasPendingGate = model.approvals.some(a => a.status === "pending");
 
-  const update = (fn: (m: LifecycleModel) => LifecycleModel) =>
-    setModels(prev => prev.map(m => (m.id === selectedId ? fn(m) : m)));
+  const update = (fn: (m: LifecycleModel) => LifecycleModel) => { persist(fn(model)); };
 
   const submitTransition = (target: Stage, kind: GateKind, approver: string, effective: string, note: string) => {
     update(m => ({
@@ -130,6 +169,13 @@ export default function ModelLifecycle() {
     toast.success(status === "approved" ? "Gate approved (logged)" : "Gate rejected (logged)");
   };
 
+  const removeModel = () => {
+    setDeleteOpen(false);
+    if (!model._rowId) return;
+    deleteLifecycle(model._rowId).then(() => toast.success(`${model.name} removed from lifecycle`))
+      .catch(() => toast.error("Failed to remove model"));
+  };
+
   const counts = {
     production: models.filter(m => m.stage === "production" || m.stage === "monitoring").length,
     pending: models.reduce((n, m) => n + m.approvals.filter(a => a.status === "pending").length, 0),
@@ -143,11 +189,16 @@ export default function ModelLifecycle() {
         subtitle={`${models.length} models tracked · ${counts.production} in production · ${counts.pending} gate(s) pending approval`}
         icon={GitBranch}
         actions={
-          <Button size="sm" leftIcon={<ArrowRight size={14} />} disabled={hasPendingGate}
-            title={hasPendingGate ? "Resolve the pending gate before requesting another transition" : "Request a stage transition"}
-            onClick={() => setTransitionOpen(true)}>
-            Request Transition
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={() => setAddOpen(true)}>Track a model</Button>
+            <Button size="sm" variant="outline" onClick={() => setDeleteOpen(true)}
+              title="Remove this model from lifecycle tracking">Remove</Button>
+            <Button size="sm" leftIcon={<ArrowRight size={14} />} disabled={hasPendingGate}
+              title={hasPendingGate ? "Resolve the pending gate before requesting another transition" : "Request a stage transition"}
+              onClick={() => setTransitionOpen(true)}>
+              Request Transition
+            </Button>
+          </div>
         }
       />
 
@@ -273,7 +324,60 @@ export default function ModelLifecycle() {
       </div>
 
       <TransitionDialog open={transitionOpen} onOpenChange={setTransitionOpen} model={model} currentIdx={currentStageIdx} onSubmit={submitTransition} />
+      <AddModelDialog open={addOpen} onOpenChange={setAddOpen} onAdd={addModel} />
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Remove from lifecycle tracking?"
+        description={`“${model.name}” and its gate/transition history will be removed from lifecycle tracking. This does not delete the model from the registry.`}
+        confirmLabel="Remove"
+        isDestructive
+        onConfirm={removeModel}
+      />
     </div>
+  );
+}
+
+// ── Add-to-lifecycle dialog ───────────────────────────────────────────────────
+function AddModelDialog({ open, onOpenChange, onAdd }: {
+  open: boolean; onOpenChange: (o: boolean) => void;
+  onAdd: (id: string, name: string, provider: string, owner: string) => void;
+}) {
+  const [name, setName] = useState("");
+  const [id, setId] = useState("");
+  const [provider, setProvider] = useState("");
+  const [owner, setOwner] = useState("");
+  const canSubmit = Boolean(name.trim() && id.trim());
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent style={{ borderRadius: 0 }}>
+        <DialogHeader><DialogTitle>Track a model in the lifecycle</DialogTitle></DialogHeader>
+        <div className="space-y-3 py-1">
+          <div>
+            <label className="text-xs font-semibold" style={{ color: "hsl(var(--text-4))" }}>Model ID</label>
+            <Input value={id} onChange={e => setId(e.target.value)} placeholder="MDL-010" className="mt-1" style={{ borderRadius: 0 }} />
+          </div>
+          <div>
+            <label className="text-xs font-semibold" style={{ color: "hsl(var(--text-4))" }}>Name</label>
+            <Input value={name} onChange={e => setName(e.target.value)} placeholder="Model name" className="mt-1" style={{ borderRadius: 0 }} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold" style={{ color: "hsl(var(--text-4))" }}>Provider</label>
+              <Input value={provider} onChange={e => setProvider(e.target.value)} placeholder="OpenAI / Internal" className="mt-1" style={{ borderRadius: 0 }} />
+            </div>
+            <div>
+              <label className="text-xs font-semibold" style={{ color: "hsl(var(--text-4))" }}>Owner</label>
+              <Input value={owner} onChange={e => setOwner(e.target.value)} placeholder="Team / owner" className="mt-1" style={{ borderRadius: 0 }} />
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button disabled={!canSubmit} onClick={() => onAdd(id.trim(), name.trim(), provider.trim(), owner.trim())}>Add</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
