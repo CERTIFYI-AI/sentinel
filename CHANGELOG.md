@@ -1,3 +1,11 @@
+## 1.54.0 (2026-08-13)
+
+* Merge PR #73: evals crash fixes + demo data + Agent Control on the platform contract ([27e80de](https://github.com/CERTIFYI-AI/sentinel/commit/27e80de))
+* feat(agents): real Kill Switch + persisted Choreography ([d798a9a](https://github.com/CERTIFYI-AI/sentinel/commit/d798a9a))
+* feat(agents): Registry + IAM on the platform contract + agent-control seed ([d9e2dcb](https://github.com/CERTIFYI-AI/sentinel/commit/d9e2dcb))
+* feat(agents): ShadowAI, Discovery & Detail on the canonical registry ([d9056ec](https://github.com/CERTIFYI-AI/sentinel/commit/d9056ec))
+* fix(evals): crash-proof all detail/list pages + complete demo seed + agent-control foundation ([e43b25f](https://github.com/CERTIFYI-AI/sentinel/commit/e43b25f))
+
 ## 1.53.0 (2026-08-13)
 
 * Merge PR #72: fix & enhance all 8 Validation & Evals modules ([5c8a0f4](https://github.com/CERTIFYI-AI/sentinel/commit/5c8a0f4))
