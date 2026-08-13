@@ -18,7 +18,9 @@ interface BreadcrumbsProps {
 
 export default function Breadcrumbs({ trail, className }: BreadcrumbsProps) {
   const auto = useBreadcrumbs()
-  const crumbs = trail ?? auto
+  // Drop a redundant leading "Home" crumb — the House icon below already links
+  // home, so explicit trails that start with { label: 'Home' } would double it.
+  const crumbs = (trail ?? auto).filter((c, i) => !(i === 0 && c.label === 'Home'))
   if (crumbs.length === 0) return null
 
   return (

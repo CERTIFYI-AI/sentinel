@@ -1,7 +1,7 @@
 // @ts-nocheck
-import { useLocation, useNavigate, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { MagnifyingGlass, Bell, ArrowsClockwise, Sun, Moon, Monitor, User, Gear, SignOut, CaretRight, PaintBrush, Question } from '@phosphor-icons/react'
+import { MagnifyingGlass, Bell, ArrowsClockwise, Sun, Moon, Monitor, User, Gear, SignOut, PaintBrush, Question } from '@phosphor-icons/react'
 import { Button } from './ui/button'
 import { CommandPalette } from './ui/CommandPalette'
 import { NotificationDrawer } from './ui/NotificationDrawer'
@@ -21,116 +21,10 @@ const ACCENT_SWATCHES: { key: Accent; label: string; color: string; darkColor: s
   { key: 'rose',    label: 'Rose',     color: 'hsl(346 77% 45%)', darkColor: 'hsl(346 77% 58%)' },
 ]
 
-const SEGMENT_LABELS: Record<string, string> = {
-  overview:            'Dashboard',
-  compliance:          'Compliance',
-  policies:            'Policies',
-  controls:            'Controls',
-  frameworks:          'Frameworks',
-  'reg-radar':         'Reg Radar',
-  hitl:                'HITL Reviews',
-  'gap-analysis':      'Gap Analysis',
-  evidence:            'Evidence Hub',
-  'policy-templates':  'Policy Templates',
-  'ai-advisor':        'AI Advisor',
-  conformity:          'Conformity Assessment',
-  'data-governance':   'Data Governance',
-  models:              'AI Inventory',
-  inventory:           'Model Inventory',
-  lifecycle:           'Model Lifecycle',
-  agents:              'Agent Discovery',
-  'shadow-ai':         'Shadow AI',
-  datasets:            'Datasets',
-  vendors:             'Vendor Registry',
-  'use-cases':         'Use Cases',
-  explainability:      'Explainability',
-  risk:                'Risk & Compliance',
-  register:            'Risk Register',
-  matrix:              'Risk Matrix',
-  'bias-audits':       'Bias Audits',
-  incidents:           'Incidents',
-  remediation:         'Remediation',
-  'evidence-sync':     'Evidence Sync',
-  reporting:           'Reporting',
-  security:            'Security',
-  threats:             'Threat Feed',
-  vulnerabilities:     'Vulnerabilities',
-  'red-team':          'Red Team Lab',
-  'attack-surface':    'Attack Surface',
-  scans:               'Scan Center',
-  keys:                'Keys Vault',
-  'model-arena':       'Model Arena',
-  reports:             'Reports',
-  'trust-engine':      'Trust Engine',
-  guardrails:          'Guardrails',
-  traces:              'Live Traces',
-  costs:               'Cost & Tokens',
-  fallback:            'Fallback Log',
-  tools:               'Tool Calls',
-  config:              'Configuration',
-  'access-control':    'Access Control',
-  roles:               'Roles',
-  users:               'Users',
-  'audit-log':         'Audit Log',
-  'evidence-vault':    'Evidence Vault',
-  export:              'Export Center',
-  settings:            'Settings',
-  notifications:       'Notifications',
-  evals:               'Evaluations',
-  techniques:          'Eval Techniques',
-  benchmark:           'Benchmark',
-  'incident-workflow': 'Incident Workflow',
-  'hitl-queue':        'HITL Queue',
-  'policy-editor':     'Policy Editor',
-  'remediation-tracker': 'Remediation Tracker',
-  audits:              'Audit Management',
-  risks:               'Risk Register',
-  exceptions:          'Exception Management',
-  training:            'Training & Awareness',
-  documents:           'Document Management',
-  continuity:          'Business Continuity',
-  calendar:            'Compliance Calendar',
-  maturity:            'Benchmarking & Maturity',
-  aiia:                'AI Impact Assessments',
-  'audit-trail':       'Audit Trail',
-  workflows:           'Approval Workflows',
-  tasks:               'Tasks',
-  'prompt-registry':   'Prompt Registry',
-}
-
-function isDynamicId(seg: string): boolean {
-  return /^[0-9a-f-]{8,}$/i.test(seg) || /^\d+$/.test(seg) || /^[A-Z]+-\d+$/.test(seg)
-}
-
-function segmentLabel(seg: string): string {
-  if (SEGMENT_LABELS[seg]) return SEGMENT_LABELS[seg]
-  if (isDynamicId(seg)) return seg.toUpperCase()
-  return seg.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-}
-
-function buildBreadcrumbs(pathname: string): { label: string; path: string; isLast: boolean }[] {
-  const segments = pathname.split('/').filter(Boolean)
-  if (segments.length === 0) return [{ label: 'Dashboard', path: '/overview', isLast: true }]
-  const crumbs: { label: string; path: string; isLast: boolean }[] = []
-  let accumulated = ''
-  for (let i = 0; i < segments.length; i++) {
-    accumulated += '/' + segments[i]
-    const label = segmentLabel(segments[i])
-    const isLast = i === segments.length - 1
-    if (crumbs.length > 0 && crumbs[crumbs.length - 1].label === label) {
-      if (isLast) crumbs[crumbs.length - 1].isLast = true
-      continue
-    }
-    crumbs.push({ label, path: accumulated, isLast })
-  }
-  return crumbs
-}
 
 export default function TopHeader() {
-  const location = useLocation()
   const navigate = useNavigate()
   const { theme, resolved, setTheme } = useTheme()
-  const breadcrumbs = buildBreadcrumbs(location.pathname)
   const user = useAuthStore(s => s.user)
   const logout = useAuthStore(s => s.logout)
 
@@ -206,30 +100,8 @@ export default function TopHeader() {
   return (
     <>
       <header className='flex items-center gap-4 px-6 h-14 border-b border-[hsl(var(--border))] bg-surface flex-shrink-0'>
-        {/* Breadcrumbs */}
-        <nav aria-label='Breadcrumb' className='flex-1 min-w-0'>
-          <ol className='flex items-center gap-1 text-sm'>
-            {breadcrumbs.map((bc, i) => (
-              <li key={i} className='flex items-center gap-1'>
-                {i > 0 && (
-                  <CaretRight size={10} className='text-[hsl(var(--text-4))] flex-shrink-0' />
-                )}
-                {bc.isLast ? (
-                  <span className='font-medium text-[hsl(var(--text-1))] truncate max-w-[200px]'>
-                    {bc.label}
-                  </span>
-                ) : (
-                  <Link
-                    to={bc.path}
-                    className='text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-2))] transition-colors truncate max-w-[120px]'
-                  >
-                    {bc.label}
-                  </Link>
-                )}
-              </li>
-            ))}
-          </ol>
-        </nav>
+        {/* Left spacer — breadcrumbs live once, in the page header below. */}
+        <div className='flex-1 min-w-0' />
 
         {/* Right side controls */}
         <div className='flex items-center gap-1'>

@@ -261,7 +261,6 @@ export default function ModelRegistryPage() {
       <PageHeader
         title="Model Registry"
         subtitle={`${orgName} · Enterprise AI Model Governance Registry`}
-        breadcrumbs={[{ label: 'Home', href: '/overview' }, { label: 'Model Governance', href: '#' }, { label: 'Registry' }]}
         actions={
           <Button onClick={() => setRegisterOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
             <Plus className="h-4 w-4" />Register Model
