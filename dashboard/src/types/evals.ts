@@ -275,6 +275,8 @@ export interface MetricProfile extends GrcBase {
   modelVersion: string
   owner: string
   state: WorkflowState
+  /** Declared tracked-metric names (editable); measured values live in `current`. */
+  metrics?: string[]
   current: Record<string, number>
   thresholds: MetricThresholdConfig[]
   benchmarks: BenchmarkProfile[]
@@ -321,6 +323,8 @@ export interface ScenarioTemplate extends GrcBase {
   name: string
   description: string
   state: WorkflowState
+  /** Governed model under test — ai_models.id (uuid), resolved to a name at render time. */
+  modelId?: string
   turns: { role: 'user' | 'assistant' | 'system'; content: string; expected?: string }[]
   guardrailChecks: string[]
   policiesReferenced: string[]

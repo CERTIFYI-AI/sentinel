@@ -3,11 +3,12 @@
 //
 // BiasAuditList — fairness audits with score, result and risk tier.
 // CRUD-backed; the guided wizard remains available at /bias-audits/wizard.
+// Honors ?model=<uuid> (dismissible filter chip) and ?open=<id> deep links.
 
-import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Scales, Plus, MagicWand } from '@phosphor-icons/react'
+import { ArrowSquareOut, Scales, Plus, MagicWand, X } from '@phosphor-icons/react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -17,35 +18,71 @@ import { StateBadge, RiskBadge, VerdictBadge } from '@/components/evals/primitiv
 import { TableSkeleton, EmptyState, ErrorState } from '@/components/evals/states'
 import { BiasAuditForm } from './BiasAuditForm'
 import { biasAuditHooks } from '@/hooks/queries/useEvalsCrud'
+import { useModelOptions } from '@/hooks/useAiiaData'
 import { useRBAC } from '@/hooks/useRBAC'
 import type { BiasAudit } from '@/types/evals'
 
 export default function BiasAuditList() {
   const nav = useNavigate()
   const { can } = useRBAC()
-  const { data, isLoading, isError, refetch } = biasAuditHooks.useList()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const modelParam = searchParams.get('model')
+  const openParam = searchParams.get('open')
+  const { data, isLoading, isError, error, refetch } = biasAuditHooks.useList()
   const del = biasAuditHooks.useDelete()
+  const { models, loading: modelsLoading } = useModelOptions()
 
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<BiasAudit | null>(null)
   const [toDelete, setToDelete] = useState<BiasAudit | null>(null)
 
-  const rows = useMemo(() => (data ?? []).map((a) => ({ ...a, name: a.auditId })), [data])
+  // Resolve a model uuid to its display name; never leak the raw uuid.
+  const modelName = (id?: string) => (id ? models.find((m) => m.id === id)?.name : undefined)
+
+  // Deep-link: ?open=<id> routes straight to that record's detail page.
+  useEffect(() => {
+    if (!openParam || !data) return
+    if (data.some((a) => a.id === openParam)) nav(`/bias-audits/record/${openParam}`, { replace: true })
+  }, [openParam, data, nav])
+
+  const rows = useMemo(
+    () => (data ?? [])
+      .filter((a) => !modelParam || a.modelId === modelParam)
+      .map((a) => ({ ...a, name: a.auditId })),
+    [data, modelParam],
+  )
 
   const columns: Column<BiasAudit & { name: string }>[] = [
     { key: 'auditId', header: 'ID', sortable: true, render: (a) => <span className="font-mono text-xs text-[hsl(var(--text-2))]">{a.auditId}</span> },
-    { key: 'modelName', header: 'Model', sortable: true },
-    { key: 'datasetId', header: 'Dataset', render: (a) => (
+    { key: 'modelName', header: 'Model', sortable: true, render: (a) => {
+      const name = modelName(a.modelId)
+      if (!name) return <span className="text-xs text-[hsl(var(--text-4))]">{!a.modelId ? '—' : modelsLoading ? '…' : 'Unavailable'}</span>
+      return (
+        <button
+          onClick={(e) => { e.stopPropagation(); nav(`/models/inventory/${a.modelId}`) }}
+          className="inline-flex items-center gap-1 border border-[hsl(var(--brand))/30] bg-[hsl(var(--brand-subtle))] px-2 py-0.5 text-xs font-medium text-[hsl(var(--brand))] transition-colors hover:bg-[hsl(var(--brand))] hover:text-[hsl(var(--bg-surface))]"
+        >
+          {name} <ArrowSquareOut size={12} />
+        </button>
+      )
+    } },
+    { key: 'datasetId', header: 'Dataset', render: (a) => a.datasetId ? (
       <button className="font-mono text-xs text-[hsl(var(--brand))] hover:underline"
         onClick={(e) => { e.stopPropagation(); nav(`/evals/dataset/${a.datasetId}`) }}>{a.datasetId}</button>
-    ) },
+    ) : <span className="text-xs text-[hsl(var(--text-4))]">—</span> },
     { key: 'framework', header: 'Framework', sortable: true },
-    { key: 'fairnessScore', header: 'Fairness', sortable: true, render: (a) => <span className="font-mono">{a.fairnessScore.toFixed(2)}</span> },
+    { key: 'fairnessScore', header: 'Fairness', sortable: true, render: (a) => <span className="font-mono">{typeof a.fairnessScore === 'number' ? a.fairnessScore.toFixed(2) : '—'}</span> },
     { key: 'result', header: 'Result', render: (a) => <VerdictBadge v={a.result} /> },
     { key: 'riskTier', header: 'Risk', render: (a) => <RiskBadge r={a.riskTier} /> },
     { key: 'state', header: 'Status', render: (a) => <StateBadge s={a.state} /> },
     { key: 'auditor', header: 'Auditor', sortable: true },
   ]
+
+  function clearModelFilter() {
+    const next = new URLSearchParams(searchParams)
+    next.delete('model')
+    setSearchParams(next, { replace: true })
+  }
 
   return (
     <div>
@@ -61,11 +98,26 @@ export default function BiasAuditList() {
         }
       />
 
+      {modelParam && (
+        <div className="mb-3 flex items-center gap-2">
+          <span className="inline-flex items-center gap-2 border border-[hsl(var(--brand))/30] bg-[hsl(var(--brand-subtle))] px-3 py-1.5 text-sm text-[hsl(var(--brand))]">
+            <span>Filtered to <strong>{modelName(modelParam) ?? (modelsLoading ? '…' : 'Unavailable')}</strong></span>
+            <button aria-label="Clear model filter" onClick={clearModelFilter} className="inline-flex cursor-pointer items-center hover:text-[hsl(var(--text-1))]">
+              <X size={14} />
+            </button>
+          </span>
+        </div>
+      )}
+
       <Card className="p-4">
-        {isLoading ? <TableSkeleton cols={9} />
-          : isError ? <ErrorState onRetry={() => refetch()} />
+        {isLoading ? <TableSkeleton cols={10} />
+          : isError ? <ErrorState message={(error as Error | null)?.message} onRetry={() => refetch()} />
           : rows.length === 0 ? (
-            <EmptyState title="No bias audits yet" message="Run the first audit to measure fairness across protected attributes."
+            <EmptyState
+              title={modelParam ? 'No bias audits for this model' : 'No bias audits yet'}
+              message={modelParam
+                ? 'Clear the model filter to see all audits, or run one for this model.'
+                : 'Run the first audit to measure fairness across protected attributes.'}
               actionLabel={can('create') ? 'New Audit' : undefined}
               onAction={can('create') ? () => { setEditing(null); setFormOpen(true) } : undefined} />
           ) : (
@@ -85,9 +137,15 @@ export default function BiasAuditList() {
       <ConfirmDialog
         open={!!toDelete} type="danger"
         title={`Delete ${toDelete?.auditId ?? ''}?`}
-        description="Soft-deletes the audit record. Snapshots and remediation history are retained."
+        description="This soft-deletes the audit record; it will no longer appear in this list."
         confirmLabel="Delete"
-        onConfirm={() => { if (toDelete) del.mutate(toDelete.id, { onSuccess: () => toast.success('Audit deleted') }); setToDelete(null) }}
+        onConfirm={() => {
+          if (toDelete) del.mutate(toDelete.id, {
+            onSuccess: () => toast.success('Audit deleted'),
+            onError: (err: any) => toast.error(err?.message ?? 'Delete failed'),
+          })
+          setToDelete(null)
+        }}
         onOpenChange={(o) => !o && setToDelete(null)}
       />
     </div>

@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 const queryClient = new QueryClient()
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useParams } from 'react-router-dom';
 import { TenantProvider } from './context/TenantContext';
 import React from 'react';
 import { lazy, Suspense, useEffect } from 'react';
@@ -29,7 +29,6 @@ const ModelArena = lazy(() => import('./pages/security/ModelArena'));
 const ReportGenerator = lazy(() => import('./pages/security/ReportGenerator'));
 const JitElevation = lazy(() => import('./pages/security/JitElevation'));
 const MfaEnrollment = lazy(() => import('./pages/security/MfaEnrollment'));
-const QualityMetrics = lazy(() => import('./pages/evals/QualityMetrics'));
 const EvalTechniques = lazy(() => import('./pages/evals/EvalTechniques'));
 const ComplianceControls = lazy(() => import('./pages/compliance/ComplianceControls'));
 const ControlDrift = lazy(() => import('./pages/compliance/ControlDrift'));
@@ -43,7 +42,6 @@ const RiskRegister = lazy(() => import('./pages/RiskRegister'));
 const AuditLog = lazy(() => import('./pages/AuditLog'));
 const AuditLogExplorer = lazy(() => import('./pages/AuditLogExplorer'));
 const Benchmark = lazy(() => import('./pages/Benchmark'));
-const Datasets = lazy(() => import('./pages/Datasets'));
 const EvidenceVault = lazy(() => import('./pages/EvidenceVault'));
 const ExportCenter = lazy(() => import('./pages/ExportCenter'));
 const GapAnalysis = lazy(() => import('./pages/GapAnalysis'));
@@ -200,12 +198,7 @@ const CommitteeManagement = lazy(() => import('./pages/committee/CommitteeManage
 const ModelValidationLab = lazy(() => import('./pages/validation/ValidationRunList'));
 const PerformanceMonitoring = lazy(() => import('./pages/performance/PerformanceMonitoring'));
 const IncidentPlaybooks = lazy(() => import('./pages/incidents/IncidentPlaybooks'));
-const EvalResultsViewer = lazy(() => import('./pages/evals/EvalResultsViewer'));
-const MetricStudio = lazy(() => import('./pages/evals/MetricStudio'));
 const DatasetCreateModal = lazy(() => import('./pages/evals/DatasetCreateModal'));
-const DatasetPreviewDrawer = lazy(() => import('./pages/evals/DatasetPreviewDrawer'));
-const MultiTurnEditor = lazy(() => import('./pages/evals/MultiTurnEditor'));
-const ConversationViewer = lazy(() => import('./pages/evals/ConversationViewer'));
 // ── Validation & Evals — CRUD lists + detail views ──────────────────────────
 const ExplainabilityProfileList = lazy(() => import('./pages/explainability/ExplainabilityProfileList'));
 const BiasAuditList = lazy(() => import('./pages/bias-audits/BiasAuditList'));
@@ -236,6 +229,16 @@ const EthicsReportingSubmit = lazy(() => import('./pages/EthicsReportingSubmit')
 
 function Loading() {
   return <PageSkeleton />;
+}
+
+/**
+ * Gives a governance record a stable, shareable URL (e.g. /aiia/<id>) that lands
+ * on its module with that record open. Cross-module links can therefore point at
+ * the specific record rather than a list.
+ */
+function RecordDeepLink({ to }: { to: string }) {
+  const { id } = useParams();
+  return <Navigate to={`${to}?open=${encodeURIComponent(id ?? '')}`} replace />;
 }
 
 /** Redirects authenticated users away from login/signup to the dashboard */
@@ -334,12 +337,12 @@ export default function App() {
           <Route path="/security/frameworks" element={<SecurityHome />} />
           <Route path="/security/strategy" element={<SecurityHome />} />
           <Route path="/security/red-team" element={<Suspense fallback={<Loading />}><RedTeamLab /></Suspense>} />
-          <Route path="/evals" element={<QualityMetrics />} />
-          <Route path="/evals/quality-metrics" element={<QualityMetrics />} />
+          <Route path="/evals" element={<Navigate to="/model-validation" replace />} />
+          <Route path="/evals/quality-metrics" element={<Navigate to="/evals/metric-studio" replace />} />
           <Route path="/evals/techniques" element={<EvalTechniques />} />
-          <Route path="/evals/results" element={<Suspense fallback={<Loading />}><EvalResultsViewer /></Suspense>} />
+          <Route path="/evals/results" element={<Navigate to="/model-validation" replace />} />
           <Route path="/evals/benchmark" element={<Benchmark />} />
-          <Route path="/evals/datasets" element={<Datasets />} />
+          <Route path="/evals/datasets" element={<Navigate to="/evals/dataset-preview" replace />} />
           {/* Phased-plan path aliases — canonical agent routes redirect to their module pages */}
           <Route path="/dashboard" element={<Navigate to="/overview" replace />} />
           <Route path="/audit" element={<Navigate to="/audit-trail" replace />} />
@@ -438,17 +441,17 @@ export default function App() {
           {/* Validation & Evals — detail views */}
           <Route path="/bias-audits/record/:id" element={<Suspense fallback={<Loading />}><BiasAuditDetail /></Suspense>} />
           <Route path="/evals/metric-studio" element={<Suspense fallback={<Loading />}><MetricProfileList /></Suspense>} />
-          <Route path="/evals/metric-studio/workspace" element={<MetricStudio />} />
+          <Route path="/evals/metric-studio/workspace" element={<Navigate to="/evals/metric-studio" replace />} />
           <Route path="/evals/metric-studio/:id" element={<Suspense fallback={<Loading />}><MetricProfileDetail /></Suspense>} />
           <Route path="/evals/dataset-create" element={<DatasetCreateModal />} />
           <Route path="/evals/dataset-preview" element={<Suspense fallback={<Loading />}><DatasetCatalogList /></Suspense>} />
-          <Route path="/evals/dataset-preview/drawer" element={<DatasetPreviewDrawer />} />
+          <Route path="/evals/dataset-preview/drawer" element={<Navigate to="/evals/dataset-preview" replace />} />
           <Route path="/evals/dataset/:id" element={<Suspense fallback={<Loading />}><DatasetCatalogDetail /></Suspense>} />
           <Route path="/evals/multi-turn" element={<Suspense fallback={<Loading />}><ScenarioTemplateList /></Suspense>} />
-          <Route path="/evals/multi-turn/editor" element={<MultiTurnEditor />} />
+          <Route path="/evals/multi-turn/editor" element={<Navigate to="/evals/multi-turn" replace />} />
           <Route path="/evals/scenario/:id" element={<Suspense fallback={<Loading />}><ScenarioTemplateDetail /></Suspense>} />
           <Route path="/evals/conversation" element={<Suspense fallback={<Loading />}><SessionTraceList /></Suspense>} />
-          <Route path="/evals/conversation/viewer" element={<ConversationViewer />} />
+          <Route path="/evals/conversation/viewer" element={<Navigate to="/evals/conversation" replace />} />
           <Route path="/evals/trace/:id" element={<Suspense fallback={<Loading />}><SessionTraceDetail /></Suspense>} />
 
           <Route path="/use-cases" element={<UseCasePage />} />
@@ -460,6 +463,11 @@ export default function App() {
 
           {/* New Sidebar Modules */}
           <Route path="/aiia" element={<AIImpactAssessments />} />
+          {/* Per-record addressable routes — each governance record has a stable,
+              shareable URL that opens it in its module. */}
+          <Route path="/aiia/:id" element={<RecordDeepLink to="/aiia" />} />
+          <Route path="/ai-risk-tiering/:id" element={<RecordDeepLink to="/ai-risk-tiering" />} />
+          <Route path="/mrc/:id" element={<RecordDeepLink to="/mrc" />} />
           <Route path="/audit-trail" element={<AuditTrail />} />
           <Route path="/workflows" element={<ApprovalWorkflows />} />
 

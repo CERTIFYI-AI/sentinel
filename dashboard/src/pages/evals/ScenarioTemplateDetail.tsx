@@ -7,19 +7,24 @@
 
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { Warning } from '@phosphor-icons/react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { Stat, Section, StateBadge, AuditTimeline } from '@/components/evals/primitives'
+import { Section, StateBadge, AuditTimeline } from '@/components/evals/primitives'
 import { scenarioTemplateHooks } from '@/hooks/queries/useEvalsCrud'
+import { useModelOptions } from '@/hooks/useAiiaData'
 
 export default function ScenarioTemplateDetail() {
   const { id } = useParams()
   const nav = useNavigate()
   const { data: sc } = scenarioTemplateHooks.useGet(id)
+  const { models } = useModelOptions()
   const [tab, setTab] = useState('script')
 
   if (!sc) return <div className="p-4 text-sm text-[hsl(var(--text-3))]">Loading scenario…</div>
+
+  const model = sc.modelId ? models.find((m) => m.id === sc.modelId) : undefined
 
   return (
     <div>
@@ -31,7 +36,20 @@ export default function ScenarioTemplateDetail() {
       />
 
       <Card className="mb-4">
-        <CardContent className="flex flex-wrap gap-2 p-4">
+        <CardContent className="flex flex-wrap items-center gap-2 p-4">
+          {sc.modelId && (
+            model ? (
+              <button title={`Open ${model.name}`} onClick={() => nav(`/models/inventory/${sc.modelId}`)}
+                className="inline-flex items-center border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] px-2 py-[2px] text-[11px] font-medium text-[hsl(var(--brand))] hover:border-[hsl(var(--brand))] hover:underline">
+                {model.name}
+              </button>
+            ) : (
+              <span title="Linked model is not in the registry"
+                className="inline-flex items-center gap-1 border border-[hsl(var(--s-er-br))] bg-[hsl(var(--s-er-bg))] px-2 py-[2px] text-[11px] font-medium text-[hsl(var(--s-er-tx))]">
+                <Warning size={10} weight="fill" />Unavailable
+              </span>
+            )
+          )}
           {sc.riskTags.map((t) => (
             <span key={t} className="inline-flex items-center border border-[hsl(var(--r-hi-br))] bg-[hsl(var(--r-hi-bg))] px-2 py-[2px] text-[11px] font-medium text-[hsl(var(--r-hi-tx))]">{t}</span>
           ))}
@@ -79,7 +97,7 @@ export default function ScenarioTemplateDetail() {
                 {sc.campaignIds.map((c) => (
                   <li key={c} className="flex items-center gap-2">
                     <span className="font-mono text-sm text-[hsl(var(--text-1))]">{c}</span>
-                    <button onClick={() => nav('/evals/conversation')} className="text-[12px] text-[hsl(var(--brand))] hover:underline">view captured traces →</button>
+                    <button onClick={() => nav(`/evals/conversation?scenario=${sc.id}`)} className="text-[12px] text-[hsl(var(--brand))] hover:underline">view captured traces →</button>
                   </li>
                 ))}
               </ul>
