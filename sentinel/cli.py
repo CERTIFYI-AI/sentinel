@@ -80,26 +80,22 @@ def logs(
     config_path: Optional[str],
 ) -> None:
     """Query audit logs."""
-    import asyncio
     import json
 
-    from sentinel.audit import AuditLogger
-    from sentinel.config import load_config
+    from sentinel.audit import get_audit_log
 
-    cfg = load_config(config_path)
-    logger = AuditLogger(cfg.audit)
+    # `request_id` is matched against the audit record's resource_id and
+    # `event_type` against its action, mapping the CLI flags onto the fields
+    # exposed by the audit store.
+    events = get_audit_log(resource_id=request_id, limit=limit)
+    if event_type:
+        events = [e for e in events if e.get("action") == event_type]
 
-    async def _query() -> None:
-        events = await logger.query(
-            request_id=request_id,
-            event_type=event_type,
-            limit=limit,
-        )
-        for event in events:
-            click.echo(json.dumps(event, indent=2, default=str))
-        await logger.close()
-
-    asyncio.run(_query())
+    if not events:
+        click.echo("No audit events found.")
+        return
+    for event in events:
+        click.echo(json.dumps(event, indent=2, default=str))
 
 
 @cli.command()

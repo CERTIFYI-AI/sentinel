@@ -5,7 +5,10 @@ from fastapi.responses import Response
 from contextlib import asynccontextmanager
 import logging
 import asyncio
+import os
 import httpx
+
+from sentinel.config import cors_config
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -49,13 +52,7 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"], # nosemgrep: python.fastapi.security.wildcard-cors.wildcard-cors
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app.add_middleware(CORSMiddleware, **cors_config())
 
 # ---- Auth ----
 try:
@@ -275,12 +272,18 @@ except Exception as e:
     logger.warning(f'questionnaire_router error: {e}')
 
 
-try:
-    from sentinel.api import migrations_router
-    app.include_router(migrations_router.router, prefix="/api/migrate", tags=["migrations"])
-    logger.info('migrations_router loaded')
-except Exception as e:
-    logger.warning(f'migrations_router error: {e}')
+# The migrations endpoint accepts a Supabase service-role key over HTTP and
+# runs schema migrations — a high-privilege operation. It is disabled by
+# default and must be explicitly opted into via SENTINEL_ENABLE_MIGRATION_API.
+if os.environ.get("SENTINEL_ENABLE_MIGRATION_API", "").strip().lower() in ("1", "true", "yes", "on"):
+    try:
+        from sentinel.api import migrations_router
+        app.include_router(migrations_router.router, prefix="/api/migrate", tags=["migrations"])
+        logger.warning('migrations_router loaded — POST /api/migrate is ENABLED (service-role key over HTTP)')
+    except Exception as e:
+        logger.warning(f'migrations_router error: {e}')
+else:
+    logger.info('migrations_router disabled (set SENTINEL_ENABLE_MIGRATION_API=true to enable)')
 
 try:
     from sentinel.api import incident_router

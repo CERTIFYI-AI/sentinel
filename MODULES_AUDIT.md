@@ -421,23 +421,45 @@ All changes are deletions of **verified-unreferenced** files or a structural fix
 | Removed 4 dev screenshots (`dashboard/screenshot*.png`) | Committed development artifacts |
 | Flattened `sentinel/storage/posture_history_store.py/` → `posture_history_store.py` | It was a directory shadowing its own module (unimportable); now a valid module (verified `py_compile` passes) |
 
-**Deliberately NOT auto-fixed** (need a compiler/runtime or a design decision):
-route-mapping duplicates (ambiguous intended target), `proxy.py` dead-router block,
-`AuditLogger` imports, `database.py` audit data loss, CORS, `@ts-nocheck` removal,
-seed-fallback removal, live duplicate-service consolidation. `auditService.ts` was
-**kept** — it is imported by `auditLogService.ts` (an earlier "dead" claim was wrong).
+`auditService.ts` was **kept** — it is imported by `auditLogService.ts` (an earlier
+"dead" claim was wrong).
+
+### 7.1 P0 correctness / security fixes (second commit)
+
+Applied after the cleanup above. Each was syntax-verified with `py_compile`
+(dependencies are not installed in the audit environment, so full import/runtime
+tests were not run — see the header note).
+
+| Change | File(s) | Rationale |
+|---|---|---|
+| Removed the always-dead `sentinel.api.routers.*` import block + its `if _NEW_ROUTERS_LOADED:` usage | `proxy.py` | Subpackage never existed → block always `ImportError` → dead code; the live `hitl_router` from `sentinel.hitl.dashboard_router` (proxy.py:189) is untouched |
+| Rewrote the `logs` CLI command to use the real `get_audit_log()` | `cli.py` | It imported a non-existent `AuditLogger` → the command crashed on invocation |
+| Removed dead legacy `sentinel/dashboard.py` | (deleted) | Non-importable (`AuditLogger`, `DashboardConfig` don't exist), `get_dashboard_routes` never called; superseded by `api/dashboard_router.py` |
+| `api/db.py` now honors `DATABASE_URL` (asyncpg-normalised), falling back to `./sentinel.db` instead of `/tmp/sentinel.db` | `api/db.py` | The GRC API (23 routers) silently ran on ephemeral, world-readable `/tmp` storage |
+| Centralised CORS via new `cors_config()`; explicit `CORS_ORIGINS` → credentialed, else non-credentialed wildcard | `config.py`, `api/main.py`, `proxy.py` | `allow_origins=["*"]` + `allow_credentials=True` is browser-rejected and unsafe |
+| Gated `POST /api/migrate` behind `SENTINEL_ENABLE_MIGRATION_API` (off by default) | `api/main.py`, `.env.example` | A service-role-key-over-HTTP migration endpoint should not be exposed by default |
+
+**Still NOT auto-fixed** (need a runtime or a design decision): route-mapping
+duplicates (ambiguous target); `database.py`'s `AuditLogRepo.append` field-drop —
+the whole `*Repo` layer in that file is **dead** (0 callers) *and* structurally
+broken (asyncpg calls on a SQLAlchemy `AsyncSession`), so a partial column fix would
+falsely imply it works — it should be **removed** wholesale instead; `@ts-nocheck`
+removal; seed-fallback removal; live duplicate-service/router consolidation; DB-layer
+unification beyond the `api/db.py` default.
 
 ---
 
 ## 8. Prioritized Backlog (beyond this branch)
 
-**P0 — correctness / integrity**
-1. Fix `AuditLogRepo.append` field-dropping (`database.py:52-62`) or retire the file.
-2. Remove/lock down `POST /api/migrate` (service-role key over HTTP).
-3. Resolve the 3 DB layers; point `api/db.py` at `DATABASE_URL` instead of `/tmp`.
-4. Fix the `AuditLogger` dead imports (`cli.py:86`, `dashboard.py:16`).
-5. Remove the always-dead `sentinel.api.routers.*` block (`proxy.py:147-160,216-225`).
-6. Fix CORS `*` + credentials in both apps.
+**P0 — correctness / integrity** (✅ = addressed in this branch, see §7.1)
+1. ⚠️ `AuditLogRepo.append` field-dropping (`database.py:52-62`) — confirmed **dead
+   + broken**; retire the whole `*Repo` layer (not fixed here to avoid implying it works).
+2. ✅ Locked down `POST /api/migrate` behind `SENTINEL_ENABLE_MIGRATION_API` (off by default).
+3. ✅ `api/db.py` now honors `DATABASE_URL`, falling back to `./sentinel.db` (not `/tmp`).
+   *(Full 3-layer unification still open.)*
+4. ✅ Fixed the `AuditLogger` dead imports (`cli.py` rewritten; dead `dashboard.py` removed).
+5. ✅ Removed the always-dead `sentinel.api.routers.*` block in `proxy.py`.
+6. ✅ Fixed CORS `*` + credentials in both apps via `cors_config()`.
 
 **P1 — architecture / de-duplication**
 7. Choose the system of record (Supabase vs Python) and collapse the duplicate
