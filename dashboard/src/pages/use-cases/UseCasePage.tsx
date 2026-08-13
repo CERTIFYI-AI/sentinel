@@ -1,157 +1,145 @@
-import { useState, useCallback } from 'react';
-import { useSupabaseTable } from '@/hooks/useSupabaseTable';
+import { useState, useCallback, useMemo, Fragment } from 'react';
 import {
-  Eye, PencilSimple, Trash, Plus, MagnifyingGlass, Briefcase,
-  Warning, CheckCircle, Info, Clock, ArrowsClockwise, Prohibit,
-  Upload, ShieldCheck, ListChecks, Gear, CalendarBlank, Tag, DownloadSimple, SquaresFour, Rows
+  Eye, Trash, Plus, MagnifyingGlass, Briefcase, Rows, Warning, CircleNotch,
 } from '@phosphor-icons/react';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Card, CardContent } from '../../components/ui/card';
 import { StatCardRow } from '../../components/ui/StatCardRow';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '../../components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
-import { Label } from '../../components/ui/label';
-import { Textarea } from '../../components/ui/textarea';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
-import { USE_CASES, MODELS, RISKS, formatDate } from '../../data/seed';
+import { useUseCases } from '@/hooks/useAiiaData';
+import { RISK_CLASS_OPTIONS, type UseCase, type UseCaseRiskClass } from '@/services/useCaseService';
 
-
-// ── Types ────────────────────────────────────────────────────────────────────
+// ── Vocabulary ───────────────────────────────────────────────────────────────
 
 interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info' }
 
-type UCStatus = 'Not Started' | 'In Progress' | 'Under Review' | 'Completed' | 'On Hold' | 'Rejected';
+const STATUS_META: Record<string, { label: string; bg: string; color: string }> = {
+  draft:         { label: 'Draft',        bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))' },
+  under_review:  { label: 'Under Review', bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
+  active:        { label: 'Active',       bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+  approved:      { label: 'Approved',     bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  retired:       { label: 'Retired',      bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))' },
+};
+const STATUS_TABS: string[] = ['All', 'draft', 'under_review', 'active', 'approved', 'retired'];
 
-interface UseCase {
-  id: string; title: string; goal: string; owner: string; riskClass: string;
-  geography: string; industry: string; status: string; frameworks: string[];
-  linkedModels: string[]; createdDate: string; lastUpdated: string;
-  description: string; stage: string;
-  // Scope Fields
-  role?: string;
-  aiEnvironment?: string;
-  technologyType?: string;
-  novelTechnology?: boolean;
-  personalData?: boolean;
-  monitoring?: boolean;
-  unintendedOutcomes?: string;
+const RISK_META: Record<string, { bg: string; color: string }> = {
+  high:         { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+  limited:      { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+  minimal:      { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  unacceptable: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+};
+const riskLabel = (v: string) => RISK_CLASS_OPTIONS.find(o => o.value === v)?.label ?? v;
+
+function RiskBadge({ riskClass }: { riskClass: UseCaseRiskClass }) {
+  const style = RISK_META[riskClass] ?? RISK_META.minimal;
+  return <Badge style={{ background: style.bg, color: style.color, borderRadius: 0, fontSize: 10 }}>{riskLabel(riskClass)}</Badge>;
 }
-
-// ── CE Marking Data ──────────────────────────────────────────────────────────
-
-const CE_CHECKLIST = [
-  { id: 'ce-1', label: 'Technical documentation complete', status: 'Complete', date: '2026-02-15' },
-  { id: 'ce-2', label: 'Conformity assessment done', status: 'Pending', date: '' },
-  { id: 'ce-3', label: 'Quality management system in place', status: 'Complete', date: '2026-01-20' },
-  { id: 'ce-4', label: 'Human oversight mechanisms implemented', status: 'Complete', date: '2026-03-01' },
-  { id: 'ce-5', label: 'Post-market monitoring plan exists', status: 'Pending', date: '' },
-];
-
-// ── Activity Log Mock ────────────────────────────────────────────────────────
-
-const ACTIVITY_LOG = [
-  { date: '2026-03-20T14:30:00', action: 'Status changed to Under Review', actor: 'James Patel' },
-  { date: '2026-03-15T10:00:00', action: 'Risk classification updated to High-Risk', actor: 'Maria Santos' },
-  { date: '2026-03-01T09:15:00', action: 'Framework EU AI Act added', actor: 'Raj Gupta' },
-  { date: '2026-02-20T16:45:00', action: 'Model MDL-001 linked', actor: 'Maria Santos' },
-  { date: '2026-02-01T11:00:00', action: 'Use case created', actor: 'Sarah Chen' },
-];
-
-const ALL_FRAMEWORKS = ['EU AI Act', 'NIST AI RMF', 'ISO 42001', 'SOC 2', 'GDPR', 'EEOC'];
-const STATUS_TABS: ('All' | UCStatus)[] = ['All', 'Not Started', 'In Progress', 'Under Review', 'Completed', 'On Hold', 'Rejected'];
-
-// ── MetricTile (Removed in favor of StatCardRow) ────────────────────────────
-
-// ── Risk Class Badge ─────────────────────────────────────────────────────────
-
-function RiskBadge({ riskClass }: { riskClass: string }) {
-  const map: Record<string, { bg: string; color: string }> = {
-    'High-Risk': { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
-    'Limited': { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
-    'Minimal': { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
-    'Prohibited': { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
-  };
-  const style = map[riskClass] || map['Minimal'];
-  return <Badge style={{ background: style.bg, color: style.color, borderRadius: 0, fontSize: 10 }}>{riskClass}</Badge>;
-}
-
-// ── Status Badge ─────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, { bg: string; color: string }> = {
-    'Completed': { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
-    'In Progress': { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
-    'Under Review': { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
-    'Not Started': { bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))' },
-    'On Hold': { bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))' },
-    'Rejected': { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
-  };
-  const style = map[status] || map['Not Started'];
-  return <Badge style={{ background: style.bg, color: style.color, borderRadius: 0, fontSize: 10 }}>{status}</Badge>;
+  const meta = STATUS_META[status] ?? { label: status, bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))' };
+  return <Badge style={{ background: meta.bg, color: meta.color, borderRadius: 0, fontSize: 10 }}>{meta.label}</Badge>;
 }
-
-// ── Regulatory Tagging Rows ──────────────────────────────────────────────────
-
-const REG_TAG_ROWS = [
-  { uc: 'UC-001', title: 'Loan Scoring Automation', risk: 'High-Risk', geo: 'US + EU', regs: ['EU AI Act Art.6', 'ECOA', 'CFPB', 'GDPR Art.22'], confidence: 97 },
-  { uc: 'UC-002', title: 'Fraud Detection Engine', risk: 'High-Risk', geo: 'Global', regs: ['EU AI Act Art.6', 'PSD2', 'GDPR', 'Basel IV'], confidence: 94 },
-  { uc: 'UC-003', title: 'HR Resume Screening', risk: 'High-Risk', geo: 'EU + UK', regs: ['EU AI Act Annex III', 'GDPR', 'UK Equality Act', 'EEOC'], confidence: 99 },
-  { uc: 'UC-004', title: 'Supply Chain Optimizer', risk: 'Minimal', geo: 'US', regs: ['NIST AI RMF', 'ISO 42001'], confidence: 82 },
-  { uc: 'UC-005', title: 'Medical Risk Score', risk: 'High-Risk', geo: 'US + EU', regs: ['EU AI Act Annex III §5', 'FDA AI/ML', 'HIPAA', 'MDR 2017/745'], confidence: 98 },
-];
 
 // ── Main Component ───────────────────────────────────────────────────────────
 
+const COLS = ['UC-ID', 'Title', 'Goal', 'Owner', 'Risk Class', 'Status', 'Compliance', 'Actions'];
+
 export default function UseCasePage() {
   const navigate = useNavigate();
-  const { data: useCases, setData: setUseCases } = useSupabaseTable('usecase_table', USE_CASES as UseCase[]);
+  const { data: useCases, isLoading, error, remove } = useUseCases();
   const [activeTab, setActiveTab] = useState('All');
   const [search, setSearch] = useState('');
   const [riskFilter, setRiskFilter] = useState('all');
   const [ownerFilter, setOwnerFilter] = useState('all');
+  const [groupBy, setGroupBy] = useState<'none' | 'status' | 'risk' | 'owner'>('none');
   const [deleteTarget, setDeleteTarget] = useState<UseCase | null>(null);
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
-  const [regTagRows, setRegTagRows] = useState(REG_TAG_ROWS);
-  const [editTagRow, setEditTagRow] = useState<(typeof REG_TAG_ROWS)[0] | null>(null);
-  const [editTagInput, setEditTagInput] = useState('');
 
   const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
-    const id = Date.now();
+    const id = Date.now() + Math.random();
     setToasts(prev => [...prev, { id, text, type }]);
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
   }, []);
 
-  // Computed
-  const owners = [...new Set(useCases.map(u => u.owner))];
+  const owners = useMemo(() => [...new Set(useCases.map(u => u.owner).filter(Boolean))], [useCases]);
   const total = useCases.length;
-  const inProgress = useCases.filter(u => u.status === 'In Progress').length;
-  const underReview = useCases.filter(u => u.status === 'Under Review').length;
-  const completed = useCases.filter(u => u.status === 'Completed').length;
+  const underReview = useCases.filter(u => u.status === 'under_review').length;
+  const active = useCases.filter(u => u.status === 'active').length;
+  const approved = useCases.filter(u => u.status === 'approved').length;
 
-  const filtered = useCases.filter(uc => {
+  const filtered = useMemo(() => useCases.filter(uc => {
     if (activeTab !== 'All' && uc.status !== activeTab) return false;
     if (riskFilter !== 'all' && uc.riskClass !== riskFilter) return false;
     if (ownerFilter !== 'all' && uc.owner !== ownerFilter) return false;
     if (search) {
       const q = search.toLowerCase();
-      return uc.title.toLowerCase().includes(q) || uc.id.toLowerCase().includes(q) || uc.goal.toLowerCase().includes(q);
+      return (uc.title ?? '').toLowerCase().includes(q)
+        || (uc.id ?? '').toLowerCase().includes(q)
+        || (uc.goal ?? '').toLowerCase().includes(q);
     }
     return true;
-  });
+  }), [useCases, activeTab, riskFilter, ownerFilter, search]);
+
+  const groups = useMemo(() => {
+    if (groupBy === 'none') return [{ key: 'all', label: '', rows: filtered }];
+    const map = new Map<string, UseCase[]>();
+    for (const uc of filtered) {
+      const key =
+        groupBy === 'status' ? (STATUS_META[uc.status]?.label ?? uc.status) :
+        groupBy === 'risk'   ? riskLabel(uc.riskClass) :
+                               (uc.owner || 'Unassigned');
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(uc);
+    }
+    return [...map.entries()].map(([label, rows]) => ({ key: label, label, rows }));
+  }, [filtered, groupBy]);
 
   const handleDelete = () => {
     if (!deleteTarget) return;
-    setUseCases(prev => prev.filter(u => u.id !== deleteTarget.id));
-    toast(`${deleteTarget.id} deleted`, 'info');
+    const target = deleteTarget;
+    remove.mutate(target.id, {
+      onSuccess: () => toast(`${target.title} deleted`, 'info'),
+      onError: (err) => toast((err as Error).message, 'error'),
+    });
     setDeleteTarget(null);
   };
+
+  const renderRow = (uc: UseCase) => (
+    <tr
+      key={uc.id}
+      className="group transition-colors hover:bg-[hsl(var(--bg-muted))] cursor-pointer"
+      onClick={() => navigate(`/use-cases/${uc.id}`)}
+      style={{ borderBottom: '1px solid hsl(var(--border))' }}
+    >
+      <td className="px-4 py-3 text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{uc.id.slice(0, 8)}</td>
+      <td className="px-4 py-3">
+        <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{uc.title}</span>
+      </td>
+      <td className="px-4 py-3 text-xs max-w-[220px] truncate" style={{ color: 'hsl(var(--text-4))' }}>{uc.goal || '—'}</td>
+      <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{uc.owner || '—'}</td>
+      <td className="px-4 py-3"><RiskBadge riskClass={uc.riskClass} /></td>
+      <td className="px-4 py-3"><StatusBadge status={uc.status} /></td>
+      <td className="px-4 py-3 text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{uc.complianceScore}%</td>
+      <td className="px-4 py-3">
+        <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/use-cases/${uc.id}`); }} style={{ padding: '4px 8px', height: 'auto' }}>
+            <Eye size={14} /> View
+          </Button>
+          <Button variant="ghost" size="sm" disabled={remove.isPending} onClick={(e) => { e.stopPropagation(); setDeleteTarget(uc); }} style={{ padding: '4px 8px', height: 'auto', color: 'hsl(var(--s-er-tx))' }}>
+            <Trash size={14} />
+          </Button>
+        </div>
+      </td>
+    </tr>
+  );
 
   return (
     <div className="space-y-6">
@@ -169,31 +157,27 @@ export default function UseCasePage() {
         subtitle="Track AI use cases across the organization with risk classification and compliance mapping"
         icon={Briefcase}
         actions={
-          <>
-            <Button size="sm" variant="outline" leftIcon={<DownloadSimple size={14} />} onClick={() => toast('Exported to CSV', 'success')}>Export</Button>
-            <Button size="sm" variant="outline" leftIcon={<Upload size={14} />} onClick={() => toast('Import dialog opened', 'info')}>Import</Button>
-            <Button size="sm" leftIcon={<Plus size={14} />} onClick={() => navigate('/use-cases/new')}>New Use Case</Button>
-          </>
+          <Button size="sm" leftIcon={<Plus size={14} />} onClick={() => navigate('/use-cases/new')}>New Use Case</Button>
         }
       />
 
       <StatCardRow cards={[
         { label: 'Total Use Cases', value: total, variant: 'default' },
-        { label: 'In Progress', value: inProgress, variant: 'warn' },
         { label: 'Under Review', value: underReview, variant: 'info' },
-        { label: 'Completed', value: completed, variant: 'ok' },
+        { label: 'Active', value: active, variant: 'warn' },
+        { label: 'Approved', value: approved, variant: 'ok' },
       ]} />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList style={{ borderRadius: 0 }}>
           {STATUS_TABS.map(t => (
-            <TabsTrigger key={t} value={t} style={{ borderRadius: 0 }}>{t}</TabsTrigger>
+            <TabsTrigger key={t} value={t} style={{ borderRadius: 0 }}>{t === 'All' ? 'All' : (STATUS_META[t]?.label ?? t)}</TabsTrigger>
           ))}
         </TabsList>
       </Tabs>
 
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1">
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-[220px]">
           <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--text-4))' }} />
           <Input
             placeholder="Search use cases..."
@@ -207,10 +191,7 @@ export default function UseCasePage() {
           <SelectTrigger className="w-[180px]" style={{ borderRadius: 0 }}><SelectValue placeholder="Risk Classification" /></SelectTrigger>
           <SelectContent style={{ borderRadius: 0 }}>
             <SelectItem value="all">All Risk Classes</SelectItem>
-            <SelectItem value="High-Risk">High-Risk</SelectItem>
-            <SelectItem value="Limited">Limited</SelectItem>
-            <SelectItem value="Minimal">Minimal</SelectItem>
-            <SelectItem value="Prohibited">Prohibited</SelectItem>
+            {RISK_CLASS_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={ownerFilter} onValueChange={setOwnerFilter}>
@@ -221,66 +202,72 @@ export default function UseCasePage() {
           </SelectContent>
         </Select>
         <div className="w-px h-6 bg-[hsl(var(--border))] mx-1" />
-        <Select defaultValue="none">
-          <SelectTrigger className="w-[140px]" style={{ borderRadius: 0 }}>
+        <Select value={groupBy} onValueChange={v => setGroupBy(v as typeof groupBy)}>
+          <SelectTrigger className="w-[150px]" style={{ borderRadius: 0 }}>
             <div className="flex items-center gap-2"><Rows size={14} /> <SelectValue placeholder="Group By" /></div>
           </SelectTrigger>
           <SelectContent style={{ borderRadius: 0 }}>
             <SelectItem value="none">No Grouping</SelectItem>
-            <SelectItem value="risk">Risk Level</SelectItem>
-            <SelectItem value="role">Role</SelectItem>
-            <SelectItem value="owner">Owner</SelectItem>
             <SelectItem value="status">Status</SelectItem>
+            <SelectItem value="risk">Risk Class</SelectItem>
+            <SelectItem value="owner">Owner</SelectItem>
           </SelectContent>
         </Select>
-        <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => toast('Column visibility updated', 'info')}>
-          <SquaresFour size={14} /> Columns
-        </Button>
       </div>
 
       <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                  {['UC-ID', 'Title', 'Goal', 'Owner', 'Risk Class', 'Status', 'Stage', 'Actions'].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold whitespace-nowrap" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(uc => (
-                  <tr
-                    key={uc.id}
-                    className="group transition-colors hover:bg-[hsl(var(--bg-muted))] cursor-pointer"
-                    onClick={() => navigate(`/use-cases/${uc.id}`)}
-                    style={{ borderBottom: '1px solid hsl(var(--border))' }}
-                  >
-                    <td className="px-4 py-3 text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{uc.id}</td>
-                    <td className="px-4 py-3">
-                      <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{uc.title}</span>
-                    </td>
-                    <td className="px-4 py-3 text-xs max-w-[200px] truncate" style={{ color: 'hsl(var(--text-4))' }}>{uc.goal}</td>
-                    <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{uc.owner}</td>
-                    <td className="px-4 py-3"><RiskBadge riskClass={uc.riskClass} /></td>
-                    <td className="px-4 py-3"><StatusBadge status={uc.status} /></td>
-                    <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{uc.stage}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/use-cases/${uc.id}`); }} style={{ padding: '4px 8px', height: 'auto' }}>
-                          <Eye size={14} /> View
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setDeleteTarget(uc); }} style={{ padding: '4px 8px', height: 'auto', color: 'hsl(var(--s-er-tx))' }}>
-                          <Trash size={14} />
-                        </Button>
-                      </div>
-                    </td>
+          {error ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <Warning size={32} className="mb-3" style={{ color: 'hsl(var(--destructive))' }} />
+              <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>Failed to load use cases</p>
+              <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>{error.message}</p>
+            </div>
+          ) : isLoading ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center" style={{ color: 'hsl(var(--text-4))' }}>
+              <CircleNotch size={28} className="mb-3 animate-spin" />
+              <p className="text-sm">Loading use cases…</p>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <Briefcase size={32} className="mb-3" style={{ color: 'hsl(var(--text-4))' }} />
+              <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>
+                {total === 0 ? 'No use cases yet' : 'No use cases match your filters'}
+              </p>
+              <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>
+                {total === 0 ? 'Create your first use case to get started.' : 'Try adjusting search, status or risk filters.'}
+              </p>
+              {total === 0 && (
+                <Button size="sm" className="mt-4" leftIcon={<Plus size={14} />} onClick={() => navigate('/use-cases/new')} style={{ borderRadius: 0 }}>New Use Case</Button>
+              )}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                    {COLS.map(h => (
+                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold whitespace-nowrap" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {groups.map(g => (
+                    <Fragment key={g.key}>
+                      {g.label && (
+                        <tr style={{ background: 'hsl(var(--bg-muted))', borderBottom: '1px solid hsl(var(--border))' }}>
+                          <td colSpan={COLS.length} className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--text-3))' }}>
+                            {g.label} <span style={{ color: 'hsl(var(--text-4))' }}>· {g.rows.length}</span>
+                          </td>
+                        </tr>
+                      )}
+                      {g.rows.map(renderRow)}
+                    </Fragment>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -290,7 +277,7 @@ export default function UseCasePage() {
         onConfirm={handleDelete}
         type="danger"
         title="Delete Use Case"
-        message={<p>Delete <strong>{deleteTarget?.title}</strong> ({deleteTarget?.id})? This cannot be undone.</p>}
+        message={<span>Delete <strong>{deleteTarget?.title}</strong>? This performs a soft delete and can be restored by an administrator.</span>}
         confirmLabel="Delete"
       />
     </div>

@@ -10,44 +10,87 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Checkbox } from '../../components/ui/checkbox';
 import { toast } from 'sonner';
 import { CheckCircle } from '@phosphor-icons/react';
+import { useUseCases, useModelOptions } from '@/hooks/useAiiaData';
+import { RISK_CLASS_OPTIONS, type UseCase, type UseCaseRiskClass } from '@/services/useCaseService';
 
 const FRAMEWORKS = ['EU AI Act', 'ISO 42001', 'ISO 27001', 'NIST AI RMF'];
 
+const STATUS_OPTIONS: { value: string; label: string }[] = [
+  { value: 'draft', label: 'Draft' },
+  { value: 'under_review', label: 'Under Review' },
+  { value: 'active', label: 'Active' },
+  { value: 'approved', label: 'Approved' },
+  { value: 'retired', label: 'Retired' },
+];
+
+interface FormErrors { title?: string; owner?: string; riskClass?: string }
+
 export default function UseCaseCreate() {
   const navigate = useNavigate();
+  const { create } = useUseCases();
+  const { models } = useModelOptions();
+
   const [formData, setFormData] = useState({
     title: '', goal: '', owner: '', startDate: '',
     riskClass: '', role: '', geography: '', industry: '',
-    description: '', members: '', status: 'Not Started', approvalWorkflow: '',
-    aiEnvironment: '', technologyType: '', novelTechnology: false,
-    personalData: false, monitoring: false, unintendedOutcomes: '',
-    frameworks: [] as string[]
+    description: '', members: '', status: 'draft', approvalWorkflow: '',
+    frameworks: [] as string[],
+    linkedModelIds: [] as string[],
   });
+  const [errors, setErrors] = useState<FormErrors>({});
 
   const handleChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    if (field in errors) setErrors(prev => ({ ...prev, [field]: undefined }));
   };
 
-  const handleToggleFramework = (fw: string) => {
+  const toggleIn = (field: 'frameworks' | 'linkedModelIds', v: string) => {
     setFormData(prev => {
-      const isSelected = prev.frameworks.includes(fw);
-      return {
-        ...prev,
-        frameworks: isSelected ? prev.frameworks.filter(f => f !== fw) : [...prev.frameworks, fw]
-      };
+      const arr = prev[field];
+      return { ...prev, [field]: arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v] };
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.title || !formData.goal || !formData.owner || !formData.riskClass || !formData.role) {
-      toast.error('Please fill in all required fields.');
-      return;
-    }
-    toast.success('Use Case created successfully!');
-    // Mock navigating to the new ID
-    navigate('/use-cases/UC-999');
+  const validate = (): boolean => {
+    const next: FormErrors = {};
+    if (!formData.title.trim()) next.title = 'Title is required.';
+    if (!formData.owner.trim()) next.owner = 'Owner is required.';
+    if (!formData.riskClass) next.riskClass = 'Risk classification is required.';
+    setErrors(next);
+    return Object.keys(next).length === 0;
   };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+
+    const payload: Partial<UseCase> = {
+      title: formData.title.trim(),
+      owner: formData.owner.trim(),
+      status: formData.status,
+      approvalWorkflow: formData.approvalWorkflow || 'standard',
+      riskClass: formData.riskClass as UseCaseRiskClass,
+      highRiskRole: formData.role || null,
+      teamMembers: formData.members.split(',').map(s => s.trim()).filter(Boolean),
+      startDate: formData.startDate || null,
+      geography: formData.geography || null,
+      regulations: formData.frameworks,
+      goal: formData.goal.trim() || null,
+      industry: formData.industry || null,
+      description: formData.description.trim() || null,
+      linkedModelIds: formData.linkedModelIds,
+    };
+
+    try {
+      const created = await create.mutateAsync(payload);
+      toast.success('Use case created successfully.');
+      navigate('/use-cases/' + created.id);
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  };
+
+  const errClass = 'text-xs text-[hsl(var(--s-er-tx))] mt-1';
 
   return (
     <div className="space-y-4 pb-12">
@@ -67,13 +110,15 @@ export default function UseCaseCreate() {
                 <div className="space-y-2">
                   <Label>Title <span className="text-[hsl(var(--s-er-tx))]">*</span></Label>
                   <Input maxLength={64} placeholder="e.g. Resume Screening Automation" value={formData.title} onChange={e => handleChange('title', e.target.value)} />
+                  {errors.title && <p className={errClass}>{errors.title}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label>Owner <span className="text-[hsl(var(--s-er-tx))]">*</span></Label>
                   <Input placeholder="Assignee email or name" value={formData.owner} onChange={e => handleChange('owner', e.target.value)} />
+                  {errors.owner && <p className={errClass}>{errors.owner}</p>}
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <Label>Goal <span className="text-[hsl(var(--s-er-tx))]">*</span></Label>
+                  <Label>Goal</Label>
                   <Textarea maxLength={256} placeholder="What is the AI system supposed to accomplish?" value={formData.goal} onChange={e => handleChange('goal', e.target.value)} />
                 </div>
                 <div className="space-y-2">
@@ -85,15 +130,13 @@ export default function UseCaseCreate() {
                   <Select value={formData.riskClass} onValueChange={v => handleChange('riskClass', v)}>
                     <SelectTrigger><SelectValue placeholder="Select classification" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Prohibited">Prohibited</SelectItem>
-                      <SelectItem value="High risk">High risk</SelectItem>
-                      <SelectItem value="Limited risk">Limited risk</SelectItem>
-                      <SelectItem value="Minimal risk">Minimal risk</SelectItem>
+                      {RISK_CLASS_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
+                  {errors.riskClass && <p className={errClass}>{errors.riskClass}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label>Type of High Risk Role <span className="text-[hsl(var(--s-er-tx))]">*</span></Label>
+                  <Label>High Risk Role</Label>
                   <Select value={formData.role} onValueChange={v => handleChange('role', v)}>
                     <SelectTrigger><SelectValue placeholder="Select role" /></SelectTrigger>
                     <SelectContent>
@@ -107,7 +150,7 @@ export default function UseCaseCreate() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Geography <span className="text-[hsl(var(--s-er-tx))]">*</span></Label>
+                  <Label>Geography</Label>
                   <Select value={formData.geography} onValueChange={v => handleChange('geography', v)}>
                     <SelectTrigger><SelectValue placeholder="Select geography" /></SelectTrigger>
                     <SelectContent>
@@ -121,7 +164,7 @@ export default function UseCaseCreate() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Target Industry <span className="text-[hsl(var(--s-er-tx))]">*</span></Label>
+                  <Label>Target Industry</Label>
                   <Input placeholder="e.g. Financial Services" value={formData.industry} onChange={e => handleChange('industry', e.target.value)} />
                 </div>
               </div>
@@ -137,7 +180,7 @@ export default function UseCaseCreate() {
                   <Textarea placeholder="A longer explanation of the system and how it works" value={formData.description} onChange={e => handleChange('description', e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Members</Label>
+                  <Label>Team Members</Label>
                   <Input placeholder="Comma separated emails" value={formData.members} onChange={e => handleChange('members', e.target.value)} />
                 </div>
                 <div className="space-y-2">
@@ -145,12 +188,7 @@ export default function UseCaseCreate() {
                   <Select value={formData.status} onValueChange={v => handleChange('status', v)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Not Started">Not Started</SelectItem>
-                      <SelectItem value="In Progress">In Progress</SelectItem>
-                      <SelectItem value="Under Review">Under Review</SelectItem>
-                      <SelectItem value="Completed">Completed</SelectItem>
-                      <SelectItem value="On Hold">On Hold</SelectItem>
-                      <SelectItem value="Rejected">Rejected</SelectItem>
+                      {STATUS_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -159,12 +197,11 @@ export default function UseCaseCreate() {
                   <Select value={formData.approvalWorkflow} onValueChange={v => handleChange('approvalWorkflow', v)}>
                     <SelectTrigger><SelectValue placeholder="Select workflow (optional)" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Standard Review">Standard Review</SelectItem>
-                      <SelectItem value="Executive Sign-off">Executive Sign-off</SelectItem>
-                      <SelectItem value="None">None</SelectItem>
+                      <SelectItem value="standard">Standard Review</SelectItem>
+                      <SelectItem value="executive">Executive Sign-off</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-[hsl(var(--text-4))] mt-1">Frameworks won't be created until the use case is approved.</p>
                 </div>
               </div>
             </div>
@@ -172,71 +209,39 @@ export default function UseCaseCreate() {
             <hr className="border-[hsl(var(--border))] my-6" />
 
             <div>
-              <h3 className="text-sm font-bold uppercase tracking-widest text-[hsl(var(--text-3))] mb-4">Defining Scope</h3>
-              <p className="text-sm text-[hsl(var(--text-3))] mb-4">Detail the technical and compliance profile of the AI system.</p>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div className="space-y-2">
-                  <Label>AI Environment</Label>
-                  <Select value={formData.aiEnvironment} onValueChange={v => handleChange('aiEnvironment', v)}>
-                    <SelectTrigger><SelectValue placeholder="Where the system runs" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Cloud (AWS)">Cloud (AWS)</SelectItem>
-                      <SelectItem value="Cloud (Azure)">Cloud (Azure)</SelectItem>
-                      <SelectItem value="Cloud (GCP)">Cloud (GCP)</SelectItem>
-                      <SelectItem value="On-Premise">On-Premise</SelectItem>
-                      <SelectItem value="Hybrid Cloud">Hybrid Cloud</SelectItem>
-                      <SelectItem value="Edge / Device">Edge / Device</SelectItem>
-                    </SelectContent>
-                  </Select>
+              <h3 className="text-sm font-bold uppercase tracking-widest text-[hsl(var(--text-3))] mb-4">Link Models</h3>
+              <p className="text-sm text-[hsl(var(--text-3))] mb-4">Interlink registry models governed by this use case.</p>
+              {models.length === 0 ? (
+                <p className="text-sm text-[hsl(var(--text-4))]">No models available in the registry to link.</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {models.map(m => (
+                    <label key={m.id} className="flex items-center gap-3 p-4 border border-[hsl(var(--border))] cursor-pointer hover:bg-[hsl(var(--bg-muted))] transition-colors">
+                      <Checkbox
+                        checked={formData.linkedModelIds.includes(m.id)}
+                        onCheckedChange={() => toggleIn('linkedModelIds', m.id)}
+                      />
+                      <div className="min-w-0">
+                        <span className="text-sm font-medium block truncate">{m.name}</span>
+                        {m.riskTier && <span className="text-xs text-[hsl(var(--text-4))] block">{m.riskTier} risk</span>}
+                      </div>
+                    </label>
+                  ))}
                 </div>
-                <div className="space-y-2">
-                  <Label>Technology Type</Label>
-                  <Input placeholder="e.g. NLP, Computer Vision, Generative AI" value={formData.technologyType} onChange={e => handleChange('technologyType', e.target.value)} />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <label className="flex items-center gap-3 p-4 border border-[hsl(var(--border))] cursor-pointer hover:bg-[hsl(var(--bg-muted))] transition-colors">
-                  <Checkbox checked={formData.novelTechnology} onCheckedChange={c => handleChange('novelTechnology', !!c)} />
-                  <div className="space-y-1">
-                    <span className="text-sm font-medium block">Novel Technology</span>
-                    <span className="text-xs text-[hsl(var(--text-4))] block">Uses experimental or unproven AI techniques</span>
-                  </div>
-                </label>
-                <label className="flex items-center gap-3 p-4 border border-[hsl(var(--border))] cursor-pointer hover:bg-[hsl(var(--bg-muted))] transition-colors">
-                  <Checkbox checked={formData.personalData} onCheckedChange={c => handleChange('personalData', !!c)} />
-                  <div className="space-y-1">
-                    <span className="text-sm font-medium block">Personal Data</span>
-                    <span className="text-xs text-[hsl(var(--text-4))] block">Processes PII or sensitive individual data</span>
-                  </div>
-                </label>
-                <label className="flex items-center gap-3 p-4 border border-[hsl(var(--border))] cursor-pointer hover:bg-[hsl(var(--bg-muted))] transition-colors">
-                  <Checkbox checked={formData.monitoring} onCheckedChange={c => handleChange('monitoring', !!c)} />
-                  <div className="space-y-1">
-                    <span className="text-sm font-medium block">Active Monitoring</span>
-                    <span className="text-xs text-[hsl(var(--text-4))] block">Post-deployment monitoring is configured</span>
-                  </div>
-                </label>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Unintended Outcomes</Label>
-                <Textarea placeholder="Describe any adverse effects or unintended consequences spotted during scoping" value={formData.unintendedOutcomes} onChange={e => handleChange('unintendedOutcomes', e.target.value)} />
-              </div>
+              )}
             </div>
 
             <hr className="border-[hsl(var(--border))] my-6" />
 
             <div>
-              <h3 className="text-sm font-bold uppercase tracking-widest text-[hsl(var(--text-3))] mb-4">Attach Frameworks</h3>
+              <h3 className="text-sm font-bold uppercase tracking-widest text-[hsl(var(--text-3))] mb-4">Applicable Regulations</h3>
               <p className="text-sm text-[hsl(var(--text-3))] mb-4">Select the compliance frameworks that apply to this use case.</p>
               <div className="grid grid-cols-2 gap-4">
                 {FRAMEWORKS.map(fw => (
                   <label key={fw} className="flex items-center gap-3 p-4 border border-[hsl(var(--border))] cursor-pointer hover:bg-[hsl(var(--bg-muted))] transition-colors">
                     <Checkbox
                       checked={formData.frameworks.includes(fw)}
-                      onCheckedChange={() => handleToggleFramework(fw)}
+                      onCheckedChange={() => toggleIn('frameworks', fw)}
                     />
                     <span className="text-sm font-medium">{fw}</span>
                   </label>
@@ -248,9 +253,9 @@ export default function UseCaseCreate() {
 
         <div className="flex justify-end gap-3">
           <Button type="button" variant="outline" onClick={() => navigate('/use-cases')} style={{ borderRadius: 0 }}>Cancel</Button>
-          <Button type="submit" style={{ borderRadius: 0 }}>
+          <Button type="submit" loading={create.isPending} disabled={create.isPending} style={{ borderRadius: 0 }}>
             <CheckCircle size={16} />
-            Create Use Case
+            {create.isPending ? 'Creating…' : 'Create Use Case'}
           </Button>
         </div>
       </form>

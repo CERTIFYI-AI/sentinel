@@ -1,43 +1,52 @@
-import { useState, useMemo } from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
-import { USE_CASES, MODELS, RISKS, formatDate } from '../../data/seed';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
-import { Input } from '../../components/ui/input';
 import { toast } from 'sonner';
+import { formatDate } from '../../data/seed';
+import { useUseCase, useUseCases, useModelOptions } from '@/hooks/useAiiaData';
+import { RISK_CLASS_OPTIONS, type UseCaseRiskClass } from '@/services/useCaseService';
 import {
-  Briefcase, Warning, ShieldCheck, ListChecks, Clock,
-  ChartLineUp, Gear, Plus, DownloadSimple, User, GlobeHemisphereWest,
-  Buildings, FileText, Cpu, Database, Eye, MagnifyingGlass, Trash
+  Briefcase, Warning, ListChecks, Clock, ChartLineUp, Gear,
+  DownloadSimple, User, GlobeHemisphereWest, Buildings, FileText,
+  Trash, CircleNotch, ArrowSquareOut, ShieldCheck,
 } from '@phosphor-icons/react';
 
+const STATUS_META: Record<string, { label: string; bg: string; color: string }> = {
+  draft:         { label: 'Draft',        bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))' },
+  under_review:  { label: 'Under Review', bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
+  active:        { label: 'Active',       bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+  approved:      { label: 'Approved',     bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  retired:       { label: 'Retired',      bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))' },
+};
+const RISK_META: Record<string, { bg: string; color: string }> = {
+  high:         { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+  limited:      { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+  minimal:      { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  unacceptable: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+};
+const riskLabel = (v: string) => RISK_CLASS_OPTIONS.find(o => o.value === v)?.label ?? v;
+
 function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, { bg: string; color: string }> = {
-    'Completed': { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
-    'In Progress': { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
-    'Under Review': { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
-    'Not Started': { bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))' },
-    'On Hold': { bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))' },
-    'Rejected': { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
-  };
-  const style = map[status] || map['Not Started'];
-  return <Badge style={{ background: style.bg, color: style.color, borderRadius: 0, fontSize: 10 }}>{status}</Badge>;
+  const meta = STATUS_META[status] ?? { label: status, bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))' };
+  return <Badge style={{ background: meta.bg, color: meta.color, borderRadius: 0, fontSize: 10 }}>{meta.label}</Badge>;
+}
+function RiskBadge({ riskClass }: { riskClass: UseCaseRiskClass }) {
+  const style = RISK_META[riskClass] ?? RISK_META.minimal;
+  return <Badge style={{ background: style.bg, color: style.color, borderRadius: 0, fontSize: 10 }}>{riskLabel(riskClass)}</Badge>;
 }
 
-function RiskBadge({ riskClass }: { riskClass: string }) {
-  const map: Record<string, { bg: string; color: string }> = {
-    'High-Risk': { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
-    'Limited': { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
-    'Minimal': { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
-    'Prohibited': { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
-  };
-  const style = map[riskClass] || map['Minimal'];
-  return <Badge style={{ background: style.bg, color: style.color, borderRadius: 0, fontSize: 10 }}>{riskClass}</Badge>;
+function EmptyState({ icon: Icon, title, hint }: { icon: any; title: string; hint?: string }) {
+  return (
+    <div className="border border-[hsl(var(--border))] text-center p-10">
+      <Icon size={32} className="mx-auto mb-3" style={{ color: 'hsl(var(--text-4))' }} />
+      <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{title}</p>
+      {hint && <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>{hint}</p>}
+    </div>
+  );
 }
 
 export default function UseCaseDetail() {
@@ -46,43 +55,48 @@ export default function UseCaseDetail() {
   const [activeTab, setActiveTab] = useState('overview');
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const uc = useMemo(() => USE_CASES.find(u => u.id === id), [id]);
-
-  // Functional state (optimistic; persists to Supabase once the tables exist).
-  const [linkedModelIds, setLinkedModelIds] = useState<string[]>(() => USE_CASES.find(u => u.id === id)?.linkedModels ?? []);
-  const [extraRisks, setExtraRisks] = useState<{ id: string; title: string; category: string; severity: string; score: number }[]>([]);
-  const [ceItems, setCeItems] = useState([
-    { id: 'ce-1', label: 'Technical documentation (Annex IV) complete', done: true },
-    { id: 'ce-2', label: 'Conformity assessment (Art. 43) performed', done: false },
-    { id: 'ce-3', label: 'Quality management system (Art. 17) in place', done: true },
-    { id: 'ce-4', label: 'Human oversight mechanism (Art. 14) implemented', done: true },
-    { id: 'ce-5', label: 'Accuracy, robustness & cybersecurity (Art. 15) verified', done: false },
-    { id: 'ce-6', label: 'Post-market monitoring plan (Art. 72) exists', done: false },
-    { id: 'ce-7', label: 'EU declaration of conformity (Art. 47) signed', done: false },
-    { id: 'ce-8', label: 'EU database registration (Art. 49) complete', done: false },
-  ]);
-  const [activity, setActivity] = useState<{ action: string; date: string; actor: string }[]>([
-    { action: 'Status changed to Under Review', date: '2026-03-20T14:30:00', actor: 'James Patel' },
-    { action: 'Risk classification confirmed as High-Risk (Annex III)', date: '2026-03-15T10:00:00', actor: 'Maria Santos' },
-    { action: 'Framework EU AI Act attached', date: '2026-03-01T09:15:00', actor: 'Raj Gupta' },
-    { action: 'Model MDL-001 linked', date: '2026-02-20T16:45:00', actor: 'Maria Santos' },
-    { action: 'DPIA initiated', date: '2026-02-10T11:20:00', actor: 'Sarah Chen' },
-    { action: 'Use case created', date: '2026-02-01T11:00:00', actor: 'Sarah Chen' },
-  ]);
-  const [showAddRisk, setShowAddRisk] = useState(false);
-  const [showLinkModel, setShowLinkModel] = useState(false);
-  const [riskForm, setRiskForm] = useState({ title: '', category: 'Fairness', severity: 'high', score: 12 });
-  const logActivity = (action: string) => setActivity(prev => [{ action, date: new Date().toISOString(), actor: 'You' }, ...prev]);
+  const { data: uc, isLoading, error } = useUseCase(id);
+  const { update, remove } = useUseCases();
+  const { models } = useModelOptions();
 
   const handleDelete = () => {
+    if (!id) return;
+    remove.mutate(id, {
+      onSuccess: () => { toast.success('Use case deleted'); navigate('/use-cases'); },
+      onError: (err) => toast.error((err as Error).message),
+    });
     setConfirmDelete(false);
-    toast.success(`Use case ${id} deleted`);
-    navigate('/use-cases');
   };
+
   const handleTransfer = () => {
+    if (!uc) return;
     const owner = window.prompt('Transfer ownership to (name or email):');
-    if (owner && owner.trim()) toast.success(`Ownership transferred to ${owner.trim()}`);
+    if (!owner || !owner.trim()) return;
+    update.mutate({ id: uc.id, patch: { owner: owner.trim() } }, {
+      onSuccess: () => toast.success(`Ownership transferred to ${owner.trim()}`),
+      onError: (err) => toast.error((err as Error).message),
+    });
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[50vh] text-center" style={{ color: 'hsl(var(--text-4))' }}>
+        <CircleNotch size={32} className="animate-spin mb-3" />
+        <p className="text-sm">Loading use case…</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[50vh] text-center">
+        <Warning size={48} className="text-[hsl(var(--destructive))] mb-4" />
+        <h2 className="text-xl font-bold text-[hsl(var(--text-1))]">Failed to load use case</h2>
+        <p className="text-[hsl(var(--text-3))] mb-6">{error.message}</p>
+        <Button onClick={() => navigate('/use-cases')} style={{ borderRadius: 0 }}>Back to Use Cases</Button>
+      </div>
+    );
+  }
 
   if (!uc) {
     return (
@@ -95,75 +109,46 @@ export default function UseCaseDetail() {
     );
   }
 
-  const linkedModels = MODELS.filter(m => linkedModelIds.includes(m.id));
-  const availableModels = MODELS.filter(m => !linkedModelIds.includes(m.id));
-  const linkedRisks = [
-    ...RISKS.filter(r => linkedModelIds.includes(r.linkedModel)).map(r => ({ id: r.id, title: r.title, category: r.category, severity: r.severity, score: r.score })),
-    ...extraRisks,
-  ];
-
-  const addRisk = () => {
-    if (!riskForm.title.trim()) { toast.error('Risk title is required'); return; }
-    const rid = `UCR-${String(extraRisks.length + 1).padStart(3, '0')}`;
-    setExtraRisks(prev => [...prev, { id: rid, ...riskForm, title: riskForm.title.trim() }]);
-    logActivity(`Risk "${riskForm.title.trim()}" logged`);
-    toast.success(`Risk ${rid} logged`);
-    setRiskForm({ title: '', category: 'Fairness', severity: 'high', score: 12 });
-    setShowAddRisk(false);
-  };
-  const linkModel = (mid: string, mname: string) => {
-    setLinkedModelIds(prev => [...prev, mid]);
-    logActivity(`Model ${mid} linked`);
-    toast.success(`Linked ${mname}`);
-    setShowLinkModel(false);
-  };
-  const toggleCe = (cid: string) => setCeItems(prev => prev.map(c => c.id === cid ? { ...c, done: !c.done } : c));
-  const ceComplete = ceItems.filter(c => c.done).length;
+  const linkedModels = uc.linkedModelIds.map(mid => ({ id: mid, name: models.find(m => m.id === mid)?.name ?? mid, meta: models.find(m => m.id === mid) }));
+  const hasScore = uc.complianceScore > 0;
 
   return (
     <div className="space-y-6">
-      {/* Header section with Breadcrumbs */}
       <div>
         <PageHeader
           title={uc.title}
-          subtitle={`Goal: ${uc.goal}`}
+          subtitle={uc.goal ? `Goal: ${uc.goal}` : 'AI use case'}
           breadcrumbs={[
             { label: 'AI Governance' },
             { label: 'Use Cases', href: '/use-cases' },
-            { label: uc.id }
+            { label: uc.id.slice(0, 8) },
           ]}
         />
-        <div className="flex items-center gap-3 mt-4">
-          <Badge variant="outline" style={{ borderRadius: 0, fontFamily: 'monospace' }}>{uc.id}</Badge>
+        <div className="flex items-center gap-3 mt-4 flex-wrap">
+          <Badge variant="outline" style={{ borderRadius: 0, fontFamily: 'monospace' }}>{uc.id.slice(0, 8)}</Badge>
           <StatusBadge status={uc.status} />
           <RiskBadge riskClass={uc.riskClass} />
           <div className="ml-auto flex gap-2">
-            <Button variant="outline" size="sm" style={{ borderRadius: 0 }} onClick={() => toast.success('Use case dossier exported (PDF)')}>
-              <DownloadSimple size={14} /> Export PDF
-            </Button>
-            <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={() => toast.success('Submitted for Model Risk Committee review')}>
-              Submit for Review
+            <Button variant="outline" size="sm" style={{ borderRadius: 0 }} onClick={() => navigate('/use-cases')}>
+              Back to Registry
             </Button>
           </div>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        {/* Navigation Tabs */}
         <div className="border-b border-[hsl(var(--border))]">
           <TabsList className="bg-transparent h-12 p-0 w-full justify-start overflow-x-auto flex-nowrap hide-scrollbar">
             {[
               { id: 'overview', icon: FileText, label: 'Overview' },
-              { id: 'risks', icon: Warning, label: 'Use case risks' },
               { id: 'models', icon: Briefcase, label: 'Linked models' },
               { id: 'frameworks', icon: ListChecks, label: 'Frameworks & regulations' },
-              { id: 'ce', icon: ShieldCheck, label: 'CE marking' },
-              { id: 'activity', icon: Clock, label: 'Activity' },
+              { id: 'compliance', icon: ShieldCheck, label: 'Compliance' },
               { id: 'monitoring', icon: ChartLineUp, label: 'Monitoring' },
-              { id: 'settings', icon: Gear, label: 'Settings' }
+              { id: 'settings', icon: Gear, label: 'Settings' },
             ].map(tab => (
-              <TabsTrigger 
-                key={tab.id} 
+              <TabsTrigger
+                key={tab.id}
                 value={tab.id}
                 className="rounded-none border-b-2 border-transparent data-[state=active]:border-[hsl(var(--brand))] data-[state=active]:bg-transparent px-6 font-medium whitespace-nowrap"
               >
@@ -175,115 +160,84 @@ export default function UseCaseDetail() {
         </div>
 
         <div className="py-6">
-          {/* TAB 1: OVERVIEW */}
+          {/* OVERVIEW */}
           <TabsContent value="overview" className="mt-0 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Main Details */}
               <div className="md:col-span-2 space-y-6">
                 <div className="bg-surface border border-[hsl(var(--border))] p-6">
                   <h3 className="text-sm font-bold uppercase tracking-widest text-[hsl(var(--text-3))] mb-4">Description</h3>
                   <p className="text-sm leading-relaxed text-[hsl(var(--text-2))]">{uc.description || 'No detailed description provided.'}</p>
                 </div>
-                
+
                 <div className="bg-surface border border-[hsl(var(--border))] p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-bold uppercase tracking-widest text-[hsl(var(--text-3))]">Framework Compliance Status</h3>
-                    <Button variant="ghost" size="sm" className="h-8">View All</Button>
-                  </div>
-                  <div className="space-y-4">
-                    {uc.frameworks.map(fw => (
-                      <div key={fw} className="flex flex-col gap-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">{fw}</span>
-                          <span className="text-xs text-[hsl(var(--text-4))]">85% Complete</span>
-                        </div>
-                        <div className="h-2 w-full bg-[hsl(var(--bg-muted))] overflow-hidden">
-                          <div className="h-full bg-[hsl(var(--brand))]" style={{ width: '85%' }} />
-                        </div>
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-[hsl(var(--text-3))] mb-4">Compliance Score</h3>
+                  {hasScore ? (
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-[hsl(var(--text-2))]">Recorded compliance score</span>
+                        <span className="text-sm font-mono font-bold text-[hsl(var(--text-1))]">{uc.complianceScore}%</span>
                       </div>
-                    ))}
-                    {uc.frameworks.length === 0 && <p className="text-sm text-[hsl(var(--text-4))]">No frameworks attached.</p>}
-                  </div>
+                      <div className="h-2 w-full bg-[hsl(var(--bg-muted))] overflow-hidden">
+                        <div className="h-full bg-[hsl(var(--brand))]" style={{ width: `${Math.min(100, uc.complianceScore)}%` }} />
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-[hsl(var(--text-4))]">Not yet measured — no compliance score has been recorded for this use case.</p>
+                  )}
                 </div>
 
-                {/* Scope Definition */}
                 <div className="bg-surface border border-[hsl(var(--border))] p-6">
-                  <h3 className="text-sm font-bold uppercase tracking-widest text-[hsl(var(--text-3))] mb-4">System Scope</h3>
-                  <div className="grid grid-cols-2 gap-y-4 gap-x-6">
-                    <div className="flex items-start gap-3">
-                      <Database size={16} className="text-[hsl(var(--text-4))] mt-0.5" />
-                      <div>
-                        <p className="text-xs text-[hsl(var(--text-4))]">Environment</p>
-                        <p className="text-sm font-medium">{uc.aiEnvironment || 'N/A'}</p>
-                      </div>
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-[hsl(var(--text-3))] mb-4">Applicable Regulations</h3>
+                  {uc.regulations.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {uc.regulations.map(r => (
+                        <Badge key={r} variant="outline" style={{ borderRadius: 0 }}>{r}</Badge>
+                      ))}
                     </div>
-                    <div className="flex items-start gap-3">
-                      <Cpu size={16} className="text-[hsl(var(--text-4))] mt-0.5" />
-                      <div>
-                        <p className="text-xs text-[hsl(var(--text-4))]">Technology Type</p>
-                        <p className="text-sm font-medium">{uc.technologyType || 'N/A'}</p>
-                      </div>
-                    </div>
-                    <div className="col-span-2 flex items-center gap-6 pt-2">
-                      <Badge variant="outline" style={{ borderRadius: 0, opacity: uc.novelTechnology ? 1 : 0.4 }}>
-                        {uc.novelTechnology ? '✓' : '✗'} Novel Technology
-                      </Badge>
-                      <Badge variant="outline" style={{ borderRadius: 0, opacity: uc.personalData ? 1 : 0.4 }}>
-                        {uc.personalData ? '✓' : '✗'} Personal Data
-                      </Badge>
-                      <Badge variant="outline" style={{ borderRadius: 0, opacity: uc.monitoring ? 1 : 0.4 }}>
-                        {uc.monitoring ? '✓' : '✗'} Active Monitoring
-                      </Badge>
-                    </div>
-                  </div>
-                  {uc.unintendedOutcomes && (
-                    <div className="mt-6 p-4 bg-[hsl(var(--bg-muted))] border-l-2 border-[hsl(var(--s-wn-tx))]">
-                      <p className="text-xs font-bold text-[hsl(var(--s-wn-tx))] mb-1 flex items-center gap-1"><Warning size={14} /> Unintended Outcomes</p>
-                      <p className="text-sm text-[hsl(var(--text-3))]">{uc.unintendedOutcomes}</p>
-                    </div>
+                  ) : (
+                    <p className="text-sm text-[hsl(var(--text-4))]">No regulations attached.</p>
+                  )}
+                </div>
+
+                <div className="bg-surface border border-[hsl(var(--border))] p-6">
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-[hsl(var(--text-3))] mb-4">Team Members</h3>
+                  {uc.teamMembers.length > 0 ? (
+                    <ul className="space-y-2">
+                      {uc.teamMembers.map(tm => (
+                        <li key={tm} className="flex items-center gap-2 text-sm text-[hsl(var(--text-2))]">
+                          <User size={14} className="text-[hsl(var(--text-4))]" /> {tm}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-[hsl(var(--text-4))]">No team members assigned.</p>
                   )}
                 </div>
               </div>
 
-              {/* Sidebar Details */}
               <div className="space-y-6">
                 <div className="bg-surface border border-[hsl(var(--border))] p-6">
                   <h3 className="text-sm font-bold uppercase tracking-widest text-[hsl(var(--text-3))] mb-4">Properties</h3>
                   <ul className="space-y-4">
                     <li className="flex items-start gap-3">
                       <User size={16} className="text-[hsl(var(--text-4))] mt-0.5" />
-                      <div>
-                        <p className="text-xs text-[hsl(var(--text-4))]">Owner</p>
-                        <p className="text-sm font-medium">{uc.owner}</p>
-                      </div>
+                      <div><p className="text-xs text-[hsl(var(--text-4))]">Owner</p><p className="text-sm font-medium">{uc.owner || '—'}</p></div>
                     </li>
                     <li className="flex items-start gap-3">
                       <Briefcase size={16} className="text-[hsl(var(--text-4))] mt-0.5" />
-                      <div>
-                        <p className="text-xs text-[hsl(var(--text-4))]">High Risk Role</p>
-                        <p className="text-sm font-medium">{uc.role || 'Deployer'}</p>
-                      </div>
+                      <div><p className="text-xs text-[hsl(var(--text-4))]">High Risk Role</p><p className="text-sm font-medium">{uc.highRiskRole || '—'}</p></div>
                     </li>
                     <li className="flex items-start gap-3">
                       <GlobeHemisphereWest size={16} className="text-[hsl(var(--text-4))] mt-0.5" />
-                      <div>
-                        <p className="text-xs text-[hsl(var(--text-4))]">Geography</p>
-                        <p className="text-sm font-medium">{uc.geography}</p>
-                      </div>
+                      <div><p className="text-xs text-[hsl(var(--text-4))]">Geography</p><p className="text-sm font-medium">{uc.geography || '—'}</p></div>
                     </li>
                     <li className="flex items-start gap-3">
                       <Buildings size={16} className="text-[hsl(var(--text-4))] mt-0.5" />
-                      <div>
-                        <p className="text-xs text-[hsl(var(--text-4))]">Industry</p>
-                        <p className="text-sm font-medium">{uc.industry}</p>
-                      </div>
+                      <div><p className="text-xs text-[hsl(var(--text-4))]">Industry</p><p className="text-sm font-medium">{uc.industry || '—'}</p></div>
                     </li>
                     <li className="flex items-start gap-3">
-                      <Clock size={16} className="text-[hsl(var(--text-4))] mt-0.5" />
-                      <div>
-                        <p className="text-xs text-[hsl(var(--text-4))]">Current Stage</p>
-                        <p className="text-sm font-medium">{uc.stage}</p>
-                      </div>
+                      <ListChecks size={16} className="text-[hsl(var(--text-4))] mt-0.5" />
+                      <div><p className="text-xs text-[hsl(var(--text-4))]">Approval Workflow</p><p className="text-sm font-medium capitalize">{uc.approvalWorkflow || '—'}</p></div>
                     </li>
                   </ul>
                 </div>
@@ -291,283 +245,139 @@ export default function UseCaseDetail() {
                 <div className="bg-surface border border-[hsl(var(--border))] p-6">
                   <h3 className="text-sm font-bold uppercase tracking-widest text-[hsl(var(--text-3))] mb-4">Dates</h3>
                   <div className="flex justify-between items-center pb-2 border-b border-[hsl(var(--border))]">
+                    <span className="text-xs text-[hsl(var(--text-4))]">Start</span>
+                    <span className="text-sm font-medium">{uc.startDate ? formatDate(uc.startDate) : '—'}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 border-b border-[hsl(var(--border))]">
                     <span className="text-xs text-[hsl(var(--text-4))]">Created</span>
-                    <span className="text-sm font-medium">{formatDate(uc.createdDate)}</span>
+                    <span className="text-sm font-medium">{formatDate(uc.createdAt)}</span>
                   </div>
                   <div className="flex justify-between items-center pt-2">
                     <span className="text-xs text-[hsl(var(--text-4))]">Last Updated</span>
-                    <span className="text-sm font-medium">{formatDate(uc.lastUpdated)}</span>
+                    <span className="text-sm font-medium">{formatDate(uc.updatedAt)}</span>
                   </div>
                 </div>
               </div>
             </div>
           </TabsContent>
 
-          {/* TAB 2: USE CASE RISKS */}
-          <TabsContent value="risks" className="mt-0">
-            <div className="bg-surface border border-[hsl(var(--border))]">
-              <div className="p-4 border-b border-[hsl(var(--border))] flex justify-between items-center">
-                <h3 className="font-semibold">Risk Register</h3>
-                <Button size="sm" style={{ borderRadius: 0 }} onClick={() => setShowAddRisk(true)}><Plus size={14} /> Log Risk</Button>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-muted))]">
-                      {['Risk ID', 'Title', 'Category', 'Severity', 'Score'].map(h => (
-                        <th key={h} className="px-4 py-3 text-left font-semibold text-[hsl(var(--text-3))] text-xs uppercase tracking-wider">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[hsl(var(--border))]">
-                    {linkedRisks.map(r => (
-                      <tr key={r.id} className="hover:bg-[hsl(var(--bg-muted))] transition-colors">
-                        <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--brand))]">{r.id}</td>
-                        <td className="px-4 py-3 font-medium">{r.title}</td>
-                        <td className="px-4 py-3 text-[hsl(var(--text-3))]">{r.category}</td>
-                        <td className="px-4 py-3">
-                          <Badge style={{
-                            background: r.severity === 'critical' ? 'hsl(var(--s-er-bg))' : r.severity === 'high' ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-nt-bg))',
-                            color: r.severity === 'critical' ? 'hsl(var(--destructive))' : r.severity === 'high' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-nt-tx))',
-                            borderRadius: 0, fontSize: 10,
-                          }}>{r.severity}</Badge>
-                        </td>
-                        <td className="px-4 py-3 font-mono font-bold">{r.score}</td>
-                      </tr>
-                    ))}
-                    {linkedRisks.length === 0 && (
-                      <tr>
-                        <td colSpan={5} className="px-4 py-8 text-center text-[hsl(var(--text-4))]">No risks logged against this use case yet.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* TAB 3: LINKED MODELS */}
+          {/* LINKED MODELS */}
           <TabsContent value="models" className="mt-0">
             <div className="bg-surface border border-[hsl(var(--border))]">
-              <div className="p-4 border-b border-[hsl(var(--border))] flex justify-between items-center">
-                <h3 className="font-semibold">Linked Models ({linkedModels.length})</h3>
-                <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={() => setShowLinkModel(true)}><Briefcase size={14} /> Link Existing Model</Button>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-muted))]">
-                      {['Model ID', 'Name', 'Version', 'Type', 'Status', 'Risk Tier'].map(h => (
-                        <th key={h} className="px-4 py-3 text-left font-semibold text-[hsl(var(--text-3))] text-xs uppercase tracking-wider">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[hsl(var(--border))]">
-                    {linkedModels.map(m => (
-                      <tr key={m.id} className="hover:bg-[hsl(var(--bg-muted))] transition-colors cursor-pointer" onClick={() => navigate(`/models/${m.id}`)}>
-                        <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--brand))]">{m.id}</td>
-                        <td className="px-4 py-3 font-medium">{m.name}</td>
-                        <td className="px-4 py-3 text-[hsl(var(--text-3))]">v{m.version}</td>
-                        <td className="px-4 py-3 text-[hsl(var(--text-3))]">{m.type}</td>
-                        <td className="px-4 py-3"><StatusBadge status={m.status === 'production' ? 'Completed' : 'In Progress'} /></td>
-                        <td className="px-4 py-3 text-[hsl(var(--text-3))]">{m.riskTier}</td>
-                      </tr>
-                    ))}
-                    {linkedModels.length === 0 && (
-                      <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center text-[hsl(var(--text-4))]">No models currently linked.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* TAB 4: FRAMEWORKS */}
-          <TabsContent value="frameworks" className="mt-0">
-            <div className="bg-surface border border-[hsl(var(--border))]">
               <div className="p-4 border-b border-[hsl(var(--border))]">
-                <h3 className="font-semibold">Frameworks & Regulations</h3>
-                <p className="text-xs text-[hsl(var(--text-4))] mt-1">Track compliance across attached frameworks.</p>
+                <h3 className="font-semibold">Linked Models ({linkedModels.length})</h3>
+                <p className="text-xs text-[hsl(var(--text-4))] mt-1">Registry models governed by this use case.</p>
               </div>
-              <Tabs defaultValue="controls" className="w-full">
-                <div className="px-6 border-b border-[hsl(var(--border))] pt-2">
-                  <TabsList className="bg-transparent h-10 p-0">
-                    <TabsTrigger value="controls" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[hsl(var(--brand))] data-[state=active]:bg-transparent px-4 font-medium text-sm">
-                      Controls
-                    </TabsTrigger>
-                    <TabsTrigger value="assessments" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[hsl(var(--brand))] data-[state=active]:bg-transparent px-4 font-medium text-sm">
-                      Assessments
-                    </TabsTrigger>
-                  </TabsList>
+              {linkedModels.length === 0 ? (
+                <div className="p-6">
+                  <EmptyState icon={Briefcase} title="No models linked" hint="Link models to this use case from the Create form or the model registry." />
                 </div>
-                <TabsContent value="controls" className="p-6 mt-0">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {uc.frameworks.map(fw => (
-                      <div key={fw} className="border border-[hsl(var(--border))] p-5 hover:border-[hsl(var(--brand))] transition-colors cursor-pointer">
-                        <div className="flex justify-between items-start mb-4">
-                          <h4 className="font-bold text-[hsl(var(--brand))]">{fw}</h4>
-                          <Badge variant="outline" style={{ borderRadius: 0, fontSize: 10 }}>In Progress</Badge>
-                        </div>
-                        <div className="space-y-3">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-[hsl(var(--text-3))]">Controls Implemented</span>
-                            <span className="font-mono">24 / 32</span>
-                          </div>
-                          <div className="h-1.5 w-full bg-[hsl(var(--bg-muted))] overflow-hidden">
-                            <div className="h-full bg-[hsl(var(--s-ok-tx))]" style={{ width: '75%' }} />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                    {uc.frameworks.length === 0 && (
-                      <p className="text-[hsl(var(--text-4))] col-span-2">No frameworks attached.</p>
-                    )}
-                  </div>
-                </TabsContent>
-                <TabsContent value="assessments" className="p-6 mt-0">
-                  <div className="border border-[hsl(var(--border))] text-center p-8 text-[hsl(var(--text-3))]">
-                    <ListChecks size={32} className="mx-auto mb-3 opacity-50" />
-                    <p className="text-sm font-medium">No assessments started yet.</p>
-                    <Button variant="outline" size="sm" className="mt-4" style={{ borderRadius: 0 }} onClick={() => toast.success('Conformity questionnaire started')}>Start Questionnaire</Button>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </div>
-          </TabsContent>
-
-          {/* TAB 5: CE MARKING */}
-          <TabsContent value="ce" className="mt-0">
-            <div className="bg-surface border border-[hsl(var(--border))]">
-              <div className="p-4 border-b border-[hsl(var(--border))] flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck size={18} className="text-[hsl(var(--brand))]" />
-                  <div>
-                    <h3 className="font-semibold">CE Marking Conformity Assessment</h3>
-                    <p className="text-xs text-[hsl(var(--text-4))]">EU AI Act declaration of conformity checklist for high-risk systems</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold font-mono" style={{ color: ceComplete === ceItems.length ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-1))' }}>{ceComplete}/{ceItems.length}</p>
-                  <p className="text-[10px] uppercase tracking-wider text-[hsl(var(--text-4))]">Complete</p>
-                </div>
-              </div>
-              <div className="h-1 w-full bg-[hsl(var(--bg-muted))]">
-                <div className="h-full bg-[hsl(var(--s-ok-tx))]" style={{ width: `${(ceComplete / ceItems.length) * 100}%` }} />
-              </div>
-              <div>
-                {ceItems.map(item => (
-                  <label key={item.id} className="flex items-center gap-3 px-4 py-3 border-b border-[hsl(var(--border))] cursor-pointer hover:bg-[hsl(var(--bg-muted))]">
-                    <input type="checkbox" checked={item.done} onChange={() => toggleCe(item.id)} className="h-4 w-4" style={{ borderRadius: 0 }} />
-                    <span className="text-sm flex-1" style={{ color: item.done ? 'hsl(var(--text-3))' : 'hsl(var(--text-1))', textDecoration: item.done ? 'line-through' : 'none' }}>{item.label}</span>
-                    <Badge style={{ background: item.done ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-wn-bg))', color: item.done ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 9 }}>{item.done ? 'DONE' : 'PENDING'}</Badge>
-                  </label>
-                ))}
-              </div>
-              <div className="p-4 flex justify-between items-center">
-                <p className="text-xs text-[hsl(var(--text-4))]">{ceComplete === ceItems.length ? 'All checks complete — ready to sign the Declaration of Conformity.' : `${ceItems.length - ceComplete} item(s) remaining before CE marking.`}</p>
-                <Button size="sm" disabled={ceComplete !== ceItems.length} onClick={() => toast.success('EU Declaration of Conformity generated')} style={{ borderRadius: 0 }}>Generate Declaration</Button>
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* TAB 6: ACTIVITY */}
-          <TabsContent value="activity" className="mt-0">
-            <div className="bg-surface border border-[hsl(var(--border))]">
-              <div className="p-4 border-b border-[hsl(var(--border))] flex items-center justify-between">
-                <h3 className="font-semibold">Audit Log</h3>
-                <span className="text-xs font-mono text-[hsl(var(--text-4))]">{activity.length} events</span>
-              </div>
-              <div>
-                {activity.map((log, i) => {
-                  const initials = log.actor.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-                  return (
-                    <div key={i} className="flex items-start gap-3 px-4 py-3 border-b border-[hsl(var(--border))]">
-                      <div className="w-7 h-7 flex items-center justify-center text-[10px] font-bold shrink-0" style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))' }}>{initials}</div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-[hsl(var(--text-1))]">{log.action}</p>
-                        <p className="text-[11px] text-[hsl(var(--text-4))] mt-0.5">
-                          <span className="font-medium text-[hsl(var(--text-3))]">{log.actor}</span> · {new Date(log.date).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* TAB 7: MONITORING */}
-          <TabsContent value="monitoring" className="mt-0 space-y-4">
-            {linkedModels.length === 0 ? (
-              <div className="bg-surface border border-[hsl(var(--border))] p-8 text-center">
-                <ChartLineUp size={40} className="mx-auto text-[hsl(var(--text-4))] mb-3" />
-                <h3 className="text-base font-bold mb-1">No models linked</h3>
-                <p className="text-[hsl(var(--text-3))] text-sm">Link an active model to start post-market monitoring.</p>
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {[
-                    { label: 'Uptime (30d)', value: '99.94%', tx: 'hsl(var(--s-ok-tx))' },
-                    { label: 'P95 Latency', value: '142 ms', tx: 'hsl(var(--text-1))' },
-                    { label: 'Drift (PSI)', value: '0.07', tx: 'hsl(var(--s-wn-tx))' },
-                    { label: 'Open Incidents', value: '1', tx: 'hsl(var(--s-er-tx))' },
-                  ].map(m => (
-                    <div key={m.label} className="bg-surface border border-[hsl(var(--border))] p-4">
-                      <p className="text-[10px] uppercase tracking-wider font-medium text-[hsl(var(--text-4))]">{m.label}</p>
-                      <p className="text-2xl font-bold font-mono mt-0.5" style={{ color: m.tx }}>{m.value}</p>
-                    </div>
-                  ))}
-                </div>
-                <div className="bg-surface border border-[hsl(var(--border))]">
-                  <div className="p-4 border-b border-[hsl(var(--border))]"><h3 className="font-semibold text-sm">Post-Market Signals (30-day)</h3></div>
+              ) : (
+                <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead><tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-muted))]">{['Signal', 'Model', 'Current', 'Threshold', 'Status'].map(h => <th key={h} className="px-4 py-2 text-left text-[10px] uppercase tracking-wider font-semibold text-[hsl(var(--text-4))]">{h}</th>)}</tr></thead>
-                    <tbody>
-                      {[
-                        { sig: 'Accuracy (F1)', cur: '0.913', thr: '≥ 0.85', ok: true },
-                        { sig: 'Demographic parity', cur: '0.84', thr: '≥ 0.85', ok: false },
-                        { sig: 'Data drift (PSI)', cur: '0.07', thr: '< 0.10', ok: true },
-                        { sig: 'Prediction volume', cur: '890K/mo', thr: 'baseline ±20%', ok: true },
-                        { sig: 'Override rate (HITL)', cur: '3.2%', thr: '< 5%', ok: true },
-                      ].map(r => (
-                        <tr key={r.sig} className="border-b border-[hsl(var(--border))]">
-                          <td className="px-4 py-2 font-medium">{r.sig}</td>
-                          <td className="px-4 py-2 font-mono text-xs text-[hsl(var(--brand))]">{linkedModels[0]?.id ?? '—'}</td>
-                          <td className="px-4 py-2 font-mono">{r.cur}</td>
-                          <td className="px-4 py-2 font-mono text-xs text-[hsl(var(--text-3))]">{r.thr}</td>
-                          <td className="px-4 py-2"><Badge style={{ background: r.ok ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-er-bg))', color: r.ok ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))', borderRadius: 0, fontSize: 9 }}>{r.ok ? 'WITHIN' : 'BREACH'}</Badge></td>
+                    <thead>
+                      <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--bg-muted))]">
+                        {['Model ID', 'Name', 'Risk Tier', 'Lifecycle', ''].map(h => (
+                          <th key={h} className="px-4 py-3 text-left font-semibold text-[hsl(var(--text-3))] text-xs uppercase tracking-wider">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[hsl(var(--border))]">
+                      {linkedModels.map(m => (
+                        <tr key={m.id} className="hover:bg-[hsl(var(--bg-muted))] transition-colors">
+                          <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--brand))]">{m.id.slice(0, 8)}</td>
+                          <td className="px-4 py-3 font-medium">{m.name}</td>
+                          <td className="px-4 py-3 text-[hsl(var(--text-3))]">{m.meta?.riskTier ?? '—'}</td>
+                          <td className="px-4 py-3 text-[hsl(var(--text-3))]">{m.meta?.lifecycle ?? '—'}</td>
+                          <td className="px-4 py-3 text-right">
+                            <Link to={`/models/${m.id}`} className="inline-flex items-center gap-1 text-xs font-medium text-[hsl(var(--brand))] hover:underline">
+                              View model <ArrowSquareOut size={12} />
+                            </Link>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-              </>
-            )}
+              )}
+            </div>
           </TabsContent>
 
-          {/* TAB 8: SETTINGS */}
+          {/* FRAMEWORKS */}
+          <TabsContent value="frameworks" className="mt-0">
+            <div className="bg-surface border border-[hsl(var(--border))]">
+              <div className="p-4 border-b border-[hsl(var(--border))]">
+                <h3 className="font-semibold">Frameworks & Regulations</h3>
+                <p className="text-xs text-[hsl(var(--text-4))] mt-1">Regulations attached to this use case.</p>
+              </div>
+              <div className="p-6">
+                {uc.regulations.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {uc.regulations.map(fw => (
+                      <div key={fw} className="border border-[hsl(var(--border))] p-5">
+                        <div className="flex justify-between items-start mb-3">
+                          <h4 className="font-bold text-[hsl(var(--brand))]">{fw}</h4>
+                        </div>
+                        <p className="text-xs text-[hsl(var(--text-4))]">Control-level tracking not yet measured for this framework.</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState icon={ListChecks} title="No frameworks attached" hint="Attach applicable regulations when editing this use case." />
+                )}
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* COMPLIANCE */}
+          <TabsContent value="compliance" className="mt-0">
+            <div className="bg-surface border border-[hsl(var(--border))] p-6">
+              <h3 className="text-sm font-bold uppercase tracking-widest text-[hsl(var(--text-3))] mb-4">Compliance Score</h3>
+              {hasScore ? (
+                <div className="flex items-center gap-6">
+                  <div className="text-4xl font-bold font-mono" style={{ color: 'hsl(var(--brand))' }}>{uc.complianceScore}%</div>
+                  <div className="flex-1">
+                    <div className="h-3 w-full bg-[hsl(var(--bg-muted))] overflow-hidden">
+                      <div className="h-full bg-[hsl(var(--brand))]" style={{ width: `${Math.min(100, uc.complianceScore)}%` }} />
+                    </div>
+                    <p className="text-xs text-[hsl(var(--text-4))] mt-2">Overall compliance score recorded for this use case.</p>
+                  </div>
+                </div>
+              ) : (
+                <EmptyState icon={ShieldCheck} title="Not yet measured" hint="No compliance score has been recorded. Complete an assessment to populate this metric." />
+              )}
+            </div>
+          </TabsContent>
+
+          {/* MONITORING */}
+          <TabsContent value="monitoring" className="mt-0">
+            <EmptyState
+              icon={ChartLineUp}
+              title="Not yet measured"
+              hint={linkedModels.length === 0
+                ? 'Link an active model to begin post-market monitoring.'
+                : 'Post-market monitoring signals have not been collected for the linked models yet.'}
+            />
+          </TabsContent>
+
+          {/* SETTINGS */}
           <TabsContent value="settings" className="mt-0">
             <div className="max-w-2xl space-y-6">
-              {/* Ownership & Access */}
               <div className="bg-surface border border-[hsl(var(--border))] p-6">
                 <h3 className="text-sm font-bold uppercase tracking-widest text-[hsl(var(--text-3))] mb-4">Ownership &amp; Access</h3>
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <h4 className="text-sm font-semibold text-[hsl(var(--text-1))]">Transfer ownership</h4>
                     <p className="text-xs text-[hsl(var(--text-4))] mt-1">
-                      Currently owned by <span className="font-medium text-[hsl(var(--text-2))]">{uc.owner}</span>. Reassign this use case to another user.
+                      Currently owned by <span className="font-medium text-[hsl(var(--text-2))]">{uc.owner || 'unassigned'}</span>. Reassign this use case to another user.
                     </p>
                   </div>
-                  <Button variant="outline" size="sm" className="shrink-0" style={{ borderRadius: 0 }} onClick={handleTransfer}>
+                  <Button variant="outline" size="sm" className="shrink-0" style={{ borderRadius: 0 }} loading={update.isPending} disabled={update.isPending} onClick={handleTransfer}>
                     <User size={14} /> Transfer
                   </Button>
                 </div>
               </div>
 
-              {/* Danger Zone */}
               <div className="border border-[hsl(var(--s-er-br))]" style={{ background: 'hsl(var(--bg-surface))' }}>
                 <div className="flex items-center gap-2 px-6 py-3 border-b border-[hsl(var(--s-er-br))]" style={{ background: 'hsl(var(--s-er-bg))' }}>
                   <Warning size={16} weight="fill" style={{ color: 'hsl(var(--destructive))' }} />
@@ -577,87 +387,24 @@ export default function UseCaseDetail() {
                   <div>
                     <h4 className="text-sm font-semibold text-[hsl(var(--text-1))]">Delete use case</h4>
                     <p className="text-xs text-[hsl(var(--text-4))] mt-1">
-                      Permanently delete <span className="font-medium text-[hsl(var(--text-2))]">{uc.title}</span> and all its assessments. This action cannot be undone.
+                      Soft-delete <span className="font-medium text-[hsl(var(--text-2))]">{uc.title}</span>. It can be restored by an administrator.
                     </p>
                   </div>
-                  <Button variant="outline" size="sm" className="shrink-0" style={{ borderRadius: 0, color: 'hsl(var(--destructive))', borderColor: 'hsl(var(--s-er-br))' }} onClick={() => setConfirmDelete(true)}>
+                  <Button variant="outline" size="sm" className="shrink-0" style={{ borderRadius: 0, color: 'hsl(var(--destructive))', borderColor: 'hsl(var(--s-er-br))' }} loading={remove.isPending} disabled={remove.isPending} onClick={() => setConfirmDelete(true)}>
                     <Trash size={14} /> Delete
                   </Button>
                 </div>
               </div>
             </div>
           </TabsContent>
-
         </div>
       </Tabs>
-
-      {/* Add Risk modal */}
-      <Dialog open={showAddRisk} onOpenChange={setShowAddRisk}>
-        <DialogContent style={{ borderRadius: 0, maxWidth: 440 }}>
-          <DialogHeader><DialogTitle>Log Use Case Risk</DialogTitle></DialogHeader>
-          <div className="space-y-3 py-1">
-            <div>
-              <label className="text-xs font-semibold text-[hsl(var(--text-4))]">Risk title *</label>
-              <Input value={riskForm.title} onChange={e => setRiskForm({ ...riskForm, title: e.target.value })} placeholder="e.g. Proxy discrimination via ZIP code" className="mt-1" style={{ borderRadius: 0 }} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-semibold text-[hsl(var(--text-4))]">Category</label>
-                <Select value={riskForm.category} onValueChange={v => setRiskForm({ ...riskForm, category: v })}>
-                  <SelectTrigger className="mt-1 w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                  <SelectContent style={{ borderRadius: 0 }}>
-                    {['Fairness', 'Privacy', 'Security', 'Robustness', 'Transparency', 'Safety', 'Operational'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-[hsl(var(--text-4))]">Severity</label>
-                <Select value={riskForm.severity} onValueChange={v => setRiskForm({ ...riskForm, severity: v })}>
-                  <SelectTrigger className="mt-1 w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                  <SelectContent style={{ borderRadius: 0 }}>
-                    {['critical', 'high', 'medium', 'low'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-[hsl(var(--text-4))]">Risk score (1–25)</label>
-              <Input type="number" min={1} max={25} value={riskForm.score} onChange={e => setRiskForm({ ...riskForm, score: Number(e.target.value) })} className="mt-1" style={{ borderRadius: 0 }} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setShowAddRisk(false)}>Cancel</Button>
-            <Button size="sm" onClick={addRisk}>Log Risk</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Link Model modal */}
-      <Dialog open={showLinkModel} onOpenChange={setShowLinkModel}>
-        <DialogContent style={{ borderRadius: 0, maxWidth: 520 }}>
-          <DialogHeader><DialogTitle>Link Existing Model</DialogTitle></DialogHeader>
-          <div className="py-1 max-h-80 overflow-y-auto">
-            {availableModels.length === 0 ? (
-              <p className="text-sm text-[hsl(var(--text-4))] py-6 text-center">All models are already linked to this use case.</p>
-            ) : availableModels.map(m => (
-              <div key={m.id} className="flex items-center justify-between px-1 py-2 border-b border-[hsl(var(--border))]">
-                <div>
-                  <p className="text-sm font-medium text-[hsl(var(--text-1))]">{m.name} <span className="text-xs font-mono text-[hsl(var(--text-4))]">{m.id}</span></p>
-                  <p className="text-[11px] text-[hsl(var(--text-4))]">{m.type} · v{m.version} · {m.riskTier}</p>
-                </div>
-                <Button size="sm" variant="outline" onClick={() => linkModel(m.id, m.name)}>Link</Button>
-              </div>
-            ))}
-          </div>
-          <DialogFooter><Button variant="outline" size="sm" onClick={() => setShowLinkModel(false)}>Close</Button></DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <ConfirmDialog
         open={confirmDelete}
         onOpenChange={setConfirmDelete}
         title="Delete use case?"
-        description={`This permanently deletes ${uc.title} (${uc.id}) and all its assessments. This cannot be undone.`}
+        description={`This soft-deletes ${uc.title}. It can be restored by an administrator.`}
         confirmLabel="Delete"
         variant="destructive"
         onConfirm={handleDelete}
