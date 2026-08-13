@@ -18,11 +18,11 @@ import {
   PolarGrid, PolarAngleAxis, PolarRadiusAxis, Cell,
 } from 'recharts';
 import {
-  BIAS_AUDITS,
   formatDate, Model,
 } from '../../data/seed';
 import { useModelsData } from '@/hooks/useModelsData';
 import { useModelDetailData } from '@/hooks/useModelDetailData';
+import { useModelAnalytics } from '@/hooks/useModelAnalytics';
 import type { AlertConfig } from '@/services/modelDetailService';
 import { useAuthStore } from '../../store/authStore';
 import { recordToModel } from '@/lib/modelMapping';
@@ -114,55 +114,6 @@ function KpiTile({ label, value, color, icon }: { label: string; value: string |
         <p style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'hsl(var(--text-4))', margin: 0 }}>{label}</p>
       </div>
       <p style={{ fontSize: 22, fontWeight: 700, color: color || 'hsl(var(--text-1))', margin: 0 }}>{value}</p>
-    </div>
-  );
-}
-
-/* ─── Data Lineage SVG ─────────────────────────────────────────────── */
-function DataLineage({ model }: { model: Model }) {
-  const [hovered, setHovered] = useState<string | null>(null);
-  const nodes = [
-    { id: 'ds', label: 'Datasets', sub: 'Source data', x: 70, y: 130, color: 'hsl(var(--s-in-tx))' },
-    { id: 'pre', label: 'Preprocessing', sub: 'Cleaning · scaling', x: 230, y: 130, color: 'hsl(var(--s-wn-tx))' },
-    { id: 'train', label: 'Training', sub: model.framework, x: 390, y: 130, color: 'hsl(var(--brand))' },
-    { id: 'mdl', label: (model.name ?? '').split(' ').slice(0, 2).join(' '), sub: `v${model.version}`, x: 550, y: 130, color: 'hsl(var(--s-ok-tx))' },
-    { id: 'inf', label: 'Inference', sub: `${model.monthlyInferences}/mo`, x: 710, y: 130, color: 'hsl(var(--brand))' },
-  ];
-  const edges = [
-    [140, 230 - 14],
-    [300, 390 - 14],
-    [460, 550 - 14],
-    [620, 710 - 14],
-  ];
-  return (
-    <div style={{ overflowX: 'auto' }}>
-      <svg width={820} height={210} style={{ display: 'block', minWidth: 820 }}>
-        <defs>
-          {edges.map((_, i) => (
-            <marker key={i} id={`arrowmd${i}`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="hsl(var(--brand))" fillOpacity="0.5" />
-            </marker>
-          ))}
-        </defs>
-        {edges.map(([x1, x2], i) => (
-          <line key={i} x1={x1} y1={130} x2={x2} y2={130}
-            stroke="hsl(var(--brand))" strokeWidth={1.5} strokeDasharray="5 4"
-            strokeOpacity={0.5} markerEnd={`url(#arrowmd${i})`} />
-        ))}
-        {nodes.map(n => (
-          <g key={n.id} onMouseEnter={() => setHovered(n.id)} onMouseLeave={() => setHovered(null)} style={{ cursor: 'pointer' }}>
-            <rect
-              x={n.x - 66} y={n.y - 42} width={132} height={84} rx={0}
-              fill={hovered === n.id ? 'hsl(var(--bg-raised))' : 'hsl(var(--bg-surface))'}
-              stroke={hovered === n.id ? n.color : 'hsl(var(--border))'}
-              strokeWidth={hovered === n.id ? 2 : 1}
-            />
-            <circle cx={n.x} cy={n.y - 20} r={8} fill={n.color} fillOpacity={0.15} stroke={n.color} strokeWidth={1.5} />
-            <text x={n.x} y={n.y - 3} textAnchor="middle" fontSize={12} fontWeight={600} fill={n.color}>{n.label}</text>
-            <text x={n.x} y={n.y + 16} textAnchor="middle" fontSize={10} fill="hsl(var(--text-4))">{n.sub}</text>
-          </g>
-        ))}
-      </svg>
     </div>
   );
 }
@@ -314,11 +265,22 @@ function ModelDetailView({ model }: { model: Model }) {
       .catch(() => toast.error('Failed to schedule audit'));
   };
 
-  // FIXED: was `a.model === model.name` (wrong field), now correctly matches by modelId
-  const modelBiasAudits = useMemo(() =>
-    BIAS_AUDITS?.filter?.(a => a.modelId === model.id || a.modelName === model.name) ?? [],
-    [model]
-  );
+  // Real analytics — Performance / Bias / Explainability / Lineage are read live
+  // from Supabase (model_performance_metrics, bias_audits, model_explanations,
+  // model_dna), keyed by this model's registry id. Performance is push-updated
+  // via a Realtime channel as the proxy writes telemetry.
+  const { performance, bias: modelBiasAudits, explanation, lineage } = useModelAnalytics(model.id, model.name);
+  const latestPerf = performance.length ? performance[performance.length - 1] : null;
+  const perfChart = useMemo(() => performance.map(p => ({
+    month: new Date(p.recordedAt).toLocaleDateString('en-GB', { month: 'short', year: '2-digit' }),
+    accuracy: Math.round(p.accuracy * 1000) / 10,
+    latency: Math.round(p.latencyP99),
+    drift: Math.round(p.driftScore * 10) / 10,
+  })), [performance]);
+  // Live latest values (fall back to the registry record when no telemetry yet).
+  const accVal = latestPerf ? Math.round(latestPerf.accuracy * 1000) / 10 : model.accuracy;
+  const latVal = latestPerf ? Math.round(latestPerf.latencyP99) : model.latencyMs;
+  const volVal = latestPerf ? latestPerf.requestCount.toLocaleString() : model.monthlyInferences;
 
   const riskTierColors: Record<string, string> = {
     high: 'hsl(var(--s-er-tx))',
@@ -352,45 +314,9 @@ function ModelDetailView({ model }: { model: Model }) {
       }));
   }, [modelBiasAudits]);
 
-  // SHAP features derived from model type
-  const shapFeatures = useMemo(() => {
-    if (model.type?.includes('Credit') || model.type?.includes('Loan') || model.type?.includes('Risk')) {
-      return [
-        { feature: 'credit_score', importance: 0.38 },
-        { feature: 'income_ratio', importance: 0.24 },
-        { feature: 'employment_years', importance: 0.17 },
-        { feature: 'debt_to_income', importance: 0.12 },
-        { feature: 'payment_history', importance: 0.09 },
-      ];
-    }
-    if (model.type?.includes('NLP') || model.type?.includes('Sentiment') || model.type?.includes('Text')) {
-      return [
-        { feature: 'sentiment_polarity', importance: 0.34 },
-        { feature: 'token_count', importance: 0.22 },
-        { feature: 'named_entities', importance: 0.19 },
-        { feature: 'negation_presence', importance: 0.14 },
-        { feature: 'sentence_complexity', importance: 0.11 },
-      ];
-    }
-    return [
-      { feature: `${model.type?.toLowerCase().replace(/\s/g, '_')}_score`, importance: 0.36 },
-      { feature: 'feature_confidence', importance: 0.26 },
-      { feature: 'input_variance', importance: 0.18 },
-      { feature: 'contextual_weight', importance: 0.12 },
-      { feature: 'residual_factor', importance: 0.08 },
-    ];
-  }, [model]);
-
-  // Pre-compute stable LIME impacts — deterministic seed from model.id so they don't flicker
-  const limeFeatures = useMemo(() => {
-    const seed = model.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-    return shapFeatures.map((f, i) => {
-      // Deterministic sign: alternate with an offset from seed
-      const sign = ((seed + i * 3) % 5 < 2) ? -1 : 1;
-      const pImpact = parseFloat((f.importance * sign * 0.65).toFixed(3));
-      return { ...f, pImpact };
-    });
-  }, [model, shapFeatures]);
+  // SHAP / LIME come from the computed explanation record (model_explanations).
+  const shapFeatures = explanation?.shap ?? [];
+  const limeFeatures = explanation?.lime ?? [];
 
   return (
     <div>
@@ -600,12 +526,24 @@ function ModelDetailView({ model }: { model: Model }) {
       ══════════════════════════════════════════════════════════ */}
       {tab === 'Performance' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* KPI row */}
+          {perfChart.length === 0 ? (
+            <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+              <CardContent style={{ padding: 48, textAlign: 'center' }}>
+                <Gauge size={28} style={{ color: 'hsl(var(--text-4))', margin: '0 auto 12px' }} />
+                <p style={{ color: 'hsl(var(--text-2))', fontSize: 15, fontWeight: 600, marginBottom: 6 }}>No telemetry yet</p>
+                <p style={{ color: 'hsl(var(--text-4))', fontSize: 13, maxWidth: 520, margin: '0 auto' }}>
+                  Performance, latency and drift populate from live inference telemetry. Route this model through the Sentinel proxy (or POST rollups to the metrics ingestion endpoint) and this view updates in real time.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+          <>
+          {/* KPI row — latest telemetry point */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-            <KpiTile label="Accuracy" value={`${model.accuracy}%`} color={model.accuracy > 90 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))'} icon={<ChartLine size={16} />} />
-            <KpiTile label="Latency p99" value={`${model.latencyMs}ms`} color={model.latencyMs < 200 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))'} icon={<Gauge size={16} />} />
-            <KpiTile label="Fairness Score" value={`${model.fairnessScore}%`} color={model.fairnessScore > 80 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))'} icon={<Scales size={16} />} />
-            <KpiTile label="Monthly Volume" value={model.monthlyInferences} color="hsl(var(--brand))" icon={<Robot size={16} />} />
+            <KpiTile label="Accuracy" value={`${accVal}%`} color={accVal > 90 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))'} icon={<ChartLine size={16} />} />
+            <KpiTile label="Latency p99" value={`${latVal}ms`} color={latVal < 200 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))'} icon={<Gauge size={16} />} />
+            <KpiTile label="Drift Score" value={`${latestPerf ? latestPerf.driftScore.toFixed(1) : '0'}%`} color={(latestPerf?.driftScore ?? 0) > 5 ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-ok-tx))'} icon={<Scales size={16} />} />
+            <KpiTile label="Requests (latest)" value={volVal} color="hsl(var(--brand))" icon={<Robot size={16} />} />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -615,7 +553,7 @@ function ModelDetailView({ model }: { model: Model }) {
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={model.performanceHistory}>
+                  <LineChart data={perfChart}>
                     <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
                     <XAxis dataKey="month" tick={{ fontSize: 10, fill: ct.axis }} />
                     <YAxis domain={[80, 100]} tick={{ fill: ct.axis, fontSize: 10 }} />
@@ -629,11 +567,11 @@ function ModelDetailView({ model }: { model: Model }) {
 
             <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
               <CardHeader className="pb-2">
-                <CardTitle style={{ fontSize: 13, color: 'hsl(var(--text-1))' }}>Latency (ms) Over Time</CardTitle>
+                <CardTitle style={{ fontSize: 13, color: 'hsl(var(--text-1))' }}>Latency p99 (ms) Over Time</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={model.performanceHistory}>
+                  <LineChart data={perfChart}>
                     <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
                     <XAxis dataKey="month" tick={{ fontSize: 10, fill: ct.axis }} />
                     <YAxis tick={{ fill: ct.axis, fontSize: 10 }} />
@@ -646,14 +584,14 @@ function ModelDetailView({ model }: { model: Model }) {
             </Card>
           </div>
 
-          {/* Drift history (simulated from performanceHistory delta) */}
+          {/* Feature drift over time — real drift_score telemetry */}
           <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
             <CardHeader className="pb-2">
               <CardTitle style={{ fontSize: 13, color: 'hsl(var(--text-1))' }}>Feature Drift Score Over Time</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={160}>
-                <LineChart data={model.performanceHistory.map((p, i) => ({ month: p.month, drift: [3.2, 4.1, 5.8, 6.2, 4.9, 3.7][i] || 4.0 }))}>
+                <LineChart data={perfChart}>
                   <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
                   <XAxis dataKey="month" tick={{ fontSize: 10, fill: ct.axis }} />
                   <YAxis tick={{ fill: ct.axis, fontSize: 10 }} />
@@ -665,6 +603,8 @@ function ModelDetailView({ model }: { model: Model }) {
               </ResponsiveContainer>
             </CardContent>
           </Card>
+          </>
+          )}
         </div>
       )}
 
@@ -891,6 +831,18 @@ function ModelDetailView({ model }: { model: Model }) {
       ══════════════════════════════════════════════════════════ */}
       {tab === 'Explainability' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {!explanation ? (
+            <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+              <CardContent style={{ padding: 48, textAlign: 'center' }}>
+                <Sparkle size={28} style={{ color: 'hsl(var(--text-4))', margin: '0 auto 12px' }} />
+                <p style={{ color: 'hsl(var(--text-2))', fontSize: 15, fontWeight: 600, marginBottom: 6 }}>No explanations computed</p>
+                <p style={{ color: 'hsl(var(--text-4))', fontSize: 13, maxWidth: 520, margin: '0 auto' }}>
+                  SHAP/LIME attributions are produced by an offline explainability job per model version and stored for audit. Once computed for this model, they appear here — evidencing EU AI Act Article 13 transparency.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+          <>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
               <CardHeader className="pb-2">
@@ -901,7 +853,7 @@ function ModelDetailView({ model }: { model: Model }) {
               </CardHeader>
               <CardContent>
                 <p style={{ fontSize: 11, color: 'hsl(var(--text-4))', marginBottom: 14 }}>
-                  Illustrative SHAP (SHapley Additive exPlanations) attributions for this model type — connect an explainability service for computed values
+                  SHAP (SHapley Additive exPlanations) — mean |SHAP| over {explanation.sampleSize?.toLocaleString() ?? '—'} samples · {explanation.method}
                 </p>
                 {shapFeatures.map(f => (
                   <div key={f.feature} style={{ marginBottom: 12 }}>
@@ -926,7 +878,7 @@ function ModelDetailView({ model }: { model: Model }) {
               </CardHeader>
               <CardContent>
                 <p style={{ fontSize: 11, color: 'hsl(var(--text-4))', marginBottom: 14 }}>
-                  Sample prediction explanation for a representative inference — perturbation-based local interpretability
+                  Perturbation-based local interpretability for a representative inference · {explanation.method}
                 </p>
                 {limeFeatures.map(f => (
                   <div key={f.feature} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, padding: '7px 10px', background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))' }}>
@@ -937,16 +889,16 @@ function ModelDetailView({ model }: { model: Model }) {
                         position: 'absolute',
                         top: 0,
                         height: '100%',
-                        left: f.pImpact >= 0 ? '50%' : `calc(50% - ${Math.abs(f.pImpact) * 80}px)`,
-                        width: `${Math.abs(f.pImpact) * 80}px`,
-                        background: f.pImpact >= 0 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))',
+                        left: f.impact >= 0 ? '50%' : `calc(50% - ${Math.abs(f.impact) * 80}px)`,
+                        width: `${Math.abs(f.impact) * 80}px`,
+                        background: f.impact >= 0 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))',
                         opacity: 0.85,
                       }} />
                       {/* Centre baseline */}
                       <div style={{ position: 'absolute', left: '50%', top: 0, width: 1, height: '100%', background: 'hsl(var(--border))' }} />
                     </div>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: f.pImpact >= 0 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))', width: 52, textAlign: 'right', flexShrink: 0 }}>
-                      {f.pImpact >= 0 ? '+' : ''}{(f.pImpact * 100).toFixed(1)}%
+                    <span style={{ fontSize: 12, fontWeight: 700, color: f.impact >= 0 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))', width: 52, textAlign: 'right', flexShrink: 0 }}>
+                      {f.impact >= 0 ? '+' : ''}{(f.impact * 100).toFixed(1)}%
                     </span>
                   </div>
                 ))}
@@ -954,16 +906,18 @@ function ModelDetailView({ model }: { model: Model }) {
             </Card>
           </div>
 
-          {/* Explainability method badge */}
-          <div style={{ padding: '12px 16px', background: 'hsl(var(--s-wn-bg))', border: '1px solid hsl(var(--s-wn-br))', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Warning size={16} style={{ color: 'hsl(var(--s-wn-tx))' }} weight="fill" />
+          {/* Explainability method badge — computed record */}
+          <div style={{ padding: '12px 16px', background: 'hsl(var(--brand-subtle))', border: '1px solid hsl(var(--brand-subtle))', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <Sparkle size={16} style={{ color: 'hsl(var(--brand))' }} weight="fill" />
             <div>
-              <span style={{ fontSize: 12, fontWeight: 600, color: 'hsl(var(--s-wn-tx))' }}>Illustrative SHAP + LIME sample</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'hsl(var(--brand))' }}>Explainability: {explanation.method}{explanation.modelVersion ? ` · ${explanation.modelVersion}` : ''}</span>
               <p style={{ fontSize: 11, color: 'hsl(var(--text-3))', marginTop: 2 }}>
-                These charts show representative feature attributions for this model type. Connect an explainability service (SHAP/LIME) in Settings to compute real per-model values — required to evidence EU AI Act Article 13 transparency.
+                Computed {formatDate(explanation.computedAt)}{explanation.sampleSize ? ` over ${explanation.sampleSize.toLocaleString()} samples` : ''}. Evidences EU AI Act Article 13 transparency for high-risk model decisions.
               </p>
             </div>
           </div>
+          </>
+          )}
         </div>
       )}
 
@@ -972,35 +926,66 @@ function ModelDetailView({ model }: { model: Model }) {
       ══════════════════════════════════════════════════════════ */}
       {tab === 'Data Lineage' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {!lineage ? (
+            <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+              <CardContent style={{ padding: 48, textAlign: 'center' }}>
+                <GitBranch size={28} style={{ color: 'hsl(var(--text-4))', margin: '0 auto 12px' }} />
+                <p style={{ color: 'hsl(var(--text-2))', fontSize: 15, fontWeight: 600, marginBottom: 6 }}>No lineage recorded</p>
+                <p style={{ color: 'hsl(var(--text-4))', fontSize: 13, maxWidth: 520, margin: '0 auto 16px' }}>
+                  Lineage is sourced from this model's DNA & Provenance record. Register a DNA record to capture the source datasets, training method and the cryptographically-linked provenance chain.
+                </p>
+                <Button size="sm" style={{ borderRadius: 0 }} onClick={() => navigate('/models/dna')}>Open Model DNA</Button>
+              </CardContent>
+            </Card>
+          ) : (
+          <>
+          {/* Provenance chain from the DNA record */}
           <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
             <CardHeader className="pb-2">
               <CardTitle style={{ fontSize: 13, color: 'hsl(var(--text-1))', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <GitBranch size={14} style={{ color: 'hsl(var(--brand))' }} />
-                Data Lineage Flow — {model.name}
+                Provenance Chain — {lineage.modelName}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p style={{ fontSize: 12, color: 'hsl(var(--text-3))', marginBottom: 16 }}>
-                End-to-end data provenance from source datasets through preprocessing, training, and inference. Hover over nodes for details.
+                Cryptographically-linked stages from source data through training to deployment, sourced from the model's DNA record.
               </p>
-              <DataLineage model={model} />
+              <div style={{ display: 'flex', gap: 0, overflowX: 'auto', paddingBottom: 8 }}>
+                {lineage.provenance.length === 0 && (
+                  <p style={{ fontSize: 12, color: 'hsl(var(--text-4))' }}>No provenance stages recorded on the DNA record.</p>
+                )}
+                {lineage.provenance.map((p, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'stretch' }}>
+                    <div style={{ width: 150, padding: '10px 12px', border: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-raised))' }}>
+                      <p style={{ fontSize: 11, fontWeight: 700, color: 'hsl(var(--text-1))', marginBottom: 3 }}>{p.stage}</p>
+                      <p style={{ fontSize: 10, color: 'hsl(var(--text-4))', marginBottom: 2 }}>{p.dataset}</p>
+                      <p style={{ fontSize: 9, color: 'hsl(var(--text-4))' }}>{p.date} · {p.by}</p>
+                      <p style={{ fontSize: 9, fontFamily: 'monospace', color: 'hsl(var(--brand))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.hash}</p>
+                    </div>
+                    {i < lineage.provenance.length - 1 && (
+                      <div style={{ display: 'flex', alignItems: 'center', padding: '0 4px' }}>
+                        <ArrowRight size={12} style={{ color: 'hsl(var(--brand))', opacity: 0.5 }} />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
 
-          <p style={{ fontSize: 11, color: 'hsl(var(--text-4))' }}>
-            Lineage attributes below are populated from the registry and the model's DNA/training pipeline. Fields not yet captured show “Not recorded”.
-          </p>
+          {/* Lineage attributes from the DNA record + registry */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
             {[
               { label: 'Framework', value: model.framework || 'Not recorded' },
               { label: 'Version', value: model.version || 'Not recorded' },
+              { label: 'Base Model', value: lineage.baseModel || 'Not recorded' },
+              { label: 'Training Dataset', value: lineage.trainingDataset || 'Not recorded' },
+              { label: 'Training Method', value: lineage.trainingMethod || 'Not recorded' },
+              { label: 'Fine-tuning', value: lineage.fineTuningMethod || 'Not recorded' },
+              { label: 'Parameters', value: lineage.parametersCount ? lineage.parametersCount.toLocaleString() : 'Not recorded' },
+              { label: 'Feature Count', value: lineage.featureCount != null ? String(lineage.featureCount) : 'Not recorded' },
               { label: 'Last Validated', value: model.lastValidated ? formatDate(model.lastValidated) : 'Not recorded' },
-              { label: 'Monthly Inferences', value: model.monthlyInferences || 'Not recorded' },
-              { label: 'Lifecycle Stage', value: model.lifecyclePhase || 'Not recorded' },
-              { label: 'Source Datasets', value: 'Not recorded' },
-              { label: 'Feature Count', value: 'Not recorded' },
-              { label: 'Preprocessing Pipeline', value: 'Not recorded' },
-              { label: 'Data Retention', value: 'Not recorded' },
             ].map(item => (
               <div key={item.label} style={{ padding: '10px 14px', background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))' }}>
                 <p style={{ fontSize: 10, color: 'hsl(var(--text-4))', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>{item.label}</p>
@@ -1008,6 +993,8 @@ function ModelDetailView({ model }: { model: Model }) {
               </div>
             ))}
           </div>
+          </>
+          )}
         </div>
       )}
 
