@@ -1,3 +1,15 @@
+## 1.51.0 (2026-08-13)
+
+* Merge PR #69: hide org/tenant switcher in top header ([134dfc7](https://github.com/CERTIFYI-AI/sentinel/commit/134dfc7))
+* Merge PR #70: complete & interlink the Impact & Risk (AIIA) modules ([d0326aa](https://github.com/CERTIFYI-AI/sentinel/commit/d0326aa))
+* feat(aiia): backend foundation + data layer for Impact & Risk modules ([32aed52](https://github.com/CERTIFYI-AI/sentinel/commit/32aed52))
+* feat(aiia): MRC — persist votes/agenda/meetings/decisions + model interlink ([7e7a017](https://github.com/CERTIFYI-AI/sentinel/commit/7e7a017))
+* feat(aiia): Risk Classification — correct EU AI Act engine + real persistence + interlink ([20a6bc7](https://github.com/CERTIFYI-AI/sentinel/commit/20a6bc7))
+* feat(aiia): Use Case Registry — real persistence, fixed Create flow, model interlink ([2434d76](https://github.com/CERTIFYI-AI/sentinel/commit/2434d76)), closes [risk/Hi#Risk](https://github.com/risk/Hi/issues/Risk)
+* feat(aiia): wire Impact Assessments page to real data + model/use-case interlink ([dbce5ba](https://github.com/CERTIFYI-AI/sentinel/commit/dbce5ba))
+* feat(models): Governance cross-link card on Model Detail (reverse interlink) ([0bfe4b4](https://github.com/CERTIFYI-AI/sentinel/commit/0bfe4b4))
+* chore(ui): hide the org/tenant switcher in the top header ([1788a4b](https://github.com/CERTIFYI-AI/sentinel/commit/1788a4b))
+
 ## 1.50.0 (2026-08-13)
 
 * Merge PR #68: real-time Model Detail analytics (Performance/Bias/Explainability/Lineage) ([b94222c](https://github.com/CERTIFYI-AI/sentinel/commit/b94222c))
