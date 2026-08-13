@@ -1,3 +1,11 @@
+## 1.52.0 (2026-08-13)
+
+* Merge PR #71: close interlink audit findings + UI/UX polish across AI Governance ([5343a33](https://github.com/CERTIFYI-AI/sentinel/commit/5343a33))
+* feat(interlink): model-scoped deep-links, risk<->use-case link, link polish ([5dc485a](https://github.com/CERTIFYI-AI/sentinel/commit/5dc485a))
+* feat(models): DNA & Lifecycle deep-link to the registry (uuid-keyed) + polish ([8845690](https://github.com/CERTIFYI-AI/sentinel/commit/8845690))
+* feat(prompts): link prompts to governed models + polish ([4d42cce](https://github.com/CERTIFYI-AI/sentinel/commit/4d42cce))
+* fix(interlink): unify model id-space + add prompt/risk interlink contracts ([484b759](https://github.com/CERTIFYI-AI/sentinel/commit/484b759))
+
 ## 1.51.0 (2026-08-13)
 
 * Merge PR #69: hide org/tenant switcher in top header ([134dfc7](https://github.com/CERTIFYI-AI/sentinel/commit/134dfc7))
