@@ -1,3 +1,8 @@
+## 1.48.0 (2026-08-13)
+
+* Merge PR #65: Prompt Registry — real CRUD to prompt_registry (Module 4) ([a6f0e53](https://github.com/CERTIFYI-AI/sentinel/commit/a6f0e53))
+* feat(prompt-registry): wire real CRUD to prompt_registry (Module 4) ([3e4e6da](https://github.com/CERTIFYI-AI/sentinel/commit/3e4e6da))
+
 ## 1.47.0 (2026-08-13)
 
 * Merge PR #64: Model DNA & Lineage — real CRUD to model_dna + NepBERTa (Module 3) ([e75d10e](https://github.com/CERTIFYI-AI/sentinel/commit/e75d10e))
