@@ -1,3 +1,13 @@
+## 1.53.0 (2026-08-13)
+
+* Merge PR #72: fix & enhance all 8 Validation & Evals modules ([5c8a0f4](https://github.com/CERTIFYI-AI/sentinel/commit/5c8a0f4))
+* feat(evals): Dataset Wizard persists into the catalog + honest Data Explorer ([dbf985d](https://github.com/CERTIFYI-AI/sentinel/commit/dbf985d))
+* feat(evals): Scenario Editor, Trace Viewer & Metric Studio — real editors + model interlink ([5706075](https://github.com/CERTIFYI-AI/sentinel/commit/5706075))
+* feat(evals): Validation Lab, Explainability & Bias Audits — model pickers, honest UX, fixed cross-li ([9afaf77](https://github.com/CERTIFYI-AI/sentinel/commit/9afaf77))
+* feat(platform): addressable governance records + register audited models ([8c6b6aa](https://github.com/CERTIFYI-AI/sentinel/commit/8c6b6aa))
+* refactor(evals): demolish mock surfaces + orphan routes, surface real ones ([852af40](https://github.com/CERTIFYI-AI/sentinel/commit/852af40))
+* fix(evals): org isolation, honest writes, one bias-audit source, DB-side demo data ([02143b4](https://github.com/CERTIFYI-AI/sentinel/commit/02143b4))
+
 ## 1.52.0 (2026-08-13)
 
 * Merge PR #71: close interlink audit findings + UI/UX polish across AI Governance ([5343a33](https://github.com/CERTIFYI-AI/sentinel/commit/5343a33))
