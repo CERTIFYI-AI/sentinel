@@ -822,6 +822,7 @@ export interface PromptRecord {
   content: string;
   tags: string[];
   usedBy: string[];
+  usedByModelIds?: string[];   // interlink -> ai_models.id (governed models using this prompt)
   tokenCount: number;
   lastModified: string;
   createdDate: string;

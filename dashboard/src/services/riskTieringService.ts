@@ -23,6 +23,7 @@ export interface RiskClassification {
   reviewDueAt: string | null
   status: string               // draft | in_review | approved
   modelId: string | null
+  useCaseId: string | null     // interlink -> use_cases.id (stored in metadata)
   annexIII: string[]
   obligations: string[]
   gpai: boolean
@@ -127,7 +128,8 @@ function fromRow(r: Record<string, any>): RiskClassification {
     classifiedAt: r.classified_at ?? null,
     reviewDueAt: r.review_due_at ?? null,
     status: r.status ?? 'draft',
-    modelId: meta.model_id ?? r.system_id ?? null,
+    modelId: meta.model_id || r.system_id || null,   // '' -> null
+    useCaseId: meta.use_case_id ?? null,
     annexIII: asArr<string>(meta.annexIII),
     obligations: asArr<string>(meta.obligations),
     gpai: !!meta.gpai,
@@ -138,7 +140,7 @@ function fromRow(r: Record<string, any>): RiskClassification {
 function toRow(c: Partial<RiskClassification>): Record<string, any> {
   const row: Record<string, any> = {}
   if (c.id !== undefined) row.id = c.id
-  if (c.systemId !== undefined) row.system_id = c.systemId
+  if (c.systemId !== undefined) row.system_id = c.systemId || null   // normalize '' -> null
   if (c.systemName !== undefined) row.system_name = c.systemName
   if (c.riskTier !== undefined) row.risk_tier = c.riskTier
   if (c.riskScore !== undefined) row.risk_score = c.riskScore
@@ -151,9 +153,10 @@ function toRow(c: Partial<RiskClassification>): Record<string, any> {
   if (c.reviewDueAt !== undefined) row.review_due_at = c.reviewDueAt
   if (c.status !== undefined) row.status = c.status
   // Interlink + questionnaire detail live in metadata.
-  if (c.modelId !== undefined || c.annexIII !== undefined || c.obligations !== undefined || c.gpai !== undefined) {
+  if (c.modelId !== undefined || c.useCaseId !== undefined || c.annexIII !== undefined || c.obligations !== undefined || c.gpai !== undefined) {
     row.metadata = {
-      ...(c.modelId !== undefined ? { model_id: c.modelId } : {}),
+      ...(c.modelId !== undefined ? { model_id: c.modelId || null } : {}),
+      ...(c.useCaseId !== undefined ? { use_case_id: c.useCaseId || null } : {}),
       ...(c.annexIII !== undefined ? { annexIII: c.annexIII } : {}),
       ...(c.obligations !== undefined ? { obligations: c.obligations } : {}),
       ...(c.gpai !== undefined ? { gpai: c.gpai } : {}),

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
-import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useRiskClassifications, useModelOptions } from '@/hooks/useAiiaData';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useRiskClassifications, useModelOptions, useUseCases } from '@/hooks/useAiiaData';
 import {
   deriveEuTier, PROHIBITED_PRACTICES, ANNEX_III_CATEGORIES,
   type RiskClassification, type RiskTier, type TieringInput,
@@ -10,7 +10,7 @@ import {
 import { toast } from 'sonner';
 import {
   Plus, Eye, Trash, Check, ArrowRight, Warning, Info, CheckCircle,
-  ShieldCheck, Spinner, Prohibit,
+  ShieldCheck, Spinner, Prohibit, X, ArrowSquareOut,
 } from '@phosphor-icons/react';
 import { Card, CardContent } from '../components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
@@ -82,20 +82,40 @@ function YesNo({ value, onChange }: { value: boolean; onChange: (v: boolean) => 
   );
 }
 
+// Pill-style interlink to a related entity — clearly clickable, with a hover state.
+function PillLink({ label, onClick, size = 'sm' }: { label: string; onClick: (e?: React.MouseEvent) => void; size?: 'sm' | 'xs' }) {
+  const sizing = size === 'xs' ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-sm';
+  return (
+    <button
+      onClick={onClick}
+      className={`inline-flex items-center gap-1.5 font-medium rounded-none border border-[hsl(var(--brand))/30] bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))] cursor-pointer transition-colors hover:bg-[hsl(var(--brand))] hover:text-[hsl(var(--bg-surface))] ${sizing}`}
+    >
+      {label} <ArrowSquareOut size={size === 'xs' ? 11 : 13} />
+    </button>
+  );
+}
+
 // ═════════════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═════════════════════════════════════════════════════════════════════════════
 
 export default function AIRiskTiering() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const modelParam = searchParams.get('model');
+  const openParam = searchParams.get('open');
   const { data: items, isLoading, error, save, remove } = useRiskClassifications();
   const { models } = useModelOptions();
+  const { data: useCases } = useUseCases();
 
   const modelById = useMemo(() => {
     const m: Record<string, typeof models[number]> = {};
     for (const model of models) m[model.id] = model;
     return m;
   }, [models]);
+
+  // Resolve a use case id to its title; "Unavailable" when it can't be resolved.
+  const useCaseTitle = (id: string | null) => (id ? (useCases.find(u => u.id === id)?.title ?? 'Unavailable') : null);
 
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<RiskClassification | null>(null);
@@ -112,6 +132,7 @@ export default function AIRiskTiering() {
   const [wFundRights, setWFundRights] = useState('');
   const [wClassifier, setWClassifier] = useState('');
   const [wReviewDue, setWReviewDue] = useState('');
+  const [wUseCaseId, setWUseCaseId] = useState('');
 
   // Wizard — questionnaire (TieringInput)
   const [input, setInput] = useState<TieringInput>(EMPTY_INPUT);
@@ -133,12 +154,23 @@ export default function AIRiskTiering() {
   const classifierValid = wClassifier.trim().length > 0;
   const canConfirm = systemValid && classifierValid && !save.isPending;
 
-  const filtered = useMemo(() => items.filter(i =>
-    !search ||
-    i.systemName.toLowerCase().includes(search.toLowerCase()) ||
-    i.id.toLowerCase().includes(search.toLowerCase()) ||
-    i.classifier.toLowerCase().includes(search.toLowerCase())
-  ), [items, search]);
+  const filtered = useMemo(() => items.filter(i => {
+    const matchesSearch = !search ||
+      i.systemName.toLowerCase().includes(search.toLowerCase()) ||
+      i.id.toLowerCase().includes(search.toLowerCase()) ||
+      i.classifier.toLowerCase().includes(search.toLowerCase());
+    const matchesModel = !modelParam || i.modelId === modelParam;
+    return matchesSearch && matchesModel;
+  }), [items, search, modelParam]);
+
+  // Deep-link: ?open=<id> opens that classification's detail sheet once loaded.
+  const openedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!openParam || items.length === 0) return;
+    if (openedRef.current === openParam) return;
+    const it = items.find(i => i.id === openParam);
+    if (it) { setSelected(it); setSheetOpen(true); openedRef.current = openParam; }
+  }, [openParam, items]);
 
   const count = (t: RiskTier) => items.filter(i => i.riskTier === t).length;
   const unacceptable = count('unacceptable');
@@ -150,7 +182,7 @@ export default function AIRiskTiering() {
     setStep(1);
     setSysMode('registry'); setWModelId(''); setWSystemName('');
     setWUseCase(''); setWAffectedUsers(''); setWFundRights('');
-    setWClassifier(''); setWReviewDue('');
+    setWClassifier(''); setWReviewDue(''); setWUseCaseId('');
     setInput(EMPTY_INPUT);
   }
 
@@ -174,6 +206,7 @@ export default function AIRiskTiering() {
       reviewDueAt: wReviewDue ? new Date(wReviewDue).toISOString() : null,
       status: 'draft',
       modelId,
+      useCaseId: wUseCaseId || null,
     };
     save.mutate(payload, {
       onSuccess: () => {
@@ -296,6 +329,22 @@ export default function AIRiskTiering() {
         onClearAll={() => setSearch('')}
       />
 
+      {/* Model-scoped filter chip (deep-link from a model's Governance card) */}
+      {modelParam && (
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-[hsl(var(--brand-subtle))] border border-[hsl(var(--brand))/30] text-[hsl(var(--brand))] rounded-none">
+            <span>Filtered to <strong>{modelById[modelParam]?.name ?? 'Unavailable'}</strong></span>
+            <button
+              aria-label="Clear model filter"
+              onClick={() => setSearchParams({})}
+              className="inline-flex items-center hover:text-[hsl(var(--text-1))] cursor-pointer"
+            >
+              <X size={14} />
+            </button>
+          </span>
+        </div>
+      )}
+
       {/* Table */}
       <Card className="border-[hsl(var(--border))] bg-surface rounded-none overflow-hidden">
         <div className="overflow-x-auto">
@@ -332,11 +381,14 @@ export default function AIRiskTiering() {
                     onClick={() => { setSelected(item); setSheetOpen(true); }}>
                     <td className="px-4 py-3">
                       <div className="font-medium text-[hsl(var(--text-1))]">{item.systemName}</div>
-                      {linkedModel && (
-                        <button onClick={e => { e.stopPropagation(); navigate(`/models/${item.modelId}`); }}
-                          className="text-[11px] text-[hsl(var(--brand))] hover:underline">
-                          ↳ {linkedModel.name}
-                        </button>
+                      {item.modelId && (
+                        <div className="mt-1">
+                          <PillLink
+                            label={linkedModel?.name ?? 'Unavailable'}
+                            size="xs"
+                            onClick={e => { e?.stopPropagation(); navigate(`/models/${item.modelId}`); }}
+                          />
+                        </div>
                       )}
                     </td>
                     <td className="px-4 py-3">
@@ -482,6 +534,16 @@ export default function AIRiskTiering() {
                         </div>
                       </div>
 
+                      {selected.useCaseId && (
+                        <div>
+                          <p className="text-xs font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Linked Use Case</p>
+                          <PillLink
+                            label={useCaseTitle(selected.useCaseId)!}
+                            onClick={() => navigate(`/use-cases/${selected.useCaseId}`)}
+                          />
+                        </div>
+                      )}
+
                       <div className="grid grid-cols-3 gap-3">
                         {[
                           { label: 'Total Obligations', value: total },
@@ -578,6 +640,17 @@ export default function AIRiskTiering() {
                 <label className="text-xs font-semibold text-[hsl(var(--text-2))] uppercase tracking-wide">Intended Use Case</label>
                 <textarea className="w-full text-sm border p-3 min-h-[80px] rounded-none border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none resize-none"
                   value={wUseCase} onChange={e => setWUseCase(e.target.value)} placeholder="Describe the intended purpose of this AI system..." />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-[hsl(var(--text-2))] uppercase tracking-wide">Linked Use Case</label>
+                <Select value={wUseCaseId || '__none'} onValueChange={v => setWUseCaseId(v === '__none' ? '' : v)}>
+                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue placeholder="None" /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    <SelectItem value="__none">— None —</SelectItem>
+                    {useCases.map(u => <SelectItem key={u.id} value={u.id}>{u.title}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="grid grid-cols-2 gap-3">

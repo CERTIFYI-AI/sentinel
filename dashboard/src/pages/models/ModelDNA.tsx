@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -18,6 +19,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from '../../components/ui/input';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { PageHeader } from '../../components/ui/PageHeader';
+
+/* ─── Helpers ─────────────────────────────────────────────────────────── */
+// A DNA record's `id` now carries the canonical ai_models.id (uuid) for demo
+// rows, so it can deep-link to the registry. Legacy/unmatched rows still hold a
+// business code and must not resolve the detail route.
+const isUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
 /* ─── Provenance Timeline Graph ───────────────────────────────────────── */
 function ProvenanceTimeline({ stages }: { stages: ProvenanceStage[] }) {
@@ -86,6 +93,7 @@ function CopyButton({ text }: { text: string }) {
 
 /* ─── Main Component ───────────────────────────────────────────────────── */
 export default function ModelDNA() {
+  const navigate = useNavigate();
   const { orgName } = useSettingsStore();
   const { records, isLoading, saveDna, deleteDna } = useModelDnaData();
   const [selectedModelId, setSelectedModelId] = useState('');
@@ -148,7 +156,16 @@ export default function ModelDNA() {
   };
 
   if (isLoading) {
-    return <div style={{ padding: 24, fontSize: 13, color: 'hsl(var(--text-4))' }}>Loading model DNA…</div>;
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <PageHeader title="Model DNA & Provenance Chain"
+          subtitle={`${orgName} · Immutable fingerprinting & provenance`} />
+        <Card><CardContent style={{ padding: 48, textAlign: 'center', color: 'hsl(var(--text-4))' }}>
+          <Fingerprint size={26} style={{ opacity: 0.4, margin: '0 auto 10px', animation: 'pulse 1.4s ease-in-out infinite' }} />
+          <p style={{ fontSize: 13 }}>Loading model DNA…</p>
+        </CardContent></Card>
+      </div>
+    );
   }
   if (!model) {
     return (
@@ -185,13 +202,24 @@ export default function ModelDNA() {
               <SelectContent style={{ borderRadius: 0 }}>
                 {records.map(m => (
                   <SelectItem key={m.id} value={m.id}>
-                    <span style={{ fontFamily: 'monospace', fontSize: 11 }}>{m.id}</span>
-                    {' — '}
-                    <span style={{ fontSize: 12 }}>{m.name}</span>
+                    <span style={{ fontSize: 12, fontWeight: 500 }}>{m.name}</span>
+                    {(m.type && m.type !== '—') && (
+                      <span style={{ fontSize: 11, color: 'hsl(var(--text-4))' }}>{' · '}{m.type}</span>
+                    )}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<ArrowUpRight size={13} />}
+              disabled={!isUuid(model.id)}
+              title={isUuid(model.id) ? `Open ${model.name} in the model registry` : 'No linked registry model'}
+              onClick={() => { if (isUuid(model.id)) navigate('/models/inventory/' + model.id); }}
+            >
+              Open model record
+            </Button>
             <Button variant="outline" size="sm" onClick={() => setRegisterOpen(true)}>Register DNA</Button>
             <Button variant="outline" size="sm" onClick={() => setDeleteOpen(true)}>Delete</Button>
             <Button variant="outline" size="sm" leftIcon={<DownloadSimple size={13} />} onClick={exportCert}>
@@ -408,6 +436,13 @@ export default function ModelDNA() {
               <p style={{ fontSize: 12, color: 'hsl(var(--text-4))', marginBottom: 16 }}>
                 Every dataset, transformation, and training run is cryptographically linked. This lineage is immutable and audit-ready per EU AI Act Article 12.
               </p>
+              {model.provenance.length === 0 ? (
+                <div style={{ padding: '32px 16px', textAlign: 'center', color: 'hsl(var(--text-4))', border: '1px dashed hsl(var(--border))', background: 'hsl(var(--bg-raised))' }}>
+                  <TreeStructure size={24} style={{ opacity: 0.4, margin: '0 auto 8px' }} />
+                  <p style={{ fontSize: 12 }}>No lineage stages recorded yet for {model.name}.</p>
+                </div>
+              ) : (
+              <>
               <ProvenanceTimeline stages={model.provenance} />
 
               <div style={{ marginTop: 20 }}>
@@ -421,7 +456,7 @@ export default function ModelDNA() {
                   </thead>
                   <tbody>
                     {model.provenance.map((p, i) => (
-                      <tr key={i} style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                      <tr key={i} style={{ borderBottom: '1px solid hsl(var(--border))', background: i % 2 === 1 ? 'hsl(var(--bg-raised))' : 'transparent' }}>
                         <td style={{ padding: '9px 12px', color: 'hsl(var(--text-4))', fontFamily: 'monospace', fontSize: 11 }}>{String(i + 1).padStart(2, '0')}</td>
                         <td style={{ padding: '9px 12px', fontWeight: 600, color: 'hsl(var(--text-1))' }}>{p.stage}</td>
                         <td style={{ padding: '9px 12px', color: 'hsl(var(--text-3))' }}>{p.dataset}</td>
@@ -438,6 +473,8 @@ export default function ModelDNA() {
                   </tbody>
                 </table>
               </div>
+              </>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

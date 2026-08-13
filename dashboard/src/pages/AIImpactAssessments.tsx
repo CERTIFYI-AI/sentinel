@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect, useMemo, useRef } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { exportCsv } from '@/lib/exportUtils'
@@ -104,12 +104,17 @@ const BLANK: FormState = {
 
 export default function AIImpactAssessments() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const modelParam = searchParams.get('model')
+  const openParam = searchParams.get('open')
   const { data: records, isLoading, error, save, remove } = useImpactAssessments()
   const { models } = useModelOptions()
   const { data: useCases } = useQuery<UseCase[]>({ queryKey: ['use-cases'], queryFn: fetchUseCases, staleTime: 20_000 })
 
-  const modelName = (id: string | null) => (id ? (models.find(m => m.id === id)?.name ?? id) : null)
-  const useCaseTitle = (id: string | null) => (id ? (useCases?.find(u => u.id === id)?.title ?? id) : null)
+  // Resolve a linked entity's display name; when an id is present but can't be
+  // resolved to a name, show "Unavailable" rather than leaking a raw uuid.
+  const modelName = (id: string | null) => (id ? (models.find(m => m.id === id)?.name ?? 'Unavailable') : null)
+  const useCaseTitle = (id: string | null) => (id ? (useCases?.find(u => u.id === id)?.title ?? 'Unavailable') : null)
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
@@ -139,14 +144,24 @@ export default function AIImpactAssessments() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [records])
 
+  // Deep-link: ?open=<id> opens that record's detail drawer once it loads.
+  const openedRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!openParam || records.length === 0) return
+    if (openedRef.current === openParam) return
+    const rec = records.find(r => r.id === openParam)
+    if (rec) { setSelected(rec); openedRef.current = openParam }
+  }, [openParam, records])
+
   const filtered = useMemo(() => records.filter(r => {
     const q = search.toLowerCase()
     const ms = r.title.toLowerCase().includes(q)
       || r.assessmentId.toLowerCase().includes(q)
       || r.assessor.toLowerCase().includes(q)
       || r.type.toLowerCase().includes(q)
-    return ms && (statusFilter === 'All' || r.status === statusFilter) && (riskFilter === 'All' || r.riskLevel === riskFilter)
-  }), [records, search, statusFilter, riskFilter])
+    const modelMatch = !modelParam || r.modelId === modelParam
+    return ms && modelMatch && (statusFilter === 'All' || r.status === statusFilter) && (riskFilter === 'All' || r.riskLevel === riskFilter)
+  }), [records, search, statusFilter, riskFilter, modelParam])
 
   const stats = {
     total: records.length,
@@ -294,6 +309,22 @@ export default function AIImpactAssessments() {
         </Select>
       </div>
 
+      {/* Model-scoped filter chip (deep-link from a model's Governance card) */}
+      {modelParam && (
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-[hsl(var(--brand-subtle))] border border-[hsl(var(--brand))/30] text-[hsl(var(--brand))] rounded-none">
+            <span>Filtered to <strong>{modelName(modelParam)}</strong></span>
+            <button
+              aria-label="Clear model filter"
+              onClick={() => setSearchParams({})}
+              className="inline-flex items-center hover:text-[hsl(var(--text-1))] cursor-pointer"
+            >
+              <X size={14} />
+            </button>
+          </span>
+        </div>
+      )}
+
       {/* Table */}
       <Card className="border-[hsl(var(--border))] bg-surface rounded-none overflow-hidden">
         <div className="overflow-x-auto">
@@ -418,23 +449,13 @@ export default function AIImpactAssessments() {
                         <div>
                           <p className="text-xs text-[hsl(var(--text-3))] uppercase tracking-wider mb-1">Model</p>
                           {selected.modelId ? (
-                            <button
-                              onClick={() => navigate(`/models/${selected.modelId}`)}
-                              className="inline-flex items-center gap-1.5 text-sm font-medium text-[hsl(var(--brand))] hover:underline"
-                            >
-                              {modelName(selected.modelId)} <ArrowSquareOut size={14} />
-                            </button>
+                            <PillLink label={modelName(selected.modelId)!} onClick={() => navigate(`/models/${selected.modelId}`)} />
                           ) : <p className="text-sm text-[hsl(var(--text-3))]">—</p>}
                         </div>
                         <div>
                           <p className="text-xs text-[hsl(var(--text-3))] uppercase tracking-wider mb-1">Use Case</p>
                           {selected.useCaseId ? (
-                            <button
-                              onClick={() => navigate(`/use-cases/${selected.useCaseId}`)}
-                              className="inline-flex items-center gap-1.5 text-sm font-medium text-[hsl(var(--brand))] hover:underline"
-                            >
-                              {useCaseTitle(selected.useCaseId)} <ArrowSquareOut size={14} />
-                            </button>
+                            <PillLink label={useCaseTitle(selected.useCaseId)!} onClick={() => navigate(`/use-cases/${selected.useCaseId}`)} />
                           ) : <p className="text-sm text-[hsl(var(--text-3))]">—</p>}
                         </div>
                       </div>
@@ -615,6 +636,18 @@ export default function AIImpactAssessments() {
         onClose={() => setDeleteTarget(null)}
       />
     </div>
+  )
+}
+
+// Pill-style interlink to a related entity — clearly clickable, with a hover state.
+function PillLink({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 text-sm font-medium rounded-none border border-[hsl(var(--brand))/30] bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))] cursor-pointer transition-colors hover:bg-[hsl(var(--brand))] hover:text-[hsl(var(--bg-surface))]"
+    >
+      {label} <ArrowSquareOut size={13} />
+    </button>
   )
 }
 

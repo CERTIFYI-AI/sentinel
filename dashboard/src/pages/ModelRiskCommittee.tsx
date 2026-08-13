@@ -1,7 +1,7 @@
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useMemo, useState, useEffect, useRef } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { useSupabaseTable } from '@/hooks/useSupabaseTable';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import {
   Users, CheckCircle, XCircle, Warning, Clock, FileText, ChartBar,
   ArrowRight, Gavel, Calendar, Star, Minus, Trash, Plus, CaretDown, CaretRight,
+  X, ArrowSquareOut,
 } from '@phosphor-icons/react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip,
@@ -59,10 +60,25 @@ function tierStyle(t?: string) {
 const initials = (name?: string | null) => (name || '?').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 const shortDate = (iso?: string | null) => (iso ? new Date(iso).toISOString().slice(0, 10) : '—');
 
+// Pill-style interlink to a related entity — clearly clickable, with a hover state.
+function PillLink({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium rounded-none border border-[hsl(var(--brand))/30] bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))] cursor-pointer transition-colors hover:bg-[hsl(var(--brand))] hover:text-[hsl(var(--bg-surface))]"
+    >
+      {label} <ArrowSquareOut size={11} />
+    </button>
+  );
+}
+
 export default function ModelRiskCommittee() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const modelParam = searchParams.get('model');
+  const openParam = searchParams.get('open');
   const authUser = useAuthStore(s => s.user);
   const voterId = authUser?.id || 'anonymous';
   const voterName = authUser?.name || authUser?.email || 'Committee Member';
@@ -126,6 +142,22 @@ export default function ModelRiskCommittee() {
   const modelById = useMemo(() => new Map(models.map(m => [m.id, m])), [models]);
   const pendingItems = agenda.filter(a => a.decision === 'pending');
   const approvedCount = agenda.filter(a => a.decision === 'approved').length;
+
+  // Model-scoped deep-link: ?model=<id> narrows the agenda (and, by extension,
+  // the votes shown per item) to a single model's reviews.
+  const visibleAgenda = useMemo(
+    () => (modelParam ? agenda.filter(a => a.modelId === modelParam) : agenda),
+    [agenda, modelParam],
+  );
+
+  // Deep-link: ?open=<id> opens that agenda item's vote dialog once it loads.
+  const openedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!openParam || agenda.length === 0) return;
+    if (openedRef.current === openParam) return;
+    const item = agenda.find(a => a.id === openParam);
+    if (item) { setTab('agenda'); setVoteDialog(item); setChoice('approve'); setRationale(''); openedRef.current = openParam; }
+  }, [openParam, agenda]);
 
   // ── Quorum — single source of truth ───────────────────────────────────────
   // Eligible = live committee members flagged as counting toward quorum. The
@@ -329,6 +361,22 @@ export default function ModelRiskCommittee() {
 
           {/* ── Agenda ── */}
           <TabsContent value="agenda" className="mt-4 space-y-4">
+            {/* Model-scoped filter chip (deep-link from a model's Governance card) */}
+            {modelParam && (
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-[hsl(var(--brand-subtle))] border border-[hsl(var(--brand))/30] text-[hsl(var(--brand))] rounded-none">
+                  <span>Filtered to <strong>{modelById.get(modelParam)?.name ?? 'Unavailable'}</strong></span>
+                  <button
+                    aria-label="Clear model filter"
+                    onClick={() => setSearchParams({})}
+                    className="inline-flex items-center hover:text-[hsl(var(--text-1))] cursor-pointer"
+                  >
+                    <X size={14} />
+                  </button>
+                </span>
+              </div>
+            )}
+
             <div className="flex items-center justify-between">
               <p className="text-xs text-[hsl(var(--text-3))]">Model reviews before the committee. Votes and decisions persist to the record.</p>
               <Button size="sm" variant="outline" className="rounded-none" onClick={() => setAgendaOpen(true)}>
@@ -338,13 +386,13 @@ export default function ModelRiskCommittee() {
 
             {isLoading ? (
               <div className="p-10 text-center text-sm text-[hsl(var(--text-3))]">Loading agenda…</div>
-            ) : agenda.length === 0 ? (
+            ) : visibleAgenda.length === 0 ? (
               <div className="p-10 text-center border border-dashed border-[hsl(var(--border))] rounded-none">
                 <FileText size={28} className="mx-auto mb-2 text-[hsl(var(--text-4))]" />
-                <p className="text-sm text-[hsl(var(--text-2))]">No agenda items yet.</p>
-                <p className="text-xs text-[hsl(var(--text-4))] mt-1">Add a model review to bring it before the committee.</p>
+                <p className="text-sm text-[hsl(var(--text-2))]">{modelParam ? 'No agenda items for this model.' : 'No agenda items yet.'}</p>
+                <p className="text-xs text-[hsl(var(--text-4))] mt-1">{modelParam ? 'Clear the filter to see all committee reviews.' : 'Add a model review to bring it before the committee.'}</p>
               </div>
-            ) : agenda.map(item => {
+            ) : visibleAgenda.map(item => {
               const ss = DECISION_META[item.decision];
               const mo = item.modelId ? modelById.get(item.modelId) : undefined;
               const ts = tierStyle(mo?.riskTier);
@@ -362,11 +410,12 @@ export default function ModelRiskCommittee() {
                         </div>
                         <p className="text-lg font-bold text-[hsl(var(--text-1))]">{item.title}</p>
                         {item.modelId && (
-                          <button
-                            onClick={() => navigate(`/models/${item.modelId}`)}
-                            className="inline-flex items-center gap-1 mt-1 text-xs font-medium text-[hsl(var(--brand))] hover:underline">
-                            {item.modelName || 'Linked model'} <ArrowRight size={12} />
-                          </button>
+                          <div className="mt-1">
+                            <PillLink
+                              label={mo?.name ?? item.modelName ?? 'Unavailable'}
+                              onClick={() => navigate(`/models/${item.modelId}`)}
+                            />
+                          </div>
                         )}
                         <p className="text-xs text-[hsl(var(--text-3))] mt-1">
                           {item.presenter && <>Presenter: <strong className="text-[hsl(var(--text-2))]">{item.presenter}</strong></>}
