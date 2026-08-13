@@ -69,6 +69,26 @@ export const useAuthStore = create<AuthState>()(
             organization: 'Sentinel AI',
           },
         };
+        // ── Live Supabase auth (preferred) ────────────────────────────────
+        // When Supabase is configured we authenticate for real — including the
+        // demo accounts (which exist as real users) — so the resulting session
+        // drives RLS/org scoping. Without a real session, org-scoped tables are
+        // invisible and the app can only show seed data.
+        if (isSupabaseConfigured()) {
+          const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+          if (error) { logger.error("SUPABASE_LOGIN_ERROR:", JSON.stringify(error)); throw error; }
+          if (data.session && data.user) {
+            set({
+              isAuthenticated: true,
+              user: mapSupabaseUser(data.user),
+              token: data.session.access_token,
+              refreshToken: data.session.refresh_token,
+              loading: false,
+            });
+            return;
+          }
+        }
+        // ── Offline demo fallback (Supabase not configured) ────────────────
         if (password === 'Demo@12345' && DEMO_USERS[email]) {
           set({
             isAuthenticated: true,
@@ -79,19 +99,7 @@ export const useAuthStore = create<AuthState>()(
           });
           return;
         }
-        // ── Live Supabase auth ────────────────────────────────────────────
-        if (!isSupabaseConfigured()) throw new Error('Supabase not configured. Use demo credentials.');
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) { logger.error("SUPABASE_SIGNUP_ERROR:", JSON.stringify(error)); throw error; }
-        if (data.session && data.user) {
-          set({
-            isAuthenticated: true,
-            user: mapSupabaseUser(data.user),
-            token: data.session.access_token,
-            refreshToken: data.session.refresh_token,
-            loading: false,
-          });
-        }
+        throw new Error('Invalid email or password');
       },
 
       signup: async ({ name, email, password, organization }) => {

@@ -21,6 +21,9 @@ export type ModelRecord = {
   is_regulated?: boolean
   is_active?: boolean
   requires_human_oversight?: boolean
+  fairness_score?: number
+  drift_status?: string
+  drift_score?: number
   tags?: string[]
   metadata?: Record<string,any>
   created_at: string
