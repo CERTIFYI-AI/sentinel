@@ -105,6 +105,8 @@ const NAV: NavSection[] = [
           { label: 'Data Explorer',        to: '/evals/dataset-preview' },
           { label: 'Scenario Editor',      to: '/evals/multi-turn' },
           { label: 'Session Trace Viewer', to: '/evals/conversation' },
+          { label: 'Benchmarks',           to: '/evals/benchmark' },
+          { label: 'Eval Techniques',      to: '/evals/techniques' },
         ],
       },
       {
