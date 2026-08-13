@@ -1,12 +1,16 @@
-// @ts-nocheck
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
 import { useState, useMemo } from 'react';
-import { useSupabaseTable } from '@/hooks/useSupabaseTable';
+import { useNavigate } from 'react-router-dom';
+import { useRiskClassifications, useModelOptions } from '@/hooks/useAiiaData';
+import {
+  deriveEuTier, PROHIBITED_PRACTICES, ANNEX_III_CATEGORIES,
+  type RiskClassification, type RiskTier, type TieringInput,
+} from '@/services/riskTieringService';
 import { toast } from 'sonner';
 import {
-  Plus, Eye, Trash, MagnifyingGlass, Check, ArrowRight, X,
-  Scales, Warning, Info, CheckCircle, ShieldCheck,
+  Plus, Eye, Trash, Check, ArrowRight, Warning, Info, CheckCircle,
+  ShieldCheck, Spinner, Prohibit,
 } from '@phosphor-icons/react';
 import { Card, CardContent } from '../components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
@@ -31,100 +35,51 @@ import { FilterBar } from '../components/ui/FilterBar';
 import type { StatCardRowItem } from '../components/ui/StatCardRow';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+// ── Tier / status display metadata ──────────────────────────────────────────────
 
-type EUTier = 'Unacceptable' | 'High Risk' | 'Limited' | 'Minimal';
-type ReviewStatus = 'Pending' | 'In Review' | 'Approved' | 'Rejected';
+const TIER_META: Record<RiskTier, { label: string; bg: string; text: string; border: string }> = {
+  unacceptable: { label: 'Unacceptable', bg: 'bg-[hsl(var(--s-er-bg))]', text: 'text-[hsl(var(--s-er-tx))]', border: 'border-[hsl(var(--s-er-br))]' },
+  high: { label: 'High Risk', bg: 'bg-[hsl(var(--r-hi-bg))]', text: 'text-[hsl(var(--r-hi-tx))]', border: 'border-[hsl(var(--r-hi-br))]' },
+  limited: { label: 'Limited', bg: 'bg-[hsl(var(--brand-subtle))]', text: 'text-[hsl(var(--brand))]', border: 'border-[hsl(var(--brand))/30]' },
+  minimal: { label: 'Minimal', bg: 'bg-[hsl(var(--s-ok-bg))]', text: 'text-[hsl(var(--s-ok-tx))]', border: 'border-[hsl(var(--s-ok-br))]' },
+};
 
-interface Classification {
-  id: string;
-  system: string;
-  type: string;
-  tier: EUTier;
-  annexIIICategory: string;
-  article: string;
-  gpai: boolean;
-  transparencyReq: boolean;
-  reviewStatus: ReviewStatus;
-  owner: string;
-  created: string;
+type StatusKey = 'draft' | 'in_review' | 'approved';
+
+const STATUS_META: Record<StatusKey, { label: string; bg: string; text: string }> = {
+  draft: { label: 'Draft', bg: 'bg-sunken', text: 'text-[hsl(var(--text-3))]' },
+  in_review: { label: 'In Review', bg: 'bg-[hsl(var(--s-wn-bg))]', text: 'text-[hsl(var(--s-wn-tx))]' },
+  approved: { label: 'Approved', bg: 'bg-[hsl(var(--s-ok-bg))]', text: 'text-[hsl(var(--s-ok-tx))]' },
+};
+
+function statusMeta(status: string) {
+  return STATUS_META[(status as StatusKey)] ?? STATUS_META.draft;
 }
 
-// ── Seed data ─────────────────────────────────────────────────────────────────
-
-const SEED: Classification[] = [
-  { id: 'CLS-001', system: 'Credit Risk Scorer', type: 'ML Classification', tier: 'High Risk', annexIIICategory: 'Access to financial services', article: 'Annex III Art.6(1)', gpai: false, transparencyReq: true, reviewStatus: 'Approved', owner: 'Sarah Chen', created: '2026-01-10' },
-  { id: 'CLS-002', system: 'Loan Approval Assistant', type: 'LLM — Decision Support', tier: 'High Risk', annexIIICategory: 'Access to essential services', article: 'Annex III', gpai: true, transparencyReq: true, reviewStatus: 'In Review', owner: 'Maria Santos', created: '2026-01-20' },
-  { id: 'CLS-003', system: 'HR Screening System', type: 'ML Classification', tier: 'High Risk', annexIIICategory: 'Employment and workers management', article: 'Annex III', gpai: false, transparencyReq: true, reviewStatus: 'Approved', owner: 'James Patel', created: '2026-02-01' },
-  { id: 'CLS-004', system: 'Fraud Detection Engine', type: 'ML Anomaly Detection', tier: 'Limited', annexIIICategory: 'N/A', article: 'Art.52', gpai: false, transparencyReq: true, reviewStatus: 'Approved', owner: 'David Kim', created: '2026-02-10' },
-  { id: 'CLS-005', system: 'Customer Sentiment Analyzer', type: 'NLP Classification', tier: 'Minimal', annexIIICategory: 'N/A', article: 'N/A', gpai: false, transparencyReq: false, reviewStatus: 'Approved', owner: 'Sarah Chen', created: '2026-02-15' },
-  { id: 'CLS-006', system: 'AML Transaction Monitor', type: 'ML Anomaly Detection', tier: 'High Risk', annexIIICategory: 'Law enforcement adjacent', article: 'Annex III', gpai: false, transparencyReq: true, reviewStatus: 'Pending', owner: 'David Kim', created: '2026-03-01' },
-  { id: 'CLS-007', system: 'Customer Service Chatbot', type: 'LLM — Conversational', tier: 'Limited', annexIIICategory: 'N/A', article: 'Art.52', gpai: true, transparencyReq: true, reviewStatus: 'Approved', owner: 'Sarah Chen', created: '2026-03-10' },
-  { id: 'CLS-008', system: 'Churn Predictor', type: 'ML Classification', tier: 'Minimal', annexIIICategory: 'N/A', article: 'N/A', gpai: false, transparencyReq: false, reviewStatus: 'Approved', owner: 'James Patel', created: '2026-03-15' },
-];
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function tierColor(tier: EUTier) {
-  switch (tier) {
-    case 'Unacceptable': return { bg: 'bg-[hsl(var(--s-er-bg))]', text: 'text-[hsl(var(--s-er-tx))]', border: 'border-[hsl(var(--s-er-br))]' };
-    case 'High Risk': return { bg: 'bg-[hsl(var(--r-hi-bg))]', text: 'text-[hsl(var(--r-hi-tx))]', border: 'border-[hsl(var(--r-hi-br))]' };
-    case 'Limited': return { bg: 'bg-[hsl(var(--brand-subtle))]', text: 'text-[hsl(var(--brand))]', border: 'border-[hsl(var(--brand))/30]' };
-    case 'Minimal': return { bg: 'bg-[hsl(var(--s-ok-bg))]', text: 'text-[hsl(var(--s-ok-tx))]', border: 'border-[hsl(var(--s-ok-br))]' };
-    default: return { bg: 'bg-sunken', text: 'text-[hsl(var(--text-3))]', border: 'border-[hsl(var(--border))]' };
-  }
+function fmtDate(iso: string | null) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '—' : d.toISOString().split('T')[0];
 }
 
-function reviewColor(status: ReviewStatus) {
-  switch (status) {
-    case 'Approved': return { bg: 'bg-[hsl(var(--s-ok-bg))]', text: 'text-[hsl(var(--s-ok-tx))]' };
-    case 'In Review': return { bg: 'bg-[hsl(var(--s-wn-bg))]', text: 'text-[hsl(var(--s-wn-tx))]' };
-    case 'Pending': return { bg: 'bg-[hsl(var(--s-wn-bg))]', text: 'text-[hsl(var(--s-wn-tx))]' };
-    case 'Rejected': return { bg: 'bg-[hsl(var(--s-er-bg))]', text: 'text-[hsl(var(--s-er-tx))]' };
-    default: return { bg: 'bg-sunken', text: 'text-[hsl(var(--text-3))]' };
-  }
-}
+const EMPTY_INPUT: TieringInput = {
+  prohibitedPractices: [], annexIII: [], affectsFundamentalRights: false,
+  interactsWithHumans: false, generatesSyntheticContent: false, isGPAI: false, discloses: false,
+};
 
-// ── MetricTile ────────────────────────────────────────────────────────────────
+// ── Yes/No toggle ────────────────────────────────────────────────────────────────
 
-function MetricTile({ label, value, variant }: { label: string; value: string | number; variant: 'default' | 'error' | 'warn' | 'ok' | 'info' }) {
-  const colors = {
-    default: { bg: 'hsl(var(--bg-surface))', text: 'hsl(var(--text-1))', border: 'hsl(var(--border))' },
-    error: { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))' },
-    warn: { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))', border: 'hsl(var(--s-wn-br))' },
-    ok: { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))' },
-    info: { bg: 'hsl(var(--brand-subtle))', text: 'hsl(var(--brand))', border: 'hsl(var(--brand)/30%)' },
-  };
-  const c = colors[variant];
+function YesNo({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   return (
-    <Card style={{ borderRadius: 0, background: c.bg, border: `1px solid ${c.border}` }}>
-      <CardContent className="px-4 py-3">
-        <p className="text-xs font-medium mb-1" style={{ color: 'hsl(var(--text-4))' }}>{label}</p>
-        <p className="text-2xl font-bold" style={{ color: c.text }}>{value}</p>
-      </CardContent>
-    </Card>
+    <div className="flex gap-3">
+      {[true, false].map(v => (
+        <button key={String(v)} type="button" onClick={() => onChange(v)}
+          className={`flex-1 py-2 text-sm border font-medium transition-colors rounded-none ${value === v ? 'border-[hsl(var(--brand))] bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))]' : 'border-[hsl(var(--border))] bg-transparent text-[hsl(var(--text-2))] hover:bg-raised'}`}>
+          {v ? 'Yes' : 'No'}
+        </button>
+      ))}
+    </div>
   );
-}
-
-// ── Wizard state ──────────────────────────────────────────────────────────────
-
-const ANNEX_III = [
-  'Biometric identification', 'Critical infrastructure', 'Education/vocational',
-  'Employment/workers management', 'Essential services (credit, insurance, housing)',
-  'Law enforcement', 'Migration/asylum', 'Justice administration',
-];
-
-const HIGH_RISK_OBLIGATIONS = [
-  'Risk Management System', 'Data Governance', 'Technical Documentation',
-  'Transparency', 'Human Oversight', 'Accuracy & Robustness', 'Post-Market Monitoring',
-];
-
-function deriveTier(answers: { affectsRights: boolean; annexIII: string[]; gpai: boolean; noDisclosure: boolean }): EUTier {
-  if (answers.annexIII.some(a => a === 'Biometric identification') && answers.annexIII.length > 2) return 'Unacceptable';
-  if (answers.annexIII.length > 0) return 'High Risk';
-  if (answers.gpai || answers.noDisclosure) return 'Limited';
-  if (answers.affectsRights) return 'Limited';
-  return 'Minimal';
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -132,105 +87,133 @@ function deriveTier(answers: { affectsRights: boolean; annexIII: string[]; gpai:
 // ═════════════════════════════════════════════════════════════════════════════
 
 export default function AIRiskTiering() {
-  const { data: items, setData: setItems } = useSupabaseTable('airisktiering_table', SEED);
+  const navigate = useNavigate();
+  const { data: items, isLoading, error, save, remove } = useRiskClassifications();
+  const { models } = useModelOptions();
+
+  const modelById = useMemo(() => {
+    const m: Record<string, typeof models[number]> = {};
+    for (const model of models) m[model.id] = model;
+    return m;
+  }, [models]);
+
   const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState<Classification | null>(null);
+  const [selected, setSelected] = useState<RiskClassification | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [step, setStep] = useState(1);
 
-  // Wizard form state
-  const [wSystem, setWSystem] = useState('');
-  const [wPurpose, setWPurpose] = useState('');
-  const [wAffectsRights, setWAffectsRights] = useState<boolean | null>(null);
-  const [wAnnexIII, setWAnnexIII] = useState<string[]>([]);
-  const [wGpai, setWGpai] = useState<boolean | null>(null);
-  const [wNoDisclosure, setWNoDisclosure] = useState<boolean | null>(null);
-  const [wOwner, setWOwner] = useState('Sarah Chen');
-  const [wObligations, setWObligations] = useState<string[]>([]);
+  // Wizard — system selection
+  const [sysMode, setSysMode] = useState<'registry' | 'freetext'>('registry');
+  const [wModelId, setWModelId] = useState('');
+  const [wSystemName, setWSystemName] = useState('');
+  const [wUseCase, setWUseCase] = useState('');
+  const [wAffectedUsers, setWAffectedUsers] = useState('');
+  const [wFundRights, setWFundRights] = useState('');
+  const [wClassifier, setWClassifier] = useState('');
+  const [wReviewDue, setWReviewDue] = useState('');
 
-  const derived = deriveTier({ affectsRights: !!wAffectsRights, annexIII: wAnnexIII, gpai: !!wGpai, noDisclosure: !!wNoDisclosure });
+  // Wizard — questionnaire (TieringInput)
+  const [input, setInput] = useState<TieringInput>(EMPTY_INPUT);
+  const setField = <K extends keyof TieringInput>(k: K, v: TieringInput[K]) =>
+    setInput(prev => ({ ...prev, [k]: v }));
+  const toggleList = (k: 'prohibitedPractices' | 'annexIII', item: string) =>
+    setInput(prev => ({
+      ...prev,
+      [k]: prev[k].includes(item) ? prev[k].filter(x => x !== item) : [...prev[k], item],
+    }));
+
+  const result = useMemo(() => deriveEuTier(input), [input]);
+  const tierMeta = TIER_META[result.tier];
+
+  // Resolved system identity from the wizard
+  const chosenModel = sysMode === 'registry' ? modelById[wModelId] : undefined;
+  const resolvedName = sysMode === 'registry' ? (chosenModel?.name ?? '') : wSystemName.trim();
+  const systemValid = resolvedName.length > 0;
+  const classifierValid = wClassifier.trim().length > 0;
+  const canConfirm = systemValid && classifierValid && !save.isPending;
 
   const filtered = useMemo(() => items.filter(i =>
-    !search || i.system.toLowerCase().includes(search.toLowerCase()) || i.id.toLowerCase().includes(search.toLowerCase())
+    !search ||
+    i.systemName.toLowerCase().includes(search.toLowerCase()) ||
+    i.id.toLowerCase().includes(search.toLowerCase()) ||
+    i.classifier.toLowerCase().includes(search.toLowerCase())
   ), [items, search]);
 
-  const unacceptable = items.filter(i => i.tier === 'Unacceptable').length;
-  const highRisk = items.filter(i => i.tier === 'High Risk').length;
-  const limited = items.filter(i => i.tier === 'Limited').length;
-  const minimal = items.filter(i => i.tier === 'Minimal').length;
+  const count = (t: RiskTier) => items.filter(i => i.riskTier === t).length;
+  const unacceptable = count('unacceptable');
+  const highRisk = count('high');
+  const limited = count('limited');
+  const minimal = count('minimal');
 
   function resetWizard() {
-    setStep(1); setWSystem(''); setWPurpose(''); setWAffectsRights(null); setWAnnexIII([]);
-    setWGpai(null); setWNoDisclosure(null); setWOwner('Sarah Chen'); setWObligations([]);
+    setStep(1);
+    setSysMode('registry'); setWModelId(''); setWSystemName('');
+    setWUseCase(''); setWAffectedUsers(''); setWFundRights('');
+    setWClassifier(''); setWReviewDue('');
+    setInput(EMPTY_INPUT);
   }
 
   function submitWizard() {
-    const newItem: Classification = {
-      id: `CLS-${String(items.length + 1).padStart(3, '0')}`,
-      system: wSystem || 'Unnamed System',
-      type: wGpai ? 'LLM — General Purpose' : 'ML System',
-      tier: derived,
-      annexIIICategory: wAnnexIII[0] || 'N/A',
-      article: wAnnexIII.length > 0 ? 'Annex III' : (wGpai ? 'Art.53' : 'N/A'),
-      gpai: !!wGpai,
-      transparencyReq: derived === 'High Risk' || derived === 'Limited',
-      reviewStatus: 'Pending',
-      owner: wOwner,
-      created: new Date().toISOString().split('T')[0],
+    if (!canConfirm) return;
+    const modelId = sysMode === 'registry' ? (wModelId || null) : null;
+    const payload: Partial<RiskClassification> = {
+      systemId: sysMode === 'registry' ? wModelId : '',
+      systemName: resolvedName,
+      riskTier: result.tier,
+      riskScore: result.score,
+      classificationBasis: result.basis,
+      obligations: result.obligations,
+      annexIII: input.annexIII,
+      gpai: input.isGPAI,
+      useCase: wUseCase.trim(),
+      affectedUsers: wAffectedUsers.trim(),
+      fundamentalRightsImpact: wFundRights.trim(),
+      classifier: wClassifier.trim(),
+      classifiedAt: new Date().toISOString(),
+      reviewDueAt: wReviewDue ? new Date(wReviewDue).toISOString() : null,
+      status: 'draft',
+      modelId,
     };
-    setItems(prev => [newItem, ...prev]);
-    toast.success(`"${newItem.system}" classified as ${derived}`);
-    setWizardOpen(false);
-    resetWizard();
+    save.mutate(payload, {
+      onSuccess: () => {
+        toast.success(`"${resolvedName}" classified as ${tierMeta.label}`);
+        setWizardOpen(false);
+        resetWizard();
+      },
+      onError: (err: Error) => toast.error(err.message),
+    });
   }
 
-  function deleteItem(id: string) {
-    const item = items.find(i => i.id === id);
-    setItems(prev => prev.filter(i => i.id !== id));
-    if (item) toast.success(`Classification "${item.system}" removed`);
+  function deleteItem(item: RiskClassification) {
+    remove.mutate(item.id, {
+      onSuccess: () => {
+        toast.success(`Classification "${item.systemName}" removed`);
+        if (selected?.id === item.id) { setSheetOpen(false); setSelected(null); }
+      },
+      onError: (err: Error) => toast.error(err.message),
+    });
   }
 
-  const tc = tierColor(derived);
+  function setStatus(item: RiskClassification, status: StatusKey) {
+    save.mutate({ id: item.id, status }, {
+      onSuccess: () => {
+        toast.success(`"${item.systemName}" moved to ${STATUS_META[status].label}`);
+        setSelected(prev => (prev && prev.id === item.id ? { ...prev, status } : prev));
+      },
+      onError: (err: Error) => toast.error(err.message),
+    });
+  }
 
   const tierKpiCards: StatCardRowItem[] = [
-    {
-      label: 'Unacceptable Risk',
-      value: String(unacceptable),
-      icon: <Warning size={18} weight="fill" style={{ color: 'hsl(var(--s-er-tx))' }} />,
-      delta: 'Prohibited — cannot deploy',
-      deltaDir: 'up' as const,
-      isPositiveUp: false,
-    },
-    {
-      label: 'High Risk',
-      value: String(highRisk),
-      icon: <Warning size={18} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />,
-      delta: 'Annex III — full compliance',
-      deltaDir: 'up' as const,
-      isPositiveUp: false,
-    },
-    {
-      label: 'Limited Risk',
-      value: String(limited),
-      icon: <Info size={18} style={{ color: 'hsl(var(--brand))' }} />,
-      delta: 'Transparency obligations',
-      deltaDir: 'up' as const,
-      isPositiveUp: true,
-    },
-    {
-      label: 'Minimal Risk',
-      value: String(minimal),
-      icon: <CheckCircle size={18} weight="fill" style={{ color: 'hsl(var(--s-ok-tx))' }} />,
-      delta: 'No specific obligations',
-      deltaDir: 'up' as const,
-      isPositiveUp: true,
-    },
+    { label: 'Unacceptable Risk', value: String(unacceptable), icon: <Warning size={18} weight="fill" style={{ color: 'hsl(var(--s-er-tx))' }} />, delta: 'Prohibited — cannot deploy', deltaDir: 'up' as const, isPositiveUp: false },
+    { label: 'High Risk', value: String(highRisk), icon: <Warning size={18} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />, delta: 'Annex III — full compliance', deltaDir: 'up' as const, isPositiveUp: false },
+    { label: 'Limited Risk', value: String(limited), icon: <Info size={18} style={{ color: 'hsl(var(--brand))' }} />, delta: 'Transparency obligations', deltaDir: 'up' as const, isPositiveUp: true },
+    { label: 'Minimal Risk', value: String(minimal), icon: <CheckCircle size={18} weight="fill" style={{ color: 'hsl(var(--s-ok-tx))' }} />, delta: 'No specific obligations', deltaDir: 'up' as const, isPositiveUp: true },
   ];
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
       <PageHeader
         title="AI Risk Tiering"
         subtitle="EU AI Act risk classification for AI systems"
@@ -242,22 +225,21 @@ export default function AIRiskTiering() {
         }
       />
 
-      {/* Tier Distribution KPI Row */}
       <StatCardRow cards={tierKpiCards} />
 
       {/* Tier overview cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {([
-          { tier: 'Unacceptable' as EUTier, label: 'UNACCEPTABLE', subtitle: 'Prohibited — cannot deploy', examples: ['Social scoring', 'Real-time biometric mass surveillance', 'Subliminal manipulation'] },
-          { tier: 'High Risk' as EUTier, label: 'HIGH RISK', subtitle: 'EU AI Act Annex III — full compliance required', examples: ['Credit scoring', 'Employment screening', 'Biometric ID', 'Critical infrastructure'] },
-          { tier: 'Limited' as EUTier, label: 'LIMITED', subtitle: 'Transparency obligations apply', examples: ['Chatbots', 'Deepfakes', 'Emotion recognition'] },
-          { tier: 'Minimal' as EUTier, label: 'MINIMAL', subtitle: 'No specific obligations', examples: ['Spam filters', 'AI in games', 'Basic recommendations'] },
-        ] as const).map(({ tier, label, subtitle, examples }) => {
-          const c = tierColor(tier);
+          { tier: 'unacceptable' as RiskTier, subtitle: 'Prohibited — cannot deploy', examples: ['Social scoring', 'Real-time biometric mass surveillance', 'Subliminal manipulation'] },
+          { tier: 'high' as RiskTier, subtitle: 'EU AI Act Annex III — full compliance required', examples: ['Credit scoring', 'Employment screening', 'Biometric ID', 'Critical infrastructure'] },
+          { tier: 'limited' as RiskTier, subtitle: 'Transparency obligations apply', examples: ['Chatbots', 'Deepfakes', 'Emotion recognition'] },
+          { tier: 'minimal' as RiskTier, subtitle: 'No specific obligations', examples: ['Spam filters', 'AI in games', 'Basic recommendations'] },
+        ]).map(({ tier, subtitle, examples }) => {
+          const c = TIER_META[tier];
           return (
             <Card key={tier} className={`rounded-none border ${c.border} ${c.bg}`}>
               <CardContent className="px-4 py-4 space-y-2">
-                <p className={`text-xs font-bold tracking-wider uppercase ${c.text}`}>{label}</p>
+                <p className={`text-xs font-bold tracking-wider uppercase ${c.text}`}>{c.label}</p>
                 <p className="text-xs text-[hsl(var(--text-2))]">{subtitle}</p>
                 <ul className="space-y-0.5">
                   {examples.map(e => (
@@ -279,10 +261,10 @@ export default function AIRiskTiering() {
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={[
-                { name: 'Unacceptable', count: unacceptable, color: 'hsl(var(--s-er-tx))' },
-                { name: 'High Risk', count: highRisk, color: 'hsl(var(--s-wn-tx))' },
-                { name: 'Limited', count: limited, color: 'hsl(var(--brand))' },
-                { name: 'Minimal', count: minimal, color: 'hsl(var(--s-ok-tx))' },
+                { name: 'Unacceptable', count: unacceptable },
+                { name: 'High Risk', count: highRisk },
+                { name: 'Limited', count: limited },
+                { name: 'Minimal', count: minimal },
               ]} layout="vertical" margin={{ top: 0, right: 30, left: 20, bottom: 0 }}>
                 <XAxis type="number" hide />
                 <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'hsl(var(--text-3))' }} width={100} />
@@ -292,16 +274,14 @@ export default function AIRiskTiering() {
                   itemStyle={{ color: 'hsl(var(--text-1))' }}
                 />
                 <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={24}>
-                  {
-                    [
-                      { name: 'Unacceptable', count: unacceptable, color: 'hsl(var(--s-er-bg))', border: 'hsl(var(--s-er-br))' },
-                      { name: 'High Risk', count: highRisk, color: 'hsl(var(--s-wn-bg))', border: 'hsl(var(--s-wn-br))' },
-                      { name: 'Limited', count: limited, color: 'hsl(var(--brand-subtle))', border: 'hsl(var(--brand)/30%)' },
-                      { name: 'Minimal', count: minimal, color: 'hsl(var(--s-ok-bg))', border: 'hsl(var(--s-ok-br))' },
-                    ].map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} stroke={entry.border} strokeWidth={1} />
-                    ))
-                  }
+                  {[
+                    { color: 'hsl(var(--s-er-bg))', border: 'hsl(var(--s-er-br))' },
+                    { color: 'hsl(var(--s-wn-bg))', border: 'hsl(var(--s-wn-br))' },
+                    { color: 'hsl(var(--brand-subtle))', border: 'hsl(var(--brand)/30%)' },
+                    { color: 'hsl(var(--s-ok-bg))', border: 'hsl(var(--s-ok-br))' },
+                  ].map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} stroke={entry.border} strokeWidth={1} />
+                  ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -309,11 +289,10 @@ export default function AIRiskTiering() {
         </CardContent>
       </Card>
 
-      {/* FilterBar */}
       <FilterBar
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Search by system name or ID..."
+        searchPlaceholder="Search by system, ID or classifier..."
         onClearAll={() => setSearch('')}
       />
 
@@ -323,35 +302,55 @@ export default function AIRiskTiering() {
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-[hsl(var(--text-2))] uppercase bg-raised border-b border-[hsl(var(--border))]">
               <tr>
-                {['ID', 'System', 'Type', 'EU AI Act Tier', 'Annex III Category', 'GPAI', 'Transparency Req', 'Review Status', 'Owner', 'Actions'].map(h => (
+                {['System', 'EU AI Act Tier', 'Basis', 'GPAI', 'Obligations', 'Status', 'Classifier', 'Actions'].map(h => (
                   <th key={h} className="px-4 py-3 font-medium">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {filtered.map(item => {
-                const tc2 = tierColor(item.tier);
-                const rc = reviewColor(item.reviewStatus);
+              {isLoading && (
+                <tr><td colSpan={8} className="px-4 py-16 text-center text-[hsl(var(--text-3))]">
+                  <Spinner size={22} className="animate-spin inline mr-2" /> Loading classifications…
+                </td></tr>
+              )}
+              {!isLoading && error && (
+                <tr><td colSpan={8} className="px-4 py-16 text-center text-[hsl(var(--s-er-tx))]">
+                  Failed to load classifications: {error.message}
+                </td></tr>
+              )}
+              {!isLoading && !error && filtered.length === 0 && (
+                <tr><td colSpan={8} className="px-4 py-16 text-center text-[hsl(var(--text-3))]">
+                  {items.length === 0 ? 'No classifications yet — classify your first AI system.' : 'No classifications match your search.'}
+                </td></tr>
+              )}
+              {!isLoading && !error && filtered.map(item => {
+                const tm = TIER_META[item.riskTier];
+                const sm = statusMeta(item.status);
+                const linkedModel = item.modelId ? modelById[item.modelId] : undefined;
                 return (
                   <tr key={item.id} className="border-b border-[hsl(var(--border))] hover:bg-raised transition-colors cursor-pointer"
                     onClick={() => { setSelected(item); setSheetOpen(true); }}>
-                    <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--brand))]">{item.id}</td>
-                    <td className="px-4 py-3 font-medium text-[hsl(var(--text-1))]">{item.system}</td>
-                    <td className="px-4 py-3 text-[hsl(var(--text-2))] text-xs">{item.type}</td>
                     <td className="px-4 py-3">
-                      <Badge className={`${tc2.bg} ${tc2.text} border-0 rounded-none uppercase text-[10px]`}>{item.tier}</Badge>
+                      <div className="font-medium text-[hsl(var(--text-1))]">{item.systemName}</div>
+                      {linkedModel && (
+                        <button onClick={e => { e.stopPropagation(); navigate(`/models/${item.modelId}`); }}
+                          className="text-[11px] text-[hsl(var(--brand))] hover:underline">
+                          ↳ {linkedModel.name}
+                        </button>
+                      )}
                     </td>
-                    <td className="px-4 py-3 text-[hsl(var(--text-2))] text-xs">{item.annexIIICategory}</td>
+                    <td className="px-4 py-3">
+                      <Badge className={`${tm.bg} ${tm.text} border-0 rounded-none uppercase text-[10px]`}>{tm.label}</Badge>
+                    </td>
+                    <td className="px-4 py-3 text-[hsl(var(--text-2))] text-xs max-w-[240px] truncate" title={item.classificationBasis}>{item.classificationBasis || '—'}</td>
                     <td className="px-4 py-3">
                       {item.gpai ? <Badge className="bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))] border-0 rounded-none uppercase text-[10px]">Yes</Badge> : <span className="text-xs text-[hsl(var(--text-3))]">No</span>}
                     </td>
+                    <td className="px-4 py-3 text-[hsl(var(--text-2))] text-xs">{item.obligations.length}</td>
                     <td className="px-4 py-3">
-                      {item.transparencyReq ? <CheckCircle size={16} className="text-[hsl(var(--s-ok-tx))]" /> : <span className="text-xs text-[hsl(var(--text-3))]">—</span>}
+                      <Badge className={`${sm.bg} ${sm.text} border-0 rounded-none`}>{sm.label}</Badge>
                     </td>
-                    <td className="px-4 py-3">
-                      <Badge className={`${rc.bg} ${rc.text} border-0 rounded-none`}>{item.reviewStatus}</Badge>
-                    </td>
-                    <td className="px-4 py-3 text-[hsl(var(--text-2))] text-xs">{item.owner}</td>
+                    <td className="px-4 py-3 text-[hsl(var(--text-2))] text-xs">{item.classifier || '—'}</td>
                     <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                       <div className="flex items-center gap-1">
                         <Button variant="ghost" size="sm" onClick={() => { setSelected(item); setSheetOpen(true); }} className="h-8 w-8 p-0 text-[hsl(var(--text-2))] hover:text-[hsl(var(--brand))] rounded-none"><Eye size={16} /></Button>
@@ -362,11 +361,11 @@ export default function AIRiskTiering() {
                           <AlertDialogContent className="rounded-none bg-surface border-[hsl(var(--border))]">
                             <AlertDialogHeader>
                               <AlertDialogTitle className="text-[hsl(var(--text-1))]">Delete Classification</AlertDialogTitle>
-                              <AlertDialogDescription className="text-[hsl(var(--text-2))]">Delete {item.id} — {item.system}? This cannot be undone.</AlertDialogDescription>
+                              <AlertDialogDescription className="text-[hsl(var(--text-2))]">Delete the classification for {item.systemName}? This cannot be undone.</AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel className="rounded-none border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:text-[hsl(var(--text-1))] hover:bg-raised">Cancel</AlertDialogCancel>
-                              <AlertDialogAction className="rounded-none bg-[hsl(var(--s-er-tx))] hover:bg-[hsl(var(--s-er-tx))] text-[hsl(var(--bg-surface))]" onClick={() => deleteItem(item.id)}>Delete</AlertDialogAction>
+                              <AlertDialogAction className="rounded-none bg-[hsl(var(--s-er-tx))] hover:bg-[hsl(var(--s-er-tx))] text-[hsl(var(--bg-surface))]" onClick={() => deleteItem(item)}>Delete</AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
@@ -383,145 +382,162 @@ export default function AIRiskTiering() {
       {/* Detail Sheet */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent className="overflow-y-auto bg-surface border-l border-[hsl(var(--border))]" style={{ width: 600, borderRadius: 0 }}>
-          {selected && (
-            <div className="flex flex-col h-full">
-              <SheetHeader className="pb-5 border-b border-[hsl(var(--border))]">
-                <SheetTitle className="flex flex-col gap-1 items-start text-left">
-                  <span className="font-mono text-xs text-[hsl(var(--brand))] block">{selected.id}</span>
-                  <span className="text-xl text-[hsl(var(--text-1))]">{selected.system}</span>
-                </SheetTitle>
-              </SheetHeader>
-              <Tabs defaultValue="classification" className="flex-1 flex flex-col mt-2">
-                <TabsList className="bg-transparent space-x-4 border-b border-[hsl(var(--border))] w-full justify-start rounded-none h-12 p-0">
-                  <TabsTrigger value="classification" className="h-full border-b-2 border-transparent data-[state=active]:border-[hsl(var(--brand))] data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-2 text-sm">Classification</TabsTrigger>
-                  <TabsTrigger value="obligations" className="h-full border-b-2 border-transparent data-[state=active]:border-[hsl(var(--brand))] data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-2 text-sm">Obligations</TabsTrigger>
-                  <TabsTrigger value="linked" className="h-full border-b-2 border-transparent data-[state=active]:border-[hsl(var(--brand))] data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-2 text-sm">Linked Model</TabsTrigger>
-                  <TabsTrigger value="activity" className="h-full border-b-2 border-transparent data-[state=active]:border-[hsl(var(--brand))] data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-2 text-sm">Activity</TabsTrigger>
-                </TabsList>
-
-                <div className="flex-1 overflow-y-auto py-6">
-                  <TabsContent value="classification" className="m-0 space-y-4">
-                    <div className="space-y-3">
-                      {[
-                        { label: 'EU AI Act Tier', value: selected.tier },
-                        { label: 'Annex III Category', value: selected.annexIIICategory },
-                        { label: 'Article', value: selected.article },
-                        { label: 'GPAI Model', value: selected.gpai ? 'Yes' : 'No' },
-                        { label: 'Transparency Required', value: selected.transparencyReq ? 'Yes' : 'No' },
-                        { label: 'Review Status', value: selected.reviewStatus },
-                        { label: 'Owner', value: selected.owner },
-                        { label: 'Classified', value: selected.created },
-                      ].map(({ label, value }) => (
-                        <div key={label} className="flex items-center justify-between py-3 border-b border-[hsl(var(--border))]">
-                          <span className="text-xs font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide">{label}</span>
-                          <span className="text-sm font-medium text-[hsl(var(--text-1))]">{value}</span>
-                        </div>
-                      ))}
+          {selected && (() => {
+            const tm = TIER_META[selected.riskTier];
+            const sm = statusMeta(selected.status);
+            const linkedModel = selected.modelId ? modelById[selected.modelId] : undefined;
+            const total = selected.obligations.length;
+            const met = selected.status === 'approved' ? total : 0;
+            const gaps = total - met;
+            return (
+              <div className="flex flex-col h-full">
+                <SheetHeader className="pb-5 border-b border-[hsl(var(--border))]">
+                  <SheetTitle className="flex flex-col gap-1 items-start text-left">
+                    <span className="font-mono text-xs text-[hsl(var(--brand))] block">{fmtDate(selected.classifiedAt)}</span>
+                    <span className="text-xl text-[hsl(var(--text-1))]">{selected.systemName}</span>
+                    <div className="flex gap-2 mt-1">
+                      <Badge className={`${tm.bg} ${tm.text} border-0 rounded-none uppercase text-[10px]`}>{tm.label}</Badge>
+                      <Badge className={`${sm.bg} ${sm.text} border-0 rounded-none`}>{sm.label}</Badge>
                     </div>
-                  </TabsContent>
+                  </SheetTitle>
+                </SheetHeader>
 
-                  <TabsContent value="obligations" className="m-0 space-y-4">
-                    <p className="text-sm text-[hsl(var(--text-2))]">EU AI Act requirements for <strong>{selected.tier}</strong> tier:</p>
-                    {selected.tier === 'High Risk' ? HIGH_RISK_OBLIGATIONS.map(ob => (
-                      <div key={ob} className="flex items-center gap-3 p-3 bg-raised border border-[hsl(var(--border))] rounded-none">
-                        <CheckCircle size={18} className="text-[hsl(var(--s-ok-tx))]" />
-                        <span className="text-sm text-[hsl(var(--text-1))]">{ob}</span>
-                      </div>
-                    )) : (
-                      <div className="text-sm p-4 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-2))] rounded-none">
-                        {selected.tier === 'Unacceptable' ? 'Deployment is prohibited under EU AI Act Art.5.' :
-                         selected.tier === 'Limited' ? 'Must disclose AI system nature to users (Art.52).' :
-                         'No specific EU AI Act obligations.'}
-                      </div>
-                    )}
-                  </TabsContent>
-
-                  <TabsContent value="linked" className="m-0 space-y-6">
-                    {/* Model card */}
-                    <div className="p-4 bg-[hsl(var(--brand-subtle))] border border-[hsl(var(--brand))/30] rounded-none">
-                      <div className="flex items-start justify-between gap-2 mb-3">
-                        <div>
-                          <p className="text-base font-bold text-[hsl(var(--text-1))]">{selected.system}</p>
-                          <p className="text-sm text-[hsl(var(--text-2))]">{selected.type}</p>
-                        </div>
-                        <Badge className={`${tierColor(selected.tier).bg} ${tierColor(selected.tier).text} border-0 rounded-none uppercase text-[10px]`}>{selected.tier}</Badge>
-                      </div>
-                      <div className="flex gap-4 flex-wrap text-xs text-[hsl(var(--text-3))]">
-                        <span>Owner: <strong className="text-[hsl(var(--text-1))]">{selected.owner}</strong></span>
-                        <span>Added: <strong className="text-[hsl(var(--text-1))]">{selected.created}</strong></span>
-                      </div>
-                    </div>
-
-                    {/* Compliance status */}
-                    <div className="space-y-1">
-                      <p className="text-xs font-semibold text-[hsl(var(--text-3))] uppercase tracking-wider mb-2">Compliance Status</p>
-                      {[
-                        { label: 'EU AI Act Article', value: selected.article, highlight: true },
-                        { label: 'Annex III Category', value: selected.annexIIICategory },
-                        { label: 'GPAI Model', value: selected.gpai ? 'Yes — Art.53 obligations apply' : 'No' },
-                        { label: 'Transparency Req.', value: selected.transparencyReq ? 'Required (Art.13 / Art.52)' : 'Not required' },
-                        { label: 'Review Status', value: selected.reviewStatus },
-                      ].map(r => (
-                        <div key={r.label} className="flex items-center justify-between py-2.5 border-b border-[hsl(var(--border))]">
-                          <span className="text-xs font-medium text-[hsl(var(--text-2))]">{r.label}</span>
-                          <span className={`text-xs font-bold ${r.highlight ? 'text-[hsl(var(--brand))]' : 'text-[hsl(var(--text-1))]'}`}>{r.value}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Obligation count */}
-                    <div className="grid grid-cols-3 gap-3">
-                      {[
-                        { label: 'Total Obligations', value: selected.tier === 'High Risk' ? 12 : selected.tier === 'Limited' ? 3 : selected.tier === 'Unacceptable' ? 0 : 0 },
-                        { label: 'Met', value: selected.reviewStatus === 'Approved' ? (selected.tier === 'High Risk' ? 10 : selected.tier === 'Limited' ? 3 : 0) : 0 },
-                        { label: 'Gaps', value: selected.reviewStatus === 'Approved' ? (selected.tier === 'High Risk' ? 2 : 0) : (selected.tier === 'High Risk' ? 12 : 3) },
-                      ].map(s => (
-                        <div key={s.label} className="p-3 bg-raised border border-[hsl(var(--border))] text-center rounded-none">
-                          <p className="text-xl font-bold text-[hsl(var(--text-1))]">{s.value}</p>
-                          <p className="text-[10px] text-[hsl(var(--text-3))] uppercase tracking-wide mt-1">{s.label}</p>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="flex gap-3">
-                      <Button className="flex-1 rounded-none bg-raised text-[hsl(var(--text-1))] border border-[hsl(var(--border))] hover:bg-sunken">
-                        <ShieldCheck size={16} className="text-[hsl(var(--brand))]" /> View Full Model Record
-                      </Button>
-                      <Button className="flex-1 rounded-none bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-hover))]">
-                        <ArrowRight size={16} /> Open Obligations
-                      </Button>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="activity" className="m-0 space-y-3">
-                    {[
-                      { date: selected.created, action: 'Classification created', user: selected.owner },
-                      { date: selected.created, action: `Tier assigned: ${selected.tier}`, user: 'System' },
-                    ].map((ev, i) => (
-                      <div key={i} className="flex items-start gap-3 p-3 bg-raised border border-[hsl(var(--border))] rounded-none">
-                        <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0 bg-[hsl(var(--brand))]" />
-                        <div>
-                          <p className="text-sm font-medium text-[hsl(var(--text-1))]">{ev.action}</p>
-                          <p className="text-xs text-[hsl(var(--text-3))] mt-1">{ev.date} · {ev.user}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </TabsContent>
+                {/* Status workflow */}
+                <div className="flex items-center gap-2 py-3 border-b border-[hsl(var(--border))]">
+                  <span className="text-xs font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mr-1">Workflow</span>
+                  <Button size="sm" disabled={save.isPending || selected.status === 'in_review'} onClick={() => setStatus(selected, 'in_review')}
+                    className="rounded-none h-8 bg-raised text-[hsl(var(--text-1))] border border-[hsl(var(--border))] hover:bg-sunken">
+                    Move to Review
+                  </Button>
+                  <Button size="sm" disabled={save.isPending || selected.status === 'approved'} onClick={() => setStatus(selected, 'approved')}
+                    className="rounded-none h-8 bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-hover))]">
+                    <Check size={14} /> Approve
+                  </Button>
                 </div>
-              </Tabs>
-            </div>
-          )}
+
+                <Tabs defaultValue="classification" className="flex-1 flex flex-col mt-2">
+                  <TabsList className="bg-transparent space-x-4 border-b border-[hsl(var(--border))] w-full justify-start rounded-none h-12 p-0">
+                    <TabsTrigger value="classification" className="h-full border-b-2 border-transparent data-[state=active]:border-[hsl(var(--brand))] data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-2 text-sm">Classification</TabsTrigger>
+                    <TabsTrigger value="obligations" className="h-full border-b-2 border-transparent data-[state=active]:border-[hsl(var(--brand))] data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-2 text-sm">Obligations</TabsTrigger>
+                    <TabsTrigger value="linked" className="h-full border-b-2 border-transparent data-[state=active]:border-[hsl(var(--brand))] data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-2 text-sm">Linked Model</TabsTrigger>
+                    <TabsTrigger value="activity" className="h-full border-b-2 border-transparent data-[state=active]:border-[hsl(var(--brand))] data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-2 text-sm">Activity</TabsTrigger>
+                  </TabsList>
+
+                  <div className="flex-1 overflow-y-auto py-6">
+                    <TabsContent value="classification" className="m-0 space-y-4">
+                      <div className="p-4 bg-raised border border-[hsl(var(--border))] rounded-none">
+                        <p className="text-xs font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">Classification Basis</p>
+                        <p className="text-sm text-[hsl(var(--text-1))]">{selected.classificationBasis || '—'}</p>
+                      </div>
+                      <div className="space-y-3">
+                        {[
+                          { label: 'EU AI Act Tier', value: tm.label },
+                          { label: 'Risk Score', value: selected.riskScore != null ? selected.riskScore.toFixed(2) : '—' },
+                          { label: 'Annex III Categories', value: selected.annexIII.length ? selected.annexIII.join(', ') : 'None' },
+                          { label: 'GPAI Model', value: selected.gpai ? 'Yes' : 'No' },
+                          { label: 'Use Case', value: selected.useCase || '—' },
+                          { label: 'Affected Users', value: selected.affectedUsers || '—' },
+                          { label: 'Fundamental Rights Impact', value: selected.fundamentalRightsImpact || '—' },
+                          { label: 'Status', value: sm.label },
+                          { label: 'Classifier', value: selected.classifier || '—' },
+                          { label: 'Classified', value: fmtDate(selected.classifiedAt) },
+                          { label: 'Review Due', value: fmtDate(selected.reviewDueAt) },
+                        ].map(({ label, value }) => (
+                          <div key={label} className="flex items-start justify-between gap-4 py-3 border-b border-[hsl(var(--border))]">
+                            <span className="text-xs font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide">{label}</span>
+                            <span className="text-sm font-medium text-[hsl(var(--text-1))] text-right">{value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="obligations" className="m-0 space-y-4">
+                      <p className="text-sm text-[hsl(var(--text-2))]">EU AI Act requirements for <strong>{tm.label}</strong> tier:</p>
+                      {selected.obligations.length > 0 ? selected.obligations.map(ob => (
+                        <div key={ob} className="flex items-center gap-3 p-3 bg-raised border border-[hsl(var(--border))] rounded-none">
+                          {selected.riskTier === 'unacceptable'
+                            ? <Prohibit size={18} className="text-[hsl(var(--s-er-tx))] flex-shrink-0" />
+                            : <CheckCircle size={18} className="text-[hsl(var(--s-ok-tx))] flex-shrink-0" />}
+                          <span className="text-sm text-[hsl(var(--text-1))]">{ob}</span>
+                        </div>
+                      )) : (
+                        <div className="text-sm p-4 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-2))] rounded-none">
+                          No specific EU AI Act obligations for this tier.
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="linked" className="m-0 space-y-6">
+                      <div className="p-4 bg-[hsl(var(--brand-subtle))] border border-[hsl(var(--brand))/30] rounded-none">
+                        <div className="flex items-start justify-between gap-2 mb-3">
+                          <div>
+                            <p className="text-base font-bold text-[hsl(var(--text-1))]">{linkedModel?.name ?? selected.systemName}</p>
+                            <p className="text-sm text-[hsl(var(--text-2))]">{linkedModel ? `Registry model · ${linkedModel.lifecycle ?? 'n/a'}` : 'Free-text system (not linked to registry)'}</p>
+                          </div>
+                          <Badge className={`${tm.bg} ${tm.text} border-0 rounded-none uppercase text-[10px]`}>{tm.label}</Badge>
+                        </div>
+                        <div className="flex gap-4 flex-wrap text-xs text-[hsl(var(--text-3))]">
+                          <span>Classifier: <strong className="text-[hsl(var(--text-1))]">{selected.classifier || '—'}</strong></span>
+                          <span>Classified: <strong className="text-[hsl(var(--text-1))]">{fmtDate(selected.classifiedAt)}</strong></span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-3">
+                        {[
+                          { label: 'Total Obligations', value: total },
+                          { label: 'Met', value: met },
+                          { label: 'Gaps', value: gaps },
+                        ].map(s => (
+                          <div key={s.label} className="p-3 bg-raised border border-[hsl(var(--border))] text-center rounded-none">
+                            <p className="text-xl font-bold text-[hsl(var(--text-1))]">{s.value}</p>
+                            <p className="text-[10px] text-[hsl(var(--text-3))] uppercase tracking-wide mt-1">{s.label}</p>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="flex gap-3">
+                        <Button
+                          disabled={!selected.modelId}
+                          onClick={() => selected.modelId && navigate(`/models/${selected.modelId}`)}
+                          className="flex-1 rounded-none bg-raised text-[hsl(var(--text-1))] border border-[hsl(var(--border))] hover:bg-sunken disabled:opacity-50">
+                          <ShieldCheck size={16} className="text-[hsl(var(--brand))]" /> View Full Model Record
+                        </Button>
+                      </div>
+                      {!selected.modelId && (
+                        <p className="text-xs text-[hsl(var(--text-3))]">This classification is not linked to a registry model.</p>
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="activity" className="m-0 space-y-3">
+                      {[
+                        { date: fmtDate(selected.createdAt), action: 'Classification created', user: selected.classifier || 'System' },
+                        { date: fmtDate(selected.classifiedAt), action: `Tier assigned: ${tm.label}`, user: 'System' },
+                        { date: fmtDate(selected.classifiedAt), action: `Status: ${sm.label}`, user: selected.classifier || 'System' },
+                      ].map((ev, i) => (
+                        <div key={i} className="flex items-start gap-3 p-3 bg-raised border border-[hsl(var(--border))] rounded-none">
+                          <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0 bg-[hsl(var(--brand))]" />
+                          <div>
+                            <p className="text-sm font-medium text-[hsl(var(--text-1))]">{ev.action}</p>
+                            <p className="text-xs text-[hsl(var(--text-3))] mt-1">{ev.date} · {ev.user}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </TabsContent>
+                  </div>
+                </Tabs>
+              </div>
+            );
+          })()}
         </SheetContent>
       </Sheet>
 
       {/* Wizard Modal */}
       <Dialog open={wizardOpen} onOpenChange={open => { if (!open) resetWizard(); setWizardOpen(open); }}>
-        <DialogContent className="rounded-none max-w-[600px] bg-surface border-[hsl(var(--border))]">
+        <DialogContent className="rounded-none max-w-[600px] bg-surface border-[hsl(var(--border))] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-[hsl(var(--text-1))]">Classify AI System — Step {step} of 3</DialogTitle>
           </DialogHeader>
 
-          {/* Step indicator */}
           <div className="flex gap-2 mb-4">
             {[1, 2, 3].map(s => (
               <div key={s} className={`flex-1 h-1.5 rounded-none ${s <= step ? 'bg-[hsl(var(--brand))]' : 'bg-sunken'}`} />
@@ -531,14 +547,59 @@ export default function AIRiskTiering() {
           {step === 1 && (
             <div className="space-y-5">
               <p className="text-sm font-semibold text-[hsl(var(--text-2))]">Step 1 — System Selection</p>
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-[hsl(var(--text-2))] uppercase tracking-wide">System Name *</label>
-                <Input className="rounded-none bg-raised" value={wSystem} onChange={e => setWSystem(e.target.value)} placeholder="e.g. Credit Risk Scorer" />
+
+              <div className="flex gap-3">
+                {(['registry', 'freetext'] as const).map(m => (
+                  <button key={m} type="button" onClick={() => setSysMode(m)}
+                    className={`flex-1 py-2 text-sm border font-medium transition-colors rounded-none ${sysMode === m ? 'border-[hsl(var(--brand))] bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))]' : 'border-[hsl(var(--border))] bg-transparent text-[hsl(var(--text-2))] hover:bg-raised'}`}>
+                    {m === 'registry' ? 'Pick registry model' : 'Free-text system'}
+                  </button>
+                ))}
               </div>
+
+              {sysMode === 'registry' ? (
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-[hsl(var(--text-2))] uppercase tracking-wide">Registry Model *</label>
+                  <Select value={wModelId} onValueChange={setWModelId}>
+                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue placeholder={models.length ? 'Select a model…' : 'No registry models available'} /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {models.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-[hsl(var(--text-2))] uppercase tracking-wide">System Name *</label>
+                  <Input className="rounded-none bg-raised" value={wSystemName} onChange={e => setWSystemName(e.target.value)} placeholder="e.g. Credit Risk Scorer" />
+                </div>
+              )}
+
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-[hsl(var(--text-2))] uppercase tracking-wide">Intended Purpose *</label>
-                <textarea className="w-full text-sm border p-3 min-h-[100px] rounded-none border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none resize-none"
-                  value={wPurpose} onChange={e => setWPurpose(e.target.value)} placeholder="Describe the intended purpose of this AI system..." />
+                <label className="text-xs font-semibold text-[hsl(var(--text-2))] uppercase tracking-wide">Intended Use Case</label>
+                <textarea className="w-full text-sm border p-3 min-h-[80px] rounded-none border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none resize-none"
+                  value={wUseCase} onChange={e => setWUseCase(e.target.value)} placeholder="Describe the intended purpose of this AI system..." />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-[hsl(var(--text-2))] uppercase tracking-wide">Affected Users</label>
+                  <Input className="rounded-none bg-raised" value={wAffectedUsers} onChange={e => setWAffectedUsers(e.target.value)} placeholder="e.g. Loan applicants" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-[hsl(var(--text-2))] uppercase tracking-wide">Review Due</label>
+                  <Input type="date" className="rounded-none bg-raised" value={wReviewDue} onChange={e => setWReviewDue(e.target.value)} />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-[hsl(var(--text-2))] uppercase tracking-wide">Classifier / Owner *</label>
+                <Input className="rounded-none bg-raised" value={wClassifier} onChange={e => setWClassifier(e.target.value)} placeholder="e.g. Sarah Chen" />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-[hsl(var(--text-2))] uppercase tracking-wide">Fundamental Rights Impact (notes)</label>
+                <textarea className="w-full text-sm border p-3 min-h-[60px] rounded-none border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none resize-none"
+                  value={wFundRights} onChange={e => setWFundRights(e.target.value)} placeholder="Notes on fundamental-rights impact..." />
               </div>
             </div>
           )}
@@ -546,54 +607,59 @@ export default function AIRiskTiering() {
           {step === 2 && (
             <div className="space-y-5">
               <p className="text-sm font-semibold text-[hsl(var(--text-2))]">Step 2 — Classification Questionnaire</p>
+
               <div className="space-y-3">
-                <p className="text-sm font-medium text-[hsl(var(--text-1))]">Q1: Does it make decisions affecting people's rights?</p>
-                <div className="flex gap-3">
-                  {[true, false].map(v => (
-                    <button key={String(v)} onClick={() => setWAffectsRights(v)}
-                      className={`flex-1 py-2 text-sm border font-medium transition-colors rounded-none ${wAffectsRights === v ? 'border-[hsl(var(--brand))] bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))]' : 'border-[hsl(var(--border))] bg-transparent text-[hsl(var(--text-2))] hover:bg-raised'}`}>
-                      {v ? 'Yes' : 'No'}
-                    </button>
+                <p className="text-sm font-medium text-[hsl(var(--text-1))]">Prohibited practices (Art. 5) — any checked ⇒ Unacceptable:</p>
+                <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                  {PROHIBITED_PRACTICES.map(p => (
+                    <label key={p} className={`flex items-start gap-3 p-2.5 border cursor-pointer text-sm transition-colors rounded-none ${input.prohibitedPractices.includes(p) ? 'border-[hsl(var(--s-er-br))] bg-[hsl(var(--s-er-bg))]' : 'border-[hsl(var(--border))] bg-transparent hover:bg-raised'}`}>
+                      <input type="checkbox" checked={input.prohibitedPractices.includes(p)} onChange={() => toggleList('prohibitedPractices', p)} className="mt-0.5 accent-[hsl(var(--s-er-tx))]" />
+                      <span className="text-[hsl(var(--text-2))]">{p}</span>
+                    </label>
                   ))}
                 </div>
               </div>
+
               <div className="space-y-3">
-                <p className="text-sm font-medium text-[hsl(var(--text-1))]">Q2: EU AI Act Annex III categories (select all that apply):</p>
-                <div className="grid grid-cols-2 gap-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-                  {ANNEX_III.map(cat => (
-                    <label key={cat} className={`flex items-start gap-3 p-3 border cursor-pointer text-sm transition-colors rounded-none ${wAnnexIII.includes(cat) ? 'border-[hsl(var(--brand))] bg-[hsl(var(--brand-subtle))]' : 'border-[hsl(var(--border))] bg-transparent hover:bg-raised'}`}>
-                      <input type="checkbox" checked={wAnnexIII.includes(cat)} onChange={() => setWAnnexIII(prev => prev.includes(cat) ? prev.filter(a => a !== cat) : [...prev, cat])} className="mt-0.5 accent-[hsl(var(--brand))]" />
+                <p className="text-sm font-medium text-[hsl(var(--text-1))]">Annex III high-risk categories — any checked ⇒ High:</p>
+                <div className="grid grid-cols-2 gap-2 max-h-44 overflow-y-auto pr-2 custom-scrollbar">
+                  {ANNEX_III_CATEGORIES.map(cat => (
+                    <label key={cat} className={`flex items-start gap-3 p-2.5 border cursor-pointer text-sm transition-colors rounded-none ${input.annexIII.includes(cat) ? 'border-[hsl(var(--brand))] bg-[hsl(var(--brand-subtle))]' : 'border-[hsl(var(--border))] bg-transparent hover:bg-raised'}`}>
+                      <input type="checkbox" checked={input.annexIII.includes(cat)} onChange={() => toggleList('annexIII', cat)} className="mt-0.5 accent-[hsl(var(--brand))]" />
                       <span className="text-[hsl(var(--text-2))]">{cat}</span>
                     </label>
                   ))}
                 </div>
               </div>
+
               <div className="space-y-3">
-                <p className="text-sm font-medium text-[hsl(var(--text-1))]">Q3: Is it a General-Purpose AI (GPAI) model?</p>
-                <div className="flex gap-3">
-                  {[true, false].map(v => (
-                    <button key={String(v)} onClick={() => setWGpai(v)}
-                      className={`flex-1 py-2 text-sm border font-medium transition-colors rounded-none ${wGpai === v ? 'border-[hsl(var(--brand))] bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))]' : 'border-[hsl(var(--border))] bg-transparent text-[hsl(var(--text-2))] hover:bg-raised'}`}>
-                      {v ? 'Yes' : 'No'}
-                    </button>
-                  ))}
-                </div>
+                <p className="text-sm font-medium text-[hsl(var(--text-1))]">Automated decision materially affecting fundamental rights?</p>
+                <YesNo value={input.affectsFundamentalRights} onChange={v => setField('affectsFundamentalRights', v)} />
               </div>
               <div className="space-y-3">
-                <p className="text-sm font-medium text-[hsl(var(--text-1))]">Q4: Does it interact with humans without disclosure?</p>
-                <div className="flex gap-3">
-                  {[true, false].map(v => (
-                    <button key={String(v)} onClick={() => setWNoDisclosure(v)}
-                      className={`flex-1 py-2 text-sm border font-medium transition-colors rounded-none ${wNoDisclosure === v ? 'border-[hsl(var(--brand))] bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))]' : 'border-[hsl(var(--border))] bg-transparent text-[hsl(var(--text-2))] hover:bg-raised'}`}>
-                      {v ? 'Yes' : 'No'}
-                    </button>
-                  ))}
-                </div>
+                <p className="text-sm font-medium text-[hsl(var(--text-1))]">Interacts directly with people?</p>
+                <YesNo value={input.interactsWithHumans} onChange={v => setField('interactsWithHumans', v)} />
               </div>
-              {/* Auto-classification */}
-              <div className="p-4 border border-[hsl(var(--border))] bg-raised rounded-none flex items-center justify-between mt-6">
-                <p className="text-xs text-[hsl(var(--text-3))] font-bold uppercase tracking-wide">Auto-classification result</p>
-                <Badge className={`${tierColor(derived).bg} ${tierColor(derived).text} border-0 rounded-none uppercase text-[10px]`}>{derived} Risk</Badge>
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-[hsl(var(--text-1))]">Generates synthetic content?</p>
+                <YesNo value={input.generatesSyntheticContent} onChange={v => setField('generatesSyntheticContent', v)} />
+              </div>
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-[hsl(var(--text-1))]">General-purpose AI model?</p>
+                <YesNo value={input.isGPAI} onChange={v => setField('isGPAI', v)} />
+              </div>
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-[hsl(var(--text-1))]">Is AI use disclosed to users?</p>
+                <YesNo value={input.discloses} onChange={v => setField('discloses', v)} />
+              </div>
+
+              {/* Live computed result */}
+              <div className={`p-4 border ${tierMeta.border} ${tierMeta.bg} rounded-none mt-6`}>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-xs font-bold uppercase tracking-wide text-[hsl(var(--text-3))]">Computed tier</p>
+                  <Badge className={`${tierMeta.bg} ${tierMeta.text} border-0 rounded-none uppercase text-[10px]`}>{tierMeta.label}</Badge>
+                </div>
+                <p className="text-xs text-[hsl(var(--text-2))]">{result.basis}</p>
               </div>
             </div>
           )}
@@ -601,32 +667,31 @@ export default function AIRiskTiering() {
           {step === 3 && (
             <div className="space-y-5">
               <p className="text-sm font-semibold text-[hsl(var(--text-2))]">Step 3 — Review & Confirm</p>
-              <div className={`p-6 border text-center ${tierColor(derived).bg} ${tierColor(derived).border} rounded-none`}>
-                <p className={`text-2xl font-bold ${tierColor(derived).text}`}>{derived}</p>
-                <p className="text-sm mt-2 text-[hsl(var(--text-2))]">{wSystem}</p>
+              <div className={`p-6 border text-center ${tierMeta.bg} ${tierMeta.border} rounded-none`}>
+                <p className={`text-2xl font-bold ${tierMeta.text}`}>{tierMeta.label}</p>
+                <p className="text-sm mt-2 text-[hsl(var(--text-2))]">{resolvedName || '(no system selected)'}</p>
+                <p className="text-xs mt-2 text-[hsl(var(--text-3))]">{result.basis}</p>
               </div>
-              {derived === 'High Risk' && (
+
+              {result.obligations.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-sm font-semibold text-[hsl(var(--text-1))]">Required compliance obligations:</p>
-                  <div className="bg-raised border border-[hsl(var(--border))] p-4 grid grid-cols-2 gap-3">
-                    {HIGH_RISK_OBLIGATIONS.map(ob => (
-                      <label key={ob} className="flex items-center gap-2 cursor-pointer text-sm text-[hsl(var(--text-2))]">
-                        <input type="checkbox" className="accent-[hsl(var(--brand))]" checked={wObligations.includes(ob)} onChange={() => setWObligations(prev => prev.includes(ob) ? prev.filter(o => o !== ob) : [...prev, ob])} />
-                        {ob}
-                      </label>
+                  <p className="text-sm font-semibold text-[hsl(var(--text-1))]">Applicable obligations:</p>
+                  <div className="bg-raised border border-[hsl(var(--border))] p-4 space-y-2">
+                    {result.obligations.map(ob => (
+                      <div key={ob} className="flex items-center gap-2 text-sm text-[hsl(var(--text-2))]">
+                        <CheckCircle size={16} className="text-[hsl(var(--s-ok-tx))] flex-shrink-0" /> {ob}
+                      </div>
                     ))}
                   </div>
                 </div>
               )}
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-[hsl(var(--text-2))] uppercase tracking-wide">Assign Owner *</label>
-                <Select value={wOwner} onValueChange={setWOwner}>
-                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue placeholder="Select owner…" /></SelectTrigger>
-                  <SelectContent style={{ borderRadius: 0 }}>
-                    {['Sarah Chen', 'James Patel', 'Maria Santos', 'David Kim', 'Emma Wilson'].map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
+
+              {(!systemValid || !classifierValid) && (
+                <div className="p-3 border border-[hsl(var(--s-wn-br))] bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))] text-xs rounded-none flex items-center gap-2">
+                  <Warning size={16} />
+                  {!systemValid ? 'Select a registry model or enter a system name (Step 1).' : 'Enter a classifier / owner (Step 1).'}
+                </div>
+              )}
             </div>
           )}
 
@@ -637,7 +702,9 @@ export default function AIRiskTiering() {
             {step < 3 ? (
               <Button className="rounded-none bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-hover))]" onClick={() => setStep(s => s + 1)}>Next <ArrowRight size={16} /></Button>
             ) : (
-              <Button className="rounded-none bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-hover))]" onClick={submitWizard}>Confirm Classification</Button>
+              <Button className="rounded-none bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-hover))] disabled:opacity-50" disabled={!canConfirm} onClick={submitWizard}>
+                {save.isPending ? <><Spinner size={16} className="animate-spin" /> Saving…</> : 'Confirm Classification'}
+              </Button>
             )}
           </div>
         </DialogContent>

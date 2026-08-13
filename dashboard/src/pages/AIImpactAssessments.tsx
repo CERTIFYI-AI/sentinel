@@ -1,11 +1,15 @@
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
-import { exportCsv } from '@/lib/exportUtils';
-import { FileMagnifyingGlass, Plus, Eye, X, Trash, PencilSimple, Export, Warning, CheckCircle, Clock, MagnifyingGlass, ArrowRight } from '@phosphor-icons/react'
+import { exportCsv } from '@/lib/exportUtils'
+import { Plus, Eye, X, Trash, PencilSimple, Export, CheckCircle, MagnifyingGlass, ArrowRight, ArrowSquareOut, Prohibit, Spinner, Warning } from '@phosphor-icons/react'
 import { toast } from 'sonner'
-import { useSupabaseTable } from '@/hooks/useSupabaseTable'
+import { useImpactAssessments, useModelOptions } from '@/hooks/useAiiaData'
+import type { ImpactAssessment } from '@/services/impactAssessmentService'
+import { fetchUseCases, type UseCase } from '@/services/useCaseService'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
-import { StatCardRow, StatCardRowItem } from '../components/ui/StatCardRow'
+import { StatCardRow } from '../components/ui/StatCardRow'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Card } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
@@ -13,189 +17,142 @@ import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { PageHeader } from '../components/ui/PageHeader'
 
+// ── Vocabulary (matches the real ai_impact_assessments table) ─────────────────
+const STATUS_OPTIONS = ['draft', 'in_review', 'approved', 'rejected'] as const
+const RISK_OPTIONS = ['low', 'medium', 'high', 'critical'] as const
+const RAG_OPTIONS = ['green', 'amber', 'red'] as const
+const TYPE_OPTIONS = ['AIIA', 'FRIA', 'DPIA', 'Conformity'] as const
 
-type AIIAStatus = 'Draft' | 'In Progress' | 'Pending Review' | 'Approved' | 'Rejected' | 'Completed'
-type RiskLevel = 'Critical' | 'High' | 'Medium' | 'Low' | 'Minimal'
+const STATUS_LABEL: Record<string, string> = {
+  draft: 'Draft', in_review: 'In Review', approved: 'Approved', rejected: 'Rejected',
+}
+const RISK_LABEL: Record<string, string> = {
+  low: 'Low', medium: 'Medium', high: 'High', critical: 'Critical',
+}
+const RAG_LABEL: Record<string, string> = { green: 'Green', amber: 'Amber', red: 'Red' }
 
-interface AIIA {
-  id: string
-  name: string
-  system: string
-  description: string
-  status: AIIAStatus
-  risk: RiskLevel
-  date: string
-  dueDate: string
-  owner: string
-  framework: string
-  department: string
-  version: string
-  purposeOfUse: string
-  dataCategories: string[]
-  affectedGroups: string
-  automatedDecision: boolean
-  humanOversight: string
-  mitigations: { area: string; measure: string; status: 'Implemented' | 'Planned' | 'Not Applicable' }[]
-  findings: { id: string; description: string; severity: 'High' | 'Medium' | 'Low'; status: 'Open' | 'Resolved' }[]
-  approvers: string[]
-  reviewedAt?: string
-  notes: string
+type Badgeish = { bg: string; color: string; border?: string }
+const NEUTRAL: Badgeish = { bg: 'bg-sunken', color: 'text-[hsl(var(--text-3))]', border: 'border-[hsl(var(--border))]' }
+
+// Fixed: background uses the -bg token, text uses the -tx token (was both -tx).
+function statusStyle(s: string): Badgeish {
+  switch (s) {
+    case 'approved': return { bg: 'bg-[hsl(var(--s-ok-bg))]', color: 'text-[hsl(var(--s-ok-tx))]' }
+    case 'in_review': return { bg: 'bg-[hsl(var(--s-wn-bg))]', color: 'text-[hsl(var(--s-wn-tx))]' }
+    case 'rejected': return { bg: 'bg-[hsl(var(--s-er-bg))]', color: 'text-[hsl(var(--s-er-tx))]' }
+    case 'draft': return { bg: 'bg-[hsl(var(--s-in-bg))]', color: 'text-[hsl(var(--s-in-tx))]' }
+    default: return NEUTRAL
+  }
+}
+function riskStyle(r: string): Badgeish {
+  switch (r) {
+    case 'critical': return { bg: 'bg-[hsl(var(--s-er-bg))]', color: 'text-[hsl(var(--s-er-tx))]' }
+    case 'high': return { bg: 'bg-[hsl(var(--s-wn-bg))]', color: 'text-[hsl(var(--s-wn-tx))]' }
+    case 'medium': return { bg: 'bg-[hsl(var(--s-in-bg))]', color: 'text-[hsl(var(--s-in-tx))]' }
+    case 'low': return { bg: 'bg-[hsl(var(--s-ok-bg))]', color: 'text-[hsl(var(--s-ok-tx))]' }
+    default: return NEUTRAL
+  }
+}
+function ragStyle(r: string): Badgeish {
+  switch (r) {
+    case 'green': return { bg: 'bg-[hsl(var(--s-ok-bg))]', color: 'text-[hsl(var(--s-ok-tx))]' }
+    case 'amber': return { bg: 'bg-[hsl(var(--s-wn-bg))]', color: 'text-[hsl(var(--s-wn-tx))]' }
+    case 'red': return { bg: 'bg-[hsl(var(--s-er-bg))]', color: 'text-[hsl(var(--s-er-tx))]' }
+    default: return NEUTRAL
+  }
+}
+function mitigationStyle(s: string): Badgeish {
+  const v = (s || '').toLowerCase()
+  if (v.includes('implement') || v.includes('done') || v.includes('complete')) return { bg: 'bg-[hsl(var(--s-ok-bg))]', color: 'text-[hsl(var(--s-ok-tx))]' }
+  if (v.includes('plan') || v.includes('progress') || v.includes('pending')) return { bg: 'bg-[hsl(var(--s-wn-bg))]', color: 'text-[hsl(var(--s-wn-tx))]' }
+  return NEUTRAL
+}
+function findingStyle(sev: string): Badgeish {
+  const v = (sev || '').toLowerCase()
+  if (v.includes('high') || v.includes('critical')) return { bg: 'bg-[hsl(var(--s-er-bg))]', color: 'text-[hsl(var(--s-er-tx))]', border: 'border-[hsl(var(--s-er-br))]' }
+  if (v.includes('medium') || v.includes('moderate')) return { bg: 'bg-[hsl(var(--s-wn-bg))]', color: 'text-[hsl(var(--s-wn-tx))]', border: 'border-[hsl(var(--s-wn-br))]' }
+  if (v.includes('low')) return { bg: 'bg-[hsl(var(--s-ok-bg))]', color: 'text-[hsl(var(--s-ok-tx))]', border: 'border-[hsl(var(--s-ok-br))]' }
+  return NEUTRAL
+}
+function findingStatusStyle(s: string): Badgeish {
+  const v = (s || '').toLowerCase()
+  if (v.includes('resolved') || v.includes('closed')) return { bg: 'bg-[hsl(var(--s-ok-bg))]', color: 'text-[hsl(var(--s-ok-tx))]' }
+  return { bg: 'bg-[hsl(var(--s-wn-bg))]', color: 'text-[hsl(var(--s-wn-tx))]' }
 }
 
-const SEED: AIIA[] = [
-  {
-    id: 'AIIA-001', name: 'Customer Scoring Model v2', system: 'Credit Engine', description: 'Automated credit scoring model used for consumer loan decisions. Processes applicant financial history, income verification, and behavioural data.',
-    status: 'Completed', risk: 'High', date: '2026-03-15', dueDate: '2026-04-15', owner: 'Sarah Chen', framework: 'EU AI Act Art. 10 + ECOA',
-    department: 'Risk & Compliance', version: 'v2.1.0', purposeOfUse: 'Automated consumer credit scoring for loan approval decisions affecting individuals seeking personal and auto loans.',
-    dataCategories: ['Financial history', 'Income verification', 'Employment data', 'Behavioural signals'], affectedGroups: 'Loan applicants (est. 15,000/month)',
-    automatedDecision: true, humanOversight: 'Borderline scores (0.45–0.65) routed to underwriter review; all rejections require human sign-off.',
-    mitigations: [
-      { area: 'Bias', measure: 'Monthly demographic parity testing across protected attributes', status: 'Implemented' },
-      { area: 'Transparency', measure: 'SHAP explanations provided with each decision', status: 'Implemented' },
-      { area: 'Accuracy', measure: 'Monthly drift monitoring with automatic retraining trigger', status: 'Implemented' },
-      { area: 'Appeal', measure: 'Automated appeal pathway via customer portal', status: 'Planned' },
-    ],
-    findings: [
-      { id: 'F-001', description: 'Gender parity gap of 8.2% detected in March batch', severity: 'High', status: 'Resolved' },
-      { id: 'F-002', description: 'Explanation generation fails for edge-case income profiles', severity: 'Medium', status: 'Open' },
-    ],
-    approvers: ['James Patel (Compliance)', 'Maria Santos (ML Lead)'], reviewedAt: '2026-03-20', notes: 'Approved subject to quarterly bias reviews and appeal pathway completion by Q3 2026.',
-  },
-  {
-    id: 'AIIA-002', name: 'Resume Screening Agent', system: 'HR Platform', description: 'AI agent that pre-screens job applications by ranking candidates based on CV content, skills matching, and cultural fit signals.',
-    status: 'In Progress', risk: 'Critical', date: '2026-03-28', dueDate: '2026-04-28', owner: 'Michael Torres', framework: 'EU AI Act + EEOC Guidelines',
-    department: 'Human Resources', version: 'v1.3.0', purposeOfUse: 'Automated first-stage screening of job applications to rank candidates for human recruiter review.',
-    dataCategories: ['CV / résumé content', 'Skills profiles', 'Education data', 'Work history'], affectedGroups: 'Job applicants (est. 2,000/month)',
-    automatedDecision: false, humanOversight: 'All shortlisting decisions reviewed by recruiter. Agent provides ranked list only — no autonomous rejection.',
-    mitigations: [
-      { area: 'Bias', measure: 'Blind screening mode — name and graduation year masked', status: 'Implemented' },
-      { area: 'Fairness', measure: 'Protected attribute neutralization in scoring model', status: 'Planned' },
-      { area: 'Transparency', measure: 'Candidate score breakdown available to recruiting team', status: 'Implemented' },
-    ],
-    findings: [
-      { id: 'F-003', description: 'Model over-weights elite university affiliation — proxy for socioeconomic bias', severity: 'High', status: 'Open' },
-      { id: 'F-004', description: 'No documented appeal process for screened-out candidates', severity: 'Medium', status: 'Open' },
-    ],
-    approvers: ['Sarah Chen (CISO)', 'Legal Counsel'], notes: 'Critical risk — must complete bias remediation before production use.',
-  },
-  {
-    id: 'AIIA-003', name: 'Fraud Detection Pipeline', system: 'Risk Engine', description: 'Real-time transaction fraud detection using ML ensemble. Flags suspicious transactions for human review or automatic block.',
-    status: 'Completed', risk: 'Medium', date: '2026-02-20', dueDate: '2026-03-20', owner: 'Priya Gupta', framework: 'PCI DSS + FFIEC',
-    department: 'Risk', version: 'v4.2.1', purposeOfUse: 'Real-time detection of fraudulent card transactions to protect customers and reduce financial losses.',
-    dataCategories: ['Transaction data', 'Device fingerprint', 'Geolocation', 'Merchant data'], affectedGroups: 'Cardholders (all active accounts)',
-    automatedDecision: true, humanOversight: 'Scores > 0.85 auto-blocked; scores 0.55–0.85 sent to fraud analyst queue.',
-    mitigations: [
-      { area: 'False positives', measure: 'Weekly FP rate review with 5% maximum threshold', status: 'Implemented' },
-      { area: 'Explainability', measure: 'Top-5 contributing features shown to analysts', status: 'Implemented' },
-      { area: 'Disparate impact', measure: 'Quarterly analysis of block rates by customer segment', status: 'Implemented' },
-    ],
-    findings: [],
-    approvers: ['Head of Risk', 'Compliance Team'], reviewedAt: '2026-02-25', notes: 'Approved. No critical findings. Annual re-assessment due Feb 2027.',
-  },
-  {
-    id: 'AIIA-004', name: 'Content Moderation Bot', system: 'Trust & Safety', description: 'Automated moderation of user-generated content on customer portal — flags, hides, or removes policy-violating content.',
-    status: 'Pending Review', risk: 'High', date: '2026-04-01', dueDate: '2026-04-30', owner: 'James Wilson', framework: 'DSA + Platform Policy',
-    department: 'Trust & Safety', version: 'v2.0.0', purposeOfUse: 'Automated moderation of user forum content at scale to enforce community guidelines.',
-    dataCategories: ['User-generated text', 'Images', 'User account data'], affectedGroups: 'Portal users (est. 45,000 active)',
-    automatedDecision: true, humanOversight: 'Removals > 3 strikes escalated to human moderator. All appeals reviewed by T&S team.',
-    mitigations: [
-      { area: 'False positives', measure: 'Over-refusal rate monitored daily; alert at > 2%', status: 'Implemented' },
-      { area: 'Appeal', measure: 'User appeal button on all moderation actions', status: 'Implemented' },
-      { area: 'Bias', measure: 'Language and dialect bias audit pending', status: 'Planned' },
-    ],
-    findings: [
-      { id: 'F-005', description: 'Dialect and non-standard English over-flagged vs standard English', severity: 'High', status: 'Open' },
-    ],
-    approvers: ['Sarah Chen', 'Legal Counsel'], notes: 'Awaiting legal sign-off on DSA compliance section.',
-  },
-  {
-    id: 'AIIA-005', name: 'Predictive Maintenance Model', system: 'Operations', description: 'Predicts equipment failure likelihood for data center infrastructure. Used to schedule preventive maintenance.',
-    status: 'Draft', risk: 'Low', date: '2026-04-05', dueDate: '2026-05-05', owner: 'Anika Patel', framework: 'ISO 31000',
-    department: 'Operations', version: 'v0.9.0', purposeOfUse: 'Predict hardware failure to optimize maintenance scheduling and reduce unplanned downtime.',
-    dataCategories: ['Sensor telemetry', 'Maintenance logs', 'Equipment specs'], affectedGroups: 'Internal operations team only',
-    automatedDecision: false, humanOversight: 'All maintenance decisions made by operations team. Model provides recommendations only.',
-    mitigations: [
-      { area: 'Accuracy', measure: 'Model accuracy monitored against historical failure data', status: 'Planned' },
-    ],
-    findings: [],
-    approvers: ['CTO'], notes: 'Low-risk internal tool. Fast-track assessment in progress.',
-  },
-  {
-    id: 'AIIA-006', name: 'Chatbot Response Generator', system: 'Customer Support', description: 'LLM-powered customer service chatbot that handles tier-1 support queries and routes complex cases to human agents.',
-    status: 'Completed', risk: 'Medium', date: '2026-01-12', dueDate: '2026-02-12', owner: 'David Kim', framework: 'EU AI Act + Consumer Protection',
-    department: 'Customer Experience', version: 'v3.5.2', purposeOfUse: 'Automated tier-1 customer support to reduce wait times and handle FAQs at scale.',
-    dataCategories: ['Customer query text', 'Account data (read-only)', 'Interaction history'], affectedGroups: 'All customers contacting support',
-    automatedDecision: false, humanOversight: 'Human escalation available at any time. Frustration detection triggers automatic agent routing.',
-    mitigations: [
-      { area: 'Hallucination', measure: 'RAG grounding with approved knowledge base only', status: 'Implemented' },
-      { area: 'PII', measure: 'Automatic PII masking in logs', status: 'Implemented' },
-      { area: 'Escalation', measure: 'Clear escalation path with < 30s wait time SLA', status: 'Implemented' },
-    ],
-    findings: [
-      { id: 'F-006', description: 'Occasional hallucination on product pricing — patched with RAG guardrail', severity: 'Medium', status: 'Resolved' },
-    ],
-    approvers: ['VP Customer Experience', 'Legal Counsel'], reviewedAt: '2026-01-18', notes: 'Approved. Quarterly review scheduled.',
-  },
-]
-
-const BLANK: Omit<AIIA, 'id' | 'findings'> = {
-  name: '', system: '', description: '', status: 'Draft', risk: 'Medium', date: new Date().toISOString().slice(0, 10),
-  dueDate: '', owner: '', framework: 'EU AI Act', department: '', version: 'v1.0.0',
-  purposeOfUse: '', dataCategories: [], affectedGroups: '', automatedDecision: false,
-  humanOversight: '', mitigations: [], approvers: [], notes: '',
+type FormState = {
+  title: string
+  type: string
+  riskLevel: string
+  status: string
+  ragStatus: string
+  progressPct: number
+  assessor: string
+  reviewer: string
+  summary: string
+  affectedEntities: string[]
+  modelId: string | null
+  useCaseId: string | null
+  nextReview: string | null
 }
 
-const STATUS_STYLE: Record<AIIAStatus, { bg: string; color: string }> = {
-  Draft: { bg: 'bg-sunken', color: 'text-[hsl(var(--text-3))]' },
-  'In Progress': { bg: 'bg-[hsl(var(--brand-subtle))]', color: 'text-[hsl(var(--brand))]' },
-  'Pending Review': { bg: 'bg-[hsl(var(--s-wn-tx))]', color: 'text-[hsl(var(--s-wn-tx))]' },
-  Approved: { bg: 'bg-[hsl(var(--s-ok-tx))]', color: 'text-[hsl(var(--s-ok-tx))]' },
-  Rejected: { bg: 'bg-[hsl(var(--s-er-tx))]', color: 'text-[hsl(var(--s-er-tx))]' },
-  Completed: { bg: 'bg-[hsl(var(--s-ok-tx))]', color: 'text-[hsl(var(--s-ok-tx))]' },
-}
-
-const RISK_STYLE: Record<RiskLevel, { bg: string; color: string }> = {
-  Critical: { bg: 'bg-[hsl(var(--s-er-tx))]', color: 'text-[hsl(var(--s-er-tx))]' },
-  High: { bg: 'bg-[hsl(var(--s-wn-tx))]', color: 'text-[hsl(var(--s-wn-tx))]' },
-  Medium: { bg: 'bg-[hsl(var(--s-wn-tx))]', color: 'text-[hsl(var(--s-wn-tx))]' },
-  Low: { bg: 'bg-[hsl(var(--s-ok-tx))]', color: 'text-[hsl(var(--s-ok-tx))]' },
-  Minimal: { bg: 'bg-[hsl(var(--s-ok-tx))]', color: 'text-[hsl(var(--s-ok-tx))]' },
-}
-
-const MITIGATION_STATUS: Record<string, { bg: string; color: string }> = {
-  Implemented: { bg: 'bg-[hsl(var(--s-ok-tx))]', color: 'text-[hsl(var(--s-ok-tx))]' },
-  Planned: { bg: 'bg-[hsl(var(--s-wn-tx))]', color: 'text-[hsl(var(--s-wn-tx))]' },
-  'Not Applicable': { bg: 'bg-sunken', color: 'text-[hsl(var(--text-3))]' },
-}
-
-const FINDING_SEV: Record<string, { bg: string; color: string, border: string }> = {
-  High: { bg: 'bg-[hsl(var(--s-er-tx))]', color: 'text-[hsl(var(--s-er-tx))]', border: 'border-[hsl(var(--s-er-br))]' },
-  Medium: { bg: 'bg-[hsl(var(--s-wn-tx))]', color: 'text-[hsl(var(--s-wn-tx))]', border: 'border-[hsl(var(--s-wn-br))]' },
-  Low: { bg: 'bg-[hsl(var(--s-ok-tx))]', color: 'text-[hsl(var(--s-ok-tx))]', border: 'border-[hsl(var(--s-ok-br))]' },
+const BLANK: FormState = {
+  title: '', type: 'AIIA', riskLevel: 'medium', status: 'draft', ragStatus: 'amber',
+  progressPct: 0, assessor: '', reviewer: '', summary: '', affectedEntities: [],
+  modelId: null, useCaseId: null, nextReview: null,
 }
 
 export default function AIImpactAssessments() {
-  const { data: records, setData: setRecords } = useSupabaseTable<AIIA>('ai_impact_assessments', SEED)
+  const navigate = useNavigate()
+  const { data: records, isLoading, error, save, remove } = useImpactAssessments()
+  const { models } = useModelOptions()
+  const { data: useCases } = useQuery<UseCase[]>({ queryKey: ['use-cases'], queryFn: fetchUseCases, staleTime: 20_000 })
+
+  const modelName = (id: string | null) => (id ? (models.find(m => m.id === id)?.name ?? id) : null)
+  const useCaseTitle = (id: string | null) => (id ? (useCases?.find(u => u.id === id)?.title ?? id) : null)
+
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
   const [riskFilter, setRiskFilter] = useState('All')
-  const [selected, setSelected] = useState<AIIA | null>(null)
+  const [selected, setSelected] = useState<ImpactAssessment | null>(null)
   const [formOpen, setFormOpen] = useState(false)
-  const [editing, setEditing] = useState<AIIA | null>(null)
-  const [form, setForm] = useState(BLANK)
-  const [deleteTarget, setDeleteTarget] = useState<AIIA | null>(null)
+  const [editing, setEditing] = useState<ImpactAssessment | null>(null)
+  const [form, setForm] = useState<FormState>(BLANK)
+  const [deleteTarget, setDeleteTarget] = useState<ImpactAssessment | null>(null)
 
-  const filtered = records.filter(r => {
+  // Escape-to-close for drawer + modal
+  useEffect(() => {
+    if (!selected && !formOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { setFormOpen(false); setSelected(null) }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selected, formOpen])
+
+  // Keep the open drawer in sync with refreshed data after a mutation
+  useEffect(() => {
+    if (selected) {
+      const fresh = records.find(r => r.id === selected.id)
+      if (fresh && fresh !== selected) setSelected(fresh)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [records])
+
+  const filtered = useMemo(() => records.filter(r => {
     const q = search.toLowerCase()
-    const ms = r.name.toLowerCase().includes(q) || r.system.toLowerCase().includes(q) || r.owner.toLowerCase().includes(q) || r.id.toLowerCase().includes(q)
-    return ms && (statusFilter === 'All' || r.status === statusFilter) && (riskFilter === 'All' || r.risk === riskFilter)
-  })
+    const ms = r.title.toLowerCase().includes(q)
+      || r.assessmentId.toLowerCase().includes(q)
+      || r.assessor.toLowerCase().includes(q)
+      || r.type.toLowerCase().includes(q)
+    return ms && (statusFilter === 'All' || r.status === statusFilter) && (riskFilter === 'All' || r.riskLevel === riskFilter)
+  }), [records, search, statusFilter, riskFilter])
 
   const stats = {
     total: records.length,
-    critical: records.filter(r => r.risk === 'Critical' || r.risk === 'High').length,
-    pending: records.filter(r => r.status === 'Pending Review' || r.status === 'In Progress').length,
-    completed: records.filter(r => r.status === 'Completed' || r.status === 'Approved').length,
+    critical: records.filter(r => r.riskLevel === 'critical' || r.riskLevel === 'high').length,
+    pending: records.filter(r => r.status === 'in_review').length,
+    completed: records.filter(r => r.status === 'approved').length,
   }
 
   function openCreate() {
@@ -204,58 +161,96 @@ export default function AIImpactAssessments() {
     setFormOpen(true)
   }
 
-  function openEdit(r: AIIA) {
+  function openEdit(r: ImpactAssessment) {
     setEditing(r)
-    setForm({ name: r.name, system: r.system, description: r.description, status: r.status, risk: r.risk, date: r.date, dueDate: r.dueDate, owner: r.owner, framework: r.framework, department: r.department, version: r.version, purposeOfUse: r.purposeOfUse, dataCategories: r.dataCategories, affectedGroups: r.affectedGroups, automatedDecision: r.automatedDecision, humanOversight: r.humanOversight, mitigations: r.mitigations, approvers: r.approvers, notes: r.notes })
+    setForm({
+      title: r.title, type: r.type, riskLevel: r.riskLevel, status: r.status, ragStatus: r.ragStatus,
+      progressPct: r.progressPct, assessor: r.assessor, reviewer: r.reviewer, summary: r.summary,
+      affectedEntities: r.affectedEntities, modelId: r.modelId, useCaseId: r.useCaseId, nextReview: r.nextReview,
+    })
     setFormOpen(true)
     setSelected(null)
   }
 
   function saveForm() {
-    if (!form.name.trim() || !form.system.trim()) { toast.error('Name and system are required.'); return }
-    if (editing) {
-      setRecords(prev => prev.map(r => r.id === editing.id ? { ...editing, ...form } : r))
-      toast.success('Assessment updated')
-    } else {
-      const newR: AIIA = { ...form, id: `AIIA-${String(records.length + 1).padStart(3, '0')}`, findings: [] }
-      setRecords(prev => [newR, ...prev])
-      toast.success('Assessment created')
+    if (!form.title.trim()) { toast.error('Title is required.'); return }
+    const payload: Partial<ImpactAssessment> = {
+      ...(editing ? { id: editing.id } : {}),
+      title: form.title.trim(),
+      type: form.type,
+      riskLevel: form.riskLevel,
+      status: form.status,
+      ragStatus: form.ragStatus,
+      progressPct: Number(form.progressPct) || 0,
+      assessor: form.assessor,
+      reviewer: form.reviewer,
+      summary: form.summary,
+      affectedEntities: form.affectedEntities,
+      modelId: form.modelId,
+      useCaseId: form.useCaseId,
+      nextReview: form.nextReview || null,
     }
-    setFormOpen(false)
+    save.mutate(payload, {
+      onSuccess: () => {
+        toast.success(editing ? 'Assessment updated' : 'Assessment created')
+        setFormOpen(false)
+      },
+      onError: (err: any) => toast.error(err?.message ?? 'Failed to save assessment'),
+    })
   }
 
   function confirmDelete() {
     if (!deleteTarget) return
-    setRecords(prev => prev.filter(r => r.id !== deleteTarget.id))
-    toast.success(`Assessment ${deleteTarget.id} deleted`)
-    setDeleteTarget(null)
-    if (selected?.id === deleteTarget.id) setSelected(null)
+    const target = deleteTarget
+    remove.mutate(target.id, {
+      onSuccess: () => {
+        toast.success(`Assessment ${target.assessmentId} deleted`)
+        if (selected?.id === target.id) setSelected(null)
+        setDeleteTarget(null)
+      },
+      onError: (err: any) => { toast.error(err?.message ?? 'Failed to delete assessment'); setDeleteTarget(null) },
+    })
   }
 
-  function submitForReview(r: AIIA) {
-    setRecords(prev => prev.map(x => x.id === r.id ? { ...x, status: 'Pending Review' as AIIAStatus } : x))
-    setSelected(prev => prev?.id === r.id ? { ...prev, status: 'Pending Review' } : prev)
-    toast.success(`${r.id} submitted for review`)
+  function transition(r: ImpactAssessment, patch: Partial<ImpactAssessment>, successMsg: string) {
+    save.mutate({ id: r.id, ...patch }, {
+      onSuccess: () => toast.success(successMsg),
+      onError: (err: any) => toast.error(err?.message ?? 'Failed to update assessment'),
+    })
   }
 
-  function approveAssessment(r: AIIA) {
-    setRecords(prev => prev.map(x => x.id === r.id ? { ...x, status: 'Approved' as AIIAStatus, reviewedAt: new Date().toISOString().slice(0, 10) } : x))
-    setSelected(prev => prev?.id === r.id ? { ...prev, status: 'Approved', reviewedAt: new Date().toISOString().slice(0, 10) } : prev)
-    toast.success(`${r.id} approved`)
-  }
+  const submitForReview = (r: ImpactAssessment) => transition(r, { status: 'in_review' }, `${r.assessmentId} submitted for review`)
+  const approveAssessment = (r: ImpactAssessment) => transition(r, { status: 'approved', approvedAt: new Date().toISOString() }, `${r.assessmentId} approved`)
+  const rejectAssessment = (r: ImpactAssessment) => transition(r, { status: 'rejected' }, `${r.assessmentId} rejected`)
 
-  const sf = (k: keyof typeof form, v: any) => setForm(prev => ({ ...prev, [k]: v }))
+  const sf = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm(prev => ({ ...prev, [k]: v }))
+
+  const csvRows = filtered.map(r => ({
+    id: r.assessmentId,
+    title: r.title,
+    type: r.type,
+    riskLevel: r.riskLevel,
+    status: r.status,
+    progressPct: r.progressPct,
+    assessor: r.assessor,
+    reviewer: r.reviewer,
+    ragStatus: r.ragStatus,
+    model: modelName(r.modelId) ?? '',
+    useCase: useCaseTitle(r.useCaseId) ?? '',
+    nextReview: r.nextReview ?? '',
+    approvedAt: r.approvedAt ?? '',
+  }))
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between">
-        <PageHeader 
-          title="AI Impact Assessments" 
+        <PageHeader
+          title="AI Impact Assessments"
           description="Document and review the impact of AI systems on individuals and society per EU AI Act Art. 9"
         />
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => exportCsv(filtered as any, 'ai-impact-assessments.csv')} className="rounded-none border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:text-[hsl(var(--text-1))]">
+          <Button variant="outline" onClick={() => exportCsv(csvRows, 'ai-impact-assessments.csv')} className="rounded-none border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:text-[hsl(var(--text-1))]">
             <Export size={16} /> Export
           </Button>
           <Button onClick={openCreate} className="rounded-none bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-hover))]">
@@ -268,31 +263,33 @@ export default function AIImpactAssessments() {
       <StatCardRow cards={[
         { label: 'Total Assessments', value: stats.total, variant: 'default' },
         { label: 'High / Critical Risk', value: stats.critical, variant: 'error' },
-        { label: 'Pending Review', value: stats.pending, variant: 'warn' },
-        { label: 'Completed / Approved', value: stats.completed, variant: 'ok' },
+        { label: 'In Review', value: stats.pending, variant: 'warn' },
+        { label: 'Approved', value: stats.completed, variant: 'ok' },
       ]} />
 
       {/* Filters */}
       <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
           <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-3))]" />
-          <Input 
-            value={search} 
-            onChange={e => setSearch(e.target.value)} 
-            placeholder="Search assessments…" 
-            className="pl-9 bg-surface border-[hsl(var(--border))] rounded-none h-9" 
+          <Input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search assessments…"
+            className="pl-9 bg-surface border-[hsl(var(--border))] rounded-none h-9"
           />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="h-9" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
           <SelectContent style={{ borderRadius: 0 }}>
-            {['All', 'Draft', 'In Progress', 'Pending Review', 'Approved', 'Rejected', 'Completed'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            <SelectItem value="All">All Statuses</SelectItem>
+            {STATUS_OPTIONS.map(s => <SelectItem key={s} value={s}>{STATUS_LABEL[s]}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={riskFilter} onValueChange={setRiskFilter}>
           <SelectTrigger className="h-9" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
           <SelectContent style={{ borderRadius: 0 }}>
-            {['All', 'Critical', 'High', 'Medium', 'Low', 'Minimal'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            <SelectItem value="All">All Risk Levels</SelectItem>
+            {RISK_OPTIONS.map(s => <SelectItem key={s} value={s}>{RISK_LABEL[s]}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
@@ -303,36 +300,54 @@ export default function AIImpactAssessments() {
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-[hsl(var(--text-2))] uppercase bg-raised border-b border-[hsl(var(--border))]">
               <tr>
-                {['ID', 'Assessment Name', 'AI System', 'Risk Level', 'Status', 'Owner', 'Due Date', 'Actions'].map(h => (
+                {['ID', 'Title', 'Type', 'Risk Level', 'Status', 'Assessor', 'Next Review', 'Actions'].map(h => (
                   <th key={h} className="px-4 py-3 font-medium">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 && (
+              {isLoading && (
+                <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-[hsl(var(--text-3))]">
+                  <span className="inline-flex items-center gap-2"><Spinner size={18} className="animate-spin" /> Loading assessments…</span>
+                </td></tr>
+              )}
+              {!isLoading && error && (
+                <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-[hsl(var(--s-er-tx))]">
+                  <span className="inline-flex items-center gap-2"><Warning size={18} /> Failed to load assessments: {error.message}</span>
+                </td></tr>
+              )}
+              {!isLoading && !error && records.length === 0 && (
+                <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-[hsl(var(--text-3))]">
+                  <div className="flex flex-col items-center gap-2">
+                    <span>No impact assessments yet.</span>
+                    <Button size="sm" onClick={openCreate} className="rounded-none bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-hover))]"><Plus size={14} /> New Assessment</Button>
+                  </div>
+                </td></tr>
+              )}
+              {!isLoading && !error && records.length > 0 && filtered.length === 0 && (
                 <tr><td colSpan={8} className="px-4 py-8 text-center text-sm text-[hsl(var(--text-3))]">No assessments match your filters.</td></tr>
               )}
-              {filtered.map(r => {
-                const ss = STATUS_STYLE[r.status] || { bg: 'bg-sunken', color: 'text-[hsl(var(--text-3))]' }
-                const rs = RISK_STYLE[r.risk] || { bg: 'bg-sunken', color: 'text-[hsl(var(--text-3))]' }
+              {!isLoading && !error && filtered.map(r => {
+                const ss = statusStyle(r.status)
+                const rs = riskStyle(r.riskLevel)
                 return (
                   <tr key={r.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-muted))] transition-colors cursor-pointer" onClick={() => setSelected(r)}>
-                    <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--brand))]">{r.id}</td>
-                    <td className="px-4 py-3 font-medium text-[hsl(var(--text-1))] max-w-[200px] truncate">{r.name}</td>
-                    <td className="px-4 py-3 text-[hsl(var(--text-2))]">{r.system}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--brand))]">{r.assessmentId}</td>
+                    <td className="px-4 py-3 font-medium text-[hsl(var(--text-1))] max-w-[220px] truncate">{r.title}</td>
+                    <td className="px-4 py-3 text-[hsl(var(--text-2))]">{r.type}</td>
                     <td className="px-4 py-3">
-                      <Badge className={`${rs.bg} ${rs.color} border-0 rounded-none uppercase text-[10px]`}>{r.risk}</Badge>
+                      <Badge className={`${rs.bg} ${rs.color} border-0 rounded-none uppercase text-[10px]`}>{RISK_LABEL[r.riskLevel] ?? r.riskLevel}</Badge>
                     </td>
                     <td className="px-4 py-3">
-                      <Badge className={`${ss.bg} ${ss.color} border-0 rounded-none`}>{r.status}</Badge>
+                      <Badge className={`${ss.bg} ${ss.color} border-0 rounded-none`}>{STATUS_LABEL[r.status] ?? r.status}</Badge>
                     </td>
-                    <td className="px-4 py-3 text-[hsl(var(--text-2))]">{r.owner}</td>
-                    <td className="px-4 py-3 text-[hsl(var(--text-3))] font-mono text-xs">{r.dueDate || '—'}</td>
+                    <td className="px-4 py-3 text-[hsl(var(--text-2))]">{r.assessor || '—'}</td>
+                    <td className="px-4 py-3 text-[hsl(var(--text-3))] font-mono text-xs">{r.nextReview ? r.nextReview.slice(0, 10) : '—'}</td>
                     <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                       <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="sm" onClick={() => setSelected(r)} className="h-8 w-8 p-0 text-[hsl(var(--text-2))] hover:text-[hsl(var(--brand))] rounded-none"><Eye size={16} /></Button>
-                        <Button variant="ghost" size="sm" onClick={() => openEdit(r)} className="h-8 w-8 p-0 text-[hsl(var(--text-2))] hover:text-[hsl(var(--brand))] rounded-none"><PencilSimple size={16} /></Button>
-                        <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(r)} className="h-8 w-8 p-0 text-[hsl(var(--text-2))] hover:text-[hsl(var(--s-er-tx))] rounded-none"><Trash size={16} /></Button>
+                        <Button aria-label={`View ${r.assessmentId}`} variant="ghost" size="sm" onClick={() => setSelected(r)} className="h-8 w-8 p-0 text-[hsl(var(--text-2))] hover:text-[hsl(var(--brand))] rounded-none"><Eye size={16} /></Button>
+                        <Button aria-label={`Edit ${r.assessmentId}`} variant="ghost" size="sm" onClick={() => openEdit(r)} className="h-8 w-8 p-0 text-[hsl(var(--text-2))] hover:text-[hsl(var(--brand))] rounded-none"><PencilSimple size={16} /></Button>
+                        <Button aria-label={`Delete ${r.assessmentId}`} variant="ghost" size="sm" onClick={() => setDeleteTarget(r)} className="h-8 w-8 p-0 text-[hsl(var(--text-2))] hover:text-[hsl(var(--s-er-tx))] rounded-none"><Trash size={16} /></Button>
                       </div>
                     </td>
                   </tr>
@@ -348,26 +363,31 @@ export default function AIImpactAssessments() {
 
       {/* Detail Drawer */}
       {selected && (
-        <div className="fixed inset-0 z-50 flex">
+        <div className="fixed inset-0 z-50 flex" role="dialog" aria-modal="true" aria-label={`Assessment ${selected.assessmentId}`}>
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelected(null)} />
-          <div className="relative ml-auto w-[700px] h-full bg-surface border-l border-[hsl(var(--border))] flex flex-col overflow-hidden shadow-2xl">
+          <div className="relative ml-auto w-[700px] max-w-full h-full bg-surface border-l border-[hsl(var(--border))] flex flex-col overflow-hidden shadow-2xl">
             <div className="flex items-center justify-between px-6 py-5 border-b border-[hsl(var(--border))] bg-raised">
               <div>
-                <span className="font-mono text-xs text-[hsl(var(--brand))] mb-1 block">{selected.id}</span>
-                <h2 className="text-lg font-bold text-[hsl(var(--text-1))]">{selected.name}</h2>
+                <span className="font-mono text-xs text-[hsl(var(--brand))] mb-1 block">{selected.assessmentId}</span>
+                <h2 className="text-lg font-bold text-[hsl(var(--text-1))]">{selected.title}</h2>
                 <div className="flex items-center gap-2 mt-2">
-                  <Badge className={`${(STATUS_STYLE[selected.status] || { bg: 'bg-sunken', color: 'text-[hsl(var(--text-3))]' }).bg} ${(STATUS_STYLE[selected.status] || { bg: 'bg-sunken', color: 'text-[hsl(var(--text-3))]' }).color} border-0 rounded-none`}>{selected.status}</Badge>
-                  <Badge className={`${(RISK_STYLE[selected.risk] || { bg: 'bg-sunken', color: 'text-[hsl(var(--text-3))]' }).bg} ${(RISK_STYLE[selected.risk] || { bg: 'bg-sunken', color: 'text-[hsl(var(--text-3))]' }).color} border-0 rounded-none uppercase text-[10px]`}>{selected.risk} Risk</Badge>
+                  <Badge className={`${statusStyle(selected.status).bg} ${statusStyle(selected.status).color} border-0 rounded-none`}>{STATUS_LABEL[selected.status] ?? selected.status}</Badge>
+                  <Badge className={`${riskStyle(selected.riskLevel).bg} ${riskStyle(selected.riskLevel).color} border-0 rounded-none uppercase text-[10px]`}>{RISK_LABEL[selected.riskLevel] ?? selected.riskLevel} Risk</Badge>
+                  <Badge className={`${ragStyle(selected.ragStatus).bg} ${ragStyle(selected.ragStatus).color} border-0 rounded-none uppercase text-[10px]`}>RAG: {RAG_LABEL[selected.ragStatus] ?? selected.ragStatus}</Badge>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" onClick={() => openEdit(selected)} className="rounded-none border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:text-[hsl(var(--text-1))]"><PencilSimple size={16} /> Edit</Button>
-                {selected.status === 'Draft' || selected.status === 'In Progress' ? (
+                {selected.status === 'draft' && (
                   <Button size="sm" onClick={() => submitForReview(selected)} className="rounded-none bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-hover))]"><ArrowRight size={16} /> Submit for Review</Button>
-                ) : selected.status === 'Pending Review' ? (
-                  <Button size="sm" onClick={() => approveAssessment(selected)} className="rounded-none bg-[hsl(var(--s-ok-tx))] hover:bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))]"><CheckCircle size={16} /> Approve</Button>
-                ) : null}
-                <Button variant="ghost" size="sm" onClick={() => setSelected(null)} className="h-8 w-8 p-0 rounded-none"><X size={20} className="text-[hsl(var(--text-3))]" /></Button>
+                )}
+                {selected.status === 'in_review' && (
+                  <>
+                    <Button size="sm" onClick={() => approveAssessment(selected)} className="rounded-none bg-[hsl(var(--s-ok-tx))] hover:opacity-90 text-white"><CheckCircle size={16} /> Approve</Button>
+                    <Button size="sm" onClick={() => rejectAssessment(selected)} className="rounded-none bg-[hsl(var(--s-er-tx))] hover:opacity-90 text-white"><Prohibit size={16} /> Reject</Button>
+                  </>
+                )}
+                <Button aria-label="Close" variant="ghost" size="sm" onClick={() => setSelected(null)} className="h-8 w-8 p-0 rounded-none"><X size={20} className="text-[hsl(var(--text-3))]" /></Button>
               </div>
             </div>
 
@@ -379,68 +399,60 @@ export default function AIImpactAssessments() {
                     <TabsTrigger value="mitigations" className="h-full border-b-2 border-transparent data-[state=active]:border-[hsl(var(--brand))] data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-2 text-sm">Mitigations & Findings</TabsTrigger>
                   </TabsList>
                 </div>
-                
+
                 <div className="flex-1 overflow-y-auto p-6 text-sm">
                   <TabsContent value="overview" className="m-0 space-y-6 focus:outline-none">
                     {/* Overview Grid */}
                     <div className="grid grid-cols-2 gap-4 p-5 border border-[hsl(var(--border))] bg-raised rounded-none">
-                      <InfoRow label="AI System" value={selected.system} />
-                      <InfoRow label="Department" value={selected.department} />
-                      <InfoRow label="Owner" value={selected.owner} />
-                      <InfoRow label="Framework" value={selected.framework} />
-                      <InfoRow label="Version" value={selected.version} />
-                      <InfoRow label="Date" value={selected.date} />
-                      <InfoRow label="Due Date" value={selected.dueDate || '—'} />
-                      <InfoRow label="Automated Decision" value={selected.automatedDecision ? 'Yes' : 'No'} />
-                      {selected.reviewedAt && <InfoRow label="Reviewed At" value={selected.reviewedAt} />}
+                      <InfoRow label="Type" value={selected.type} />
+                      <InfoRow label="Progress" value={`${selected.progressPct}%`} />
+                      <InfoRow label="Assessor" value={selected.assessor || '—'} />
+                      <InfoRow label="Reviewer" value={selected.reviewer || '—'} />
+                      <InfoRow label="Next Review" value={selected.nextReview ? selected.nextReview.slice(0, 10) : '—'} />
+                      <InfoRow label="Approved At" value={selected.approvedAt ? selected.approvedAt.slice(0, 10) : '—'} />
                     </div>
 
-                    <Section title="Description">
-                      <p className="text-[hsl(var(--text-2))] text-sm leading-relaxed">{selected.description}</p>
-                    </Section>
-
-                    <Section title="Purpose of Use">
-                      <p className="text-[hsl(var(--text-2))] text-sm leading-relaxed">{selected.purposeOfUse}</p>
-                    </Section>
-
-                    <Section title="Data & Affected Groups">
-                      <div className="space-y-5">
+                    {/* Interlinks */}
+                    <Section title="Linked Records">
+                      <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <p className="text-xs font-semibold text-[hsl(var(--text-3))] uppercase mb-2 tracking-wider">Data Categories</p>
-                          <div className="flex flex-wrap gap-2">
-                            {selected.dataCategories.map(d => <Badge key={d} className="bg-sunken text-[hsl(var(--text-2))] border-[hsl(var(--border))] rounded-none font-normal">{d}</Badge>)}
-                          </div>
+                          <p className="text-xs text-[hsl(var(--text-3))] uppercase tracking-wider mb-1">Model</p>
+                          {selected.modelId ? (
+                            <button
+                              onClick={() => navigate(`/models/${selected.modelId}`)}
+                              className="inline-flex items-center gap-1.5 text-sm font-medium text-[hsl(var(--brand))] hover:underline"
+                            >
+                              {modelName(selected.modelId)} <ArrowSquareOut size={14} />
+                            </button>
+                          ) : <p className="text-sm text-[hsl(var(--text-3))]">—</p>}
                         </div>
                         <div>
-                          <p className="text-xs font-semibold text-[hsl(var(--text-3))] uppercase mb-1 tracking-wider">Affected Groups</p>
-                          <p className="text-[hsl(var(--text-2))]">{selected.affectedGroups}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs font-semibold text-[hsl(var(--text-3))] uppercase mb-1 tracking-wider">Human Oversight</p>
-                          <p className="text-[hsl(var(--text-2))]">{selected.humanOversight}</p>
+                          <p className="text-xs text-[hsl(var(--text-3))] uppercase tracking-wider mb-1">Use Case</p>
+                          {selected.useCaseId ? (
+                            <button
+                              onClick={() => navigate(`/use-cases/${selected.useCaseId}`)}
+                              className="inline-flex items-center gap-1.5 text-sm font-medium text-[hsl(var(--brand))] hover:underline"
+                            >
+                              {useCaseTitle(selected.useCaseId)} <ArrowSquareOut size={14} />
+                            </button>
+                          ) : <p className="text-sm text-[hsl(var(--text-3))]">—</p>}
                         </div>
                       </div>
                     </Section>
 
-                    {selected.approvers.length > 0 && (
-                      <Section title="Approvers">
-                        <div className="flex flex-wrap gap-2">
-                          {selected.approvers.map(a => (
-                            <Badge key={a} className="bg-raised border-[hsl(var(--border))] text-[hsl(var(--text-1))] rounded-none flex items-center gap-2 px-3 py-1.5 font-normal">
-                              <CheckCircle size={14} className="text-[hsl(var(--s-ok-tx))]" weight="fill" /> {a}
-                            </Badge>
-                          ))}
-                        </div>
-                      </Section>
-                    )}
+                    <Section title="Summary">
+                      <p className="text-[hsl(var(--text-2))] text-sm leading-relaxed">{selected.summary || 'No summary provided.'}</p>
+                    </Section>
 
-                    {selected.notes && (
-                      <Section title="Notes">
-                        <div className="bg-[hsl(var(--brand-subtle))] border-l-4 border-[hsl(var(--brand))] p-4 text-[hsl(var(--brand))] text-sm">
-                          {selected.notes}
+                    <Section title="Affected Entities">
+                      {selected.affectedEntities.length === 0 ? (
+                        <p className="text-sm text-[hsl(var(--text-3))]">None recorded.</p>
+                      ) : (
+                        <div className="flex flex-wrap gap-2">
+                          {selected.affectedEntities.map((d, i) => <Badge key={i} className="bg-sunken text-[hsl(var(--text-2))] border-[hsl(var(--border))] rounded-none font-normal">{d}</Badge>)}
                         </div>
-                      </Section>
-                    )}
+                      )}
+                    </Section>
                   </TabsContent>
 
                   <TabsContent value="mitigations" className="m-0 space-y-8 focus:outline-none">
@@ -449,17 +461,15 @@ export default function AIImpactAssessments() {
                         <p className="text-sm text-[hsl(var(--text-3))]">No mitigations recorded.</p>
                       ) : (
                         <div className="space-y-3">
-                          {selected.mitigations.map((m, i) => (
-                            <div key={i} className="flex items-start justify-between gap-4 p-4 border border-[hsl(var(--border))] bg-raised rounded-none">
-                              <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="text-xs font-bold text-[hsl(var(--text-1))] uppercase tracking-wider">{m.area}</span>
-                                </div>
-                                <p className="text-sm text-[hsl(var(--text-2))] mt-1">{m.measure}</p>
+                          {selected.mitigations.map((m, i) => {
+                            const st = mitigationStyle(m.status ?? '')
+                            return (
+                              <div key={i} className="flex items-start justify-between gap-4 p-4 border border-[hsl(var(--border))] bg-raised rounded-none">
+                                <p className="text-sm text-[hsl(var(--text-1))]">{m.title}</p>
+                                {m.status && <Badge className={`${st.bg} ${st.color} border-0 rounded-none whitespace-nowrap`}>{m.status}</Badge>}
                               </div>
-                              <Badge className={`${(MITIGATION_STATUS[m.status] || { bg: 'bg-sunken', color: 'text-[hsl(var(--text-3))]' }).bg} ${(MITIGATION_STATUS[m.status] || { bg: 'bg-sunken', color: 'text-[hsl(var(--text-3))]' }).color} border-0 rounded-none whitespace-nowrap`}>{m.status}</Badge>
-                            </div>
-                          ))}
+                            )
+                          })}
                         </div>
                       )}
                     </Section>
@@ -469,18 +479,21 @@ export default function AIImpactAssessments() {
                         <p className="text-sm text-[hsl(var(--text-3))]">No findings recorded.</p>
                       ) : (
                         <div className="space-y-3">
-                          {selected.findings.map(f => (
-                            <div key={f.id} className={`flex items-start justify-between gap-4 p-4 border border-[hsl(var(--border))] bg-surface border-l-4 ${(FINDING_SEV[f.severity] || { bg: 'bg-sunken', color: 'text-[hsl(var(--text-3))]', border: 'border-[hsl(var(--border))]' }).border} rounded-none`}>
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <span className="font-mono text-xs font-bold text-[hsl(var(--text-1))]">{f.id}</span>
-                                  <Badge className={`${(FINDING_SEV[f.severity] || { bg: 'bg-sunken', color: 'text-[hsl(var(--text-3))]', border: 'border-[hsl(var(--border))]' }).bg} ${(FINDING_SEV[f.severity] || { bg: 'bg-sunken', color: 'text-[hsl(var(--text-3))]', border: 'border-[hsl(var(--border))]' }).color} border-0 rounded-none uppercase text-[10px]`}>{f.severity} Severity</Badge>
-                                  <Badge className={f.status === 'Resolved' ? 'bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--s-ok-tx))] border-0 rounded-none' : 'bg-[hsl(var(--s-wn-tx))] text-[hsl(var(--s-wn-tx))] border-0 rounded-none'}>{f.status}</Badge>
+                          {selected.findings.map((f, i) => {
+                            const sev = findingStyle(f.severity ?? '')
+                            const fst = findingStatusStyle(f.status ?? '')
+                            return (
+                              <div key={i} className={`flex items-start justify-between gap-4 p-4 border border-[hsl(var(--border))] bg-surface border-l-4 ${sev.border ?? 'border-[hsl(var(--border))]'} rounded-none`}>
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    {f.severity && <Badge className={`${sev.bg} ${sev.color} border-0 rounded-none uppercase text-[10px]`}>{f.severity} Severity</Badge>}
+                                    {f.status && <Badge className={`${fst.bg} ${fst.color} border-0 rounded-none`}>{f.status}</Badge>}
+                                  </div>
+                                  <p className="text-sm text-[hsl(var(--text-2))]">{f.title}</p>
                                 </div>
-                                <p className="text-sm text-[hsl(var(--text-2))]">{f.description}</p>
                               </div>
-                            </div>
-                          ))}
+                            )
+                          })}
                         </div>
                       )}
                     </Section>
@@ -494,79 +507,98 @@ export default function AIImpactAssessments() {
 
       {/* Create / Edit Modal */}
       {formOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" aria-label={editing ? 'Edit Assessment' : 'New Assessment'}>
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setFormOpen(false)} />
-          <div className="relative w-[700px] max-h-[85vh] overflow-y-auto bg-surface border border-[hsl(var(--border))] flex flex-col shadow-2xl">
+          <div className="relative w-[700px] max-w-full max-h-[85vh] overflow-y-auto bg-surface border border-[hsl(var(--border))] flex flex-col shadow-2xl">
             <div className="flex items-center justify-between px-6 py-5 border-b border-[hsl(var(--border))] bg-raised">
               <h2 className="text-lg font-bold text-[hsl(var(--text-1))]">{editing ? 'Edit Assessment' : 'New AI Impact Assessment'}</h2>
-              <Button variant="ghost" size="sm" onClick={() => setFormOpen(false)} className="h-8 w-8 p-0 rounded-none"><X size={20} className="text-[hsl(var(--text-3))]" /></Button>
+              <Button aria-label="Close" variant="ghost" size="sm" onClick={() => setFormOpen(false)} className="h-8 w-8 p-0 rounded-none"><X size={20} className="text-[hsl(var(--text-3))]" /></Button>
             </div>
             <div className="p-6 space-y-6 text-sm">
               <div className="grid grid-cols-2 gap-5">
-                <FormField label="Assessment Name *">
-                  <Input value={form.name} onChange={e => sf('name', e.target.value)} className="rounded-none bg-raised" placeholder="e.g. Customer Scoring Model v3" />
+                <FormField label="Title *">
+                  <Input value={form.title} onChange={e => sf('title', e.target.value)} className="rounded-none bg-raised" placeholder="e.g. Customer Scoring Model FRIA" />
                 </FormField>
-                <FormField label="AI System *">
-                  <Input value={form.system} onChange={e => sf('system', e.target.value)} className="rounded-none bg-raised" placeholder="e.g. Credit Engine" />
-                </FormField>
-                <FormField label="Department">
-                  <Input value={form.department} onChange={e => sf('department', e.target.value)} className="rounded-none bg-raised" placeholder="e.g. Risk & Compliance" />
-                </FormField>
-                <FormField label="Owner">
-                  <Input value={form.owner} onChange={e => sf('owner', e.target.value)} className="rounded-none bg-raised" placeholder="e.g. Sarah Chen" />
-                </FormField>
-                <FormField label="Risk Level">
-                  <Select value={form.risk} onValueChange={v => sf('risk', v as RiskLevel)}>
+                <FormField label="Type">
+                  <Select value={form.type} onValueChange={v => sf('type', v)}>
                     <SelectTrigger className="w-full h-10" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
                     <SelectContent style={{ borderRadius: 0 }}>
-                      {['Critical', 'High', 'Medium', 'Low', 'Minimal'].map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                      {TYPE_OPTIONS.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </FormField>
+                <FormField label="Risk Level">
+                  <Select value={form.riskLevel} onValueChange={v => sf('riskLevel', v)}>
+                    <SelectTrigger className="w-full h-10" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {RISK_OPTIONS.map(v => <SelectItem key={v} value={v}>{RISK_LABEL[v]}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </FormField>
                 <FormField label="Status">
-                  <Select value={form.status} onValueChange={v => sf('status', v as AIIAStatus)}>
+                  <Select value={form.status} onValueChange={v => sf('status', v)}>
                     <SelectTrigger className="w-full h-10" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
                     <SelectContent style={{ borderRadius: 0 }}>
-                      {['Draft', 'In Progress', 'Pending Review', 'Approved', 'Rejected', 'Completed'].map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                      {STATUS_OPTIONS.map(v => <SelectItem key={v} value={v}>{STATUS_LABEL[v]}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </FormField>
-                <FormField label="Framework">
-                  <Input value={form.framework} onChange={e => sf('framework', e.target.value)} className="rounded-none bg-raised" placeholder="e.g. EU AI Act Art. 9" />
+                <FormField label="RAG Status">
+                  <Select value={form.ragStatus} onValueChange={v => sf('ragStatus', v)}>
+                    <SelectTrigger className="w-full h-10" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {RAG_OPTIONS.map(v => <SelectItem key={v} value={v}>{RAG_LABEL[v]}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </FormField>
-                <FormField label="Version">
-                  <Input value={form.version} onChange={e => sf('version', e.target.value)} className="rounded-none bg-raised" placeholder="e.g. v1.0.0" />
+                <FormField label="Progress %">
+                  <Input type="number" min={0} max={100} value={form.progressPct} onChange={e => sf('progressPct', Number(e.target.value))} className="rounded-none bg-raised" />
                 </FormField>
-                <FormField label="Assessment Date">
-                  <Input type="date" value={form.date} onChange={e => sf('date', e.target.value)} className="rounded-none bg-raised" />
+                <FormField label="Assessor">
+                  <Input value={form.assessor} onChange={e => sf('assessor', e.target.value)} className="rounded-none bg-raised" placeholder="e.g. Sarah Chen" />
                 </FormField>
-                <FormField label="Due Date">
-                  <Input type="date" value={form.dueDate} onChange={e => sf('dueDate', e.target.value)} className="rounded-none bg-raised" />
+                <FormField label="Reviewer">
+                  <Input value={form.reviewer} onChange={e => sf('reviewer', e.target.value)} className="rounded-none bg-raised" placeholder="e.g. James Patel" />
+                </FormField>
+                <FormField label="Linked Model">
+                  <Select value={form.modelId ?? '__none'} onValueChange={v => sf('modelId', v === '__none' ? null : v)}>
+                    <SelectTrigger className="w-full h-10" style={{ borderRadius: 0 }}><SelectValue placeholder="Select a model" /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      <SelectItem value="__none">— None —</SelectItem>
+                      {models.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </FormField>
+                <FormField label="Linked Use Case">
+                  <Select value={form.useCaseId ?? '__none'} onValueChange={v => sf('useCaseId', v === '__none' ? null : v)}>
+                    <SelectTrigger className="w-full h-10" style={{ borderRadius: 0 }}><SelectValue placeholder="Select a use case" /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      <SelectItem value="__none">— None —</SelectItem>
+                      {(useCases ?? []).map(u => <SelectItem key={u.id} value={u.id}>{u.title}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </FormField>
+                <FormField label="Next Review Date">
+                  <Input type="date" value={form.nextReview ? form.nextReview.slice(0, 10) : ''} onChange={e => sf('nextReview', e.target.value || null)} className="rounded-none bg-raised" />
                 </FormField>
               </div>
-              <FormField label="Description">
-                <textarea value={form.description} onChange={e => sf('description', e.target.value)} rows={3} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] text-sm focus:outline-none resize-none rounded-none" placeholder="Describe the AI system and its use case…" />
+              <FormField label="Summary">
+                <textarea value={form.summary} onChange={e => sf('summary', e.target.value)} rows={3} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] text-sm focus:outline-none resize-none rounded-none" placeholder="Describe the AI system, its use case and impact…" />
               </FormField>
-              <FormField label="Purpose of Use">
-                <textarea value={form.purposeOfUse} onChange={e => sf('purposeOfUse', e.target.value)} rows={2} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] text-sm focus:outline-none resize-none rounded-none" placeholder="How and why the AI system is used…" />
-              </FormField>
-              <FormField label="Affected Groups">
-                <Input value={form.affectedGroups} onChange={e => sf('affectedGroups', e.target.value)} className="rounded-none bg-raised" placeholder="e.g. Loan applicants (est. 15,000/month)" />
-              </FormField>
-              <div className="flex items-center gap-3">
-                <input type="checkbox" id="autoDecision" checked={form.automatedDecision} onChange={e => sf('automatedDecision', e.target.checked)} className="w-4 h-4 accent-[hsl(var(--brand))]" />
-                <label htmlFor="autoDecision" className="text-sm text-[hsl(var(--text-1))] font-medium">Makes automated decisions affecting individuals</label>
-              </div>
-              <FormField label="Human Oversight Mechanism">
-                <textarea value={form.humanOversight} onChange={e => sf('humanOversight', e.target.value)} rows={2} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] text-sm focus:outline-none resize-none rounded-none" placeholder="Describe human oversight and appeal processes…" />
-              </FormField>
-              <FormField label="Notes">
-                <textarea value={form.notes} onChange={e => sf('notes', e.target.value)} rows={2} className="w-full px-3 py-2 border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] text-sm focus:outline-none resize-none rounded-none" placeholder="Additional reviewer notes…" />
+              <FormField label="Affected Entities (comma-separated)">
+                <Input
+                  value={form.affectedEntities.join(', ')}
+                  onChange={e => sf('affectedEntities', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+                  className="rounded-none bg-raised"
+                  placeholder="e.g. Loan applicants, Cardholders"
+                />
               </FormField>
             </div>
             <div className="flex justify-end gap-3 px-6 py-5 border-t border-[hsl(var(--border))] bg-raised">
               <Button variant="outline" onClick={() => setFormOpen(false)} className="rounded-none border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:text-[hsl(var(--text-1))]">Cancel</Button>
-              <Button onClick={saveForm} className="rounded-none bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-hover))]">{editing ? 'Save Changes' : 'Create Assessment'}</Button>
+              <Button onClick={saveForm} disabled={save.isPending} className="rounded-none bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-hover))]">
+                {save.isPending ? 'Saving…' : editing ? 'Save Changes' : 'Create Assessment'}
+              </Button>
             </div>
           </div>
         </div>
@@ -576,7 +608,7 @@ export default function AIImpactAssessments() {
       <ConfirmDialog
         open={!!deleteTarget}
         title="Delete Assessment"
-        description={`Are you sure you want to delete ${deleteTarget?.id} — "${deleteTarget?.name}"? This action cannot be undone.`}
+        description={`Are you sure you want to delete ${deleteTarget?.assessmentId} — "${deleteTarget?.title}"? This action cannot be undone.`}
         confirmLabel="Delete"
         type="danger"
         onConfirm={confirmDelete}

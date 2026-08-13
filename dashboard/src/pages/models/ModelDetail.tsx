@@ -11,6 +11,7 @@ import {
   Export, DownloadSimple, Bell, X, GitBranch, ArrowRight,
   Scales, TestTube, Robot, Gauge, XCircle,
   Sparkle, FileText, ListBullets, CalendarCheck, Copy, Plus,
+  ShieldCheck, CaretRight, Bank,
 } from '@phosphor-icons/react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
@@ -23,6 +24,7 @@ import {
 import { useModelsData } from '@/hooks/useModelsData';
 import { useModelDetailData } from '@/hooks/useModelDetailData';
 import { useModelAnalytics } from '@/hooks/useModelAnalytics';
+import { useModelGovernance } from '@/hooks/useAiiaData';
 import type { AlertConfig } from '@/services/modelDetailService';
 import { useAuthStore } from '../../store/authStore';
 import { recordToModel } from '@/lib/modelMapping';
@@ -215,6 +217,9 @@ function ModelDetailView({ model }: { model: Model }) {
     addDocument, removeDocument, logActivity, saveAlertConfig,
   } = useModelDetailData(model.id);
 
+  // Reverse interlink — this model's footprint across the Impact & Risk modules.
+  const gov = useModelGovernance(model.id);
+
   const [linkOpen, setLinkOpen] = useState(false);
   const [dForm, setDForm] = useState({ title: '', type: 'PDF', url: '', desc: '' });
   const linkDoc = () => {
@@ -397,6 +402,62 @@ function ModelDetailView({ model }: { model: Model }) {
                     {model.driftStatus.toUpperCase()}
                   </span>
                 } />
+              </CardContent>
+            </Card>
+
+            {/* Governance — cross-links into the Impact & Risk (AIIA) modules */}
+            <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+              <CardHeader className="pb-2">
+                <CardTitle style={{ fontSize: 13, color: 'hsl(var(--text-1))', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <ShieldCheck size={14} style={{ color: 'hsl(var(--brand))' }} />
+                  Governance
+                </CardTitle>
+              </CardHeader>
+              <CardContent style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {/* EU AI Act risk classification */}
+                <button
+                  onClick={() => navigate('/ai-risk-tiering')}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '9px 11px', background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))', cursor: 'pointer', textAlign: 'left' }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Scales size={14} style={{ color: 'hsl(var(--text-3))' }} />
+                    <span style={{ fontSize: 12, color: 'hsl(var(--text-2))' }}>EU AI Act Risk Class</span>
+                  </span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {gov.riskClassification
+                      ? <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'hsl(var(--text-1))' }}>{gov.riskClassification.riskTier}</span>
+                      : <span style={{ fontSize: 11, color: 'hsl(var(--text-4))' }}>Not classified</span>}
+                    <CaretRight size={12} style={{ color: 'hsl(var(--text-4))' }} />
+                  </span>
+                </button>
+                {/* Impact assessments */}
+                <button
+                  onClick={() => navigate('/aiia')}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '9px 11px', background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))', cursor: 'pointer', textAlign: 'left' }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <FileText size={14} style={{ color: 'hsl(var(--text-3))' }} />
+                    <span style={{ fontSize: 12, color: 'hsl(var(--text-2))' }}>Impact Assessments</span>
+                  </span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: gov.impactAssessments.length ? 'hsl(var(--text-1))' : 'hsl(var(--text-4))' }}>{gov.impactAssessments.length}</span>
+                    <CaretRight size={12} style={{ color: 'hsl(var(--text-4))' }} />
+                  </span>
+                </button>
+                {/* MRC reviews */}
+                <button
+                  onClick={() => navigate('/mrc')}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '9px 11px', background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))', cursor: 'pointer', textAlign: 'left' }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Bank size={14} style={{ color: 'hsl(var(--text-3))' }} />
+                    <span style={{ fontSize: 12, color: 'hsl(var(--text-2))' }}>Model Risk Committee</span>
+                  </span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: gov.mrcReviews.length ? 'hsl(var(--text-1))' : 'hsl(var(--text-4))' }}>{gov.mrcReviews.length} review{gov.mrcReviews.length === 1 ? '' : 's'}</span>
+                    <CaretRight size={12} style={{ color: 'hsl(var(--text-4))' }} />
+                  </span>
+                </button>
               </CardContent>
             </Card>
 
