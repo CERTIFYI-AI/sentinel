@@ -1,3 +1,8 @@
+## <small>1.48.1 (2026-08-13)</small>
+
+* Merge PR #66: fix RLS recursion (0 models), admin role, Model Governance guide ([1134dfb](https://github.com/CERTIFYI-AI/sentinel/commit/1134dfb))
+* fix(governance): resolve RLS recursion (0-models), admin role, Model Governance guide ([515fa14](https://github.com/CERTIFYI-AI/sentinel/commit/515fa14))
+
 ## 1.48.0 (2026-08-13)
 
 * Merge PR #65: Prompt Registry — real CRUD to prompt_registry (Module 4) ([a6f0e53](https://github.com/CERTIFYI-AI/sentinel/commit/a6f0e53))
