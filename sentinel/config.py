@@ -311,6 +311,35 @@ def load_config(config_path: Optional[str] = None) -> SentinelConfig:
     return SentinelConfig()
 
 
+def cors_config() -> dict:
+    """Return safe CORS middleware kwargs.
+
+    Reads a comma-separated allowlist from the ``CORS_ORIGINS`` env var. When
+    explicit origins are configured, credentialed requests are allowed (the
+    valid, secure form). When no allowlist is set we fall back to a wildcard
+    with credentials DISABLED — because ``allow_origins=["*"]`` combined with
+    ``allow_credentials=True`` is rejected by browsers and is unsafe. Set
+    ``CORS_ORIGINS`` in any deployment that needs credentialed cross-origin
+    access.
+    """
+    import os
+
+    raw = os.environ.get("CORS_ORIGINS", "").strip()
+    if raw and raw != "*":
+        origins = [o.strip() for o in raw.split(",") if o.strip()]
+        return {
+            "allow_origins": origins,
+            "allow_credentials": True,
+            "allow_methods": ["*"],
+            "allow_headers": ["*"],
+        }
+    return {
+        "allow_origins": ["*"],
+        "allow_credentials": False,
+        "allow_methods": ["*"],
+        "allow_headers": ["*"],
+    }
+
 
 # ---------------------------------------------------------------------------
 # Module-level singleton (imported as `from sentinel.config import settings`)

@@ -85,6 +85,11 @@ jobs:
   trivy:
     name: Supply Chain Scan (Trivy)
     runs-on: ubuntu-latest
+    # Authenticate the trivy-action's binary download to GitHub so its setup step
+    # is not rate-limited/blocked (the unauthenticated install intermittently
+    # fails at the download stage, failing the whole job before any scan runs).
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v6
       - name: Filesystem vuln scan

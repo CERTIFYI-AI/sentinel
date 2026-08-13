@@ -6,8 +6,20 @@ from datetime import datetime, timezone
 import uuid
 import os
 
-DB_PATH = os.environ.get("SQLITE_DB", "/tmp/sentinel.db")
-DATABASE_URL = f"sqlite+aiosqlite:///{DB_PATH}"
+# Prefer a configured DATABASE_URL (e.g. Postgres) so the API does not silently
+# run against throwaway storage. Fall back to a local SQLite file (NOT /tmp,
+# which is ephemeral and world-readable on many systems).
+_DATABASE_URL = os.environ.get("DATABASE_URL")
+if _DATABASE_URL:
+    DATABASE_URL = _DATABASE_URL
+    # Normalise Postgres URLs to the asyncpg driver.
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
+    elif DATABASE_URL.startswith("postgresql://") and "+" not in DATABASE_URL.split("://", 1)[0]:
+        DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
+else:
+    DB_PATH = os.environ.get("SQLITE_DB", "./sentinel.db")
+    DATABASE_URL = f"sqlite+aiosqlite:///{DB_PATH}"
 
 engine = create_async_engine(DATABASE_URL, echo=False)
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)

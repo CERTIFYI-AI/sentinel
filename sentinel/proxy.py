@@ -22,7 +22,7 @@ from jose import JWTError, jwt
 
 from sentinel import __version__
 from sentinel.compliance.engine import ComplianceEngine
-from sentinel.config import settings
+from sentinel.config import cors_config, settings
 from sentinel.layers import auditor
 from sentinel.layers import circuit_breaker
 from sentinel.layers import sanitizer
@@ -143,35 +143,13 @@ async def _call_llm_provider(
 # ---------------------------------------------------------------------------
 
 
-# New Sentinel module routers
-try:
-    from sentinel.api.routers.model_router import router as ai_models_router
-    from sentinel.api.routers.controls_router import router as controls_router
-    from sentinel.api.routers.dataset_router import router as datasets_router
-    from sentinel.api.routers.agent_router import router as agents_router
-    from sentinel.api.routers.vendor_router import router as vendors_router
-    from sentinel.api.routers.bias_audit_router import router as bias_audits_router
-    from sentinel.api.routers.evidence_router import router as evidence_router
-    from sentinel.api.routers.hitl_router import router as hitl_router
-    _NEW_ROUTERS_LOADED = True
-except ImportError as e:
-    import logging
-    logging.getLogger(__name__).warning(f"New routers not loaded: {e}")
-    _NEW_ROUTERS_LOADED = False
-
 def create_app() -> FastAPI:
     app = FastAPI(
         title="Certifyi Sentinel",
         version=__version__,
         docs_url="/docs",
     )
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=getattr(settings, "CORS_ORIGINS", ["*"]), # nosemgrep: python.fastapi.security.wildcard-cors.wildcard-cors
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    app.add_middleware(CORSMiddleware, **cors_config())
         # Mount routers
     from sentinel.api.policy_router import router as policy_router
     from sentinel.api.auth_router import router as auth_router  # noqa: PLC0415
@@ -213,16 +191,6 @@ def create_app() -> FastAPI:
                 return FileResponse(index)
             return {"detail": "Not Found"}
 
-    # New module routers
-    if _NEW_ROUTERS_LOADED:
-        app.include_router(ai_models_router, prefix="/api/v1", tags=["ai-models"])
-        app.include_router(controls_router, prefix="/api/v1", tags=["controls"])
-        app.include_router(datasets_router, prefix="/api/v1", tags=["datasets"])
-        app.include_router(agents_router, prefix="/api/v1", tags=["agents"])
-        app.include_router(vendors_router, prefix="/api/v1", tags=["vendors"])
-        app.include_router(bias_audits_router, prefix="/api/v1", tags=["bias-audits"])
-        app.include_router(evidence_router, prefix="/api/v1", tags=["evidence"])
-        app.include_router(hitl_router, prefix="/api/v1", tags=["hitl"])
     return app
 
 

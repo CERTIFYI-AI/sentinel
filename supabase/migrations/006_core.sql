@@ -2,14 +2,14 @@
 CREATE TABLE IF NOT EXISTS organizations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL, domain text UNIQUE, industry text, size text,
-  country text DEFAULT \'US\', settings jsonb DEFAULT \'{}\',
+  country text DEFAULT 'US', settings jsonb DEFAULT '{}',
   created_at timestamptz DEFAULT now()
 );
 CREATE TABLE IF NOT EXISTS user_profiles (
   id uuid PRIMARY KEY REFERENCES auth.users ON DELETE CASCADE,
   org_id uuid REFERENCES organizations ON DELETE CASCADE,
   full_name text NOT NULL,
-  role text DEFAULT \'viewer\',
+  role text DEFAULT 'viewer',
   department text, avatar_url text, mfa_enabled boolean DEFAULT false,
   is_active boolean DEFAULT true,
   created_at timestamptz DEFAULT now(), updated_at timestamptz DEFAULT now()
