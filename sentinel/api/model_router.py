@@ -138,3 +138,40 @@ async def delete_model(model_id: str, req: Request, db=Depends(get_db)):
         VALUES($1,$2,'MODEL_DELETED','model',$3)
     """, tenant_id, user_id, model_id)
     return {"deleted": True, "id": model_id}
+
+
+class MetricIngest(BaseModel):
+    model_id: str
+    model_name: Optional[str] = None
+    latency_p50: Optional[float] = None
+    latency_p99: Optional[float] = None
+    throughput: Optional[float] = None
+    accuracy: Optional[float] = None
+    error_rate: Optional[float] = None
+    drift_score: Optional[float] = None
+    cost_per_inference: Optional[float] = None
+    request_count: Optional[int] = None
+
+
+@router.post("/metrics")
+async def ingest_metric(req: Request, body: MetricIngest, db=Depends(get_db)):
+    """Ingest a performance-telemetry rollup for a model.
+
+    Feeds the Model Detail "Performance" tab. Callers (the proxy, a batch
+    rollup job, or an external collector) POST one row per interval keyed by
+    the registry model id so the dashboard can attribute it to the model.
+    org_id is taken from the caller's tenant.
+    """
+    tenant_id = get_tenant(req)
+    await db.execute(
+        """
+        INSERT INTO model_performance_metrics
+            (org_id, model_id, model_name, recorded_at, latency_p50, latency_p99,
+             throughput, accuracy, error_rate, drift_score, cost_per_inference, request_count)
+        VALUES ($1::uuid, $2, $3, NOW(), $4, $5, $6, $7, $8, $9, $10, $11)
+        """,
+        tenant_id, body.model_id, body.model_name,
+        body.latency_p50, body.latency_p99, body.throughput, body.accuracy,
+        body.error_rate, body.drift_score, body.cost_per_inference, body.request_count,
+    )
+    return {"ok": True, "model_id": body.model_id}

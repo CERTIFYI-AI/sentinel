@@ -52,6 +52,46 @@ async def _get_db() -> asyncpg.Connection:  # pragma: no cover
         await conn.close()
 
 
+async def _record_model_metric(
+    org_id_text: str,
+    model_name: str,
+    latency_ms: float,
+    cost_usd: float,
+) -> None:  # pragma: no cover
+    """Best-effort per-inference telemetry → ``model_performance_metrics``.
+
+    Runs as a background task after the response is sent and opens its own
+    connection (the request-scoped one is already closed by then). Fully
+    guarded: any failure is swallowed so telemetry can never affect request
+    handling. Rows are keyed by the model name and the tenant's org id; the
+    Model Detail dashboard reads them by registry id OR model name.
+    """
+    try:
+        try:
+            org_uuid = str(uuid.UUID(str(org_id_text)))
+        except (ValueError, TypeError):
+            return  # tenant is not an org uuid — nothing to attribute the row to
+        conn = await asyncpg.connect(str(settings.database_url))
+        try:
+            await conn.execute(
+                """
+                INSERT INTO model_performance_metrics
+                    (org_id, model_id, model_name, recorded_at,
+                     latency_p99, cost_per_inference, request_count)
+                VALUES ($1::uuid, $2, $3, now(), $4, $5, 1)
+                """,
+                org_uuid,
+                str(model_name),
+                str(model_name),
+                float(latency_ms),
+                float(cost_usd or 0.0),
+            )
+        finally:
+            await conn.close()
+    except Exception:  # noqa: BLE001
+        logger.debug("model metric emit skipped", exc_info=True)
+
+
 def _get_redis_client() -> redis.Redis | None:
     """Return a Redis async client, or None if not configured."""
     if not settings.redis_url:
@@ -343,6 +383,16 @@ async def chat_completions(
             "value",
             "none",
         ),
+    )
+
+    # 7b. Per-inference telemetry → model_performance_metrics (best-effort,
+    # background). Feeds the Model Detail "Performance" tab in real time.
+    background_tasks.add_task(
+        _record_model_metric,
+        tenant.tenant_id,
+        body.get("model", tenant.primary_model),
+        elapsed_ms(),
+        getattr(pipeline_result, "cost_usd", 0.0),
     )
 
     return circuit_result

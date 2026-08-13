@@ -94,8 +94,8 @@ const MODULE_GUIDES: Record<string, GuideContent> = {
         icon: Robot,
       },
       {
-        title: 'Model detail & evidence',
-        description: 'Opening a model reveals its full passport across tabs: performance and drift charts, bias-audit history, an illustrative explainability view, data lineage, and two live evidence stores — Technical Documents (link artifacts from your DMS; persisted per model) and an Activity log that records every governance action. Configure drift/fairness alert thresholds and channels (saved to the model), export a Model Card or EU AI Act Annex IV package as JSON, and "Initiate Review" logs the request to the model\'s activity trail.',
+        title: 'Model detail & live analytics',
+        description: 'Opening a model reveals its full passport across seven tabs, each backed by a real table: Performance (latency p99, accuracy and feature-drift charts fed by live inference telemetry via the Sentinel proxy — the chart updates in real time as new metrics arrive), Bias History (audit records with per-attribute dimension scores), Explainability (computed SHAP/LIME attributions), Data Lineage (the cryptographic provenance chain from the model\'s DNA record), Technical Documents and an Activity log (both persisted per model), plus the Model Card. Configure drift/fairness alert thresholds and channels, export a Model Card or EU AI Act Annex IV package as JSON, and "Initiate Review" logs to the activity trail. Tabs without data yet show a clear empty state rather than placeholder numbers.',
         icon: FileText,
       },
       {
