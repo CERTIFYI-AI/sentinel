@@ -1,3 +1,10 @@
+## 1.45.0 (2026-08-13)
+
+* Merge PR #62: Model Registry — real ai_models CRUD + auth fix (Module 1) ([8b9e8d3](https://github.com/CERTIFYI-AI/sentinel/commit/8b9e8d3))
+* feat(auth): use real Supabase auth for demo accounts so RLS-backed CRUD works ([21598a5](https://github.com/CERTIFYI-AI/sentinel/commit/21598a5))
+* feat(model-registry): wire ModelDetail to real ai_models + share mappers ([ff30f5f](https://github.com/CERTIFYI-AI/sentinel/commit/ff30f5f))
+* feat(model-registry): wire real CRUD to ai_models (module 1 of Model Governance) ([c38bf6c](https://github.com/CERTIFYI-AI/sentinel/commit/c38bf6c))
+
 ## <small>1.44.2 (2026-08-13)</small>
 
 * Merge PR #61: fix(ui): eliminate duplicate breadcrumbs across the platform ([5ca1ca5](https://github.com/CERTIFYI-AI/sentinel/commit/5ca1ca5))
