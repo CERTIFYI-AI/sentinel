@@ -58,6 +58,10 @@ const GATE_STYLE: Record<GateStatus, { bg: string; tx: string; icon: typeof Chec
 };
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const today = () => new Date().toISOString().slice(0, 10);
+// A lifecycle model.id now carries the canonical ai_models.id (uuid) for demo
+// rows, so it can deep-link into the registry detail route. Legacy rows still
+// hold a business code (e.g. MDL-001) and fall back to the registry list.
+const isUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
 export default function ModelLifecycle() {
   const navigate = useNavigate();
@@ -83,7 +87,15 @@ export default function ModelLifecycle() {
   };
 
   if (isLoading) {
-    return <div className="p-6 text-sm" style={{ color: "hsl(var(--text-4))" }}>Loading lifecycle…</div>;
+    return (
+      <div className="space-y-4">
+        <PageHeader title="Model Lifecycle" subtitle="Loading lifecycle tracking…" icon={GitBranch} />
+        <Card><CardContent className="py-16 text-center" style={{ color: "hsl(var(--text-4))" }}>
+          <GitBranch className="mx-auto mb-2 opacity-40 animate-pulse" />
+          <p className="text-sm">Loading lifecycle…</p>
+        </CardContent></Card>
+      </div>
+    );
   }
 
   const selectedId = models.some(m => m.id === selectedIdState) ? selectedIdState : (models[0]?.id ?? "");
@@ -283,9 +295,18 @@ export default function ModelLifecycle() {
               </div>
             ))}
             <div className="pt-2.5" style={{ borderTop: "1px solid hsl(var(--border))" }}>
-              {/* Lifecycle model.id is a business id (e.g. MDL-001), not the ai_models
-                  uuid the detail route resolves by, so link to the registry list. */}
-              <Button variant="outline" size="sm" fullWidth onClick={() => navigate('/models/inventory')}>Open in Model Registry</Button>
+              {/* When model.id is the canonical ai_models uuid, deep-link straight
+                  to the model's registry record; otherwise fall back to the list. */}
+              <Button
+                variant="outline"
+                size="sm"
+                fullWidth
+                leftIcon={<ArrowRight size={14} />}
+                title={isUuid(model.id) ? `Open ${model.name} in the model registry` : "Open the model registry (no linked record for this model)"}
+                onClick={() => navigate(isUuid(model.id) ? '/models/inventory/' + model.id : '/models/inventory')}
+              >
+                {isUuid(model.id) ? "Open in Model Registry" : "Open Model Registry"}
+              </Button>
             </div>
           </CardContent>
         </Card>
