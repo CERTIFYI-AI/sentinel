@@ -387,6 +387,47 @@ reached 1.44.0.
 
 ---
 
+## 5A. Database Audit — live Supabase project (`vhparvughsygyknblkzt`)
+
+Audited the actual production database ("Sentinel v 1.0", Postgres 17,
+`ACTIVE_HEALTHY`). It corroborates the code findings and adds its own.
+
+**Schema sprawl is worse in the DB than in code — ~230 `public` tables in three
+overlapping generations** for the same concepts:
+- PascalCase legacy (~26): `Model`, `Policy`, `Control`, `Vendor`, `AuditLog`…
+- snake_case main (~145, org/tenant-scoped, RLS policies): `models`, `policies`…
+- `*_table` doc-jsonb scaffolds (~60): `modelinventory_table`, `governanceframework_table`…
+  (created by the `wire_unwired_crud_doc_tables` migrations — **partly live**, not all dead)
+
+E.g. **models** exists as `Model` / `models` / `ai_models` / `model_inventory` /
+`modelinventory_table`. This is the DB twin of the frontend's two-page-generation
+problem, one generation deeper.
+
+**Every table has 0 rows.** The production DB is empty — the root cause of the
+seed-fallback behavior (§3.2): lists come back empty, so the app renders seed data.
+
+**Security advisors:**
+- 🟡 **6 `SECURITY DEFINER` functions callable by `authenticated`** — `current_user_org_id`,
+  `current_user_permissions`, `get_user_org_id`, `get_user_role`, `is_org_admin`, and
+  notably **`global_search(p_tenant_id,…)`**, a definer function taking a tenant_id
+  callable by any signed-in user → potential **cross-tenant read** if it doesn't pin
+  the caller's org. (Advisor 0029.)
+- 🔵 **~59 tables had RLS enabled but no policy** → denied to all normal users, another
+  reason lists returned empty. (Advisor 0008.)
+- 🟡 **Leaked-password protection disabled** in Supabase Auth.
+
+**Applied in this branch (safe, additive — DB is empty so no break/leak risk):**
+Added convention-matching RLS policies to the **24 live snake_case tables** that had
+RLS-on/no-policy (`org_id`/`tenant_id`/owner-scoped, matching sibling tables like
+`models`/`risks`). Captured as `supabase/migrations/20260813_add_rls_policies_unpoliced_live_tables.sql`.
+The remaining **35** RLS-no-policy tables are the legacy PascalCase duplicates and
+child/reference tables — deferred to review (see below), not blind-patched.
+
+**Deliberately NOT executed on prod** (irreversible / needs review) — staged as
+`docs/db/schema_consolidation_plan.sql`: dropping the ~86 duplicate/legacy tables,
+join-based policies for child tables, `SECURITY DEFINER` hardening, and the
+leaked-password Auth toggle (a dashboard setting, not SQL).
+
 ## 6. Cross-Cutting Themes
 
 1. **Two products, one repo.** The React+Supabase app and the Python backend are

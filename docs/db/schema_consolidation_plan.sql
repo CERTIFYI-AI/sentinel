@@ -1,0 +1,102 @@
+-- =============================================================================
+-- Sentinel — Supabase schema consolidation plan  (REVIEW REQUIRED — DO NOT AUTO-RUN)
+-- =============================================================================
+-- Generated 2026-08-13 as part of the module audit (see MODULES_AUDIT.md §9).
+--
+-- The public schema has ~230 tables in THREE overlapping naming generations for
+-- the same domain concepts:
+--   1. PascalCase legacy (Prisma-style): "Model","Policy","Control","Vendor",...
+--   2. snake_case main (the live generation, org/tenant scoped, RLS policies):
+--      models, policies, controls, vendors, ...
+--   3. "*_table" doc-jsonb scaffolds: modelinventory_table, governanceframework_table,...
+--      NOTE: these were created by 20260710/11/23_wire_unwired_crud_doc_tables_*.sql
+--      to wire previously-unwired CRUD pages — so SOME are LIVE, not dead.
+--
+-- Because generation (3) is partly live and this is a PRODUCTION database, this
+-- file is a PLAN, not an executable drop script. Nothing here has been applied.
+-- Work it in this order, one cluster at a time, verifying against frontend usage.
+-- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- STEP 1 — Establish ground truth before dropping anything.
+-- -----------------------------------------------------------------------------
+-- 1a. Which tables actually hold data?
+--   SELECT relname, n_live_tup FROM pg_stat_user_tables
+--   WHERE schemaname='public' AND n_live_tup > 0 ORDER BY n_live_tup DESC;
+--
+-- 1b. Which tables does the frontend actually query? Cross-check every candidate
+--     against dashboard/src/services/*.ts (`.from('<table>')`) and
+--     dashboard/src/data/*.  A table with 0 rows AND 0 service references is a
+--     safe drop candidate; anything else needs a data migration first.
+--
+-- 1c. Snapshot before any destructive step:
+--   pg_dump / Supabase backup, and record row counts.
+
+-- -----------------------------------------------------------------------------
+-- STEP 2 — Duplicate clusters (canonical = the snake_case, org/tenant-scoped table
+--          with RLS policies). Migrate any data into the canonical, repoint the
+--          frontend service, THEN drop the duplicates.
+-- -----------------------------------------------------------------------------
+--   models        <= Model, ai_models, model_inventory, modelinventory_table
+--   policies      <= Policy, PolicyVersion, policyeditor_table
+--   controls      <= Control, compliancecontrols_table
+--   vendors       <= Vendor, VendorQuestionnaire, vendor_questionnaire(s),
+--                    vendorassessments_table, vendorsla_table
+--   agents        <= Agent, agent_registry(?), agent_gov_registry(?)
+--   datasets      <= Dataset, dataset_registry, dataset_catalog_entries, datasetregistry_table
+--   bias_audits   <= BiasAudit, bias_audit_records, biasauditwizard_table
+--   frameworks    <= Framework, governanceframework_table, frameworkmapping_table
+--   risks         <= RiskEntry, ai_risk_tiering(?), airisktiering_table
+--   evidence      <= Evidence, evidence_chain, evidencehub_table, evidencevault_table,
+--                    evidencesyncengine_table
+--   audit_log     <= AuditLog, audit_events, audit_findings, audits, audit_trail_config
+--   notifications <= Notification, notifications_table
+--   regulations   <= Regulation, regulation_entries, regradar_table
+--   guardrails    <= GuardrailRule, guardrail_rules, guardrailactivity_table
+--   hitl_reviews  <= HitlItem, hitlreviewcenter_table
+--   trust_config  <= TrustTrace, ModelTrustConfig, model_trust_configs, trustconfig_table,
+--                    trustenginedashboard_table
+--   tenants/orgs  <= Tenant, tenants, organizations   (reconcile to one)
+--   rbac          <= RBACRole, RBACUser, rbac_roles, rbac_users, roles, custom_roles,
+--                    sentinel_roles, user_roles, user_role_assignments (reconcile RBAC model)
+--
+-- Drop template (only after 1a/1b confirm empty + unreferenced):
+--   -- DROP TABLE IF EXISTS public."Model" CASCADE;
+--   -- DROP TABLE IF EXISTS public.modelinventory_table CASCADE;
+--   (CASCADE will drop dependent policies/constraints — review dependents first.)
+
+-- -----------------------------------------------------------------------------
+-- STEP 3 — RLS for the remaining child / reference tables that are LIVE but still
+--          have RLS enabled and no policy (join to parent, or org/tenant scope).
+--          Confirm parent table + FK column names before applying.
+-- -----------------------------------------------------------------------------
+-- Child tables (scope via parent):
+--   -- document_versions      -> parent documents(tenant_id)
+--   -- incident_workflow_steps -> parent incidents(tenant_id)
+--   -- workflow_step_actions   -> parent workflow_instances(tenant_id)
+--   -- audit_findings          -> parent audits(tenant_id)
+-- Example (verify FK column name first):
+--   -- CREATE POLICY document_versions_org ON public.document_versions FOR ALL TO authenticated
+--   --   USING (EXISTS (SELECT 1 FROM public.documents d
+--   --                  WHERE d.id = document_versions.document_id
+--   --                    AND d.tenant_id = (current_user_org_id())::text));
+--
+-- Reference tables (decide: global-read vs org-scoped):
+--   framework_sections, maturity_dimensions, observability_metrics, policy_templates
+--   -- e.g. global read:  CREATE POLICY <t>_read ON public.<t> FOR SELECT TO authenticated USING (true);
+
+-- -----------------------------------------------------------------------------
+-- STEP 4 — Harden SECURITY DEFINER functions (advisor 0029). Pin search_path and
+--          confirm each enforces the caller's org/tenant (esp. global_search,
+--          which takes p_tenant_id and must not allow cross-tenant reads).
+-- -----------------------------------------------------------------------------
+--   -- ALTER FUNCTION public.global_search(text,text,integer) SET search_path = public, pg_temp;
+--   -- (and add: assert p_tenant_id = (current_user_org_id())::text inside the body)
+--   -- Repeat search_path pinning for current_user_org_id, current_user_permissions,
+--   -- get_user_org_id, get_user_role, is_org_admin — or switch to SECURITY INVOKER
+--   -- where the definer privilege is not required.
+
+-- -----------------------------------------------------------------------------
+-- STEP 5 — Auth setting (NOT SQL — do in Supabase Dashboard > Authentication):
+--   Enable "Leaked password protection" (HaveIBeenPwned). Advisor: auth_leaked_password_protection.
+-- =============================================================================
