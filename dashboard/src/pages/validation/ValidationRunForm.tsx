@@ -26,6 +26,33 @@ const EMPTY: ValidationRun = {
   ], regMappings: [], suites: [], evidence: [], workflowSteps: [], auditTrail: [],
 }
 
+/** Normalize a (possibly partial) stored doc so the controlled form never crashes. */
+function seed(i?: ValidationRun | null): ValidationRun {
+  if (!i) return EMPTY
+  return {
+    ...EMPTY,
+    ...i,
+    runId: i.runId ?? '',
+    modelId: i.modelId ?? '',
+    modelVersion: i.modelVersion ?? '',
+    validatorId: i.validatorId ?? '',
+    scope: {
+      intendedUse: i.scope?.intendedUse ?? '',
+      population: i.scope?.population ?? '',
+      dataPeriod: i.scope?.dataPeriod ?? '',
+      keyLimitations: i.scope?.keyLimitations ?? [],
+      assumptions: i.scope?.assumptions ?? [],
+    },
+    signoffs: i.signoffs ?? EMPTY.signoffs,
+    adversarial: i.adversarial ?? [],
+    regMappings: i.regMappings ?? [],
+    suites: i.suites ?? [],
+    evidence: i.evidence ?? [],
+    workflowSteps: i.workflowSteps ?? [],
+    auditTrail: i.auditTrail ?? [],
+  }
+}
+
 export function ValidationRunForm({ open, onOpenChange, initial, onSaved }: {
   open: boolean
   onOpenChange: (o: boolean) => void
@@ -34,13 +61,13 @@ export function ValidationRunForm({ open, onOpenChange, initial, onSaved }: {
 }) {
   const upsert = validationRunHooks.useUpsert()
   const { models, loading: modelsLoading } = useModelOptions()
-  const [form, setForm] = useState<ValidationRun>(initial ?? EMPTY)
+  const [form, setForm] = useState<ValidationRun>(seed(initial))
   const isEdit = !!initial
 
   // Re-seed local state whenever a different record is opened.
   const [seededFor, setSeededFor] = useState<string | undefined>(initial?.id)
   if (open && (initial?.id ?? '') !== (seededFor ?? '')) {
-    setForm(initial ?? EMPTY); setSeededFor(initial?.id)
+    setForm(seed(initial)); setSeededFor(initial?.id)
   }
 
   const set = <K extends keyof ValidationRun>(k: K, v: ValidationRun[K]) => setForm((f) => ({ ...f, [k]: v }))

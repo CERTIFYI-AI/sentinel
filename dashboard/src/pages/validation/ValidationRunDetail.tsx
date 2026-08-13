@@ -83,7 +83,7 @@ export default function ValidationRunDetail() {
     <div>
       <PageHeader
         title={run.runId}
-        subtitle={`${resolvedModelName ?? (modelsLoading ? run.modelName : 'Unavailable')} · ${run.modelVersion || '—'} · ${run.framework}`}
+        subtitle={`${resolvedModelName ?? (modelsLoading ? run.modelName : 'Unavailable')} · ${run.modelVersion || '—'} · ${run.framework || '—'}`}
         badge={<StateBadge s={run.state} />}
         onBack={() => nav('/model-validation')}
         actions={
@@ -111,9 +111,9 @@ export default function ValidationRunDetail() {
       {/* Summary strip */}
       <Card className="mb-4">
         <CardContent className="grid grid-cols-2 gap-4 p-4 sm:grid-cols-3 lg:grid-cols-6">
-          <Stat label="Validator" value={run.validatorId} />
+          <Stat label="Validator" value={run.validatorId || '—'} />
           <Stat label="Overall score" value={run.overallScore != null ? `${run.overallScore}/100` : '—'} mono />
-          <Stat label="Recommendation" value={run.recommendation} />
+          <Stat label="Recommendation" value={run.recommendation ?? '—'} />
           <Stat label="Risk rating" value={<RiskBadge r={run.riskRating} />} />
           <Stat
             label="Model"
@@ -173,8 +173,8 @@ export default function ValidationRunDetail() {
           <Section title="Challenger comparison">
             {run.challenger ? (
               <div className="grid grid-cols-3 gap-4">
-                <Stat label="Challenger" value={run.challenger.modelId} mono />
-                <Stat label="Δ AUC" value={`+${run.challenger.deltaAuc.toFixed(3)}`} mono />
+                <Stat label="Challenger" value={run.challenger.modelId ?? '—'} mono />
+                <Stat label="Δ AUC" value={typeof run.challenger.deltaAuc === 'number' ? `+${run.challenger.deltaAuc.toFixed(3)}` : '—'} mono />
                 <Stat label="Verdict" value={<VerdictBadge v={run.challenger.verdict} />} />
               </div>
             ) : <p className="text-sm text-[hsl(var(--text-3))]">No challenger recorded.</p>}
@@ -202,8 +202,8 @@ export default function ValidationRunDetail() {
                   {(run.adversarial ?? []).map((a, i) => (
                     <tr key={i} className="border-t border-[hsl(var(--border))]">
                       <td className="py-2 pr-3 text-[hsl(var(--text-1))]">{a.attack}</td>
-                      <td className="py-2 pr-3 font-mono text-[hsl(var(--text-2))]">{(a.successRate * 100).toFixed(1)}%</td>
-                      <td className="py-2 pr-3 font-mono text-[hsl(var(--text-4))]">≤ {(a.baseline * 100).toFixed(1)}%</td>
+                      <td className="py-2 pr-3 font-mono text-[hsl(var(--text-2))]">{typeof a.successRate === 'number' ? `${(a.successRate * 100).toFixed(1)}%` : '—'}</td>
+                      <td className="py-2 pr-3 font-mono text-[hsl(var(--text-4))]">{typeof a.baseline === 'number' ? `≤ ${(a.baseline * 100).toFixed(1)}%` : '—'}</td>
                       <td className="py-2"><VerdictBadge v={a.verdict} /></td>
                     </tr>
                   ))}

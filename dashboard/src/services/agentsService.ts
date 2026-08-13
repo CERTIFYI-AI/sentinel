@@ -1,50 +1,48 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI.
+//
+// agentsService — org-scoped access to the legacy `agents` table (raw
+// network-discovery rows). The Agent Discovery / Shadow AI / Agent Detail
+// pages read the canonical agent_gov_registry via agentRecordHooks
+// (src/hooks/queries/useAgentGovCrud.ts); this service exists only for the
+// plain `agents` table. Platform contract (see CLAUDE.md): reads throw so
+// callers render real error states, writes THROW on failure so the UI can
+// never report a false success.
+
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 
-// Try Agent (PascalCase, confirmed has data) first, then agents as fallback
-export async function fetchAllAgents(filters: Record<string, any> = {}) {
-  if (!isSupabaseConfigured() || !supabase) return []
-  try {
-    // Try Agent (PascalCase) first — confirmed has data
-    let q = supabase.from('Agent').select('*').order('createdAt', { ascending: false })
-    if (filters.status) q = q.eq('status', filters.status)
-    if (filters.type) q = q.eq('type', filters.type)
-    const { data, error } = await q
-    if (!error && data && data.length > 0) return data
+export interface AgentsFilters {
+  status?: string
+  type?: string
+}
 
-    // Fallback to agents (snake_case)
-    let q2 = supabase.from('agents').select('*').order('created_at', { ascending: false })
-    if (filters.status) q2 = q2.eq('status', filters.status)
-    if (filters.type) q2 = q2.eq('type', filters.type)
-    const { data: data2, error: error2 } = await q2
-    if (error2) { console.warn('[agentsService] fetch:', error2.message); return [] }
-    return data2 ?? []
-  } catch { return [] }
+export async function fetchAllAgents(filters: AgentsFilters = {}) {
+  if (!isSupabaseConfigured() || !supabase) return []
+  let q = supabase.from('agents').select('*').order('created_at', { ascending: false })
+  if (filters.status) q = q.eq('status', filters.status)
+  if (filters.type) q = q.eq('type', filters.type)
+  const { data, error } = await q
+  if (error) { console.warn('[agentsService] fetch:', error.message); throw new Error(error.message) }
+  return data ?? []
 }
 
 export async function fetchAgentsById(id: string) {
   if (!isSupabaseConfigured() || !supabase || !id) return null
-  try {
-    const { data, error } = await supabase.from('Agent').select('*').eq('id', id).single()
-    if (!error && data) return data
-    const { data: data2 } = await supabase.from('agents').select('*').eq('id', id).single()
-    return data2 ?? null
-  } catch { return null }
+  const { data, error } = await supabase.from('agents').select('*').eq('id', id).maybeSingle()
+  if (error) { console.warn('[agentsService] get:', error.message); throw new Error(error.message) }
+  return data ?? null
 }
 
-export async function upsertAgents(record: any) {
-  if (!isSupabaseConfigured() || !supabase) return record
-  try {
-    const { data, error } = await supabase.from('Agent').upsert(record).select().single()
-    if (error) throw error
-    return data
-  } catch (e) { console.warn('[agentsService] upsert:', e); return record }
+// Writes throw on any failure (config / RLS / network) — never a false success.
+export async function upsertAgents(record: Record<string, unknown>) {
+  if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase is not configured — cannot save agent.')
+  const { data, error } = await supabase.from('agents').upsert(record).select().single()
+  if (error) { console.warn('[agentsService] upsert:', error.message); throw new Error(error.message) }
+  return data
 }
 
 export async function deleteAgents(id: string) {
-  if (!isSupabaseConfigured() || !supabase) return true
-  try {
-    const { error } = await supabase.from('Agent').delete().eq('id', id)
-    if (error) throw error
-    return true
-  } catch { return false }
+  if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase is not configured — cannot delete agent.')
+  const { error } = await supabase.from('agents').delete().eq('id', id)
+  if (error) { console.warn('[agentsService] delete:', error.message); throw new Error(error.message) }
 }

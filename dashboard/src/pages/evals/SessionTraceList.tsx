@@ -87,10 +87,10 @@ export default function SessionTraceList() {
       <button className="font-mono text-xs text-[hsl(var(--brand))] hover:underline"
         onClick={(e) => { e.stopPropagation(); nav(`/evals/scenario/${t.scenarioId}`) }}>{t.scenarioId}</button>
     ) : <span className="text-[hsl(var(--text-4))]">—</span> },
-    { key: 'turns', header: 'Turns', render: (t) => <span className="font-mono">{t.turns.length}</span> },
-    { key: 'checks', header: 'Policy checks', render: (t) => <span className="font-mono">{t.policyResults.length}</span> },
+    { key: 'turns', header: 'Turns', render: (t) => <span className="font-mono">{(t.turns ?? []).length}</span> },
+    { key: 'checks', header: 'Policy checks', render: (t) => <span className="font-mono">{(t.policyResults ?? []).length}</span> },
     { key: 'interventions', header: 'Interventions', render: (t) => (
-      <span className="font-mono">{t.policyResults.filter((p) => p.intervention && p.intervention !== 'none').length}</span>
+      <span className="font-mono">{(t.policyResults ?? []).filter((p) => p.intervention && p.intervention !== 'none').length}</span>
     ) },
     { key: 'verdict', header: 'Verdict', render: (t) => <VerdictBadge v={t.verdict} /> },
   ]

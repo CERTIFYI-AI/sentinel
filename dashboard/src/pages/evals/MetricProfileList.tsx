@@ -25,8 +25,8 @@ import type { MetricProfile } from '@/types/evals'
 /** Worst threshold verdict across configured metrics — the profile's posture. */
 export function posture(p: MetricProfile): 'pass' | 'warn' | 'fail' | 'na' {
   let worst: 'pass' | 'warn' | 'fail' | 'na' = 'na'
-  for (const t of p.thresholds) {
-    const cur = p.current[t.metric]
+  for (const t of p.thresholds ?? []) {
+    const cur = (p.current ?? {})[t.metric]
     if (cur === undefined) continue
     const breach = t.direction === 'higher_better' ? (v: number, x: number) => v < x : (v: number, x: number) => v > x
     const v = breach(cur, t.fail) ? 'fail' : breach(cur, t.warn) ? 'warn' : 'pass'
@@ -93,8 +93,8 @@ export default function MetricProfileList() {
     ) },
     { key: 'modelVersion', header: 'Version', render: (p) => <span className="font-mono text-xs">{p.modelVersion}</span> },
     { key: 'owner', header: 'Owner', sortable: true },
-    { key: 'metrics', header: 'Metrics', render: (p) => <span className="font-mono">{(p.metrics ?? Object.keys(p.current)).length}</span> },
-    { key: 'thresholds', header: 'Thresholds', render: (p) => <span className="font-mono">{p.thresholds.length}</span> },
+    { key: 'metrics', header: 'Metrics', render: (p) => <span className="font-mono">{(p.metrics ?? Object.keys(p.current ?? {})).length}</span> },
+    { key: 'thresholds', header: 'Thresholds', render: (p) => <span className="font-mono">{(p.thresholds ?? []).length}</span> },
     { key: 'posture', header: 'Posture', render: (p) => <VerdictBadge v={posture(p)} /> },
     { key: 'state', header: 'Status', render: (p) => <StateBadge s={p.state} /> },
   ]

@@ -70,9 +70,10 @@ export default function BiasAuditResults() {
   }
 
   const resultColor = audit.result === 'passed' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))';
-  const sc = severityColor(audit.severity);
-  const passCount = audit.dimensions.filter(d => d.pass).length;
-  const failCount = audit.dimensions.filter(d => !d.pass).length;
+  const sc = severityColor(audit.severity ?? '');
+  const dimensions = audit.dimensions ?? [];
+  const passCount = dimensions.filter(d => d.pass).length;
+  const failCount = dimensions.filter(d => !d.pass).length;
 
   return (
     <div className="space-y-6">
@@ -118,7 +119,7 @@ export default function BiasAuditResults() {
             padding: '4px 12px',
           }}>
             {audit.result === 'passed' ? <CheckCircle size={12} style={{ display: 'inline', marginRight: 4 }} /> : <XCircle size={12} style={{ display: 'inline', marginRight: 4 }} />}
-            {audit.result.toUpperCase()}
+            {(audit.result ?? '—').toUpperCase()}
           </Badge>
         </div>
       </div>
@@ -150,7 +151,7 @@ export default function BiasAuditResults() {
             <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Overall Fairness Score</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center pb-4">
-            <ScoreGauge score={audit.overallScore} size={160} />
+            <ScoreGauge score={audit.overallScore ?? 0} size={160} />
             <div className="mt-3 flex gap-3 text-center">
               <div>
                 <p className="text-2xl font-bold" style={{ color: 'hsl(var(--s-ok-tx))' }}>{passCount}</p>
@@ -180,21 +181,21 @@ export default function BiasAuditResults() {
                 </tr>
               </thead>
               <tbody>
-                {audit.dimensions.map(d => {
+                {dimensions.map(d => {
                   const color = d.pass ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))';
-                  const gap = (d.score - d.threshold) * 100;
+                  const gap = ((d.score ?? 0) - (d.threshold ?? 0)) * 100;
                   return (
                     <tr key={d.attribute} style={{ borderTop: '1px solid hsl(var(--border))' }}>
                       <td className="p-3 text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{d.attribute}</td>
                       <td className="p-3">
                         <div className="flex items-center gap-2">
                           <div style={{ width: 70, height: 6, background: 'hsl(var(--bg-muted))' }}>
-                            <div style={{ width: `${d.score * 100}%`, height: '100%', background: color }} />
+                            <div style={{ width: `${(d.score ?? 0) * 100}%`, height: '100%', background: color }} />
                           </div>
-                          <span className="text-sm font-semibold" style={{ color }}>{(d.score * 100).toFixed(0)}%</span>
+                          <span className="text-sm font-semibold" style={{ color }}>{typeof d.score === 'number' ? `${(d.score * 100).toFixed(0)}%` : '—'}</span>
                         </div>
                       </td>
-                      <td className="p-3 text-sm" style={{ color: 'hsl(var(--text-3))' }}>{(d.threshold * 100).toFixed(0)}%</td>
+                      <td className="p-3 text-sm" style={{ color: 'hsl(var(--text-3))' }}>{typeof d.threshold === 'number' ? `${(d.threshold * 100).toFixed(0)}%` : '—'}</td>
                       <td className="p-3">
                         <Badge style={{
                           background: `${color}20`,
@@ -230,11 +231,14 @@ export default function BiasAuditResults() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
-            {audit.protectedAttributes.map(attr => (
-              <Badge key={attr.name} variant="outline" style={{ borderRadius: 0, fontSize: 12 }}>
-                <Shield size={11} className="mr-1" /> {attr.name}
-              </Badge>
-            ))}
+            {(audit.protectedAttributes ?? []).map(attr => {
+              const label = typeof attr === 'string' ? attr : attr?.name ?? '—';
+              return (
+                <Badge key={label} variant="outline" style={{ borderRadius: 0, fontSize: 12 }}>
+                  <Shield size={11} className="mr-1" /> {label}
+                </Badge>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
@@ -246,7 +250,7 @@ export default function BiasAuditResults() {
         </CardHeader>
         <CardContent>
           <ul className="space-y-2">
-            {audit.recommendations.map((rec, i) => (
+            {(audit.recommendations ?? []).map((rec, i) => (
               <li key={i} className="flex items-start gap-3">
                 <span className="text-xs font-mono font-semibold" style={{ color: 'hsl(var(--brand))', minWidth: 20, marginTop: 2 }}>{i + 1}.</span>
                 <span className="text-sm" style={{ color: 'hsl(var(--text-2))' }}>{rec}</span>

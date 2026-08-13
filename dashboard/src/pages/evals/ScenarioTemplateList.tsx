@@ -76,17 +76,17 @@ export default function ScenarioTemplateList() {
   const columns: Column<ScenarioTemplate>[] = [
     { key: 'name', header: 'Scenario', sortable: true },
     { key: 'modelId', header: 'Model', render: (s) => <ModelPill modelId={s.modelId} models={models} onOpen={(id) => nav(`/models/inventory/${id}`)} /> },
-    { key: 'turns', header: 'Turns', render: (s) => <span className="font-mono">{s.turns.length}</span> },
-    { key: 'guardrails', header: 'Guardrails', render: (s) => <span className="font-mono text-xs text-[hsl(var(--text-3))]">{s.guardrailChecks.join(', ') || '—'}</span> },
+    { key: 'turns', header: 'Turns', render: (s) => <span className="font-mono">{(s.turns ?? []).length}</span> },
+    { key: 'guardrails', header: 'Guardrails', render: (s) => <span className="font-mono text-xs text-[hsl(var(--text-3))]">{(s.guardrailChecks ?? []).join(', ') || '—'}</span> },
     { key: 'riskTags', header: 'Risk tags', render: (s) => (
       <span className="flex flex-wrap gap-1">
-        {s.riskTags.slice(0, 2).map((t) => (
+        {(s.riskTags ?? []).slice(0, 2).map((t) => (
           <span key={t} className="border border-[hsl(var(--r-hi-br))] bg-[hsl(var(--r-hi-bg))] px-1.5 py-[1px] text-[10px] font-medium text-[hsl(var(--r-hi-tx))]">{t}</span>
         ))}
-        {s.riskTags.length > 2 && <span className="text-[10px] text-[hsl(var(--text-4))]">+{s.riskTags.length - 2}</span>}
+        {(s.riskTags ?? []).length > 2 && <span className="text-[10px] text-[hsl(var(--text-4))]">+{(s.riskTags ?? []).length - 2}</span>}
       </span>
     ) },
-    { key: 'campaigns', header: 'Campaigns', render: (s) => <span className="font-mono">{s.campaignIds.length}</span> },
+    { key: 'campaigns', header: 'Campaigns', render: (s) => <span className="font-mono">{(s.campaignIds ?? []).length}</span> },
     { key: 'state', header: 'Status', render: (s) => <StateBadge s={s.state} /> },
   ]
 

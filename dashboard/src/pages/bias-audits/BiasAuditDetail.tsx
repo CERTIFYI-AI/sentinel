@@ -61,7 +61,7 @@ export default function BiasAuditDetail() {
     <div>
       <PageHeader
         title={audit.auditId}
-        subtitle={`${resolvedModelName ?? (modelsLoading ? audit.modelName : 'Unavailable')} · ${audit.datasetId || '—'} · ${audit.framework}`}
+        subtitle={`${resolvedModelName ?? (modelsLoading ? audit.modelName : 'Unavailable')} · ${audit.datasetId || '—'} · ${audit.framework || '—'}`}
         badge={<StateBadge s={audit.state} />}
         onBack={() => nav('/bias-audits')}
         actions={
@@ -80,7 +80,7 @@ export default function BiasAuditDetail() {
 
       <Card className="mb-4">
         <CardContent className="grid grid-cols-2 gap-4 p-4 sm:grid-cols-4 lg:grid-cols-7">
-          <Stat label="Auditor" value={audit.auditor} />
+          <Stat label="Auditor" value={audit.auditor || '—'} />
           <Stat label="Fairness score" value={typeof audit.fairnessScore === 'number' ? audit.fairnessScore.toFixed(2) : '—'} mono />
           <Stat label="Result" value={<VerdictBadge v={audit.result} />} />
           <Stat label="Risk tier" value={<RiskBadge r={audit.riskTier} />} />
@@ -142,7 +142,7 @@ export default function BiasAuditDetail() {
         <TabsContent value="intersectional" className="mt-4">
           <Section title="Intersectional heatmap" right={<span className="text-[11px] text-[hsl(var(--text-4))]">click a cell to view flagged cases</span>}>
             {intersections.length > 0 ? (
-              <Heatmap cells={intersections} onCell={(k) => {
+              <Heatmap cells={intersections.map((c) => ({ ...c, verdict: c.verdict ?? 'na', caseRefs: c.caseRefs ?? [] }))} onCell={(k) => {
                 const cell = intersections.find((c) => c.key === k)
                 toast(cell?.caseRefs?.length ? `${k}: ${cell.caseRefs.join(', ')}` : `${k}: within threshold`)
               }} />
@@ -157,14 +157,15 @@ export default function BiasAuditDetail() {
                 <thead><tr className="text-left text-[11px] uppercase tracking-wide text-[hsl(var(--text-4))]"><th className="py-2 pr-3 font-medium">Metric</th><th className="py-2 pr-3 font-medium">Pre-deploy</th><th className="py-2 pr-3 font-medium">Post-deploy</th><th className="py-2 font-medium">Δ</th></tr></thead>
                 <tbody>
                   {Object.keys(pre[0].metrics ?? {}).map((k) => {
-                    const a = (pre[0].metrics as Record<string, number>)[k]
-                    const b = post[0] ? (post[0].metrics as Record<string, number>)[k] : undefined
+                    const a = ((pre[0].metrics ?? {}) as Record<string, number>)[k]
+                    const b = post[0] ? ((post[0].metrics ?? {}) as Record<string, number>)[k] : undefined
+                    const hasBoth = typeof a === 'number' && typeof b === 'number'
                     return (
                       <tr key={k} className="border-t border-[hsl(var(--border))]">
                         <td className="py-2 pr-3 text-[hsl(var(--text-1))]">{k}</td>
-                        <td className="py-2 pr-3 font-mono text-[hsl(var(--text-2))]">{a.toFixed(2)}</td>
-                        <td className="py-2 pr-3 font-mono text-[hsl(var(--text-2))]">{b?.toFixed(2) ?? '—'}</td>
-                        <td className="py-2 font-mono text-[hsl(var(--text-3))]">{b !== undefined ? (b - a >= 0 ? '+' : '') + (b - a).toFixed(2) : '—'}</td>
+                        <td className="py-2 pr-3 font-mono text-[hsl(var(--text-2))]">{typeof a === 'number' ? a.toFixed(2) : '—'}</td>
+                        <td className="py-2 pr-3 font-mono text-[hsl(var(--text-2))]">{typeof b === 'number' ? b.toFixed(2) : '—'}</td>
+                        <td className="py-2 font-mono text-[hsl(var(--text-3))]">{hasBoth ? (b! - a >= 0 ? '+' : '') + (b! - a).toFixed(2) : '—'}</td>
                       </tr>
                     )
                   })}

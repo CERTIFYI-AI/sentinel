@@ -11,6 +11,8 @@ export type AgentRiskTier = 'Critical' | 'High' | 'Medium' | 'Low'
 
 export interface AgentRecord {
   id: string
+  /** Human-readable code shown in the UI (e.g. AGT-3F2A91B0); `id` is the storage key. */
+  displayId?: string
   name: string
   /** Semantic version of the agent build. Named to avoid the CRUD envelope's optimistic-lock `version` counter. */
   agentVersion: string
@@ -22,12 +24,16 @@ export interface AgentRecord {
   purpose: string
   tools: string[]
   permissions: string[]    // coarse capability grants; credentials live in AgentCredential
+  /** Canonical ai_models.id (uuid) — the platform id-space. Resolve the name at render time. */
+  modelId?: string
+  /** Display fallback for the underlying model (legacy free-text records predate modelId). */
   model: string
   maxBudget: number
   dailyCallCount: number
   lastActivity: string
   registeredDate: string
   approvedBy: string       // from central Users directory
+  /** Declared by the owning team at registration — NOT computed by the platform. */
   trustScore: number
   escalationPolicy: string
   killSwitchEnabled: boolean
@@ -40,6 +46,8 @@ export type PrincipalType = 'Service Account' | 'API Key' | 'OAuth Client' | 'mT
 
 export interface AgentCredential {
   id: string
+  /** Human-readable code shown in the UI (e.g. IAM-8C41D2E9); `id` is the storage key. */
+  displayId?: string
   agentId: string          // → AgentRecord.id (cross-module link)
   agentName: string
   principalType: PrincipalType
