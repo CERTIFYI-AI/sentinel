@@ -16,6 +16,23 @@ import { getLocale } from "./i18n";
 // Auto-register all 27 governance agents on app bootstrap.
 // Side-effect import — each agent file calls governanceBus.registerAgent.
 import "./agents";
+import { setLoggerErrorSink } from "./lib/logger";
+
+// Observability: forward logger.error to Sentry when a DSN is configured.
+// sentry.ts loads @sentry/browser dynamically and no-ops without a DSN,
+// so this adds no dependency and no cost when VITE_SENTRY_DSN is unset.
+if (import.meta.env.VITE_SENTRY_DSN) {
+  import("./lib/observability/sentry")
+    .then(({ captureException }) => {
+      setLoggerErrorSink((...args: unknown[]) => {
+        const err =
+          args.find((a) => a instanceof Error) ??
+          new Error(args.map((a) => (typeof a === "string" ? a : JSON.stringify(a))).join(" "));
+        void captureException(err);
+      });
+    })
+    .catch(() => { /* observability must never block app bootstrap */ });
+}
 
 // Set <html lang> early so screen readers pick up the right pronunciation.
 document.documentElement.setAttribute("lang", getLocale());

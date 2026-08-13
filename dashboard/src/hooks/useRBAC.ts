@@ -1,5 +1,10 @@
 import { useAuthStore } from '@/store/authStore';
 
+// NOTE: `user.role` now originates SERVER-SIDE from the `user_profiles` table
+// (resolved in authStore after sign-in/session restore), not from client-mutable
+// auth user_metadata. This matrix is a UX gate only — RLS still enforces all
+// permissions server-side regardless of what this hook returns.
+
 export type Action = 'create'|'read'|'update'|'delete'|'approve'|'publish'|'export'|'admin';
 
 const ROLE_MATRIX: Record<string, Action[]> = {

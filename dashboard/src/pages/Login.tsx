@@ -168,7 +168,8 @@ export default function Login() {
             <p className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>Enter your credentials to continue to Sentinel AI</p>
           </div>
 
-          {/* Demo credentials banner */}
+          {/* Demo credentials banner — dev builds only; never render credentials in production */}
+          {import.meta.env.DEV && (
           <div className="mb-6 p-3.5 border" style={{ borderColor: 'hsl(var(--brand)/30%)', background: 'hsl(var(--brand)/5%)', borderRadius: 0 }}>
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -192,6 +193,7 @@ export default function Login() {
               </div>
             </div>
           </div>
+          )}
 
           {/* Error alert */}
           {errors.form && (

@@ -28,16 +28,40 @@ interface AuthState {
   initializeAuth: () => Promise<void>;
 }
 
-function mapSupabaseUser(su: SupabaseUser): User {
+// SECURITY: never derive role from user_metadata — it is client-mutable via
+// supabase.auth.updateUser(), which allowed self-service privilege escalation.
+// The authoritative role lives server-side in user_profiles (RLS-protected);
+// callers must resolve it with resolveServerRole() and pass it in.
+function mapSupabaseUser(su: SupabaseUser, serverRole: string = 'viewer'): User {
   return {
     id: su.id,
     email: su.email || '',
     name: su.user_metadata?.name || su.user_metadata?.full_name || su.email?.split('@')[0] || '',
-    role: su.user_metadata?.role || 'viewer',
+    role: serverRole,
     avatar: su.user_metadata?.avatar_url,
     tenant: su.user_metadata?.tenant || 'default',
     organization: su.user_metadata?.organization,
   };
+}
+
+// Fetch the authoritative role from user_profiles. Falls back to 'viewer'
+// when the profile is absent or the lookup fails. Defense-in-depth only:
+// RLS still enforces permissions server-side regardless of this value.
+async function resolveServerRole(userId: string): Promise<string> {
+  try {
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('role, org_id')
+      .eq('id', userId)
+      .maybeSingle();
+    if (error) {
+      logger.warn('ROLE_LOOKUP_FAILED:', error.message);
+      return 'viewer';
+    }
+    return (data?.role as string) || 'viewer';
+  } catch {
+    return 'viewer';
+  }
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -78,9 +102,10 @@ export const useAuthStore = create<AuthState>()(
           const { data, error } = await supabase.auth.signInWithPassword({ email, password });
           if (error) { logger.error("SUPABASE_LOGIN_ERROR:", JSON.stringify(error)); throw error; }
           if (data.session && data.user) {
+            const serverRole = await resolveServerRole(data.user.id);
             set({
               isAuthenticated: true,
-              user: mapSupabaseUser(data.user),
+              user: mapSupabaseUser(data.user, serverRole),
               token: data.session.access_token,
               refreshToken: data.session.refresh_token,
               loading: false,
@@ -113,9 +138,10 @@ export const useAuthStore = create<AuthState>()(
         });
         if (error) { logger.error("SUPABASE_SIGNUP_ERROR:", JSON.stringify(error)); throw error; }
         if (data.session && data.user) {
+          const serverRole = await resolveServerRole(data.user.id);
           set({
             isAuthenticated: true,
-            user: mapSupabaseUser(data.user),
+            user: mapSupabaseUser(data.user, serverRole),
             token: data.session.access_token,
             refreshToken: data.session.refresh_token,
             loading: false,
@@ -134,12 +160,21 @@ export const useAuthStore = create<AuthState>()(
 
       setSession: (session) => {
         if (session?.user) {
+          const su = session.user;
+          // Set the session immediately with the least-privileged role, then
+          // upgrade to the server-side role once user_profiles resolves.
           set({
             isAuthenticated: true,
-            user: mapSupabaseUser(session.user),
+            user: mapSupabaseUser(su),
             token: session.access_token,
             refreshToken: session.refresh_token,
             loading: false,
+          });
+          void resolveServerRole(su.id).then((serverRole) => {
+            const current = get().user;
+            if (current && current.id === su.id) {
+              set({ user: { ...current, role: serverRole } });
+            }
           });
         } else {
           set({ isAuthenticated: false, user: null, token: null, refreshToken: null, loading: false });
@@ -154,9 +189,10 @@ export const useAuthStore = create<AuthState>()(
         try {
           const { data: { session } } = await supabase.auth.getSession();
           if (session?.user) {
+            const serverRole = await resolveServerRole(session.user.id);
             set({
               isAuthenticated: true,
-              user: mapSupabaseUser(session.user),
+              user: mapSupabaseUser(session.user, serverRole),
               token: session.access_token,
               refreshToken: session.refresh_token,
               loading: false,

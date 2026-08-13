@@ -1,6 +1,14 @@
 import { supabase, isSupabaseConfigured } from './supabase';
 
-const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true';
+// SECURITY: demo mode is dev-only. `import.meta.env.DEV` is statically false
+// in production builds, so every demo path below is dead code in prod —
+// setting VITE_DEMO_MODE=true in a production deployment has no effect.
+const DEMO_MODE = import.meta.env.DEV && import.meta.env.VITE_DEMO_MODE === 'true';
+const DEMO_PASSWORD = 'Demo@12345';
+
+// Even in dev, the demo user only exists after a successful credentialed
+// demo sign-in — getSession()/getProfile() never mint a session for free.
+let demoSessionActive = false;
 
 export interface AuthUser {
   id: string;
@@ -21,9 +29,13 @@ const DEMO_USER: AuthUser = {
 };
 
 export async function signIn(email: string, password: string): Promise<{ user: AuthUser | null; error: string | null }> {
-  // Demo mode — bypass Supabase auth entirely
+  // Demo mode (dev builds only) — still requires the known demo credentials.
   if (DEMO_MODE) {
-    return { user: DEMO_USER, error: null };
+    if (email === DEMO_USER.email && password === DEMO_PASSWORD) {
+      demoSessionActive = true;
+      return { user: DEMO_USER, error: null };
+    }
+    return { user: null, error: 'Invalid email or password' };
   }
   if (!isSupabaseConfigured()) {
     return { user: null, error: 'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.local' };
@@ -50,6 +62,7 @@ export async function signUp(email: string, password: string, fullName: string):
 }
 
 export async function signOut(): Promise<void> {
+  demoSessionActive = false;
   try {
     await supabase.auth.signOut();
   } catch (e) {
@@ -58,7 +71,7 @@ export async function signOut(): Promise<void> {
 }
 
 export async function getProfile(userId: string): Promise<AuthUser | null> {
-  if (DEMO_MODE) return DEMO_USER;
+  if (DEMO_MODE && demoSessionActive) return DEMO_USER;
   try {
     const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
     if (error) throw error;
@@ -71,12 +84,12 @@ export async function getProfile(userId: string): Promise<AuthUser | null> {
       avatarUrl: data.avatar_url,
     };
   } catch {
-    return DEMO_MODE ? DEMO_USER : null;
+    return DEMO_MODE && demoSessionActive ? DEMO_USER : null;
   }
 }
 
 export async function getSession(): Promise<AuthUser | null> {
-  if (DEMO_MODE) return DEMO_USER;
+  if (DEMO_MODE && demoSessionActive) return DEMO_USER;
   if (!isSupabaseConfigured()) return null;
   try {
     const { data } = await supabase.auth.getSession();
