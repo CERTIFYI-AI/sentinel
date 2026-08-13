@@ -1,0 +1,16 @@
+-- Demo seed: model_lifecycle_stages rows for the default demo org so the wired
+-- Model Lifecycle page shows live pipelines + gate history. The rich gate history
+-- lives in metadata.approvals (jsonb); current stage + latest gate mirror to
+-- first-class columns. Idempotent (guarded by NOT EXISTS on model_id). Applied via Supabase MCP.
+INSERT INTO public.model_lifecycle_stages (org_id, model_id, model_name, current_stage, gate_status, gate_reviewer, gate_notes, metadata)
+SELECT * FROM (VALUES
+ ('00000000-0000-0000-0000-000000000001'::uuid,'MDL-001','Credit Risk Scorer','production','approved','CISO','Go-live approved with human-oversight control active.',
+   '{"provider":"Internal","owner":"Maria Santos","nextReview":"2026-09-10","lastTransition":"2026-06-05","name":"Credit Risk Scorer","approvals":[{"stage":"Development","kind":"promotion","approver":"Alice Chen","date":"2026-03-15","status":"approved","note":"Initial build signed off."},{"stage":"Staging","kind":"promotion","approver":"Risk Committee","date":"2026-05-01","status":"approved","note":"Bias within threshold; DPIA complete."},{"stage":"Production","kind":"promotion","approver":"CISO","date":"2026-06-05","status":"approved","note":"Go-live approved."}]}'::jsonb),
+ ('00000000-0000-0000-0000-000000000001'::uuid,'MDL-002','Fraud Detection Engine','production','approved','CTO','Production release approved.',
+   '{"provider":"Internal","owner":"David Kim","nextReview":"2026-09-08","lastTransition":"2026-06-08","name":"Fraud Detection Engine","approvals":[{"stage":"Development","kind":"promotion","approver":"Sara Cohen","date":"2026-03-20","status":"approved","note":"Prototype approved."},{"stage":"Production","kind":"promotion","approver":"CTO","date":"2026-06-08","status":"approved","note":"Released."}]}'::jsonb),
+ ('00000000-0000-0000-0000-000000000001'::uuid,'MDL-003','Churn Predictor','staging','pending','Security Team','Awaiting prompt-injection test results before production.',
+   '{"provider":"Internal","owner":"Maria Santos","nextReview":"2026-08-22","lastTransition":"2026-07-12","name":"Churn Predictor","approvals":[{"stage":"Development","kind":"promotion","approver":"Raj Mehta","date":"2026-07-02","status":"approved","note":"PoC approved."},{"stage":"Staging","kind":"promotion","approver":"Security Team","requestedBy":"Raj Mehta","date":"2026-07-12","status":"pending","note":"Awaiting security sign-off."}]}'::jsonb),
+ ('00000000-0000-0000-0000-000000000001'::uuid,'MDL-004','Loan Approval Assistant','production','approved','CTO','Production release approved for Legal dept.',
+   '{"provider":"OpenAI","owner":"Priya Patel","nextReview":"2026-09-08","lastTransition":"2026-06-08","name":"Loan Approval Assistant","approvals":[{"stage":"Development","kind":"promotion","approver":"Tom Weber","date":"2026-04-20","status":"approved","note":"Prototype."},{"stage":"Production","kind":"promotion","approver":"CTO","date":"2026-06-08","status":"approved","note":"Live."}]}'::jsonb)
+) AS v(org_id,model_id,model_name,current_stage,gate_status,gate_reviewer,gate_notes,metadata)
+WHERE NOT EXISTS (SELECT 1 FROM public.model_lifecycle_stages s WHERE s.org_id=v.org_id AND s.model_id=v.model_id);
