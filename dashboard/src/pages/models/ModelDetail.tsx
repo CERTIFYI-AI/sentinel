@@ -416,7 +416,7 @@ function ModelDetailView({ model }: { model: Model }) {
               <CardContent style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {/* EU AI Act risk classification */}
                 <button
-                  onClick={() => navigate('/ai-risk-tiering')}
+                  onClick={() => navigate(`/ai-risk-tiering?model=${model.id}`)}
                   style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '9px 11px', background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))', cursor: 'pointer', textAlign: 'left' }}
                 >
                   <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -432,7 +432,7 @@ function ModelDetailView({ model }: { model: Model }) {
                 </button>
                 {/* Impact assessments */}
                 <button
-                  onClick={() => navigate('/aiia')}
+                  onClick={() => navigate(`/aiia?model=${model.id}`)}
                   style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '9px 11px', background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))', cursor: 'pointer', textAlign: 'left' }}
                 >
                   <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -446,7 +446,7 @@ function ModelDetailView({ model }: { model: Model }) {
                 </button>
                 {/* MRC reviews */}
                 <button
-                  onClick={() => navigate('/mrc')}
+                  onClick={() => navigate(`/mrc?model=${model.id}`)}
                   style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '9px 11px', background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))', cursor: 'pointer', textAlign: 'left' }}
                 >
                   <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
