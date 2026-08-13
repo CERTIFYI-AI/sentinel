@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 CERTIFYI-AI.
 //
-// ExplainabilityProfileForm — create/edit an XAI profile. Owner comes from the
-// central Users directory; jurisdictions toggle GDPR / EU AI Act / ECOA text
+// ExplainabilityProfileForm — create/edit an XAI profile. Model is chosen from
+// the platform model inventory (ai_models uuid); owner comes from the central
+// Users directory; jurisdictions toggle GDPR / EU AI Act / ECOA text
 // obligations downstream.
 
 import { useState } from 'react'
@@ -12,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { UserSelect } from '@/components/evals/UserSelect'
 import { explainProfileHooks } from '@/hooks/queries/useEvalsCrud'
+import { useModelOptions } from '@/hooks/useAiiaData'
 import { cn } from '@/lib/utils'
 import type { ExplainabilityProfile, Jurisdiction, XaiMethod } from '@/types/evals'
 
@@ -33,6 +35,7 @@ export function ExplainabilityProfileForm({ open, onOpenChange, initial }: {
   open: boolean; onOpenChange: (o: boolean) => void; initial?: ExplainabilityProfile | null
 }) {
   const upsert = explainProfileHooks.useUpsert()
+  const { models, loading: modelsLoading } = useModelOptions()
   const [form, setForm] = useState<ExplainabilityProfile>(initial ?? EMPTY)
   const isEdit = !!initial
 
@@ -43,31 +46,43 @@ export function ExplainabilityProfileForm({ open, onOpenChange, initial }: {
   const toggleJur = (j: Jurisdiction) => set('jurisdictions',
     form.jurisdictions.includes(j) ? form.jurisdictions.filter((x) => x !== j) : [...form.jurisdictions, j])
 
-  const valid = form.modelId.trim() && form.modelName.trim() && form.modelVersion.trim() && form.owner.trim()
+  function setModel(id: string) {
+    const m = models.find((x) => x.id === id)
+    setForm((f) => ({ ...f, modelId: id, modelName: m?.name ?? '' }))
+  }
+
+  const valid = !!(form.modelId && form.modelVersion.trim() && form.owner.trim())
 
   function submit() {
     const rec: ExplainabilityProfile = {
       ...form,
-      id: form.id || `XP-${form.modelId.replace(/\D/g, '') || Date.now()}`,
+      // PK is a generated uuid — never derived from the model id.
+      id: form.id || crypto.randomUUID(),
       auditTrail: isEdit ? form.auditTrail : [{ id: `A${Date.now()}`, actor: form.owner, action: 'created profile', at: new Date().toISOString() }],
     }
     upsert.mutate(rec, {
       onSuccess: () => { toast.success(isEdit ? 'Profile updated' : 'Profile created'); onOpenChange(false) },
-      onError: () => toast.error('Failed to save profile'),
+      onError: (err: any) => toast.error(err?.message ?? 'Failed to save profile'),
     })
   }
 
   return (
     <FormDialog
       open={open} onOpenChange={onOpenChange}
-      title={isEdit ? `Edit ${form.modelName} profile` : 'New Explainability Profile'}
+      title={isEdit ? `Edit ${form.modelName || 'explainability'} profile` : 'New Explainability Profile'}
       description="Track global/local explanation methods and adequacy per jurisdiction."
       submitLabel={isEdit ? 'Save changes' : 'Create profile'}
       busy={upsert.isPending} disabled={!valid} onSubmit={submit}
     >
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Model ID" required><Input value={form.modelId} onChange={(e) => set('modelId', e.target.value)} placeholder="MDL-003" /></Field>
-        <Field label="Model name" required><Input value={form.modelName} onChange={(e) => set('modelName', e.target.value)} /></Field>
+        <Field label="Model" required hint="From the model inventory">
+          <Select value={form.modelId || undefined} onValueChange={setModel}>
+            <SelectTrigger><SelectValue placeholder={modelsLoading ? 'Loading models…' : 'Select a model'} /></SelectTrigger>
+            <SelectContent>
+              {models.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}{m.riskTier ? ` · ${m.riskTier}` : ''}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </Field>
         <Field label="Version" required><Input value={form.modelVersion} onChange={(e) => set('modelVersion', e.target.value)} placeholder="v4.0.0" /></Field>
         <Field label="Owner" required hint="From the Users directory">
           <UserSelect value={form.owner} onChange={(v) => set('owner', v)} by="name" rolesFilter={['ml', 'engineer', 'compliance']} />

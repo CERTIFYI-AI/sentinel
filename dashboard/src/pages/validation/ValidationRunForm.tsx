@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 CERTIFYI-AI.
 //
-// ValidationRunForm — create/edit a validation run. Validator is chosen from
-// the central Users directory (UserSelect). Persists via the evals CRUD hook.
+// ValidationRunForm — create/edit a validation run. Model is chosen from the
+// platform model inventory (ai_models uuid), validator from the central Users
+// directory (UserSelect). Persists via the evals CRUD hook.
 
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -12,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { UserSelect } from '@/components/evals/UserSelect'
 import { validationRunHooks } from '@/hooks/queries/useEvalsCrud'
+import { useModelOptions } from '@/hooks/useAiiaData'
 import type { ValidationRun, RiskTier } from '@/types/evals'
 
 const EMPTY: ValidationRun = {
@@ -31,6 +33,7 @@ export function ValidationRunForm({ open, onOpenChange, initial, onSaved }: {
   onSaved?: (run: ValidationRun) => void
 }) {
   const upsert = validationRunHooks.useUpsert()
+  const { models, loading: modelsLoading } = useModelOptions()
   const [form, setForm] = useState<ValidationRun>(initial ?? EMPTY)
   const isEdit = !!initial
 
@@ -43,19 +46,25 @@ export function ValidationRunForm({ open, onOpenChange, initial, onSaved }: {
   const set = <K extends keyof ValidationRun>(k: K, v: ValidationRun[K]) => setForm((f) => ({ ...f, [k]: v }))
   const setScope = (k: keyof ValidationRun['scope'], v: any) => setForm((f) => ({ ...f, scope: { ...f.scope, [k]: v } }))
 
-  const valid = form.runId.trim() && form.modelName.trim() && form.modelVersion.trim() && form.validatorId.trim()
+  function setModel(id: string) {
+    const m = models.find((x) => x.id === id)
+    setForm((f) => ({ ...f, modelId: id, modelName: m?.name ?? '' }))
+  }
+
+  const valid = !!(form.runId.trim() && form.modelId && form.modelVersion.trim() && form.validatorId.trim())
 
   function submit() {
     const rec: ValidationRun = {
       ...form,
-      id: form.id || form.runId.trim(),
+      // PK is a generated uuid — the human-readable runId stays a display field.
+      id: form.id || crypto.randomUUID(),
       auditTrail: isEdit ? form.auditTrail : [
         { id: `A${Date.now()}`, actor: form.validatorId, action: 'created validation run', at: new Date().toISOString() },
       ],
     }
     upsert.mutate(rec, {
       onSuccess: (saved) => { toast.success(isEdit ? 'Validation run updated' : 'Validation run created'); onSaved?.(saved); onOpenChange(false) },
-      onError: () => toast.error('Failed to save validation run'),
+      onError: (err: any) => toast.error(err?.message ?? 'Failed to save validation run'),
     })
   }
 
@@ -82,11 +91,13 @@ export function ValidationRunForm({ open, onOpenChange, initial, onSaved }: {
             </SelectContent>
           </Select>
         </Field>
-        <Field label="Model ID" htmlFor="modelId" required>
-          <Input id="modelId" value={form.modelId} onChange={(e) => set('modelId', e.target.value)} placeholder="MDL-003" />
-        </Field>
-        <Field label="Model name" required>
-          <Input value={form.modelName} onChange={(e) => set('modelName', e.target.value)} placeholder="Credit Risk Scorer" />
+        <Field label="Model" required hint="From the model inventory">
+          <Select value={form.modelId || undefined} onValueChange={setModel}>
+            <SelectTrigger><SelectValue placeholder={modelsLoading ? 'Loading models…' : 'Select a model'} /></SelectTrigger>
+            <SelectContent>
+              {models.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}{m.riskTier ? ` · ${m.riskTier}` : ''}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </Field>
         <Field label="Version" required>
           <Input value={form.modelVersion} onChange={(e) => set('modelVersion', e.target.value)} placeholder="v4.0.0" />

@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 CERTIFYI-AI.
 //
-// BiasAuditForm — create/edit a bias audit: model, dataset, framework,
-// protected attributes and auditor (from the central Users directory).
+// BiasAuditForm — create/edit a bias audit: model (from the platform model
+// inventory), dataset (from the Data Explorer catalog), framework, protected
+// attributes and auditor (from the central Users directory).
 
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -10,7 +11,8 @@ import { FormDialog, Field } from '@/components/evals/FormDialog'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { UserSelect } from '@/components/evals/UserSelect'
-import { biasAuditHooks } from '@/hooks/queries/useEvalsCrud'
+import { biasAuditHooks, datasetCatalogHooks } from '@/hooks/queries/useEvalsCrud'
+import { useModelOptions } from '@/hooks/useAiiaData'
 import { PROTECTED_ATTRIBUTES } from '@/data/evalsSeed'
 import { cn } from '@/lib/utils'
 import type { BiasAudit, RiskTier } from '@/types/evals'
@@ -26,6 +28,8 @@ export function BiasAuditForm({ open, onOpenChange, initial }: {
   open: boolean; onOpenChange: (o: boolean) => void; initial?: BiasAudit | null
 }) {
   const upsert = biasAuditHooks.useUpsert()
+  const { models, loading: modelsLoading } = useModelOptions()
+  const { data: datasets, isLoading: datasetsLoading } = datasetCatalogHooks.useList()
   const [form, setForm] = useState<BiasAudit>(initial ?? EMPTY)
   const isEdit = !!initial
 
@@ -38,20 +42,31 @@ export function BiasAuditForm({ open, onOpenChange, initial }: {
       ? form.protectedAttributes.filter((p) => p.id !== id)
       : [...form.protectedAttributes, PROTECTED_ATTRIBUTES.find((p) => p.id === id)!])
 
-  const valid = form.auditId.trim() && form.modelName.trim() && form.datasetId.trim() && form.auditor.trim()
-    && form.protectedAttributes.length > 0
+  function setModel(id: string) {
+    const m = models.find((x) => x.id === id)
+    setForm((f) => ({ ...f, modelId: id, modelName: m?.name ?? '' }))
+  }
+
+  const valid = !!(form.auditId.trim() && form.modelId && form.datasetId && form.auditor.trim()
+    && form.protectedAttributes.length > 0)
 
   function submit() {
     const rec: BiasAudit = {
       ...form,
-      id: form.id || form.auditId.trim(),
+      // PK is a generated uuid — the human-readable auditId stays a display field.
+      id: form.id || crypto.randomUUID(),
       auditTrail: isEdit ? form.auditTrail : [{ id: `A${Date.now()}`, actor: form.auditor, action: 'opened bias audit', at: new Date().toISOString() }],
     }
     upsert.mutate(rec, {
       onSuccess: () => { toast.success(isEdit ? 'Audit updated' : 'Audit created'); onOpenChange(false) },
-      onError: () => toast.error('Failed to save audit'),
+      onError: (err: any) => toast.error(err?.message ?? 'Failed to save audit'),
     })
   }
+
+  // If an existing audit references a dataset that's no longer in the catalog,
+  // keep it selectable so the record still round-trips honestly.
+  const datasetOptions = datasets ?? []
+  const hasCurrentDataset = !form.datasetId || datasetOptions.some((d) => d.id === form.datasetId)
 
   return (
     <FormDialog
@@ -71,10 +86,22 @@ export function BiasAuditForm({ open, onOpenChange, initial }: {
             </SelectContent>
           </Select>
         </Field>
-        <Field label="Model ID" required><Input value={form.modelId} onChange={(e) => set('modelId', e.target.value)} placeholder="MDL-003" /></Field>
-        <Field label="Model name" required><Input value={form.modelName} onChange={(e) => set('modelName', e.target.value)} /></Field>
-        <Field label="Dataset ID" required hint="Links to the Data Explorer catalog entry">
-          <Input value={form.datasetId} onChange={(e) => set('datasetId', e.target.value)} placeholder="DS-credit-v4" />
+        <Field label="Model" required hint="From the model inventory">
+          <Select value={form.modelId || undefined} onValueChange={setModel}>
+            <SelectTrigger><SelectValue placeholder={modelsLoading ? 'Loading models…' : 'Select a model'} /></SelectTrigger>
+            <SelectContent>
+              {models.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}{m.riskTier ? ` · ${m.riskTier}` : ''}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </Field>
+        <Field label="Dataset" required hint="From the Data Explorer catalog">
+          <Select value={form.datasetId || undefined} onValueChange={(v) => set('datasetId', v)}>
+            <SelectTrigger><SelectValue placeholder={datasetsLoading ? 'Loading datasets…' : 'Select a dataset'} /></SelectTrigger>
+            <SelectContent>
+              {!hasCurrentDataset && <SelectItem value={form.datasetId}>{form.datasetId} (not in catalog)</SelectItem>}
+              {datasetOptions.map((d) => <SelectItem key={d.id} value={d.id}>{d.name} · {d.datasetVersion}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </Field>
         <Field label="Auditor" required hint="From the Users directory">
           <UserSelect value={form.auditor} onChange={(v) => set('auditor', v)} by="name" rolesFilter={['audit', 'risk', 'compliance']} />
