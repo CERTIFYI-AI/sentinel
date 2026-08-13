@@ -1,3 +1,10 @@
+## 1.49.0 (2026-08-13)
+
+* Merge PR #67: Model Governance QA fixes + Model Detail backend wiring ([d8000cd](https://github.com/CERTIFYI-AI/sentinel/commit/d8000cd))
+* feat(model-detail): wire documents, activity, alerts to backend; real exports ([36e902b](https://github.com/CERTIFYI-AI/sentinel/commit/36e902b))
+* fix(model-governance): make CRUD honest and gates real across 4 modules ([e9b65da](https://github.com/CERTIFYI-AI/sentinel/commit/e9b65da))
+* fix(ui): remove remaining duplicate breadcrumbs + hide sidebar items ([1a8490f](https://github.com/CERTIFYI-AI/sentinel/commit/1a8490f))
+
 ## <small>1.48.1 (2026-08-13)</small>
 
 * Merge PR #66: fix RLS recursion (0 models), admin role, Model Governance guide ([1134dfb](https://github.com/CERTIFYI-AI/sentinel/commit/1134dfb))
