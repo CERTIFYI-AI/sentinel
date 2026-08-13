@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, type ReactNode } from 'react';
 import { usePromptRegistryData } from '@/hooks/usePromptRegistryData';
+import { useAuthStore } from '../store/authStore';
 import { toast } from 'sonner';
 import {
   ChatTeardropText, Plus, MagnifyingGlass, PencilSimple, Trash,
@@ -51,10 +52,13 @@ function bumpVersion(v: string): string {
   return parts.join('.');
 }
 
-function generateId(existing: PromptRecord[]): string {
-  const nums = existing.map(p => parseInt(p.id.split('-')[1] ?? '0', 10)).filter(Boolean);
-  const next = Math.max(0, ...nums) + 1;
-  return `PR-${String(next).padStart(3, '0')}`;
+function generateId(): string {
+  // Collision-free id. The previous PR-NNN max()+1 scheme could reissue an id
+  // after deletes or across concurrent clients, silently overwriting a prompt.
+  const rand = (typeof crypto !== 'undefined' && 'randomUUID' in crypto)
+    ? crypto.randomUUID().slice(0, 8)
+    : Math.random().toString(16).slice(2, 10);
+  return `PR-${rand.toUpperCase()}`;
 }
 
 // ── Toaster ───────────────────────────────────────────────────────────────────
@@ -196,13 +200,17 @@ function TokenBudgetBar({ count, max = 4096 }: { count: number; max?: number }) 
 }
 
 // ── View Sheet ────────────────────────────────────────────────────────────────
-function ViewSheet({ record, open, onClose }: { record: PromptRecord | null; open: boolean; onClose: () => void }) {
+function ViewSheet({ record, open, onClose, onAction }: {
+  record: PromptRecord | null; open: boolean; onClose: () => void;
+  onAction: (record: PromptRecord, action: 'approve' | 'reject' | 'submit') => void;
+}) {
   const [tab, setTab] = useState<'content' | 'test' | 'safety' | 'versions' | 'meta'>('content');
   const [vars, setVars] = useState<Record<string, string>>({});
   if (!record) return null;
   const sc = statusConfig(record.status);
 
-  // Simulated safety analysis scores
+  // Heuristic (static) pre-screen derived from the prompt text/category — a
+  // lightweight indicator, not a substitute for a live safety classifier.
   const safetyAnalysis = {
     injectionRisk: record.category === 'user' ? 'HIGH' : record.category === 'tool_call' ? 'MEDIUM' : 'LOW',
     piiDetected: record.content.toLowerCase().includes('name') || record.content.toLowerCase().includes('email'),
@@ -231,13 +239,13 @@ function ViewSheet({ record, open, onClose }: { record: PromptRecord | null; ope
             {record.status === 'under_review' && (
               <>
                 <button
-                  onClick={() => toast.success(`"${record.name}" approved and promoted to Active`)}
+                  onClick={() => onAction(record, 'approve')}
                   style={{ padding: '6px 12px', background: 'hsl(var(--s-ok-bg))', border: '1px solid hsl(var(--s-ok-br))', cursor: 'pointer', fontSize: 11, fontWeight: 700, color: 'hsl(var(--s-ok-tx))' }}
                 >
                   ✓ Approve
                 </button>
                 <button
-                  onClick={() => toast.error(`"${record.name}" rejected — returned to draft`)}
+                  onClick={() => onAction(record, 'reject')}
                   style={{ padding: '6px 12px', background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-br))', cursor: 'pointer', fontSize: 11, fontWeight: 700, color: 'hsl(var(--s-er-tx))' }}
                 >
                   ✗ Reject
@@ -246,19 +254,10 @@ function ViewSheet({ record, open, onClose }: { record: PromptRecord | null; ope
             )}
             {record.status === 'draft' && (
               <button
-                onClick={() => toast.info(`"${record.name}" submitted for review`)}
+                onClick={() => onAction(record, 'submit')}
                 style={{ padding: '6px 12px', background: 'hsl(var(--s-wn-bg))', border: '1px solid hsl(var(--s-wn-br))', cursor: 'pointer', fontSize: 11, fontWeight: 700, color: 'hsl(var(--s-wn-tx))' }}
               >
                 Submit for Review
-              </button>
-            )}
-            {record.status === 'active' && (
-              <button
-                onClick={() => toast.success(`Safety analysis initiated for "${record.name}"`)}
-                style={{ padding: '6px 12px', background: 'hsl(var(--brand-subtle))', border: '1px solid hsl(var(--brand-subtle))', cursor: 'pointer', fontSize: 11, fontWeight: 600, color: 'hsl(var(--brand))' }}
-              >
-                <Sparkle size={12} style={{ display: 'inline', marginRight: 4 }} />
-                Run Safety Scan
               </button>
             )}
           </div>
@@ -350,7 +349,7 @@ function ViewSheet({ record, open, onClose }: { record: PromptRecord | null; ope
           {tab === 'safety' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div style={{ padding: '12px 14px', background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))' }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: 'hsl(var(--text-4))', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>Automated Safety Analysis</p>
+                <p style={{ fontSize: 11, fontWeight: 700, color: 'hsl(var(--text-4))', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>Heuristic Safety Pre-Screen</p>
                 {[
                   {
                     label: 'Prompt Injection Risk',
@@ -407,12 +406,12 @@ function ViewSheet({ record, open, onClose }: { record: PromptRecord | null; ope
                   </div>
                   <span style={{ fontSize: 13, fontWeight: 700, color: safetyAnalysis.toxicityScore > 20 ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-ok-tx))', minWidth: 40, textAlign: 'right' }}>{safetyAnalysis.toxicityScore}/100</span>
                 </div>
-                <p style={{ fontSize: 11, color: 'hsl(var(--text-4))', marginTop: 6 }}>Perspective API — lower is safer. Threshold: &lt;20 for production use.</p>
+                <p style={{ fontSize: 11, color: 'hsl(var(--text-4))', marginTop: 6 }}>Heuristic estimate — lower is safer. Target &lt;20 for production use; wire a classifier in Settings for scored analysis.</p>
               </div>
 
               <div style={{ padding: '10px 12px', background: 'hsl(var(--brand-subtle))', border: '1px solid hsl(var(--brand-subtle))', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <ShieldCheck size={14} style={{ color: 'hsl(var(--brand))' }} />
-                <p style={{ fontSize: 12, color: 'hsl(var(--brand))', margin: 0 }}>Analysis performed by Sentinel Prompt Guard v2.1 · Last scan: {formatDate(record.lastModified)}</p>
+                <p style={{ fontSize: 12, color: 'hsl(var(--brand))', margin: 0 }}>Static heuristic pre-screen · Derived {formatDate(record.lastModified)} · Connect a safety classifier in Settings for live scoring</p>
               </div>
             </div>
           )}
@@ -643,6 +642,7 @@ function EditSheet({ record, open, onClose, onSave }: {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function PromptRegistry() {
   const { records, isLoading, save: savePrompt, remove: removePrompt } = usePromptRegistryData();
+  const reviewer = useAuthStore(s => s.user?.name || s.user?.email || 'Reviewer');
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<PromptStatus | 'all'>('all');
   const [filterCategory, setFilterCategory] = useState<PromptCategory | 'all'>('all');
@@ -682,7 +682,7 @@ export default function PromptRegistry() {
     const now = new Date().toISOString();
     if (isNew) {
       const rec: PromptRecord = {
-        id: generateId(records),
+        id: generateId(),
         name: data.name ?? 'Untitled',
         category: (data.category ?? 'system') as PromptCategory,
         status: (data.status ?? 'draft') as PromptStatus,
@@ -734,6 +734,29 @@ export default function PromptRegistry() {
       .then(() => toast(`Deleted "${target.name}"`, 'info'))
       .catch(() => toast('Failed to delete prompt', 'error'));
   }, [deleteTarget, toast, removePrompt]);
+
+  // Approve / Reject / Submit now persist a real status transition (and the
+  // approver + approval date on approval) instead of firing a toast-only stub.
+  const handleAction = useCallback((rec: PromptRecord, action: 'approve' | 'reject' | 'submit') => {
+    const now = new Date().toISOString();
+    const updated: PromptRecord =
+      action === 'approve'
+        ? { ...rec, status: 'active', approvedBy: reviewer, approvalDate: now, lastModified: now }
+        : action === 'reject'
+        ? { ...rec, status: 'draft', approvedBy: null, approvalDate: null, lastModified: now }
+        : { ...rec, status: 'under_review', lastModified: now };
+    savePrompt(updated)
+      .then(() => {
+        toast(
+          action === 'approve' ? `"${rec.name}" approved and promoted to Active`
+            : action === 'reject' ? `"${rec.name}" rejected — returned to draft`
+            : `"${rec.name}" submitted for review`,
+          action === 'reject' ? 'error' : action === 'submit' ? 'info' : 'success',
+        );
+        setViewRecord(updated);
+      })
+      .catch(() => toast('Failed to update prompt status', 'error'));
+  }, [reviewer, savePrompt, toast]);
 
   if (isLoading && records.length === 0) {
     return <div className="p-6 text-sm" style={{ color: 'hsl(var(--text-4))' }}>Loading prompts…</div>;
@@ -812,7 +835,7 @@ export default function PromptRegistry() {
       </div>
 
       {/* Overlays */}
-      <ViewSheet record={viewRecord} open={!!viewRecord} onClose={() => setViewRecord(null)} />
+      <ViewSheet record={viewRecord} open={!!viewRecord} onClose={() => setViewRecord(null)} onAction={handleAction} />
       <EditSheet record={editRecord} open={editOpen} onClose={() => setEditOpen(false)} onSave={handleSave} />
       <ConfirmDialog
         open={!!deleteTarget}

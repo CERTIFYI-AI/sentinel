@@ -32,33 +32,28 @@ export type ModelRecord = {
 
 export async function fetchAllModels(filters: Record<string,any> = {}): Promise<ModelRecord[]> {
   if (!isSupabaseConfigured() || !supabase) return []
-  try {
-    let q = supabase.from('ai_models').select('*').order('created_at', { ascending: false })
-    if (filters.lifecycle_stage) q = q.eq('lifecycle_stage', filters.lifecycle_stage)
-    if (filters.risk_tier) q = q.eq('risk_tier', filters.risk_tier)
-    if (filters.is_active !== undefined) q = q.eq('is_active', filters.is_active)
-    const { data, error } = await q
-    if (error) { console.warn('[modelService] fetch:', error.message); return [] }
-    return (data ?? []) as ModelRecord[]
-  } catch { return [] }
+  let q = supabase.from('ai_models').select('*').order('created_at', { ascending: false })
+  if (filters.lifecycle_stage) q = q.eq('lifecycle_stage', filters.lifecycle_stage)
+  if (filters.risk_tier) q = q.eq('risk_tier', filters.risk_tier)
+  if (filters.is_active !== undefined) q = q.eq('is_active', filters.is_active)
+  const { data, error } = await q
+  if (error) { console.warn('[modelService] fetch:', error.message); throw new Error(error.message) }
+  return (data ?? []) as ModelRecord[]
 }
 
-export async function upsertModel(record: Partial<ModelRecord>): Promise<ModelRecord | null> {
-  if (!isSupabaseConfigured() || !supabase) return null
-  try {
-    const { data, error } = await supabase.from('ai_models').upsert(record).select().single()
-    if (error) { console.warn('[modelService] upsert:', error.message); return null }
-    return data as ModelRecord
-  } catch { return null }
+// Writes throw on failure (config/RLS/CHECK/network) so callers surface a real
+// error toast instead of a false success. Never swallow to null.
+export async function upsertModel(record: Partial<ModelRecord>): Promise<ModelRecord> {
+  if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase is not configured — cannot save model.')
+  const { data, error } = await supabase.from('ai_models').upsert(record).select().single()
+  if (error) { console.warn('[modelService] upsert:', error.message); throw new Error(error.message) }
+  return data as ModelRecord
 }
 
-export async function deleteModel(id: string): Promise<boolean> {
-  if (!isSupabaseConfigured() || !supabase) return false
-  try {
-    const { error } = await supabase.from('ai_models').delete().eq('id', id)
-    if (error) { console.warn('[modelService] delete:', error.message); return false }
-    return true
-  } catch { return false }
+export async function deleteModel(id: string): Promise<void> {
+  if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase is not configured — cannot delete model.')
+  const { error } = await supabase.from('ai_models').delete().eq('id', id)
+  if (error) { console.warn('[modelService] delete:', error.message); throw new Error(error.message) }
 }
 
 export const fetchModels = fetchAllModels

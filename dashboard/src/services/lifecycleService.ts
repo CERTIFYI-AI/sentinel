@@ -65,34 +65,29 @@ function lifecycleToRow(x: LifecycleModel): Record<string, any> {
 
 export async function fetchLifecycleModels(): Promise<LifecycleModel[]> {
   if (!isSupabaseConfigured() || !supabase) return []
-  try {
-    const { data, error } = await supabase
-      .from('model_lifecycle_stages')
-      .select('*')
-      .order('updated_at', { ascending: false })
-    if (error) { console.warn('[lifecycleService] fetch:', error.message); return [] }
-    return (data ?? []).map(rowToLifecycle)
-  } catch { return [] }
+  const { data, error } = await supabase
+    .from('model_lifecycle_stages')
+    .select('*')
+    .order('updated_at', { ascending: false })
+  if (error) { console.warn('[lifecycleService] fetch:', error.message); throw new Error(error.message) }
+  return (data ?? []).map(rowToLifecycle)
 }
 
-export async function upsertLifecycleModel(x: LifecycleModel): Promise<LifecycleModel | null> {
-  if (!isSupabaseConfigured() || !supabase) return null
-  try {
-    const { data, error } = await supabase
-      .from('model_lifecycle_stages')
-      .upsert(lifecycleToRow(x))
-      .select()
-      .single()
-    if (error) { console.warn('[lifecycleService] upsert:', error.message); return null }
-    return rowToLifecycle(data)
-  } catch { return null }
+// Writes throw on failure so a gate decision / transition never reports success
+// while nothing persisted. Never swallow to null.
+export async function upsertLifecycleModel(x: LifecycleModel): Promise<LifecycleModel> {
+  if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase is not configured — cannot save lifecycle change.')
+  const { data, error } = await supabase
+    .from('model_lifecycle_stages')
+    .upsert(lifecycleToRow(x))
+    .select()
+    .single()
+  if (error) { console.warn('[lifecycleService] upsert:', error.message); throw new Error(error.message) }
+  return rowToLifecycle(data)
 }
 
-export async function deleteLifecycleModel(rowId: string): Promise<boolean> {
-  if (!isSupabaseConfigured() || !supabase) return false
-  try {
-    const { error } = await supabase.from('model_lifecycle_stages').delete().eq('id', rowId)
-    if (error) { console.warn('[lifecycleService] delete:', error.message); return false }
-    return true
-  } catch { return false }
+export async function deleteLifecycleModel(rowId: string): Promise<void> {
+  if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase is not configured — cannot remove model.')
+  const { error } = await supabase.from('model_lifecycle_stages').delete().eq('id', rowId)
+  if (error) { console.warn('[lifecycleService] delete:', error.message); throw new Error(error.message) }
 }

@@ -56,27 +56,22 @@ function promptToRow(r: PromptRecord): Record<string, any> {
 
 export async function fetchPromptRecords(): Promise<PromptRecord[]> {
   if (!isSupabaseConfigured() || !supabase) return []
-  try {
-    const { data, error } = await supabase.from('prompt_registry').select('*').order('last_modified', { ascending: false })
-    if (error) { console.warn('[promptService] fetch:', error.message); return [] }
-    return (data ?? []).map(rowToPrompt)
-  } catch { return [] }
+  const { data, error } = await supabase.from('prompt_registry').select('*').order('last_modified', { ascending: false })
+  if (error) { console.warn('[promptService] fetch:', error.message); throw new Error(error.message) }
+  return (data ?? []).map(rowToPrompt)
 }
 
-export async function upsertPromptRecord(record: PromptRecord): Promise<PromptRecord | null> {
-  if (!isSupabaseConfigured() || !supabase) return null
-  try {
-    const { data, error } = await supabase.from('prompt_registry').upsert(promptToRow(record)).select().single()
-    if (error) { console.warn('[promptService] upsert:', error.message); return null }
-    return rowToPrompt(data)
-  } catch { return null }
+// Writes throw on failure so create/approve/reject actions surface a real error
+// instead of a false success. Never swallow to null.
+export async function upsertPromptRecord(record: PromptRecord): Promise<PromptRecord> {
+  if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase is not configured — cannot save prompt.')
+  const { data, error } = await supabase.from('prompt_registry').upsert(promptToRow(record)).select().single()
+  if (error) { console.warn('[promptService] upsert:', error.message); throw new Error(error.message) }
+  return rowToPrompt(data)
 }
 
-export async function deletePromptRecord(id: string): Promise<boolean> {
-  if (!isSupabaseConfigured() || !supabase) return false
-  try {
-    const { error } = await supabase.from('prompt_registry').delete().eq('id', id)
-    if (error) { console.warn('[promptService] delete:', error.message); return false }
-    return true
-  } catch { return false }
+export async function deletePromptRecord(id: string): Promise<void> {
+  if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase is not configured — cannot delete prompt.')
+  const { error } = await supabase.from('prompt_registry').delete().eq('id', id)
+  if (error) { console.warn('[promptService] delete:', error.message); throw new Error(error.message) }
 }
