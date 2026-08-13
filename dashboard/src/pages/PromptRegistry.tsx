@@ -1,12 +1,14 @@
 import { useState, useMemo, useCallback, type ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { usePromptRegistryData } from '@/hooks/usePromptRegistryData';
+import { useModelOptions, type ModelOption } from '@/hooks/useAiiaData';
 import { useAuthStore } from '../store/authStore';
 import { toast } from 'sonner';
 import {
   ChatTeardropText, Plus, MagnifyingGlass, PencilSimple, Trash,
   Eye, ClockCounterClockwise, Tag, Robot, CheckCircle,
   Warning, Clock, Archive, Funnel, ArrowsClockwise,
-  ShieldCheck, Scales, Lock, Sparkle, Copy,
+  ShieldCheck, Scales, Lock, Sparkle, Copy, LinkSimple, ArrowSquareOut,
 } from '@phosphor-icons/react';
 import { Card, CardContent } from '../components/ui/card';
 import { PageHeader } from '../components/ui/PageHeader';
@@ -107,13 +109,16 @@ function StatsRow({ records }: { records: PromptRecord[] }) {
 }
 
 // ── Prompt Card ───────────────────────────────────────────────────────────────
-function PromptCard({ record, onView, onEdit, onDelete }: {
+function PromptCard({ record, onView, onEdit, onDelete, models, navigate }: {
   record: PromptRecord;
   onView: (r: PromptRecord) => void;
   onEdit: (r: PromptRecord) => void;
   onDelete: (r: PromptRecord) => void;
+  models: ModelOption[];
+  navigate: (path: string) => void;
 }) {
   const sc = statusConfig(record.status);
+  const linkedIds = record.usedByModelIds ?? [];
   return (
     <Card className="bg-surface border-[hsl(var(--border))] hover:border-[hsl(var(--brand))] transition-colors group">
       <CardContent className="p-4">
@@ -159,6 +164,36 @@ function PromptCard({ record, onView, onEdit, onDelete }: {
           </div>
         </div>
 
+        {linkedIds.length > 0 && (
+          <div className="mt-2 pt-2 border-t border-[hsl(var(--border))]">
+            <div className="flex items-center gap-1 mb-1.5 text-[9px] uppercase tracking-wide font-semibold text-[hsl(var(--text-4))]">
+              <LinkSimple size={10} />Used by governed models
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {linkedIds.map(id => {
+                const m = models.find(mm => mm.id === id);
+                if (!m) {
+                  return (
+                    <span key={id} title="Linked model is not in the registry"
+                      className="text-[10px] px-1.5 py-0.5 flex items-center gap-1"
+                      style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))', border: '1px solid hsl(var(--s-er-br))' }}>
+                      <Warning size={9} weight="fill" />Unavailable
+                    </span>
+                  );
+                }
+                return (
+                  <button key={id} title={`Open ${m.name}`}
+                    onClick={e => { e.stopPropagation(); navigate(`/models/${id}`); }}
+                    className="text-[10px] px-1.5 py-0.5 flex items-center gap-1 border border-transparent hover:border-[hsl(var(--brand))] transition-colors"
+                    style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))' }}>
+                    <Robot size={9} weight="fill" />{m.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <div className="mt-2 pt-2 border-t border-[hsl(var(--border))] text-[10px] flex items-center gap-1">
           {record.approvedBy ? (
             <span className="flex items-center gap-1 text-[hsl(var(--s-ok-tx))]">
@@ -199,10 +234,60 @@ function TokenBudgetBar({ count, max = 4096 }: { count: number; max?: number }) 
   );
 }
 
+// ── Governed-model interlink ────────────────────────────────────────────────────
+// Renders a prompt's usedByModelIds as pill-style links to /models/:id, resolving
+// each id to its governed-model name (never a raw uuid). Unresolvable ids render
+// as a non-clickable "Unavailable" pill.
+function UsedByModelsLinks({ modelIds, models, navigate }: {
+  modelIds: string[];
+  models: ModelOption[];
+  navigate: (path: string) => void;
+}) {
+  if (!modelIds.length) {
+    return (
+      <p style={{ fontSize: 12, color: 'hsl(var(--text-4))', margin: 0 }}>
+        No governed models are linked to this prompt yet.
+      </p>
+    );
+  }
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+      {modelIds.map(id => {
+        const model = models.find(m => m.id === id);
+        if (!model) {
+          return (
+            <span key={id} title="Linked model is not in the registry"
+              style={{ fontSize: 12, padding: '4px 10px', background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-br))', color: 'hsl(var(--s-er-tx))', display: 'flex', alignItems: 'center', gap: 5 }}>
+              <Warning size={11} weight="fill" />Unavailable
+            </span>
+          );
+        }
+        return (
+          <button key={id} onClick={() => navigate(`/models/${id}`)} title={`Open ${model.name}`}
+            className="group/link"
+            style={{ fontSize: 12, padding: '4px 10px', background: 'hsl(var(--brand-subtle))', border: '1px solid hsl(var(--brand-subtle))', color: 'hsl(var(--brand))', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, transition: 'filter 0.15s ease, border-color 0.15s ease' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'hsl(var(--brand))'; e.currentTarget.style.filter = 'brightness(1.05)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'hsl(var(--brand-subtle))'; e.currentTarget.style.filter = 'none'; }}
+          >
+            <Robot size={11} weight="fill" />
+            <span style={{ fontWeight: 600 }}>{model.name}</span>
+            {model.riskTier && (
+              <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', opacity: 0.75 }}>· {model.riskTier}</span>
+            )}
+            <ArrowSquareOut size={10} />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── View Sheet ────────────────────────────────────────────────────────────────
-function ViewSheet({ record, open, onClose, onAction }: {
+function ViewSheet({ record, open, onClose, onAction, models, navigate }: {
   record: PromptRecord | null; open: boolean; onClose: () => void;
   onAction: (record: PromptRecord, action: 'approve' | 'reject' | 'submit') => void;
+  models: ModelOption[];
+  navigate: (path: string) => void;
 }) {
   const [tab, setTab] = useState<'content' | 'test' | 'safety' | 'versions' | 'meta'>('content');
   const [vars, setVars] = useState<Record<string, string>>({});
@@ -453,9 +538,15 @@ function ViewSheet({ record, open, onClose, onAction }: {
                   </div>
                 ))}
               </div>
+              <div>
+                <p style={{ fontSize: 11, fontWeight: 600, color: 'hsl(var(--text-4))', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <LinkSimple size={12} />Used By (Governed Models)
+                </p>
+                <UsedByModelsLinks modelIds={record.usedByModelIds ?? []} models={models} navigate={navigate} />
+              </div>
               {record.usedBy.length > 0 && (
                 <div>
-                  <p style={{ fontSize: 11, fontWeight: 600, color: 'hsl(var(--text-4))', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Used By</p>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: 'hsl(var(--text-4))', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Used By (Free-text References)</p>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                     {record.usedBy.map(u => (
                       <span key={u} style={{ fontSize: 12, padding: '4px 10px', background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-2))', display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -474,11 +565,13 @@ function ViewSheet({ record, open, onClose, onAction }: {
 }
 
 // ── Edit / Create Sheet ───────────────────────────────────────────────────────
-function EditSheet({ record, open, onClose, onSave }: {
+function EditSheet({ record, open, onClose, onSave, models, modelsLoading }: {
   record: PromptRecord | null;
   open: boolean;
   onClose: () => void;
   onSave: (data: Partial<PromptRecord> & { changeNote: string }, isNew: boolean) => void;
+  models: ModelOption[];
+  modelsLoading: boolean;
 }) {
   const isNew = record === null;
   const [name, setName] = useState('');
@@ -490,6 +583,7 @@ function EditSheet({ record, open, onClose, onSave }: {
   const [content, setContent] = useState('');
   const [tagsInput, setTagsInput] = useState('');
   const [usedByInput, setUsedByInput] = useState('');
+  const [usedByModelIds, setUsedByModelIds] = useState<string[]>([]);
   const [changeNote, setChangeNote] = useState('');
 
   const reset = useCallback(() => {
@@ -497,13 +591,16 @@ function EditSheet({ record, open, onClose, onSave }: {
       setName(record.name); setCategory(record.category); setStatus(record.status);
       setModel(record.model); setOwner(record.owner); setDescription(record.description);
       setContent(record.content); setTagsInput(record.tags.join(', '));
-      setUsedByInput(record.usedBy.join(', ')); setChangeNote('');
+      setUsedByInput(record.usedBy.join(', ')); setUsedByModelIds(record.usedByModelIds ?? []); setChangeNote('');
     } else {
       setName(''); setCategory('system'); setStatus('draft');
       setModel('GPT-4o'); setOwner(''); setDescription('');
-      setContent(''); setTagsInput(''); setUsedByInput(''); setChangeNote('');
+      setContent(''); setTagsInput(''); setUsedByInput(''); setUsedByModelIds([]); setChangeNote('');
     }
   }, [record]);
+
+  const toggleModelId = (id: string) =>
+    setUsedByModelIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
   // Reset when sheet opens
   const handleOpenChange = (v: boolean) => {
@@ -520,6 +617,7 @@ function EditSheet({ record, open, onClose, onSave }: {
       name, category, status, model, owner, description, content,
       tags: tagsInput.split(',').map(t => t.trim()).filter(Boolean),
       usedBy: usedByInput.split(',').map(t => t.trim()).filter(Boolean),
+      usedByModelIds,
       changeNote,
     }, isNew);
   };
@@ -610,9 +708,41 @@ function EditSheet({ record, open, onClose, onSave }: {
               <Input value={tagsInput} onChange={e => setTagsInput(e.target.value)} placeholder="compliance, PII, safety" className="text-sm" />
             </div>
             <div>
-              <label className="text-xs font-medium text-[hsl(var(--text-2))] mb-1 block">Used By (comma-separated)</label>
+              <label className="text-xs font-medium text-[hsl(var(--text-2))] mb-1 block">Used By (free-text, comma-separated)</label>
               <Input value={usedByInput} onChange={e => setUsedByInput(e.target.value)} placeholder="MDL-001, ComplianceBot" className="text-sm" />
             </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-[hsl(var(--text-2))] mb-1 flex items-center justify-between">
+              <span className="flex items-center gap-1.5"><LinkSimple size={12} />Used by (governed models)</span>
+              {usedByModelIds.length > 0 && (
+                <span className="text-[10px] text-[hsl(var(--brand))] font-normal">{usedByModelIds.length} selected</span>
+              )}
+            </label>
+            <div className="border border-[hsl(var(--border))] bg-raised max-h-44 overflow-y-auto">
+              {modelsLoading ? (
+                <p className="text-xs text-[hsl(var(--text-4))] px-3 py-3">Loading models…</p>
+              ) : models.length === 0 ? (
+                <p className="text-xs text-[hsl(var(--text-4))] px-3 py-3">No governed models in the registry yet.</p>
+              ) : (
+                models.map(m => {
+                  const checked = usedByModelIds.includes(m.id);
+                  return (
+                    <label key={m.id}
+                      className="flex items-center gap-2.5 px-3 py-2 cursor-pointer border-b border-[hsl(var(--border))] last:border-b-0 hover:bg-[hsl(var(--bg-muted))] transition-colors">
+                      <input type="checkbox" checked={checked} onChange={() => toggleModelId(m.id)}
+                        className="accent-[hsl(var(--brand))] cursor-pointer" />
+                      <span className="text-sm text-[hsl(var(--text-1))] flex-1 truncate">{m.name}</span>
+                      {m.riskTier && (
+                        <span className="text-[9px] uppercase font-bold tracking-wide text-[hsl(var(--text-4))]">{m.riskTier}</span>
+                      )}
+                    </label>
+                  );
+                })
+              )}
+            </div>
+            <p className="text-[10px] text-[hsl(var(--text-4))] mt-1">Links this prompt to registry models that use it — shown as clickable interlinks on the prompt detail.</p>
           </div>
 
           <div>
@@ -642,6 +772,8 @@ function EditSheet({ record, open, onClose, onSave }: {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function PromptRegistry() {
   const { records, isLoading, save: savePrompt, remove: removePrompt } = usePromptRegistryData();
+  const { models, loading: modelsLoading } = useModelOptions();
+  const navigate = useNavigate();
   const reviewer = useAuthStore(s => s.user?.name || s.user?.email || 'Reviewer');
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<PromptStatus | 'all'>('all');
@@ -693,13 +825,15 @@ export default function PromptRegistry() {
         content: data.content ?? '',
         tags: data.tags ?? [],
         usedBy: data.usedBy ?? [],
+        usedByModelIds: data.usedByModelIds ?? [],
         tokenCount: Math.round((data.content ?? '').split(/\s+/).filter(Boolean).length * 1.3),
         lastModified: now, createdDate: now,
         approvedBy: null, approvalDate: null,
         versions: [{ version: '1.0.0', content: data.content ?? '', author: data.owner ?? '', changedAt: now, changeNote: data.changeNote || 'Initial version.' }],
       };
-      savePrompt(rec).catch(() => toast('Failed to save prompt', 'error'));
-      toast(`Created "${rec.name}" (v1.0.0)`);
+      savePrompt(rec)
+        .then(() => toast(`Created "${rec.name}" (v1.0.0)`))
+        .catch(() => toast('Failed to save prompt', 'error'));
     } else {
       const existing = records.find(r => r.id === (data as PromptRecord).id);
       if (!existing) return;
@@ -715,13 +849,15 @@ export default function PromptRegistry() {
         content: data.content ?? existing.content,
         tags: data.tags ?? existing.tags,
         usedBy: data.usedBy ?? existing.usedBy,
+        usedByModelIds: data.usedByModelIds ?? existing.usedByModelIds ?? [],
         tokenCount: Math.round((data.content ?? existing.content).split(/\s+/).filter(Boolean).length * 1.3),
         currentVersion: newVer, lastModified: now,
         approvedBy: null, approvalDate: null,
         versions: [{ version: newVer, content: data.content ?? existing.content, author: data.owner ?? existing.owner, changedAt: now, changeNote: data.changeNote || 'Updated.' }, ...existing.versions],
       };
-      savePrompt(updated).catch(() => toast('Failed to save prompt', 'error'));
-      toast(`Updated "${updated.name}" → v${newVer}`);
+      savePrompt(updated)
+        .then(() => toast(`Updated "${updated.name}" → v${newVer}`))
+        .catch(() => toast('Failed to save prompt', 'error'));
     }
     setEditOpen(false);
   }, [records, toast, savePrompt]);
@@ -828,15 +964,15 @@ export default function PromptRegistry() {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
             {filtered.map(r => (
-              <PromptCard key={r.id} record={r} onView={setViewRecord} onEdit={openEdit} onDelete={setDeleteTarget} />
+              <PromptCard key={r.id} record={r} onView={setViewRecord} onEdit={openEdit} onDelete={setDeleteTarget} models={models} navigate={navigate} />
             ))}
           </div>
         )}
       </div>
 
       {/* Overlays */}
-      <ViewSheet record={viewRecord} open={!!viewRecord} onClose={() => setViewRecord(null)} onAction={handleAction} />
-      <EditSheet record={editRecord} open={editOpen} onClose={() => setEditOpen(false)} onSave={handleSave} />
+      <ViewSheet record={viewRecord} open={!!viewRecord} onClose={() => setViewRecord(null)} onAction={handleAction} models={models} navigate={navigate} />
+      <EditSheet record={editRecord} open={editOpen} onClose={() => setEditOpen(false)} onSave={handleSave} models={models} modelsLoading={modelsLoading} />
       <ConfirmDialog
         open={!!deleteTarget}
         title="Delete Prompt?"
