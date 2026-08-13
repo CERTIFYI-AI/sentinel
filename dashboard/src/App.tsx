@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 const queryClient = new QueryClient()
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useParams } from 'react-router-dom';
 import { TenantProvider } from './context/TenantContext';
 import React from 'react';
 import { lazy, Suspense, useEffect } from 'react';
@@ -238,6 +238,16 @@ function Loading() {
   return <PageSkeleton />;
 }
 
+/**
+ * Gives a governance record a stable, shareable URL (e.g. /aiia/<id>) that lands
+ * on its module with that record open. Cross-module links can therefore point at
+ * the specific record rather than a list.
+ */
+function RecordDeepLink({ to }: { to: string }) {
+  const { id } = useParams();
+  return <Navigate to={`${to}?open=${encodeURIComponent(id ?? '')}`} replace />;
+}
+
 /** Redirects authenticated users away from login/signup to the dashboard */
 function PublicRoute() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -460,6 +470,11 @@ export default function App() {
 
           {/* New Sidebar Modules */}
           <Route path="/aiia" element={<AIImpactAssessments />} />
+          {/* Per-record addressable routes — each governance record has a stable,
+              shareable URL that opens it in its module. */}
+          <Route path="/aiia/:id" element={<RecordDeepLink to="/aiia" />} />
+          <Route path="/ai-risk-tiering/:id" element={<RecordDeepLink to="/ai-risk-tiering" />} />
+          <Route path="/mrc/:id" element={<RecordDeepLink to="/mrc" />} />
           <Route path="/audit-trail" element={<AuditTrail />} />
           <Route path="/workflows" element={<ApprovalWorkflows />} />
 
