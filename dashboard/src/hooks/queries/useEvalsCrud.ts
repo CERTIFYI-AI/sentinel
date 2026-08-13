@@ -1,38 +1,38 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 CERTIFYI-AI.
 //
-// TanStack Query hooks for Validation & Evals aggregate roots. Each list falls
-// back to seed data when Supabase returns no rows (empty tenant), matching the
-// established data-source pattern (useBiasAuditData.ts et al.).
+// TanStack Query hooks for Validation & Evals aggregate roots, on the platform
+// contract: what you see is what the backend holds. No client-side seed
+// fallback — an empty org renders an honest empty state, and a failed read
+// renders a real error state (demo data lives in the database, org-scoped).
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { type EvalsCrud } from '../../services/evalsCrud'
 import {
-  validationRunsCrud, explainProfilesCrud, biasAuditsCrud, metricProfilesCrud,
+  validationRunsCrud, explainProfilesCrud, metricProfilesCrud,
   datasetCatalogCrud, scenarioTemplatesCrud, scenarioCampaignsCrud, sessionTracesCrud,
 } from '../../services/evalsCrud'
-import {
-  VALIDATION_RUNS, EXPLAINABILITY_PROFILES, BIAS_AUDITS, METRIC_PROFILES,
-  DATASET_CATALOG, SCENARIO_TEMPLATES, SCENARIO_CAMPAIGNS, SESSION_TRACES,
-} from '../../data/evalsSeed'
+// Bias audits are consolidated onto the platform's single bias_audits table —
+// the same one Model Detail's Bias History reads.
+import { biasAuditsUnifiedCrud } from '../../services/biasAuditRecordsService'
 import type {
   ValidationRun, ExplainabilityProfile, BiasAudit, MetricProfile,
   DatasetCatalogEntry, ScenarioTemplate, ScenarioCampaign, SessionTrace,
 } from '../../types/evals'
 
+// _legacySeed is accepted for source compatibility with older callers but is
+// deliberately IGNORED: seed fallbacks made a broken backend indistinguishable
+// from an empty org. Demo data lives in the database, org-scoped.
 export function makeHooks<T extends { id: string; state?: string; modelId?: string; version?: number }>(
   crud: EvalsCrud<T>,
-  seed: T[],
+  _legacySeed?: T[],
 ) {
   const key = crud.table
 
   function useList() {
     return useQuery({
       queryKey: [key],
-      queryFn: async () => {
-        const rows = await crud.list()
-        return rows.length > 0 ? rows : seed
-      },
+      queryFn: () => crud.list(),
       staleTime: 30_000,
     })
   }
@@ -41,11 +41,7 @@ export function makeHooks<T extends { id: string; state?: string; modelId?: stri
     return useQuery({
       queryKey: [key, id],
       enabled: !!id,
-      queryFn: async () => {
-        if (!id) return null
-        const row = await crud.get(id)
-        return row ?? seed.find((s) => s.id === id) ?? null
-      },
+      queryFn: () => (id ? crud.get(id) : Promise.resolve(null)),
       staleTime: 30_000,
     })
   }
@@ -72,11 +68,11 @@ export function makeHooks<T extends { id: string; state?: string; modelId?: stri
   return { useList, useGet, useUpsert, useDelete }
 }
 
-export const validationRunHooks = makeHooks<ValidationRun>(validationRunsCrud, VALIDATION_RUNS)
-export const explainProfileHooks = makeHooks<ExplainabilityProfile>(explainProfilesCrud, EXPLAINABILITY_PROFILES)
-export const biasAuditHooks = makeHooks<BiasAudit>(biasAuditsCrud, BIAS_AUDITS)
-export const metricProfileHooks = makeHooks<MetricProfile>(metricProfilesCrud, METRIC_PROFILES)
-export const datasetCatalogHooks = makeHooks<DatasetCatalogEntry>(datasetCatalogCrud, DATASET_CATALOG)
-export const scenarioTemplateHooks = makeHooks<ScenarioTemplate>(scenarioTemplatesCrud, SCENARIO_TEMPLATES)
-export const scenarioCampaignHooks = makeHooks<ScenarioCampaign>(scenarioCampaignsCrud, SCENARIO_CAMPAIGNS)
-export const sessionTraceHooks = makeHooks<SessionTrace>(sessionTracesCrud, SESSION_TRACES)
+export const validationRunHooks = makeHooks<ValidationRun>(validationRunsCrud)
+export const explainProfileHooks = makeHooks<ExplainabilityProfile>(explainProfilesCrud)
+export const biasAuditHooks = makeHooks<BiasAudit>(biasAuditsUnifiedCrud)
+export const metricProfileHooks = makeHooks<MetricProfile>(metricProfilesCrud)
+export const datasetCatalogHooks = makeHooks<DatasetCatalogEntry>(datasetCatalogCrud)
+export const scenarioTemplateHooks = makeHooks<ScenarioTemplate>(scenarioTemplatesCrud)
+export const scenarioCampaignHooks = makeHooks<ScenarioCampaign>(scenarioCampaignsCrud)
+export const sessionTraceHooks = makeHooks<SessionTrace>(sessionTracesCrud)
