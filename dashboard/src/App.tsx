@@ -360,7 +360,8 @@ export default function App() {
           <Route path="/risk/incidents" element={<IncidentLog />} />
           <Route path="/incidents" element={<Navigate to="/risk/incidents" replace />} />
           <Route path="/risk/remediation" element={<Remediation />} />
-          <Route path="/models" element={<ModelInventory />} />
+          {/* Single canonical registry surface — /models redirects to it (retires the legacy ModelInventory duplicate). */}
+          <Route path="/models" element={<Navigate to="/models/inventory" replace />} />
           <Route path="/models/inventory" element={<ModelRegistryPage />} />
           <Route path="/models/inventory/:id" element={<ModelDetail />} />
           <Route path="/models/lifecycle" element={<ModelLifecycle />} />
