@@ -1,474 +1,438 @@
-import { useState, useMemo } from 'react';
-import { useSupabaseTable } from '@/hooks/useSupabaseTable';
-import { toast } from 'sonner';
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI.
+//
+// DataQuality — EU AI Act Art. 10 data quality assessments, persisted in the
+// org-scoped `data_quality_assessments` table and keyed to real datasets
+// (datasets.id) and models (ai_models.id). Honors ?dataset=<id> deep links.
+
+import { useMemo, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { toast } from 'sonner'
+import { ArrowSquareOut, CheckCircle, Plus, X } from '@phosphor-icons/react'
 import {
-  Plus, Eye, Trash, MagnifyingGlass, CheckCircle,
-} from '@phosphor-icons/react';
-import { Card, CardContent } from '../components/ui/card';
-import { Button } from '../components/ui/button';
-import { PageHeader } from '../components/ui/PageHeader';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Input } from '../components/ui/input';
-import {
-  Sheet, SheetContent, SheetHeader, SheetTitle,
-} from '../components/ui/sheet';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-} from '../components/ui/dialog';
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-  AlertDialogTrigger,
-} from '../components/ui/alert-dialog';
-import {
-  RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, Tooltip,
-} from 'recharts';
-import { useChartTheme } from '../hooks/useChartTheme';
+  PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer, Tooltip,
+} from 'recharts'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { DataTable, type Column } from '@/components/ui/DataTable'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { TableSkeleton, EmptyState, ErrorState } from '@/components/evals/states'
+import { useChartTheme } from '@/hooks/useChartTheme'
+import { useDatasets, useQualityAssessments } from '@/hooks/useDatasetData'
+import { useModelOptions } from '@/hooks/useAiiaData'
+import { useRBAC } from '@/hooks/useRBAC'
+import type { Art10Status, QualityAssessment } from '@/services/datasetService'
 
+const DIMENSIONS = [
+  { key: 'completeness', label: 'Completeness' },
+  { key: 'accuracy', label: 'Accuracy' },
+  { key: 'consistency', label: 'Consistency' },
+  { key: 'representativeness', label: 'Representativeness' },
+  { key: 'relevance', label: 'Relevance' },
+  { key: 'timeliness', label: 'Timeliness' },
+] as const
 
-type Art10Status = 'Met' | 'Partial' | 'Not Met';
-
-interface DQAssessment {
-  id: string;
-  dataset: string;
-  linkedModel: string;
-  overallScore: number;
-  completeness: number;
-  accuracy: number;
-  consistency: number;
-  representativeness: number;
-  biasScore: number;
-  relevance: number;
-  timeliness: number;
-  art10Status: Art10Status;
-  assessmentMethod: 'Automated' | 'Manual' | 'Hybrid';
-  assessor?: string;
-  date: string;
-  deficiencies: { issue: string; dimension: string; severity: string; remediation: string }[];
-}
-
-const SEED: DQAssessment[] = [
-  { id: 'DQ-001', dataset: 'Consumer Credit DS', linkedModel: 'Credit Risk Scorer', overallScore: 78, completeness: 92, accuracy: 85, consistency: 80, representativeness: 71, biasScore: 0.74, relevance: 88, timeliness: 82, art10Status: 'Partial', assessmentMethod: 'Automated', date: '2026-03-01', deficiencies: [{ issue: 'Underrepresentation of minority groups', dimension: 'Representativeness', severity: 'High', remediation: 'Augment training data with diverse samples' }] },
-  { id: 'DQ-002', dataset: 'Transaction Fraud DS', linkedModel: 'Fraud Detection Engine', overallScore: 91, completeness: 98, accuracy: 93, consistency: 94, representativeness: 88, biasScore: 0.91, relevance: 95, timeliness: 96, art10Status: 'Met', assessmentMethod: 'Automated', date: '2026-03-10', deficiencies: [] },
-  { id: 'DQ-003', dataset: 'HR Recruitment DS', linkedModel: 'HR Screening System', overallScore: 61, completeness: 78, accuracy: 70, consistency: 65, representativeness: 52, biasScore: 0.68, relevance: 72, timeliness: 60, art10Status: 'Not Met', assessmentMethod: 'Manual', assessor: 'David Kim', date: '2026-03-15', deficiencies: [{ issue: 'Severe gender bias in historical hiring data', dimension: 'Bias-Free', severity: 'Critical', remediation: 'Rebalance dataset and apply bias correction' }, { issue: 'Low geographic diversity', dimension: 'Representativeness', severity: 'High', remediation: 'Expand data collection to underrepresented regions' }] },
-  { id: 'DQ-004', dataset: 'AML History DS', linkedModel: 'AML Transaction Monitor', overallScore: 89, completeness: 95, accuracy: 91, consistency: 90, representativeness: 86, biasScore: 0.88, relevance: 93, timeliness: 89, art10Status: 'Met', assessmentMethod: 'Automated', date: '2026-02-20', deficiencies: [] },
-  { id: 'DQ-005', dataset: 'Policy Corpus DS', linkedModel: 'Customer Service Chatbot', overallScore: 82, completeness: 88, accuracy: 84, consistency: 83, representativeness: 78, biasScore: 0.82, relevance: 86, timeliness: 80, art10Status: 'Partial', assessmentMethod: 'Hybrid', date: '2026-02-15', deficiencies: [{ issue: 'Some policy documents outdated (>2 years)', dimension: 'Timeliness', severity: 'Medium', remediation: 'Update policy corpus with current documentation' }] },
-  { id: 'DQ-006', dataset: 'Employee HR Records DS', linkedModel: 'HR Screening System', overallScore: 55, completeness: 72, accuracy: 60, consistency: 58, representativeness: 48, biasScore: 0.62, relevance: 65, timeliness: 55, art10Status: 'Not Met', assessmentMethod: 'Manual', assessor: 'James Patel', date: '2026-03-20', deficiencies: [{ issue: 'Significant data gaps for remote workers', dimension: 'Completeness', severity: 'High', remediation: 'Collect missing employment records' }, { issue: 'Performance ratings show systematic bias', dimension: 'Bias-Free', severity: 'Critical', remediation: 'Review and recalibrate rating methodology' }] },
-];
-
-const DIMENSIONS = ['Completeness', 'Accuracy', 'Consistency', 'Representativeness', 'Bias-Free', 'Relevance', 'Timeliness'];
-
-function art10Color(s: Art10Status) {
+function art10Style(s?: Art10Status) {
   switch (s) {
-    case 'Met': return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))' };
-    case 'Partial': return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))', border: 'hsl(var(--s-wn-br))' };
-    case 'Not Met': return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))' };
-    default: return { bg: 'hsl(var(--bg-raised))', text: 'hsl(var(--text-4))', border: 'hsl(var(--border))' };
+    case 'met': return { background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' }
+    case 'partial': return { background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' }
+    case 'not_met': return { background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))' }
+    default: return { background: 'hsl(var(--bg-raised))', color: 'hsl(var(--text-4))' }
   }
 }
 
-function scorePct(n: number) {
-  if (n >= 85) return 'hsl(var(--s-ok-tx))';
-  if (n >= 70) return 'hsl(var(--s-wn-tx))';
-  return 'hsl(var(--s-er-tx))';
+function art10Label(s?: Art10Status) {
+  return s ? { met: 'Met', partial: 'Partial', not_met: 'Not Met' }[s] : '—'
 }
 
-function MetricTile({ label, value, variant }: { label: string; value: string | number; variant: 'default' | 'error' | 'warn' | 'ok' }) {
-  const colors = {
-    default: { bg: 'hsl(var(--bg-surface))', text: 'hsl(var(--text-1))', border: 'hsl(var(--border))' },
-    error: { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))' },
-    warn: { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))', border: 'hsl(var(--s-wn-br))' },
-    ok: { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))' },
-  };
-  const c = colors[variant];
-  return (
-    <Card style={{ borderRadius: 0, background: c.bg, border: `1px solid ${c.border}` }}>
-      <CardContent className="px-4 py-3">
-        <p className="text-xs font-medium mb-1" style={{ color: 'hsl(var(--text-4))' }}>{label}</p>
-        <p className="text-2xl font-bold" style={{ color: c.text }}>{value}</p>
-      </CardContent>
-    </Card>
-  );
+function scoreColor(n?: number) {
+  if (n == null) return 'hsl(var(--text-4))'
+  if (n >= 85) return 'hsl(var(--s-ok-tx))'
+  if (n >= 70) return 'hsl(var(--s-wn-tx))'
+  return 'hsl(var(--s-er-tx))'
 }
 
-function dqToRadar(dq: DQAssessment) {
-  return [
-    { subject: 'Completeness', value: dq.completeness },
-    { subject: 'Accuracy', value: dq.accuracy },
-    { subject: 'Consistency', value: dq.consistency },
-    { subject: 'Representativeness', value: dq.representativeness },
-    { subject: 'Bias-Free', value: Math.round(dq.biasScore * 100) },
-    { subject: 'Relevance', value: dq.relevance },
-    { subject: 'Timeliness', value: dq.timeliness },
-  ];
+function toRadar(a: QualityAssessment) {
+  const dims = DIMENSIONS.map((d) => ({ subject: d.label, value: a[d.key] ?? 0 }))
+  return [...dims, { subject: 'Bias-Free', value: a.biasScore != null ? Math.round(a.biasScore * 100) : 0 }]
+}
+
+// Derived, not measured: overall = mean of entered dimensions (bias on a 0-100
+// scale); Art. 10 status from the weakest dimension. Shown as "derived" in UI.
+function derive(dims: Record<string, number>, bias: number): { overall: number; status: Art10Status } {
+  const values = [...DIMENSIONS.map((d) => dims[d.key] ?? 0), Math.round(bias * 100)]
+  const overall = Math.round(values.reduce((s, v) => s + v, 0) / values.length)
+  const min = Math.min(...values)
+  const status: Art10Status = min >= 80 ? 'met' : min >= 60 ? 'partial' : 'not_met'
+  return { overall, status }
 }
 
 export default function DataQuality() {
-  const ct = useChartTheme();
-  const { data: items, setData: setItems } = useSupabaseTable('dataquality_table', SEED);
-  const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState<DQAssessment | null>(null);
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [createOpen, setCreateOpen] = useState(false);
+  const ct = useChartTheme()
+  const nav = useNavigate()
+  const { can } = useRBAC()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const datasetParam = searchParams.get('dataset')
 
-  // Wizard state
-  const [wDataset, setWDataset] = useState('');
-  const [wModel, setWModel] = useState('');
-  const [wMethod, setWMethod] = useState<'Automated' | 'Manual' | 'Hybrid'>('Automated');
-  const [wDims, setWDims] = useState<Record<string, number>>({ Completeness: 80, Accuracy: 80, Consistency: 80, Representativeness: 70, Relevance: 80, Timeliness: 80 });
-  const [wBias, setWBias] = useState(0.80);
+  const { data: assessments, isLoading, isError, error, refetch, create, remove } = useQualityAssessments()
+  const { data: datasets } = useDatasets()
+  const { models, loading: modelsLoading } = useModelOptions()
 
-  const filtered = useMemo(() => items.filter(i =>
-    !search || i.dataset.toLowerCase().includes(search.toLowerCase()) || i.id.toLowerCase().includes(search.toLowerCase())
-  ), [items, search]);
+  const [selected, setSelected] = useState<QualityAssessment | null>(null)
+  const [createOpen, setCreateOpen] = useState(false)
+  const [toDelete, setToDelete] = useState<QualityAssessment | null>(null)
 
-  const assessed = items.length;
-  const passing = items.filter(i => i.art10Status === 'Met').length;
-  const warning = items.filter(i => i.art10Status === 'Partial').length;
-  const failing = items.filter(i => i.art10Status === 'Not Met').length;
+  const datasetName = (id?: string) => (id ? datasets.find((d) => d.id === id)?.name : undefined)
+  const modelName = (id?: string) => (id ? models.find((m) => m.id === id)?.name : undefined)
 
-  const avgScore = Math.round(items.reduce((a, i) => a + i.overallScore, 0) / items.length);
-  const topThree = [...items].sort((a, b) => b.overallScore - a.overallScore).slice(0, 3);
+  const rows = useMemo(
+    () => assessments
+      .filter((a) => !datasetParam || a.datasetId === datasetParam)
+      .map((a) => ({ ...a, name: datasetName(a.datasetId) ?? a.datasetId })),
+    [assessments, datasetParam, datasets],
+  )
 
-  const autoStatus = (score: number): Art10Status => score >= 85 ? 'Met' : score >= 70 ? 'Partial' : 'Not Met';
+  const met = assessments.filter((a) => a.art10Status === 'met').length
+  const partial = assessments.filter((a) => a.art10Status === 'partial').length
+  const notMet = assessments.filter((a) => a.art10Status === 'not_met').length
 
-  function submitCreate() {
-    const scores = Object.values(wDims);
-    const overall = Math.round((scores.reduce((a, v) => a + v, 0) / scores.length + wBias * 100) / 2);
-    const newItem: DQAssessment = {
-      id: `DQ-${String(items.length + 1).padStart(3, '0')}`,
-      dataset: wDataset || 'New Dataset',
-      linkedModel: wModel || 'Unknown Model',
-      overallScore: overall,
-      completeness: wDims.Completeness || 80,
-      accuracy: wDims.Accuracy || 80,
-      consistency: wDims.Consistency || 80,
-      representativeness: wDims.Representativeness || 70,
-      biasScore: wBias,
-      relevance: wDims.Relevance || 80,
-      timeliness: wDims.Timeliness || 80,
-      art10Status: autoStatus(overall),
-      assessmentMethod: wMethod,
-      date: new Date().toISOString().split('T')[0],
-      deficiencies: [],
-    };
-    setItems(prev => [newItem, ...prev]);
-    toast.success(`Assessment "${newItem.id}" created for ${newItem.dataset}`);
-    setCreateOpen(false);
-    setWDataset(''); setWModel('');
+  const columns: Column<QualityAssessment & { name: string }>[] = [
+    { key: 'name', header: 'Dataset', sortable: true, render: (a) => {
+      const name = datasetName(a.datasetId)
+      if (!name) return <span className="text-xs text-[hsl(var(--text-4))]">Unavailable</span>
+      return (
+        <button onClick={(e) => { e.stopPropagation(); nav(`/datasets/${a.datasetId}`) }}
+          className="text-xs font-medium text-[hsl(var(--brand))] hover:underline">{name}</button>
+      )
+    } },
+    { key: 'modelId', header: 'Model', render: (a) => {
+      const name = modelName(a.modelId)
+      if (!name) return <span className="text-xs text-[hsl(var(--text-4))]">{!a.modelId ? '—' : modelsLoading ? '…' : 'Unavailable'}</span>
+      return (
+        <button
+          onClick={(e) => { e.stopPropagation(); nav(`/models/inventory/${a.modelId}`) }}
+          className="inline-flex items-center gap-1 border border-[hsl(var(--brand))/30] bg-[hsl(var(--brand-subtle))] px-2 py-0.5 text-xs font-medium text-[hsl(var(--brand))] transition-colors hover:bg-[hsl(var(--brand))] hover:text-[hsl(var(--bg-surface))]"
+        >
+          {name} <ArrowSquareOut size={12} />
+        </button>
+      )
+    } },
+    { key: 'overallScore', header: 'Overall', sortable: true, render: (a) => (
+      <span className="font-mono text-xs font-semibold" style={{ color: scoreColor(a.overallScore) }}>
+        {a.overallScore != null ? a.overallScore : '—'}
+      </span>
+    ) },
+    { key: 'art10Status', header: 'Art. 10', render: (a) => (
+      <span className="px-2 py-0.5 text-[10px] font-medium" style={art10Style(a.art10Status)}>{art10Label(a.art10Status)}</span>
+    ) },
+    { key: 'assessmentMethod', header: 'Method', sortable: true, render: (a) => (
+      <span className="text-xs capitalize text-[hsl(var(--text-3))]">{a.assessmentMethod}</span>
+    ) },
+    { key: 'deficiencies', header: 'Deficiencies', render: (a) => (
+      a.deficiencies.length
+        ? <span className="text-xs text-[hsl(var(--s-wn-tx))]">{a.deficiencies.length}</span>
+        : <CheckCircle size={14} className="text-[hsl(var(--s-ok-tx))]" />
+    ) },
+    { key: 'assessedAt', header: 'Date', sortable: true, render: (a) => (
+      <span className="text-xs text-[hsl(var(--text-4))]">{a.assessedAt}</span>
+    ) },
+  ]
+
+  function clearDatasetFilter() {
+    const next = new URLSearchParams(searchParams)
+    next.delete('dataset')
+    setSearchParams(next, { replace: true })
   }
-
-  function deleteItem(id: string) {
-    const item = items.find(i => i.id === id);
-    if (item) toast.success(`Assessment "${item.id}" removed`);
-    setItems(prev => prev.filter(i => i.id !== id));
-  }
-
-  // Radar data for top 3
-  const radarData = DIMENSIONS.map(dim => {
-    const entry: Record<string, number | string> = { subject: dim };
-    topThree.forEach(dq => {
-      entry[dq.dataset] = dim === 'Bias-Free' ? Math.round(dq.biasScore * 100) :
-        dim === 'Completeness' ? dq.completeness : dim === 'Accuracy' ? dq.accuracy :
-        dim === 'Consistency' ? dq.consistency : dim === 'Representativeness' ? dq.representativeness :
-        dim === 'Relevance' ? dq.relevance : dq.timeliness;
-    });
-    return entry;
-  });
-
-  const RADAR_COLORS = [ct.colors[0], ct.colors[1], ct.colors[2]];
 
   return (
-    <div className="space-y-6">
+    <div>
       <PageHeader
-        title="Data Quality Assessment"
-        subtitle="EU AI Act Article 10 — validate training data for high-risk AI systems"
-        actions={
-          <Button onClick={() => setCreateOpen(true)} style={{ borderRadius: 0 }}>
-            <Plus size={15} /> Run Assessment
-          </Button>
-        }
+        title="Data Quality"
+        subtitle="EU AI Act Article 10 quality assessments per governed dataset"
+        icon={CheckCircle}
+        actions={can('create') ? (
+          <Button size="sm" icon={<Plus />} onClick={() => setCreateOpen(true)}>New Assessment</Button>
+        ) : undefined}
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricTile label="Datasets Assessed" value={assessed} variant="default" />
-        <MetricTile label="Passing (Art.10 Met)" value={passing} variant="ok" />
-        <MetricTile label="Warning (Partial)" value={warning} variant="warn" />
-        <MetricTile label="Failing (Not Met)" value={failing} variant="error" />
+      {datasetParam && (
+        <div className="mb-3 flex items-center gap-2">
+          <span className="inline-flex items-center gap-2 border border-[hsl(var(--brand))/30] bg-[hsl(var(--brand-subtle))] px-3 py-1.5 text-sm text-[hsl(var(--brand))]">
+            <span>Filtered to <strong>{datasetName(datasetParam) ?? 'Unavailable'}</strong></span>
+            <button aria-label="Clear dataset filter" onClick={clearDatasetFilter} className="inline-flex cursor-pointer items-center hover:text-[hsl(var(--text-1))]">
+              <X size={14} />
+            </button>
+          </span>
+        </div>
+      )}
+
+      <div className="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {[
+          { label: 'Assessments', value: assessments.length, color: 'hsl(var(--text-1))' },
+          { label: 'Art. 10 Met', value: met, color: 'hsl(var(--s-ok-tx))' },
+          { label: 'Partial', value: partial, color: 'hsl(var(--s-wn-tx))' },
+          { label: 'Not Met', value: notMet, color: 'hsl(var(--s-er-tx))' },
+        ].map((s) => (
+          <Card key={s.label}>
+            <CardContent className="px-4 py-3">
+              <p className="text-2xl font-bold" style={{ color: s.color }}>{isLoading ? '—' : s.value}</p>
+              <p className="mt-0.5 text-xs text-[hsl(var(--text-4))]">{s.label}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* Radar chart */}
-      <Card style={{ borderRadius: 0 }}>
-        <CardContent className="p-4">
-          <p className="text-sm font-semibold mb-3" style={{ color: 'hsl(var(--text-1))' }}>Quality Dimensions — Top 3 Datasets</p>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="lg:col-span-2">
-              <ResponsiveContainer width="100%" height={260}>
-                <RadarChart data={radarData}>
-                  <PolarGrid stroke={ct.grid} />
-                  <PolarAngleAxis dataKey="subject" tick={{ fill: ct.text, fontSize: 11 }} />
-                  {topThree.map((dq, i) => (
-                    <Radar key={dq.id} name={dq.dataset} dataKey={dq.dataset} stroke={RADAR_COLORS[i]} fill={RADAR_COLORS[i]} fillOpacity={0.15} />
-                  ))}
-                  <Tooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.grid}`, borderRadius: 0 }} />
-                </RadarChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="space-y-2">
-              {topThree.map((dq, i) => (
-                <div key={dq.id} className="flex items-center gap-2">
-                  <div className="w-3 h-3 flex-shrink-0" style={{ background: RADAR_COLORS[i] }} />
-                  <div>
-                    <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-2))' }}>{dq.dataset}</p>
-                    <p className="text-xs" style={{ color: scorePct(dq.overallScore) }}>{dq.overallScore}% overall</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </CardContent>
+      <Card className="p-4">
+        {isLoading ? <TableSkeleton cols={7} />
+          : isError ? <ErrorState message={error?.message} onRetry={() => refetch()} />
+          : rows.length === 0 ? (
+            <EmptyState
+              title={datasetParam ? 'No assessments for this dataset' : 'No quality assessments yet'}
+              message={datasetParam
+                ? 'Clear the dataset filter, or run the first assessment for it.'
+                : datasets.length === 0
+                  ? 'Register a dataset first — assessments are recorded against governed datasets.'
+                  : 'Run the first Article 10 assessment against a registered dataset.'}
+              actionLabel={can('create') && datasets.length > 0 ? 'New Assessment' : datasets.length === 0 ? 'Open Dataset Registry' : undefined}
+              onAction={datasets.length === 0 ? () => nav('/datasets') : can('create') ? () => setCreateOpen(true) : undefined} />
+          ) : (
+            <DataTable
+              data={rows} columns={columns}
+              searchKey="name" searchPlaceholder="Search by dataset…"
+              onView={setSelected}
+              onDelete={can('delete') ? setToDelete : undefined}
+              onRowClick={setSelected}
+            />
+          )}
       </Card>
 
-      {/* Table */}
-      <Card style={{ borderRadius: 0 }}>
-        <CardContent className="p-0">
-          <div className="p-4 border-b flex items-center gap-3" style={{ borderColor: 'hsl(var(--border))' }}>
-            <MagnifyingGlass size={15} style={{ color: 'hsl(var(--text-4))' }} />
-            <Input placeholder="Search assessments..." value={search} onChange={e => setSearch(e.target.value)}
-              className="h-8 border-0 p-0 focus-visible:ring-0 bg-transparent" style={{ color: 'hsl(var(--text-1))' }} />
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr style={{ borderBottom: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-raised))' }}>
-                  {['DQ ID', 'Dataset', 'Overall Score', 'Completeness', 'Accuracy', 'Representativeness', 'Bias Score', 'EU AI Act Art.10', 'Actions'].map(h => (
-                    <th key={h} className="text-left px-3 py-2.5 text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(item => {
-                  const ac = art10Color(item.art10Status);
-                  const isFailing = item.art10Status === 'Not Met';
-                  return (
-                    <tr key={item.id} className="border-b hover:bg-raised transition-colors cursor-pointer"
-                      style={{ borderColor: 'hsl(var(--border))', borderLeft: isFailing ? '3px solid hsl(var(--s-er-tx))' : 'none' }}
-                      onClick={() => { setSelected(item); setSheetOpen(true); }}>
-                      <td className="px-3 py-2.5">
-                        <span className="font-mono text-xs px-1.5 py-0.5" style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))' }}>{item.id}</span>
-                      </td>
-                      <td className="px-3 py-2.5 font-medium text-xs" style={{ color: 'hsl(var(--text-1))' }}>{item.dataset}</td>
-                      <td className="px-3 py-2.5">
-                        <span className="text-sm font-bold" style={{ color: scorePct(item.overallScore) }}>{item.overallScore}%</span>
-                      </td>
-                      <td className="px-3 py-2.5 text-xs" style={{ color: scorePct(item.completeness) }}>{item.completeness}%</td>
-                      <td className="px-3 py-2.5 text-xs" style={{ color: scorePct(item.accuracy) }}>{item.accuracy}%</td>
-                      <td className="px-3 py-2.5 text-xs" style={{ color: scorePct(item.representativeness) }}>{item.representativeness}%</td>
-                      <td className="px-3 py-2.5 text-xs" style={{ color: item.biasScore >= 0.85 ? 'hsl(var(--s-ok-tx))' : item.biasScore >= 0.70 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-er-tx))' }}>
-                        {item.biasScore.toFixed(2)}
-                      </td>
-                      <td className="px-3 py-2.5">
-                        <span className="text-xs px-2 py-0.5 font-medium" style={{ background: ac.bg, color: ac.text, borderRadius: 0 }}>{item.art10Status}</span>
-                      </td>
-                      <td className="px-3 py-2.5" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="sm" className="h-7 px-2" style={{ borderRadius: 0 }}
-                            onClick={() => { setSelected(item); setSheetOpen(true); }}>
-                            <Eye size={13} />
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-7 px-2" style={{ borderRadius: 0, color: 'hsl(var(--s-er-tx))' }}>
-                                <Trash size={13} />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent style={{ borderRadius: 0 }}>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Assessment</AlertDialogTitle>
-                                <AlertDialogDescription>Delete {item.id}? This cannot be undone.</AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-                                <AlertDialogAction style={{ borderRadius: 0 }} onClick={() => deleteItem(item.id)}>Delete</AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Detail Sheet */}
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent style={{ width: 560, borderRadius: 0 }}>
+      {/* Detail sheet with radar */}
+      <Sheet open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
+        <SheetContent className="w-[560px] max-w-full overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>{datasetName(selected?.datasetId) ?? 'Assessment'}</SheetTitle>
+          </SheetHeader>
           {selected && (
-            <>
-              <SheetHeader className="pb-4 border-b" style={{ borderColor: 'hsl(var(--border))' }}>
-                <SheetTitle className="flex items-center gap-2">
-                  <span className="font-mono text-sm px-1.5 py-0.5" style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))' }}>{selected.id}</span>
-                  {selected.dataset}
-                </SheetTitle>
-              </SheetHeader>
-              <Tabs defaultValue="overview" className="mt-4">
-                <TabsList style={{ borderRadius: 0 }}>
-                  <TabsTrigger value="overview" style={{ borderRadius: 0 }}>Overview</TabsTrigger>
-                  <TabsTrigger value="dimensions" style={{ borderRadius: 0 }}>Dimensions</TabsTrigger>
-                  <TabsTrigger value="deficiencies" style={{ borderRadius: 0 }}>Deficiencies</TabsTrigger>
-                  <TabsTrigger value="remediation" style={{ borderRadius: 0 }}>Remediation</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="overview" className="mt-4 space-y-3">
-                  {[
-                    { label: 'Dataset', value: selected.dataset },
-                    { label: 'Linked Model', value: selected.linkedModel },
-                    { label: 'Overall Score', value: `${selected.overallScore}%` },
-                    { label: 'EU AI Act Art.10', value: selected.art10Status },
-                    { label: 'Assessment Method', value: selected.assessmentMethod },
-                    { label: 'Date', value: selected.date },
-                  ].map(({ label, value }) => (
-                    <div key={label} className="flex items-center justify-between py-2 border-b" style={{ borderColor: 'hsl(var(--border))' }}>
-                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{label}</span>
-                      <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{value}</span>
-                    </div>
-                  ))}
-                </TabsContent>
-
-                <TabsContent value="dimensions" className="mt-4 space-y-3">
-                  <ResponsiveContainer width="100%" height={200}>
-                    <RadarChart data={dqToRadar(selected)}>
-                      <PolarGrid stroke={ct.grid} />
-                      <PolarAngleAxis dataKey="subject" tick={{ fill: ct.text, fontSize: 10 }} />
-                      <Radar name={selected.dataset} dataKey="value" stroke={ct.colors[0]} fill={ct.colors[0]} fillOpacity={0.25} />
-                      <Tooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.grid}`, borderRadius: 0 }} />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                  {DIMENSIONS.map(dim => {
-                    const val = dim === 'Bias-Free' ? Math.round(selected.biasScore * 100) :
-                      dim === 'Completeness' ? selected.completeness : dim === 'Accuracy' ? selected.accuracy :
-                      dim === 'Consistency' ? selected.consistency : dim === 'Representativeness' ? selected.representativeness :
-                      dim === 'Relevance' ? selected.relevance : selected.timeliness;
-                    return (
-                      <div key={dim} className="flex items-center gap-3">
-                        <span className="text-xs w-28 flex-shrink-0" style={{ color: 'hsl(var(--text-3))' }}>{dim}</span>
-                        <div className="flex-1 h-1.5 bg-raised">
-                          <div className="h-full" style={{ width: `${val}%`, background: scorePct(val) }} />
+            <div className="mt-4 space-y-4">
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 text-xs" style={art10Style(selected.art10Status)}>Art. 10 {art10Label(selected.art10Status)}</span>
+                <span className="text-xs text-[hsl(var(--text-4))]">
+                  {selected.assessmentMethod}{selected.assessor ? ` · ${selected.assessor}` : ''} · {selected.assessedAt}
+                </span>
+              </div>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart data={toRadar(selected)}>
+                    <PolarGrid stroke={ct.grid} />
+                    <PolarAngleAxis dataKey="subject" tick={{ fill: ct.text, fontSize: 10 }} />
+                    <Radar dataKey="value" stroke={ct.brand} fill={ct.brand} fillOpacity={0.25} />
+                    <Tooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.tooltipText }} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {DIMENSIONS.map((d) => (
+                  <div key={d.key} className="flex items-center justify-between border border-[hsl(var(--border))] px-3 py-2">
+                    <span className="text-[hsl(var(--text-3))]">{d.label}</span>
+                    <span className="font-mono font-semibold" style={{ color: scoreColor(selected[d.key]) }}>{selected[d.key] ?? '—'}</span>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between border border-[hsl(var(--border))] px-3 py-2">
+                  <span className="text-[hsl(var(--text-3))]">Bias-Free</span>
+                  <span className="font-mono font-semibold" style={{ color: scoreColor(selected.biasScore != null ? selected.biasScore * 100 : undefined) }}>
+                    {selected.biasScore != null ? selected.biasScore.toFixed(2) : '—'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between border border-[hsl(var(--border))] px-3 py-2">
+                  <span className="text-[hsl(var(--text-3))]">Overall (derived)</span>
+                  <span className="font-mono font-semibold" style={{ color: scoreColor(selected.overallScore) }}>{selected.overallScore ?? '—'}</span>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-[hsl(var(--text-4))]">Deficiencies</p>
+                {selected.deficiencies.length === 0 ? (
+                  <p className="mt-1 text-xs text-[hsl(var(--text-4))]">None recorded.</p>
+                ) : (
+                  <div className="mt-1 space-y-2">
+                    {selected.deficiencies.map((d, i) => (
+                      <div key={i} className="border border-[hsl(var(--border))] p-3 text-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-[hsl(var(--text-1))]">{d.issue}</span>
+                          <span className="text-[hsl(var(--s-wn-tx))]">{d.severity}</span>
                         </div>
-                        <span className="text-xs tabular-nums w-8 text-right" style={{ color: scorePct(val) }}>{val}%</span>
+                        <p className="mt-1 text-[hsl(var(--text-4))]">{d.dimension} — {d.remediation}</p>
                       </div>
-                    );
-                  })}
-                </TabsContent>
-
-                <TabsContent value="deficiencies" className="mt-4 space-y-2">
-                  {selected.deficiencies.length === 0 ? (
-                    <div className="flex items-center gap-2 p-3 border" style={{ borderColor: 'hsl(var(--s-ok-br))', background: 'hsl(var(--s-ok-bg))', borderRadius: 0 }}>
-                      <CheckCircle size={14} style={{ color: 'hsl(var(--s-ok-tx))' }} />
-                      <span className="text-sm" style={{ color: 'hsl(var(--s-ok-tx))' }}>No deficiencies identified</span>
-                    </div>
-                  ) : selected.deficiencies.map((d, i) => (
-                    <div key={i} className="p-3 border" style={{ borderColor: 'hsl(var(--s-er-br))', background: 'hsl(var(--s-er-bg))', borderRadius: 0 }}>
-                      <p className="text-xs font-semibold" style={{ color: 'hsl(var(--s-er-tx))' }}>{d.issue}</p>
-                      <p className="text-[11px] mt-1" style={{ color: 'hsl(var(--text-3))' }}>Dimension: {d.dimension} · Severity: {d.severity}</p>
-                      <p className="text-[11px] mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>Remediation: {d.remediation}</p>
-                    </div>
-                  ))}
-                </TabsContent>
-
-                <TabsContent value="remediation" className="mt-4">
-                  <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Remediation tasks linked to this assessment.</p>
-                  {selected.deficiencies.length === 0 ? (
-                    <p className="text-xs mt-3" style={{ color: 'hsl(var(--text-4))' }}>No remediation required.</p>
-                  ) : (
-                    <div className="space-y-2 mt-3">
-                      {selected.deficiencies.map((d, i) => (
-                        <div key={i} className="p-3 border" style={{ borderColor: 'hsl(var(--border))' }}>
-                          <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-2))' }}>{d.remediation}</p>
-                          <p className="text-[11px] mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>Status: Open · Priority: {d.severity}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </TabsContent>
-              </Tabs>
-            </>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="flex justify-end border-t border-[hsl(var(--border))] pt-3">
+                <Button size="sm" variant="outline" onClick={() => nav(`/datasets/${selected.datasetId}`)}>Open Dataset</Button>
+              </div>
+            </div>
           )}
         </SheetContent>
       </Sheet>
 
-      {/* Run Assessment Modal */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent style={{ borderRadius: 0, maxWidth: 560 }}>
-          <DialogHeader>
-            <DialogTitle>Run Data Quality Assessment</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 mt-2">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Dataset *</label>
-                <Input style={{ borderRadius: 0 }} value={wDataset} onChange={e => setWDataset(e.target.value)} placeholder="e.g. Consumer Credit DS" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Linked Model *</label>
-                <Select value={wModel || undefined} onValueChange={setWModel}>
-                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue placeholder="Select model..." /></SelectTrigger>
-                  <SelectContent style={{ borderRadius: 0 }}>
-                    {['Credit Risk Scorer', 'Fraud Detection Engine', 'Loan Approval Assistant', 'HR Screening System', 'Customer Service Chatbot'].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Assessment Method</label>
-              <div className="flex gap-2">
-                {(['Automated', 'Manual', 'Hybrid'] as const).map(m => (
-                  <button key={m} onClick={() => setWMethod(m)}
-                    className="flex-1 py-1.5 text-sm border font-medium transition-colors"
-                    style={{ borderRadius: 0, borderColor: wMethod === m ? 'hsl(var(--brand))' : 'hsl(var(--border))', background: wMethod === m ? 'hsl(var(--brand-subtle))' : 'transparent', color: wMethod === m ? 'hsl(var(--brand))' : 'hsl(var(--text-3))' }}>
-                    {m}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-3">
-              <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Quality Dimensions (0–100)</p>
-              {['Completeness', 'Accuracy', 'Consistency', 'Representativeness', 'Relevance', 'Timeliness'].map(dim => (
-                <div key={dim} className="flex items-center gap-3">
-                  <span className="text-xs w-28 flex-shrink-0" style={{ color: 'hsl(var(--text-3))' }}>{dim}</span>
-                  <input type="range" min={0} max={100} value={wDims[dim] ?? 80}
-                    onChange={e => setWDims(prev => ({ ...prev, [dim]: Number(e.target.value) }))}
-                    className="flex-1" />
-                  <span className="text-xs tabular-nums w-8 text-right font-medium" style={{ color: scorePct(wDims[dim] ?? 80) }}>{wDims[dim] ?? 80}%</span>
-                </div>
-              ))}
-              <div className="flex items-center gap-3">
-                <span className="text-xs w-28 flex-shrink-0" style={{ color: 'hsl(var(--text-3))' }}>Bias Score</span>
-                <input type="range" min={0} max={100} value={Math.round(wBias * 100)}
-                  onChange={e => setWBias(Number(e.target.value) / 100)}
-                  className="flex-1" />
-                <span className="text-xs tabular-nums w-8 text-right font-medium" style={{ color: wBias >= 0.85 ? 'hsl(var(--s-ok-tx))' : wBias >= 0.70 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-er-tx))' }}>{wBias.toFixed(2)}</span>
-              </div>
-            </div>
+      <AssessmentForm
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        defaultDatasetId={datasetParam ?? undefined}
+        onSubmit={async (record) => {
+          await create.mutateAsync(record)
+          toast.success('Assessment recorded')
+          setCreateOpen(false)
+        }}
+      />
 
-            {/* Auto status preview */}
-            {wDataset && (
-              <div className="p-2 border" style={{ borderRadius: 0, borderColor: 'hsl(var(--border))', background: 'hsl(var(--bg-raised))' }}>
-                <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Estimated EU AI Act Art.10 status: <strong style={{ color: (() => { const avg = Math.round((Object.values(wDims).reduce((a, v) => a + v, 0) / Object.values(wDims).length + wBias * 100) / 2); return scorePct(avg); })() }}>{autoStatus(Math.round((Object.values(wDims).reduce((a, v) => a + v, 0) / Object.values(wDims).length + wBias * 100) / 2))}</strong></p>
-              </div>
-            )}
-          </div>
-          <div className="flex items-center justify-between pt-4 border-t" style={{ borderColor: 'hsl(var(--border))' }}>
-            <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setCreateOpen(false)}>Cancel</Button>
-            <Button style={{ borderRadius: 0 }} onClick={submitCreate}>Run Assessment</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={!!toDelete} type="danger"
+        title="Delete this assessment?"
+        description="This permanently removes the quality assessment record."
+        confirmLabel="Delete"
+        onConfirm={() => {
+          if (toDelete) remove.mutate(toDelete.id, {
+            onSuccess: () => toast.success('Assessment deleted'),
+            onError: (err: any) => toast.error(err?.message ?? 'Delete failed'),
+          })
+          setToDelete(null)
+        }}
+        onOpenChange={(o) => !o && setToDelete(null)}
+      />
     </div>
-  );
+  )
+}
+
+// ── New assessment form ───────────────────────────────────────────────────────
+
+function AssessmentForm({ open, onOpenChange, defaultDatasetId, onSubmit }: {
+  open: boolean
+  onOpenChange: (o: boolean) => void
+  defaultDatasetId?: string
+  onSubmit: (record: Partial<QualityAssessment>) => Promise<void>
+}) {
+  const { data: datasets } = useDatasets()
+  const { models } = useModelOptions()
+  const [datasetId, setDatasetId] = useState('')
+  const [modelId, setModelId] = useState('')
+  const [method, setMethod] = useState<'automated' | 'manual' | 'hybrid'>('automated')
+  const [assessor, setAssessor] = useState('')
+  const [dims, setDims] = useState<Record<string, number>>(
+    Object.fromEntries(DIMENSIONS.map((d) => [d.key, 80])),
+  )
+  const [bias, setBias] = useState(0.8)
+  const [saving, setSaving] = useState(false)
+
+  const [wasOpen, setWasOpen] = useState(false)
+  if (open !== wasOpen) {
+    setWasOpen(open)
+    if (open) {
+      setDatasetId(defaultDatasetId ?? '')
+      setModelId('')
+      setMethod('automated')
+      setAssessor('')
+      setDims(Object.fromEntries(DIMENSIONS.map((d) => [d.key, 80])))
+      setBias(0.8)
+    }
+  }
+
+  const { overall, status } = derive(dims, bias)
+  const canSubmit = !!datasetId && !saving
+
+  async function handleSubmit() {
+    if (!canSubmit) return
+    setSaving(true)
+    try {
+      await onSubmit({
+        datasetId,
+        modelId: modelId || undefined,
+        assessmentMethod: method,
+        assessor: assessor.trim() || undefined,
+        completeness: dims.completeness, accuracy: dims.accuracy, consistency: dims.consistency,
+        representativeness: dims.representativeness, relevance: dims.relevance, timeliness: dims.timeliness,
+        biasScore: bias,
+        overallScore: overall,
+        art10Status: status,
+        deficiencies: [],
+        assessedAt: new Date().toISOString().slice(0, 10),
+      })
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to record assessment')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const label = 'text-xs font-semibold text-[hsl(var(--text-4))]'
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>New Quality Assessment</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 py-2">
+          <div><label className={label}>Dataset *</label>
+            <Select value={datasetId} onValueChange={setDatasetId}>
+              <SelectTrigger className="mt-1 h-9"><SelectValue placeholder="Select a governed dataset" /></SelectTrigger>
+              <SelectContent>
+                {datasets.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+              </SelectContent>
+            </Select></div>
+          <div><label className={label}>Model (optional)</label>
+            <Select value={modelId || 'none'} onValueChange={(v) => setModelId(v === 'none' ? '' : v)}>
+              <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">—</SelectItem>
+                {models.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+              </SelectContent>
+            </Select></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className={label}>Method</label>
+              <Select value={method} onValueChange={(v) => setMethod(v as typeof method)}>
+                <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {(['automated', 'manual', 'hybrid'] as const).map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                </SelectContent>
+              </Select></div>
+            <div><label className={label}>Assessor</label>
+              <Input value={assessor} onChange={(e) => setAssessor(e.target.value)} className="mt-1" placeholder="Name or team" /></div>
+          </div>
+          <div className="space-y-2">
+            {DIMENSIONS.map((d) => (
+              <div key={d.key} className="flex items-center gap-3">
+                <span className="w-40 text-xs text-[hsl(var(--text-3))]">{d.label}</span>
+                <input type="range" min={0} max={100} value={dims[d.key]}
+                  onChange={(e) => setDims((prev) => ({ ...prev, [d.key]: Number(e.target.value) }))}
+                  className="flex-1" />
+                <span className="w-8 text-right font-mono text-xs" style={{ color: scoreColor(dims[d.key]) }}>{dims[d.key]}</span>
+              </div>
+            ))}
+            <div className="flex items-center gap-3">
+              <span className="w-40 text-xs text-[hsl(var(--text-3))]">Bias-Free (0–1)</span>
+              <input type="range" min={0} max={100} value={Math.round(bias * 100)}
+                onChange={(e) => setBias(Number(e.target.value) / 100)} className="flex-1" />
+              <span className="w-8 text-right font-mono text-xs">{bias.toFixed(2)}</span>
+            </div>
+          </div>
+          <div className="flex items-center justify-between border border-[hsl(var(--border))] px-3 py-2 text-xs">
+            <span className="text-[hsl(var(--text-4))]">Derived: overall score & Art. 10 status</span>
+            <span className="flex items-center gap-2">
+              <span className="font-mono font-semibold" style={{ color: scoreColor(overall) }}>{overall}</span>
+              <span className="px-2 py-0.5 text-[10px]" style={art10Style(status)}>{art10Label(status)}</span>
+            </span>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button disabled={!canSubmit} onClick={handleSubmit}>{saving ? 'Saving…' : 'Record Assessment'}</Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
 }

@@ -1,619 +1,403 @@
-import { useState, useCallback } from 'react';
-import { useSupabaseTable } from '@/hooks/useSupabaseTable';
-import {
-  Eye, PencilSimple, Trash, Plus, Database, MagnifyingGlass, Funnel,
-  Warning, CheckCircle, ShieldWarning, Lock, CalendarBlank, ListChecks,
-} from '@phosphor-icons/react';
-import { Card, CardContent } from '../../components/ui/card';
-import { Badge } from '../../components/ui/badge';
-import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../components/ui/sheet';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
-import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '../../components/ui/select';
-import {
-  DATASETS, Dataset, MODELS, severityColor, statusColor, formatDate, formatNumber,
-} from '../../data/seed';
-import { useSettingsStore } from '../../stores/settingsStore';
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI.
+//
+// DatasetRegistry — governed dataset inventory over the canonical `datasets`
+// table. Linked models are ai_models uuids resolved to name pills; honors
+// ?model=<uuid> (dismissible filter chip) and ?open=<id> deep links.
 
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { toast } from 'sonner'
+import { ArrowSquareOut, Database, Plus, X } from '@phosphor-icons/react'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { DataTable, type Column } from '@/components/ui/DataTable'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { TableSkeleton, EmptyState, ErrorState } from '@/components/evals/states'
+import { useDatasets } from '@/hooks/useDatasetData'
+import { useModelOptions } from '@/hooks/useAiiaData'
+import { useRBAC } from '@/hooks/useRBAC'
+import type { DatasetRecord } from '@/services/datasetService'
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+const DATASET_TYPES = ['tabular', 'text_corpus', 'image', 'time_series', 'graph', 'audio', 'video', 'multimodal']
+const CLASSIFICATIONS = ['public', 'internal', 'confidential', 'restricted']
+const STATUSES = ['active', 'archived', 'deprecated', 'draft']
 
-interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info' }
-
-function isAuditOverdue(lastAudit: string): boolean {
-  if (!lastAudit) return true;
-  const auditDate = new Date(lastAudit);
-  const now = new Date();
-  const daysDiff = Math.floor((now.getTime() - auditDate.getTime()) / (1000 * 60 * 60 * 24));
-  return daysDiff > 90;
+function isAuditOverdue(lastAudit?: string): boolean {
+  if (!lastAudit) return true
+  return (Date.now() - new Date(lastAudit).getTime()) / 86_400_000 > 90
 }
 
-function daysSinceAudit(lastAudit: string): number {
-  if (!lastAudit) return 999;
-  return Math.floor((new Date().getTime() - new Date(lastAudit).getTime()) / (1000 * 60 * 60 * 24));
+function classStyle(c?: string) {
+  switch (c) {
+    case 'restricted': return { background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))' }
+    case 'confidential': return { background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' }
+    case 'public': return { background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' }
+    default: return { background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' }
+  }
 }
-
-// ── Main Component ────────────────────────────────────────────────────────────
 
 export default function DatasetRegistry() {
-  const { orgName } = useSettingsStore();
-  const { data: datasets, setData: setDatasets } = useSupabaseTable('datasetregistry_table', DATASETS);
-  const [search, setSearch] = useState('');
-  const [sensitivityFilter, setSensitivityFilter] = useState('all');
-  const [selectedDataset, setSelectedDataset] = useState<Dataset | null>(null);
-  const [detailTab, setDetailTab] = useState('overview');
-  const [editDataset, setEditDataset] = useState<Dataset | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Dataset | null>(null);
-  const [addOpen, setAddOpen] = useState(false);
-  const [toasts, setToasts] = useState<ToastMsg[]>([]);
+  const nav = useNavigate()
+  const { can } = useRBAC()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const modelParam = searchParams.get('model')
+  const openParam = searchParams.get('open')
 
-  const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
-    const id = Date.now();
-    setToasts(prev => [...prev, { id, text, type }]);
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
-  }, []);
+  const { data, isLoading, isError, error, refetch, create, update, remove } = useDatasets()
+  const { models, loading: modelsLoading } = useModelOptions()
 
-  // Metrics
-  const totalDatasets = datasets.length;
-  const piiPhiCount = datasets.filter(d => d.sensitivity === 'PII' || d.sensitivity === 'PHI').length;
-  const criticalRisk = datasets.filter(d => d.risk === 'critical').length;
-  const needsReAudit = datasets.filter(d => isAuditOverdue(d.lastAudit)).length;
+  const [formOpen, setFormOpen] = useState(false)
+  const [editing, setEditing] = useState<DatasetRecord | null>(null)
+  const [toDelete, setToDelete] = useState<DatasetRecord | null>(null)
 
-  // Filters
-  const filtered = datasets.filter(d => {
-    const matchSearch = d.id.toLowerCase().includes(search.toLowerCase()) ||
-      d.name.toLowerCase().includes(search.toLowerCase()) ||
-      d.owner.toLowerCase().includes(search.toLowerCase());
-    const matchSensitivity = sensitivityFilter === 'all' || d.sensitivity === sensitivityFilter;
-    return matchSearch && matchSensitivity;
-  });
+  // Resolve a model uuid to its display name; never leak the raw uuid.
+  const modelName = (id?: string) => (id ? models.find((m) => m.id === id)?.name : undefined)
 
-  const handleDelete = () => {
-    if (!deleteTarget) return;
-    setDatasets(prev => prev.filter(d => d.id !== deleteTarget.id));
-    toast(`${deleteTarget.id} removed`, 'error');
-    setDeleteTarget(null);
-  };
+  // Deep-link: ?open=<id> routes straight to the dataset detail page.
+  useEffect(() => {
+    if (!openParam || !data.length) return
+    if (data.some((d) => d.id === openParam)) nav(`/datasets/${openParam}`, { replace: true })
+  }, [openParam, data, nav])
 
-  // Schema fields for the detail view (simulated)
-  const schemaFields = (ds: Dataset) => {
-    const base = [
-      { name: 'id', type: 'string', pii: false },
-      { name: 'timestamp', type: 'datetime', pii: false },
-      { name: 'amount', type: 'float', pii: false },
-    ];
-    if (ds.sensitivity === 'PII') {
-      return [
-        ...base,
-        { name: 'customer_name', type: 'string', pii: true },
-        { name: 'ssn', type: 'string', pii: true },
-        { name: 'email', type: 'string', pii: true },
-        { name: 'address', type: 'string', pii: true },
-        { name: 'credit_score', type: 'integer', pii: true },
-      ];
-    }
-    return [...base, { name: 'category', type: 'string', pii: false }, { name: 'value', type: 'float', pii: false }];
-  };
+  const rows = useMemo(
+    () => data.filter((d) => !modelParam || d.usedInModels.includes(modelParam)),
+    [data, modelParam],
+  )
+
+  const piiCount = data.filter((d) => d.containsPii).length
+  const unlinked = data.filter((d) => d.usedInModels.length === 0).length
+  const overdue = data.filter((d) => isAuditOverdue(d.lastAuditDate)).length
+
+  const columns: Column<DatasetRecord>[] = [
+    { key: 'name', header: 'Name', sortable: true, render: (d) => (
+      <div>
+        <span className="text-xs font-medium text-[hsl(var(--text-1))]">{d.name}</span>
+        {d.version && <span className="ml-2 font-mono text-[10px] text-[hsl(var(--text-4))]">{d.version}</span>}
+      </div>
+    ) },
+    { key: 'type', header: 'Type', sortable: true, render: (d) => (
+      <span className="text-xs text-[hsl(var(--text-3))]">{d.type?.replace('_', ' ') ?? '—'}</span>
+    ) },
+    { key: 'classification', header: 'Classification', sortable: true, render: (d) => (
+      <span className="px-2 py-0.5 text-[10px] font-medium" style={classStyle(d.classification)}>{d.classification ?? '—'}</span>
+    ) },
+    { key: 'containsPii', header: 'PII', render: (d) => d.containsPii ? (
+      <span className="px-1.5 py-0.5 text-[10px] font-medium" style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))' }}>PII</span>
+    ) : <span className="text-xs text-[hsl(var(--text-4))]">—</span> },
+    { key: 'usedInModels', header: 'Linked Models', render: (d) => {
+      if (d.usedInModels.length === 0) return <span className="text-xs text-[hsl(var(--text-4))]">—</span>
+      const shown = d.usedInModels.slice(0, 2)
+      return (
+        <span className="inline-flex flex-wrap items-center gap-1">
+          {shown.map((mid) => {
+            const name = modelName(mid)
+            if (!name) return <span key={mid} className="text-xs text-[hsl(var(--text-4))]">{modelsLoading ? '…' : 'Unavailable'}</span>
+            return (
+              <button
+                key={mid}
+                onClick={(e) => { e.stopPropagation(); nav(`/models/inventory/${mid}`) }}
+                className="inline-flex items-center gap-1 border border-[hsl(var(--brand))/30] bg-[hsl(var(--brand-subtle))] px-2 py-0.5 text-xs font-medium text-[hsl(var(--brand))] transition-colors hover:bg-[hsl(var(--brand))] hover:text-[hsl(var(--bg-surface))]"
+              >
+                {name} <ArrowSquareOut size={12} />
+              </button>
+            )
+          })}
+          {d.usedInModels.length > 2 && (
+            <span className="text-[10px] text-[hsl(var(--text-4))]">+{d.usedInModels.length - 2}</span>
+          )}
+        </span>
+      )
+    } },
+    { key: 'recordCount', header: 'Records', sortable: true, render: (d) => (
+      <span className="font-mono text-xs text-[hsl(var(--text-2))]">{d.recordCount != null ? d.recordCount.toLocaleString() : '—'}</span>
+    ) },
+    { key: 'status', header: 'Status', sortable: true, render: (d) => (
+      <span className="text-xs text-[hsl(var(--text-2))]">{d.status ?? '—'}</span>
+    ) },
+    { key: 'lastAuditDate', header: 'Last Audit', sortable: true, render: (d) => (
+      <span className="text-xs" style={{ color: isAuditOverdue(d.lastAuditDate) ? 'hsl(var(--s-er-tx))' : 'hsl(var(--text-4))' }}>
+        {d.lastAuditDate ?? 'never'}
+      </span>
+    ) },
+  ]
+
+  function clearModelFilter() {
+    const next = new URLSearchParams(searchParams)
+    next.delete('model')
+    setSearchParams(next, { replace: true })
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Toast layer */}
-      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
-        {toasts.map(t => (
-          <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
-            background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
-            color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 300
-          }}>{t.text}</div>
-        ))}
-      </div>
+    <div>
+      <PageHeader
+        title="Dataset Registry"
+        subtitle="Governed inventory of AI training and evaluation data"
+        icon={Database}
+        actions={can('create') ? (
+          <Button size="sm" icon={<Plus />} onClick={() => { setEditing(null); setFormOpen(true) }}>New Dataset</Button>
+        ) : undefined}
+      />
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Dataset Registry</h1>
-          <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} · AI training data governance & compliance</p>
+      {modelParam && (
+        <div className="mb-3 flex items-center gap-2">
+          <span className="inline-flex items-center gap-2 border border-[hsl(var(--brand))/30] bg-[hsl(var(--brand-subtle))] px-3 py-1.5 text-sm text-[hsl(var(--brand))]">
+            <span>Filtered to <strong>{modelName(modelParam) ?? (modelsLoading ? '…' : 'Unavailable')}</strong></span>
+            <button aria-label="Clear model filter" onClick={clearModelFilter} className="inline-flex cursor-pointer items-center hover:text-[hsl(var(--text-1))]">
+              <X size={14} />
+            </button>
+          </span>
         </div>
-        <Button onClick={() => setAddOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-          <Plus className="h-4 w-4" />Add Dataset
-        </Button>
-      </div>
+      )}
 
-      {/* Metric Tiles */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
         {[
-          { label: 'Total Datasets', value: totalDatasets, color: 'hsl(var(--text-1))', icon: Database },
-          { label: 'PII / PHI', value: piiPhiCount, color: 'hsl(var(--s-wn-tx))', icon: Lock },
-          { label: 'Critical Risk', value: criticalRisk, color: 'hsl(var(--destructive))', icon: ShieldWarning },
-          { label: 'Needs Re-Audit', value: needsReAudit, color: 'hsl(var(--s-wn-tx))', icon: CalendarBlank },
-        ].map(stat => (
-          <Card key={stat.label} style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-            <CardContent className="pt-4 pb-4">
-              <div className="flex items-center justify-between mb-2">
-                <stat.icon size={20} style={{ color: stat.color }} />
-              </div>
-              <p className="text-2xl font-bold" style={{ color: stat.color }}>{stat.value}</p>
-              <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>{stat.label}</p>
+          { label: 'Total Datasets', value: data.length },
+          { label: 'Contain PII', value: piiCount },
+          { label: 'Not Linked to a Model', value: unlinked },
+          { label: 'Audit Overdue (>90d)', value: overdue },
+        ].map((s) => (
+          <Card key={s.label}>
+            <CardContent className="px-4 py-3">
+              <p className="text-2xl font-bold text-[hsl(var(--text-1))]">{isLoading ? '—' : s.value}</p>
+              <p className="mt-0.5 text-xs text-[hsl(var(--text-4))]">{s.label}</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Filters */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative min-w-52 max-w-xs">
-          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: 'hsl(var(--text-4))' }} />
-          <Input placeholder="Search datasets..." value={search} onChange={e => setSearch(e.target.value)}
-            className="pl-9 h-9" style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }} />
-        </div>
-        <Select value={sensitivityFilter} onValueChange={setSensitivityFilter}>
-          <SelectTrigger className="w-36 h-9" style={{ borderRadius: 0 }}>
-            <Funnel className="h-3 w-3 mr-1" /><SelectValue placeholder="Sensitivity" />
-          </SelectTrigger>
-          <SelectContent style={{ borderRadius: 0 }}>
-            <SelectItem value="all">All Sensitivity</SelectItem>
-            {['PII', 'PHI', 'internal', 'confidential'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{filtered.length} datasets</span>
-      </div>
-
-      {/* Table */}
-      <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-        <CardContent className="p-0">
-          {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12" style={{ color: 'hsl(var(--text-4))' }}>
-              <Database size={32} className="mb-2 opacity-40" />
-              <p className="text-sm">No datasets found</p>
-            </div>
+      <Card className="p-4">
+        {isLoading ? <TableSkeleton cols={8} />
+          : isError ? <ErrorState message={error?.message} onRetry={() => refetch()} />
+          : rows.length === 0 ? (
+            <EmptyState
+              title={modelParam ? 'No datasets linked to this model' : 'No datasets yet'}
+              message={modelParam
+                ? 'Clear the model filter to see all datasets, or register one and link it to this model.'
+                : 'Register the first dataset to start governing your AI training data.'}
+              actionLabel={can('create') ? 'New Dataset' : undefined}
+              onAction={can('create') ? () => { setEditing(null); setFormOpen(true) } : undefined} />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                    {['ID', 'Name', 'Linked Model', 'Sensitivity', 'Risk Level', 'Records', 'Status', 'Last Audit', 'Actions'].map(h => (
-                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map(d => {
-                    const sc = severityColor(d.risk);
-                    const stc = statusColor(d.status);
-                    const auditOverdue = isAuditOverdue(d.lastAudit);
-                    const linkedModel = MODELS.find(m => m.id === d.linkedModel);
-                    return (
-                      <tr
-                        key={d.id}
-                        className="hover:bg-muted/30 transition-colors"
-                        style={{ borderBottom: '1px solid hsl(var(--border))' }}
-                      >
-                        <td className="px-4 py-3 font-mono text-xs" style={{ color: 'hsl(var(--text-4))' }}>{d.id}</td>
-                        <td className="px-4 py-3 text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{d.name}</td>
-                        <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>
-                          {linkedModel ? `${linkedModel.id} — ${linkedModel.name}` : '—'}
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge style={{
-                            background: d.sensitivity === 'PII' ? 'hsl(var(--s-er-bg))' : d.sensitivity === 'confidential' ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-in-bg))',
-                            color: d.sensitivity === 'PII' ? 'hsl(var(--destructive))' : d.sensitivity === 'confidential' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-in-tx))',
-                            borderRadius: 0, fontSize: 10,
-                          }}>
-                            {d.sensitivity}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge style={{ background: sc.bg, color: sc.text, borderRadius: 0, fontSize: 10 }}>{d.risk}</Badge>
-                        </td>
-                        <td className="px-4 py-3 text-xs font-mono" style={{ color: 'hsl(var(--text-2))' }}>
-                          {formatNumber(d.records)}
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge style={{ background: stc.bg, color: stc.text, borderRadius: 0, fontSize: 10 }}>{d.status}</Badge>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="text-xs" style={{
-                            color: auditOverdue ? 'hsl(var(--destructive))' : 'hsl(var(--text-4))',
-                            fontWeight: auditOverdue ? 600 : 400,
-                          }}>
-                            {formatDate(d.lastAudit)}
-                            {auditOverdue && ` (${daysSinceAudit(d.lastAudit)}d ago)`}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0"
-                              onClick={() => { setSelectedDataset(d); setDetailTab('overview'); }}>
-                              <Eye size={14} />
-                            </Button>
-                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0"
-                              onClick={() => setEditDataset(d)}>
-                              <PencilSimple size={14} />
-                            </Button>
-                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0"
-                              onClick={() => setDeleteTarget(d)}>
-                              <Trash size={14} />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Delete Confirm */}
-      <ConfirmDialog
-        open={!!deleteTarget}
-        onOpenChange={() => setDeleteTarget(null)}
-        title={`Delete ${deleteTarget?.name}?`}
-        description={`This will remove ${deleteTarget?.id} from the dataset registry. This action cannot be undone.`}
-        confirmLabel="Delete Dataset"
-        variant="destructive"
-        onConfirm={handleDelete}
-      />
-
-      {/* Dataset Detail Sheet */}
-      <Sheet open={!!selectedDataset} onOpenChange={() => setSelectedDataset(null)}>
-        <SheetContent style={{ borderRadius: 0, width: 640, maxWidth: '100vw' }}>
-          <SheetHeader>
-            <SheetTitle style={{ color: 'hsl(var(--text-1))' }}>
-              {selectedDataset?.name} <span className="text-xs font-mono font-normal" style={{ color: 'hsl(var(--text-4))' }}>{selectedDataset?.id}</span>
-            </SheetTitle>
-          </SheetHeader>
-          {selectedDataset && (
-            <div className="mt-4 overflow-y-auto h-[calc(100vh-120px)]">
-              <Tabs value={detailTab} onValueChange={setDetailTab}>
-                <TabsList style={{ borderRadius: 0 }}>
-                  <TabsTrigger value="overview" style={{ borderRadius: 0 }}>Overview</TabsTrigger>
-                  <TabsTrigger value="schema" style={{ borderRadius: 0 }}>Schema</TabsTrigger>
-                  <TabsTrigger value="linked" style={{ borderRadius: 0 }}>Linked Models</TabsTrigger>
-                  <TabsTrigger value="compliance" style={{ borderRadius: 0 }}>Compliance</TabsTrigger>
-                  <TabsTrigger value="audit" style={{ borderRadius: 0 }}>Audit History</TabsTrigger>
-                </TabsList>
-
-                {/* Overview */}
-                <TabsContent value="overview" className="mt-4 space-y-4">
-                  <div className="flex gap-2 flex-wrap">
-                    <Badge style={{ ...severityColor(selectedDataset.risk), borderRadius: 0, fontSize: 10 }}>{selectedDataset.risk}</Badge>
-                    <Badge style={{ ...statusColor(selectedDataset.status), borderRadius: 0, fontSize: 10 }}>{selectedDataset.status}</Badge>
-                    <Badge style={{
-                      background: selectedDataset.sensitivity === 'PII' ? 'hsl(var(--s-er-bg))' : 'hsl(var(--s-in-bg))',
-                      color: selectedDataset.sensitivity === 'PII' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
-                      borderRadius: 0, fontSize: 10,
-                    }}>{selectedDataset.sensitivity}</Badge>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 text-xs">
-                    <div><p style={{ color: 'hsl(var(--text-4))' }}>Description</p><p className="mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selectedDataset.description}</p></div>
-                    <div><p style={{ color: 'hsl(var(--text-4))' }}>Owner</p><p className="mt-1 font-medium" style={{ color: 'hsl(var(--text-1))' }}>{selectedDataset.owner}</p></div>
-                    <div><p style={{ color: 'hsl(var(--text-4))' }}>Records</p><p className="mt-1 font-bold" style={{ color: 'hsl(var(--text-1))' }}>{formatNumber(selectedDataset.records)}</p></div>
-                    <div><p style={{ color: 'hsl(var(--text-4))' }}>Classification</p><p className="mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selectedDataset.classification}</p></div>
-                    <div><p style={{ color: 'hsl(var(--text-4))' }}>Encryption</p><p className="mt-1 font-mono" style={{ color: 'hsl(var(--text-1))' }}>{selectedDataset.encryption}</p></div>
-                    <div><p style={{ color: 'hsl(var(--text-4))' }}>Retention Policy</p><p className="mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selectedDataset.retentionPolicy}</p></div>
-                    <div><p style={{ color: 'hsl(var(--text-4))' }}>Last Audit</p><p className="mt-1" style={{ color: isAuditOverdue(selectedDataset.lastAudit) ? 'hsl(var(--destructive))' : 'hsl(var(--text-1))' }}>{formatDate(selectedDataset.lastAudit)}</p></div>
-                  </div>
-                </TabsContent>
-
-                {/* Schema Tab */}
-                <TabsContent value="schema" className="mt-4 space-y-3">
-                  <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Field Schema</p>
-                  <div className="space-y-1">
-                    {schemaFields(selectedDataset).map((f, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-2" style={{ border: '1px solid hsl(var(--border))' }}>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-mono" style={{ color: 'hsl(var(--text-1))' }}>{f.name}</span>
-                          <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{f.type}</span>
-                        </div>
-                        {f.pii && (
-                          <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 9 }}>
-                            PII
-                          </Badge>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </TabsContent>
-
-                {/* Linked Models */}
-                <TabsContent value="linked" className="mt-4 space-y-3">
-                  <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Linked Models</p>
-                  {selectedDataset.linkedModel ? (
-                    (() => {
-                      const model = MODELS.find(m => m.id === selectedDataset.linkedModel);
-                      return model ? (
-                        <div className="p-3 flex items-center justify-between" style={{ border: '1px solid hsl(var(--border))' }}>
-                          <div>
-                            <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{model.name}</p>
-                            <p className="text-xs font-mono" style={{ color: 'hsl(var(--text-4))' }}>{model.id} · {model.version}</p>
-                          </div>
-                          <Badge style={{ ...statusColor(model.status), borderRadius: 0, fontSize: 10 }}>{model.status}</Badge>
-                        </div>
-                      ) : (
-                        <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Model {selectedDataset.linkedModel} not found</p>
-                      );
-                    })()
-                  ) : (
-                    <p className="text-xs text-center py-6" style={{ color: 'hsl(var(--text-4))' }}>No linked models</p>
-                  )}
-                </TabsContent>
-
-                {/* Compliance */}
-                <TabsContent value="compliance" className="mt-4 space-y-3">
-                  <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>GDPR Art. 5 Compliance Checklist</p>
-                  {[
-                    { label: 'Lawful basis for processing identified', met: selectedDataset.sensitivity !== 'PII' || selectedDataset.risk !== 'critical' },
-                    { label: 'Purpose limitation documented', met: true },
-                    { label: 'Data minimization applied', met: selectedDataset.classification !== 'restricted' },
-                    { label: 'Accuracy measures in place', met: true },
-                    { label: 'Storage limitation defined', met: !!selectedDataset.retentionPolicy },
-                    { label: 'Integrity & confidentiality (encryption)', met: selectedDataset.encryption.includes('AES') },
-                    { label: 'Data subject consent obtained', met: selectedDataset.sensitivity !== 'PII' },
-                    { label: 'DPIA completed', met: selectedDataset.risk !== 'critical' },
-                  ].map((check, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3" style={{ border: '1px solid hsl(var(--border))' }}>
-                      <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{check.label}</span>
-                      {check.met ? (
-                        <CheckCircle size={16} className="text-[hsl(var(--s-ok-tx))]" />
-                      ) : (
-                        <Warning size={16} className="text-destructive" />
-                      )}
-                    </div>
-                  ))}
-                </TabsContent>
-
-                {/* Audit History */}
-                <TabsContent value="audit" className="mt-4 space-y-3">
-                  <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Audit History</p>
-                  {[
-                    { date: selectedDataset.lastAudit, auditor: 'Emma Wilson', result: 'Pass', notes: 'Quarterly compliance audit completed.' },
-                    { date: '2025-11-15', auditor: 'David Kim', result: 'Pass', notes: 'Data quality verification — all checks passed.' },
-                    { date: '2025-08-20', auditor: 'Maria Santos', result: selectedDataset.risk === 'critical' ? 'Partial' : 'Pass', notes: selectedDataset.risk === 'critical' ? 'PII consent gaps identified — remediation required.' : 'Routine audit completed.' },
-                  ].map((audit, idx) => (
-                    <div key={idx} className="p-3" style={{ border: '1px solid hsl(var(--border))' }}>
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{formatDate(audit.date)}</p>
-                        <Badge style={{
-                          background: audit.result === 'Pass' ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-wn-bg))',
-                          color: audit.result === 'Pass' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))',
-                          borderRadius: 0, fontSize: 10,
-                        }}>{audit.result}</Badge>
-                      </div>
-                      <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>Auditor: {audit.auditor}</p>
-                      <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-2))' }}>{audit.notes}</p>
-                    </div>
-                  ))}
-                </TabsContent>
-              </Tabs>
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
-
-      {/* Edit Dialog */}
-      <Dialog open={!!editDataset} onOpenChange={() => setEditDataset(null)}>
-        <DialogContent style={{ borderRadius: 0, maxWidth: 520 }}>
-          <DialogHeader>
-            <DialogTitle>Edit {editDataset?.name}</DialogTitle>
-          </DialogHeader>
-          {editDataset && (
-            <EditDatasetForm
-              dataset={editDataset}
-              onSave={(updated) => {
-                setDatasets(prev => prev.map(d => d.id === updated.id ? updated : d));
-                toast(`${updated.id} updated`);
-                setEditDataset(null);
-              }}
+            <DataTable
+              data={rows} columns={columns}
+              searchKey="name" searchPlaceholder="Search datasets…"
+              onView={(d) => nav(`/datasets/${d.id}`)}
+              onEdit={can('update') ? (d) => { setEditing(d); setFormOpen(true) } : undefined}
+              onDelete={can('delete') ? setToDelete : undefined}
+              onRowClick={(d) => nav(`/datasets/${d.id}`)}
             />
           )}
-        </DialogContent>
-      </Dialog>
+      </Card>
 
-      {/* Add Dataset Dialog */}
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent style={{ borderRadius: 0, maxWidth: 600 }} className="max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Add Dataset</DialogTitle>
-          </DialogHeader>
-          <AddDatasetForm
-            onSubmit={(newDs) => {
-              setDatasets(prev => [...prev, newDs]);
-              toast(`${newDs.id} ${newDs.name} added`);
-              setAddOpen(false);
-            }}
-            nextId={`DS-${String(datasets.length + 1).padStart(3, '0')}`}
-          />
-        </DialogContent>
-      </Dialog>
+      <DatasetForm
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        initial={editing}
+        defaultModelId={modelParam ?? undefined}
+        onSubmit={async (patch) => {
+          if (editing) {
+            await update.mutateAsync({ id: editing.id, patch })
+            toast.success('Dataset updated')
+          } else {
+            await create.mutateAsync(patch)
+            toast.success('Dataset registered')
+          }
+          setFormOpen(false)
+        }}
+      />
+
+      <ConfirmDialog
+        open={!!toDelete} type="danger"
+        title={`Delete ${toDelete?.name ?? ''}?`}
+        description="This soft-deletes the dataset; it will no longer appear in the registry, lineage or quality views."
+        confirmLabel="Delete"
+        onConfirm={() => {
+          if (toDelete) remove.mutate(toDelete.id, {
+            onSuccess: () => toast.success('Dataset deleted'),
+            onError: (err: any) => toast.error(err?.message ?? 'Delete failed'),
+          })
+          setToDelete(null)
+        }}
+        onOpenChange={(o) => !o && setToDelete(null)}
+      />
     </div>
-  );
+  )
 }
 
-// ── Edit Form ─────────────────────────────────────────────────────────────────
+// ── Create / edit form ────────────────────────────────────────────────────────
 
-function EditDatasetForm({ dataset, onSave }: { dataset: Dataset; onSave: (d: Dataset) => void }) {
-  const [name, setName] = useState(dataset.name);
-  const [owner, setOwner] = useState(dataset.owner);
-  const [sensitivity, setSensitivity] = useState(dataset.sensitivity);
-  const [status, setStatus] = useState(dataset.status);
+function DatasetForm({ open, onOpenChange, initial, defaultModelId, onSubmit }: {
+  open: boolean
+  onOpenChange: (o: boolean) => void
+  initial: DatasetRecord | null
+  defaultModelId?: string
+  onSubmit: (patch: Partial<DatasetRecord>) => Promise<void>
+}) {
+  const { models, loading: modelsLoading } = useModelOptions()
+  const [name, setName] = useState('')
+  const [version, setVersion] = useState('')
+  const [type, setType] = useState('tabular')
+  const [classification, setClassification] = useState('internal')
+  const [status, setStatus] = useState('active')
+  const [owner, setOwner] = useState('')
+  const [source, setSource] = useState('')
+  const [format, setFormat] = useState('')
+  const [containsPii, setContainsPii] = useState(false)
+  const [piiTypes, setPiiTypes] = useState('')
+  const [demographicData, setDemographicData] = useState(false)
+  const [recordCount, setRecordCount] = useState('')
+  const [encryption, setEncryption] = useState('')
+  const [retentionPolicy, setRetentionPolicy] = useState('')
+  const [lastAuditDate, setLastAuditDate] = useState('')
+  const [description, setDescription] = useState('')
+  const [linkedModels, setLinkedModels] = useState<string[]>([])
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (!open) return
+    setName(initial?.name ?? '')
+    setVersion(initial?.version ?? '')
+    setType(initial?.type ?? 'tabular')
+    setClassification(initial?.classification ?? 'internal')
+    setStatus(initial?.status ?? 'active')
+    setOwner(initial?.owner ?? '')
+    setSource(initial?.source ?? '')
+    setFormat(initial?.format ?? '')
+    setContainsPii(initial?.containsPii ?? false)
+    setPiiTypes((initial?.piiTypes ?? []).join(', '))
+    setDemographicData(initial?.demographicData ?? false)
+    setRecordCount(initial?.recordCount != null ? String(initial.recordCount) : '')
+    setEncryption(initial?.encryption ?? '')
+    setRetentionPolicy(initial?.retentionPolicy ?? '')
+    setLastAuditDate(initial?.lastAuditDate ?? '')
+    setDescription(initial?.description ?? '')
+    setLinkedModels(initial?.usedInModels ?? (defaultModelId ? [defaultModelId] : []))
+  }, [open, initial, defaultModelId])
+
+  const toggleModel = (id: string) =>
+    setLinkedModels((prev) => prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id])
+
+  const canSubmit = name.trim().length > 0 && owner.trim().length > 0 && !saving
+
+  async function handleSubmit() {
+    if (!canSubmit) return
+    setSaving(true)
+    try {
+      await onSubmit({
+        name: name.trim(), version: version.trim() || undefined, type, classification, status,
+        owner: owner.trim(), source: source.trim() || undefined, format: format.trim() || undefined,
+        containsPii,
+        piiTypes: containsPii ? piiTypes.split(',').map((s) => s.trim()).filter(Boolean) : [],
+        demographicData,
+        recordCount: recordCount ? Number(recordCount) : undefined,
+        encryption: encryption.trim() || undefined,
+        retentionPolicy: retentionPolicy.trim() || undefined,
+        lastAuditDate: lastAuditDate || undefined,
+        description: description.trim() || undefined,
+        usedInModels: linkedModels,
+      })
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to save dataset')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const label = 'text-xs font-semibold text-[hsl(var(--text-4))]'
 
   return (
-    <div className="space-y-3 py-2">
-      <div>
-        <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Name</label>
-        <Input value={name} onChange={e => setName(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} />
-      </div>
-      <div>
-        <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Owner</label>
-        <Input value={owner} onChange={e => setOwner(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} />
-      </div>
-      <div>
-        <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Sensitivity</label>
-        <Select value={sensitivity} onValueChange={setSensitivity}>
-          <SelectTrigger className="mt-1 h-9" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-          <SelectContent style={{ borderRadius: 0 }}>
-            {['PII', 'PHI', 'confidential', 'internal'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="flex justify-end gap-2 pt-2">
-        <Button onClick={() => onSave({ ...dataset, name, owner, sensitivity, status })}
-          style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-          Save Changes
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-// ── Add Dataset Form ──────────────────────────────────────────────────────────
-
-function AddDatasetForm({ onSubmit, nextId }: { onSubmit: (d: Dataset) => void; nextId: string }) {
-  const [name, setName] = useState('');
-  const [version, setVersion] = useState('');
-  const [dsType, setDsType] = useState('tabular');
-  const [sensitivity, setSensitivity] = useState('internal');
-  const [hasPii, setHasPii] = useState(false);
-  const [hasPhi, setHasPhi] = useState(false);
-  const [owner, setOwner] = useState('');
-  const [source, setSource] = useState('');
-  const [linkedModel, setLinkedModel] = useState('');
-  const [format, setFormat] = useState('CSV');
-  const [records, setRecords] = useState('');
-  const [encryption, setEncryption] = useState('AES-256');
-  const [retention, setRetention] = useState('3 years');
-  const [classification, setClassification] = useState('internal');
-
-  const canSubmit = name && sensitivity && owner;
-
-  const handleSubmit = () => {
-    if (!canSubmit) return;
-    const now = new Date().toISOString().split('T')[0];
-    const effSensitivity = hasPhi ? 'PHI' : hasPii ? 'PII' : sensitivity;
-    onSubmit({
-      id: nextId, name, sensitivity: effSensitivity, classification,
-      risk: (hasPii || hasPhi) ? 'high' : 'medium',
-      linkedModel, records: parseInt(records) || 0, status: 'active',
-      lastAudit: now, owner, encryption, retentionPolicy: retention,
-      description: `${name} — ${dsType} dataset.`,
-    });
-  };
-
-  return (
-    <div className="space-y-3 py-2">
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Name *</label>
-          <Input value={name} onChange={e => setName(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} placeholder="Dataset name" />
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{initial ? `Edit ${initial.name}` : 'Register Dataset'}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 py-2">
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className={label}>Name *</label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} className="mt-1" placeholder="Dataset name" /></div>
+            <div><label className={label}>Version</label>
+              <Input value={version} onChange={(e) => setVersion(e.target.value)} className="mt-1" placeholder="v1.0" /></div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div><label className={label}>Type</label>
+              <Select value={type} onValueChange={setType}>
+                <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>{DATASET_TYPES.map((t) => <SelectItem key={t} value={t}>{t.replace('_', ' ')}</SelectItem>)}</SelectContent>
+              </Select></div>
+            <div><label className={label}>Classification</label>
+              <Select value={classification} onValueChange={setClassification}>
+                <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>{CLASSIFICATIONS.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+              </Select></div>
+            <div><label className={label}>Status</label>
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>{STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+              </Select></div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className={label}>Owner *</label>
+              <Input value={owner} onChange={(e) => setOwner(e.target.value)} className="mt-1" placeholder="Owning team or person" /></div>
+            <div><label className={label}>Source System</label>
+              <Input value={source} onChange={(e) => setSource(e.target.value)} className="mt-1" placeholder="e.g. Core Banking DB" /></div>
+          </div>
+          <div className="flex items-center gap-6 py-1">
+            <label className="flex items-center gap-2 text-xs text-[hsl(var(--text-1))]">
+              <input type="checkbox" checked={containsPii} onChange={(e) => setContainsPii(e.target.checked)} className="h-4 w-4" />
+              Contains PII
+            </label>
+            <label className="flex items-center gap-2 text-xs text-[hsl(var(--text-1))]">
+              <input type="checkbox" checked={demographicData} onChange={(e) => setDemographicData(e.target.checked)} className="h-4 w-4" />
+              Demographic data
+            </label>
+          </div>
+          {containsPii && (
+            <div><label className={label}>PII Categories (comma-separated)</label>
+              <Input value={piiTypes} onChange={(e) => setPiiTypes(e.target.value)} className="mt-1" placeholder="e.g. name, SSN, email" /></div>
+          )}
+          <div className="grid grid-cols-4 gap-3">
+            <div><label className={label}>Records</label>
+              <Input type="number" value={recordCount} onChange={(e) => setRecordCount(e.target.value)} className="mt-1" placeholder="0" /></div>
+            <div><label className={label}>Format</label>
+              <Input value={format} onChange={(e) => setFormat(e.target.value)} className="mt-1" placeholder="Parquet" /></div>
+            <div><label className={label}>Encryption</label>
+              <Input value={encryption} onChange={(e) => setEncryption(e.target.value)} className="mt-1" placeholder="AES-256" /></div>
+            <div><label className={label}>Last Audit</label>
+              <Input type="date" value={lastAuditDate} onChange={(e) => setLastAuditDate(e.target.value)} className="mt-1" /></div>
+          </div>
+          <div><label className={label}>Retention Policy</label>
+            <Input value={retentionPolicy} onChange={(e) => setRetentionPolicy(e.target.value)} className="mt-1" placeholder="e.g. 7 years (regulatory minimum)" /></div>
+          <div><label className={label}>Description</label>
+            <Input value={description} onChange={(e) => setDescription(e.target.value)} className="mt-1" placeholder="What this dataset contains and how it is used" /></div>
+          <div>
+            <label className={label}>Linked Models</label>
+            {modelsLoading ? (
+              <p className="mt-1 text-xs text-[hsl(var(--text-4))]">Loading models…</p>
+            ) : models.length === 0 ? (
+              <p className="mt-1 text-xs text-[hsl(var(--text-4))]">No models registered yet — link models later from this form.</p>
+            ) : (
+              <div className="mt-1 max-h-36 space-y-1 overflow-y-auto border border-[hsl(var(--border))] p-2">
+                {models.map((m) => (
+                  <label key={m.id} className="flex items-center gap-2 text-xs text-[hsl(var(--text-1))]">
+                    <input type="checkbox" checked={linkedModels.includes(m.id)} onChange={() => toggleModel(m.id)} className="h-4 w-4" />
+                    {m.name}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button disabled={!canSubmit} onClick={handleSubmit}>
+              {saving ? 'Saving…' : initial ? 'Save Changes' : 'Register Dataset'}
+            </Button>
+          </div>
         </div>
-        <div>
-          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Version</label>
-          <Input value={version} onChange={e => setVersion(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} placeholder="v1.0" />
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Type</label>
-          <Select value={dsType} onValueChange={setDsType}>
-            <SelectTrigger className="mt-1 h-9" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-            <SelectContent style={{ borderRadius: 0 }}>
-              {['tabular', 'text_corpus', 'image', 'time_series', 'graph', 'audio'].map(t =>
-                <SelectItem key={t} value={t}>{t.replace('_', ' ')}</SelectItem>
-              )}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Sensitivity *</label>
-          <Select value={sensitivity} onValueChange={setSensitivity}>
-            <SelectTrigger className="mt-1 h-9" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-            <SelectContent style={{ borderRadius: 0 }}>
-              {['PII', 'PHI', 'confidential', 'internal', 'public'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-      <div className="flex items-center gap-6 py-1">
-        <label className="flex items-center gap-2 text-xs" style={{ color: 'hsl(var(--text-1))' }}>
-          <input type="checkbox" checked={hasPii} onChange={e => setHasPii(e.target.checked)} className="h-4 w-4" />
-          Contains PII
-        </label>
-        <label className="flex items-center gap-2 text-xs" style={{ color: 'hsl(var(--text-1))' }}>
-          <input type="checkbox" checked={hasPhi} onChange={e => setHasPhi(e.target.checked)} className="h-4 w-4" />
-          Contains PHI
-        </label>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Owner *</label>
-          <Input value={owner} onChange={e => setOwner(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} placeholder="Owner name" />
-        </div>
-        <div>
-          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Source</label>
-          <Input value={source} onChange={e => setSource(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} placeholder="Data source" />
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Linked Models</label>
-          <Input value={linkedModel} onChange={e => setLinkedModel(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} placeholder="e.g. MDL-001" />
-        </div>
-        <div>
-          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Format</label>
-          <Select value={format} onValueChange={setFormat}>
-            <SelectTrigger className="mt-1 h-9" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-            <SelectContent style={{ borderRadius: 0 }}>
-              {['CSV', 'Parquet', 'JSON', 'SQL', 'AVRO', 'Delta'].map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-      <div className="grid grid-cols-3 gap-3">
-        <div>
-          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Records</label>
-          <Input type="number" value={records} onChange={e => setRecords(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} placeholder="0" />
-        </div>
-        <div>
-          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Encryption</label>
-          <Select value={encryption} onValueChange={setEncryption}>
-            <SelectTrigger className="mt-1 h-9" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-            <SelectContent style={{ borderRadius: 0 }}>
-              {['AES-256', 'AES-128', 'RSA-2048', 'None'].map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Retention</label>
-          <Select value={retention} onValueChange={setRetention}>
-            <SelectTrigger className="mt-1 h-9" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-            <SelectContent style={{ borderRadius: 0 }}>
-              {['1 year', '2 years', '3 years', '5 years', '7 years', '10 years'].map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-      <div>
-        <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Classification</label>
-        <Select value={classification} onValueChange={setClassification}>
-          <SelectTrigger className="mt-1 h-9" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-          <SelectContent style={{ borderRadius: 0 }}>
-            {['public', 'internal', 'confidential', 'restricted'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="flex justify-end gap-2 pt-2">
-        <Button disabled={!canSubmit} onClick={handleSubmit}
-          style={{ borderRadius: 0, background: canSubmit ? 'hsl(var(--brand))' : undefined, color: canSubmit ? 'hsl(var(--bg-surface))' : undefined }}>
-          <Plus size={14} />Add Dataset
-        </Button>
-      </div>
-    </div>
-  );
+      </DialogContent>
+    </Dialog>
+  )
 }

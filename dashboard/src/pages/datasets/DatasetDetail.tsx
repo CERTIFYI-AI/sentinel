@@ -1,102 +1,89 @@
-import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Database, Lock, Clock, Robot } from '@phosphor-icons/react';
-import { Card } from '../../components/ui/card';
-import { Button } from '../../components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
-import { DATASETS, MODELS, severityColor, statusColor, formatDate, formatNumber } from '../../data/seed';
-import { useSettingsStore } from '../../stores/settingsStore';
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI.
+//
+// DatasetDetail — a single dataset from the canonical `datasets` table.
+// Schema comes from schema_definition; the Quality tab shows real
+// data_quality_assessments; linked models resolve to ai_models pills.
 
-const schemaByDataset: Record<string, { column: string; type: string; pii: boolean; nullable: boolean; description: string }[]> = {
-  'DS-001': [
-    { column: 'applicant_id', type: 'UUID', pii: false, nullable: false, description: 'Anonymous applicant identifier' },
-    { column: 'credit_score', type: 'INT', pii: false, nullable: false, description: 'Credit bureau score (300–850)' },
-    { column: 'annual_income', type: 'DECIMAL(15,2)', pii: true, nullable: true, description: 'Self-reported annual income' },
-    { column: 'zip_code', type: 'VARCHAR(10)', pii: true, nullable: true, description: 'ZIP code — geographic proxy risk' },
-    { column: 'loan_amount', type: 'DECIMAL(15,2)', pii: false, nullable: false, description: 'Requested loan amount' },
-    { column: 'loan_term_months', type: 'INT', pii: false, nullable: false, description: 'Loan term in months' },
-    { column: 'default_flag', type: 'BOOLEAN', pii: false, nullable: false, description: 'Historical default (label)' },
-    { column: 'created_at', type: 'TIMESTAMP', pii: false, nullable: false, description: 'Record creation timestamp' },
-  ],
-  'DS-002': [
-    { column: 'transaction_id', type: 'UUID', pii: false, nullable: false, description: 'Unique transaction identifier' },
-    { column: 'amount', type: 'DECIMAL(15,2)', pii: false, nullable: false, description: 'Transaction amount' },
-    { column: 'merchant_id', type: 'VARCHAR(50)', pii: false, nullable: false, description: 'Anonymized merchant identifier' },
-    { column: 'user_id', type: 'UUID', pii: true, nullable: false, description: 'Customer user identifier (PII)' },
-    { column: 'is_fraud', type: 'BOOLEAN', pii: false, nullable: false, description: 'Fraud label (ground truth)' },
-    { column: 'timestamp', type: 'TIMESTAMP', pii: false, nullable: false, description: 'Transaction timestamp' },
-  ],
-  default: [
-    { column: 'id', type: 'UUID', pii: false, nullable: false, description: 'Primary key' },
-    { column: 'created_at', type: 'TIMESTAMP', pii: false, nullable: false, description: 'Creation timestamp' },
-    { column: 'updated_at', type: 'TIMESTAMP', pii: false, nullable: true, description: 'Last update timestamp' },
-    { column: 'label', type: 'VARCHAR(255)', pii: false, nullable: false, description: 'Target label' },
-    { column: 'features', type: 'JSONB', pii: false, nullable: false, description: 'Feature vector' },
-  ],
-};
+import { useNavigate, useParams } from 'react-router-dom'
+import { ArrowLeft, ArrowSquareOut, Clock, Database, Lock, Robot } from '@phosphor-icons/react'
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { EmptyState, ErrorState } from '@/components/evals/states'
+import { useDataset, useQualityAssessments } from '@/hooks/useDatasetData'
+import { useModelOptions } from '@/hooks/useAiiaData'
 
-const auditHistory = [
-  { date: '2026-02-15', auditor: 'Emma Wilson', framework: 'GDPR', result: 'passed', notes: 'Data processing basis confirmed. Consent records verified.' },
-  { date: '2025-11-20', auditor: 'James Patel', framework: 'ISO 27001', result: 'passed', notes: 'Encryption at rest and in transit verified.' },
-  { date: '2025-08-10', auditor: 'Maria Santos', framework: 'NIST AI RMF', result: 'failed', notes: 'Missing data lineage documentation. Remediation required.' },
-];
+function classStyle(c?: string) {
+  switch (c) {
+    case 'restricted': return { background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))' }
+    case 'confidential': return { background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' }
+    case 'public': return { background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' }
+    default: return { background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' }
+  }
+}
+
+function art10Style(s?: string) {
+  switch (s) {
+    case 'met': return { background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' }
+    case 'partial': return { background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' }
+    case 'not_met': return { background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))' }
+    default: return { background: 'hsl(var(--bg-raised))', color: 'hsl(var(--text-4))' }
+  }
+}
 
 export default function DatasetDetail() {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  useSettingsStore(s => s.orgName);
+  const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const { data: dataset, isLoading, isError, error } = useDataset(id)
+  const { data: assessments } = useQualityAssessments(id)
+  const { models, loading: modelsLoading } = useModelOptions()
 
-  const dataset = DATASETS.find(d => d.id === id);
+  const back = (
+    <Button variant="outline" onClick={() => navigate('/datasets')} className="gap-2 mb-4">
+      <ArrowLeft size={16} /> Back to Registry
+    </Button>
+  )
 
+  if (isLoading) return <div className="p-6 text-sm text-[hsl(var(--text-4))]">Loading dataset…</div>
+  if (isError) return <div className="p-6">{back}<ErrorState message={error?.message} /></div>
   if (!dataset) {
     return (
       <div className="p-6">
-        <Button variant="outline" onClick={() => navigate('/datasets')} className="gap-2 mb-4">
-          <ArrowLeft size={16} /> Back to Registry
-        </Button>
-        <div className="text-[hsl(var(--text-4))]">Dataset not found: {id}</div>
+        {back}
+        <div className="text-[hsl(var(--text-4))]">Dataset not found.</div>
       </div>
-    );
+    )
   }
 
-  const rc = severityColor(dataset.risk);
-  const sc = statusColor(dataset.status);
-  const model = MODELS.find(m => m.id === dataset.linkedModel);
-  const schema = schemaByDataset[dataset.id] || schemaByDataset['default'];
-
-  const sensitivityColor: Record<string, string> = {
-    PII: 'bg-[hsl(var(--s-er-tx))] text-[hsl(var(--s-er-tx))] border-[hsl(var(--s-er-br))]',
-    PHI: 'bg-[hsl(var(--tag-purple-bg))] text-[hsl(var(--tag-purple))] border-[hsl(var(--tag-purple-border))]',
-    confidential: 'bg-[hsl(var(--s-wn-tx))] text-[hsl(var(--s-wn-tx))] border-[hsl(var(--s-wn-br))]',
-    internal: 'bg-[hsl(var(--s-in-tx))] text-[hsl(var(--s-in-tx))] border-[hsl(var(--s-in-br))]',
-    public: 'bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--s-ok-tx))] border-[hsl(var(--s-ok-br))]',
-  };
+  const linkedModels = dataset.usedInModels
+    .map((mid) => ({ id: mid, name: models.find((m) => m.id === mid)?.name }))
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
-        <Button variant="outline" onClick={() => navigate('/datasets')} className="gap-2 mb-4">
-          <ArrowLeft size={16} /> Back to Registry
-        </Button>
+        {back}
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3">
-            <div className="p-2 bg-surface border border-[hsl(var(--border))]">
+            <div className="border border-[hsl(var(--border))] bg-surface p-2">
               <Database size={24} className="text-[hsl(var(--brand))]" />
             </div>
             <div>
               <h1 className="text-xl font-semibold text-[hsl(var(--text-1))]">{dataset.name}</h1>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="font-mono text-xs text-[hsl(var(--text-4))]">{dataset.id}</span>
-                <span className={`px-2 py-0.5 text-xs border ${sensitivityColor[dataset.sensitivity] || ''}`}>{dataset.sensitivity}</span>
-                <span className="px-2 py-0.5 text-xs" style={{ background: rc.bg, color: rc.text, border: `1px solid ${rc.border}` }}>{dataset.risk} risk</span>
-                <span className="px-2 py-0.5 text-xs" style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}` }}>{dataset.status}</span>
+              <div className="mt-1 flex items-center gap-2">
+                {dataset.version && <span className="font-mono text-xs text-[hsl(var(--text-4))]">{dataset.version}</span>}
+                <span className="px-2 py-0.5 text-xs" style={classStyle(dataset.classification)}>{dataset.classification ?? 'unclassified'}</span>
+                {dataset.containsPii && (
+                  <span className="px-2 py-0.5 text-xs" style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))' }}>PII</span>
+                )}
+                {dataset.status && <span className="px-2 py-0.5 text-xs text-[hsl(var(--text-2))] border border-[hsl(var(--border))]">{dataset.status}</span>}
               </div>
-              <p className="text-sm text-[hsl(var(--text-4))] mt-1">{dataset.description}</p>
+              {dataset.description && <p className="mt-1 text-sm text-[hsl(var(--text-4))]">{dataset.description}</p>}
             </div>
           </div>
           <div className="text-right text-xs text-[hsl(var(--text-4))]">
-            <div>Owner: {dataset.owner}</div>
-            <div className="mt-0.5">Last Audit: {formatDate(dataset.lastAudit)}</div>
+            {dataset.owner && <div>Owner: {dataset.owner}</div>}
+            <div className="mt-0.5">Last Audit: {dataset.lastAuditDate ?? 'never'}</div>
           </div>
         </div>
       </div>
@@ -106,114 +93,155 @@ export default function DatasetDetail() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="schema">Schema</TabsTrigger>
           <TabsTrigger value="linked">Linked Models</TabsTrigger>
-          <TabsTrigger value="audit">Audit History</TabsTrigger>
+          <TabsTrigger value="quality">Quality</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-4 mt-4">
+        <TabsContent value="overview" className="mt-4 space-y-4">
           <div className="grid grid-cols-4 gap-4">
             <Card className="p-4">
               <div className="text-xs text-[hsl(var(--text-4))]">Records</div>
-              <div className="text-2xl font-bold text-[hsl(var(--text-1))] mt-1">{formatNumber(dataset.records)}</div>
+              <div className="mt-1 text-2xl font-bold text-[hsl(var(--text-1))]">{dataset.recordCount != null ? dataset.recordCount.toLocaleString() : '—'}</div>
             </Card>
             <Card className="p-4">
               <div className="text-xs text-[hsl(var(--text-4))]">Encryption</div>
-              <div className="text-sm font-medium text-[hsl(var(--text-1))] mt-1 flex items-center gap-1"><Lock size={14} /> {dataset.encryption}</div>
+              <div className="mt-1 flex items-center gap-1 text-sm font-medium text-[hsl(var(--text-1))]"><Lock size={14} /> {dataset.encryption ?? '—'}</div>
             </Card>
             <Card className="p-4">
               <div className="text-xs text-[hsl(var(--text-4))]">Retention</div>
-              <div className="text-sm font-medium text-[hsl(var(--text-1))] mt-1 flex items-center gap-1"><Clock size={14} /> {dataset.retentionPolicy}</div>
+              <div className="mt-1 flex items-center gap-1 text-sm font-medium text-[hsl(var(--text-1))]"><Clock size={14} /> {dataset.retentionPolicy ?? '—'}</div>
             </Card>
             <Card className="p-4">
-              <div className="text-xs text-[hsl(var(--text-4))]">Classification</div>
-              <div className="text-sm font-medium text-[hsl(var(--text-1))] mt-1">{dataset.classification}</div>
+              <div className="text-xs text-[hsl(var(--text-4))]">Format</div>
+              <div className="mt-1 text-sm font-medium text-[hsl(var(--text-1))]">{dataset.format ?? '—'}</div>
             </Card>
           </div>
-        </TabsContent>
-
-        <TabsContent value="schema" className="mt-4">
-          <Card>
-            <div className="p-4 border-b border-[hsl(var(--border))]">
-              <div className="text-sm font-medium text-[hsl(var(--text-1))]">Column Definitions</div>
-              <div className="text-xs text-[hsl(var(--text-4))] mt-0.5">{schema.length} columns · {schema.filter(c => c.pii).length} PII columns</div>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-[hsl(var(--border))]">
-                    {['Column', 'Type', 'Nullable', 'PII', 'Description'].map(h => (
-                      <th key={h} className="text-left px-4 py-3 text-xs font-medium text-[hsl(var(--text-4))] uppercase tracking-wide">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {schema.map(col => (
-                    <tr key={col.column} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-surface))/50]">
-                      <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--text-1))]">{col.column}</td>
-                      <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--text-3))]">{col.type}</td>
-                      <td className="px-4 py-3 text-xs text-[hsl(var(--text-3))]">{col.nullable ? 'YES' : 'NO'}</td>
-                      <td className="px-4 py-3">
-                        {col.pii && <span className="px-1.5 py-0.5 text-xs bg-[hsl(var(--s-er-tx))] text-[hsl(var(--s-er-tx))] border border-[hsl(var(--s-er-br))]">PII</span>}
-                      </td>
-                      <td className="px-4 py-3 text-xs text-[hsl(var(--text-4))]">{col.description}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <Card className="p-4">
+            <div className="grid grid-cols-2 gap-4 text-xs">
+              <div><p className="text-[hsl(var(--text-4))]">Source System</p><p className="mt-1 text-[hsl(var(--text-1))]">{dataset.source ?? '—'}</p></div>
+              <div><p className="text-[hsl(var(--text-4))]">Ingestion</p><p className="mt-1 text-[hsl(var(--text-1))]">{dataset.ingestionMethod ?? '—'}</p></div>
+              <div><p className="text-[hsl(var(--text-4))]">Collection Method</p><p className="mt-1 text-[hsl(var(--text-1))]">{dataset.collectionMethod ?? '—'}</p></div>
+              <div><p className="text-[hsl(var(--text-4))]">License</p><p className="mt-1 text-[hsl(var(--text-1))]">{dataset.license ?? '—'}</p></div>
+              <div><p className="text-[hsl(var(--text-4))]">PII Categories</p><p className="mt-1 text-[hsl(var(--text-1))]">{dataset.piiTypes.length ? dataset.piiTypes.join(', ') : '—'}</p></div>
+              <div><p className="text-[hsl(var(--text-4))]">Demographic Data</p><p className="mt-1 text-[hsl(var(--text-1))]">{dataset.demographicData ? 'Yes' : 'No'}</p></div>
+              <div><p className="text-[hsl(var(--text-4))]">Known Biases</p><p className="mt-1 text-[hsl(var(--text-1))]">{dataset.knownBiases ?? '—'}</p></div>
+              <div><p className="text-[hsl(var(--text-4))]">Bias Mitigation</p><p className="mt-1 text-[hsl(var(--text-1))]">{dataset.biasMitigation ?? '—'}</p></div>
             </div>
           </Card>
         </TabsContent>
 
-        <TabsContent value="linked" className="mt-4">
-          {model ? (
-            <Card className="p-4">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-surface border border-[hsl(var(--border))]">
-                  <Robot size={18} className="text-[hsl(var(--brand))]" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium text-[hsl(var(--text-1))]">{model.name}</div>
-                      <div className="text-xs text-[hsl(var(--text-4))] mt-0.5">{model.id} · {model.version} · {model.type}</div>
-                    </div>
-                    <Button size="sm" variant="outline" onClick={() => navigate('/models/inventory')}>View Model</Button>
-                  </div>
-                  <div className="text-sm text-[hsl(var(--text-3))] mt-2">{model.description}</div>
-                  <div className="grid grid-cols-3 gap-3 mt-3">
-                    <div className="text-xs"><span className="text-[hsl(var(--text-4))]">Status:</span> <span className="text-[hsl(var(--text-1))]">{model.status}</span></div>
-                    <div className="text-xs"><span className="text-[hsl(var(--text-4))]">Risk Tier:</span> <span className="text-[hsl(var(--text-1))]">{model.riskTier}</span></div>
-                    <div className="text-xs"><span className="text-[hsl(var(--text-4))]">Accuracy:</span> <span className="text-[hsl(var(--text-1))]">{model.accuracy}%</span></div>
-                  </div>
+        <TabsContent value="schema" className="mt-4">
+          {dataset.schemaDefinition.length === 0 ? (
+            <EmptyState
+              title="No schema documented"
+              message="Column definitions have not been recorded for this dataset yet." />
+          ) : (
+            <Card>
+              <div className="border-b border-[hsl(var(--border))] p-4">
+                <div className="text-sm font-medium text-[hsl(var(--text-1))]">Column Definitions</div>
+                <div className="mt-0.5 text-xs text-[hsl(var(--text-4))]">
+                  {dataset.schemaDefinition.length} columns · {dataset.schemaDefinition.filter((c) => c.pii).length} PII columns
                 </div>
               </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-[hsl(var(--border))]">
+                      {['Column', 'Type', 'Nullable', 'PII', 'Description'].map((h) => (
+                        <th key={h} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-[hsl(var(--text-4))]">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dataset.schemaDefinition.map((col) => (
+                      <tr key={col.column} className="border-b border-[hsl(var(--border))]">
+                        <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--text-1))]">{col.column}</td>
+                        <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--text-3))]">{col.type}</td>
+                        <td className="px-4 py-3 text-xs text-[hsl(var(--text-3))]">{col.nullable ? 'YES' : 'NO'}</td>
+                        <td className="px-4 py-3">
+                          {col.pii && <span className="px-1.5 py-0.5 text-xs" style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))' }}>PII</span>}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-[hsl(var(--text-4))]">{col.description ?? ''}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </Card>
-          ) : (
-            <div className="text-sm text-[hsl(var(--text-4))]">No linked models for this dataset.</div>
           )}
         </TabsContent>
 
-        <TabsContent value="audit" className="mt-4">
-          <div className="space-y-3">
-            {auditHistory.map((a, i) => {
-              const statusC = statusColor(a.result);
-              return (
-                <Card key={i} className="p-4">
+        <TabsContent value="linked" className="mt-4">
+          {linkedModels.length === 0 ? (
+            <EmptyState
+              title="No linked models"
+              message="Link this dataset to models from the registry edit form to trace training-data lineage." />
+          ) : (
+            <div className="space-y-3">
+              {linkedModels.map((m) => (
+                <Card key={m.id} className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="border border-[hsl(var(--border))] bg-surface p-2">
+                        <Robot size={18} className="text-[hsl(var(--brand))]" />
+                      </div>
+                      <div className="text-sm font-medium text-[hsl(var(--text-1))]">
+                        {m.name ?? (modelsLoading ? '…' : 'Unavailable')}
+                      </div>
+                    </div>
+                    {m.name && (
+                      <Button size="sm" variant="outline" className="gap-1" onClick={() => navigate(`/models/inventory/${m.id}`)}>
+                        View Model <ArrowSquareOut size={12} />
+                      </Button>
+                    )}
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="quality" className="mt-4">
+          {assessments.length === 0 ? (
+            <EmptyState
+              title="No quality assessments"
+              message="Run a data quality assessment for this dataset from the Data Quality module."
+              actionLabel="Open Data Quality"
+              onAction={() => navigate(`/data-quality?dataset=${dataset.id}`)} />
+          ) : (
+            <div className="space-y-3">
+              {assessments.map((a) => (
+                <Card key={a.id} className="p-4">
                   <div className="flex items-start justify-between">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-[hsl(var(--text-1))]">{a.framework} Audit</span>
-                        <span className="px-2 py-0.5 text-xs" style={{ background: statusC.bg, color: statusC.text, border: `1px solid ${statusC.border}` }}>{a.result}</span>
+                        <span className="text-sm font-medium text-[hsl(var(--text-1))]">
+                          {a.overallScore != null ? `Overall ${a.overallScore}/100` : 'Assessment'}
+                        </span>
+                        {a.art10Status && (
+                          <span className="px-2 py-0.5 text-xs" style={art10Style(a.art10Status)}>
+                            Art. 10 {a.art10Status.replace('_', ' ')}
+                          </span>
+                        )}
                       </div>
-                      <div className="text-xs text-[hsl(var(--text-4))] mt-1">Auditor: {a.auditor} · {formatDate(a.date)}</div>
-                      <div className="text-sm text-[hsl(var(--text-3))] mt-2">{a.notes}</div>
+                      <div className="mt-1 text-xs text-[hsl(var(--text-4))]">
+                        {a.assessmentMethod}{a.assessor ? ` · ${a.assessor}` : ''} · {a.assessedAt}
+                      </div>
+                      {a.deficiencies.length > 0 && (
+                        <ul className="mt-2 space-y-1 text-xs text-[hsl(var(--text-2))]">
+                          {a.deficiencies.map((d, i) => (
+                            <li key={i}>• <strong>{d.dimension}</strong> ({d.severity}): {d.issue}</li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
+                    <Button size="sm" variant="outline" onClick={() => navigate(`/data-quality?dataset=${dataset.id}`)}>Details</Button>
                   </div>
                 </Card>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>
-  );
+  )
 }

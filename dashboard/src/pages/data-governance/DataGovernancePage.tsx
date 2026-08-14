@@ -20,7 +20,7 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { formatDate } from '../../data/seed';
 import { useEffect } from 'react'
 import { useDsarRequests } from '../../hooks/queries/useDataGovernance'
-import { useDatasetData } from '../../hooks/useDatasetData'
+import { useDatasets } from '../../hooks/useDatasetData'
 import { PageSkeleton } from '@/components/ui/PageSkeleton'
 
 // Supabase-wired — no mock data
@@ -130,7 +130,7 @@ function LineageFlow({ lineage }: { lineage: string[] }) {
 // ── Main Component ───────────────────────────────────────────────────────────
 
 export default function DataGovernancePage() {
-  const { items: datasetItems, isLoading: datasetsLoading } = useDatasetData()
+  const { data: datasetItems, isLoading: datasetsLoading } = useDatasets()
   const { data: supabaseDsars = [] } = useDsarRequests()
   const [dsars, setDsars] = useState<DSAR[]>([]);
   useEffect(() => { if (supabaseDsars.length > 0) setDsars(supabaseDsars as any) }, [supabaseDsars]);
@@ -155,21 +155,21 @@ export default function DataGovernancePage() {
 
   // Map dataset items to DG shape — use live data from Supabase
   const dataAssets = (datasetItems as any[]).map(d => ({
-    id: d.id || d.datasetId || '',
-    name: d.name || d.datasetName || '',
-    datasetId: d.datasetId || d.id || '',
-    type: d.type || d.dataType || 'Unknown',
-    classification: d.classification || d.sensitivity || 'Internal',
-    retention: d.retentionPolicy || d.retention || 'Unknown',
+    id: d.id || '',
+    name: d.name || '',
+    datasetId: d.id || '',
+    type: d.type || 'Unknown',
+    classification: d.classification || 'Internal',
+    retention: d.retentionPolicy || 'Unknown',
     owner: d.owner || 'Unknown',
-    pii: d.pii ?? (d.sensitivity === 'PII'),
+    pii: !!d.containsPii,
     crossBorder: d.crossBorder ?? false,
     countries: d.countries || [],
     consentStatus: d.consentStatus || 'Not Required',
     dsarCount: d.dsarCount ?? 0,
-    lineage: d.lineage || [],
+    lineage: d.upstreamSources || [],
     lawfulBasis: d.lawfulBasis || 'Legitimate Interest',
-    lastReview: d.lastAudit || d.lastReview || '',
+    lastReview: d.lastAuditDate || '',
   })) as DG[];
 
   // Metrics

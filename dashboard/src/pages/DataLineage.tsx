@@ -1,530 +1,298 @@
-import { useState } from 'react'
-import { useSupabaseTable } from '@/hooks/useSupabaseTable'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ChartLine, Export, X, ArrowRight, Warning, Plus, MagnifyingGlass, Pencil, Trash, Database, ArrowsDownUp, GitBranch } from '@phosphor-icons/react'
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI.
+//
+// DataLineage — flow view over the canonical `datasets` table:
+// upstream sources → dataset (transformations) → downstream models
+// (ai_models uuids resolved to pills). Edits persist to `datasets`.
+// Honors ?model=<uuid> with a dismissible filter chip.
+
+import { useMemo, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { ConfirmDialog } from '../components/ui/ConfirmDialog'
-
-
-interface LineageRecord {
-  id: string
-  datasetName: string
-  version: string
-  sourceSystem: string
-  ingestionMethod: string
-  transformations: string[]
-  downstreamModels: string[]
-  upstreamSources: string[]
-  piiPresent: boolean
-  piiTypes?: string[]
-  dataClassification: 'Public' | 'Internal' | 'Confidential' | 'Restricted'
-  retentionPolicy: string
-  lastUpdated: string
-  quality: number
-  owner: string
-  issues: string[]
-  schema?: string
-  rowCount?: string
-  sla?: string
-}
-
-const SEED: LineageRecord[] = [
-  { id: 'DL-001', datasetName: 'ACME Credit History', version: '2026-Q1', sourceSystem: 'Core Banking System (FIS Horizon)', ingestionMethod: 'Batch ETL · Daily', transformations: ['PII tokenization', 'Normalization (Z-score)', 'Outlier removal (IQR)', 'Feature engineering (30-day rolling avg)'], downstreamModels: ['Credit Scoring Model v2.1', 'Loan Approval Model v3.0'], upstreamSources: ['FIS Horizon Core DB', 'Oracle GL Ledger'], piiPresent: true, piiTypes: ['Account Number (tokenized)', 'SSN (hashed)', 'DOB (binned to decade)'], dataClassification: 'Restricted', retentionPolicy: '7 years (regulatory minimum)', lastUpdated: '2026-04-10 02:00:00', quality: 94, owner: 'Data Engineering', issues: [], schema: 'credit_history_v3.1.json', rowCount: '4.2M rows', sla: 'By 03:00 UTC daily' },
-  { id: 'DL-002', datasetName: 'Transaction Stream', version: 'Live', sourceSystem: 'Kafka · Transaction Processing', ingestionMethod: 'Streaming · Real-time', transformations: ['Deduplication', 'Schema validation', 'Fraud feature extraction', 'Session windowing (5min)'], downstreamModels: ['Fraud Detection Engine v4.2'], upstreamSources: ['Payment Gateway (Stripe)', 'ACH Processing System', 'Internal GL'], piiPresent: true, piiTypes: ['Card Number (truncated)', 'Merchant ID', 'Geolocation (city-level)'], dataClassification: 'Confidential', retentionPolicy: '90 days hot, 5 years cold', lastUpdated: '2026-04-10 09:20:00', quality: 98, owner: 'Data Engineering', issues: [], schema: 'transaction_event_v2.avro', rowCount: '~12K/min', sla: 'Real-time (< 500ms lag)' },
-  { id: 'DL-003', datasetName: 'Experian Bureau Data', version: '2026-Q1', sourceSystem: 'Experian Credit Bureau API', ingestionMethod: 'API Pull · Weekly', transformations: ['Schema mapping', 'Score normalization', 'Missing value imputation'], downstreamModels: ['Credit Scoring Model v2.1'], upstreamSources: ['Experian API v4.2'], piiPresent: true, piiTypes: ['Credit Score', 'Inquiry History'], dataClassification: 'Restricted', retentionPolicy: '2 years (bureau agreement)', lastUpdated: '2026-04-07 04:00:00', quality: 91, owner: 'Data Engineering', issues: ['Experian API latency spike on Apr 7 — 3% missing records imputed'], schema: 'experian_credit_v2.json', rowCount: '1.8M records', sla: 'By Monday 06:00 UTC' },
-  { id: 'DL-004', datasetName: 'Customer Behavior Events', version: '2025-Q4', sourceSystem: 'CDP (Segment.io)', ingestionMethod: 'Batch ETL · Nightly', transformations: ['Event aggregation', 'Churn feature engineering', 'Behavioral clustering'], downstreamModels: ['Customer Churn Predictor v2.3'], upstreamSources: ['Segment.io S3 Export', 'Salesforce CRM'], piiPresent: false, dataClassification: 'Internal', retentionPolicy: '3 years', lastUpdated: '2026-04-09 03:00:00', quality: 87, owner: 'Analytics Engineering', issues: ['Schema drift detected on 2026-03-15 — field "session_duration" renamed to "session_length_sec"'], schema: 'customer_events_v1.8.parquet', rowCount: '22M events', sla: 'By 05:00 UTC nightly' },
-  { id: 'DL-005', datasetName: 'Synthetic Fraud Patterns', version: 'v3.0', sourceSystem: 'Internal Generator (GANs)', ingestionMethod: 'Manual upload', transformations: ['Quality validation', 'Distribution matching'], downstreamModels: ['Fraud Detection Engine v4.2'], upstreamSources: ['Internal GAN Generator v2.1'], piiPresent: false, dataClassification: 'Internal', retentionPolicy: 'Indefinite (synthetic)', lastUpdated: '2026-02-15', quality: 99, owner: 'Fraud AI Team', issues: [], schema: 'synthetic_fraud_v3.parquet', rowCount: '500K synthetic records', sla: 'On-demand' },
-]
-
-const CLASS_STYLE: Record<string, { bg: string; color: string }> = {
-  Public: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
-  Internal: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
-  Confidential: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
-  Restricted: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
-}
-
-const BLANK = {
-  datasetName: '', version: '', sourceSystem: '', ingestionMethod: 'Batch ETL · Daily',
-  transformations: '', downstreamModels: '', upstreamSources: '',
-  piiPresent: false, piiTypes: '', dataClassification: 'Internal' as const,
-  retentionPolicy: '', quality: 90, owner: '', schema: '', rowCount: '', sla: '',
-}
+import { ArrowRight, ArrowSquareOut, GitBranch, X } from '@phosphor-icons/react'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { DataTable, type Column } from '@/components/ui/DataTable'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { TableSkeleton, EmptyState, ErrorState } from '@/components/evals/states'
+import { useDatasets } from '@/hooks/useDatasetData'
+import { useModelOptions } from '@/hooks/useAiiaData'
+import { useRBAC } from '@/hooks/useRBAC'
+import type { DatasetRecord } from '@/services/datasetService'
 
 export default function DataLineage() {
-  const { data: records, setData: setRecords } = useSupabaseTable<LineageRecord>('datalineage_table', SEED)
-  const [selected, setSelected] = useState<LineageRecord | null>(null)
-  const [drawerTab, setDrawerTab] = useState<'overview' | 'upstream' | 'downstream'>('overview')
-  const [search, setSearch] = useState('')
-  const [classFilter, setClassFilter] = useState('All')
-  const [showCreate, setShowCreate] = useState(false)
-  const [editMode, setEditMode] = useState(false)
-  const [form, setForm] = useState(BLANK)
-  const [deleteTarget, setDeleteTarget] = useState<LineageRecord | null>(null)
+  const nav = useNavigate()
+  const { can } = useRBAC()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const modelParam = searchParams.get('model')
 
-  const filtered = records.filter(r => {
-    const q = search.toLowerCase()
-    const ms = r.datasetName.toLowerCase().includes(q) || r.id.toLowerCase().includes(q) || r.sourceSystem.toLowerCase().includes(q)
-    return ms && (classFilter === 'All' || r.dataClassification === classFilter)
-  })
+  const { data, isLoading, isError, error, refetch, update } = useDatasets()
+  const { models, loading: modelsLoading } = useModelOptions()
+
+  const [selected, setSelected] = useState<DatasetRecord | null>(null)
+  const [editing, setEditing] = useState<DatasetRecord | null>(null)
+
+  const modelName = (id?: string) => (id ? models.find((m) => m.id === id)?.name : undefined)
+
+  const rows = useMemo(
+    () => data.filter((d) => !modelParam || d.usedInModels.includes(modelParam)),
+    [data, modelParam],
+  )
 
   const stats = {
-    total: records.length,
-    pii: records.filter(r => r.piiPresent).length,
-    avgQuality: Math.round(records.reduce((s, r) => s + r.quality, 0) / records.length),
-    issues: records.filter(r => r.issues.length > 0).length,
+    total: data.length,
+    pii: data.filter((d) => d.containsPii).length,
+    sources: new Set(data.map((d) => d.source).filter(Boolean)).size,
+    unlinked: data.filter((d) => d.usedInModels.length === 0).length,
   }
 
-  function openCreate() {
-    setForm(BLANK)
-    setEditMode(false)
-    setShowCreate(true)
+  const modelPill = (mid: string) => {
+    const name = modelName(mid)
+    if (!name) return <span key={mid} className="text-xs text-[hsl(var(--text-4))]">{modelsLoading ? '…' : 'Unavailable'}</span>
+    return (
+      <button
+        key={mid}
+        onClick={(e) => { e.stopPropagation(); nav(`/models/inventory/${mid}`) }}
+        className="inline-flex items-center gap-1 border border-[hsl(var(--brand))/30] bg-[hsl(var(--brand-subtle))] px-2 py-0.5 text-xs font-medium text-[hsl(var(--brand))] transition-colors hover:bg-[hsl(var(--brand))] hover:text-[hsl(var(--bg-surface))]"
+      >
+        {name} <ArrowSquareOut size={12} />
+      </button>
+    )
   }
 
-  function openEdit(r: LineageRecord) {
-    setForm({
-      datasetName: r.datasetName, version: r.version, sourceSystem: r.sourceSystem,
-      ingestionMethod: r.ingestionMethod, transformations: r.transformations.join('\n'),
-      downstreamModels: r.downstreamModels.join('\n'), upstreamSources: r.upstreamSources.join('\n'),
-      piiPresent: r.piiPresent, piiTypes: r.piiTypes?.join(', ') ?? '',
-      dataClassification: r.dataClassification as any, retentionPolicy: r.retentionPolicy,
-      quality: r.quality, owner: r.owner, schema: r.schema ?? '', rowCount: r.rowCount ?? '', sla: r.sla ?? '',
-    })
-    setEditMode(true)
-    setShowCreate(true)
-    setSelected(null)
-  }
+  const columns: Column<DatasetRecord>[] = [
+    { key: 'name', header: 'Dataset', sortable: true, render: (d) => (
+      <div>
+        <button
+          onClick={(e) => { e.stopPropagation(); nav(`/datasets/${d.id}`) }}
+          className="text-xs font-medium text-[hsl(var(--brand))] hover:underline"
+        >{d.name}</button>
+        {d.version && <span className="ml-2 font-mono text-[10px] text-[hsl(var(--text-4))]">{d.version}</span>}
+      </div>
+    ) },
+    { key: 'source', header: 'Source System', sortable: true, render: (d) => (
+      <span className="text-xs text-[hsl(var(--text-2))]">{d.source ?? '—'}</span>
+    ) },
+    { key: 'ingestionMethod', header: 'Ingestion', render: (d) => (
+      <span className="text-xs text-[hsl(var(--text-3))]">{d.ingestionMethod ?? '—'}</span>
+    ) },
+    { key: 'upstreamSources', header: 'Upstream', render: (d) => (
+      <span className="text-xs text-[hsl(var(--text-3))]">{d.upstreamSources.length || '—'}</span>
+    ) },
+    { key: 'usedInModels', header: 'Downstream Models', render: (d) => (
+      d.usedInModels.length === 0
+        ? <span className="text-xs text-[hsl(var(--text-4))]">—</span>
+        : <span className="inline-flex flex-wrap items-center gap-1">
+            {d.usedInModels.slice(0, 2).map(modelPill)}
+            {d.usedInModels.length > 2 && <span className="text-[10px] text-[hsl(var(--text-4))]">+{d.usedInModels.length - 2}</span>}
+          </span>
+    ) },
+    { key: 'containsPii', header: 'PII', render: (d) => d.containsPii ? (
+      <span className="px-1.5 py-0.5 text-[10px] font-medium" style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))' }}>PII</span>
+    ) : <span className="text-xs text-[hsl(var(--text-4))]">—</span> },
+    { key: 'sla', header: 'SLA', render: (d) => (
+      <span className="text-xs text-[hsl(var(--text-4))]">{d.sla ?? '—'}</span>
+    ) },
+  ]
 
-  function handleSave() {
-    if (!form.datasetName || !form.sourceSystem || !form.owner) {
-      toast.error('Dataset name, source system, and owner are required')
-      return
-    }
-    const toArr = (s: string) => s.split('\n').map(x => x.trim()).filter(Boolean)
-
-    if (editMode && selected) {
-      setRecords(prev => prev.map(r => r.id === selected.id ? {
-        ...r, datasetName: form.datasetName, version: form.version, sourceSystem: form.sourceSystem,
-        ingestionMethod: form.ingestionMethod, transformations: toArr(form.transformations),
-        downstreamModels: toArr(form.downstreamModels), upstreamSources: toArr(form.upstreamSources),
-        piiPresent: form.piiPresent, piiTypes: form.piiTypes ? form.piiTypes.split(',').map(x => x.trim()) : [],
-        dataClassification: form.dataClassification, retentionPolicy: form.retentionPolicy,
-        quality: form.quality, owner: form.owner, schema: form.schema, rowCount: form.rowCount, sla: form.sla,
-      } : r))
-      toast.success(`${form.datasetName} updated`)
-    } else {
-      const newId = `DL-${String(records.length + 1).padStart(3, '0')}`
-      const newR: LineageRecord = {
-        id: newId, datasetName: form.datasetName, version: form.version || 'v1.0',
-        sourceSystem: form.sourceSystem, ingestionMethod: form.ingestionMethod,
-        transformations: toArr(form.transformations), downstreamModels: toArr(form.downstreamModels),
-        upstreamSources: toArr(form.upstreamSources), piiPresent: form.piiPresent,
-        piiTypes: form.piiTypes ? form.piiTypes.split(',').map(x => x.trim()) : undefined,
-        dataClassification: form.dataClassification, retentionPolicy: form.retentionPolicy || '3 years',
-        lastUpdated: new Date().toISOString().slice(0, 16).replace('T', ' '), quality: form.quality,
-        owner: form.owner, issues: [], schema: form.schema || undefined,
-        rowCount: form.rowCount || undefined, sla: form.sla || undefined,
-      }
-      setRecords(prev => [newR, ...prev])
-      toast.success(`${newR.id} — ${newR.datasetName} added to lineage registry`)
-    }
-    setShowCreate(false)
-  }
-
-  function handleDelete() {
-    if (!deleteTarget) return
-    setRecords(prev => prev.filter(r => r.id !== deleteTarget.id))
-    if (selected?.id === deleteTarget.id) setSelected(null)
-    toast.success(`${deleteTarget.datasetName} removed from lineage registry`)
-    setDeleteTarget(null)
-  }
-
-  function openDrawer(r: LineageRecord) {
-    setSelected(r)
-    setDrawerTab('overview')
+  function clearModelFilter() {
+    const next = new URLSearchParams(searchParams)
+    next.delete('model')
+    setSearchParams(next, { replace: true })
   }
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-[hsl(var(--text-1))] flex items-center gap-2">
-            <ChartLine size={20} weight="fill" className="text-[hsl(var(--brand))]" />
-            Data Lineage
-          </h1>
-          <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">End-to-end data lineage — trace from source system to AI model, with PII mapping, quality metrics, and compliance tagging</p>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={() => toast.success('Lineage map exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
-            <Export size={14} /> Export
-          </button>
-          <button onClick={openCreate} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm hover:opacity-90">
-            <Plus size={14} /> Add Dataset
-          </button>
-        </div>
-      </div>
+    <div>
+      <PageHeader
+        title="Data Lineage"
+        subtitle="Where each governed dataset comes from and which models consume it"
+        icon={GitBranch}
+      />
 
-      <div className="grid grid-cols-4 gap-4">
+      {modelParam && (
+        <div className="mb-3 flex items-center gap-2">
+          <span className="inline-flex items-center gap-2 border border-[hsl(var(--brand))/30] bg-[hsl(var(--brand-subtle))] px-3 py-1.5 text-sm text-[hsl(var(--brand))]">
+            <span>Filtered to <strong>{modelName(modelParam) ?? (modelsLoading ? '…' : 'Unavailable')}</strong></span>
+            <button aria-label="Clear model filter" onClick={clearModelFilter} className="inline-flex cursor-pointer items-center hover:text-[hsl(var(--text-1))]">
+              <X size={14} />
+            </button>
+          </span>
+        </div>
+      )}
+
+      <div className="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
         {[
-          { label: 'Tracked Datasets', value: stats.total, color: 'hsl(var(--text-1))' },
-          { label: 'PII Datasets', value: stats.pii, color: 'hsl(var(--destructive))' },
-          { label: 'Avg Quality Score', value: `${stats.avgQuality}%`, color: 'hsl(var(--s-ok-tx))' },
-          { label: 'Datasets with Issues', value: stats.issues, color: 'hsl(var(--s-wn-tx))' },
-        ].map(s => (
-          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
-            <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
-            <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
-          </div>
+          { label: 'Tracked Datasets', value: stats.total },
+          { label: 'With PII', value: stats.pii },
+          { label: 'Source Systems', value: stats.sources },
+          { label: 'No Downstream Model', value: stats.unlinked },
+        ].map((s) => (
+          <Card key={s.label}>
+            <CardContent className="px-4 py-3">
+              <p className="text-2xl font-bold text-[hsl(var(--text-1))]">{isLoading ? '—' : s.value}</p>
+              <p className="mt-0.5 text-xs text-[hsl(var(--text-4))]">{s.label}</p>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
-      <div className="flex gap-3 flex-wrap">
-        <div className="relative flex-1 max-w-xs">
-          <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search datasets…" className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]" />
-        </div>
-        <Select value={classFilter} onValueChange={setClassFilter}>
-          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-          <SelectContent style={{ borderRadius: 0 }}>
-            {['All', 'Public', 'Internal', 'Confidential', 'Restricted'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
+      <Card className="p-4">
+        {isLoading ? <TableSkeleton cols={7} />
+          : isError ? <ErrorState message={error?.message} onRetry={() => refetch()} />
+          : rows.length === 0 ? (
+            <EmptyState
+              title={modelParam ? 'No datasets feed this model' : 'No lineage to show yet'}
+              message={modelParam
+                ? 'Clear the model filter, or link a dataset to this model from the Dataset Registry.'
+                : 'Register datasets in the Dataset Registry — their sources and model links appear here.'}
+              actionLabel="Open Dataset Registry"
+              onAction={() => nav('/datasets')} />
+          ) : (
+            <DataTable
+              data={rows} columns={columns}
+              searchKey="name" searchPlaceholder="Search datasets…"
+              onView={setSelected}
+              onEdit={can('update') ? setEditing : undefined}
+              onRowClick={setSelected}
+            />
+          )}
+      </Card>
 
-      <div className="space-y-3">
-        {filtered.length === 0 && (
-          <div className="text-center py-12 text-[hsl(var(--text-4))] text-sm border border-[hsl(var(--border))] bg-surface">No datasets match your filters</div>
-        )}
-        {filtered.map(d => (
-          <div key={d.id} className="rounded border border-[hsl(var(--border))] bg-surface p-4 cursor-pointer hover:border-[hsl(var(--brand)/0.4)] transition-colors" onClick={() => openDrawer(d)}>
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className="font-mono text-[10px] text-[hsl(var(--brand))]">{d.id}</span>
-                  <span className="text-[11px] px-2 py-0.5 font-medium" style={CLASS_STYLE[d.dataClassification] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{d.dataClassification}</span>
-                  {d.piiPresent && <span className="text-[10px] px-1.5 py-0.5" style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' }}>PII</span>}
-                  {d.issues.length > 0 && <Warning size={12} className="text-[hsl(var(--s-wn-tx))]" />}
-                </div>
-                <h3 className="text-sm font-semibold text-[hsl(var(--text-1))]">{d.datasetName} <span className="text-[hsl(var(--text-4))] font-normal text-xs">{d.version}</span></h3>
-                <p className="text-xs text-[hsl(var(--text-4))] mt-0.5">{d.sourceSystem} · {d.ingestionMethod}</p>
-              </div>
-              <div className="flex items-center gap-3 flex-shrink-0">
-                <div className="text-right">
-                  <p className="text-sm font-bold" style={{ color: d.quality >= 95 ? 'hsl(var(--s-ok-tx))' : d.quality >= 85 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))' }}>{d.quality}%</p>
-                  <p className="text-[10px] text-[hsl(var(--text-4))]">Quality</p>
-                </div>
-                <div className="flex gap-1">
-                  <button onClick={e => { e.stopPropagation(); openEdit(d) }} className="p-1.5 rounded text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))] hover:bg-raised"><Pencil size={13} /></button>
-                  <button onClick={e => { e.stopPropagation(); setDeleteTarget(d) }} className="p-1.5 rounded text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(var(--s-er-bg))]"><Trash size={13} /></button>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-3 flex items-center gap-2 overflow-x-auto pb-1">
-              {d.upstreamSources.map((src, i) => (
-                <div key={i} className="flex items-center gap-1.5">
-                  <div className="flex-shrink-0 text-[10px] px-2 py-1 bg-[hsl(var(--tag-purple-bg))] border border-[hsl(var(--tag-purple-bg))] text-[hsl(var(--tag-purple))] whitespace-nowrap">{src.split(' ')[0]}</div>
-                  {i < d.upstreamSources.length - 1 && <span className="text-[hsl(var(--text-4))] text-[10px]">+</span>}
-                </div>
-              ))}
-              <ArrowRight size={12} className="text-[hsl(var(--text-4))] flex-shrink-0" />
-              <div className="flex-shrink-0 text-[10px] px-2 py-1 bg-[hsl(var(--s-in-bg))] border border-[hsl(var(--s-in-bg))] text-[hsl(var(--s-in-tx))] whitespace-nowrap">{d.sourceSystem.split(' ')[0]}</div>
-              <ArrowRight size={12} className="text-[hsl(var(--text-4))] flex-shrink-0" />
-              <div className="flex-shrink-0 text-[10px] px-2 py-1 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-3))] whitespace-nowrap">{d.transformations.length} transforms</div>
-              <ArrowRight size={12} className="text-[hsl(var(--text-4))] flex-shrink-0" />
-              {d.downstreamModels.map(m => (
-                <div key={m} className="flex-shrink-0 text-[10px] px-2 py-1 bg-[hsl(var(--brand)/0.1)] border border-[hsl(var(--brand)/0.2)] text-[hsl(var(--brand))] whitespace-nowrap">{m.split(' ')[0]}</div>
-              ))}
-            </div>
-
-            {d.issues.length > 0 && (
-              <div className="mt-2 flex items-start gap-1.5 p-2 bg-[hsl(var(--s-wn-bg))] border border-[hsl(var(--s-wn-bg))]">
-                <Warning size={11} className="text-[hsl(var(--s-wn-tx))] flex-shrink-0 mt-0.5" />
-                <p className="text-[10px] text-[hsl(var(--s-wn-tx))]">{d.issues[0]}</p>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {selected && (
-        <div className="fixed inset-0 z-50 flex">
-          <div className="flex-1 bg-black/40" onClick={() => setSelected(null)} />
-          <div className="w-[520px] bg-surface border-l border-[hsl(var(--border))] flex flex-col h-full">
-            <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))]">
+      {/* Flow drawer */}
+      <Sheet open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
+        <SheetContent className="w-[560px] max-w-full overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>{selected?.name} — lineage</SheetTitle>
+          </SheetHeader>
+          {selected && (
+            <div className="mt-4 space-y-5">
               <div>
-                <p className="font-mono text-xs text-[hsl(var(--brand))]">{selected.id}</p>
-                <h2 className="text-base font-semibold text-[hsl(var(--text-1))]">{selected.datasetName}</h2>
-              </div>
-              <div className="flex gap-2 items-center">
-                <button onClick={() => openEdit(selected)} className="p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))]"><Pencil size={15} /></button>
-                <button onClick={() => setSelected(null)}><X size={18} className="text-[hsl(var(--text-4))]" /></button>
-              </div>
-            </div>
-
-            <div className="flex border-b border-[hsl(var(--border))]">
-              {(['overview', 'upstream', 'downstream'] as const).map(tab => (
-                <button key={tab} onClick={() => setDrawerTab(tab)} className="flex-1 py-2.5 text-xs font-medium capitalize transition-colors" style={drawerTab === tab ? { color: 'hsl(var(--brand))', borderBottom: '2px solid hsl(var(--brand))' } : { color: 'hsl(var(--text-4))' }}>
-                  {tab === 'overview' && <Database size={12} className="inline mr-1" />}
-                  {tab === 'upstream' && <ArrowsDownUp size={12} className="inline mr-1" />}
-                  {tab === 'downstream' && <GitBranch size={12} className="inline mr-1" />}
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {drawerTab === 'overview' && (
-                <>
-                  <div className="flex gap-2 flex-wrap">
-                    <span className="text-[11px] px-2 py-0.5 font-medium" style={CLASS_STYLE[selected.dataClassification] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{selected.dataClassification}</span>
-                    {selected.piiPresent && <span className="text-[11px] px-2 py-0.5" style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' }}>Contains PII</span>}
-                    <span className="text-[11px] px-2 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{selected.version}</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    {[
-                      { label: 'Source System', value: selected.sourceSystem },
-                      { label: 'Ingestion Method', value: selected.ingestionMethod },
-                      { label: 'Quality Score', value: `${selected.quality}%` },
-                      { label: 'Owner', value: selected.owner },
-                      { label: 'Retention Policy', value: selected.retentionPolicy },
-                      { label: 'Last Updated', value: selected.lastUpdated },
-                      { label: 'Row Count', value: selected.rowCount ?? 'N/A' },
-                      { label: 'SLA', value: selected.sla ?? 'N/A' },
-                    ].map(({ label, value }) => (
-                      <div key={label} className="p-3 bg-raised border border-[hsl(var(--border))]">
-                        <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{label}</p>
-                        <p className="text-xs font-medium text-[hsl(var(--text-1))] mt-0.5">{value}</p>
-                      </div>
+                <p className="text-xs font-semibold text-[hsl(var(--text-4))]">Upstream Sources</p>
+                {selected.upstreamSources.length === 0 && !selected.source ? (
+                  <p className="mt-1 text-xs text-[hsl(var(--text-4))]">No upstream sources documented.</p>
+                ) : (
+                  <div className="mt-1 space-y-1">
+                    {(selected.upstreamSources.length ? selected.upstreamSources : [selected.source!]).map((s, i) => (
+                      <div key={i} className="border border-[hsl(var(--border))] px-3 py-2 text-xs text-[hsl(var(--text-1))]">{s}</div>
                     ))}
                   </div>
-                  {selected.schema && (
-                    <div>
-                      <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">Schema File</p>
-                      <p className="text-xs font-mono text-[hsl(var(--brand))] p-2 bg-raised border border-[hsl(var(--border))]">{selected.schema}</p>
-                    </div>
-                  )}
-                  {selected.piiPresent && selected.piiTypes && (
-                    <div>
-                      <p className="text-[11px] font-semibold text-[hsl(var(--destructive))] uppercase tracking-wide mb-2">PII Types Present</p>
-                      <div className="flex flex-wrap gap-1">
-                        {selected.piiTypes.map(t => (
-                          <span key={t} className="text-[10px] px-2 py-0.5 bg-[hsl(var(--s-er-bg))] border border-[hsl(var(--destructive)/0.3)] text-[hsl(var(--destructive))]">{t}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {selected.issues.length > 0 && (
-                    <div>
-                      <p className="text-[11px] font-semibold text-[hsl(var(--s-wn-tx))] uppercase tracking-wide mb-2">Open Issues</p>
-                      <div className="space-y-1">
-                        {selected.issues.map(i => (
-                          <div key={i} className="flex items-start gap-1.5 text-xs text-[hsl(var(--text-2))] p-2 bg-[hsl(var(--s-wn-bg))] border border-[hsl(var(--s-wn-bg))]">
-                            <Warning size={11} className="text-[hsl(var(--s-wn-tx))] flex-shrink-0 mt-0.5" />{i}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-
-              {drawerTab === 'upstream' && (
-                <>
-                  <div>
-                    <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-3">Upstream Sources</p>
-                    <div className="space-y-2">
-                      {selected.upstreamSources.map((src, i) => (
-                        <div key={i} className="flex items-center gap-3 p-3 bg-[hsl(var(--tag-purple-bg))] border border-[hsl(var(--tag-purple-bg))]">
-                          <div className="w-2 h-2 rounded-full bg-[hsl(var(--tag-purple))]" />
-                          <p className="text-xs font-medium text-[hsl(var(--text-1))]">{src}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Transformations Applied</p>
-                    <div className="space-y-1">
-                      {selected.transformations.map((t, i) => (
-                        <div key={i} className="flex items-center gap-2 p-2 bg-raised border border-[hsl(var(--border))]">
-                          <span className="text-[10px] font-mono text-[hsl(var(--text-4))] w-5">T{i + 1}</span>
-                          <p className="text-xs text-[hsl(var(--text-2))]">{t}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Ingestion Details</p>
-                    <div className="p-3 bg-raised border border-[hsl(var(--border))] space-y-1">
-                      <p className="text-xs text-[hsl(var(--text-2))]"><span className="text-[hsl(var(--text-4))]">Method:</span> {selected.ingestionMethod}</p>
-                      {selected.sla && <p className="text-xs text-[hsl(var(--text-2))]"><span className="text-[hsl(var(--text-4))]">SLA:</span> {selected.sla}</p>}
-                      <p className="text-xs text-[hsl(var(--text-2))]"><span className="text-[hsl(var(--text-4))]">Last Run:</span> {selected.lastUpdated}</p>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {drawerTab === 'downstream' && (
-                <>
-                  <div>
-                    <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-3">Downstream AI Models</p>
-                    <div className="space-y-2">
-                      {selected.downstreamModels.length === 0 ? (
-                        <p className="text-xs text-[hsl(var(--text-4))]">No downstream models registered</p>
-                      ) : selected.downstreamModels.map(m => (
-                        <div key={m} className="flex items-center gap-3 p-3 bg-[hsl(var(--brand)/0.06)] border border-[hsl(var(--brand)/0.2)]">
-                          <div className="w-2 h-2 rounded-full bg-[hsl(var(--brand))]" />
-                          <p className="text-xs font-medium text-[hsl(var(--brand))]">{m}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Impact Analysis</p>
-                    <div className="p-3 bg-raised border border-[hsl(var(--border))] space-y-2">
-                      <p className="text-xs text-[hsl(var(--text-2))]">This dataset feeds <strong>{selected.downstreamModels.length}</strong> AI model{selected.downstreamModels.length !== 1 ? 's' : ''}. Any quality issue, PII breach, or schema change in this dataset will directly affect these models.</p>
-                      {selected.piiPresent && (
-                        <div className="flex items-start gap-1.5 p-2 bg-[hsl(var(--s-er-bg))] border border-[hsl(var(--destructive)/0.3)]">
-                          <Warning size={11} className="text-[hsl(var(--destructive))] flex-shrink-0 mt-0.5" />
-                          <p className="text-[10px] text-[hsl(var(--destructive))]">PII flows downstream — downstream models must comply with applicable privacy regulations for all PII types listed</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Data Quality Score</p>
-                    <div className="flex items-center gap-3 p-3 bg-raised border border-[hsl(var(--border))]">
-                      <div className="flex-1 bg-[hsl(var(--bg-page))] h-3 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full" style={{ width: `${selected.quality}%`, background: selected.quality >= 95 ? 'hsl(var(--s-ok-tx))' : selected.quality >= 85 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))' }} />
-                      </div>
-                      <span className="text-sm font-bold text-[hsl(var(--text-1))]">{selected.quality}%</span>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-
-            <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
-              <button onClick={() => openEdit(selected)} className="flex-1 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised flex items-center justify-center gap-1.5">
-                <Pencil size={13} /> Edit
-              </button>
-              <button onClick={() => toast.success(`Lineage for ${selected.datasetName} exported`)} className="flex-1 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90 flex items-center justify-center gap-1.5">
-                <Export size={13} /> Export Lineage
-              </button>
-              <button onClick={() => { setDeleteTarget(selected); setSelected(null) }} className="px-3 py-2 border border-[hsl(var(--destructive)/0.3)] text-[hsl(var(--destructive))] hover:bg-[hsl(var(--s-er-bg))]">
-                <Trash size={14} />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showCreate && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowCreate(false)} />
-          <div className="relative bg-surface border border-[hsl(var(--border))] w-full max-w-lg mx-4 shadow-2xl max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
-              <h2 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2">
-                <ChartLine size={15} className="text-[hsl(var(--brand))]" />
-                {editMode ? 'Edit Dataset' : 'Register Dataset'}
-              </h2>
-              <button onClick={() => setShowCreate(false)}><X size={16} className="text-[hsl(var(--text-4))]" /></button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-5 space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Dataset Name *</label>
-                  <input value={form.datasetName} onChange={e => setForm(p => ({ ...p, datasetName: e.target.value }))} placeholder="e.g. ACME Credit History" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
-                </div>
-                <div>
-                  <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Version</label>
-                  <input value={form.version} onChange={e => setForm(p => ({ ...p, version: e.target.value }))} placeholder="e.g. v1.0 or 2026-Q1" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
-                </div>
+                )}
               </div>
+              <div className="flex justify-center text-[hsl(var(--text-4))]"><ArrowRight size={16} className="rotate-90" /></div>
+              <div className="border border-[hsl(var(--brand))/40] bg-[hsl(var(--brand-subtle))] px-3 py-2">
+                <p className="text-xs font-medium text-[hsl(var(--brand))]">{selected.name}{selected.version ? ` · ${selected.version}` : ''}</p>
+                <p className="mt-0.5 text-[10px] text-[hsl(var(--text-4))]">
+                  {selected.ingestionMethod ?? 'Ingestion not documented'}{selected.sla ? ` · SLA ${selected.sla}` : ''}
+                </p>
+                {selected.preprocessingSteps && (
+                  <p className="mt-1 text-[10px] text-[hsl(var(--text-3))]">Transformations: {selected.preprocessingSteps}</p>
+                )}
+              </div>
+              <div className="flex justify-center text-[hsl(var(--text-4))]"><ArrowRight size={16} className="rotate-90" /></div>
               <div>
-                <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Source System *</label>
-                <input value={form.sourceSystem} onChange={e => setForm(p => ({ ...p, sourceSystem: e.target.value }))} placeholder="e.g. Core Banking System (FIS Horizon)" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+                <p className="text-xs font-semibold text-[hsl(var(--text-4))]">Downstream Models</p>
+                {selected.usedInModels.length === 0 ? (
+                  <p className="mt-1 text-xs text-[hsl(var(--text-4))]">Not linked to any model yet.</p>
+                ) : (
+                  <div className="mt-1 flex flex-wrap gap-1.5">{selected.usedInModels.map(modelPill)}</div>
+                )}
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Ingestion Method</label>
-                  <Select value={form.ingestionMethod} onValueChange={v => setForm(p => ({ ...p, ingestionMethod: v }))}>
-                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                    <SelectContent style={{ borderRadius: 0 }}>
-                      {['Batch ETL · Daily', 'Batch ETL · Nightly', 'Streaming · Real-time', 'API Pull · Weekly', 'Manual upload', 'Event-driven'].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Classification</label>
-                  <Select value={form.dataClassification} onValueChange={v => setForm(p => ({ ...p, dataClassification: v as any }))}>
-                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                    <SelectContent style={{ borderRadius: 0 }}>
-                      {['Public', 'Internal', 'Confidential', 'Restricted'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="flex justify-end gap-2 border-t border-[hsl(var(--border))] pt-3">
+                <Button size="sm" variant="outline" onClick={() => nav(`/datasets/${selected.id}`)}>Open Dataset</Button>
+                {can('update') && <Button size="sm" onClick={() => { setEditing(selected); setSelected(null) }}>Edit Lineage</Button>}
               </div>
-              <div>
-                <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Upstream Sources (one per line)</label>
-                <textarea value={form.upstreamSources} onChange={e => setForm(p => ({ ...p, upstreamSources: e.target.value }))} rows={2} placeholder="e.g. FIS Horizon Core DB&#10;Oracle GL Ledger" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))] resize-none" />
-              </div>
-              <div>
-                <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Transformations (one per line)</label>
-                <textarea value={form.transformations} onChange={e => setForm(p => ({ ...p, transformations: e.target.value }))} rows={3} placeholder="e.g. PII tokenization&#10;Normalization (Z-score)" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))] resize-none" />
-              </div>
-              <div>
-                <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Downstream AI Models (one per line)</label>
-                <textarea value={form.downstreamModels} onChange={e => setForm(p => ({ ...p, downstreamModels: e.target.value }))} rows={2} placeholder="e.g. Credit Scoring Model v2.1&#10;Loan Approval Model v3.0" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))] resize-none" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Owner *</label>
-                  <input value={form.owner} onChange={e => setForm(p => ({ ...p, owner: e.target.value }))} placeholder="e.g. Data Engineering" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
-                </div>
-                <div>
-                  <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Quality Score (%)</label>
-                  <input type="number" min={0} max={100} value={form.quality} onChange={e => setForm(p => ({ ...p, quality: Number(e.target.value) }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Retention Policy</label>
-                  <input value={form.retentionPolicy} onChange={e => setForm(p => ({ ...p, retentionPolicy: e.target.value }))} placeholder="e.g. 7 years (regulatory)" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
-                </div>
-                <div>
-                  <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Row Count</label>
-                  <input value={form.rowCount} onChange={e => setForm(p => ({ ...p, rowCount: e.target.value }))} placeholder="e.g. 4.2M rows" className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
-                </div>
-              </div>
-              <div className="flex items-center gap-2 p-3 bg-raised border border-[hsl(var(--border))]">
-                <input type="checkbox" id="pii" checked={form.piiPresent} onChange={e => setForm(p => ({ ...p, piiPresent: e.target.checked }))} className="w-4 h-4 accent-[hsl(var(--brand))]" />
-                <label htmlFor="pii" className="text-sm text-[hsl(var(--text-2))]">Dataset contains PII</label>
-              </div>
-              {form.piiPresent && (
-                <div>
-                  <label className="text-[10px] font-medium text-[hsl(var(--destructive))] uppercase tracking-wide mb-1 block">PII Types (comma-separated)</label>
-                  <input value={form.piiTypes} onChange={e => setForm(p => ({ ...p, piiTypes: e.target.value }))} placeholder="e.g. SSN (hashed), Account Number (tokenized)" className="w-full px-3 py-2 text-sm border border-[hsl(var(--destructive)/0.5)] bg-[hsl(var(--s-er-bg))] text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--destructive))]" />
-                </div>
-              )}
             </div>
-            <div className="flex justify-end gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
-              <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">Cancel</button>
-              <button onClick={handleSave} className="px-4 py-2 text-sm font-medium bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] hover:opacity-90">{editMode ? 'Save Changes' : 'Register Dataset'}</button>
-            </div>
-          </div>
-        </div>
-      )}
+          )}
+        </SheetContent>
+      </Sheet>
 
-      <ConfirmDialog
-        open={!!deleteTarget}
-        onOpenChange={o => !o && setDeleteTarget(null)}
-        onConfirm={handleDelete}
-        title="Remove dataset from lineage?"
-        description={`Remove "${deleteTarget?.datasetName}" from the lineage registry. This will not delete the actual data — only the lineage tracking record.`}
-        isDestructive
-        confirmLabel="Remove Dataset"
-        impactList={deleteTarget?.downstreamModels.length ? [`${deleteTarget.downstreamModels.length} downstream model${deleteTarget.downstreamModels.length > 1 ? 's' : ''} will lose lineage tracking`] : undefined}
+      <LineageForm
+        open={!!editing}
+        onOpenChange={(o) => !o && setEditing(null)}
+        initial={editing}
+        onSubmit={async (patch) => {
+          if (!editing) return
+          await update.mutateAsync({ id: editing.id, patch })
+          toast.success('Lineage updated')
+          setEditing(null)
+        }}
       />
     </div>
+  )
+}
+
+// ── Lineage edit form (persists to the dataset record) ────────────────────────
+
+function LineageForm({ open, onOpenChange, initial, onSubmit }: {
+  open: boolean
+  onOpenChange: (o: boolean) => void
+  initial: DatasetRecord | null
+  onSubmit: (patch: Partial<DatasetRecord>) => Promise<void>
+}) {
+  const [source, setSource] = useState('')
+  const [ingestionMethod, setIngestionMethod] = useState('')
+  const [upstream, setUpstream] = useState('')
+  const [transformations, setTransformations] = useState('')
+  const [sla, setSla] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  // Reset per open using key-less sync: initialize when the target changes.
+  const [lastId, setLastId] = useState<string | null>(null)
+  if (initial && initial.id !== lastId) {
+    setLastId(initial.id)
+    setSource(initial.source ?? '')
+    setIngestionMethod(initial.ingestionMethod ?? '')
+    setUpstream(initial.upstreamSources.join('\n'))
+    setTransformations(initial.preprocessingSteps ?? '')
+    setSla(initial.sla ?? '')
+  }
+
+  async function handleSubmit() {
+    setSaving(true)
+    try {
+      await onSubmit({
+        source: source.trim() || undefined,
+        ingestionMethod: ingestionMethod.trim() || undefined,
+        upstreamSources: upstream.split('\n').map((s) => s.trim()).filter(Boolean),
+        preprocessingSteps: transformations.trim() || undefined,
+        sla: sla.trim() || undefined,
+      })
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to update lineage')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const label = 'text-xs font-semibold text-[hsl(var(--text-4))]'
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Edit lineage — {initial?.name}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 py-2">
+          <div><label className={label}>Source System</label>
+            <Input value={source} onChange={(e) => setSource(e.target.value)} className="mt-1" placeholder="e.g. Core Banking System" /></div>
+          <div><label className={label}>Ingestion Method</label>
+            <Input value={ingestionMethod} onChange={(e) => setIngestionMethod(e.target.value)} className="mt-1" placeholder="e.g. Batch ETL · Daily" /></div>
+          <div><label className={label}>Upstream Sources (one per line)</label>
+            <textarea value={upstream} onChange={(e) => setUpstream(e.target.value)} rows={3}
+              className="mt-1 w-full border border-[hsl(var(--border))] bg-transparent px-3 py-2 text-sm text-[hsl(var(--text-1))]" /></div>
+          <div><label className={label}>Transformations</label>
+            <Input value={transformations} onChange={(e) => setTransformations(e.target.value)} className="mt-1" placeholder="e.g. PII tokenization, normalization" /></div>
+          <div><label className={label}>SLA</label>
+            <Input value={sla} onChange={(e) => setSla(e.target.value)} className="mt-1" placeholder="e.g. By 03:00 UTC daily" /></div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button disabled={saving} onClick={handleSubmit}>{saving ? 'Saving…' : 'Save Lineage'}</Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }
