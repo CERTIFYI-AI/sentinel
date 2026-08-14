@@ -36,7 +36,6 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { PageSkeleton } from '../../components/ui/PageSkeleton';
-import { TrustEngineTabs } from '../../components/trust-engine/TrustEngineTabs';
 import { trustConfigCrud } from '@/hooks/queries/useTrustEngineCrud';
 import { useModelTrustConfigs } from '@/hooks/useModelTrustConfigs';
 import { useTrustPolicies } from '@/hooks/useTrustPolicies';
@@ -355,7 +354,6 @@ export default function TrustConfig() {
 
   return (
     <div className="space-y-6">
-      <TrustEngineTabs />
 
       <PageHeader
         title="Trust Configuration"

@@ -19,7 +19,6 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { StatCardRow } from '@/components/ui/StatCardRow';
 import { FilterBar } from '@/components/ui/FilterBar';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
-import { TrustEngineTabs } from '../../components/trust-engine/TrustEngineTabs';
 import { useToolCalls } from '../../hooks/useToolCalls';
 import { useModelOptions } from '@/hooks/useAiiaData';
 import { upsertIncident, type IncidentRecord } from '../../services/incidentService';
@@ -199,7 +198,6 @@ export default function ToolCallMonitor() {
 
   return (
     <div className="space-y-6">
-      <TrustEngineTabs />
 
       <PageHeader
         title="Tool Monitor"

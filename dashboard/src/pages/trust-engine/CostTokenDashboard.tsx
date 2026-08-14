@@ -22,7 +22,6 @@ import {
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatCardRow } from '@/components/ui/StatCardRow';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
-import { TrustEngineTabs } from '../../components/trust-engine/TrustEngineTabs';
 import { useChartTheme } from '../../hooks/useChartTheme';
 import { useCostMetrics, type CostRangeKey } from '../../hooks/useCostMetrics';
 import { useModelOptions } from '@/hooks/useAiiaData';
@@ -140,7 +139,6 @@ export default function CostTokenDashboard() {
 
   return (
     <div className="space-y-6">
-      <TrustEngineTabs />
 
       <PageHeader
         title="Trust Costs & Tokens"

@@ -20,7 +20,6 @@ import { StatCardRow } from '@/components/ui/StatCardRow';
 import { FilterBar } from '@/components/ui/FilterBar';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { InterlinkChip } from '@/components/ui/InterlinkChip';
-import { TrustEngineTabs } from '../../components/trust-engine/TrustEngineTabs';
 import { useLiveTraces } from '@/hooks/useLiveTraces';
 import { useModelOptions } from '@/hooks/useAiiaData';
 import type { LiveTrace } from '@/services/liveTraceService';
@@ -126,7 +125,6 @@ export default function LiveTraceFeed() {
 
   return (
     <div className="space-y-6">
-      <TrustEngineTabs />
 
       <PageHeader
         title="Live Inference Traces"

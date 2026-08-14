@@ -18,7 +18,6 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { StatCardRow } from '@/components/ui/StatCardRow';
 import { FilterBar } from '@/components/ui/FilterBar';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
-import { TrustEngineTabs } from '../../components/trust-engine/TrustEngineTabs';
 import { useFallbackLogs } from '../../hooks/useFallbackLogs';
 import { useModelOptions } from '@/hooks/useAiiaData';
 import type { FallbackLogRecord } from '@/services/fallbackService';
@@ -159,7 +158,6 @@ export default function FallbackLog() {
   return (
     <TooltipProvider>
       <div className="space-y-6">
-        <TrustEngineTabs />
 
         <PageHeader
           title="Fallback Failovers"

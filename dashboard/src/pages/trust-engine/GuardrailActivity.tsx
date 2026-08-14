@@ -32,7 +32,6 @@ import { StatCardRow } from '@/components/ui/StatCardRow';
 import { FilterBar } from '@/components/ui/FilterBar';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { InterlinkChip } from '@/components/ui/InterlinkChip';
-import { TrustEngineTabs } from '../../components/trust-engine/TrustEngineTabs';
 import { useGuardrailEvents, useGuardrailRules } from '@/hooks/useGuardrails';
 import { useModelOptions } from '@/hooks/useAiiaData';
 import { useAuthStore } from '@/store/authStore';
@@ -303,7 +302,6 @@ export default function GuardrailActivity() {
 
   return (
     <div className="space-y-6">
-      <TrustEngineTabs />
 
       <PageHeader
         title="Active Guardrails"

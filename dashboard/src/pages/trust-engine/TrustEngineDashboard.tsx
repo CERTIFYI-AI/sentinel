@@ -34,7 +34,6 @@ import { PageHeader } from '../../components/ui/PageHeader';
 import { StatCardRow } from '../../components/ui/StatCardRow';
 import type { StatCardRowItem } from '../../components/ui/StatCardRow';
 import { FilterBar } from '@/components/ui/FilterBar';
-import { TrustEngineTabs } from '../../components/trust-engine/TrustEngineTabs';
 import { useChartTheme } from '../../hooks/useChartTheme';
 import { useTrustPolicies, useTraceAnalytics } from '../../hooks/useTrustPolicies';
 import { useModelOptions } from '@/hooks/useAiiaData';
@@ -339,7 +338,6 @@ export default function TrustEngineDashboard() {
 
   return (
     <div className="space-y-6">
-      <TrustEngineTabs />
 
       <PageHeader
         title="Runtime Trust"
