@@ -1,11 +1,23 @@
-import { useState, useCallback, useEffect } from 'react';
-import { useSupabaseTable } from '@/hooks/useSupabaseTable';
-import { trustConfigCrud } from '@/hooks/queries/useTrustEngineCrud';
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
+//
+// Trust Engine Configuration. Two real backends, one page:
+//   • Global sections (settings, guardrail toggles, thresholds, alert
+//     thresholds, fallback chains, integrations) live in the org-scoped
+//     trust_config doc (single 'default' document) via trustConfigCrud.
+//   • Per-Model Config edits the org-scoped model_trust_configs table,
+//     uuid-keyed to ai_models (names resolved at render time).
+// Saves resolve before any success toast; failures keep the dirty state.
+// Secrets are NEVER stored in the config doc — API keys belong in the
+// Keys Vault module.
+
+import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import {
-  FloppyDisk, ArrowCounterClockwise, Warning, ShieldCheck,
-  CurrencyDollar, GitFork, Bell, Plus, Trash, Clock, Info,
-  Gear, Sliders, PlugsConnected, SlidersHorizontal, TestTube,
-  CheckCircle, XCircle, Globe, Eye,
+  FloppyDisk, ArrowCounterClockwise, Warning, ShieldCheck, Bell, Plus, Trash,
+  Gear, Sliders, PlugsConnected, SlidersHorizontal, Globe, Cpu, PencilSimple,
+  Clock, Key, GitFork,
 } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
@@ -21,75 +33,68 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger,
 } from '../../components/ui/alert-dialog';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../components/ui/tooltip';
-import { TRUST_POLICIES } from '../../data/seed';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { PageSkeleton } from '../../components/ui/PageSkeleton';
 import { TrustEngineTabs } from '../../components/trust-engine/TrustEngineTabs';
+import { trustConfigCrud } from '@/hooks/queries/useTrustEngineCrud';
+import { useModelTrustConfigs } from '@/hooks/useModelTrustConfigs';
+import { useTrustPolicies } from '@/hooks/useTrustPolicies';
+import { useModelOptions } from '@/hooks/useAiiaData';
+import { useAuthStore } from '@/store/authStore';
+import type { ModelTrustConfig } from '@/services/modelTrustConfigService';
 
+// ── Doc section types ─────────────────────────────────────────────────────────
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-
+interface GlobalSettings {
+  piiEnabled: boolean;
+  piiSensitivity: number;
+  /** Max toxicity score, 0–1. */
+  toxicityThreshold: number;
+  hallucinationEnabled: boolean;
+  hallucinationMethod: string;
+  costDailyUsd: string;
+  costWeeklyUsd: string;
+  costMonthlyUsd: string;
+}
 interface GuardrailConfig {
   id: string; name: string; enabled: boolean; threshold: string;
   action: 'block' | 'warn' | 'flag'; justification: string;
 }
-interface CostLimit {
-  id: string; agent: string; dailyLimit: string; weeklyLimit: string; alertAt: string;
-}
-interface FallbackChain {
-  id: string; primary: string; fallback1: string; fallback2: string; timeout: string;
+interface ThresholdRow {
+  id: string; policy: string; current: string; recommended: string; framework: string; status: 'meets' | 'below';
 }
 interface AlertThreshold {
   id: string; metric: string; threshold: string; severity: 'critical' | 'high' | 'medium'; enabled: boolean;
 }
-interface AuditEntry {
-  id: string; timestamp: string; user: string; section: string; change: string; before: string; after: string;
+interface FallbackChain {
+  id: string;
+  /** Canonical ai_models.id uuids — names resolved at render time. */
+  primaryModelId: string;
+  fallbackModelIds: string[];
+  timeoutSec: string;
 }
-interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info' }
-interface ThresholdRow {
-  id: string; policy: string; current: string; recommended: string; framework: string; status: 'meets' | 'below';
-}
-interface Integration {
-  id: string; name: string; type: string; connected: boolean; webhook: string; apiKey: string;
-}
-interface PerModelConfig {
-  id: string; model: string; overrideGlobal: boolean; piiEnabled: boolean; toxicityThreshold: string;
-  hallucinationEnabled: boolean; costDaily: string; linkedPolicies: string[];
+interface IntegrationConfig {
+  id: string; name: string; kind: 'webhook' | 'api_key'; enabled: boolean;
+  /** Non-secret config only. Secrets live in the Keys Vault. */
+  webhookUrl: string;
 }
 
-// ── Seed Data ─────────────────────────────────────────────────────────────────
+// ── Defaults (configuration presets for a fresh org — not fabricated metrics) ─
+
+const DEFAULT_GLOBAL: GlobalSettings = {
+  piiEnabled: true, piiSensitivity: 95, toxicityThreshold: 0.15,
+  hallucinationEnabled: true, hallucinationMethod: 'confidence',
+  costDailyUsd: '200', costWeeklyUsd: '1000', costMonthlyUsd: '3500',
+};
 
 const DEFAULT_GUARDRAILS: GuardrailConfig[] = [
   { id: 'g1', name: 'PII Detection & Redaction', enabled: true, threshold: '99.5% recall', action: 'block', justification: 'GDPR Art. 25 — Privacy by Design.' },
   { id: 'g2', name: 'Toxicity Filter', enabled: true, threshold: 'Score < 0.15', action: 'warn', justification: 'EU AI Act Art. 9 — Risk management.' },
-  { id: 'g3', name: 'Hallucination Guard', enabled: true, threshold: 'Confidence > 0.95', action: 'block', justification: 'ISO 42001 Clause 8.4 — Raised from 0.80 to 0.95.' },
+  { id: 'g3', name: 'Hallucination Guard', enabled: true, threshold: 'Confidence > 0.95', action: 'block', justification: 'ISO 42001 Clause 8.4.' },
   { id: 'g4', name: 'Data Boundary Enforcement', enabled: true, threshold: 'Strict', action: 'block', justification: 'SOC 2 CC6.1 — Logical access controls.' },
   { id: 'g5', name: 'Prompt Injection Detection', enabled: true, threshold: 'BERT score > 0.75', action: 'block', justification: 'OWASP LLM01.' },
   { id: 'g6', name: 'Sensitive Topic Filter', enabled: false, threshold: 'Category list v2', action: 'flag', justification: 'EU AI Act Art. 13 — Disabled pending review.' },
-];
-
-const DEFAULT_COST_LIMITS: CostLimit[] = [
-  { id: 'cl1', agent: 'OpenAI-API-Connector', dailyLimit: '50', weeklyLimit: '250', alertAt: '70' },
-  { id: 'cl2', agent: 'DataLabeler-v2', dailyLimit: '30', weeklyLimit: '150', alertAt: '75' },
-  { id: 'cl3', agent: 'LoanAssistant', dailyLimit: '20', weeklyLimit: '100', alertAt: '80' },
-  { id: 'cl4', agent: 'ComplianceBot', dailyLimit: '10', weeklyLimit: '50', alertAt: '80' },
-  { id: 'cl5', agent: 'SupportBot', dailyLimit: '16', weeklyLimit: '80', alertAt: '70' },
-  { id: 'cl6', agent: 'RiskAnalyzer', dailyLimit: '12', weeklyLimit: '60', alertAt: '75' },
-];
-
-const DEFAULT_FALLBACK_CHAINS: FallbackChain[] = [
-  { id: 'fc1', primary: 'GPT-4o', fallback1: 'Claude-3-Sonnet', fallback2: 'GPT-3.5-Turbo', timeout: '15s' },
-  { id: 'fc2', primary: 'Claude-3-Opus', fallback1: 'Claude-3-Sonnet', fallback2: 'Claude-3-Haiku', timeout: '30s' },
-  { id: 'fc3', primary: 'GPT-4-Turbo', fallback1: 'GPT-4o', fallback2: 'Mistral-7B', timeout: '30s' },
-];
-
-const DEFAULT_ALERT_THRESHOLDS: AlertThreshold[] = [
-  { id: 'at1', metric: 'Trust Score Drop', threshold: '< 85%', severity: 'critical', enabled: true },
-  { id: 'at2', metric: 'Guardrail Violation Rate', threshold: '> 5% of calls', severity: 'high', enabled: true },
-  { id: 'at3', metric: 'Avg Latency Spike', threshold: '> 2000ms', severity: 'high', enabled: true },
-  { id: 'at4', metric: 'Fallback Rate', threshold: '> 10% of calls', severity: 'medium', enabled: true },
-  { id: 'at5', metric: 'Daily Cost Exceeded', threshold: 'Agent budget 100%', severity: 'critical', enabled: true },
-  { id: 'at6', metric: 'Model Unavailability', threshold: '> 60s downtime', severity: 'critical', enabled: false },
 ];
 
 const DEFAULT_THRESHOLDS: ThresholdRow[] = [
@@ -100,332 +105,400 @@ const DEFAULT_THRESHOLDS: ThresholdRow[] = [
   { id: 'th5', policy: 'Cost & Rate Limiter', current: '100%', recommended: '90%', framework: 'ISO 42001 Cl. 9.1', status: 'below' },
 ];
 
-const DEFAULT_INTEGRATIONS: Integration[] = [
-  { id: 'int1', name: 'Slack', type: 'webhook', connected: true, webhook: 'https://hooks.slack.com/services/T0XX/B0XX/xxxx', apiKey: '' },
-  { id: 'int2', name: 'Jira', type: 'api_key', connected: false, webhook: '', apiKey: '' },
-  { id: 'int3', name: 'PagerDuty', type: 'webhook', connected: false, webhook: '', apiKey: '' },
+const DEFAULT_ALERT_THRESHOLDS: AlertThreshold[] = [
+  { id: 'at1', metric: 'Trust Score Drop', threshold: '< 85%', severity: 'critical', enabled: true },
+  { id: 'at2', metric: 'Guardrail Violation Rate', threshold: '> 5% of calls', severity: 'high', enabled: true },
+  { id: 'at3', metric: 'Avg Latency Spike', threshold: '> 2000ms', severity: 'high', enabled: true },
+  { id: 'at4', metric: 'Fallback Rate', threshold: '> 10% of calls', severity: 'medium', enabled: true },
+  { id: 'at5', metric: 'Daily Cost Exceeded', threshold: 'Budget 100%', severity: 'critical', enabled: true },
+  { id: 'at6', metric: 'Model Unavailability', threshold: '> 60s downtime', severity: 'critical', enabled: false },
 ];
 
-const DEFAULT_PER_MODEL: PerModelConfig[] = [
-  { id: 'pm1', model: 'GPT-4o', overrideGlobal: true, piiEnabled: true, toxicityThreshold: '0.10', hallucinationEnabled: true, costDaily: '50', linkedPolicies: ['TP-001', 'TP-003', 'TP-005'] },
-  { id: 'pm2', model: 'Claude-3-Opus', overrideGlobal: false, piiEnabled: true, toxicityThreshold: '0.15', hallucinationEnabled: true, costDaily: '30', linkedPolicies: ['TP-001', 'TP-002'] },
-  { id: 'pm3', model: 'GPT-3.5-Turbo', overrideGlobal: false, piiEnabled: true, toxicityThreshold: '0.15', hallucinationEnabled: false, costDaily: '10', linkedPolicies: ['TP-001'] },
-  { id: 'pm4', model: 'Mistral-7B', overrideGlobal: false, piiEnabled: true, toxicityThreshold: '0.20', hallucinationEnabled: false, costDaily: '5', linkedPolicies: [] },
+const DEFAULT_INTEGRATIONS: IntegrationConfig[] = [
+  { id: 'int-slack', name: 'Slack', kind: 'webhook', enabled: false, webhookUrl: '' },
+  { id: 'int-jira', name: 'Jira', kind: 'api_key', enabled: false, webhookUrl: '' },
+  { id: 'int-pagerduty', name: 'PagerDuty', kind: 'webhook', enabled: false, webhookUrl: '' },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function actionBadge(action: GuardrailConfig['action']) {
-  const map = {
-    block: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
-    warn: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
-    flag: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
-  };
-  const s = map[action];
-  return <Badge style={{ background: s.bg, color: s.color, borderRadius: 0, fontSize: 11 }}>{action.charAt(0).toUpperCase() + action.slice(1)}</Badge>;
-}
-
 function severityBadge(severity: AlertThreshold['severity']) {
   const map = {
-    critical: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+    critical: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))' },
     high: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
-    medium: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+    medium: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
   };
-  const s = map[severity];
+  const s = map[severity] ?? map.medium;
   return <Badge style={{ background: s.bg, color: s.color, borderRadius: 0, fontSize: 11 }}>{severity.charAt(0).toUpperCase() + severity.slice(1)}</Badge>;
 }
+
+interface PerModelForm {
+  id?: string;
+  modelId: string;
+  toxicityThreshold: string;
+  hallucinationThreshold: string;
+  piiDetectionEnabled: boolean;
+  jailbreakDetection: boolean;
+  outputFiltering: boolean;
+  costAlertUsd: string;
+  tokenLimitPerReq: string;
+  rateLimitRpm: string;
+  fallbackModelId: string;
+  blockedTopics: string;
+  allowedTopics: string;
+}
+const EMPTY_PER_MODEL_FORM: PerModelForm = {
+  modelId: '', toxicityThreshold: '0.80', hallucinationThreshold: '0.70',
+  piiDetectionEnabled: true, jailbreakDetection: true, outputFiltering: true,
+  costAlertUsd: '', tokenLimitPerReq: '4096', rateLimitRpm: '60',
+  fallbackModelId: '', blockedTopics: '', allowedTopics: '',
+};
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function TrustConfig() {
-  const { orgName } = useSettingsStore();
-  const { data: guardrails, setData: setGuardrails } = useSupabaseTable('trustconfig_table', DEFAULT_GUARDRAILS);
-  const [costLimits, setCostLimits] = useState<CostLimit[]>(DEFAULT_COST_LIMITS);
-  const [fallbackChains, setFallbackChains] = useState<FallbackChain[]>(DEFAULT_FALLBACK_CHAINS);
-  const [alertThresholds, setAlertThresholds] = useState<AlertThreshold[]>(DEFAULT_ALERT_THRESHOLDS);
+  const currentUser = useAuthStore(s => s.user);
+
+  // Global doc state -----------------------------------------------------------
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [docVersion, setDocVersion] = useState<number | undefined>(undefined);
+  /** Unknown doc keys (e.g. alertNotifications written by Runtime Trust) preserved across saves. */
+  const [docExtras, setDocExtras] = useState<Record<string, unknown>>({});
+
+  const [globalSettings, setGlobalSettings] = useState<GlobalSettings>(DEFAULT_GLOBAL);
+  const [guardrails, setGuardrails] = useState<GuardrailConfig[]>(DEFAULT_GUARDRAILS);
   const [thresholds, setThresholds] = useState<ThresholdRow[]>(DEFAULT_THRESHOLDS);
-  const [integrations, setIntegrations] = useState<Integration[]>(DEFAULT_INTEGRATIONS);
-  const [perModel, setPerModel] = useState<PerModelConfig[]>(DEFAULT_PER_MODEL);
-  const [selectedModel, setSelectedModel] = useState('GPT-4o');
-  const [auditLog, setAuditLog] = useState<AuditEntry[]>([]);
+  const [alertThresholds, setAlertThresholds] = useState<AlertThreshold[]>(DEFAULT_ALERT_THRESHOLDS);
+  const [fallbackChains, setFallbackChains] = useState<FallbackChain[]>([]);
+  const [integrations, setIntegrations] = useState<IntegrationConfig[]>(DEFAULT_INTEGRATIONS);
+
   const [dirty, setDirty] = useState(false);
-  const [toasts, setToasts] = useState<ToastMsg[]>([]);
-  const [showAuditLog, setShowAuditLog] = useState(false);
-  // Global settings
-  const [piiEnabled, setPiiEnabled] = useState(true);
-  const [piiSensitivity, setPiiSensitivity] = useState(95);
-  const [toxicityThreshold, setToxicityThreshold] = useState(15);
-  const [hallucinationEnabled, setHallucinationEnabled] = useState(true);
-  const [hallucinationMethod, setHallucinationMethod] = useState('confidence');
-  const [costDaily, setCostDaily] = useState('200');
-  const [costWeekly, setCostWeekly] = useState('1000');
-  const [costMonthly, setCostMonthly] = useState('3500');
-
-  const [savedSnapshot, setSavedSnapshot] = useState({
-    guardrails: DEFAULT_GUARDRAILS, costLimits: DEFAULT_COST_LIMITS,
-    fallbackChains: DEFAULT_FALLBACK_CHAINS, alertThresholds: DEFAULT_ALERT_THRESHOLDS,
+  const [saving, setSaving] = useState(false);
+  const [snapshot, setSnapshot] = useState({
+    globalSettings: DEFAULT_GLOBAL, guardrails: DEFAULT_GUARDRAILS, thresholds: DEFAULT_THRESHOLDS,
+    alertThresholds: DEFAULT_ALERT_THRESHOLDS, fallbackChains: [] as FallbackChain[], integrations: DEFAULT_INTEGRATIONS,
   });
-
-  const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
-    const id = Date.now();
-    setToasts(prev => [...prev, { id, text, type }]);
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
-  }, []);
 
   const markDirty = () => setDirty(true);
 
-  // Hydrate from the persisted configuration document (falls back to defaults).
-  useEffect(() => {
-    let active = true;
-    trustConfigCrud.get('default').then(doc => {
-      if (!active || !doc) return;
-      if (Array.isArray(doc.guardrails) && doc.guardrails.length) setGuardrails(doc.guardrails as GuardrailConfig[]);
-      if (Array.isArray(doc.costLimits) && doc.costLimits.length) setCostLimits(doc.costLimits as CostLimit[]);
-      if (Array.isArray(doc.fallbackChains) && doc.fallbackChains.length) setFallbackChains(doc.fallbackChains as FallbackChain[]);
-      if (Array.isArray(doc.alertThresholds) && doc.alertThresholds.length) setAlertThresholds(doc.alertThresholds as AlertThreshold[]);
-      setSavedSnapshot({
-        guardrails: (doc.guardrails as GuardrailConfig[]) ?? DEFAULT_GUARDRAILS,
-        costLimits: (doc.costLimits as CostLimit[]) ?? DEFAULT_COST_LIMITS,
-        fallbackChains: (doc.fallbackChains as FallbackChain[]) ?? DEFAULT_FALLBACK_CHAINS,
-        alertThresholds: (doc.alertThresholds as AlertThreshold[]) ?? DEFAULT_ALERT_THRESHOLDS,
+  // Real backends for the Per-Model tab ---------------------------------------
+  const { data: modelConfigs, isLoading: configsLoading, error: configsError, save: saveConfig, remove: removeConfig } = useModelTrustConfigs();
+  const { data: policies } = useTrustPolicies();
+  const { models } = useModelOptions();
+  const modelName = (id: string | null | undefined) => (id ? models.find(m => m.id === id)?.name : undefined);
+
+  const [perModelFormOpen, setPerModelFormOpen] = useState(false);
+  const [perModelForm, setPerModelForm] = useState<PerModelForm>(EMPTY_PER_MODEL_FORM);
+
+  // Hydrate the persisted configuration document.
+  const hydrate = () => {
+    setLoading(true);
+    setLoadError(null);
+    trustConfigCrud.get('default')
+      .then(doc => {
+        const d = doc as any;
+        const next = {
+          globalSettings: { ...DEFAULT_GLOBAL, ...(d?.globalSettings ?? {}) } as GlobalSettings,
+          guardrails: (Array.isArray(d?.guardrails) && d.guardrails.length ? d.guardrails : DEFAULT_GUARDRAILS) as GuardrailConfig[],
+          thresholds: (Array.isArray(d?.thresholds) && d.thresholds.length ? d.thresholds : DEFAULT_THRESHOLDS) as ThresholdRow[],
+          alertThresholds: (Array.isArray(d?.alertThresholds) && d.alertThresholds.length ? d.alertThresholds : DEFAULT_ALERT_THRESHOLDS) as AlertThreshold[],
+          fallbackChains: (Array.isArray(d?.fallbackChains) ? d.fallbackChains.filter((fc: any) => typeof fc?.primaryModelId === 'string') : []) as FallbackChain[],
+          integrations: (Array.isArray(d?.integrations) && d.integrations.length ? d.integrations : DEFAULT_INTEGRATIONS) as IntegrationConfig[],
+        };
+        setGlobalSettings(next.globalSettings);
+        setGuardrails(next.guardrails);
+        setThresholds(next.thresholds);
+        setAlertThresholds(next.alertThresholds);
+        setFallbackChains(next.fallbackChains);
+        setIntegrations(next.integrations);
+        setSnapshot(next);
+        setDocVersion(d?.version);
+        if (d) {
+          const { id: _id, version: _v, globalSettings: _g, guardrails: _gr, thresholds: _t, alertThresholds: _a, fallbackChains: _f, integrations: _i, costLimits: _legacy, ...extras } = d;
+          setDocExtras(extras);
+        }
+        setDirty(false);
+        setLoading(false);
+      })
+      .catch((e: Error) => {
+        setLoadError(e.message);
+        setLoading(false);
       });
-    });
-    return () => { active = false; };
-  }, []);
-
-  const createAuditEntry = (section: string, change: string, before: string, after: string) => {
-    const entry: AuditEntry = {
-      id: `AUD-${Date.now()}`, timestamp: new Date().toISOString(),
-      user: 'Sarah Chen (CISO)', section, change, before, after,
-    };
-    setAuditLog(prev => [entry, ...prev]);
   };
+  useEffect(hydrate, []);
 
-  const handleSave = () => {
-    createAuditEntry('Configuration', 'Configuration saved', 'Previous state', 'Updated state');
-    setSavedSnapshot({ guardrails: [...guardrails], costLimits: [...costLimits], fallbackChains: [...fallbackChains], alertThresholds: [...alertThresholds] });
-    setDirty(false);
-    // Persist the configuration bundle (single 'default' document).
-    trustConfigCrud.upsert({ id: 'default', guardrails, costLimits, fallbackChains, alertThresholds })
-      .then(() => toast('Configuration saved — audit entry created'))
-      .catch(() => toast('Saved locally, but persistence failed', 'error'));
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const saved = await trustConfigCrud.upsert({
+        ...docExtras,
+        id: 'default',
+        version: docVersion,
+        globalSettings, guardrails, thresholds, alertThresholds, fallbackChains, integrations,
+      } as any);
+      // Success only after the upsert resolves.
+      setSnapshot({ globalSettings, guardrails, thresholds, alertThresholds, fallbackChains, integrations });
+      setDocVersion((saved as any)?.version);
+      setDirty(false);
+      toast.success('Configuration saved — recorded in the platform Audit Log');
+    } catch (e) {
+      // Keep the dirty state so nothing looks saved when it is not.
+      toast.error(`Failed to save configuration: ${(e as Error).message}`);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleReset = () => {
-    setGuardrails([...savedSnapshot.guardrails]);
-    setCostLimits([...savedSnapshot.costLimits]);
-    setFallbackChains([...savedSnapshot.fallbackChains]);
-    setAlertThresholds([...savedSnapshot.alertThresholds]);
+    setGlobalSettings(snapshot.globalSettings);
+    setGuardrails([...snapshot.guardrails]);
+    setThresholds([...snapshot.thresholds]);
+    setAlertThresholds([...snapshot.alertThresholds]);
+    setFallbackChains([...snapshot.fallbackChains]);
+    setIntegrations([...snapshot.integrations]);
     setDirty(false);
-    toast('Configuration reset to last saved state');
+    toast.info('Configuration reset to last saved state');
   };
 
-  // CRUD handlers
+  // Doc-section CRUD handlers ---------------------------------------------------
+  const updateGlobal = <K extends keyof GlobalSettings>(key: K, value: GlobalSettings[K]) => {
+    setGlobalSettings(prev => ({ ...prev, [key]: value })); markDirty();
+  };
   const toggleGuardrail = (id: string) => { setGuardrails(prev => prev.map(g => g.id === id ? { ...g, enabled: !g.enabled } : g)); markDirty(); };
   const updateGuardrail = (id: string, field: keyof GuardrailConfig, value: string) => { setGuardrails(prev => prev.map(g => g.id === id ? { ...g, [field]: value } : g)); markDirty(); };
-  const deleteGuardrail = (id: string) => { const g = guardrails.find(g => g.id === id); setGuardrails(prev => prev.filter(g => g.id !== id)); markDirty(); toast(`Guardrail "${g?.name}" removed`); };
+  const deleteGuardrail = (id: string) => { setGuardrails(prev => prev.filter(g => g.id !== id)); markDirty(); };
   const addGuardrail = () => { setGuardrails(prev => [...prev, { id: `g${Date.now()}`, name: 'New Guardrail', enabled: false, threshold: '90%', action: 'warn', justification: '' }]); markDirty(); };
-  const updateCostLimit = (id: string, field: keyof CostLimit, value: string) => { setCostLimits(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c)); markDirty(); };
-  const deleteCostLimit = (id: string) => { setCostLimits(prev => prev.filter(c => c.id !== id)); markDirty(); };
-  const addCostLimit = () => { setCostLimits(prev => [...prev, { id: `cl${Date.now()}`, agent: 'New Agent', dailyLimit: '10', weeklyLimit: '50', alertAt: '80' }]); markDirty(); };
-  const updateFallbackChain = (id: string, field: keyof FallbackChain, value: string) => { setFallbackChains(prev => prev.map(fc => fc.id === id ? { ...fc, [field]: value } : fc)); markDirty(); };
-  const deleteFallbackChain = (id: string) => { setFallbackChains(prev => prev.filter(fc => fc.id !== id)); markDirty(); };
-  const addFallbackChain = () => { setFallbackChains(prev => [...prev, { id: `fc${Date.now()}`, primary: 'New Model', fallback1: 'Claude-3-Haiku', fallback2: 'GPT-3.5-Turbo', timeout: '30s' }]); markDirty(); };
   const toggleAlert = (id: string) => { setAlertThresholds(prev => prev.map(a => a.id === id ? { ...a, enabled: !a.enabled } : a)); markDirty(); };
   const deleteAlert = (id: string) => { setAlertThresholds(prev => prev.filter(a => a.id !== id)); markDirty(); };
-
-  const handleTestConnection = (intId: string) => {
-    toast(`Testing connection for ${integrations.find(i => i.id === intId)?.name}...`, 'info');
-    setTimeout(() => toast('Connection test successful', 'success'), 1500);
-  };
-
-  const toggleIntegration = (intId: string) => {
-    setIntegrations(prev => prev.map(i => i.id === intId ? { ...i, connected: !i.connected } : i));
+  const addFallbackChain = () => {
+    if (models.length === 0) { toast.error('No registry models available'); return; }
+    setFallbackChains(prev => [...prev, { id: `fc${Date.now()}`, primaryModelId: '', fallbackModelIds: [], timeoutSec: '30' }]);
     markDirty();
   };
+  const updateChain = (id: string, patch: Partial<FallbackChain>) => { setFallbackChains(prev => prev.map(fc => fc.id === id ? { ...fc, ...patch } : fc)); markDirty(); };
+  const deleteChain = (id: string) => { setFallbackChains(prev => prev.filter(fc => fc.id !== id)); markDirty(); };
+  const toggleIntegration = (id: string) => { setIntegrations(prev => prev.map(i => i.id === id ? { ...i, enabled: !i.enabled } : i)); markDirty(); };
+  const updateIntegration = (id: string, patch: Partial<IntegrationConfig>) => { setIntegrations(prev => prev.map(i => i.id === id ? { ...i, ...patch } : i)); markDirty(); };
 
-  const currentModelConfig = perModel.find(pm => pm.model === selectedModel);
+  // Per-model handlers ----------------------------------------------------------
+  const unconfiguredModels = useMemo(
+    () => models.filter(m => !modelConfigs.some(c => c.modelId === m.id)),
+    [models, modelConfigs],
+  );
+
+  function openPerModelCreate() {
+    setPerModelForm(EMPTY_PER_MODEL_FORM);
+    setPerModelFormOpen(true);
+  }
+  function openPerModelEdit(c: ModelTrustConfig) {
+    setPerModelForm({
+      id: c.id,
+      modelId: c.modelId,
+      toxicityThreshold: String(c.toxicityThreshold),
+      hallucinationThreshold: String(c.hallucinationThreshold),
+      piiDetectionEnabled: c.piiDetectionEnabled,
+      jailbreakDetection: c.jailbreakDetection,
+      outputFiltering: c.outputFiltering,
+      costAlertUsd: c.costAlertUsd === null ? '' : String(c.costAlertUsd),
+      tokenLimitPerReq: String(c.tokenLimitPerReq),
+      rateLimitRpm: String(c.rateLimitRpm),
+      fallbackModelId: c.fallbackModelId ?? '',
+      blockedTopics: c.blockedTopics.join(', '),
+      allowedTopics: c.allowedTopics.join(', '),
+    });
+    setPerModelFormOpen(true);
+  }
+
+  async function submitPerModel() {
+    if (!perModelForm.modelId) { toast.error('A registry model is required'); return; }
+    const num = (v: string, label: string, allowEmpty = false): number | null => {
+      if (v.trim() === '') { if (allowEmpty) return null; throw new Error(`${label} is required`); }
+      const n = Number(v);
+      if (Number.isNaN(n)) throw new Error(`${label} must be a number`);
+      return n;
+    };
+    try {
+      const rec: Partial<ModelTrustConfig> = {
+        id: perModelForm.id,
+        modelId: perModelForm.modelId,
+        toxicityThreshold: num(perModelForm.toxicityThreshold, 'Toxicity threshold')!,
+        hallucinationThreshold: num(perModelForm.hallucinationThreshold, 'Hallucination threshold')!,
+        piiDetectionEnabled: perModelForm.piiDetectionEnabled,
+        jailbreakDetection: perModelForm.jailbreakDetection,
+        outputFiltering: perModelForm.outputFiltering,
+        costAlertUsd: num(perModelForm.costAlertUsd, 'Cost alert', true),
+        tokenLimitPerReq: num(perModelForm.tokenLimitPerReq, 'Token limit')!,
+        rateLimitRpm: num(perModelForm.rateLimitRpm, 'Rate limit')!,
+        fallbackModelId: perModelForm.fallbackModelId || null,
+        blockedTopics: perModelForm.blockedTopics.split(',').map(s => s.trim()).filter(Boolean),
+        allowedTopics: perModelForm.allowedTopics.split(',').map(s => s.trim()).filter(Boolean),
+      };
+      const saved = await saveConfig.mutateAsync(rec);
+      toast.success(`Trust config for ${modelName(saved.modelId) ?? 'model'} ${perModelForm.id ? 'updated' : 'created'}`);
+      setPerModelFormOpen(false);
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  }
+
+  async function deletePerModel(c: ModelTrustConfig) {
+    try {
+      await removeConfig.mutateAsync(c.id);
+      toast.success(`Trust config for ${modelName(c.modelId) ?? 'model'} removed`);
+    } catch (e) {
+      toast.error(`Failed to remove config: ${(e as Error).message}`);
+    }
+  }
+
+  if (loading) return <PageSkeleton title="Trust Configuration" />;
 
   return (
-    <TooltipProvider>
-      <div className="space-y-6">
-        <TrustEngineTabs />
-        {/* Toast */}
-        <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
-          {toasts.map(t => (
-            <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
-              background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
-              color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 300,
-            }}>{t.text}</div>
-          ))}
-        </div>
+    <div className="space-y-6">
+      <TrustEngineTabs />
 
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Trust Configuration</h1>
-              <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>PRODUCTION</Badge>
-            </div>
-            <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} · Guardrails, cost limits, fallback chains, alert thresholds</p>
-          </div>
+      <PageHeader
+        title="Trust Configuration"
+        subtitle="Global guardrail settings, thresholds, fallback chains and per-model trust controls"
+        breadcrumbs={[{ label: 'Dashboard', href: '/' }, { label: 'Runtime Trust', href: '/trust-engine' }, { label: 'Configuration' }]}
+        actions={
           <div className="flex items-center gap-3">
             {dirty && <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: 'hsl(var(--s-wn-tx))' }}><Warning size={14} />Unsaved changes</span>}
-            <Button variant="outline" onClick={() => setShowAuditLog(s => !s)} style={{ borderRadius: 0 }}>
-              <Clock className="h-4 w-4" />Audit Log ({auditLog.length})
+            <Button variant="outline" onClick={handleReset} disabled={!dirty || saving} style={{ borderRadius: 0 }}>
+              <ArrowCounterClockwise className="h-4 w-4" />Reset to Last Saved
             </Button>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" onClick={handleReset} disabled={!dirty} style={{ borderRadius: 0 }}>
-                  <ArrowCounterClockwise className="h-4 w-4" />Reset to Last Saved
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent style={{ borderRadius: 0, maxWidth: 260 }}>Reverts all changes to the last successfully saved state.</TooltipContent>
-            </Tooltip>
-            <Button onClick={handleSave} disabled={!dirty} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
+            <Button onClick={handleSave} disabled={!dirty} loading={saving} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
               <FloppyDisk className="h-4 w-4" />Save Configuration
             </Button>
           </div>
-        </div>
+        }
+      />
 
-        {/* Production Warning */}
-        <div className="flex items-center gap-2 px-4 py-2" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-bg))', borderRadius: 0 }}>
-          <Warning size={14} className="text-destructive" />
-          <p className="text-xs text-destructive">
-            <strong>PRODUCTION environment.</strong> Changes take effect immediately. All saves create an immutable audit entry (SOC 2 CC6.1, ISO 27001 A.12.1.2).
-          </p>
+      {/* Load error state with retry */}
+      {loadError && (
+        <div className="border border-[hsl(var(--destructive)/0.4)] bg-[hsl(var(--destructive)/0.06)] p-4 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold text-[hsl(var(--destructive))]">Failed to load configuration</p>
+            <p className="text-xs text-[hsl(var(--text-3))] mt-0.5">{loadError} — editing defaults; saving may overwrite the stored configuration.</p>
+          </div>
+          <Button variant="outline" size="sm" style={{ borderRadius: 0 }} onClick={hydrate}>Retry</Button>
         </div>
+      )}
 
-        {/* Audit Log Panel */}
-        {showAuditLog && (
+      {/* Audit trail note — real entries live in the platform Audit Log module */}
+      <div className="flex items-center gap-2 px-4 py-2" style={{ background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+        <Clock size={14} style={{ color: 'hsl(var(--text-3))', flexShrink: 0 }} />
+        <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>
+          Every save is recorded in the platform{' '}
+          <Link to="/audit-log" className="underline" style={{ color: 'hsl(var(--brand))' }}>Audit Log</Link>
+          {currentUser ? <> as <strong>{currentUser.name || currentUser.email}</strong></> : null}.
+        </p>
+      </div>
+
+      <Tabs defaultValue="global" className="space-y-4">
+        <TabsList style={{ borderRadius: 0 }}>
+          <TabsTrigger value="global" style={{ borderRadius: 0 }}><Gear size={14} className="mr-1.5" />Global Settings</TabsTrigger>
+          <TabsTrigger value="per-model" style={{ borderRadius: 0 }}><SlidersHorizontal size={14} className="mr-1.5" />Per-Model Config</TabsTrigger>
+          <TabsTrigger value="thresholds" style={{ borderRadius: 0 }}><Sliders size={14} className="mr-1.5" />Thresholds</TabsTrigger>
+          <TabsTrigger value="integrations" style={{ borderRadius: 0 }}><PlugsConnected size={14} className="mr-1.5" />Integrations</TabsTrigger>
+        </TabsList>
+
+        {/* TAB 1: Global Settings */}
+        <TabsContent value="global" className="space-y-4">
+          {/* PII Detection */}
           <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Configuration Change Audit Log</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>PII Detection</CardTitle>
             </CardHeader>
-            <CardContent className="p-0">
-              {auditLog.length === 0 ? (
-                <p className="px-4 py-6 text-xs text-center" style={{ color: 'hsl(var(--text-4))' }}>No configuration changes recorded in this session.</p>
-              ) : (
-                <div className="divide-y" style={{ borderColor: 'hsl(var(--border))' }}>
-                  {auditLog.map(entry => (
-                    <div key={entry.id} className="px-4 py-3 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{entry.section} — {entry.change}</span>
-                        <span className="text-xs font-mono" style={{ color: 'hsl(var(--text-4))' }}>{new Date(entry.timestamp).toLocaleString()}</span>
-                      </div>
-                      <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Changed by: {entry.user}</p>
-                    </div>
-                  ))}
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>Enable PII Detection</p>
+                  <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Detect and redact PII in all model inputs/outputs</p>
                 </div>
-              )}
+                <Switch checked={globalSettings.piiEnabled} onCheckedChange={v => updateGlobal('piiEnabled', v)} />
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Sensitivity: {globalSettings.piiSensitivity}%</label>
+                <input type="range" min={50} max={100} value={globalSettings.piiSensitivity}
+                  onChange={e => updateGlobal('piiSensitivity', Number(e.target.value))} className="w-full" />
+              </div>
             </CardContent>
           </Card>
-        )}
 
-        {/* 4 Tabs */}
-        <Tabs defaultValue="global" className="space-y-4">
-          <TabsList style={{ borderRadius: 0 }}>
-            <TabsTrigger value="global" style={{ borderRadius: 0 }}><Gear size={14} className="mr-1.5" />Global Settings</TabsTrigger>
-            <TabsTrigger value="per-model" style={{ borderRadius: 0 }}><SlidersHorizontal size={14} className="mr-1.5" />Per-Model Config</TabsTrigger>
-            <TabsTrigger value="thresholds" style={{ borderRadius: 0 }}><Sliders size={14} className="mr-1.5" />Thresholds</TabsTrigger>
-            <TabsTrigger value="integrations" style={{ borderRadius: 0 }}><PlugsConnected size={14} className="mr-1.5" />Integrations</TabsTrigger>
-          </TabsList>
+          {/* Toxicity */}
+          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Toxicity Threshold</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Max Toxicity Score: {globalSettings.toxicityThreshold.toFixed(2)}</label>
+              <input type="range" min={5} max={30} value={Math.round(globalSettings.toxicityThreshold * 100)}
+                onChange={e => updateGlobal('toxicityThreshold', Number(e.target.value) / 100)} className="w-full" />
+            </CardContent>
+          </Card>
 
-          {/* TAB 1: Global Settings */}
-          <TabsContent value="global" className="space-y-4">
-            {/* PII Detection */}
-            <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>PII Detection</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>Enable PII Detection</p>
-                    <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Detect and redact PII in all agent inputs/outputs</p>
-                  </div>
-                  <Switch checked={piiEnabled} onCheckedChange={v => { setPiiEnabled(v); markDirty(); }} />
-                </div>
+          {/* Hallucination */}
+          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Hallucination Guard</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
                 <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Sensitivity: {piiSensitivity}%</label>
-                  <input type="range" min={50} max={100} value={piiSensitivity} onChange={e => { setPiiSensitivity(Number(e.target.value)); markDirty(); }} className="w-full" />
+                  <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>Enable Hallucination Detection</p>
+                  <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Confidence-based hallucination detection for LLM outputs</p>
                 </div>
-              </CardContent>
-            </Card>
+                <Switch checked={globalSettings.hallucinationEnabled} onCheckedChange={v => updateGlobal('hallucinationEnabled', v)} />
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Detection Method</label>
+                <Select value={globalSettings.hallucinationMethod} onValueChange={v => updateGlobal('hallucinationMethod', v)}>
+                  <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    <SelectItem value="confidence">Confidence Score</SelectItem>
+                    <SelectItem value="rag_verification">RAG Verification</SelectItem>
+                    <SelectItem value="cross_model">Cross-Model Verification</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
 
-            {/* Toxicity */}
-            <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Toxicity Threshold</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Max Toxicity Score: {(toxicityThreshold / 100).toFixed(2)}</label>
-                <input type="range" min={5} max={30} value={toxicityThreshold} onChange={e => { setToxicityThreshold(Number(e.target.value)); markDirty(); }} className="w-full" />
-              </CardContent>
-            </Card>
+          {/* Cost Limits */}
+          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Cost Limits (Global)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-4">
+                {([
+                  ['costDailyUsd', 'Daily Limit ($)'],
+                  ['costWeeklyUsd', 'Weekly Limit ($)'],
+                  ['costMonthlyUsd', 'Monthly Limit ($)'],
+                ] as const).map(([key, label]) => (
+                  <div key={key}>
+                    <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>{label}</label>
+                    <Input value={globalSettings[key]} onChange={e => updateGlobal(key, e.target.value)} style={{ borderRadius: 0 }} />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
-            {/* Hallucination */}
-            <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Hallucination Guard</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>Enable Hallucination Detection</p>
-                    <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Confidence-based hallucination detection for LLM outputs</p>
-                  </div>
-                  <Switch checked={hallucinationEnabled} onCheckedChange={v => { setHallucinationEnabled(v); markDirty(); }} />
+          {/* Guardrail toggles */}
+          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck size={16} style={{ color: 'hsl(var(--brand))' }} />
+                  <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Default Guardrails</CardTitle>
                 </div>
-                <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Detection Method</label>
-                  <Select value={hallucinationMethod} onValueChange={v => { setHallucinationMethod(v); markDirty(); }}>
-                    <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                    <SelectContent style={{ borderRadius: 0 }}>
-                      <SelectItem value="confidence">Confidence Score</SelectItem>
-                      <SelectItem value="rag_verification">RAG Verification</SelectItem>
-                      <SelectItem value="cross_model">Cross-Model Verification</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Cost Limits */}
-            <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Cost Limits (Global)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Daily Limit ($)</label>
-                    <Input value={costDaily} onChange={e => { setCostDaily(e.target.value); markDirty(); }} style={{ borderRadius: 0 }} />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Weekly Limit ($)</label>
-                    <Input value={costWeekly} onChange={e => { setCostWeekly(e.target.value); markDirty(); }} style={{ borderRadius: 0 }} />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Monthly Limit ($)</label>
-                    <Input value={costMonthly} onChange={e => { setCostMonthly(e.target.value); markDirty(); }} style={{ borderRadius: 0 }} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Default Guardrails */}
-            <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck size={16} style={{ color: 'hsl(var(--brand))' }} />
-                    <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Default Guardrails</CardTitle>
-                  </div>
-                  <Button size="sm" variant="outline" onClick={addGuardrail} style={{ borderRadius: 0, height: 28 }}><Plus size={13} />Add Row</Button>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
+                <Button size="sm" variant="outline" onClick={addGuardrail} style={{ borderRadius: 0, height: 28 }}><Plus size={13} />Add Row</Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
@@ -451,7 +524,7 @@ export default function TrustConfig() {
                           <AlertDialog>
                             <AlertDialogTrigger asChild><Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive"><Trash size={13} /></Button></AlertDialogTrigger>
                             <AlertDialogContent style={{ borderRadius: 0 }}>
-                              <AlertDialogHeader><AlertDialogTitle>Delete Guardrail</AlertDialogTitle><AlertDialogDescription>Delete "{g.name}"? This creates an audit entry.</AlertDialogDescription></AlertDialogHeader>
+                              <AlertDialogHeader><AlertDialogTitle>Delete Guardrail</AlertDialogTitle><AlertDialogDescription>Delete "{g.name}"? The change persists when you save the configuration.</AlertDialogDescription></AlertDialogHeader>
                               <AlertDialogFooter><AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => deleteGuardrail(g.id)} style={{ borderRadius: 0, background: 'hsl(var(--destructive))' }}>Delete</AlertDialogAction></AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
@@ -460,80 +533,218 @@ export default function TrustConfig() {
                     ))}
                   </tbody>
                 </table>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* TAB 2: Per-Model Config */}
-          <TabsContent value="per-model" className="space-y-4">
-            <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Per-Model Configuration</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Select Model</label>
-                  <Select value={selectedModel} onValueChange={setSelectedModel}>
-                    <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                    <SelectContent style={{ borderRadius: 0 }}>
-                      {perModel.map(pm => <SelectItem key={pm.id} value={pm.model}>{pm.model}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+          {/* Fallback chains — registry-keyed */}
+          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <GitFork size={16} style={{ color: 'hsl(var(--brand))' }} />
+                  <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Fallback Chains</CardTitle>
                 </div>
-                {currentModelConfig && (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>Override Global Settings</p>
-                        <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Apply model-specific overrides</p>
-                      </div>
-                      <Switch checked={currentModelConfig.overrideGlobal} onCheckedChange={v => { setPerModel(prev => prev.map(pm => pm.model === selectedModel ? { ...pm, overrideGlobal: v } : pm)); markDirty(); }} />
-                    </div>
-                    {currentModelConfig.overrideGlobal && (
-                      <>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm" style={{ color: 'hsl(var(--text-1))' }}>PII Detection</span>
-                          <Switch checked={currentModelConfig.piiEnabled} onCheckedChange={v => { setPerModel(prev => prev.map(pm => pm.model === selectedModel ? { ...pm, piiEnabled: v } : pm)); markDirty(); }} />
-                        </div>
-                        <div>
-                          <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Toxicity Threshold</label>
-                          <Input value={currentModelConfig.toxicityThreshold} onChange={e => { setPerModel(prev => prev.map(pm => pm.model === selectedModel ? { ...pm, toxicityThreshold: e.target.value } : pm)); markDirty(); }} style={{ borderRadius: 0 }} />
-                        </div>
-                        <div>
-                          <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Daily Cost Limit ($)</label>
-                          <Input value={currentModelConfig.costDaily} onChange={e => { setPerModel(prev => prev.map(pm => pm.model === selectedModel ? { ...pm, costDaily: e.target.value } : pm)); markDirty(); }} style={{ borderRadius: 0 }} />
-                        </div>
-                      </>
-                    )}
-                    <div>
-                      <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Linked Policies</label>
-                      <div className="flex flex-wrap gap-2">
-                        {currentModelConfig.linkedPolicies.map(p => {
-                          const policy = TRUST_POLICIES.find(tp => tp.id === p);
-                          return (
-                            <Badge key={p} style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>
-                              {policy?.name || p}
-                            </Badge>
-                          );
-                        })}
-                        {currentModelConfig.linkedPolicies.length === 0 && (
-                          <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>No policies linked</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                <Button size="sm" variant="outline" onClick={addFallbackChain} style={{ borderRadius: 0, height: 28 }}><Plus size={13} />Add Chain</Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              {fallbackChains.length === 0 ? (
+                <p className="px-4 py-8 text-xs text-center" style={{ color: 'hsl(var(--text-4))' }}>
+                  No fallback chains configured. Chains route traffic to a registry fallback model when the primary fails.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                        {['Primary Model', 'Fallback 1', 'Fallback 2', 'Timeout (s)', ''].map(h => (
+                          <th key={h} className="px-4 py-3 text-left text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {fallbackChains.map(fc => (
+                        <tr key={fc.id} style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                          <td className="px-4 py-2">
+                            <Select value={fc.primaryModelId || undefined} onValueChange={v => updateChain(fc.id, { primaryModelId: v })}>
+                              <SelectTrigger className="h-7 w-48 text-xs" style={{ borderRadius: 0 }}><SelectValue placeholder="Select model…" /></SelectTrigger>
+                              <SelectContent style={{ borderRadius: 0 }}>{models.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}</SelectContent>
+                            </Select>
+                          </td>
+                          {[0, 1].map(idx => (
+                            <td key={idx} className="px-4 py-2">
+                              <Select
+                                value={fc.fallbackModelIds[idx] ?? '__none'}
+                                onValueChange={v => {
+                                  const next = [...fc.fallbackModelIds];
+                                  if (v === '__none') next.splice(idx, 1);
+                                  else next[idx] = v;
+                                  updateChain(fc.id, { fallbackModelIds: next.filter(Boolean) });
+                                }}
+                              >
+                                <SelectTrigger className="h-7 w-44 text-xs" style={{ borderRadius: 0 }}><SelectValue placeholder="None" /></SelectTrigger>
+                                <SelectContent style={{ borderRadius: 0 }}>
+                                  <SelectItem value="__none">None</SelectItem>
+                                  {models.filter(m => m.id !== fc.primaryModelId).map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                            </td>
+                          ))}
+                          <td className="px-4 py-2">
+                            <Input value={fc.timeoutSec} onChange={e => updateChain(fc.id, { timeoutSec: e.target.value })} className="h-7 text-xs font-mono w-16" style={{ borderRadius: 0 }} />
+                          </td>
+                          <td className="px-4 py-2">
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteChain(fc.id)}><Trash size={13} /></Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          {/* TAB 3: Thresholds */}
-          <TabsContent value="thresholds" className="space-y-4">
-            <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Policy Thresholds</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
+        {/* TAB 2: Per-Model Config — real model_trust_configs rows */}
+        <TabsContent value="per-model" className="space-y-4">
+          {configsError && (
+            <div className="border border-[hsl(var(--destructive)/0.4)] bg-[hsl(var(--destructive)/0.06)] p-4">
+              <p className="text-sm font-semibold text-[hsl(var(--destructive))]">Failed to load per-model configs</p>
+              <p className="text-xs text-[hsl(var(--text-3))] mt-0.5">{configsError.message}</p>
+            </div>
+          )}
+          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Per-Model Trust Configuration</CardTitle>
+                  <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>
+                    Model-specific overrides, keyed to the model registry. Changes save directly to the database.
+                  </p>
+                </div>
+                <Button size="sm" onClick={openPerModelCreate} disabled={unconfiguredModels.length === 0}
+                  style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
+                  <Plus size={13} />Add Model Config
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              {configsLoading ? (
+                <p className="px-4 py-8 text-xs text-center" style={{ color: 'hsl(var(--text-4))' }}>Loading…</p>
+              ) : modelConfigs.length === 0 ? (
+                <div className="py-12 text-center">
+                  <SlidersHorizontal size={28} className="mx-auto mb-2 text-[hsl(var(--text-4))]" />
+                  <p className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>No per-model trust configurations yet.</p>
+                  <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>Add a registry model to give it model-specific guardrail thresholds and limits.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                        {['Model', 'Toxicity ≤', 'Hallucination ≤', 'PII', 'Jailbreak', 'Output Filter', 'Cost Alert', 'Tokens/Req', 'RPM', 'Fallback Model', 'Linked Policies', ''].map(h => (
+                          <th key={h} className="px-3 py-3 text-left text-xs font-semibold whitespace-nowrap" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {modelConfigs.map(c => {
+                        const linked = policies.filter(p => p.linkedModels.includes(c.modelId));
+                        const name = modelName(c.modelId);
+                        return (
+                          <tr key={c.id} style={{ borderBottom: '1px solid hsl(var(--border))' }} className="hover:bg-muted/30">
+                            <td className="px-3 py-2.5 whitespace-nowrap">
+                              {name ? (
+                                <Link to={`/models/inventory/${c.modelId}`}
+                                  className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 hover:underline"
+                                  style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))', borderRadius: 0 }}>
+                                  <Cpu size={11} />{name}
+                                </Link>
+                              ) : (
+                                <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Unavailable</span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2.5 text-xs font-mono" style={{ color: 'hsl(var(--text-1))' }}>{c.toxicityThreshold}</td>
+                            <td className="px-3 py-2.5 text-xs font-mono" style={{ color: 'hsl(var(--text-1))' }}>{c.hallucinationThreshold}</td>
+                            {[c.piiDetectionEnabled, c.jailbreakDetection, c.outputFiltering].map((flag, i) => (
+                              <td key={i} className="px-3 py-2.5">
+                                <Badge style={{
+                                  background: flag ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-nt-bg))',
+                                  color: flag ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-nt-tx))',
+                                  borderRadius: 0, fontSize: 9,
+                                }}>{flag ? 'On' : 'Off'}</Badge>
+                              </td>
+                            ))}
+                            <td className="px-3 py-2.5 text-xs font-mono" style={{ color: 'hsl(var(--text-1))' }}>{c.costAlertUsd === null ? '—' : `$${c.costAlertUsd}`}</td>
+                            <td className="px-3 py-2.5 text-xs font-mono" style={{ color: 'hsl(var(--text-1))' }}>{c.tokenLimitPerReq}</td>
+                            <td className="px-3 py-2.5 text-xs font-mono" style={{ color: 'hsl(var(--text-1))' }}>{c.rateLimitRpm}</td>
+                            <td className="px-3 py-2.5 whitespace-nowrap">
+                              {c.fallbackModelId ? (
+                                modelName(c.fallbackModelId) ? (
+                                  <Link to={`/models/inventory/${c.fallbackModelId}`} className="text-xs hover:underline" style={{ color: 'hsl(var(--brand))' }}>
+                                    {modelName(c.fallbackModelId)}
+                                  </Link>
+                                ) : <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Unavailable</span>
+                              ) : (
+                                <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>None</span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2.5">
+                              <div className="flex flex-wrap gap-1 max-w-[180px]">
+                                {linked.length === 0
+                                  ? <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>None</span>
+                                  : linked.map(p => (
+                                    <span key={p.id} title={p.name}>
+                                      <Badge style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 9 }}>
+                                        {p.policyRef}
+                                      </Badge>
+                                    </span>
+                                  ))}
+                              </div>
+                            </td>
+                            <td className="px-3 py-2.5">
+                              <div className="flex items-center gap-1">
+                                <Button aria-label="Edit config" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openPerModelEdit(c)}>
+                                  <PencilSimple size={13} style={{ color: 'hsl(var(--text-4))' }} />
+                                </Button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button aria-label="Delete config" variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive"><Trash size={13} /></Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent style={{ borderRadius: 0 }}>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Remove Model Config</AlertDialogTitle>
+                                      <AlertDialogDescription>Remove the trust configuration for {name ?? 'this model'}? The model falls back to global settings.</AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => deletePerModel(c)} style={{ borderRadius: 0, background: 'hsl(var(--destructive))' }}>Remove</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* TAB 3: Thresholds */}
+        <TabsContent value="thresholds" className="space-y-4">
+          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Policy Thresholds</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
@@ -569,20 +780,20 @@ export default function TrustConfig() {
                     ))}
                   </tbody>
                 </table>
-              </CardContent>
-            </Card>
+              </div>
+            </CardContent>
+          </Card>
 
-            {/* Alert Thresholds */}
-            <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Bell size={16} style={{ color: 'hsl(var(--brand))' }} />
-                    <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Alert Thresholds</CardTitle>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
+          {/* Alert Thresholds */}
+          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-2">
+                <Bell size={16} style={{ color: 'hsl(var(--brand))' }} />
+                <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Alert Thresholds</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
@@ -602,7 +813,7 @@ export default function TrustConfig() {
                           <AlertDialog>
                             <AlertDialogTrigger asChild><Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive"><Trash size={13} /></Button></AlertDialogTrigger>
                             <AlertDialogContent style={{ borderRadius: 0 }}>
-                              <AlertDialogHeader><AlertDialogTitle>Delete Alert</AlertDialogTitle><AlertDialogDescription>Remove this alert threshold?</AlertDialogDescription></AlertDialogHeader>
+                              <AlertDialogHeader><AlertDialogTitle>Delete Alert</AlertDialogTitle><AlertDialogDescription>Remove this alert threshold? The change persists when you save the configuration.</AlertDialogDescription></AlertDialogHeader>
                               <AlertDialogFooter><AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => deleteAlert(a.id)} style={{ borderRadius: 0, background: 'hsl(var(--destructive))' }}>Delete</AlertDialogAction></AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
@@ -611,69 +822,161 @@ export default function TrustConfig() {
                     ))}
                   </tbody>
                 </table>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          {/* TAB 4: Integrations */}
-          <TabsContent value="integrations" className="space-y-4">
-            {integrations.map(int => (
-              <Card key={int.id} style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <Globe size={18} style={{ color: 'hsl(var(--brand))' }} />
-                      <div>
-                        <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{int.name}</p>
-                        <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{int.type === 'webhook' ? 'Webhook' : 'API Key'}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Switch checked={int.connected} onCheckedChange={() => toggleIntegration(int.id)} />
-                      <Badge style={{
-                        background: int.connected ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-nt-bg))',
-                        color: int.connected ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-nt-tx))',
-                        borderRadius: 0, fontSize: 10,
-                      }}>
-                        {int.connected ? 'Connected' : 'Disconnected'}
-                      </Badge>
+        {/* TAB 4: Integrations — non-secret config only */}
+        <TabsContent value="integrations" className="space-y-4">
+          {integrations.map(int => (
+            <Card key={int.id} style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <Globe size={18} style={{ color: 'hsl(var(--brand))' }} />
+                    <div>
+                      <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{int.name}</p>
+                      <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{int.kind === 'webhook' ? 'Webhook' : 'API Key'}</p>
                     </div>
                   </div>
-                  {int.connected && (
-                    <div className="space-y-3">
-                      {int.type === 'webhook' ? (
-                        <div>
-                          <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Webhook URL</label>
-                          <Input
-                            value={int.webhook}
-                            onChange={e => { setIntegrations(prev => prev.map(i => i.id === int.id ? { ...i, webhook: e.target.value } : i)); markDirty(); }}
-                            style={{ borderRadius: 0 }}
-                            placeholder="https://hooks.slack.com/..."
-                          />
-                        </div>
-                      ) : (
-                        <div>
-                          <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>API Key</label>
-                          <Input
-                            value={int.apiKey}
-                            onChange={e => { setIntegrations(prev => prev.map(i => i.id === int.id ? { ...i, apiKey: e.target.value } : i)); markDirty(); }}
-                            style={{ borderRadius: 0 }}
-                            type="password"
-                            placeholder="Enter API key..."
-                          />
-                        </div>
-                      )}
-                      <Button variant="outline" size="sm" onClick={() => handleTestConnection(int.id)} style={{ borderRadius: 0 }}>
-                        <TestTube size={14} />Test Connection
+                  <div className="flex items-center gap-3">
+                    <Switch checked={int.enabled} onCheckedChange={() => toggleIntegration(int.id)} />
+                    <Badge style={{
+                      background: int.enabled ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-nt-bg))',
+                      color: int.enabled ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-nt-tx))',
+                      borderRadius: 0, fontSize: 10,
+                    }}>
+                      {int.enabled ? 'Enabled' : 'Disabled'}
+                    </Badge>
+                  </div>
+                </div>
+                {int.enabled && (
+                  <div className="space-y-3">
+                    {int.kind === 'webhook' ? (
+                      <div>
+                        <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Webhook URL</label>
+                        <Input
+                          value={int.webhookUrl}
+                          onChange={e => updateIntegration(int.id, { webhookUrl: e.target.value })}
+                          style={{ borderRadius: 0 }}
+                          placeholder="https://hooks.example.com/…"
+                        />
+                        <p className="text-[11px] mt-1" style={{ color: 'hsl(var(--text-4))' }}>
+                          If this URL contains a secret token, store it in the{' '}
+                          <Link to="/security/keys" className="underline" style={{ color: 'hsl(var(--brand))' }}>Keys Vault</Link> instead.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="flex items-start gap-2 p-3" style={{ background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                        <Key size={14} style={{ color: 'hsl(var(--text-3))', flexShrink: 0, marginTop: 1 }} />
+                        <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>
+                          API keys and secrets are never stored in this configuration. Manage the {int.name} credential in the{' '}
+                          <Link to="/security/keys" className="underline" style={{ color: 'hsl(var(--brand))' }}>Keys Vault</Link> module.
+                        </p>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" disabled style={{ borderRadius: 0 }}>
+                        Test Connection
                       </Button>
+                      <span className="text-[11px]" style={{ color: 'hsl(var(--text-4))' }}>Connection testing is not yet available.</span>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </TabsContent>
+      </Tabs>
+
+      {/* Per-Model Config create/edit dialog */}
+      <Dialog open={perModelFormOpen} onOpenChange={setPerModelFormOpen}>
+        <DialogContent style={{ borderRadius: 0, maxWidth: 540 }}>
+          <DialogHeader>
+            <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>
+              {perModelForm.id
+                ? `Edit Trust Config — ${modelName(perModelForm.modelId) ?? 'Unavailable'}`
+                : 'Add Model Trust Config'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2 max-h-[62vh] overflow-y-auto pr-1">
+            {!perModelForm.id && (
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Registry Model *</label>
+                <Select value={perModelForm.modelId || undefined} onValueChange={v => setPerModelForm({ ...perModelForm, modelId: v })}>
+                  <SelectTrigger style={{ borderRadius: 0 }}><SelectValue placeholder="Select registry model…" /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {unconfiguredModels.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Toxicity Threshold (0–1)</label>
+                <Input value={perModelForm.toxicityThreshold} onChange={e => setPerModelForm({ ...perModelForm, toxicityThreshold: e.target.value })} style={{ borderRadius: 0 }} />
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Hallucination Threshold (0–1)</label>
+                <Input value={perModelForm.hallucinationThreshold} onChange={e => setPerModelForm({ ...perModelForm, hallucinationThreshold: e.target.value })} style={{ borderRadius: 0 }} />
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Cost Alert ($/day, optional)</label>
+                <Input value={perModelForm.costAlertUsd} onChange={e => setPerModelForm({ ...perModelForm, costAlertUsd: e.target.value })} style={{ borderRadius: 0 }} placeholder="e.g., 25" />
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Token Limit / Request</label>
+                <Input value={perModelForm.tokenLimitPerReq} onChange={e => setPerModelForm({ ...perModelForm, tokenLimitPerReq: e.target.value })} style={{ borderRadius: 0 }} />
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Rate Limit (RPM)</label>
+                <Input value={perModelForm.rateLimitRpm} onChange={e => setPerModelForm({ ...perModelForm, rateLimitRpm: e.target.value })} style={{ borderRadius: 0 }} />
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Fallback Model</label>
+                <Select
+                  value={perModelForm.fallbackModelId || '__none'}
+                  onValueChange={v => setPerModelForm({ ...perModelForm, fallbackModelId: v === '__none' ? '' : v })}
+                >
+                  <SelectTrigger style={{ borderRadius: 0 }}><SelectValue placeholder="None" /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    <SelectItem value="__none">None</SelectItem>
+                    {models.filter(m => m.id !== perModelForm.modelId).map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {([
+              ['piiDetectionEnabled', 'PII Detection', 'Detect and redact PII for this model'],
+              ['jailbreakDetection', 'Jailbreak Detection', 'Block prompt-injection and jailbreak attempts'],
+              ['outputFiltering', 'Output Filtering', 'Filter model outputs against guardrail rules'],
+            ] as const).map(([key, label, desc]) => (
+              <div key={key} className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{label}</p>
+                  <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{desc}</p>
+                </div>
+                <Switch checked={perModelForm[key]} onCheckedChange={v => setPerModelForm({ ...perModelForm, [key]: v })} />
+              </div>
             ))}
-          </TabsContent>
-        </Tabs>
-      </div>
-    </TooltipProvider>
+            <div>
+              <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Blocked Topics (comma-separated)</label>
+              <Input value={perModelForm.blockedTopics} onChange={e => setPerModelForm({ ...perModelForm, blockedTopics: e.target.value })} style={{ borderRadius: 0 }} placeholder="e.g., legal_advice, medical_advice" />
+            </div>
+            <div>
+              <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Allowed Topics (comma-separated, optional)</label>
+              <Input value={perModelForm.allowedTopics} onChange={e => setPerModelForm({ ...perModelForm, allowedTopics: e.target.value })} style={{ borderRadius: 0 }} />
+            </div>
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setPerModelFormOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
+            <Button onClick={submitPerModel} loading={saveConfig.isPending} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
+              {perModelForm.id ? 'Save Changes' : 'Create Config'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }

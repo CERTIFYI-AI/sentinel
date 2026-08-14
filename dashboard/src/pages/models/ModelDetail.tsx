@@ -491,6 +491,17 @@ function ModelDetailView({ model }: { model: Model }) {
                   </span>
                   <CaretRight size={12} style={{ color: 'hsl(var(--text-4))' }} />
                 </button>
+                {/* Runtime trust policies & trace outcomes for this model */}
+                <button
+                  onClick={() => navigate(`/trust-engine?model=${model.id}`)}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '9px 11px', background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))', cursor: 'pointer', textAlign: 'left' }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <ShieldCheck size={14} style={{ color: 'hsl(var(--text-3))' }} />
+                    <span style={{ fontSize: 12, color: 'hsl(var(--text-2))' }}>Runtime Trust</span>
+                  </span>
+                  <CaretRight size={12} style={{ color: 'hsl(var(--text-4))' }} />
+                </button>
               </CardContent>
             </Card>
 

@@ -15,10 +15,10 @@ import { cn } from '@/lib/utils'
 
 const TABS: { to: string; label: string; icon: React.ElementType }[] = [
   { to: '/trust-engine', label: 'Runtime Trust', icon: Gauge },
-  { to: '/trust-engine/guardrails', label: 'Guardrails', icon: ShieldCheck },
-  { to: '/trust-engine/traces', label: 'Inference Traces', icon: Lightning },
-  { to: '/trust-engine/costs', label: 'Costs & Tokens', icon: Coins },
-  { to: '/trust-engine/fallback', label: 'Fallbacks', icon: ArrowsClockwise },
+  { to: '/trust-engine/guardrails', label: 'Active Guardrails', icon: ShieldCheck },
+  { to: '/trust-engine/traces', label: 'Live Inference Traces', icon: Lightning },
+  { to: '/trust-engine/costs', label: 'Trust Costs & Tokens', icon: Coins },
+  { to: '/trust-engine/fallback', label: 'Fallback Failovers', icon: ArrowsClockwise },
   { to: '/trust-engine/tools', label: 'Tool Monitor', icon: Wrench },
   { to: '/trust-engine/config', label: 'Configuration', icon: SlidersHorizontal },
 ]
