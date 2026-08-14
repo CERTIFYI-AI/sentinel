@@ -73,7 +73,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   policies: 'Policies', 'policy-templates': 'Policy Templates', risk: 'Risk',
   matrix: 'Risk Matrix', vendors: 'Vendors', incidents: 'Incidents',
   remediation: 'Remediation', models: 'Model Registry', inventory: 'Model Registry',
-  lifecycle: 'Lifecycle', agents: 'Agent Discovery', 'shadow-ai': 'Shadow AI',
+  lifecycle: 'Lifecycle', agents: 'Agents', 'shadow-ai': 'Shadow AI',
   'trust-engine': 'Trust Engine', guardrails: 'Guardrails', traces: 'Live Traces',
   'access-control': 'Access Control', roles: 'Roles', users: 'Users',
   'audit-log': 'Audit Log', 'audit-trail': 'Audit Trail', 'evidence-vault': 'Evidence Vault',

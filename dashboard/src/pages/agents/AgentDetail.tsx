@@ -283,7 +283,7 @@ export default function AgentDetail() {
       {/* Cross-module interlinks — same agent id everywhere */}
       <div className="flex items-center gap-2 flex-wrap mb-4">
         <span style={{ fontSize: 11, color: 'hsl(var(--text-4))' }}>Related:</span>
-        <Link to={`/agent-registry?agent=${agent.id}`} className={linkPillCls} aria-label="Open in Agent Registry">
+        <Link to={`/agents?agent=${agent.id}`} className={linkPillCls} aria-label="Open in the Agents registry">
           <Robot size={12} className="mr-1" /> Registry
         </Link>
         <Link to={`/agent-iam?agent=${agent.id}`} className={linkPillCls} aria-label="Open IAM credentials for this agent">

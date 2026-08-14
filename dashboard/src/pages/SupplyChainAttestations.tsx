@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Certificate, MagnifyingGlass, Plus, X, Export, Trash, ShieldCheck, FileText, ArrowClockwise, Pencil } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { exportCsv } from '../lib/exportUtils'
 
 
 type AttestationStatus = 'Valid' | 'Expired' | 'Pending' | 'Rejected' | 'Under Review'
@@ -83,6 +84,29 @@ export default function SupplyChainAttestations() {
     underReview: attestations.filter(a => a.status === 'Under Review').length,
   }
 
+  // Real CSV export of the currently displayed (filtered) rows — no fake
+  // success toast; exportCsv triggers an actual file download.
+  function handleExport() {
+    if (!filtered.length) { toast.info('No attestations to export'); return }
+    exportCsv(filtered.map(a => ({
+      id: a.id,
+      subject: a.subject,
+      subject_type: a.subjectType,
+      type: a.type,
+      status: a.status,
+      attested_by: a.attestedBy,
+      attested_date: a.attestedDate,
+      valid_until: a.validUntil,
+      scope: a.scope,
+      findings: a.findings,
+      evidence: a.evidence.join('; '),
+      sig_hash: a.sigHash,
+      framework: a.framework,
+      review_notes: a.reviewNotes ?? '',
+      next_review_date: a.nextReviewDate ?? '',
+    })), 'supply-chain-attestations.csv')
+  }
+
   function openCreate() {
     setForm(BLANK)
     setEditMode(false)
@@ -160,7 +184,7 @@ export default function SupplyChainAttestations() {
           <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">Cryptographically signed attestations for AI supply chain — data, models, vendors, and pipelines</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => toast.success('Attestations exported')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
+          <button onClick={handleExport} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
             <Export size={14} /> Export
           </button>
           <button onClick={openCreate} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm hover:opacity-90">

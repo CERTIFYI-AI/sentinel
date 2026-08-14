@@ -2,8 +2,8 @@
 // Copyright (c) 2026 CERTIFYI-AI.
 //
 // ExplainabilityProfileList — per model/version XAI profiles with adequacy
-// posture. CRUD-backed; the analysis workspace (legacy Explainability Center)
-// remains available at /explainability/center.
+// posture. CRUD-backed. The legacy seed-mock Explainability Center
+// (/explainability/center) was retired; that route now redirects here.
 // Honors ?model=<uuid> (dismissible filter chip) and ?open=<id> deep links.
 
 import { useEffect, useMemo, useState } from 'react'
@@ -88,7 +88,6 @@ export default function ExplainabilityProfileList() {
         icon={Eye}
         actions={
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => nav('/explainability/center')}>Analysis workspace</Button>
             {can('create') && <Button size="sm" icon={<Plus />} onClick={() => { setEditing(null); setFormOpen(true) }}>New Profile</Button>}
           </div>
         }
