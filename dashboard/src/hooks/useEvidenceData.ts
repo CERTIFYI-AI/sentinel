@@ -1,41 +1,28 @@
-// @ts-nocheck
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { fetchEvidences, upsertEvidence, deleteEvidence } from '../services/evidenceService'
-import { toast } from 'sonner'
+import {
+  fetchAllEvidences, upsertEvidence, deleteEvidence, fetchEvidenceChain,
+  type EvidenceRecord,
+} from '../services/evidenceService'
 
-// Legacy exports for backward compat
-export function useEvidences() {
-  return useQuery({ queryKey: ['evidence'], queryFn: fetchEvidences, staleTime: 30_000 })
-}
-export function useUpsertEvidence() {
-  const qc = useQueryClient()
-  return useMutation({ mutationFn: upsertEvidence, onSuccess: () => qc.invalidateQueries({ queryKey: ['evidence'] }) })
-}
-export function useDeleteEvidence() {
-  const qc = useQueryClient()
-  return useMutation({ mutationFn: deleteEvidence, onSuccess: () => qc.invalidateQueries({ queryKey: ['evidence'] }) })
-}
-
-// Standard hook
+// Success/error toasts are owned by the page so a single, context-rich
+// notification fires per action — the hook only keeps the cache fresh.
 export function useEvidenceData(filters: Record<string, any> = {}) {
   const qc = useQueryClient()
 
   const query = useQuery({
     queryKey: ['evidence', filters],
-    queryFn: () => fetchEvidences(filters),
+    queryFn: () => fetchAllEvidences(filters),
     staleTime: 30_000,
   })
 
   const saveMutation = useMutation({
-    mutationFn: (record: any) => upsertEvidence(record),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['evidence'] }); toast.success('Evidence saved') },
-    onError: () => toast.error('Failed to save evidence'),
+    mutationFn: (record: Partial<EvidenceRecord>) => upsertEvidence(record),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['evidence'] }) },
   })
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteEvidence(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['evidence'] }); toast.success('Evidence deleted') },
-    onError: () => toast.error('Failed to delete evidence'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['evidence'] }) },
   })
 
   return {
@@ -47,4 +34,14 @@ export function useEvidenceData(filters: Record<string, any> = {}) {
     isSaving: saveMutation.isPending,
     isDeleting: deleteMutation.isPending,
   }
+}
+
+// Read-only view over the append-only evidence_chain custody ledger.
+export function useEvidenceChain(limit = 200) {
+  const query = useQuery({
+    queryKey: ['evidence-chain', limit],
+    queryFn: () => fetchEvidenceChain(limit),
+    staleTime: 30_000,
+  })
+  return { chain: query.data ?? [], isLoading: query.isLoading, error: query.error }
 }

@@ -1,522 +1,690 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
-import { useState, useCallback } from 'react';
-import { useSupabaseTable } from '@/hooks/useSupabaseTable';
+//
+// Evidence — the single evidence surface for the platform.
+// Tabs: Vault (real org-scoped `evidence` records) · Chain of Custody
+// (read-only view over the append-only `evidence_chain` ledger) · Sync
+// (collection-source coverage derived from real records; integrations
+// pending). Consolidates the former Evidence Hub, Evidence Chain and
+// Evidence Sync Engine pages.
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '../components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { Textarea } from '../components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '../components/ui/alert-dialog';
 import {
-  Vault, FilePdf, FileDoc, FileXls, File, UploadSimple, MagnifyingGlass,
-  Trash, Download, Eye, Warning, CheckCircle, Clock, ShieldCheck,
-  Link as LinkIcon, ArrowsClockwise, Spinner, Certificate, Export,
-  SealCheck, Hash, CalendarCheck, Lock,
+  Vault, FileText, UploadSimple, Trash, Eye, Clock, Link as LinkIcon,
+  Robot, Plugs, Lock, ArrowSquareOut, Export, Cube, ShieldCheck,
 } from '@phosphor-icons/react';
-import { statusColor, formatDate } from '../data/seed';
-type Evidence = any;
-type EvidenceStatus = string;
-import { useEvidenceData } from '../hooks/useEvidenceData';
-import { PageSkeleton } from '../components/ui/PageSkeleton';
-
-function exportCsv(rows: any[], filename: string) {
-  if (!rows.length) return
-  const keys = Object.keys(rows[0])
-  const csv = [keys.join(','), ...rows.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n')
-  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = filename; a.click()
-}
-import { useSettingsStore } from '../stores/settingsStore';
 import { toast } from 'sonner';
+import { useEvidenceData, useEvidenceChain } from '../hooks/useEvidenceData';
+import { useModelsData } from '../hooks/useModelsData';
+import type { EvidenceRecord } from '../services/evidenceService';
+import { PageSkeleton } from '../components/ui/PageSkeleton';
 import { PageHeader } from '../components/ui/PageHeader';
 import { StatCardRow } from '../components/ui/StatCardRow';
-import { FilterBar } from '../components/ui/FilterBar';
 import type { StatCardRowItem } from '../components/ui/StatCardRow';
+import { FilterBar } from '../components/ui/FilterBar';
 
-// ── Simulated cryptographic chain data ──────────────────────────────────────
-
-interface ChainEntry {
-  seq: number;
-  timestamp: string;
-  action: string;
-  entityType: string;
-  entityId: string;
-  actor: string;
-  payloadHash: string;
-  chainHash: string;
-  verified?: boolean;
+function exportCsv(rows: Record<string, unknown>[], filename: string) {
+  if (!rows.length) return;
+  const keys = Object.keys(rows[0]);
+  const csv = [keys.join(','), ...rows.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = filename;
+  a.click();
 }
 
-const CHAIN_ENTRIES: ChainEntry[] = [
-  { seq: 847, timestamp: '2026-04-10 09:14:32', action: 'approve', entityType: 'control', entityId: 'CTRL-008', actor: 'James Patel', payloadHash: 'a3f4d2c1b8e7f6a5...4d3c2b1a', chainHash: 'f8e7d6c5b4a3f2e1...8c7b6a5f', verified: true },
-  { seq: 846, timestamp: '2026-04-10 09:12:11', action: 'create', entityType: 'evidence', entityId: 'EV-012', actor: 'Maria Santos', payloadHash: '2b3c4d5e6f7a8b9c...1a2b3c4d', chainHash: 'd4c3b2a1f8e7d6c5...4b3a2f1e', verified: true },
-  { seq: 845, timestamp: '2026-04-10 08:55:44', action: 'sign', entityType: 'policy', entityId: 'POL-003', actor: 'Sarah Chen', payloadHash: 'c9b8a7f6e5d4c3b2...9a8b7c6d', chainHash: 'e1f2a3b4c5d6e7f8...5d4c3b2a', verified: true },
-  { seq: 844, timestamp: '2026-04-09 16:33:28', action: 'verify', entityType: 'audit', entityId: 'AUD-022', actor: 'Emma Wilson', payloadHash: '4e5f6a7b8c9d0e1f...2a3b4c5d', chainHash: 'b7a6f5e4d3c2b1a0...7f6e5d4c', verified: true },
-  { seq: 843, timestamp: '2026-04-09 14:21:05', action: 'update', entityType: 'risk', entityId: 'RSK-007', actor: 'David Kim', payloadHash: '1f2e3d4c5b6a7f8e...3c2b1a0f', chainHash: '9a8f7e6d5c4b3a2f...9b8a7f6e', verified: true },
-  { seq: 842, timestamp: '2026-04-09 11:08:55', action: 'reject', entityType: 'hitl', entityId: 'HITL-041', actor: 'Sarah Chen', payloadHash: 'f1e2d3c4b5a6f7e8...0f1e2d3c', chainHash: '3b4c5d6e7f8a9b0c...3a4b5c6d', verified: true },
-  { seq: 841, timestamp: '2026-04-09 10:44:18', action: 'create', entityType: 'incident', entityId: 'INC-012', actor: 'Maria Santos', payloadHash: '7a8b9c0d1e2f3a4b...7c8d9e0f', chainHash: '5e6f7a8b9c0d1e2f...5d6e7f8a', verified: true },
-  { seq: 840, timestamp: '2026-04-08 17:30:02', action: 'approve', entityType: 'policy', entityId: 'POL-005', actor: 'James Patel', payloadHash: 'b5c6d7e8f9a0b1c2...5d6e7f8a', chainHash: '1c2d3e4f5a6b7c8d...1a2b3c4d', verified: true },
-  { seq: 839, timestamp: '2026-04-08 15:12:44', action: 'sign', entityType: 'evidence', entityId: 'EV-011', actor: 'Raj Gupta', payloadHash: 'd3e4f5a6b7c8d9e0...3e4f5a6b', chainHash: '9c0d1e2f3a4b5c6d...9d0e1f2a', verified: true },
-  { seq: 838, timestamp: '2026-04-08 13:05:31', action: 'create', entityType: 'control', entityId: 'CTRL-019', actor: 'Emma Wilson', payloadHash: '6b7c8d9e0f1a2b3c...6a7b8c9d', chainHash: '2f3a4b5c6d7e8f9a...2e3f4a5b', verified: true },
+function formatDate(d?: string | null): string {
+  if (!d) return '—';
+  const date = new Date(d);
+  if (isNaN(date.getTime())) return '—';
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function freshnessStyle(status?: string | null) {
+  const s = (status || '').toLowerCase();
+  if (s === 'fresh') return { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', label: 'Fresh' };
+  if (s === 'aging') return { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', label: 'Aging' };
+  if (s === 'stale') return { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))', label: 'Stale' };
+  if (s === 'expired') return { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))', label: 'Expired' };
+  return { bg: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))', label: status || 'Unknown' };
+}
+
+function truncateHash(h?: string | null) {
+  if (!h) return '—';
+  if (h.length <= 18) return h;
+  return h.slice(0, 10) + '…' + h.slice(-8);
+}
+
+const EVIDENCE_TYPES = [
+  'Policy Document', 'Report', 'Audit Report', 'Test Result', 'Log File',
+  'Certificate', 'Attestation', 'Screenshot', 'Legal Document', 'Security Report',
+  'Regulatory Filing',
 ];
 
-const FRAMEWORK_CYCLES = [
-  { name: 'EU AI Act', status: 'Cycle 2 of 3', progress: 68, color: 'hsl(var(--brand))' },
-  { name: 'ISO 42001', status: 'Certified', progress: 100, color: 'hsl(var(--s-ok-tx))' },
-  { name: 'SOC 2 Type II', status: 'Active', progress: 83, color: 'hsl(var(--s-in-tx))' },
-  { name: 'NIST AI RMF', status: 'In Progress', progress: 54, color: 'hsl(var(--r-hi-tx))' },
-];
+interface UploadForm {
+  title: string;
+  type: string;
+  source: string;
+  collection_date: string;
+  description: string;
+  url: string;
+}
 
-const EMPTY_EVIDENCE: Omit<Evidence, 'id'> = {
-  title: '', source: '', framework: '', control: '', type: 'Report',
-  status: 'pending', lastSync: new Date().toISOString().split('T')[0],
-  owner: '', description: '', fileSize: '0 KB',
+const EMPTY_FORM: UploadForm = {
+  title: '', type: 'Report', source: '',
+  collection_date: new Date().toISOString().split('T')[0],
+  description: '', url: '',
 };
 
-function fileIcon(type: string) {
-  if (type === 'Report' || type === 'Validation') return <FilePdf size={28} style={{ color: 'hsl(var(--s-er-tx))' }} />;
-  if (type === 'Agreement' || type === 'Log') return <FileDoc size={28} style={{ color: 'hsl(var(--s-in-tx))' }} />;
-  if (type === 'Certificate') return <FileXls size={28} style={{ color: 'hsl(var(--s-ok-tx))' }} />;
-  return <File size={28} style={{ color: 'hsl(var(--text-3))' }} />;
-}
-
-function syncStatusDot(status: EvidenceStatus) {
-  if (status === 'synced') return { color: 'hsl(var(--s-ok-tx))', label: 'Synced' };
-  if (status === 'pending') return { color: 'hsl(var(--r-hi-tx))', label: 'Pending' };
-  if (status === 'expired') return { color: 'hsl(var(--s-er-tx))', label: 'Expired' };
-  return { color: 'hsl(var(--s-er-tx))', label: 'Failed' };
-}
-
-function actionBadgeStyle(action: string) {
-  switch (action) {
-    case 'approve': return { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' };
-    case 'sign': return { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' };
-    case 'create': return { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' };
-    case 'verify': return { bg: 'hsl(var(--tag-purple-bg))', color: 'hsl(var(--tag-purple))' };
-    case 'reject': return { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))' };
-    case 'update': return { bg: 'hsl(var(--r-hi-bg))', color: 'hsl(var(--r-hi-tx))' };
-    default: return { bg: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))' };
-  }
-}
-
-function truncateHash(h: string) {
-  if (h.length <= 16) return h;
-  return h.slice(0, 8) + '...' + h.slice(-8);
+// Derived from the record's own collection date — <=30d Fresh, <=90d Aging, else Stale.
+function deriveFreshness(collectionDate: string): string {
+  const days = Math.floor((Date.now() - new Date(collectionDate).getTime()) / 86400000);
+  if (days <= 30) return 'Fresh';
+  if (days <= 90) return 'Aging';
+  return 'Stale';
 }
 
 export default function EvidenceVault() {
-  const { orgName } = useSettingsStore();
-  const { evidence, isLoading, save: saveEvidence, remove: removeEvidence } = useEvidenceData();
-  const [_localEvidence, _setLocalEvidence] = useState<Evidence[]>([]);
-  const { data: chain, setData: setChain } = useSupabaseTable('evidencevault_table', CHAIN_ENTRIES);
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { evidence, isLoading, error, save, remove, isSaving } = useEvidenceData();
+  const { chain, isLoading: chainLoading, error: chainError } = useEvidenceChain();
+  const { models } = useModelsData();
+
+  // ?tab=vault|chain|sync selects the initial tab (used by legacy-route redirects).
+  const initialTab = ['vault', 'chain', 'sync'].includes(searchParams.get('tab') || '')
+    ? (searchParams.get('tab') as string)
+    : 'vault';
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('all');
-  const [viewItem, setViewItem] = useState<Evidence | null>(null);
-  const [deleteItem, setDeleteItem] = useState<Evidence | null>(null);
+  const [filterFreshness, setFilterFreshness] = useState('all');
+  const [viewItem, setViewItem] = useState<EvidenceRecord | null>(null);
+  const [deleteItem, setDeleteItem] = useState<EvidenceRecord | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [formData, setFormData] = useState<Omit<Evidence, 'id'>>(EMPTY_EVIDENCE);
-  const [verifying, setVerifying] = useState(false);
-  const [verifyResult, setVerifyResult] = useState<{ valid: boolean; entries: number } | null>(null);
-  const [verifyingRow, setVerifyingRow] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState('vault');
+  const [form, setForm] = useState<UploadForm>(EMPTY_FORM);
 
-  const evidenceList = evidence || [];
-  const types = Array.from(new Set(evidenceList.map(e => e.type)));
-  const filtered = evidenceList.filter(e => {
+  const types = useMemo(
+    () => Array.from(new Set(evidence.map(e => e.type).filter(Boolean))) as string[],
+    [evidence],
+  );
+
+  // Cross-module deep links: ?open=<id> opens a record; ?model=<uuid> filters
+  // the list to records linked to that model (dismissible chip).
+  const modelParam = searchParams.get('model');
+  const modelFilter = modelParam ? models.find(m => m.id === modelParam) : undefined;
+  useEffect(() => {
+    const openId = searchParams.get('open');
+    if (!openId || evidence.length === 0) return;
+    const record = evidence.find(e => e.id === openId);
+    if (record) setViewItem(record);
+    setSearchParams(prev => { const next = new URLSearchParams(prev); next.delete('open'); return next; }, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [evidence.length]);
+
+  const filtered = useMemo(() => evidence.filter(e => {
+    if (modelParam) {
+      const refs = e.linked_models || [];
+      const matchesModel = refs.includes(modelParam) || (modelFilter?.slug ? refs.includes(modelFilter.slug) : false);
+      if (!matchesModel) return false;
+    }
     const q = search.toLowerCase();
-    const matchSearch = !q || e.title.toLowerCase().includes(q) || e.source.toLowerCase().includes(q) || e.framework.toLowerCase().includes(q);
+    const matchSearch = !q
+      || e.title.toLowerCase().includes(q)
+      || (e.source || '').toLowerCase().includes(q)
+      || (e.linked_controls || []).some(c => c.toLowerCase().includes(q));
     const matchType = filterType === 'all' || e.type === filterType;
-    return matchSearch && matchType;
-  });
+    const matchFresh = filterFreshness === 'all'
+      || (e.freshness_status || '').toLowerCase() === filterFreshness;
+    return matchSearch && matchType && matchFresh;
+  }), [evidence, search, filterType, filterFreshness, modelParam, modelFilter]);
 
-  const synced = evidenceList.filter(e => e.status === 'synced').length;
-  const totalChain = chain.length > 0 ? chain[0].seq : 0;
+  const freshCount = evidence.filter(e => (e.freshness_status || '').toLowerCase() === 'fresh').length;
+  const staleCount = evidence.filter(e => ['stale', 'expired'].includes((e.freshness_status || '').toLowerCase())).length;
+  const autoCount = evidence.filter(e => e.auto_collected).length;
 
-  const stats = [
-    { label: 'Chain Length', value: totalChain, icon: LinkIcon, color: 'hsl(var(--brand))', sub: 'entries' },
-    { label: 'Audit Cycles', value: '3', icon: CalendarCheck, color: 'hsl(var(--s-ok-tx))', sub: 'complete' },
-    { label: 'Days Active', value: '847', icon: Clock, color: 'hsl(var(--s-in-tx))', sub: 'days' },
-    { label: 'Integrity', value: '100%', icon: SealCheck, color: 'hsl(var(--s-ok-tx))', sub: 'verified' },
-  ];
-
-  const handleUpload = useCallback(async () => {
-    try {
-      await saveEvidence({ ...formData });
-      toast.success(`${formData.title || 'Evidence'} uploaded successfully`);
-    } catch { toast.error('Failed to upload evidence'); }
-    setUploadOpen(false);
-    setFormData(EMPTY_EVIDENCE);
-  }, [formData, saveEvidence]);
-
-  const handleDelete = useCallback(async () => {
-    if (!deleteItem) return;
-    try { await removeEvidence(deleteItem.id); toast.success('Evidence removed from vault'); } catch { toast.error('Failed to remove'); }
-    setDeleteItem(null);
-  }, [deleteItem, removeEvidence]);
-
-  const handleVerifyChain = useCallback(async () => {
-    setVerifying(true);
-    setVerifyResult(null);
-    await new Promise(r => setTimeout(r, 2200));
-    setVerifyResult({ valid: true, entries: totalChain });
-    setVerifying(false);
-    toast.success(`Chain integrity verified — ${totalChain} entries validated`);
-  }, [totalChain]);
-
-  const handleVerifyRow = useCallback(async (seq: number) => {
-    setVerifyingRow(seq);
-    await new Promise(r => setTimeout(r, 900));
-    setVerifyingRow(null);
-    setChain(prev => prev.map(e => e.seq === seq ? { ...e, verified: true } : e));
-    toast.success(`Entry #${seq} — hash verified ✓`);
-  }, []);
-
-  const handleExportPackage = useCallback(() => {
-    exportCsv(evidence, 'evidence.csv');
-    toast.success('Evidence export downloaded');
+  // Collection-source coverage, derived from real records (Sync tab).
+  const sources = useMemo(() => {
+    const bySource = new Map<string, { count: number; auto: number; latest: string | null }>();
+    for (const e of evidence) {
+      const key = e.source || 'Unspecified';
+      const cur = bySource.get(key) ?? { count: 0, auto: 0, latest: null };
+      cur.count += 1;
+      if (e.auto_collected) cur.auto += 1;
+      const d = e.collection_date || e.created_at || null;
+      if (d && (!cur.latest || d > cur.latest)) cur.latest = d;
+      bySource.set(key, cur);
+    }
+    return Array.from(bySource.entries()).sort((a, b) => b[1].count - a[1].count);
   }, [evidence]);
 
-  const sxSel: React.CSSProperties = {
-    background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))',
-    color: 'hsl(var(--text-1))', padding: '6px 10px', fontSize: 13, borderRadius: 0,
+  // Resolve a stored model ref (ai_models.id uuid, or a legacy slug) to a
+  // real model. Unresolvable refs render as "Unavailable" — never a raw id.
+  const resolveModel = (ref: string) =>
+    models.find(m => m.id === ref || m.slug === ref);
+
+  const handleUpload = async () => {
+    try {
+      await save({
+        title: form.title.trim(),
+        type: form.type,
+        source: form.source.trim() || null,
+        collection_date: form.collection_date || null,
+        description: form.description.trim() || null,
+        url: form.url.trim() || null,
+        freshness_status: deriveFreshness(form.collection_date),
+        auto_collected: false,
+      } as Partial<EvidenceRecord>);
+      toast.success(`Evidence "${form.title.trim()}" saved`);
+      setUploadOpen(false);
+      setForm(EMPTY_FORM);
+    } catch (e: any) {
+      toast.error(`Failed to save evidence: ${e?.message ?? 'unknown error'}`);
+    }
   };
 
-  const evidenceKpiCards: StatCardRowItem[] = [
-    {
-      label: 'Chain Length',
-      value: String(totalChain),
-      icon: <LinkIcon size={18} style={{ color: 'hsl(var(--brand))' }} />,
-      delta: 'Append-only entries',
-      deltaDir: 'up' as const,
-      isPositiveUp: true,
-    },
-    {
-      label: 'Files in Vault',
-      value: String(evidence.length),
-      icon: <Vault size={18} style={{ color: 'hsl(var(--brand))' }} />,
-      delta: `${synced} synced`,
-      deltaDir: 'up' as const,
-      isPositiveUp: true,
-    },
-    {
-      label: 'Days Active',
-      value: '847',
-      icon: <Clock size={18} style={{ color: 'hsl(var(--s-in-tx))' }} />,
-      delta: '3 audit cycles',
-      deltaDir: 'up' as const,
-      isPositiveUp: true,
-    },
-    {
-      label: 'Chain Integrity',
-      value: '100%',
-      icon: <SealCheck size={18} style={{ color: 'hsl(var(--s-ok-tx))' }} />,
-      delta: 'SHA-256 verified',
-      deltaDir: 'up' as const,
-      isPositiveUp: true,
-    },
+  const handleDelete = async () => {
+    if (!deleteItem) return;
+    try {
+      await remove(deleteItem.id);
+      toast.success(`Evidence "${deleteItem.title}" removed`);
+      setViewItem(v => (v?.id === deleteItem.id ? null : v));
+    } catch (e: any) {
+      toast.error(`Failed to remove evidence: ${e?.message ?? 'unknown error'}`);
+    }
+    setDeleteItem(null);
+  };
+
+  const kpis: StatCardRowItem[] = [
+    { label: 'Evidence Records', value: String(evidence.length), icon: <Vault size={18} style={{ color: 'hsl(var(--brand))' }} /> },
+    { label: 'Fresh', value: String(freshCount), icon: <ShieldCheck size={18} style={{ color: 'hsl(var(--s-ok-tx))' }} />, delta: `${staleCount} stale/expired` },
+    { label: 'Auto-collected', value: String(autoCount), icon: <Robot size={18} style={{ color: 'hsl(var(--s-in-tx))' }} />, delta: `${evidence.length - autoCount} manual` },
+    { label: 'Custody Chain Entries', value: String(chain.length), icon: <LinkIcon size={18} style={{ color: 'hsl(var(--brand))' }} /> },
   ];
 
   if (isLoading) return <PageSkeleton />;
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
       <PageHeader
-        title="Evidence Vault"
-        subtitle="Immutable audit evidence collection and custody"
-        breadcrumbs={[{ label: 'Dashboard', href: '/' }, { label: 'Evidence Vault' }]}
-        badge={
-          <span className="px-2 py-0.5 text-xs font-bold" style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', border: '1px solid hsl(var(--s-ok-br))' }}>
-            ENTERPRISE
-          </span>
-        }
+        title="Evidence"
+        subtitle="Org evidence vault, chain of custody, and collection sources"
+        breadcrumbs={[{ label: 'Dashboard', href: '/' }, { label: 'Evidence' }]}
         actions={
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={handleExportPackage} style={{ borderRadius: 0 }}>
-              <Export size={14} /> Export Package
+            <Button
+              size="sm" variant="outline" style={{ borderRadius: 0 }}
+              disabled={evidence.length === 0}
+              onClick={() => {
+                exportCsv(
+                  evidence.map(e => ({
+                    id: e.id, title: e.title, type: e.type, source: e.source,
+                    collection_date: e.collection_date, freshness: e.freshness_status,
+                    linked_controls: (e.linked_controls || []).join('; '),
+                  })),
+                  'evidence.csv',
+                );
+                toast.success('Evidence CSV downloaded');
+              }}
+            >
+              <Export size={14} /> Export CSV
             </Button>
-            <Button size="sm" onClick={() => { setFormData(EMPTY_EVIDENCE); setUploadOpen(true); }} style={{ borderRadius: 0 }}>
-              <UploadSimple size={14} /> Upload Evidence
+            <Button size="sm" style={{ borderRadius: 0 }} onClick={() => { setForm(EMPTY_FORM); setUploadOpen(true); }}>
+              <UploadSimple size={14} /> Add Evidence
             </Button>
           </div>
         }
       />
 
-      {/* Evidence KPI Row */}
-      <StatCardRow cards={evidenceKpiCards} />
+      <StatCardRow cards={kpis} />
 
-      {/* ── Compliance Continuity Hero ── */}
-      <div style={{ background: 'hsl(var(--brand-subtle))', border: '2px solid hsl(var(--brand-subtle))', padding: '20px 24px' }}>
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <Certificate size={28} style={{ color: 'hsl(var(--brand))' }} />
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'hsl(var(--brand))' }}>
-                  Compliance Continuity Score
-                </p>
-                <h2 className="text-3xl font-black" style={{ color: 'hsl(var(--text-1))' }}>
-                  847 Days
-                </h2>
-              </div>
-            </div>
-            <p className="text-sm mb-4" style={{ color: 'hsl(var(--text-2))' }}>
-              3 complete audit cycles of unbroken, cryptographically verified compliance history. Switching platforms means starting from zero.
-            </p>
-            <div className="flex flex-wrap gap-2 mb-4">
-              {FRAMEWORK_CYCLES.map(f => (
-                <span key={f.name} className="px-2.5 py-1 text-xs font-medium" style={{ background: `${f.color}20`, color: f.color, border: `1px solid ${f.color}40` }}>
-                  {f.name}: {f.status}
-                </span>
-              ))}
-            </div>
-            <div className="space-y-2">
-              {FRAMEWORK_CYCLES.map(f => (
-                <div key={f.name} className="flex items-center gap-3">
-                  <span className="text-xs w-28" style={{ color: 'hsl(var(--text-3))' }}>{f.name}</span>
-                  <div className="flex-1 h-1.5" style={{ background: 'hsl(var(--bg-muted))' }}>
-                    <div className="h-full transition-all" style={{ width: `${f.progress}%`, background: f.color }} />
-                  </div>
-                  <span className="text-xs font-medium w-8 text-right" style={{ color: f.color }}>{f.progress}%</span>
-                </div>
-              ))}
-            </div>
-            <p className="text-xs mt-4 italic" style={{ color: 'hsl(var(--text-4))' }}>
-              "What this means: No competitor can import your 847-day audit chain. Your compliance history lives exclusively in Sentinel."
-
-            </p>
-          </div>
-          <div className="ml-6 text-right flex flex-col items-end gap-3">
-            {verifyResult ? (
-              <div className="flex items-center gap-2 px-3 py-2" style={{ background: 'hsl(var(--s-ok-bg))', border: '1px solid hsl(var(--s-ok-br))' }}>
-                <SealCheck size={18} style={{ color: 'hsl(var(--s-ok-tx))' }} />
-                <div className="text-left">
-                  <p className="text-xs font-bold" style={{ color: 'hsl(var(--s-ok-tx))' }}>INTEGRITY: VERIFIED ✓</p>
-                  <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{verifyResult.entries} entries validated</p>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 px-3 py-2" style={{ background: 'hsl(var(--s-in-bg))', border: '1px solid hsl(var(--s-in-br))' }}>
-                <ShieldCheck size={18} style={{ color: 'hsl(var(--brand))' }} />
-                <div className="text-left">
-                  <p className="text-xs font-bold" style={{ color: 'hsl(var(--brand))' }}>CHAIN: INTACT</p>
-                  <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Last verified: Today</p>
-                </div>
-              </div>
-            )}
-            <Button size="sm" onClick={handleVerifyChain} disabled={verifying} style={{ borderRadius: 0 }}>
-              {verifying ? <Spinner size={14} className="animate-spin" /> : <ArrowsClockwise size={14} />}
-              {verifying ? 'Verifying…' : 'Run Integrity Verification'}
-            </Button>
-            <Button size="sm" variant="outline" style={{ borderRadius: 0 }}>
-              <Certificate size={14} /> Generate Audit Certificate
-            </Button>
-          </div>
+      {error && (
+        <div className="p-3 text-sm" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-br))', color: 'hsl(var(--s-er-tx))' }}>
+          Failed to load evidence: {(error as Error).message}
         </div>
-      </div>
+      )}
 
-      {/* Metric tiles replaced by StatCardRow above */}
-
-      {/* ── Tabs: Vault Files / Chain Explorer ── */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
           <TabsTrigger value="vault" style={{ borderRadius: 0 }}>
-            <Vault size={14} className="mr-1.5" /> Evidence Files
+            <Vault size={14} className="mr-1.5" /> Vault
           </TabsTrigger>
           <TabsTrigger value="chain" style={{ borderRadius: 0 }}>
-            <LinkIcon size={14} className="mr-1.5" /> Chain Explorer
+            <LinkIcon size={14} className="mr-1.5" /> Chain of Custody
+          </TabsTrigger>
+          <TabsTrigger value="sync" style={{ borderRadius: 0 }}>
+            <Plugs size={14} className="mr-1.5" /> Sync
           </TabsTrigger>
         </TabsList>
 
-        {/* ── Files Tab ── */}
+        {/* ── Vault ── */}
         <TabsContent value="vault" className="mt-4 space-y-4">
+          {modelParam && (
+            <div className="flex items-center gap-2 px-3 py-2" style={{ background: 'hsl(var(--brand-subtle))', border: '1px solid hsl(var(--border))' }}>
+              <Cube size={14} style={{ color: 'hsl(var(--brand))' }} />
+              <span className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>
+                Showing evidence linked to{' '}
+                <strong style={{ color: 'hsl(var(--brand))' }}>{modelFilter ? modelFilter.name : 'Unavailable'}</strong>
+              </span>
+              <button
+                className="ml-auto text-xs hover:underline"
+                style={{ color: 'hsl(var(--brand))', background: 'none', border: 'none', cursor: 'pointer' }}
+                onClick={() => setSearchParams(prev => { const next = new URLSearchParams(prev); next.delete('model'); return next; }, { replace: true })}
+              >
+                Clear filter
+              </button>
+            </div>
+          )}
           <FilterBar
             search={search}
             onSearchChange={setSearch}
-            searchPlaceholder="Search vault by title, source, framework..."
+            searchPlaceholder="Search by title, source, or control ref…"
             filters={[
               {
-                key: 'type',
-                label: 'Type',
+                key: 'type', label: 'Type',
                 value: filterType === 'all' ? '' : filterType,
-                onChange: v => setFilterType(v || 'all'),
+                onChange: (v: string) => setFilterType(v || 'all'),
                 options: types.map(t => ({ label: t, value: t })),
               },
+              {
+                key: 'freshness', label: 'Freshness',
+                value: filterFreshness === 'all' ? '' : filterFreshness,
+                onChange: (v: string) => setFilterFreshness(v || 'all'),
+                options: ['fresh', 'aging', 'stale', 'expired'].map(f => ({ label: f[0].toUpperCase() + f.slice(1), value: f })),
+              },
             ]}
-            activeFilterCount={filterType !== 'all' ? 1 : 0}
-            onClearAll={() => { setSearch(''); setFilterType('all'); }}
+            activeFilterCount={(filterType !== 'all' ? 1 : 0) + (filterFreshness !== 'all' ? 1 : 0)}
+            onClearAll={() => { setSearch(''); setFilterType('all'); setFilterFreshness('all'); }}
             trailing={
-              <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{filtered.length} of {evidence.length} files</span>
+              <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>
+                {filtered.length} of {evidence.length} records
+              </span>
             }
           />
-          <div className="grid grid-cols-3 gap-4">
-            {filtered.map(e => {
-              const sc = statusColor(e.status);
-              return (
-                <Card key={e.id} className="cursor-pointer" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0, transition: 'border-color 0.15s' }}
-                  onMouseEnter={ev => (ev.currentTarget.style.borderColor = 'hsl(var(--brand))')}
-                  onMouseLeave={ev => (ev.currentTarget.style.borderColor = 'hsl(var(--border))')}
-                  onClick={() => setViewItem(e)}>
+
+          {evidence.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16" style={{ border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-3))' }}>
+              <Vault size={40} />
+              <p className="mt-3 text-sm font-medium">No evidence collected yet</p>
+              <p className="text-xs mt-1">Add your first record — policy documents, test results, certificates, or attestations.</p>
+              <Button size="sm" className="mt-4" style={{ borderRadius: 0 }} onClick={() => { setForm(EMPTY_FORM); setUploadOpen(true); }}>
+                <UploadSimple size={14} /> Add Evidence
+              </Button>
+            </div>
+          ) : (
+            <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead style={{ background: 'hsl(var(--bg-muted))' }}>
+                      <tr>
+                        {['Title', 'Type', 'Source', 'Linked Controls', 'Linked Models', 'Freshness', 'Collected', ''].map(h => (
+                          <th key={h} className="text-left p-3 text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filtered.map(e => {
+                        const fs = freshnessStyle(e.freshness_status);
+                        const linkedModels = (e.linked_models || []).filter(m => m && m !== 'n/a');
+                        return (
+                          <tr
+                            key={e.id}
+                            className="cursor-pointer"
+                            style={{ borderTop: '1px solid hsl(var(--border))' }}
+                            onMouseEnter={ev => (ev.currentTarget.style.background = 'hsl(var(--bg-muted))')}
+                            onMouseLeave={ev => (ev.currentTarget.style.background = '')}
+                            onClick={() => setViewItem(e)}
+                          >
+                            <td className="p-3 text-sm font-medium" style={{ color: 'hsl(var(--text-1))', maxWidth: 280 }}>
+                              <span className="line-clamp-2">{e.title}</span>
+                            </td>
+                            <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{e.type || '—'}</td>
+                            <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{e.source || '—'}</td>
+                            <td className="p-3">
+                              <div className="flex flex-wrap gap-1">
+                                {(e.linked_controls || []).slice(0, 3).map(c => (
+                                  <span key={c} className="font-mono text-[10px] px-1.5 py-0.5" style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' }}>{c}</span>
+                                ))}
+                                {(e.linked_controls || []).length > 3 && (
+                                  <span className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>+{(e.linked_controls || []).length - 3}</span>
+                                )}
+                                {(e.linked_controls || []).length === 0 && (
+                                  <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>None</span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="p-3" onClick={ev => ev.stopPropagation()}>
+                              <div className="flex flex-wrap gap-1">
+                                {linkedModels.length === 0 && <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>None</span>}
+                                {linkedModels.map(ref => {
+                                  const m = resolveModel(ref);
+                                  return m ? (
+                                    <Link
+                                      key={ref}
+                                      to={`/models/inventory/${m.id}`}
+                                      className="text-[10px] px-1.5 py-0.5 hover:underline"
+                                      style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))' }}
+                                    >
+                                      <Cube size={9} className="inline mr-0.5" />{m.name}
+                                    </Link>
+                                  ) : (
+                                    <span key={ref} className="text-[10px] px-1.5 py-0.5" title="Model reference could not be resolved" style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-4))' }}>
+                                      Unavailable
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            </td>
+                            <td className="p-3">
+                              <Badge style={{ background: fs.bg, color: fs.color, borderRadius: 0, fontSize: 10 }}>{fs.label}</Badge>
+                            </td>
+                            <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{formatDate(e.collection_date)}</td>
+                            <td className="p-3" onClick={ev => ev.stopPropagation()}>
+                              <div className="flex items-center gap-1">
+                                <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setViewItem(e)}>
+                                  <Eye size={14} />
+                                </Button>
+                                <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: 'hsl(var(--s-er-tx))' }} onClick={() => setDeleteItem(e)}>
+                                  <Trash size={14} />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                {filtered.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-12" style={{ color: 'hsl(var(--text-3))' }}>
+                    <FileText size={32} />
+                    <p className="mt-2 text-sm">No records match the current filters</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* ── Chain of Custody ── */}
+        <TabsContent value="chain" className="mt-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Chain of Custody</p>
+              <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-3))' }}>
+                Append-only, org-scoped ledger — each entry stores the hash of the previous entry
+              </p>
+            </div>
+            {chain.length > 0 && (
+              <div className="flex items-center gap-2 px-3 py-1.5 text-xs" style={{ background: 'hsl(var(--s-ok-bg))', border: '1px solid hsl(var(--s-ok-br))', color: 'hsl(var(--s-ok-tx))' }}>
+                <Lock size={12} /> Append-only — inserts and reads only
+              </div>
+            )}
+          </div>
+
+          {chainError && (
+            <div className="p-3 text-sm" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-br))', color: 'hsl(var(--s-er-tx))' }}>
+              Failed to load custody chain: {(chainError as Error).message}
+            </div>
+          )}
+
+          {!chainLoading && !chainError && chain.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-16 text-center" style={{ border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-3))' }}>
+              <Lock size={40} />
+              <p className="mt-3 text-sm font-medium" style={{ color: 'hsl(var(--text-2))' }}>No custody entries yet</p>
+              <p className="text-xs mt-1 max-w-md">
+                Hash-chain verification ships with the Workers audit pipeline. Once the pipeline
+                starts sealing governance actions into the <span className="font-mono">evidence_chain</span> ledger,
+                entries will appear here with their linked hashes.
+              </p>
+            </div>
+          )}
+
+          {chain.length > 0 && (
+            <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead style={{ background: 'hsl(var(--bg-muted))' }}>
+                      <tr>
+                        {['Timestamp', 'Action', 'Entity', 'Actor', 'Prev Hash', 'Hash'].map(h => (
+                          <th key={h} className="text-left p-3 text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {chain.map(entry => (
+                        <tr key={entry.id} style={{ borderTop: '1px solid hsl(var(--border))' }}>
+                          <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{new Date(entry.created_at).toLocaleString()}</td>
+                          <td className="p-3">
+                            <Badge style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>{entry.action}</Badge>
+                          </td>
+                          <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{entry.entity_type}</td>
+                          <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{entry.actor || '—'}</td>
+                          <td className="p-3 text-[10px] font-mono" style={{ color: 'hsl(var(--text-4))' }}>{truncateHash(entry.prev_hash)}</td>
+                          <td className="p-3 text-[10px] font-mono" style={{ color: 'hsl(var(--text-4))' }}>{truncateHash(entry.hash)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* ── Sync ── */}
+        <TabsContent value="sync" className="mt-4 space-y-4">
+          <div>
+            <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Collection Sources</p>
+            <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-3))' }}>
+              Where the vault's records came from — derived from the evidence records themselves
+            </p>
+          </div>
+
+          {sources.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12" style={{ border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-3))' }}>
+              <Plugs size={32} />
+              <p className="mt-2 text-sm">No evidence sources yet</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {sources.map(([source, s]) => (
+                <Card key={source} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                   <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      {fileIcon(e.type)}
-                      <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0, fontSize: 10 }}>{e.status}</Badge>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{source}</p>
+                      {s.auto > 0 ? (
+                        <Badge style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>
+                          <Robot size={10} className="mr-1 inline" />auto
+                        </Badge>
+                      ) : (
+                        <Badge style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))', borderRadius: 0, fontSize: 10 }}>manual</Badge>
+                      )}
                     </div>
-                    <p className="text-sm font-semibold mb-1 line-clamp-2" style={{ color: 'hsl(var(--text-1))' }}>{e.title}</p>
-                    <p className="text-xs mb-2 line-clamp-1" style={{ color: 'hsl(var(--text-3))' }}>{e.framework}</p>
-                    <div className="flex items-center justify-between text-xs mb-1" style={{ color: 'hsl(var(--text-3))' }}>
-                      <span>{e.type}</span><span>{e.fileSize}</span>
+                    <div className="flex items-center justify-between text-xs" style={{ color: 'hsl(var(--text-3))' }}>
+                      <span>{s.count} record{s.count !== 1 ? 's' : ''} · {s.auto} auto-collected</span>
                     </div>
-                    <div className="flex items-center text-xs" style={{ color: 'hsl(var(--text-4))' }}>
-                      <Hash size={10} className="mr-1" />
-                      <span className="font-mono">SHA-256 signed</span>
-                    </div>
-                    <div className="flex items-center gap-2 pt-3 mt-2" style={{ borderTop: '1px solid hsl(var(--border))' }} onClick={ev => ev.stopPropagation()}>
-                      <Button size="sm" variant="ghost" style={{ padding: '3px 8px', fontSize: 11, borderRadius: 0 }}><Download size={12} /> Download</Button>
-                      <Button size="sm" variant="ghost" style={{ padding: '3px 8px', fontSize: 11, borderRadius: 0, color: 'hsl(var(--s-er-tx))' }} onClick={() => setDeleteItem(e)}><Trash size={12} /></Button>
+                    <div className="flex items-center gap-1 mt-2 text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+                      <Clock size={11} /> Last collected {formatDate(s.latest)}
                     </div>
                   </CardContent>
                 </Card>
-              );
-            })}
-          </div>
-          {filtered.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-16" style={{ color: 'hsl(var(--text-3))' }}>
-              <Vault size={40} />
-              <p className="mt-3 text-sm font-medium">No files found</p>
-              <p className="text-xs mt-1">Adjust search or upload new evidence</p>
+              ))}
             </div>
           )}
-        </TabsContent>
 
-        {/* ── Chain Explorer Tab ── */}
-        <TabsContent value="chain" className="mt-4">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
-                Cryptographic Evidence Chain
+          <div className="p-4 flex items-start gap-3" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))' }}>
+            <Plugs size={20} style={{ color: 'hsl(var(--text-3))', flexShrink: 0, marginTop: 2 }} />
+            <div className="flex-1">
+              <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>Automated evidence sync is not connected yet</p>
+              <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-3))' }}>
+                Scheduled collection from external systems (compliance platforms, cloud providers,
+                MLOps tooling) will land here once an integration is connected. Until then, records
+                are added manually or by the audit pipeline.
               </p>
-              <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-3))' }}>
-                SHA-256 tamper-evident ledger — each entry includes the hash of the previous
-              </p>
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 text-xs" style={{ background: 'hsl(var(--s-ok-bg))', border: '1px solid hsl(var(--s-ok-br))', color: 'hsl(var(--s-ok-tx))' }}>
-              <Lock size={12} />
-              Append-only — no DELETE or UPDATE permitted
-            </div>
+            <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={() => navigate('/integrations')}>
+              <ArrowSquareOut size={12} /> Integrations
+            </Button>
           </div>
-          <div style={{ border: '1px solid hsl(var(--border))', overflow: 'hidden' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '60px 160px 90px 110px 120px 1fr 1fr 100px', background: 'hsl(var(--bg-muted))', padding: '8px 12px', fontSize: 11, color: 'hsl(var(--text-3))', fontWeight: 600, borderBottom: '1px solid hsl(var(--border))', gap: 8 }}>
-              <span>SEQ</span><span>TIMESTAMP</span><span>ACTION</span><span>ENTITY</span>
-              <span>ACTOR</span><span>PAYLOAD HASH</span><span>CHAIN HASH</span><span>VERIFY</span>
-            </div>
-            {chain.map((entry, idx) => (
-              <div key={entry.seq} style={{ display: 'grid', gridTemplateColumns: '60px 160px 90px 110px 120px 1fr 1fr 100px', padding: '10px 12px', fontSize: 11, borderBottom: idx < chain.length - 1 ? '1px solid hsl(var(--border))' : 'none', background: idx % 2 === 0 ? 'hsl(var(--bg-surface))' : 'hsl(var(--bg-raised))', alignItems: 'center', gap: 8 }}>
-                <span className="font-mono font-bold" style={{ color: 'hsl(var(--brand))' }}>#{entry.seq}</span>
-                <span className="font-mono text-xs" style={{ color: 'hsl(var(--text-3))' }}>{entry.timestamp}</span>
-                <span>
-                  <span className="px-1.5 py-0.5 font-medium" style={{ ...actionBadgeStyle(entry.action), fontSize: 10 }}>
-                    {entry.action}
-                  </span>
-                </span>
-                <div>
-                  <p style={{ color: 'hsl(var(--text-2))' }}>{entry.entityType}</p>
-                  <p className="font-mono" style={{ color: 'hsl(var(--text-4))', fontSize: 10 }}>{entry.entityId}</p>
-                </div>
-                <span style={{ color: 'hsl(var(--text-2))' }}>{entry.actor}</span>
-                <span className="font-mono" style={{ color: 'hsl(var(--text-4))', fontSize: 10 }}>{truncateHash(entry.payloadHash)}</span>
-                <span className="font-mono" style={{ color: 'hsl(var(--text-4))', fontSize: 10 }}>{truncateHash(entry.chainHash)}</span>
-                <button
-                  onClick={() => handleVerifyRow(entry.seq)}
-                  disabled={verifyingRow === entry.seq}
-                  className="flex items-center gap-1 px-2 py-1 text-xs hover:opacity-80 transition-opacity"
-                  style={{ background: entry.verified ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--bg-muted))', color: entry.verified ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-3))', border: `1px solid ${entry.verified ? 'hsl(var(--s-ok-br))' : 'hsl(var(--border))'}`, borderRadius: 0 }}>
-                  {verifyingRow === entry.seq ? <Spinner size={10} className="animate-spin" /> : entry.verified ? <CheckCircle size={10} /> : <Eye size={10} />}
-                  {verifyingRow === entry.seq ? 'Checking…' : entry.verified ? 'Verified' : 'Verify'}
-                </button>
-              </div>
-            ))}
-          </div>
-          <p className="text-xs mt-3 text-center" style={{ color: 'hsl(var(--text-4))' }}>
-            Showing most recent {chain.length} of {totalChain} chain entries · Full chain available in export package
-          </p>
         </TabsContent>
       </Tabs>
 
-      {/* ── View Dialog ── */}
-      <Dialog open={!!viewItem} onOpenChange={o => !o && setViewItem(null)}>
-        <DialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0, maxWidth: 540 }}>
-          <DialogHeader>
-            <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>{viewItem?.title}</DialogTitle>
-          </DialogHeader>
+      {/* ── Detail Sheet ── */}
+      <Sheet open={!!viewItem} onOpenChange={o => !o && setViewItem(null)}>
+        <SheetContent style={{ width: 560, background: 'hsl(var(--bg-surface))', borderRadius: 0, overflowY: 'auto' }}>
           {viewItem && (
-            <div className="space-y-3">
-              <div className="flex justify-center py-4">{fileIcon(viewItem.type)}</div>
-              {[
-                { label: 'Evidence ID', value: viewItem.id },
-                { label: 'Type', value: viewItem.type },
-                { label: 'Framework', value: viewItem.framework },
-                { label: 'Control', value: viewItem.control },
-                { label: 'Source', value: viewItem.source },
-                { label: 'Owner', value: viewItem.owner },
-                { label: 'File Size', value: viewItem.fileSize },
-                { label: 'Status', value: viewItem.status },
-                { label: 'Last Sync', value: formatDate(viewItem.lastSync) },
-                { label: 'Chain Entry', value: `#${Math.floor(Math.random() * 100) + 740}` },
-                { label: 'SHA-256 Hash', value: '3a4b5c6d7e8f9a0b…' },
-              ].map(r => (
-                <div key={r.label} className="flex justify-between py-1.5" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                  <span className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>{r.label}</span>
-                  <span className="text-sm font-medium font-mono" style={{ color: r.label.includes('Hash') || r.label.includes('Chain') ? 'hsl(var(--brand))' : 'hsl(var(--text-1))' }}>{r.value}</span>
+            <>
+              <SheetHeader className="pb-4">
+                <SheetTitle style={{ color: 'hsl(var(--text-1))' }}>{viewItem.title}</SheetTitle>
+                <div className="flex gap-2 flex-wrap">
+                  {(() => { const fs = freshnessStyle(viewItem.freshness_status); return (
+                    <Badge style={{ background: fs.bg, color: fs.color, borderRadius: 0 }}>{fs.label}</Badge>
+                  ); })()}
+                  {viewItem.type && <Badge variant="outline" style={{ borderRadius: 0 }}>{viewItem.type}</Badge>}
+                  {viewItem.auto_collected && (
+                    <Badge style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0 }}>
+                      <Robot size={10} className="mr-1 inline" />Auto-collected
+                    </Badge>
+                  )}
                 </div>
-              ))}
-              {viewItem.description && <p className="text-sm pt-2" style={{ color: 'hsl(var(--text-2))' }}>{viewItem.description}</p>}
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" style={{ borderRadius: 0 }}><Download size={14} /> Download</Button>
-            <Button variant="outline" onClick={() => setViewItem(null)} style={{ borderRadius: 0 }}>Close</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              </SheetHeader>
+              <div className="space-y-3">
+                {[
+                  { label: 'Source', value: viewItem.source || '—' },
+                  { label: 'Collected', value: formatDate(viewItem.collection_date) },
+                  { label: 'Created', value: formatDate(viewItem.created_at) },
+                  { label: 'Last Updated', value: formatDate(viewItem.updated_at) },
+                ].map(r => (
+                  <div key={r.label} className="flex justify-between py-2" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                    <span className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>{r.label}</span>
+                    <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{r.value}</span>
+                  </div>
+                ))}
 
-      {/* ── Upload Dialog ── */}
+                {viewItem.description && (
+                  <div className="pt-1">
+                    <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-2))' }}>Description</p>
+                    <p className="text-sm" style={{ color: 'hsl(var(--text-2))' }}>{viewItem.description}</p>
+                  </div>
+                )}
+
+                <div className="pt-1">
+                  <p className="text-xs font-semibold mb-1.5" style={{ color: 'hsl(var(--text-2))' }}>Linked Controls</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(viewItem.linked_controls || []).length === 0 && (
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>No controls linked</span>
+                    )}
+                    {(viewItem.linked_controls || []).map(c => (
+                      <span key={c} className="font-mono text-[11px] px-2 py-0.5" style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' }}>{c}</span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-1">
+                  <p className="text-xs font-semibold mb-1.5" style={{ color: 'hsl(var(--text-2))' }}>Linked Models</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(viewItem.linked_models || []).filter(m => m && m !== 'n/a').length === 0 && (
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>No models linked</span>
+                    )}
+                    {(viewItem.linked_models || []).filter(m => m && m !== 'n/a').map(ref => {
+                      const m = resolveModel(ref);
+                      return m ? (
+                        <Link key={ref} to={`/models/inventory/${m.id}`} className="text-xs px-2 py-0.5 hover:underline" style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))' }}>
+                          <Cube size={10} className="inline mr-1" />{m.name}
+                        </Link>
+                      ) : (
+                        <span key={ref} className="text-xs px-2 py-0.5" title="Model reference could not be resolved" style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-4))' }}>
+                          Unavailable
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {(viewItem.url || viewItem.file_url) && (
+                  <div className="pt-1">
+                    <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-2))' }}>Artifact</p>
+                    <a
+                      href={viewItem.url || viewItem.file_url || '#'}
+                      target="_blank" rel="noopener noreferrer"
+                      className="text-xs hover:underline inline-flex items-center gap-1"
+                      style={{ color: 'hsl(var(--brand))' }}
+                    >
+                      <ArrowSquareOut size={12} /> {viewItem.file_name || viewItem.url || viewItem.file_url}
+                    </a>
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-2 mt-6">
+                <Button size="sm" variant="outline" style={{ borderRadius: 0, color: 'hsl(var(--s-er-tx))' }} onClick={() => setDeleteItem(viewItem)}>
+                  <Trash size={14} /> Remove
+                </Button>
+                <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={() => setViewItem(null)}>Close</Button>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* ── Add Evidence Dialog ── */}
       <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
         <DialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0, maxWidth: 520 }}>
           <DialogHeader>
-            <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>Upload Evidence File</DialogTitle>
+            <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>Add Evidence Record</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <div className="flex flex-col items-center justify-center py-8" style={{ border: '2px dashed hsl(var(--border))', background: 'hsl(var(--bg-muted))' }}>
-              <UploadSimple size={28} style={{ color: 'hsl(var(--text-3))' }} />
-              <p className="text-sm mt-2" style={{ color: 'hsl(var(--text-2))' }}>Drop files here or click to browse</p>
-              <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-3))' }}>File will be SHA-256 hashed and appended to chain</p>
-            </div>
-            {[{ label: 'Title', key: 'title' }, { label: 'Framework', key: 'framework' }, { label: 'Owner', key: 'owner' }, { label: 'Description', key: 'description' }].map(f => (
-              <div key={f.key}>
-                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>{f.label}</label>
-                <Input value={(formData as any)[f.key] || ''} onChange={e => setFormData(prev => ({ ...prev, [f.key]: e.target.value }))} style={{ borderRadius: 0 }} />
-              </div>
-            ))}
             <div>
-              <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Type</label>
-              <Select value={formData.type} onValueChange={v => setFormData(prev => ({ ...prev, type: v }))}>
-                <SelectTrigger style={{ width: '100%', borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                <SelectContent style={{ borderRadius: 0 }}>
-                  {['Report', 'Log', 'Validation', 'Agreement', 'Certificate'].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Title *</label>
+              <Input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} style={{ borderRadius: 0 }} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Type</label>
+                <Select value={form.type} onValueChange={v => setForm(p => ({ ...p, type: v }))}>
+                  <SelectTrigger style={{ width: '100%', borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {EVIDENCE_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Collection Date</label>
+                <Input type="date" value={form.collection_date} onChange={e => setForm(p => ({ ...p, collection_date: e.target.value }))} style={{ borderRadius: 0 }} />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Source</label>
+              <Input value={form.source} placeholder="e.g. Internal Audit, Vendor Trust Portal" onChange={e => setForm(p => ({ ...p, source: e.target.value }))} style={{ borderRadius: 0 }} />
+            </div>
+            <div>
+              <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Artifact URL</label>
+              <Input value={form.url} placeholder="https://…" onChange={e => setForm(p => ({ ...p, url: e.target.value }))} style={{ borderRadius: 0 }} />
+            </div>
+            <div>
+              <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Description</label>
+              <Textarea rows={3} value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} style={{ borderRadius: 0 }} />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setUploadOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
-            <Button onClick={handleUpload} disabled={!formData.title} style={{ borderRadius: 0 }}>
-              <UploadSimple size={14} /> Upload & Sign
+            <Button onClick={handleUpload} disabled={!form.title.trim() || isSaving} style={{ borderRadius: 0 }}>
+              <UploadSimple size={14} /> {isSaving ? 'Saving…' : 'Save Record'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -526,14 +694,15 @@ export default function EvidenceVault() {
       <AlertDialog open={!!deleteItem} onOpenChange={o => !o && setDeleteItem(null)}>
         <AlertDialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0 }}>
           <AlertDialogHeader>
-            <AlertDialogTitle style={{ color: 'hsl(var(--text-1))' }}>Delete Evidence File</AlertDialogTitle>
+            <AlertDialogTitle style={{ color: 'hsl(var(--text-1))' }}>Remove Evidence Record</AlertDialogTitle>
             <AlertDialogDescription>
-              Permanently delete <strong>{deleteItem?.title}</strong>? The chain entry remains as a record of deletion.
+              Remove <strong>{deleteItem?.title}</strong> from the vault? The record is soft-deleted
+              so custody history stays intact.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} style={{ background: 'hsl(var(--s-er-tx))', borderRadius: 0 }}>Delete</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} style={{ background: 'hsl(var(--s-er-tx))', borderRadius: 0 }}>Remove</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -55,7 +55,7 @@ const SEED_NOTIFICATIONS: Notification[] = [
     severity: 'medium',
     category: 'compliance',
     read: false,
-    link: '/compliance/evidence',
+    link: '/evidence-vault',
   },
   {
     id: 'N-004',

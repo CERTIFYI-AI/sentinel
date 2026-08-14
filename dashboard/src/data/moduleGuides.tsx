@@ -56,7 +56,7 @@ export const ROUTE_TO_COLLECTION_MAP: Record<string, string> = {
 
   '/compliance': 'compliance',
   '/frameworks': 'compliance',
-  '/compliance/evidence': 'compliance',
+  '/evidence-vault': 'compliance',
   '/policies': 'compliance',
   '/reg-radar': 'compliance',
 
