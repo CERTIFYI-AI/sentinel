@@ -1,3 +1,15 @@
+## 1.55.0 (2026-08-14)
+
+* feat(runtime-trust): rebuild Performance Monitoring, Model Efficiency, GenAI Risk Profiles on real d ([bbf33a3](https://github.com/CERTIFYI-AI/sentinel/commit/bbf33a3))
+* feat(trust-engine): Costs & Tokens, Fallback Failovers, Tool Monitor on real data ([c0afd17](https://github.com/CERTIFYI-AI/sentinel/commit/c0afd17))
+* feat(trust-engine): Runtime Trust dashboard + Configuration on real backends ([8fbc1f6](https://github.com/CERTIFYI-AI/sentinel/commit/8fbc1f6))
+* db: model_efficiency joinable to registry (model_id uuid) + org defaults ([ea830e9](https://github.com/CERTIFYI-AI/sentinel/commit/ea830e9))
+* db(trust): runtime-trust foundation + coherent 14-day seeds ([6cc3850](https://github.com/CERTIFYI-AI/sentinel/commit/6cc3850))
+* cleanup(dashboard): remove unreferenced legacy api/ layer ([c8ecb74](https://github.com/CERTIFYI-AI/sentinel/commit/c8ecb74))
+* security(backend+infra): authenticate the API, security headers, honest CI gates, replayable migrati ([314cbf7](https://github.com/CERTIFYI-AI/sentinel/commit/314cbf7))
+* security(rls)+docs: close all 64 anon-open policies + rewrite README ([da08778](https://github.com/CERTIFYI-AI/sentinel/commit/da08778))
+* security(frontend): server-side roles, gated demo auth, live logging, honest audit writes ([133d871](https://github.com/CERTIFYI-AI/sentinel/commit/133d871))
+
 ## 1.54.0 (2026-08-13)
 
 * Merge PR #73: evals crash fixes + demo data + Agent Control on the platform contract ([27e80de](https://github.com/CERTIFYI-AI/sentinel/commit/27e80de))
