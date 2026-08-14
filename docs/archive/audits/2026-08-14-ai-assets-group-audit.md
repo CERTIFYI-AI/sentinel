@@ -112,16 +112,21 @@ Nodes deep-link to their detail routes; counts are real; the paths tab shows
 factual dataset→model→use-case chains with PII flags from `contains_pii`;
 drawn-graph truncation is disclosed; honest empty states throughout.
 
-### F-8 (P2, partially fixed) — Legacy dataset tables await consolidation
-`dashboard/src/agents/dataGovernanceAgent.ts` **has been repointed**: it now
-links models by appending to `datasets.used_in_models`, reads PII flags from
-canonical `datasets`, and reports consent as UNKNOWN instead of asserting
-validity the platform has not verified. Remaining (DB-side, gated on the
-review procedure in `docs/architecture/db/schema_consolidation_plan.sql`):
-dropping `Dataset` (0 rows), `dataset_registry` (0), `dataset_catalog_entries`
-(4 — still used by evals), `datasetregistry_table` (0), `datalineage_table`
-(5 seed), `dataquality_table` (6 seed), `data_assets` (0),
-`model_dataset_links` (0). No frontend references remain to the demo tables.
+### F-8 (P2) — Legacy dataset tables consolidated  **FIXED**
+Code side: `dataGovernanceAgent.ts` repointed to canonical `datasets`
+(links via `used_in_models`; consent reported UNKNOWN rather than asserted);
+the dead `data_assets` service functions and hooks were removed.
+DB side (migration `20260814_drop_legacy_dataset_tables.sql`, applied live
+after the consolidation plan's verify step — repo-wide reference grep, live
+row counts, inbound-FK check): dropped `"Dataset"`, `dataset_registry`,
+`datasetregistry_table`, `datalineage_table`, `dataquality_table`,
+`model_dataset_links`, `data_assets`. The two seed-only tables were archived
+to `legacy_archive.*` first (revoked from API roles); the empty-table FKs
+`"Model".datasetId` and `"BiasAudit".datasetId` were released.
+`dataset_catalog_entries` is kept — actively used by the evals Dataset
+Wizard / Data Explorer. Note: `sentinel/api/dataset_router.py` targets the
+Python backend's own schema (column-incompatible with the dropped Supabase
+table) and is unaffected.
 
 ## Changes shipped this phase
 

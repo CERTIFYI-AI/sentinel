@@ -50,7 +50,6 @@ const REALTIME_TABLES = [
   { table: 'departments', queryKey: ['departments'] },
   { table: 'exceptions', queryKey: ['exceptions'] },
   { table: 'bcp_plans', queryKey: ['bcp_plans'] },
-  { table: 'data_assets', queryKey: ['data-assets'] },
   { table: 'attack_surface_assets', queryKey: ['attack-surface-assets'] },
   { table: 'keys_vault', queryKey: ['keys-vault'] },
   { table: 'api_keys', queryKey: ['api-keys'] },
