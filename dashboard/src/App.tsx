@@ -46,7 +46,6 @@ const EvidenceVault = lazy(() => import('./pages/EvidenceVault'));
 const ExportCenter = lazy(() => import('./pages/ExportCenter'));
 const GapAnalysis = lazy(() => import('./pages/GapAnalysis'));
 const IncidentLog = lazy(() => import('./pages/IncidentLog'));
-const ModelInventory = lazy(() => import('./pages/ModelInventory'));
 const ModelRegistryPage = lazy(() => import('./pages/models/ModelRegistryPage'));
 const ModelCatalogPage = lazy(() => import('./pages/ai-gateway/ModelCatalogPage'));
 const ModelDetail = lazy(() => import('./pages/models/ModelDetail'));

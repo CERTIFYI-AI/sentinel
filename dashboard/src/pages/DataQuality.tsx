@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useMemo } from 'react';
 import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { toast } from 'sonner';
