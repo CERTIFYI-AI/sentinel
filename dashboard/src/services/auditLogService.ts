@@ -1,36 +1,83 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
 //
-// DEPRECATED — maintained only for legacy callers. New code must use
-// `./auditService` which is typed, read-only, and cursor-paginated.
-// The mutating helpers below are now no-ops: the DB denies UPDATE/DELETE
-// at the RLS layer and inserts must go through the Worker's withAudit()
-// path.
+// Read service for the live, org-scoped `audit_log` table
+// (supabase/migrations/006_core.sql):
+//   id uuid, org_id uuid (default current_user_org_id()), actor_id, actor_name,
+//   actor_role, module, entity_type, entity_id uuid, entity_name, action,
+//   old_values jsonb, new_values jsonb, created_at
+//
+// RLS: select is org-scoped; insert requires org match; update/delete are not
+// granted — the trail is append-only. All writes flow through
+// lib/auditLogger.logAction(); this module is read-only.
+//
+// NOTE: services/auditService.ts targets a different (hash-chained) audit
+// schema that is not deployed to this project — do not use it for reads.
 
-import { listAuditEntries, type AuditEntry } from "./auditService";
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
-export type { AuditEntry };
+export type AuditLogRecord = {
+  id: string;
+  orgId?: string | null;
+  actorId?: string | null;
+  actorName: string;
+  actorRole?: string | null;
+  module: string;
+  entityType: string;
+  entityId?: string | null;
+  entityName?: string | null;
+  action: string;
+  oldValues?: Record<string, unknown> | null;
+  newValues?: Record<string, unknown> | null;
+  createdAt: string;
+};
 
-export async function fetchAllAuditEntrys(limit = 200): Promise<readonly AuditEntry[]> {
-  const { items } = await listAuditEntries({ limit });
-  return items;
+function mapRow(row: any): AuditLogRecord {
+  return {
+    id: row.id,
+    orgId: row.org_id ?? null,
+    actorId: row.actor_id ?? null,
+    actorName: row.actor_name ?? 'System',
+    actorRole: row.actor_role ?? null,
+    module: row.module ?? '',
+    entityType: row.entity_type ?? '',
+    entityId: row.entity_id ?? null,
+    entityName: row.entity_name ?? null,
+    action: row.action ?? '',
+    oldValues: row.old_values ?? null,
+    newValues: row.new_values ?? null,
+    createdAt: row.created_at,
+  };
 }
 
-// Legacy aliases. Kept so existing imports compile; they now route to
-// the read-only typed service.
-export const fetchAuditEntrys = fetchAllAuditEntrys;
-export function fetchAuditLogs(limit = 200): Promise<readonly AuditEntry[]> {
-  return fetchAllAuditEntrys(limit);
+export interface AuditLogFilters {
+  module?: string;
+  action?: string;
+  entityType?: string;
+  entityId?: string;
+  from?: string; // ISO timestamp lower bound on created_at
 }
 
-// Mutations are forbidden by RLS. These shims exist so old imports
-// don't crash builds; they resolve to the input without writing.
-export async function upsertAuditEntry<T>(record: T): Promise<T> {
-  return record;
-}
-export const saveAuditEntry = upsertAuditEntry;
-
-/** Delete is explicitly a no-op. */
-export async function deleteAuditEntry(_id: string): Promise<false> {
-  return false;
+/** Reads throw on failure so callers render a real error state. */
+export async function fetchAuditLogs(
+  limit = 500,
+  filters: AuditLogFilters = {},
+): Promise<AuditLogRecord[]> {
+  if (!isSupabaseConfigured() || !supabase) return [];
+  let q = supabase
+    .from('audit_log')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (filters.module) q = q.eq('module', filters.module);
+  if (filters.action) q = q.eq('action', filters.action);
+  if (filters.entityType) q = q.eq('entity_type', filters.entityType);
+  if (filters.entityId) q = q.eq('entity_id', filters.entityId);
+  if (filters.from) q = q.gte('created_at', filters.from);
+  const { data, error } = await q;
+  if (error) {
+    console.warn('[auditLogService] fetch:', error.message);
+    throw new Error(error.message);
+  }
+  return (data ?? []).map(mapRow);
 }

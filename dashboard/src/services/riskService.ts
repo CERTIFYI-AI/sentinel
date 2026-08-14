@@ -1,10 +1,17 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
-// Maps production 'risks' table columns to the RiskRecord shape used by the UI
+// Maps production 'risks' table columns to the RiskRecord shape used by the UI.
+// Live table (org-scoped via RLS: tenant_id = current_user_org_id()::text,
+// filled by the DB default — never set tenant_id from the client):
+//   id (text pk), tenant_id, name, description, action_owner, categories text[],
+//   likelihood int, severity int, risk_score float, mitigation_status,
+//   mitigation_plan, applicable_frameworks text[], linked_control_ids uuid[],
+//   linked_incident_ids uuid[], deadline, is_deleted, created_at, updated_at
 export type RiskRecord = {
   id: string
   org_id?: string
   title: string
+  description?: string
   category: string
   likelihood: number
   impact: number
@@ -12,8 +19,12 @@ export type RiskRecord = {
   status: string
   owner?: string
   mitigation?: string
+  frameworks?: string[]
+  linked_control_ids?: string[]
+  linked_incident_ids?: string[]
+  deadline?: string | null
   tags?: string[]
-  metadata?: Record<string,any>
+  metadata?: Record<string, any>
   created_at: string
   updated_at: string
   // Legacy/aliased fields retained for backward-compatibility with existing
@@ -25,17 +36,27 @@ export type RiskRecord = {
 
 // Internal: maps 'risks' table row → RiskRecord UI shape
 function mapRow(row: any): RiskRecord {
+  const likelihood = row.likelihood ?? 3
+  const impact = row.severity ?? row.impact ?? 3
+  // Several legacy rows carry risk_score = 0; derive from L×I so the UI never
+  // shows a fabricated-looking zero for a scored risk.
+  const stored = row.risk_score != null ? Number(row.risk_score) : 0
   return {
     id: row.id,
     org_id: row.tenant_id,
     title: row.name ?? row.title ?? '',
+    description: row.description ?? '',
     category: Array.isArray(row.categories) ? row.categories[0] ?? '' : (row.category ?? ''),
-    likelihood: row.likelihood ?? 3,
-    impact: row.severity ?? row.impact ?? 3,
-    risk_score: row.risk_score != null ? Number(row.risk_score) : ((row.likelihood ?? 3) * (row.severity ?? 3)),
+    likelihood,
+    impact,
+    risk_score: stored > 0 ? stored : likelihood * impact,
     status: row.mitigation_status ?? row.status ?? 'Open',
     owner: row.action_owner ?? row.owner ?? '',
     mitigation: row.mitigation_plan ?? row.mitigation ?? '',
+    frameworks: Array.isArray(row.applicable_frameworks) ? row.applicable_frameworks : [],
+    linked_control_ids: Array.isArray(row.linked_control_ids) ? row.linked_control_ids : [],
+    linked_incident_ids: Array.isArray(row.linked_incident_ids) ? row.linked_incident_ids : [],
+    deadline: row.deadline ?? null,
     tags: Array.isArray(row.categories) ? row.categories : [],
     metadata: row.metadata ?? {},
     created_at: row.created_at,
@@ -43,13 +64,15 @@ function mapRow(row: any): RiskRecord {
   }
 }
 
-// Internal: maps RiskRecord UI shape → 'risks' table row for upsert
+// Internal: maps RiskRecord UI shape → 'risks' table row for upsert.
+// Never sets tenant_id — the DB default (current_user_org_id()) scopes the row.
 function mapToRow(record: Partial<RiskRecord>): Record<string, any> {
   const row: Record<string, any> = {}
   if (record.id) row.id = record.id
-  if (record.org_id) row.tenant_id = record.org_id
   if (record.title != null) row.name = record.title
+  if (record.description != null) row.description = record.description
   if (record.category != null) row.categories = [record.category]
+  if (record.tags != null) row.categories = record.tags
   if (record.likelihood != null) row.likelihood = record.likelihood
   if (record.impact != null) row.severity = record.impact
   if (record.risk_score != null) row.risk_score = record.risk_score
@@ -59,45 +82,42 @@ function mapToRow(record: Partial<RiskRecord>): Record<string, any> {
   if (record.status != null) row.mitigation_status = record.status
   if (record.owner != null) row.action_owner = record.owner
   if (record.mitigation != null) row.mitigation_plan = record.mitigation
-  if (record.tags != null) row.categories = record.tags
+  if (record.frameworks != null) row.applicable_frameworks = record.frameworks
+  if (record.linked_control_ids != null) row.linked_control_ids = record.linked_control_ids
+  if (record.deadline !== undefined) row.deadline = record.deadline
   row.updated_at = new Date().toISOString()
   return row
 }
 
-export async function fetchAllRisks(filters: Record<string,any> = {}): Promise<RiskRecord[]> {
+export async function fetchAllRisks(filters: Record<string, any> = {}): Promise<RiskRecord[]> {
   if (!isSupabaseConfigured() || !supabase) return []
-  try {
-    let q = supabase
-      .from('risks')
-      .select('*')
-      .eq('is_deleted', false)
-      .order('created_at', { ascending: false })
-    if (filters.status) q = q.eq('mitigation_status', filters.status)
-    if (filters.category) q = q.contains('categories', [filters.category])
-    const { data, error } = await q
-    if (error) { console.warn('[riskService] fetch:', error.message); return [] }
-    return (data ?? []).map(mapRow)
-  } catch (e) { console.warn('[riskService] fetch exception:', e); return [] }
+  let q = supabase
+    .from('risks')
+    .select('*')
+    .eq('is_deleted', false)
+    .order('created_at', { ascending: false })
+  if (filters.status) q = q.eq('mitigation_status', filters.status)
+  if (filters.category) q = q.contains('categories', [filters.category])
+  const { data, error } = await q
+  if (error) { console.warn('[riskService] fetch:', error.message); throw new Error(error.message) }
+  return (data ?? []).map(mapRow)
 }
 
-export async function upsertRisk(record: Partial<RiskRecord>): Promise<RiskRecord | null> {
-  if (!isSupabaseConfigured() || !supabase) return null
-  try {
-    const payload = mapToRow(record)
-    const { data, error } = await supabase.from('risks').upsert(payload).select().single()
-    if (error) { console.warn('[riskService] upsert:', error.message); return null }
-    return mapRow(data)
-  } catch { return null }
+// Writes throw on failure (config/RLS/CHECK/network) so callers surface a real
+// error toast instead of a false success. Never swallow to null.
+export async function upsertRisk(record: Partial<RiskRecord>): Promise<RiskRecord> {
+  if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase is not configured — cannot save risk.')
+  const payload = mapToRow(record)
+  const { data, error } = await supabase.from('risks').upsert(payload).select().single()
+  if (error) { console.warn('[riskService] upsert:', error.message); throw new Error(error.message) }
+  return mapRow(data)
 }
 
-export async function deleteRisk(id: string): Promise<boolean> {
-  if (!isSupabaseConfigured() || !supabase) return false
-  try {
-    // Soft delete via is_deleted flag
-    const { error } = await supabase.from('risks').update({ is_deleted: true }).eq('id', id)
-    if (error) { console.warn('[riskService] delete:', error.message); return false }
-    return true
-  } catch { return false }
+export async function deleteRisk(id: string): Promise<void> {
+  if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase is not configured — cannot delete risk.')
+  // Soft delete via is_deleted flag
+  const { error } = await supabase.from('risks').update({ is_deleted: true }).eq('id', id)
+  if (error) { console.warn('[riskService] delete:', error.message); throw new Error(error.message) }
 }
 
 export const fetchRisks = fetchAllRisks

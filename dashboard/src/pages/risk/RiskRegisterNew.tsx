@@ -1,10 +1,12 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams, Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
   Eye, MagnifyingGlass, Funnel, Export, Plus, Warning,
-  ShieldCheck, Clock, User, CaretRight, GridFour, Fire,
-  ArrowUp, ArrowDown, ArrowRight, Check, X, Scales,
-  TreeStructure, ListBullets, Target,
+  ShieldCheck, Clock, User, GridFour,
+  X, Scales, Target,
 } from '@phosphor-icons/react';
+import { toast } from 'sonner';
 import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -21,251 +23,59 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/ta
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '../../components/ui/select';
+import { PageSkeleton } from '../../components/ui/PageSkeleton';
 import { useSettingsStore } from '../../stores/settingsStore';
-
+import { useRisksData, type RiskRecord } from '../../hooks/useRisksData';
+import { fetchAllControls } from '../../services/controlService';
 
 // ── Types ────────────────────────────────────────────────────────────────────
-
-type RiskCategory = 'AI Model' | 'Data' | 'Operational' | 'Compliance' | 'Security' | 'Third-Party';
-
-type TreatmentStatus = 'Mitigated' | 'In Progress' | 'Accepted' | 'Planned' | 'Overdue';
 
 interface RiskItem {
   id: string;
   title: string;
   description: string;
-  category: RiskCategory;
+  category: string;
   likelihood: number;
   impact: number;
   score: number;
   owner: string;
-  treatmentStatus: TreatmentStatus;
+  treatmentStatus: string;
+  overdue: boolean;
   frameworkMapping: string[];
   treatmentPlan: string;
-  controls: string[];
-  history: { date: string; action: string; user: string }[];
+  controlIds: string[];
   createdDate: string;
   lastUpdated: string;
+  deadline: string | null;
 }
 
-// ── Toast ────────────────────────────────────────────────────────────────────
+const DEFAULT_CATEGORIES = ['AI Model', 'Data', 'Operational', 'Compliance', 'Security', 'Third-Party'];
 
-interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info' }
+// ── Mapping: RiskRecord (risks table) → RiskItem (UI) ────────────────────────
 
-// ── Seed Data ────────────────────────────────────────────────────────────────
-
-const SEED_RISKS: RiskItem[] = [
-  {
-    id: 'RSK-001',
-    title: 'Model bias propagation in credit scoring',
-    description: 'Credit scoring AI model exhibits demographic bias that propagates through downstream lending decisions, causing disparate impact on protected classes and violating fair lending regulations.',
-    category: 'AI Model',
-    likelihood: 4,
-    impact: 5,
-    score: 20,
-    owner: 'Sarah Chen',
-    treatmentStatus: 'In Progress',
-    frameworkMapping: ['NIST AI RMF 2.3', 'EU AI Act Art. 10', 'ISO 42001 A.8.4'],
-    treatmentPlan: 'Deploy bias detection pipeline with monthly fairness audits. Implement counterfactual fairness constraints in model training. Establish disparate impact testing thresholds at 80% rule compliance.',
-    controls: ['CTRL-006 Bias Monitoring', 'CTRL-002 Model Validation'],
-    history: [
-      { date: '2026-03-15', action: 'Risk identified during quarterly model audit', user: 'Sarah Chen' },
-      { date: '2026-03-20', action: 'Escalated to Critical — impact assessment completed', user: 'James Liu' },
-      { date: '2026-04-01', action: 'Treatment plan approved by Risk Committee', user: 'Maria Santos' },
-    ],
-    createdDate: '2026-03-15',
-    lastUpdated: '2026-04-01',
-  },
-  {
-    id: 'RSK-002',
-    title: 'Training data poisoning via supply chain',
-    description: 'Third-party training data sources may be compromised through supply chain attacks, introducing poisoned data that degrades model performance or creates backdoor vulnerabilities.',
-    category: 'Security',
-    likelihood: 3,
-    impact: 5,
-    score: 15,
-    owner: 'David Park',
-    treatmentStatus: 'In Progress',
-    frameworkMapping: ['NIST AI RMF 2.6', 'OWASP ML Top 10 ML06', 'ISO 42001 A.7.2'],
-    treatmentPlan: 'Implement data provenance tracking for all training datasets. Establish vendor data integrity verification protocol. Deploy anomaly detection on incoming training batches.',
-    controls: ['CTRL-003 Data Integrity Checks', 'CTRL-012 Supply Chain Review'],
-    history: [
-      { date: '2026-02-10', action: 'Identified during supply chain risk assessment', user: 'David Park' },
-      { date: '2026-02-28', action: 'Risk rating increased after OWASP ML threat briefing', user: 'David Park' },
-      { date: '2026-03-15', action: 'Data provenance tool procurement initiated', user: 'Lisa Wang' },
-    ],
-    createdDate: '2026-02-10',
-    lastUpdated: '2026-03-15',
-  },
-  {
-    id: 'RSK-003',
-    title: 'Hallucination liability in customer-facing bot',
-    description: 'Customer service chatbot produces fabricated financial advice and product information, creating legal liability for Acme Financial and eroding customer trust.',
-    category: 'AI Model',
-    likelihood: 4,
-    impact: 4,
-    score: 16,
-    owner: 'Rachel Torres',
-    treatmentStatus: 'Planned',
-    frameworkMapping: ['NIST AI RMF 3.1', 'EU AI Act Art. 52', 'FCA SMCR'],
-    treatmentPlan: 'Integrate retrieval-augmented generation with verified knowledge base. Add confidence scoring with automatic escalation to human agents below threshold. Implement output guardrails for financial claims.',
-    controls: ['CTRL-015 Output Validation'],
-    history: [
-      { date: '2026-01-22', action: 'Customer complaint triggered investigation', user: 'Rachel Torres' },
-      { date: '2026-02-05', action: 'Legal review completed — liability exposure confirmed', user: 'Mark Stevens' },
-      { date: '2026-03-10', action: 'RAG implementation added to product roadmap', user: 'Rachel Torres' },
-    ],
-    createdDate: '2026-01-22',
-    lastUpdated: '2026-03-10',
-  },
-  {
-    id: 'RSK-004',
-    title: 'Vendor lock-in (OpenAI dependency)',
-    description: 'Over-reliance on OpenAI GPT-4 APIs across 12 production systems creates single-vendor dependency risk. API pricing changes or service disruptions could critically impact operations.',
-    category: 'Third-Party',
-    likelihood: 3,
-    impact: 4,
-    score: 12,
-    owner: 'James Liu',
-    treatmentStatus: 'Accepted',
-    frameworkMapping: ['ISO 27001 A.15.1', 'NIST CSF ID.SC', 'DORA Art. 28'],
-    treatmentPlan: 'Develop model abstraction layer supporting multi-provider failover. Evaluate Anthropic Claude and open-source alternatives for critical workloads. Negotiate exit clause in renewed contract terms.',
-    controls: ['CTRL-009 Vendor Risk Assessment'],
-    history: [
-      { date: '2026-01-05', action: 'Vendor concentration analysis flagged dependency', user: 'James Liu' },
-      { date: '2026-02-12', action: 'Accepted with compensating controls — board approved', user: 'Maria Santos' },
-    ],
-    createdDate: '2026-01-05',
-    lastUpdated: '2026-02-12',
-  },
-  {
-    id: 'RSK-005',
-    title: 'Regulatory non-compliance with EU AI Act',
-    description: 'Credit scoring and fraud detection systems classified as high-risk under EU AI Act. Current documentation, transparency, and human oversight mechanisms do not meet Article 9-15 requirements.',
-    category: 'Compliance',
-    likelihood: 5,
-    impact: 5,
-    score: 25,
-    owner: 'Maria Santos',
-    treatmentStatus: 'In Progress',
-    frameworkMapping: ['EU AI Act Art. 9-15', 'ISO 42001 A.5', 'NIST AI RMF Gov 1.1'],
-    treatmentPlan: 'Complete conformity assessment for all high-risk AI systems by Q3 2026. Establish technical documentation repository per Annex IV. Deploy real-time human oversight dashboard for automated decision systems.',
-    controls: ['CTRL-005 Regulatory Monitoring', 'CTRL-010 Conformity Assessment'],
-    history: [
-      { date: '2025-12-01', action: 'EU AI Act gap analysis initiated', user: 'Maria Santos' },
-      { date: '2026-01-15', action: 'Gap analysis completed — 14 non-conformities identified', user: 'Maria Santos' },
-      { date: '2026-02-20', action: 'Remediation roadmap approved by compliance board', user: 'Mark Stevens' },
-      { date: '2026-03-30', action: '6 of 14 non-conformities resolved', user: 'Maria Santos' },
-    ],
-    createdDate: '2025-12-01',
-    lastUpdated: '2026-03-30',
-  },
-  {
-    id: 'RSK-006',
-    title: 'Data breach via AI pipeline',
-    description: 'ML training and inference pipelines process PII without adequate encryption in transit. Compromised pipeline credentials could expose customer financial data.',
-    category: 'Security',
-    likelihood: 3,
-    impact: 5,
-    score: 15,
-    owner: 'David Park',
-    treatmentStatus: 'Mitigated',
-    frameworkMapping: ['ISO 27001 A.10', 'GDPR Art. 32', 'NIST CSF PR.DS'],
-    treatmentPlan: 'Enforce TLS 1.3 on all pipeline communication channels. Implement column-level encryption for PII fields in feature stores. Deploy DLP scanning on model input/output logs.',
-    controls: ['CTRL-007 Encryption Standards', 'CTRL-008 Access Control'],
-    history: [
-      { date: '2026-01-10', action: 'Penetration test identified unencrypted pipeline segment', user: 'David Park' },
-      { date: '2026-02-01', action: 'TLS 1.3 enforcement deployed across all pipelines', user: 'Alex Kim' },
-      { date: '2026-03-01', action: 'DLP scanning operational — risk downgraded to Mitigated', user: 'David Park' },
-    ],
-    createdDate: '2026-01-10',
-    lastUpdated: '2026-03-01',
-  },
-  {
-    id: 'RSK-007',
-    title: 'Adversarial attack surface on fraud model',
-    description: 'Real-time fraud detection model is vulnerable to adversarial perturbation attacks that could allow fraudulent transactions to bypass detection thresholds.',
-    category: 'Security',
-    likelihood: 3,
-    impact: 4,
-    score: 12,
-    owner: 'Alex Kim',
-    treatmentStatus: 'In Progress',
-    frameworkMapping: ['OWASP ML Top 10 ML01', 'NIST AI RMF 2.7', 'MITRE ATLAS TA0043'],
-    treatmentPlan: 'Deploy adversarial training with PGD augmentation. Implement input validation and anomaly detection at inference boundary. Conduct quarterly red-team exercises on fraud detection pipeline.',
-    controls: ['CTRL-003 Data Integrity Checks', 'CTRL-014 Red Team Testing'],
-    history: [
-      { date: '2026-02-15', action: 'Red team exercise identified evasion vectors', user: 'Alex Kim' },
-      { date: '2026-03-01', action: 'Adversarial training dataset generation started', user: 'Alex Kim' },
-      { date: '2026-03-25', action: 'Input validation layer deployed to staging', user: 'David Park' },
-    ],
-    createdDate: '2026-02-15',
-    lastUpdated: '2026-03-25',
-  },
-  {
-    id: 'RSK-008',
-    title: 'Shadow AI usage by business units',
-    description: 'Business units deploying unapproved AI tools (ChatGPT, Midjourney, Copilot) for customer communications, risk analysis, and code generation without governance oversight.',
-    category: 'Operational',
-    likelihood: 5,
-    impact: 3,
-    score: 15,
-    owner: 'Lisa Wang',
-    treatmentStatus: 'Overdue',
-    frameworkMapping: ['ISO 42001 A.4.2', 'NIST AI RMF Gov 1.3', 'Internal Policy AUP-AI-001'],
-    treatmentPlan: 'Deploy AI asset discovery tool across all business units. Publish and enforce acceptable AI use policy. Establish centralized AI request portal with 48-hour approval SLA.',
-    controls: ['CTRL-006 Bias Monitoring', 'CTRL-015 Output Validation'],
-    history: [
-      { date: '2026-01-05', action: 'Internal audit discovered 23 unapproved AI tools in use', user: 'Lisa Wang' },
-      { date: '2026-01-20', action: 'Draft AI acceptable use policy circulated for review', user: 'Lisa Wang' },
-      { date: '2026-02-15', action: 'Policy approval delayed — treatment now overdue', user: 'Maria Santos' },
-    ],
-    createdDate: '2026-01-05',
-    lastUpdated: '2026-02-15',
-  },
-  {
-    id: 'RSK-009',
-    title: 'Consent management gap in training data',
-    description: 'Customer data used for model training lacks granular consent records. Existing consent mechanisms do not distinguish between service delivery and AI training purposes.',
-    category: 'Data',
-    likelihood: 4,
-    impact: 4,
-    score: 16,
-    owner: 'Rachel Torres',
-    treatmentStatus: 'Planned',
-    frameworkMapping: ['GDPR Art. 6-7', 'EU AI Act Art. 10.5', 'ISO 42001 A.8.2'],
-    treatmentPlan: 'Implement purpose-specific consent collection for AI training data. Retrofit consent records for existing training datasets. Deploy consent verification checkpoint in data ingestion pipeline.',
-    controls: ['CTRL-005 Regulatory Monitoring'],
-    history: [
-      { date: '2026-02-01', action: 'DPO flagged consent gap during DPIA review', user: 'Rachel Torres' },
-      { date: '2026-03-05', action: 'Consent management vendor evaluation completed', user: 'Rachel Torres' },
-    ],
-    createdDate: '2026-02-01',
-    lastUpdated: '2026-03-05',
-  },
-  {
-    id: 'RSK-010',
-    title: 'Cross-border data transfer for model training',
-    description: 'Model training infrastructure spans US and EU regions. Training data containing EU citizen PII is transferred to US-based GPU clusters without adequate transfer mechanism (post-Schrems II).',
-    category: 'Compliance',
-    likelihood: 4,
-    impact: 5,
-    score: 20,
-    owner: 'Mark Stevens',
-    treatmentStatus: 'Overdue',
-    frameworkMapping: ['GDPR Art. 44-49', 'EU AI Act Art. 10.5', 'EDPB Guidelines 05/2020'],
-    treatmentPlan: 'Implement EU-region-only training pipeline for EU citizen data. Execute Standard Contractual Clauses with cloud provider. Deploy data residency tagging and automated transfer impact assessments.',
-    controls: ['CTRL-009 Vendor Risk Assessment'],
-    history: [
-      { date: '2025-11-10', action: 'Data residency audit identified cross-border transfers', user: 'Mark Stevens' },
-      { date: '2025-12-20', action: 'SCC negotiation with AWS initiated', user: 'Mark Stevens' },
-      { date: '2026-02-01', action: 'SCC execution delayed — treatment marked overdue', user: 'Maria Santos' },
-      { date: '2026-03-15', action: 'EU-region GPU cluster procurement approved', user: 'James Liu' },
-    ],
-    createdDate: '2025-11-10',
-    lastUpdated: '2026-03-15',
-  },
-];
+function toItem(r: RiskRecord): RiskItem {
+  const status = r.status || 'Open';
+  const settled = /mitigated|closed|resolved|accepted/i.test(status);
+  const overdue = !!r.deadline && !settled && new Date(r.deadline).getTime() < Date.now();
+  return {
+    id: r.id,
+    title: r.title,
+    description: r.description ?? '',
+    category: r.category || 'Uncategorized',
+    likelihood: r.likelihood,
+    impact: r.impact,
+    score: r.risk_score,
+    owner: r.owner || '',
+    treatmentStatus: status.replace(/^[a-z]/, c => c.toUpperCase()),
+    overdue,
+    frameworkMapping: r.frameworks ?? [],
+    treatmentPlan: r.mitigation ?? '',
+    controlIds: r.linked_control_ids ?? [],
+    createdDate: (r.created_at ?? '').slice(0, 10),
+    lastUpdated: (r.updated_at ?? '').slice(0, 10),
+    deadline: r.deadline ? r.deadline.slice(0, 10) : null,
+  };
+}
 
 // ── Score Color Helper ───────────────────────────────────────────────────────
 
@@ -276,27 +86,24 @@ function scoreColor(score: number): { bg: string; text: string; label: string } 
   return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', label: 'Low' };
 }
 
-function treatmentColor(status: TreatmentStatus): { bg: string; text: string } {
-  switch (status) {
-    case 'Mitigated': return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))' };
-    case 'In Progress': return { bg: 'hsl(217 91% 60% / 0.15)', text: 'hsl(var(--s-in-tx))' };
-    case 'Accepted': return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))' };
-    case 'Planned': return { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))' };
-    case 'Overdue': return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--destructive))' };
-    default: return { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))' };
-  }
+function treatmentColor(status: string): { bg: string; text: string } {
+  const s = status.toLowerCase();
+  if (/mitigated|closed|resolved/.test(s)) return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))' };
+  if (/in progress|mitigating/.test(s)) return { bg: 'hsl(217 91% 60% / 0.15)', text: 'hsl(var(--s-in-tx))' };
+  if (/accepted/.test(s)) return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))' };
+  if (/overdue/.test(s)) return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--destructive))' };
+  // open / planned / monitoring / anything else
+  return { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))' };
 }
 
-function categoryColor(cat: RiskCategory): { bg: string; text: string } {
-  switch (cat) {
-    case 'AI Model': return { bg: 'hsl(271 81% 56% / 0.15)', text: 'hsl(271 81% 66%)' };
-    case 'Data': return { bg: 'hsl(217 91% 60% / 0.15)', text: 'hsl(var(--s-in-tx))' };
-    case 'Operational': return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))' };
-    case 'Compliance': return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--destructive))' };
-    case 'Security': return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(25 95% 63%)' };
-    case 'Third-Party': return { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))' };
-    default: return { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))' };
-  }
+function categoryColor(cat: string): { bg: string; text: string } {
+  const c = cat.toLowerCase();
+  if (/model|ai\b/.test(c)) return { bg: 'hsl(271 81% 56% / 0.15)', text: 'hsl(271 81% 66%)' };
+  if (/data|privacy|gdpr/.test(c)) return { bg: 'hsl(217 91% 60% / 0.15)', text: 'hsl(var(--s-in-tx))' };
+  if (/operational|governance/.test(c)) return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))' };
+  if (/compliance|regulatory|ethics/.test(c)) return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--destructive))' };
+  if (/security|cyber/.test(c)) return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(25 95% 63%)' };
+  return { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))' };
 }
 
 // ── MetricTile ───────────────────────────────────────────────────────────────
@@ -322,6 +129,11 @@ function MetricTile({ label, value, variant }: {
 }
 
 // ── 5x5 Heat Map ─────────────────────────────────────────────────────────────
+
+function riskShortLabel(r: RiskItem): string {
+  // Legacy ids read like 'risk-001'; uuid ids are truncated for the cell chip.
+  return r.id.length > 10 ? r.id.slice(0, 6) : r.id;
+}
 
 function HeatMap({ risks, onCellClick }: { risks: RiskItem[]; onCellClick: (r: RiskItem) => void }) {
   const matrix: Record<string, RiskItem[]> = {};
@@ -389,6 +201,7 @@ function HeatMap({ risks, onCellClick }: { risks: RiskItem[]; onCellClick: (r: R
                             <span
                               key={r.id}
                               className="text-[8px] font-mono px-1"
+                              title={r.title}
                               style={{
                                 background: sc.text,
                                 color: 'hsl(var(--bg-surface))',
@@ -397,7 +210,7 @@ function HeatMap({ risks, onCellClick }: { risks: RiskItem[]; onCellClick: (r: R
                               }}
                               onClick={(e) => { e.stopPropagation(); onCellClick(r); }}
                             >
-                              {r.id}
+                              {riskShortLabel(r)}
                             </span>
                           ))}
                           {cellRisks.length > 3 && (
@@ -494,18 +307,38 @@ function MiniMatrix({ likelihood, impact }: { likelihood: number; impact: number
 
 export default function RiskRegisterNew() {
   const { orgName } = useSettingsStore();
-  const [risks, setRisks] = useState<RiskItem[]>(SEED_RISKS);
+  const { risks: records, isLoading, error, saveRisk, isSaving } = useRisksData();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
-  const [selectedRisk, setSelectedRisk] = useState<RiskItem | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [detailTab, setDetailTab] = useState('overview');
-  const [toasts, setToasts] = useState<ToastMsg[]>([]);
+
+  // Controls lookup for resolving linked_control_ids → names (never raw uuids)
+  const { data: controls = [] } = useQuery({
+    queryKey: ['controls'],
+    queryFn: fetchAllControls,
+    staleTime: 60_000,
+  });
+  const controlById = useMemo(() => {
+    const m = new Map<string, { ref: string; name: string }>();
+    for (const c of controls as any[]) {
+      if (c?.id) m.set(String(c.id), { ref: c.control_ref ?? '', name: c.name ?? c.title ?? '' });
+    }
+    return m;
+  }, [controls]);
+
+  const risks: RiskItem[] = useMemo(() => (records as RiskRecord[]).map(toItem), [records]);
+  const selectedRisk = useMemo(
+    () => risks.find(r => r.id === selectedId) ?? null,
+    [risks, selectedId],
+  );
 
   // ── Add Risk dialog state ──────────────────────────────────────────────────
   const [addOpen, setAddOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
-  const [newCategory, setNewCategory] = useState<RiskCategory>('AI Model');
+  const [newCategory, setNewCategory] = useState('AI Model');
   const [newLikelihood, setNewLikelihood] = useState(3);
   const [newImpact, setNewImpact] = useState(3);
   const [newDescription, setNewDescription] = useState('');
@@ -513,14 +346,33 @@ export default function RiskRegisterNew() {
   const [newTreatment, setNewTreatment] = useState('');
   const [newFramework, setNewFramework] = useState('');
 
-  const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
-    const id = Date.now();
-    setToasts(prev => [...prev, { id, text, type }]);
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
-  }, []);
+  // ── Deep link: /risks?open=<id> opens that record ──────────────────────────
+  const openParam = searchParams.get('open');
+  useEffect(() => {
+    if (openParam && risks.some(r => r.id === openParam)) {
+      setSelectedId(openParam);
+      setDetailTab('overview');
+      setSheetOpen(true);
+    }
+  }, [openParam, risks]);
+
+  const closeSheet = (open: boolean) => {
+    setSheetOpen(open);
+    if (!open && searchParams.has('open')) {
+      searchParams.delete('open');
+      setSearchParams(searchParams, { replace: true });
+    }
+  };
 
   // ── Filtering ──────────────────────────────────────────────────────────────
-  const categories: RiskCategory[] = ['AI Model', 'Data', 'Operational', 'Compliance', 'Security', 'Third-Party'];
+  const categories = useMemo(
+    () => Array.from(new Set(risks.map(r => r.category).filter(Boolean))).sort(),
+    [risks],
+  );
+  const addCategories = useMemo(
+    () => Array.from(new Set([...DEFAULT_CATEGORIES, ...categories])),
+    [categories],
+  );
 
   const filtered = useMemo(() => {
     return risks.filter(r => {
@@ -533,12 +385,12 @@ export default function RiskRegisterNew() {
   // ── Metrics ────────────────────────────────────────────────────────────────
   const totalRisks = risks.length;
   const criticalHighCount = risks.filter(r => r.score >= 12).length;
-  const mitigatedCount = risks.filter(r => r.treatmentStatus === 'Mitigated').length;
-  const overdueCount = risks.filter(r => r.treatmentStatus === 'Overdue').length;
+  const mitigatedCount = risks.filter(r => /mitigated|closed|resolved/i.test(r.treatmentStatus)).length;
+  const openCount = risks.filter(r => /open/i.test(r.treatmentStatus)).length;
 
   // ── Detail Drawer ──────────────────────────────────────────────────────────
   const openDetail = (risk: RiskItem) => {
-    setSelectedRisk(risk);
+    setSelectedId(risk.id);
     setDetailTab('overview');
     setSheetOpen(true);
   };
@@ -547,7 +399,7 @@ export default function RiskRegisterNew() {
   const exportCSV = () => {
     const headers = ['Risk ID', 'Title', 'Category', 'Likelihood', 'Impact', 'Risk Score', 'Owner', 'Treatment Status', 'Framework Mapping', 'Created', 'Last Updated'];
     const rows = filtered.map(r => [
-      r.id, `"${r.title}"`, r.category, r.likelihood, r.impact, r.score,
+      r.id, `"${r.title.replace(/"/g, '""')}"`, r.category, r.likelihood, r.impact, r.score,
       r.owner, r.treatmentStatus, `"${r.frameworkMapping.join('; ')}"`, r.createdDate, r.lastUpdated,
     ]);
     const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
@@ -555,61 +407,64 @@ export default function RiskRegisterNew() {
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     a.download = `risk-register-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
-    toast('Risk register exported as CSV');
+    toast.success('Risk register exported as CSV');
   };
 
-  // ── Add Risk ───────────────────────────────────────────────────────────────
-  const handleAddRisk = () => {
-    if (!newTitle.trim()) { toast('Risk title is required', 'error'); return; }
-    if (!newDescription.trim()) { toast('Description is required', 'error'); return; }
-    if (!newOwner.trim()) { toast('Risk owner is required', 'error'); return; }
-    const nextNum = risks.length + 1;
-    const id = `RSK-${String(nextNum).padStart(3, '0')}`;
-    const score = newLikelihood * newImpact;
-    const today = new Date().toISOString().split('T')[0];
-    const risk: RiskItem = {
-      id,
-      title: newTitle.trim(),
-      description: newDescription.trim(),
-      category: newCategory,
-      likelihood: newLikelihood,
-      impact: newImpact,
-      score,
-      owner: newOwner.trim(),
-      treatmentStatus: 'Planned',
-      frameworkMapping: newFramework.trim()
-        ? newFramework.split(',').map(f => f.trim()).filter(Boolean)
-        : [],
-      treatmentPlan: newTreatment.trim(),
-      controls: [],
-      history: [{ date: today, action: 'Risk registered', user: 'Current User' }],
-      createdDate: today,
-      lastUpdated: today,
-    };
-    setRisks(prev => [risk, ...prev]);
-    setAddOpen(false);
-    setNewTitle(''); setNewCategory('AI Model'); setNewLikelihood(3); setNewImpact(3);
-    setNewDescription(''); setNewOwner(''); setNewTreatment(''); setNewFramework('');
-    toast(`${id} added to risk register`);
+  // ── Add Risk (persists via riskService; writes throw on failure) ──────────
+  const handleAddRisk = async () => {
+    if (!newTitle.trim()) { toast.error('Risk title is required'); return; }
+    if (!newDescription.trim()) { toast.error('Description is required'); return; }
+    if (!newOwner.trim()) { toast.error('Risk owner is required'); return; }
+    try {
+      await saveRisk({
+        title: newTitle.trim(),
+        description: newDescription.trim(),
+        category: newCategory,
+        likelihood: newLikelihood,
+        impact: newImpact,
+        risk_score: newLikelihood * newImpact,
+        status: 'Open',
+        owner: newOwner.trim(),
+        mitigation: newTreatment.trim(),
+        frameworks: newFramework.trim()
+          ? newFramework.split(',').map(f => f.trim()).filter(Boolean)
+          : [],
+      });
+      // Success toast fires from the mutation only after the write resolved.
+      setAddOpen(false);
+      setNewTitle(''); setNewCategory('AI Model'); setNewLikelihood(3); setNewImpact(3);
+      setNewDescription(''); setNewOwner(''); setNewTreatment(''); setNewFramework('');
+    } catch {
+      // Error toast fires from the mutation; keep the dialog open so nothing
+      // the user typed is lost.
+    }
   };
+
+  if (isLoading) return <PageSkeleton />;
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Risk Register</h1>
+          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-4))' }}>
+            {orgName} — Enterprise AI risk inventory and treatment tracking
+          </p>
+        </div>
+        <div role="alert" className="p-4 flex items-center gap-2" style={{
+          background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--destructive))', borderRadius: 0,
+        }}>
+          <Warning size={16} style={{ color: 'hsl(var(--destructive))' }} />
+          <span className="text-sm" style={{ color: 'hsl(var(--destructive))' }}>
+            Failed to load the risk register: {(error as Error).message}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Toast layer */}
-      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
-        {toasts.map(t => (
-          <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto flex items-center gap-2" style={{
-            background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
-            color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 300,
-          }}>
-            {t.type === 'success' && <Check size={14} weight="bold" />}
-            {t.type === 'error' && <X size={14} weight="bold" />}
-            {t.type === 'info' && <Eye size={14} weight="bold" />}
-            {t.text}
-          </div>
-        ))}
-      </div>
-
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -624,6 +479,7 @@ export default function RiskRegisterNew() {
             variant="outline"
             style={{ borderRadius: 0 }}
             onClick={exportCSV}
+            disabled={filtered.length === 0}
           >
             <Export size={14} />
             Export CSV
@@ -644,7 +500,7 @@ export default function RiskRegisterNew() {
         <MetricTile label="Total Risks" value={totalRisks} variant="default" />
         <MetricTile label="Critical / High" value={criticalHighCount} variant="error" />
         <MetricTile label="Mitigated" value={mitigatedCount} variant="ok" />
-        <MetricTile label="Overdue Treatments" value={overdueCount} variant="warn" />
+        <MetricTile label="Open" value={openCount} variant="warn" />
       </div>
 
       {/* Heat Map */}
@@ -691,7 +547,17 @@ export default function RiskRegisterNew() {
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 ? (
+              {risks.length === 0 ? (
+                <tr>
+                  <td colSpan={10} className="px-4 py-12 text-center">
+                    <ShieldCheck size={32} className="mx-auto mb-2 opacity-40" />
+                    <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>No risks recorded yet</p>
+                    <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>
+                      Use &quot;Add Risk&quot; to register the first risk for {orgName}.
+                    </p>
+                  </td>
+                </tr>
+              ) : filtered.length === 0 ? (
                 <tr>
                   <td colSpan={10} className="px-4 py-12 text-center">
                     <Warning size={32} className="mx-auto mb-2 opacity-40" />
@@ -701,7 +567,7 @@ export default function RiskRegisterNew() {
               ) : (
                 filtered.map(r => {
                   const sc = scoreColor(r.score);
-                  const tc = treatmentColor(r.treatmentStatus);
+                  const tc = treatmentColor(r.overdue ? 'Overdue' : r.treatmentStatus);
                   const cc = categoryColor(r.category);
                   return (
                     <tr
@@ -711,7 +577,7 @@ export default function RiskRegisterNew() {
                       onClick={() => openDetail(r)}
                     >
                       <td className="px-4 py-3">
-                        <span className="text-xs font-mono font-medium" style={{ color: 'hsl(var(--brand))' }}>{r.id}</span>
+                        <span className="text-xs font-mono font-medium" title={r.id} style={{ color: 'hsl(var(--brand))' }}>{riskShortLabel(r)}</span>
                       </td>
                       <td className="px-4 py-3 max-w-[260px]">
                         <p className="text-xs font-medium truncate" style={{ color: 'hsl(var(--text-1))' }}>{r.title}</p>
@@ -733,31 +599,35 @@ export default function RiskRegisterNew() {
                         </Badge>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{r.owner}</span>
+                        <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{r.owner || 'Unassigned'}</span>
                       </td>
                       <td className="px-4 py-3">
                         <Badge style={{ background: tc.bg, color: tc.text, borderRadius: 0, fontSize: 10 }}>
-                          {r.treatmentStatus}
+                          {r.overdue ? 'Overdue' : r.treatmentStatus}
                         </Badge>
                       </td>
                       <td className="px-4 py-3 max-w-[200px]">
-                        <div className="flex flex-wrap gap-1">
-                          {r.frameworkMapping.slice(0, 2).map((fw, idx) => (
-                            <span key={idx} className="text-[10px] px-1.5 py-0.5" style={{
-                              background: 'hsl(var(--bg-muted))',
-                              color: 'hsl(var(--text-4))',
-                              borderRadius: 0,
-                              border: '1px solid hsl(var(--border))',
-                            }}>
-                              {fw}
-                            </span>
-                          ))}
-                          {r.frameworkMapping.length > 2 && (
-                            <span className="text-[10px] px-1" style={{ color: 'hsl(var(--text-4))' }}>
-                              +{r.frameworkMapping.length - 2}
-                            </span>
-                          )}
-                        </div>
+                        {r.frameworkMapping.length === 0 ? (
+                          <span className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>—</span>
+                        ) : (
+                          <div className="flex flex-wrap gap-1">
+                            {r.frameworkMapping.slice(0, 2).map((fw, idx) => (
+                              <span key={idx} className="text-[10px] px-1.5 py-0.5" style={{
+                                background: 'hsl(var(--bg-muted))',
+                                color: 'hsl(var(--text-4))',
+                                borderRadius: 0,
+                                border: '1px solid hsl(var(--border))',
+                              }}>
+                                {fw}
+                              </span>
+                            ))}
+                            {r.frameworkMapping.length > 2 && (
+                              <span className="text-[10px] px-1" style={{ color: 'hsl(var(--text-4))' }}>
+                                +{r.frameworkMapping.length - 2}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <Button
@@ -779,18 +649,18 @@ export default function RiskRegisterNew() {
       </Card>
 
       {/* Detail Drawer */}
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+      <Sheet open={sheetOpen} onOpenChange={closeSheet}>
         <SheetContent className="w-[560px] sm:max-w-[560px] overflow-y-auto" style={{ borderRadius: 0 }}>
           {selectedRisk && (
             <>
               <SheetHeader className="pb-4" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{selectedRisk.id}</span>
+                  <span className="text-xs font-mono" title={selectedRisk.id} style={{ color: 'hsl(var(--brand))' }}>{riskShortLabel(selectedRisk)}</span>
                   <Badge style={{ background: scoreColor(selectedRisk.score).bg, color: scoreColor(selectedRisk.score).text, borderRadius: 0, fontSize: 10, fontWeight: 700 }}>
                     Score: {selectedRisk.score}
                   </Badge>
-                  <Badge style={{ background: treatmentColor(selectedRisk.treatmentStatus).bg, color: treatmentColor(selectedRisk.treatmentStatus).text, borderRadius: 0, fontSize: 10 }}>
-                    {selectedRisk.treatmentStatus}
+                  <Badge style={{ background: treatmentColor(selectedRisk.overdue ? 'Overdue' : selectedRisk.treatmentStatus).bg, color: treatmentColor(selectedRisk.overdue ? 'Overdue' : selectedRisk.treatmentStatus).text, borderRadius: 0, fontSize: 10 }}>
+                    {selectedRisk.overdue ? 'Overdue' : selectedRisk.treatmentStatus}
                   </Badge>
                 </div>
                 <SheetTitle className="text-base" style={{ color: 'hsl(var(--text-1))' }}>
@@ -816,7 +686,11 @@ export default function RiskRegisterNew() {
                 <TabsContent value="overview" className="mt-4 space-y-4">
                   <div>
                     <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-4))' }}>Description</p>
-                    <p className="text-sm leading-relaxed" style={{ color: 'hsl(var(--text-3))' }}>{selectedRisk.description}</p>
+                    {selectedRisk.description ? (
+                      <p className="text-sm leading-relaxed" style={{ color: 'hsl(var(--text-3))' }}>{selectedRisk.description}</p>
+                    ) : (
+                      <p className="text-sm italic" style={{ color: 'hsl(var(--text-4))' }}>No description recorded.</p>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="p-3" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
@@ -829,7 +703,7 @@ export default function RiskRegisterNew() {
                       <p className="text-[10px] font-semibold mb-1" style={{ color: 'hsl(var(--text-4))' }}>Owner</p>
                       <div className="flex items-center gap-1">
                         <User size={12} style={{ color: 'hsl(var(--text-3))' }} />
-                        <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{selectedRisk.owner}</span>
+                        <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{selectedRisk.owner || 'Unassigned'}</span>
                       </div>
                     </div>
                     <div className="p-3" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
@@ -849,18 +723,22 @@ export default function RiskRegisterNew() {
                   </div>
                   <div>
                     <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-4))' }}>Framework Mapping</p>
-                    <div className="flex flex-wrap gap-1">
-                      {selectedRisk.frameworkMapping.map((fw, idx) => (
-                        <span key={idx} className="text-[10px] px-2 py-1" style={{
-                          background: 'hsl(var(--bg-muted))',
-                          color: 'hsl(var(--text-3))',
-                          borderRadius: 0,
-                          border: '1px solid hsl(var(--border))',
-                        }}>
-                          <Scales size={10} className="inline mr-1" />{fw}
-                        </span>
-                      ))}
-                    </div>
+                    {selectedRisk.frameworkMapping.length === 0 ? (
+                      <p className="text-xs italic" style={{ color: 'hsl(var(--text-4))' }}>No framework references mapped yet.</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-1">
+                        {selectedRisk.frameworkMapping.map((fw, idx) => (
+                          <span key={idx} className="text-[10px] px-2 py-1" style={{
+                            background: 'hsl(var(--bg-muted))',
+                            color: 'hsl(var(--text-3))',
+                            borderRadius: 0,
+                            border: '1px solid hsl(var(--border))',
+                          }}>
+                            <Scales size={10} className="inline mr-1" />{fw}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </TabsContent>
 
@@ -894,7 +772,7 @@ export default function RiskRegisterNew() {
                       {scoreColor(selectedRisk.score).label} Risk
                     </p>
                     <p className="text-[10px] mt-1" style={{ color: 'hsl(var(--text-4))' }}>
-                      {selectedRisk.likelihood} (Likelihood) x {selectedRisk.impact} (Impact) = {selectedRisk.score}
+                      {selectedRisk.likelihood} (Likelihood) x {selectedRisk.impact} (Impact)
                     </p>
                   </div>
                   <div>
@@ -915,16 +793,20 @@ export default function RiskRegisterNew() {
                         {selectedRisk.treatmentStatus}
                       </Badge>
                     </div>
-                    <p className="text-sm leading-relaxed" style={{ color: 'hsl(var(--text-3))' }}>
-                      {selectedRisk.treatmentPlan}
-                    </p>
+                    {selectedRisk.treatmentPlan ? (
+                      <p className="text-sm leading-relaxed" style={{ color: 'hsl(var(--text-3))' }}>
+                        {selectedRisk.treatmentPlan}
+                      </p>
+                    ) : (
+                      <p className="text-sm italic" style={{ color: 'hsl(var(--text-4))' }}>No treatment plan recorded yet.</p>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="p-3" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                       <p className="text-[10px] font-semibold mb-1" style={{ color: 'hsl(var(--text-4))' }}>Risk Owner</p>
                       <div className="flex items-center gap-1">
                         <User size={12} style={{ color: 'hsl(var(--text-3))' }} />
-                        <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{selectedRisk.owner}</span>
+                        <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{selectedRisk.owner || 'Unassigned'}</span>
                       </div>
                     </div>
                     <div className="p-3" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
@@ -934,7 +816,13 @@ export default function RiskRegisterNew() {
                       </Badge>
                     </div>
                   </div>
-                  {selectedRisk.treatmentStatus === 'Overdue' && (
+                  {selectedRisk.deadline && (
+                    <div className="p-3" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <p className="text-[10px] font-semibold mb-1" style={{ color: 'hsl(var(--text-4))' }}>Treatment Deadline</p>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{selectedRisk.deadline}</span>
+                    </div>
+                  )}
+                  {selectedRisk.overdue && (
                     <div className="p-3 flex items-center gap-2" style={{
                       background: 'hsl(var(--s-er-bg))',
                       border: '1px solid hsl(var(--s-er-bg))',
@@ -954,33 +842,42 @@ export default function RiskRegisterNew() {
                     <ShieldCheck size={16} style={{ color: 'hsl(var(--text-4))' }} />
                     <span className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Linked Controls</span>
                     <span className="text-xs px-1.5 py-0.5" style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-4))', borderRadius: 0 }}>
-                      {selectedRisk.controls.length}
+                      {selectedRisk.controlIds.length}
                     </span>
                   </div>
-                  {selectedRisk.controls.length === 0 ? (
+                  {selectedRisk.controlIds.length === 0 ? (
                     <div className="p-8 text-center" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                       <ShieldCheck size={24} className="mx-auto mb-2 opacity-40" />
                       <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>No controls linked to this risk</p>
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {selectedRisk.controls.map((ctrl, idx) => {
-                        const parts = ctrl.split(' ');
-                        const ctrlId = parts[0];
-                        const ctrlName = parts.slice(1).join(' ');
+                      {selectedRisk.controlIds.map((ctrlId) => {
+                        const ctrl = controlById.get(ctrlId);
                         return (
-                          <div key={idx} className="p-3 flex items-center justify-between" style={{
-                            background: 'hsl(var(--bg-muted))',
-                            border: '1px solid hsl(var(--border))',
-                            borderRadius: 0,
-                          }}>
+                          <Link
+                            key={ctrlId}
+                            to={`/controls/${ctrlId}`}
+                            className="p-3 flex items-center justify-between hover:bg-[hsl(var(--bg-surface))] transition-colors"
+                            style={{
+                              background: 'hsl(var(--bg-muted))',
+                              border: '1px solid hsl(var(--border))',
+                              borderRadius: 0,
+                            }}
+                          >
                             <div className="flex items-center gap-2">
                               <ShieldCheck size={14} style={{ color: 'hsl(var(--s-ok-tx))' }} />
-                              <span className="text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{ctrlId}</span>
-                              <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{ctrlName}</span>
+                              {ctrl ? (
+                                <>
+                                  {ctrl.ref && <span className="text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{ctrl.ref}</span>}
+                                  <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{ctrl.name || 'Unnamed control'}</span>
+                                </>
+                              ) : (
+                                <span className="text-xs italic" style={{ color: 'hsl(var(--text-4))' }}>Unavailable</span>
+                              )}
                             </div>
-                            <CaretRight size={12} style={{ color: 'hsl(var(--text-4))' }} />
-                          </div>
+                            <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>&#8250;</span>
+                          </Link>
                         );
                       })}
                     </div>
@@ -992,7 +889,7 @@ export default function RiskRegisterNew() {
                   </div>
                 </TabsContent>
 
-                {/* History Tab */}
+                {/* History Tab — derived from real record timestamps only */}
                 <TabsContent value="history" className="mt-4 space-y-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Clock size={16} style={{ color: 'hsl(var(--text-4))' }} />
@@ -1001,7 +898,12 @@ export default function RiskRegisterNew() {
                   <div className="relative pl-4">
                     <div className="absolute left-[7px] top-2 bottom-2 w-px" style={{ background: 'hsl(var(--border))' }} />
                     <div className="space-y-4">
-                      {selectedRisk.history.map((entry, idx) => (
+                      {[
+                        ...(selectedRisk.lastUpdated && selectedRisk.lastUpdated !== selectedRisk.createdDate
+                          ? [{ date: selectedRisk.lastUpdated, action: 'Risk record last updated' }]
+                          : []),
+                        { date: selectedRisk.createdDate, action: 'Risk registered' },
+                      ].map((entry, idx) => (
                         <div key={idx} className="relative flex gap-3">
                           <div className="absolute -left-[9px] top-1 w-3 h-3" style={{
                             background: idx === 0 ? 'hsl(var(--brand))' : 'hsl(var(--border))',
@@ -1012,13 +914,15 @@ export default function RiskRegisterNew() {
                             <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{entry.action}</p>
                             <div className="flex items-center gap-2 mt-1">
                               <span className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>{entry.date}</span>
-                              <span className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>by {entry.user}</span>
                             </div>
                           </div>
                         </div>
                       ))}
                     </div>
                   </div>
+                  <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+                    Detailed change history is captured in the platform <Link to="/audit-trail" className="underline" style={{ color: 'hsl(var(--brand))' }}>Audit Trail</Link>.
+                  </p>
                 </TabsContent>
               </Tabs>
             </>
@@ -1045,10 +949,10 @@ export default function RiskRegisterNew() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs font-medium">Category *</Label>
-                <Select value={newCategory} onValueChange={v => setNewCategory(v as RiskCategory)}>
+                <Select value={newCategory} onValueChange={setNewCategory}>
                   <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
                   <SelectContent style={{ borderRadius: 0 }}>
-                    {(['AI Model', 'Data', 'Operational', 'Compliance', 'Security', 'Third-Party'] as RiskCategory[]).map(c => (
+                    {addCategories.map(c => (
                       <SelectItem key={c} value={c}>{c}</SelectItem>
                     ))}
                   </SelectContent>
@@ -1132,11 +1036,11 @@ export default function RiskRegisterNew() {
             </div>
           </div>
           <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setAddOpen(false)} style={{ borderRadius: 0 }}>
+            <Button variant="outline" onClick={() => setAddOpen(false)} disabled={isSaving} style={{ borderRadius: 0 }}>
               Cancel
             </Button>
-            <Button onClick={handleAddRisk} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-              <Plus size={14} />Register Risk
+            <Button onClick={handleAddRisk} disabled={isSaving} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
+              <Plus size={14} />{isSaving ? 'Saving…' : 'Register Risk'}
             </Button>
           </DialogFooter>
         </DialogContent>

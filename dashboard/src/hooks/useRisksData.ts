@@ -1,23 +1,33 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { fetchAllRisks, upsertRisk, deleteRisk } from '@/services/riskService'
+import { fetchAllRisks, upsertRisk, deleteRisk, type RiskRecord } from '@/services/riskService'
 import { toast } from 'sonner'
+
+export type { RiskRecord }
 
 export function useRisksData(filters = {}) {
   const qc = useQueryClient()
   const query = useQuery({
-    queryKey: ['risk-register', filters],
+    queryKey: ['risks', filters],
     queryFn: () => fetchAllRisks(filters),
     staleTime: 30_000,
   })
   const saveMutation = useMutation({
-    mutationFn: (risk: any) => upsertRisk(risk),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['risk-register'] }); toast.success('Risk saved') },
-    onError: () => toast.error('Failed to save risk'),
+    mutationFn: (risk: Partial<RiskRecord>) => upsertRisk(risk),
+    // Service writes throw — success fires only after the write resolved.
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['risks'] }); toast.success('Risk saved') },
+    onError: (e: Error) => toast.error(`Failed to save risk: ${e.message}`),
   })
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteRisk(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['risk-register'] }); toast.success('Risk deleted') },
-    onError: () => toast.error('Failed to delete risk'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['risks'] }); toast.success('Risk deleted') },
+    onError: (e: Error) => toast.error(`Failed to delete risk: ${e.message}`),
   })
-  return { risks: query.data ?? [], isLoading: query.isLoading, error: query.error, saveRisk: saveMutation.mutateAsync, removeRisk: deleteMutation.mutateAsync }
+  return {
+    risks: query.data ?? [],
+    isLoading: query.isLoading,
+    error: query.error,
+    saveRisk: saveMutation.mutateAsync,
+    removeRisk: deleteMutation.mutateAsync,
+    isSaving: saveMutation.isPending,
+  }
 }

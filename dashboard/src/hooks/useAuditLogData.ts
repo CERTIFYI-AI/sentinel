@@ -1,10 +1,15 @@
 import { useQuery } from '@tanstack/react-query'
-import { fetchAuditLogs } from '@/services/auditLogService'
+import { fetchAuditLogs, type AuditLogRecord, type AuditLogFilters } from '@/services/auditLogService'
 
-export function useAuditLogData(limit = 100) {
+export type { AuditLogRecord, AuditLogFilters }
+
+// queryKey starts with 'audit-log' so the global Realtime invalidation
+// (useRealtimeInvalidation, mounted in App) refreshes this query on every
+// audit_log insert — the trail is live without page-level subscriptions.
+export function useAuditLogData(limit = 500, filters: AuditLogFilters = {}) {
   const { data: logs = [], isLoading, error } = useQuery({
-    queryKey: ['audit-logs', limit],
-    queryFn: () => fetchAuditLogs(limit),
+    queryKey: ['audit-log', limit, filters],
+    queryFn: () => fetchAuditLogs(limit, filters),
     staleTime: 15_000,
   })
   return { logs, isLoading, error }
