@@ -1,3 +1,8 @@
+## <small>1.56.2 (2026-08-14)</small>
+
+* Merge main ([c375d18](https://github.com/CERTIFYI-AI/sentinel/commit/c375d18))
+* fix(nav): broken Vulnerabilities link, dead palette, fabricated badges ([93c3ea0](https://github.com/CERTIFYI-AI/sentinel/commit/93c3ea0))
+
 ## <small>1.56.1 (2026-08-14)</small>
 
 * Merge main ([fa4ee43](https://github.com/CERTIFYI-AI/sentinel/commit/fa4ee43))
