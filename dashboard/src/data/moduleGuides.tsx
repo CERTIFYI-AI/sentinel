@@ -36,8 +36,6 @@ export const ROUTE_TO_COLLECTION_MAP: Record<string, string> = {
   '/notifications': 'overview',
   '/reporting': 'overview',
   '/ciso': 'overview',
-  '/executive-center': 'overview',
-  '/roi': 'overview',
 
   '/models': 'ai-governance',
   '/aiia': 'ai-governance',

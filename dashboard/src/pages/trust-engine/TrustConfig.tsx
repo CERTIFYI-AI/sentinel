@@ -388,7 +388,7 @@ export default function TrustConfig() {
         <Clock size={14} style={{ color: 'hsl(var(--text-3))', flexShrink: 0 }} />
         <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>
           Every save is recorded in the platform{' '}
-          <Link to="/audit-log" className="underline" style={{ color: 'hsl(var(--brand))' }}>Audit Log</Link>
+          <Link to="/audit-trail" className="underline" style={{ color: 'hsl(var(--brand))' }}>Audit Log</Link>
           {currentUser ? <> as <strong>{currentUser.name || currentUser.email}</strong></> : null}.
         </p>
       </div>

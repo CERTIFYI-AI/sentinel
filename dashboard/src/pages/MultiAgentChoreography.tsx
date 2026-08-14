@@ -4,7 +4,7 @@
 // MultiAgentChoreography — multi-agent workflows persisted to the org-scoped
 // agent_workflows table. Orchestrator/worker agents are canonical
 // agent_gov_registry ids (names resolved at render time) with pill links to
-// /agent-registry?open=<id>. Honors ?agent=<id> filters (dismissible chip)
+// /agents?open=<id>. Honors ?agent=<id> filters (dismissible chip)
 // and ?open=<workflow id> deep links.
 
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -204,7 +204,7 @@ export default function MultiAgentChoreography() {
     return id ? (
       <Link
         key={id}
-        to={`/agent-registry?open=${id}`}
+        to={`/agents?open=${id}`}
         onClick={e => e.stopPropagation()}
         className={`${pillCls} text-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-subtle))] hover:underline`}
         aria-label={`Open ${name ?? 'agent'} in Agent Registry`}
@@ -488,7 +488,7 @@ export default function MultiAgentChoreography() {
               <div>
                 <label className="text-xs text-[hsl(var(--text-4))]">Orchestrator Agent *</label>
                 {agents.length === 0 ? (
-                  <p className="text-xs text-[hsl(var(--text-4))] mt-1">No agents in the registry yet — register agents in the <Link to="/agent-registry" className="text-[hsl(var(--brand))] hover:underline">Agent Registry</Link> first.</p>
+                  <p className="text-xs text-[hsl(var(--text-4))] mt-1">No agents in the registry yet — register agents in the <Link to="/agents" className="text-[hsl(var(--brand))] hover:underline">Agent Registry</Link> first.</p>
                 ) : (
                   <Select value={newWfOrch} onValueChange={setNewWfOrch}>
                     <SelectTrigger className="w-full mt-0.5" style={{ borderRadius: 0 }} aria-label="Orchestrator agent"><SelectValue placeholder="Select from Agent Registry" /></SelectTrigger>

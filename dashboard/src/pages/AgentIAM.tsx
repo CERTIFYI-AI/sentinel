@@ -190,7 +190,7 @@ export default function AgentIAM() {
         icon={IdentificationCard}
         actions={
           <div className="flex gap-2">
-            <button onClick={() => navigate('/agent-registry')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
+            <button onClick={() => navigate('/agents')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
               <Cpu size={14} /> Agent Registry
             </button>
             <button onClick={() => navigate('/trust-engine/traces')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
@@ -270,7 +270,7 @@ export default function AgentIAM() {
                 <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--brand))]">{i.displayId ?? i.id}</td>
                 <td className="px-4 py-3 text-xs font-medium">
                   <button
-                    onClick={e => { e.stopPropagation(); navigate(`/agent-registry?open=${i.agentId}`) }}
+                    onClick={e => { e.stopPropagation(); navigate(`/agents?open=${i.agentId}`) }}
                     className="text-[hsl(var(--brand))] hover:underline"
                     title={`Open ${i.agentName} in Agent Registry`}
                   >{i.agentName}</button>
@@ -322,7 +322,7 @@ export default function AgentIAM() {
               {leastPrivilege.map(({ cred, signal, flagged }) => (
                 <tr key={cred.id} className="border-b border-[hsl(var(--border))] hover:bg-raised">
                   <td className="px-3 py-2">
-                    <button onClick={() => navigate(`/agent-registry?open=${cred.agentId}`)} className="font-medium text-[hsl(var(--brand))] hover:underline">{cred.agentName}</button>
+                    <button onClick={() => navigate(`/agents?open=${cred.agentId}`)} className="font-medium text-[hsl(var(--brand))] hover:underline">{cred.agentName}</button>
                   </td>
                   <td className="px-3 py-2 font-mono text-[hsl(var(--text-3))]">{cred.displayId ?? cred.id}</td>
                   <td className="px-3 py-2">
@@ -409,7 +409,7 @@ export default function AgentIAM() {
             </div>
             {/* Cross-module: credential → agent record → runtime traces */}
             <div className="px-4 pt-3 flex gap-2">
-              <button onClick={() => navigate(`/agent-registry?open=${selected.agentId}`)}
+              <button onClick={() => navigate(`/agents?open=${selected.agentId}`)}
                 className="flex items-center gap-1.5 px-3 py-1.5 border border-[hsl(var(--border))] text-xs text-[hsl(var(--text-2))] hover:bg-raised">
                 <Cpu size={12} /> View Agent
               </button>

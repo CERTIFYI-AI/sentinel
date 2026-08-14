@@ -4,7 +4,7 @@
 // KillSwitchEvents — audit log of agent suspension events, backed by the
 // org-scoped kill_switch_events table. Kill-all suspends real agents in
 // agent_gov_registry and records one auditable event; blast radius is derived
-// from the live registry. Events interlink to /agent-registry?open=<agent_id>
+// from the live registry. Events interlink to /agents?open=<agent_id>
 // and the page honors ?open=<event id> deep links.
 
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -202,7 +202,7 @@ export default function KillSwitchEvents() {
       const registered = agents.find(a => a.id === ev.agentId)
       return (
         <Link
-          to={`/agent-registry?open=${ev.agentId}`}
+          to={`/agents?open=${ev.agentId}`}
           onClick={e => e.stopPropagation()}
           className={`${pillCls} text-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-subtle))] hover:underline`}
           aria-label={`Open ${registered?.name ?? ev.agentName ?? 'agent'} in Agent Registry`}
@@ -254,7 +254,7 @@ export default function KillSwitchEvents() {
               {activeAgents.map(a => (
                 <div key={a.id} className="p-2 border border-[hsl(var(--border))]">
                   <Link
-                    to={`/agent-registry?open=${a.id}`}
+                    to={`/agents?open=${a.id}`}
                     className={`${pillCls} text-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-subtle))] hover:underline`}
                   >
                     {a.name}

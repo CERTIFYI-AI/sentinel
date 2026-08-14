@@ -277,7 +277,7 @@ export default function Overview() {
   const REGULATORY_SCORECARD = [
     { label: 'EU AI Act', score: 65, target: 80, trend: 'up' as const, link: '/ai-risk-tiering' },
     { label: 'ISO 42001', score: 72, target: 90, trend: 'up' as const, link: '/frameworks' },
-    { label: 'NIST AI RMF', score: 71, target: 85, trend: 'stable' as const, link: '/framework-mapping' },
+    { label: 'NIST AI RMF', score: 71, target: 85, trend: 'stable' as const, link: '/frameworks?tab=mapping' },
     { label: 'GDPR', score: 88, target: 95, trend: 'up' as const, link: '/dpia' },
   ];
 
@@ -621,7 +621,7 @@ export default function Overview() {
               </div>
             </div>
             <div className="mt-4 pt-3 border-t border-[hsl(var(--border))] flex items-center justify-between">
-              <Link to="/agents/shadow-ai" className="text-xs font-semibold hover:underline" style={{ color: 'hsl(var(--brand))' }}>
+              <Link to="/agents?tab=shadow" className="text-xs font-semibold hover:underline" style={{ color: 'hsl(var(--brand))' }}>
                 Review Shadow AI Logs
               </Link>
               <ArrowRight size={12} style={{ color: 'hsl(var(--text-4))' }} />
@@ -926,7 +926,7 @@ export default function Overview() {
             <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
               Recent Activity
             </CardTitle>
-            <Link to="/audit-log">
+            <Link to="/audit-trail">
               <Button variant="ghost" size="sm" style={{ fontSize: 11, padding: '2px 8px' }}>
                 View All <ArrowRight size={12} />
               </Button>
@@ -1013,7 +1013,7 @@ export default function Overview() {
           <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
             SLA Countdown — Open Remediation Items
           </CardTitle>
-          <Link to="/risk/remediation">
+          <Link to="/remediation-tracker">
             <Button variant="ghost" size="sm" style={{ fontSize: 11, padding: '2px 8px' }}>
               View All <ArrowRight size={12} />
             </Button>
@@ -1288,7 +1288,7 @@ export default function Overview() {
           <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
             Compliance Calendar (90 Days)
           </CardTitle>
-          <Link to="/compliance/frameworks">
+          <Link to="/frameworks?tab=catalog">
             <Button variant="ghost" size="sm" style={{ fontSize: 11, padding: '2px 8px' }}>
               Full Calendar <ArrowRight size={12} />
             </Button>
@@ -1324,7 +1324,7 @@ export default function Overview() {
           <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
             AI System Governance Coverage
           </CardTitle>
-          <Link to="/governance-framework">
+          <Link to="/conformity">
             <Button variant="ghost" size="sm" style={{ fontSize: 11, padding: '2px 8px' }}>
               Manage Mesh <ArrowRight size={12} />
             </Button>

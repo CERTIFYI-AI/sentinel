@@ -25,64 +25,71 @@ interface SearchItem {
 }
 
 const ALL_ITEMS: SearchItem[] = [
-  // Overview
-  { group: 'Overview', icon: SquaresFour, title: 'Dashboard', subtitle: 'Main overview', path: '/overview', keywords: ['home', 'summary', 'kpi'] },
-  { group: 'Overview', icon: ChartPieSlice, title: 'Reporting', subtitle: 'Reports & exports', path: '/reporting' },
+  // Home
+  { group: 'Home', icon: SquaresFour, title: 'Dashboard', subtitle: 'Main overview', path: '/overview', keywords: ['home', 'summary', 'kpi'] },
+  { group: 'Home', icon: ClipboardText, title: 'Tasks', subtitle: 'My work queue', path: '/tasks' },
+  { group: 'Home', icon: ChartPieSlice, title: 'CISO Dashboard', subtitle: 'Executive metrics, board report & ROI', path: '/ciso', keywords: ['executive', 'board', 'roi', 'metrics'] },
+  { group: 'Home', icon: ChartBar, title: 'Peer Benchmarking', subtitle: 'Industry peer intelligence', path: '/peer-intelligence', keywords: ['benchmark', 'peers'] },
 
-  // AI Governance
-  { group: 'AI Governance', icon: Robot, title: 'Model Inventory', subtitle: 'AI model registry', path: '/models/inventory', keywords: ['model', 'registry', 'ai'] },
-  { group: 'AI Governance', icon: Gauge, title: 'Trust Engine', subtitle: 'LLM observability', path: '/trust-engine', keywords: ['trust', 'llm', 'guardrails'] },
-  { group: 'AI Governance', icon: Brain, title: 'Agent Discovery', subtitle: 'AI agent inventory', path: '/agents', keywords: ['agent', 'shadow', 'discovery'] },
-  { group: 'AI Governance', icon: Scales, title: 'Bias Audits', subtitle: 'Fairness assessments', path: '/bias-audits', keywords: ['bias', 'fairness', 'audit'] },
-  { group: 'AI Governance', icon: FileMagnifyingGlass, title: 'AI Impact Assessments', subtitle: 'AIIA evaluations', path: '/aiia', keywords: ['impact', 'assessment', 'aiia'] },
-  { group: 'AI Governance', icon: Lightbulb, title: 'Explainability', subtitle: 'Model explainability', path: '/explainability', keywords: ['explainability', 'shap', 'xai'] },
-  { group: 'AI Governance', icon: Briefcase, title: 'Use Cases', subtitle: 'Approved use case registry', path: '/use-cases' },
+  // AI Assets
+  { group: 'AI Assets', icon: Robot, title: 'Model Registry', subtitle: 'AI model inventory', path: '/models/inventory', keywords: ['model', 'registry', 'inventory', 'ai'] },
+  { group: 'AI Assets', icon: Briefcase, title: 'Use Cases', subtitle: 'Approved use case registry', path: '/use-cases' },
+  { group: 'AI Assets', icon: Brain, title: 'Agents', subtitle: 'Agent registry, shadow AI & observability', path: '/agents', keywords: ['agent', 'shadow', 'discovery', 'registry'] },
+  { group: 'AI Assets', icon: Database, title: 'Datasets', subtitle: 'Dataset registry', path: '/datasets', keywords: ['data', 'training'] },
+  { group: 'AI Assets', icon: FileText, title: 'Prompt Registry', subtitle: 'Versioned prompt library', path: '/prompt-registry', keywords: ['prompts'] },
+  { group: 'AI Assets', icon: Hash, title: 'Knowledge Graph', subtitle: 'Governed entity graph', path: '/knowledge-graph' },
+
+  // Assess & Validate
+  { group: 'Assess & Validate', icon: FileMagnifyingGlass, title: 'Impact Assessments', subtitle: 'AIIA evaluations', path: '/aiia', keywords: ['impact', 'assessment', 'aiia'] },
+  { group: 'Assess & Validate', icon: Target, title: 'Risk Classification', subtitle: 'AI risk tiering', path: '/ai-risk-tiering', keywords: ['tiering', 'classification'] },
+  { group: 'Assess & Validate', icon: UserCircleCheck, title: 'Model Risk Committee', subtitle: 'MRC reviews & decisions', path: '/mrc', keywords: ['mrc', 'committee'] },
+  { group: 'Assess & Validate', icon: Gauge, title: 'Validation Lab', subtitle: 'Model validation & eval runs', path: '/model-validation', keywords: ['evals', 'validation', 'metrics'] },
+  { group: 'Assess & Validate', icon: Scales, title: 'Bias Audits', subtitle: 'Fairness assessments', path: '/bias-audits', keywords: ['bias', 'fairness', 'audit'] },
+  { group: 'Assess & Validate', icon: Lightbulb, title: 'Explainability', subtitle: 'Model explainability profiles', path: '/explainability', keywords: ['explainability', 'shap', 'xai'] },
+
+  // Trust Engine & Gateways
+  { group: 'Trust Engine & Gateways', icon: Gauge, title: 'Runtime Trust', subtitle: 'LLM observability', path: '/trust-engine', keywords: ['trust', 'llm', 'runtime'] },
+  { group: 'Trust Engine & Gateways', icon: ShieldCheck, title: 'Active Guardrails', subtitle: 'Guardrail activity', path: '/trust-engine/guardrails', keywords: ['guardrails'] },
+  { group: 'Trust Engine & Gateways', icon: Scroll, title: 'Live Inference Traces', subtitle: 'Trace feed & gateway logs', path: '/trust-engine/traces', keywords: ['traces', 'logs', 'inference'] },
+  { group: 'Trust Engine & Gateways', icon: FlowArrow, title: 'Playground', subtitle: 'AI gateway playground', path: '/ai-gateway/playground', keywords: ['playground', 'gateway'] },
+  { group: 'Trust Engine & Gateways', icon: Database, title: 'MCP Servers', subtitle: 'MCP server registry', path: '/mcp-gateway/servers', keywords: ['mcp', 'servers', 'tools'] },
 
   // Security
   { group: 'Security', icon: ShieldCheck, title: 'Security Overview', subtitle: 'Security posture', path: '/security', keywords: ['security', 'threats', 'vulnerabilities'] },
   { group: 'Security', icon: ShieldWarning, title: 'Threat Feed', subtitle: 'Active threat intelligence', path: '/security/threats', keywords: ['threats', 'intel', 'cve'] },
   { group: 'Security', icon: Target, title: 'Scan Center', subtitle: 'Security scans', path: '/security/scans' },
   { group: 'Security', icon: ShieldWarning, title: 'Vulnerabilities', subtitle: 'Vulnerability register', path: '/security/vuln-tracker' },
-
-  // Compliance
-  { group: 'Compliance', icon: ChartBar, title: 'Compliance Dashboard', subtitle: 'Compliance posture', path: '/compliance', keywords: ['compliance', 'gdpr', 'eu ai act', 'sox'] },
-  { group: 'Compliance', icon: BookOpen, title: 'Frameworks', subtitle: 'EU AI Act, SOC 2, GDPR', path: '/frameworks', keywords: ['frameworks', 'standards'] },
-  { group: 'Compliance', icon: ListChecks, title: 'Controls', subtitle: 'Control requirements', path: '/compliance/controls', keywords: ['controls', 'requirements'] },
-  { group: 'Compliance', icon: ClipboardText, title: 'Audit Management', subtitle: 'Internal audits', path: '/audits' },
-  { group: 'Compliance', icon: FolderOpen, title: 'Evidence Hub', subtitle: 'Evidence collection', path: '/compliance/evidence', keywords: ['evidence', 'documents'] },
-  { group: 'Compliance', icon: Target, title: 'Gap Analysis', subtitle: 'Compliance gaps', path: '/compliance/gap-analysis' },
-  { group: 'Compliance', icon: Scroll, title: 'Policies', subtitle: 'Policy library', path: '/policies', keywords: ['policy', 'policies'] },
-  { group: 'Compliance', icon: CalendarBlank, title: 'Compliance Calendar', subtitle: 'Upcoming deadlines', path: '/calendar' },
-  { group: 'Compliance', icon: FileText, title: 'Document Management', subtitle: 'Document repository', path: '/documents' },
-  { group: 'Compliance', icon: ClockCounterClockwise, title: 'Audit Trail', subtitle: 'Immutable audit log', path: '/audit-trail' },
+  { group: 'Security', icon: Lock, title: 'Keys Vault', subtitle: 'API & virtual keys', path: '/security/keys', keywords: ['keys', 'secrets', 'vault'] },
 
   // Risk & Incidents
   { group: 'Risk & Incidents', icon: Warning, title: 'Risk Register', subtitle: 'Risk inventory', path: '/risks', keywords: ['risk', 'register'] },
-  { group: 'Risk & Incidents', icon: Target, title: 'Risk Matrix', subtitle: 'Risk heat map', path: '/risk/matrix' },
   { group: 'Risk & Incidents', icon: ShieldWarning, title: 'Incidents', subtitle: 'Incident management', path: '/risk/incidents', keywords: ['incidents', 'events'] },
-  { group: 'Risk & Incidents', icon: ShieldWarning, title: 'Exception Management', subtitle: 'Risk exceptions', path: '/exceptions' },
+  { group: 'Risk & Incidents', icon: ClockCounterClockwise, title: 'Remediation Tracker', subtitle: 'Remediation & exceptions', path: '/remediation-tracker', keywords: ['remediation', 'fix'] },
+  { group: 'Risk & Incidents', icon: UserCircleCheck, title: 'HITL Reviews', subtitle: 'Human-in-the-loop queue', path: '/hitl', keywords: ['hitl', 'human', 'review', 'approvals'] },
+  { group: 'Risk & Incidents', icon: Target, title: 'Kill Switch', subtitle: 'Emergency agent containment', path: '/kill-switch', keywords: ['emergency', 'containment'] },
 
-  // Evaluations
-  { group: 'Evaluations', icon: Gauge, title: 'Quality Metrics', subtitle: 'Eval runs & metrics', path: '/evals' },
-  { group: 'Evaluations', icon: Database, title: 'Datasets', subtitle: 'Training & eval datasets', path: '/datasets' },
-  { group: 'Evaluations', icon: Table, title: 'Data Governance', subtitle: 'Data lineage & classification', path: '/data-governance' },
+  // Compliance & Regulatory
+  { group: 'Compliance & Regulatory', icon: ChartBar, title: 'Compliance Overview', subtitle: 'Compliance posture', path: '/compliance', keywords: ['compliance', 'gdpr', 'eu ai act', 'sox'] },
+  { group: 'Compliance & Regulatory', icon: BookOpen, title: 'Frameworks', subtitle: 'Catalog & framework mapping', path: '/frameworks', keywords: ['frameworks', 'standards', 'mapping'] },
+  { group: 'Compliance & Regulatory', icon: ListChecks, title: 'Controls', subtitle: 'Control requirements', path: '/compliance/controls', keywords: ['controls', 'requirements'] },
+  { group: 'Compliance & Regulatory', icon: FolderOpen, title: 'Evidence Vault', subtitle: 'Evidence, chain & sync', path: '/evidence-vault', keywords: ['evidence', 'documents', 'chain'] },
+  { group: 'Compliance & Regulatory', icon: ClockCounterClockwise, title: 'Audit Trail', subtitle: 'Immutable audit log', path: '/audit-trail', keywords: ['audit', 'log'] },
+  { group: 'Compliance & Regulatory', icon: Scroll, title: 'Policies', subtitle: 'Policy library', path: '/policies', keywords: ['policy', 'policies'] },
+  { group: 'Compliance & Regulatory', icon: GlobeHemisphereWest, title: 'Reg Radar', subtitle: 'Regulatory intelligence', path: '/reg-radar', keywords: ['regulatory', 'compliance updates'] },
+  { group: 'Compliance & Regulatory', icon: FlowArrow, title: 'Compliance Autopilot', subtitle: 'Automated compliance', path: '/autopilot', keywords: ['autopilot', 'automation'] },
 
-  // Operations
-  { group: 'Operations', icon: UserCircleCheck, title: 'HITL Reviews', subtitle: 'Human-in-the-loop queue', path: '/hitl', keywords: ['hitl', 'human', 'review'] },
-  { group: 'Operations', icon: BuildingOffice, title: 'Vendors', subtitle: 'Third-party vendors', path: '/vendors', keywords: ['vendor', 'third-party', 'supplier'] },
-  { group: 'Operations', icon: GlobeHemisphereWest, title: 'Regulatory Radar', subtitle: 'Regulatory intelligence', path: '/reg-radar', keywords: ['regulatory', 'compliance updates'] },
-  { group: 'Operations', icon: FlowArrow, title: 'Approval Workflows', subtitle: 'Workflow management', path: '/workflows' },
-  { group: 'Operations', icon: Bell, title: 'Notifications', subtitle: 'All notifications', path: '/notifications' },
-  { group: 'Operations', icon: DownloadSimple, title: 'Export Center', subtitle: 'Download reports', path: '/export' },
+  // Privacy
+  { group: 'Privacy', icon: UserCircleCheck, title: 'DSR Management', subtitle: 'Data subject rights', path: '/dsr', keywords: ['dsr', 'privacy', 'rights'] },
+  { group: 'Privacy', icon: FileMagnifyingGlass, title: 'DPIA', subtitle: 'Data protection impact assessments', path: '/dpia', keywords: ['dpia', 'privacy'] },
 
-  // Organization
-  { group: 'Organization', icon: GraduationCap, title: 'Training & Awareness', subtitle: 'AI training courses', path: '/training', keywords: ['training', 'learning', 'courses'] },
-  { group: 'Organization', icon: Lock, title: 'Access Control', subtitle: 'Roles & user management', path: '/access-control', keywords: ['rbac', 'roles', 'users', 'permissions'] },
-  { group: 'Organization', icon: ChartBar, title: 'Benchmarking & Maturity', subtitle: 'AI maturity model', path: '/maturity' },
-  { group: 'Organization', icon: Lifebuoy, title: 'Business Continuity', subtitle: 'BCP & disaster recovery', path: '/continuity' },
+  // Vendors & Supply Chain
+  { group: 'Vendors & Supply Chain', icon: BuildingOffice, title: 'Vendor Registry', subtitle: 'Third-party vendors & TPRM', path: '/vendors', keywords: ['vendor', 'third-party', 'supplier', 'tprm'] },
+  { group: 'Vendors & Supply Chain', icon: Table, title: 'Supply Chain', subtitle: 'Attestations, AIBOM & provenance', path: '/supply-chain', keywords: ['supply chain', 'aibom', 'provenance'] },
 
-  // System
-  { group: 'System', icon: Gear, title: 'Settings', subtitle: 'Platform settings', path: '/settings' },
+  // Admin
+  { group: 'Admin', icon: Lock, title: 'Access Control', subtitle: 'Roles & user management', path: '/access-control', keywords: ['rbac', 'roles', 'users', 'permissions', 'iam'] },
+  { group: 'Admin', icon: DownloadSimple, title: 'Export Center', subtitle: 'Download reports', path: '/export' },
+  { group: 'Admin', icon: Gear, title: 'Settings', subtitle: 'Platform settings', path: '/settings' },
 ]
 
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {

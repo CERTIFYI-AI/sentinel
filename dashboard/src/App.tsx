@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 const queryClient = new QueryClient()
-import { BrowserRouter, Routes, Route, Navigate, Outlet, useParams } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useParams, useLocation } from 'react-router-dom';
 import { TenantProvider } from './context/TenantContext';
 import React from 'react';
 import { lazy, Suspense, useEffect } from 'react';
@@ -31,15 +31,10 @@ const MfaEnrollment = lazy(() => import('./pages/security/MfaEnrollment'));
 const EvalTechniques = lazy(() => import('./pages/evals/EvalTechniques'));
 const ComplianceControls = lazy(() => import('./pages/compliance/ComplianceControls'));
 const ControlDrift = lazy(() => import('./pages/compliance/ControlDrift'));
-const FrameworkCatalog = lazy(() => import('./pages/compliance/FrameworkCatalog'));
-const EvidenceHub = lazy(() => import('./pages/compliance/EvidenceHub'));
 const ComplianceDashboard = lazy(() => import('./pages/ComplianceDashboard'));
 const RiskMatrix = lazy(() => import('./pages/RiskMatrix'));
 const Overview = lazy(() => import('./pages/Overview'));
 const Policies = lazy(() => import('./pages/Policies'));
-const RiskRegister = lazy(() => import('./pages/RiskRegister'));
-const AuditLog = lazy(() => import('./pages/AuditLog'));
-const AuditLogExplorer = lazy(() => import('./pages/AuditLogExplorer'));
 const Benchmark = lazy(() => import('./pages/Benchmark'));
 const EvidenceVault = lazy(() => import('./pages/EvidenceVault'));
 const ExportCenter = lazy(() => import('./pages/ExportCenter'));
@@ -51,11 +46,9 @@ const ModelDetail = lazy(() => import('./pages/models/ModelDetail'));
 const ModelLifecycle = lazy(() => import('./pages/ModelLifecycle'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const PolicyEditor = lazy(() => import('./pages/PolicyEditor'));
-const Remediation = lazy(() => import('./pages/Remediation'));
 const RemediationTracker = lazy(() => import('./pages/RemediationTracker'));
 const Settings = lazy(() => import('./pages/Settings'));
 const SsoProviders = lazy(() => import('./pages/settings/SsoProviders'));
-const Vendors = lazy(() => import('./pages/Vendors'));
 const Login = lazy(() => import('./pages/Login'));
 const Signup = lazy(() => import('./pages/Signup'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
@@ -73,10 +66,8 @@ const AccessControlOverview = lazy(() => import('./pages/rbac/AccessControlOverv
 const RolesPage = lazy(() => import('./pages/rbac/RolesPage'));
 const UsersPage = lazy(() => import('./pages/rbac/UsersPage'));
 const DepartmentsPage = lazy(() => import('./pages/rbac/DepartmentsPage'));
-const AgentDiscovery = lazy(() => import('./pages/agents/AgentDiscovery'));
-const ShadowAI = lazy(() => import('./pages/agents/ShadowAI'));
+const AgentsPage = lazy(() => import('./pages/agents/Agents'));
 const AgentDetail = lazy(() => import('./pages/agents/AgentDetail'));
-const AgentObservability = lazy(() => import('./pages/agents/AgentObservability'));
 const VendorRegistry = lazy(() => import('./pages/vendors/VendorRegistry'));
 const VendorDetail = lazy(() => import('./pages/vendors/VendorDetail'));
 const VendorQuestionnaire = lazy(() => import('./pages/vendors/VendorQuestionnaire'));
@@ -92,7 +83,6 @@ const BiasAuditResults = lazy(() => import('./pages/bias-audits/BiasAuditResults
 const ControlDetail = lazy(() => import('./pages/controls/ControlDetail'));
 const DatasetRegistry = lazy(() => import('./pages/datasets/DatasetRegistry'));
 const DatasetDetail = lazy(() => import('./pages/datasets/DatasetDetail'));
-const EvidenceSyncEngine = lazy(() => import('./pages/evidence/EvidenceSyncEngine'));
 const RegRadar = lazy(() => import('./pages/governance/RegRadar'));
 const RegDetail = lazy(() => import('./pages/governance/RegDetail'));
 const Frameworks = lazy(() => import('./pages/Frameworks'));
@@ -101,12 +91,10 @@ const Frameworks = lazy(() => import('./pages/Frameworks'));
 const UseCasePage = lazy(() => import('./pages/use-cases/UseCasePage'));
 const UseCaseCreate = lazy(() => import('./pages/use-cases/UseCaseCreate'));
 const UseCaseDetail = lazy(() => import('./pages/use-cases/UseCaseDetail'));
-const ExplainabilityCenterNew = lazy(() => import('./pages/explainability/ExplainabilityCenter'));
 const ConformityAssessmentNew = lazy(() => import('./pages/conformity/ConformityAssessment'));
 const DataGovernancePage = lazy(() => import('./pages/data-governance/DataGovernancePage'));
 const StakeholderNotifications = lazy(() => import('./pages/notifications/StakeholderNotifications'));
 const IncidentWorkflow = lazy(() => import('./pages/IncidentWorkflow'));
-const RiskDetail = lazy(() => import('./pages/risk/RiskDetail'));
 const PolicyDetail = lazy(() => import('./pages/policies/PolicyDetail'));
 
 // ── New Sidebar Modules ─────────────────────────────────────────────────────
@@ -132,8 +120,6 @@ const DsrManagement = lazy(() => import('./pages/DsrManagement'));
 const RedTeamFindings = lazy(() => import('./pages/RedTeamFindings'));
 const ConsentManagement = lazy(() => import('./pages/ConsentManagement'));
 const FinancialRisk = lazy(() => import('./pages/FinancialRisk'));
-const SystemAuditLog = lazy(() => import('./pages/SystemAuditLog'));
-const AgentRegistry = lazy(() => import('./pages/AgentRegistry'));
 const AgentIAM = lazy(() => import('./pages/AgentIAM'));
 const MultiAgentChoreography = lazy(() => import('./pages/MultiAgentChoreography'));
 const KillSwitchEvents = lazy(() => import('./pages/KillSwitchEvents'));
@@ -160,9 +146,7 @@ const RiskIntelligence = lazy(() => import('./pages/RiskIntelligence'));
 const Marketplace = lazy(() => import('./pages/Marketplace'));
 const SupplyChainGraph = lazy(() => import('./pages/SupplyChainGraph'));
 const Licensing = lazy(() => import('./pages/admin/Licensing'));
-const GovernanceFramework = lazy(() => import('./pages/GovernanceFramework'));
 const GovernanceMesh = lazy(() => import('./pages/GovernanceMesh'));
-const EvidenceChain = lazy(() => import('./pages/EvidenceChain'));
 const EvidenceCustodyExplorer = lazy(() => import('./pages/EvidenceCustodyExplorer'));
 const AutomationStudio = lazy(() => import('./pages/AutomationStudio'));
 
@@ -185,9 +169,7 @@ const McpServers = lazy(() => import('./pages/mcp-gateway/Servers'));
 const McpToolCatalog = lazy(() => import('./pages/mcp-gateway/ToolCatalog'));
 
 // ============================================================================── 5 Enterprise Command Modules ─────────────────────────────────────────────
-const ExecutiveCenter = lazy(() => import('./pages/ExecutiveCenter'));
 const ModelRiskCommittee = lazy(() => import('./pages/ModelRiskCommittee'));
-const ValueRealization = lazy(() => import('./pages/ValueRealization'));
 const ExaminationManager = lazy(() => import('./pages/ExaminationManager'));
 const ControlTesting = lazy(() => import('./pages/ControlTesting'));
 
@@ -219,7 +201,6 @@ const AIRiskTiering = lazy(() => import('./pages/AIRiskTiering'));
 const DPIA = lazy(() => import('./pages/DPIA'));
 const TransparencyReports = lazy(() => import('./pages/TransparencyReports'));
 const PostMarket = lazy(() => import('./pages/PostMarket'));
-const FrameworkMapping = lazy(() => import('./pages/FrameworkMapping'));
 const GenAIRisks = lazy(() => import('./pages/GenAIRisks'));
 const DataQuality = lazy(() => import('./pages/DataQuality'));
 const EthicsReporting = lazy(() => import('./pages/EthicsReporting'));
@@ -237,6 +218,21 @@ function Loading() {
 function RecordDeepLink({ to }: { to: string }) {
   const { id } = useParams();
   return <Navigate to={`${to}?open=${encodeURIComponent(id ?? '')}`} replace />;
+}
+
+/**
+ * Redirects a retired route to its replacement, preserving the query string
+ * (e.g. /agent-registry?open=<id> → /agents?open=<id>).
+ */
+function RedirectWithQuery({ to }: { to: string }) {
+  const location = useLocation();
+  return <Navigate to={`${to}${location.search}`} replace />;
+}
+
+/** Param-aware redirect: keeps the :id segment (e.g. /models/:id → /models/inventory/:id). */
+function ParamRedirect({ to }: { to: string }) {
+  const { id } = useParams();
+  return <Navigate to={`${to}/${encodeURIComponent(id ?? '')}`} replace />;
 }
 
 /** Redirects authenticated users away from login/signup to the dashboard */
@@ -318,12 +314,12 @@ export default function App() {
           <Route path="/" element={<Navigate to="/overview" replace />} />
           <Route path="/overview" element={<Overview />} />
           <Route path="/security" element={<SecurityHome />} />
-          <Route path="/security/overview" element={<SecurityHome />} />
+          <Route path="/security/overview" element={<Navigate to="/security" replace />} />
           <Route path="/security/threats" element={<ThreatFeed />} />
           <Route path="/security/scans" element={<ScanCenter />} />
-          <Route path="/security/scanner" element={<ScanCenter />} />
+          <Route path="/security/scanner" element={<Navigate to="/security/scans" replace />} />
           <Route path="/security/attack-surface" element={<AttackSurface />} />
-          <Route path="/security/model-auditor" element={<SecurityHome />} />
+          <Route path="/security/model-auditor" element={<Navigate to="/security" replace />} />
           <Route path="/security/vuln-tracker" element={<VulnTracker />} />
           <Route path="/security/policies" element={<PolicyFirewall />} />
           <Route path="/security/keys" element={<KeysVault />} />
@@ -331,9 +327,9 @@ export default function App() {
           <Route path="/security/reports" element={<ReportGenerator />} />
           <Route path="/security/jit" element={<Suspense fallback={<Loading />}><JitElevation /></Suspense>} />
           <Route path="/security/mfa" element={<Suspense fallback={<Loading />}><MfaEnrollment /></Suspense>} />
-          <Route path="/security/campaigns" element={<ThreatFeed />} />
-          <Route path="/security/frameworks" element={<SecurityHome />} />
-          <Route path="/security/strategy" element={<SecurityHome />} />
+          <Route path="/security/campaigns" element={<Navigate to="/security/threats" replace />} />
+          <Route path="/security/frameworks" element={<Navigate to="/security" replace />} />
+          <Route path="/security/strategy" element={<Navigate to="/security" replace />} />
           <Route path="/security/red-team" element={<Suspense fallback={<Loading />}><RedTeamLab /></Suspense>} />
           <Route path="/evals" element={<Navigate to="/model-validation" replace />} />
           <Route path="/evals/quality-metrics" element={<Navigate to="/evals/metric-studio" replace />} />
@@ -349,25 +345,25 @@ export default function App() {
           <Route path="/compliance" element={<ComplianceDashboard />} />
           <Route path="/compliance/controls" element={<ComplianceControls />} />
           <Route path="/compliance/drift" element={<ControlDrift />} />
-          <Route path="/compliance/graph" element={<ControlDrift />} />
-          <Route path="/compliance/frameworks" element={<Suspense fallback={<Loading />}><FrameworkCatalog /></Suspense>} />
-          <Route path="/compliance/evidence" element={<EvidenceHub />} />
+          <Route path="/compliance/graph" element={<Navigate to="/compliance/drift" replace />} />
+          <Route path="/compliance/frameworks" element={<Navigate to="/frameworks?tab=catalog" replace />} />
+          <Route path="/compliance/evidence" element={<Navigate to="/evidence-vault" replace />} />
           <Route path="/compliance/gap-analysis" element={<GapAnalysis />} />
-          <Route path="/compliance/policies" element={<Policies />} />
+          <Route path="/compliance/policies" element={<Navigate to="/policies" replace />} />
           <Route path="/policies" element={<Policies />} />
-          <Route path="/risk" element={<RiskRegister />} />
+          <Route path="/risk" element={<Navigate to="/risks" replace />} />
           <Route path="/risk/matrix" element={<RiskMatrix />} />
-          <Route path="/risk/vendors" element={<Vendors />} />
+          <Route path="/risk/vendors" element={<Navigate to="/vendors" replace />} />
           <Route path="/risk/incidents" element={<IncidentLog />} />
           <Route path="/incidents" element={<Navigate to="/risk/incidents" replace />} />
-          <Route path="/risk/remediation" element={<Remediation />} />
+          <Route path="/risk/remediation" element={<Navigate to="/remediation-tracker" replace />} />
           {/* Single canonical registry surface — /models redirects to it (retires the legacy ModelInventory duplicate). */}
           <Route path="/models" element={<Navigate to="/models/inventory" replace />} />
           <Route path="/models/inventory" element={<ModelRegistryPage />} />
           <Route path="/models/inventory/:id" element={<ModelDetail />} />
           <Route path="/models/lifecycle" element={<ModelLifecycle />} />
-          <Route path="/audit-log" element={<AuditLog />} />
-          <Route path="/audit-log/chain" element={<Suspense fallback={<Loading />}><AuditLogExplorer /></Suspense>} />
+          <Route path="/audit-log" element={<Navigate to="/audit-trail" replace />} />
+          <Route path="/audit-log/chain" element={<Navigate to="/audit-trail" replace />} />
           <Route path="/evidence-vault" element={<EvidenceVault />} />
           <Route path="/export" element={<ExportCenter />} />
           <Route path="/hitl-queue" element={<Navigate to="/hitl" replace />} />
@@ -383,9 +379,9 @@ export default function App() {
           <Route path="/reg-radar" element={<RegRadar />} />
 
           {/* AI Inventory */}
-          <Route path="/agents" element={<AgentDiscovery />} />
-          <Route path="/agents/shadow-ai" element={<ShadowAI />} />
-          <Route path="/agents/observability" element={<AgentObservability />} />
+          <Route path="/agents" element={<AgentsPage />} />
+          <Route path="/agents/shadow-ai" element={<Navigate to="/agents?tab=shadow" replace />} />
+          <Route path="/agents/observability" element={<Navigate to="/agents?tab=observability" replace />} />
           <Route path="/agents/:id" element={<AgentDetail />} />
           <Route path="/datasets" element={<DatasetRegistry />} />
           <Route path="/datasets/:id" element={<DatasetDetail />} />
@@ -400,7 +396,7 @@ export default function App() {
           <Route path="/bias-audits" element={<Suspense fallback={<Loading />}><BiasAuditList /></Suspense>} />
           <Route path="/bias-audits/wizard" element={<BiasAuditWizard />} />
           <Route path="/bias-audits/:id" element={<BiasAuditResults />} />
-          <Route path="/evidence-sync" element={<EvidenceSyncEngine />} />
+          <Route path="/evidence-sync" element={<Navigate to="/evidence-vault?tab=sync" replace />} />
           <Route path="/hitl" element={<HITLReviewCenter />} />
           <Route path="/hitl/:id" element={<HITLDetail />} />
 
@@ -422,17 +418,17 @@ export default function App() {
           <Route path="/ai-advisor" element={<Suspense fallback={null}><AiAdvisor /></Suspense>} />
           <Route path="/compliance/policy-templates" element={<Suspense fallback={null}><PolicyTemplates /></Suspense>} />
           <Route path="/compliance/controls/:id" element={<ControlDetail />} />
-              <Route path="/controls/:id" element={<ControlDetail />} />
+          <Route path="/controls/:id" element={<ParamRedirect to="/compliance/controls" />} />
           <Route path="/reporting" element={<Suspense fallback={<Loading />}><Reporting /></Suspense>} />
           <Route path="/ciso" element={<Suspense fallback={<Loading />}><CisoDashboard /></Suspense>} />
           <Route path="/ciso/report" element={<Suspense fallback={<Loading />}><BoardReport /></Suspense>} />
-          <Route path="/risk/register" element={<RiskRegister />} />
-          <Route path="/risk/:id" element={<RiskDetail />} />
-          <Route path="/models/:id" element={<ModelDetail />} />
+          <Route path="/risk/register" element={<Navigate to="/risks" replace />} />
+          <Route path="/risk/:id" element={<RecordDeepLink to="/risks" />} />
+          <Route path="/models/:id" element={<ParamRedirect to="/models/inventory" />} />
           <Route path="/policies/:id" element={<PolicyDetail />} />
           <Route path="/reg-radar/:id" element={<RegDetail />} />
           <Route path="/explainability" element={<Suspense fallback={<Loading />}><ExplainabilityProfileList /></Suspense>} />
-          <Route path="/explainability/center" element={<ExplainabilityCenterNew />} />
+          <Route path="/explainability/center" element={<Navigate to="/explainability" replace />} />
           <Route path="/explainability/:id" element={<Suspense fallback={<Loading />}><ExplainabilityProfileDetail /></Suspense>} />
           <Route path="/conformity" element={<ConformityAssessmentNew />} />
 
@@ -493,10 +489,10 @@ export default function App() {
           <Route path="/financial-risk" element={<FinancialRisk />} />
 
           {/* Compliance */}
-          <Route path="/system-audit-log" element={<SystemAuditLog />} />
+          <Route path="/system-audit-log" element={<Navigate to="/audit-trail" replace />} />
 
           {/* Agentic Governance */}
-          <Route path="/agent-registry" element={<AgentRegistry />} />
+          <Route path="/agent-registry" element={<RedirectWithQuery to="/agents" />} />
           <Route path="/agent-iam" element={<AgentIAM />} />
           <Route path="/multi-agent" element={<MultiAgentChoreography />} />
           <Route path="/kill-switch" element={<KillSwitchEvents />} />
@@ -519,10 +515,10 @@ export default function App() {
           {/* Operations */}
           <Route path="/integrations" element={<IntegrationsPage />} />
 
-          {/* 5 Enterprise Command Modules */}
-          <Route path="/executive-center" element={<Suspense fallback={<Loading />}><ExecutiveCenter /></Suspense>} />
+          {/* Enterprise Command Modules — Executive Center & ROI merged into the CISO Dashboard */}
+          <Route path="/executive-center" element={<Navigate to="/ciso?tab=metrics" replace />} />
           <Route path="/mrc" element={<Suspense fallback={<Loading />}><ModelRiskCommittee /></Suspense>} />
-          <Route path="/roi" element={<Suspense fallback={<Loading />}><ValueRealization /></Suspense>} />
+          <Route path="/roi" element={<Navigate to="/ciso?tab=roi" replace />} />
           <Route path="/examination-manager" element={<Suspense fallback={<Loading />}><ExaminationManager /></Suspense>} />
           <Route path="/control-testing" element={<Suspense fallback={<Loading />}><ControlTesting /></Suspense>} />
 
@@ -538,7 +534,7 @@ export default function App() {
           <Route path="/dpia" element={<Suspense fallback={<Loading />}><DPIA /></Suspense>} />
           <Route path="/transparency-reports" element={<Suspense fallback={<Loading />}><TransparencyReports /></Suspense>} />
           <Route path="/post-market" element={<Suspense fallback={<Loading />}><PostMarket /></Suspense>} />
-          <Route path="/framework-mapping" element={<Suspense fallback={<Loading />}><FrameworkMapping /></Suspense>} />
+          <Route path="/framework-mapping" element={<Navigate to="/frameworks?tab=mapping" replace />} />
           <Route path="/genai-risks" element={<Suspense fallback={<Loading />}><GenAIRisks /></Suspense>} />
           <Route path="/data-quality" element={<Suspense fallback={<Loading />}><DataQuality /></Suspense>} />
           <Route path="/ethics-reporting" element={<Suspense fallback={<Loading />}><EthicsReporting /></Suspense>} />
@@ -555,9 +551,9 @@ export default function App() {
           <Route path="/marketplace" element={<Suspense fallback={<Loading />}><Marketplace /></Suspense>} />
           <Route path="/supply-chain/graph" element={<Suspense fallback={<Loading />}><SupplyChainGraph /></Suspense>} />
           <Route path="/admin/licensing" element={<Suspense fallback={<Loading />}><Licensing /></Suspense>} />
-          <Route path="/governance-framework" element={<Suspense fallback={<Loading />}><GovernanceFramework /></Suspense>} />
+          <Route path="/governance-framework" element={<Navigate to="/conformity" replace />} />
           <Route path="/governance-mesh" element={<Suspense fallback={<Loading />}><GovernanceMesh /></Suspense>} />
-          <Route path="/evidence-chain" element={<Suspense fallback={<Loading />}><EvidenceChain /></Suspense>} />
+          <Route path="/evidence-chain" element={<Navigate to="/evidence-vault?tab=chain" replace />} />
           <Route path="/evidence/custody/:artifactId" element={<Suspense fallback={<Loading />}><EvidenceCustodyExplorer /></Suspense>} />
           <Route path="/automation-studio" element={<Suspense fallback={<Loading />}><AutomationStudio /></Suspense>} />
 
@@ -570,25 +566,28 @@ export default function App() {
             <Route path="/regulator-filings" element={<Suspense fallback={<Loading />}><RegulatorFilings /></Suspense>} />
             <Route path="/bia" element={<Suspense fallback={<Loading />}><BIA /></Suspense>} />
 
-            {/* AI Gateway Modules */}
+            {/* AI Gateway — Playground & Model Catalog are canonical here; the rest
+                were aliases of Trust Engine / Security surfaces and now redirect. */}
             <Route path="/ai-gateway/playground" element={<Suspense fallback={<Loading />}><AiPlayground /></Suspense>} />
-            <Route path="/ai-gateway/analytics" element={<Suspense fallback={<Loading />}><CostTokenDashboard /></Suspense>} />
-            <Route path="/ai-gateway/endpoints" element={<Suspense fallback={<Loading />}><TrustConfig /></Suspense>} />
-            <Route path="/ai-gateway/prompts" element={<Suspense fallback={<Loading />}><PromptRegistryPage /></Suspense>} />
-            <Route path="/ai-gateway/guardrails" element={<Suspense fallback={<Loading />}><GuardrailActivity /></Suspense>} />
-            <Route path="/ai-gateway/logs" element={<Suspense fallback={<Loading />}><LiveTraceFeed /></Suspense>} />
-            <Route path="/ai-gateway/keys" element={<Suspense fallback={<Loading />}><KeysVault /></Suspense>} />
             <Route path="/ai-gateway/models" element={<Suspense fallback={<Loading />}><ModelCatalogPage /></Suspense>} />
-            <Route path="/ai-gateway/settings" element={<Suspense fallback={<Loading />}><TrustConfig /></Suspense>} />
+            <Route path="/ai-gateway/analytics" element={<Navigate to="/trust-engine/costs" replace />} />
+            <Route path="/ai-gateway/endpoints" element={<Navigate to="/trust-engine/config" replace />} />
+            <Route path="/ai-gateway/settings" element={<Navigate to="/trust-engine/config" replace />} />
+            <Route path="/ai-gateway/prompts" element={<Navigate to="/prompt-registry" replace />} />
+            <Route path="/ai-gateway/guardrails" element={<Navigate to="/trust-engine/guardrails" replace />} />
+            <Route path="/ai-gateway/logs" element={<Navigate to="/trust-engine/traces" replace />} />
+            <Route path="/ai-gateway/keys" element={<Navigate to="/security/keys" replace />} />
 
-            {/* MCP Gateway Modules */}
-            <Route path="/mcp-gateway/overview" element={<Suspense fallback={<Loading />}><McpOverview /></Suspense>} />
+            {/* MCP Gateway — Overview, Servers & Tool Catalog are canonical; the rest
+                were aliases and now redirect. */}
+            <Route path="/mcp-gateway" element={<Suspense fallback={<Loading />}><McpOverview /></Suspense>} />
+            <Route path="/mcp-gateway/overview" element={<Navigate to="/mcp-gateway" replace />} />
             <Route path="/mcp-gateway/servers" element={<Suspense fallback={<Loading />}><McpServers /></Suspense>} />
             <Route path="/mcp-gateway/tools" element={<Suspense fallback={<Loading />}><McpToolCatalog /></Suspense>} />
-            <Route path="/mcp-gateway/keys" element={<Suspense fallback={<Loading />}><AgentIAM /></Suspense>} />
-            <Route path="/mcp-gateway/logs" element={<Suspense fallback={<Loading />}><ToolCallMonitor /></Suspense>} />
-            <Route path="/mcp-gateway/approvals" element={<Suspense fallback={<Loading />}><HITLReviewCenter /></Suspense>} />
-            <Route path="/mcp-gateway/guardrails" element={<Suspense fallback={<Loading />}><GuardrailActivity /></Suspense>} />
+            <Route path="/mcp-gateway/keys" element={<Navigate to="/agent-iam" replace />} />
+            <Route path="/mcp-gateway/logs" element={<Navigate to="/trust-engine/tools" replace />} />
+            <Route path="/mcp-gateway/approvals" element={<Navigate to="/hitl" replace />} />
+            <Route path="/mcp-gateway/guardrails" element={<Navigate to="/trust-engine/guardrails" replace />} />
             {/* WS2 Scaffolded GA-Critical Modules (Removed - Functionality covered by main modules) */}
           <Route path="*" element={<Suspense fallback={<Loading />}><NotFound /></Suspense>} />
         </Route>

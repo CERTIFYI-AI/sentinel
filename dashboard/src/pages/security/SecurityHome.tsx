@@ -286,7 +286,7 @@ export default function SecurityHome() {
     {
       title: 'Security Scanner',
       description: 'Automated vulnerability scanning, compliance checks, and policy enforcement.',
-      path: '/security/scanner',
+      path: '/security/scans',
       icon: <Scan size={16} style={{ color: 'hsl(var(--brand))' }} />,
       statusLabel: 'Operational',
       statusVariant: 'active',
