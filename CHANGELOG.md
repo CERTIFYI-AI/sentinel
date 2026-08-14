@@ -1,3 +1,8 @@
+## <small>1.56.1 (2026-08-14)</small>
+
+* Merge main ([fa4ee43](https://github.com/CERTIFYI-AI/sentinel/commit/fa4ee43))
+* fix(trust-engine): remove tab strip duplicating the sidebar ([882e568](https://github.com/CERTIFYI-AI/sentinel/commit/882e568))
+
 ## 1.56.0 (2026-08-14)
 
 * Merge release v1.55.0 from main ([d7c9546](https://github.com/CERTIFYI-AI/sentinel/commit/d7c9546))
