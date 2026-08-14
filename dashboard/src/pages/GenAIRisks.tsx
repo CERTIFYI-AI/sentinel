@@ -3,12 +3,12 @@
 //
 // GenAIRisks — Generative AI-specific risk catalogue (NIST AI 600-1).
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
-  Plus, Eye, Trash, PencilSimple, Cpu, ShieldCheck,
+  Plus, Eye, Trash, PencilSimple, Cpu, ShieldCheck, X,
 } from '@phosphor-icons/react';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -32,6 +32,9 @@ import {
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatCardRow } from '@/components/ui/StatCardRow';
 import { FilterBar } from '@/components/ui/FilterBar';
+import { PageSkeleton } from '@/components/ui/PageSkeleton';
+import { useModelOptions } from '@/hooks/useAiiaData';
+import { useAuthStore } from '@/store/authStore';
 
 type Severity = GenAIRiskProfile['severity'];
 type MitigationStatus = GenAIRiskProfile['mitigationStatus'];
@@ -72,11 +75,22 @@ function mitigationColor(s: MitigationStatus) {
   }
 }
 
+/** Display id: legacy GRP- codes render as-is; uuid ids render as a short reference — never a raw uuid. */
+function displayId(id: string) {
+  return id.startsWith('GRP-') ? id : id.slice(0, 8).toUpperCase();
+}
+
 export default function GenAIRisks() {
   const navigate = useNavigate();
-  const { data: profiles = [] } = genaiRiskHooks.useList();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const modelParam = searchParams.get('model');
+  const openParam = searchParams.get('open');
+  const { data: profiles = [], isLoading, error } = genaiRiskHooks.useList();
   const upsert = genaiRiskHooks.useUpsert();
   const remove = genaiRiskHooks.useDelete();
+  const { models } = useModelOptions();
+  const currentUser = useAuthStore(s => s.user);
+  const defaultOwner = currentUser?.name || currentUser?.email || '';
   const [search, setSearch] = useState('');
   const [filterSeverity, setFilterSeverity] = useState('');
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
@@ -85,49 +99,68 @@ export default function GenAIRisks() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const [wModel, setWModel] = useState('');
+  const [wModelId, setWModelId] = useState('');
   const [wCategory, setWCategory] = useState(NIST_600_1_RISKS[0].name);
   const [wSeverity, setWSeverity] = useState<Severity>('High');
   const [wGuardrails, setWGuardrails] = useState('');
   const [wCoverage, setWCoverage] = useState<GuardrailCoverage>('None');
-  const [wOwner, setWOwner] = useState('Sarah Chen');
+  const [wOwner, setWOwner] = useState('');
+
+  // Resolve the display name at render time; the stored snapshot is the fallback.
+  const resolvedModelName = (p: Pick<GenAIRiskProfile, 'modelId' | 'model'>) =>
+    (p.modelId ? models.find(m => m.id === p.modelId)?.name : undefined) ?? p.model ?? 'Unavailable';
 
   function openCreate() {
     setEditingId(null);
-    setWModel(''); setWCategory(NIST_600_1_RISKS[0].name); setWSeverity('High');
-    setWGuardrails(''); setWCoverage('None'); setWOwner('Sarah Chen');
+    setWModelId(''); setWCategory(NIST_600_1_RISKS[0].name); setWSeverity('High');
+    setWGuardrails(''); setWCoverage('None'); setWOwner(defaultOwner);
     setCreateOpen(true);
   }
 
   function openEdit(p: GenAIRiskProfile) {
     setEditingId(p.id);
-    setWModel(p.model); setWCategory(p.riskCategory); setWSeverity(p.severity);
+    // Legacy rows stored only a name — recover the registry uuid by name match.
+    setWModelId(p.modelId ?? models.find(m => m.name === p.model)?.id ?? '');
+    setWCategory(p.riskCategory); setWSeverity(p.severity);
     setWGuardrails(p.guardrails === 'None' ? '' : p.guardrails); setWCoverage(p.guardrailCoverage); setWOwner(p.owner);
     setCreateOpen(true);
   }
+
+  // Deep-link: ?open=<id> opens that profile's detail sheet once it loads.
+  const openedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!openParam || profiles.length === 0) return;
+    if (openedRef.current === openParam) return;
+    const rec = profiles.find(p => p.id === openParam);
+    if (rec) { setSelected(rec); setSheetOpen(true); openedRef.current = openParam; }
+  }, [openParam, profiles]);
 
   const filtered = useMemo(() => profiles.filter(p => {
     const matchSearch = !search || p.model.toLowerCase().includes(search.toLowerCase()) || p.id.toLowerCase().includes(search.toLowerCase()) || p.riskCategory.toLowerCase().includes(search.toLowerCase());
     const matchCat = !filterCategory || p.riskCategory === filterCategory;
     const matchSeverity = !filterSeverity || p.severity === filterSeverity;
-    return matchSearch && matchCat && matchSeverity;
-  }), [profiles, search, filterCategory, filterSeverity]);
+    const matchModel = !modelParam || p.modelId === modelParam;
+    return matchSearch && matchCat && matchSeverity && matchModel;
+  }), [profiles, search, filterCategory, filterSeverity, modelParam]);
 
   const critical = profiles.filter(p => p.severity === 'Critical').length;
   const notAddressed = profiles.filter(p => p.mitigationStatus === 'Not Addressed').length;
   const implemented = profiles.filter(p => p.mitigationStatus === 'Implemented').length;
   const highRisk = profiles.filter(p => p.severity === 'High').length;
 
-  const activeFilterCount = (filterSeverity ? 1 : 0) + (filterCategory ? 1 : 0);
+  const activeFilterCount = (filterSeverity ? 1 : 0) + (filterCategory ? 1 : 0) + (modelParam ? 1 : 0);
 
   function submitCreate() {
-    if (!wModel) { toast.error('Linked model is required'); return; }
+    if (!wModelId) { toast.error('Linked model is required'); return; }
     if (!wOwner) { toast.error('Owner is required'); return; }
     const risk = NIST_600_1_RISKS.find(r => r.name === wCategory);
     const existing = editingId ? profiles.find(p => p.id === editingId) : null;
+    const modelName = models.find(m => m.id === wModelId)?.name ?? existing?.model ?? '';
     const rec: GenAIRiskProfile = {
-      id: editingId ?? `GRP-${String(profiles.length + 1).padStart(3, '0')}`,
-      model: wModel,
+      // Stable uuid ids — never a re-mintable GRP-N counter (collides after soft-delete).
+      id: editingId ?? crypto.randomUUID(),
+      modelId: wModelId,
+      model: modelName,
       riskCategory: wCategory,
       riskNumber: risk?.num || 1,
       severity: wSeverity,
@@ -136,31 +169,39 @@ export default function GenAIRisks() {
       mitigationStatus: wCoverage === 'Implemented' ? 'Implemented' : wCoverage === 'Partial' ? 'Partial' : (existing?.mitigationStatus === 'Under Review' ? 'Under Review' : 'Not Addressed'),
       owner: wOwner,
       created: existing?.created ?? new Date().toISOString().split('T')[0],
+      mitigationEvents: existing?.mitigationEvents,
+      version: existing?.version,
     };
     upsert.mutate(rec, {
-      onSuccess: () => toast.success(editingId ? `Risk profile "${rec.id}" updated` : `Risk profile "${rec.id}" created for ${rec.model}`),
-      onError: () => toast.error('Failed to save risk profile'),
+      onSuccess: (saved) => {
+        toast.success(editingId ? `Risk profile "${displayId(rec.id)}" updated` : `Risk profile "${displayId(rec.id)}" created for ${rec.model}`);
+        if (selected?.id === rec.id) setSelected(saved);
+      },
+      onError: (e: Error) => toast.error(`Failed to save risk profile: ${e.message}`),
     });
-    if (selected?.id === rec.id) setSelected(rec);
     setCreateOpen(false);
   }
 
   function deleteProfile(id: string) {
     remove.mutate(id, {
-      onSuccess: () => toast.success(`Risk profile "${id}" removed`),
-      onError: () => toast.error('Failed to remove risk profile'),
+      onSuccess: () => {
+        toast.success(`Risk profile "${displayId(id)}" removed`);
+        if (selected?.id === id) { setSheetOpen(false); setSelected(null); }
+      },
+      onError: (e: Error) => toast.error(`Failed to remove risk profile: ${e.message}`),
     });
-    if (selected?.id === id) { setSheetOpen(false); setSelected(null); }
   }
 
   const selectedRiskInfo = selected ? NIST_600_1_RISKS.find(r => r.num === selected.riskNumber) : null;
 
+  if (isLoading) return <PageSkeleton title="GenAI Risk Profiles" />;
+
   return (
     <div className="space-y-6">
       <PageHeader
-        title="GenAI Risks"
+        title="GenAI Risk Profiles"
         subtitle="Generative AI-specific risk catalogue — NIST AI 600-1 risk management"
-        breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'GenAI Risks' }]}
+        breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'GenAI Risk Profiles' }]}
         actions={
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => navigate('/trust-engine/guardrails')} style={{ borderRadius: 0 }}>
@@ -172,6 +213,30 @@ export default function GenAIRisks() {
           </div>
         }
       />
+
+      {/* Real query error state */}
+      {error && (
+        <div className="border border-[hsl(var(--destructive)/0.4)] bg-[hsl(var(--destructive)/0.06)] p-4">
+          <p className="text-sm font-semibold text-[hsl(var(--destructive))]">Failed to load risk profiles</p>
+          <p className="text-xs text-[hsl(var(--text-3))] mt-0.5">{(error as Error).message}</p>
+        </div>
+      )}
+
+      {/* Model-scoped filter chip (deep-link from a model's Governance card) */}
+      {modelParam && (
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-[hsl(var(--brand-subtle))] border border-[hsl(var(--brand))/30] text-[hsl(var(--brand))] rounded-none">
+            <span>Filtered to <strong>{models.find(m => m.id === modelParam)?.name ?? 'Unavailable'}</strong></span>
+            <button
+              aria-label="Clear model filter"
+              onClick={() => setSearchParams({})}
+              className="inline-flex items-center hover:text-[hsl(var(--text-1))] cursor-pointer"
+            >
+              <X size={14} />
+            </button>
+          </span>
+        </div>
+      )}
 
       <StatCardRow
         cards={[
@@ -270,9 +335,9 @@ export default function GenAIRisks() {
                     <tr key={p.id} className="border-b hover:bg-raised transition-colors cursor-pointer" style={{ borderColor: 'hsl(var(--border))' }}
                       onClick={() => { setSelected(p); setSheetOpen(true); }}>
                       <td className="px-3 py-2.5">
-                        <span className="font-mono text-xs px-1.5 py-0.5" style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))' }}>{p.id}</span>
+                        <span className="font-mono text-xs px-1.5 py-0.5" style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))' }}>{displayId(p.id)}</span>
                       </td>
-                      <td className="px-3 py-2.5 font-medium text-xs" style={{ color: 'hsl(var(--text-1))' }}>{p.model}</td>
+                      <td className="px-3 py-2.5 font-medium text-xs" style={{ color: 'hsl(var(--text-1))' }}>{resolvedModelName(p)}</td>
                       <td className="px-3 py-2.5 text-xs" style={{ color: 'hsl(var(--text-2))' }}>
                         <span className="text-[10px] mr-1.5 font-mono" style={{ color: 'hsl(var(--text-4))' }}>#{p.riskNumber}</span>{p.riskCategory}
                       </td>
@@ -303,7 +368,7 @@ export default function GenAIRisks() {
                             <AlertDialogContent style={{ borderRadius: 0 }}>
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Delete Profile</AlertDialogTitle>
-                                <AlertDialogDescription>Delete {p.id}? This cannot be undone.</AlertDialogDescription>
+                                <AlertDialogDescription>Delete {displayId(p.id)}? This cannot be undone.</AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
@@ -319,9 +384,20 @@ export default function GenAIRisks() {
               </tbody>
             </table>
             {filtered.length === 0 && (
-              <div className="py-12 text-center text-sm text-[hsl(var(--text-4))]">
-                No risk profiles match the current filters.
-              </div>
+              profiles.length === 0 && !error ? (
+                <div className="py-12 text-center">
+                  <ShieldCheck size={32} className="mx-auto mb-3 text-[hsl(var(--text-4))]" />
+                  <p className="text-sm text-[hsl(var(--text-3))]">No GenAI risk profiles recorded for your organization yet.</p>
+                  <p className="text-xs text-[hsl(var(--text-4))] mt-1">Create the first profile to start cataloguing NIST AI 600-1 risks per model.</p>
+                  <Button className="mt-4" style={{ borderRadius: 0 }} onClick={openCreate}>
+                    <Plus size={15} /> Create Risk Profile
+                  </Button>
+                </div>
+              ) : (
+                <div className="py-12 text-center text-sm text-[hsl(var(--text-4))]">
+                  No risk profiles match the current filters.
+                </div>
+              )
             )}
           </div>
         </CardContent>
@@ -334,12 +410,15 @@ export default function GenAIRisks() {
             <>
               <SheetHeader className="pb-4 border-b" style={{ borderColor: 'hsl(var(--border))' }}>
                 <SheetTitle className="flex items-center gap-2">
-                  <span className="font-mono text-sm px-1.5 py-0.5" style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))' }}>{selected.id}</span>
-                  {selected.model}
+                  <span className="font-mono text-sm px-1.5 py-0.5" style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))' }}>{displayId(selected.id)}</span>
+                  {resolvedModelName(selected)}
                 </SheetTitle>
                 {/* Cross-module: risk profile → model registry / guardrails */}
                 <div className="flex gap-2 pt-1">
-                  <Button variant="outline" size="sm" style={{ borderRadius: 0 }} onClick={() => navigate(`/models/inventory?q=${encodeURIComponent(selected.model)}`)}>
+                  <Button variant="outline" size="sm" style={{ borderRadius: 0 }}
+                    onClick={() => selected.modelId
+                      ? navigate(`/models/inventory/${selected.modelId}`)
+                      : navigate(`/models/inventory?q=${encodeURIComponent(selected.model)}`)}>
                     <Cpu size={12} /> View Model
                   </Button>
                   <Button variant="outline" size="sm" style={{ borderRadius: 0 }} onClick={() => navigate('/trust-engine/guardrails')}>
@@ -365,7 +444,7 @@ export default function GenAIRisks() {
                     return (
                       <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>Risk Score</span>
+                          <span className="text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>Severity index (derived from rating)</span>
                           <span className="text-lg font-bold" style={{ color: sc.text }}>{score}/100</span>
                         </div>
                         <div className="w-full h-2" style={{ background: 'hsl(var(--border))' }}>
@@ -380,7 +459,7 @@ export default function GenAIRisks() {
                   })()}
                   <div className="grid grid-cols-2 gap-2">
                     {[
-                      { label: 'Model', value: selected.model },
+                      { label: 'Model', value: resolvedModelName(selected) },
                       { label: 'Owner', value: selected.owner },
                       { label: 'NIST Risk #', value: `#${selected.riskNumber}` },
                       { label: 'Created', value: selected.created },
@@ -420,7 +499,7 @@ export default function GenAIRisks() {
                         <p className="text-xs mt-2" style={{ color: 'hsl(var(--text-3))' }}>{selectedRiskInfo.desc}</p>
                       </div>
                       <div className="space-y-2">
-                        <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>Recommended controls:</p>
+                        <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>Suggested controls (static guidance):</p>
                         {[
                           { action: 'Implement monitoring and detection controls', priority: 'High' },
                           { action: 'Establish testing protocols before deployment', priority: 'High' },
@@ -469,50 +548,55 @@ export default function GenAIRisks() {
                     </div>
                   )}
                   <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                    <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-2))' }}>Coverage Dimensions</p>
-                    {[
-                      { dim: 'Input Validation', pct: selected.guardrailCoverage === 'Implemented' ? 95 : selected.guardrailCoverage === 'Partial' ? 60 : 0 },
-                      { dim: 'Output Filtering', pct: selected.guardrailCoverage === 'Implemented' ? 88 : selected.guardrailCoverage === 'Partial' ? 45 : 0 },
-                      { dim: 'Monitoring & Alerting', pct: selected.guardrailCoverage === 'Implemented' ? 100 : selected.guardrailCoverage === 'Partial' ? 70 : 0 },
-                    ].map(({ dim, pct }) => (
-                      <div key={dim} className="mb-2">
-                        <div className="flex justify-between mb-0.5">
-                          <span className="text-[11px]" style={{ color: 'hsl(var(--text-3))' }}>{dim}</span>
-                          <span className="text-[11px] font-bold" style={{ color: pct === 0 ? 'hsl(var(--s-er-tx))' : pct >= 80 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))' }}>{pct}%</span>
-                        </div>
-                        <div className="w-full h-1.5" style={{ background: 'hsl(var(--border))' }}>
-                          <div className="h-full" style={{ width: `${pct}%`, background: pct === 0 ? 'hsl(var(--s-er-tx))' : pct >= 80 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))' }} />
-                        </div>
-                      </div>
-                    ))}
+                    <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-2))' }}>Coverage Assessment (recorded)</p>
+                    <div className="flex gap-1">
+                      {([
+                        { level: 'None', label: 'None', color: 'hsl(var(--s-er-tx))', bg: 'hsl(var(--s-er-bg))' },
+                        { level: 'Partial', label: 'Partial', color: 'hsl(var(--s-wn-tx))', bg: 'hsl(var(--s-wn-bg))' },
+                        { level: 'Implemented', label: 'Full', color: 'hsl(var(--s-ok-tx))', bg: 'hsl(var(--s-ok-bg))' },
+                      ] as const).map(({ level, label, color, bg }) => {
+                        const active = selected.guardrailCoverage === level;
+                        return (
+                          <div key={level} className="flex-1 py-2 text-center border" style={{
+                            borderRadius: 0,
+                            borderColor: active ? color : 'hsl(var(--border))',
+                            background: active ? bg : 'transparent',
+                          }}>
+                            <p className="text-xs font-bold" style={{ color: active ? color : 'hsl(var(--text-4))' }}>{label}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <p className="text-[10px] mt-2" style={{ color: 'hsl(var(--text-4))' }}>
+                      Recorded coverage assessment for this risk — no per-dimension coverage measurements are collected yet.
+                    </p>
                   </div>
                 </TabsContent>
 
                 <TabsContent value="log" className="mt-4 space-y-2">
-                  <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-2))' }}>Mitigation Timeline</p>
-                  {[
-                    { date: selected.created, action: 'Risk profile created and catalogued', user: selected.owner, type: 'info' },
-                    { date: selected.created, action: `Initial severity assessed: ${selected.severity}`, user: 'Risk Engine', type: 'info' },
-                    { date: selected.created, action: `NIST 600-1 mapping applied: Risk #${selected.riskNumber}`, user: 'System', type: 'info' },
-                    ...(selected.guardrailCoverage !== 'None' ? [{ date: selected.created, action: `Guardrail assigned: ${selected.guardrails}`, user: selected.owner, type: 'ok' }] : []),
-                    ...(selected.mitigationStatus === 'Implemented' ? [{ date: selected.created, action: 'All controls validated — risk mitigated', user: selected.owner, type: 'ok' }] : []),
-                    ...(selected.mitigationStatus === 'Partial' ? [{ date: selected.created, action: 'Partial mitigation in place — follow-up required', user: selected.owner, type: 'warn' }] : []),
-                    ...(selected.mitigationStatus === 'Not Addressed' ? [{ date: selected.created, action: 'Risk flagged as unaddressed — escalation pending', user: 'Risk Engine', type: 'error' }] : []),
-                  ].map((ev, i) => {
-                    const dotColor = ev.type === 'ok' ? 'hsl(var(--s-ok-tx))' : ev.type === 'warn' ? 'hsl(var(--s-wn-tx))' : ev.type === 'error' ? 'hsl(var(--s-er-tx))' : 'hsl(var(--brand))';
-                    return (
-                      <div key={i} className="flex items-start gap-3 pb-3" style={{ borderBottom: i < 3 ? '1px solid hsl(var(--border))' : undefined }}>
+                  <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-2))' }}>Mitigation Log</p>
+                  {(selected.mitigationEvents?.length ?? 0) > 0 ? (
+                    selected.mitigationEvents!.map((ev, i) => (
+                      <div key={i} className="flex items-start gap-3 pb-3" style={{ borderBottom: i < selected.mitigationEvents!.length - 1 ? '1px solid hsl(var(--border))' : undefined }}>
                         <div className="flex flex-col items-center">
-                          <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ background: dotColor }} />
-                          {i < 3 && <div className="w-px flex-1 mt-1" style={{ background: 'hsl(var(--border))', minHeight: 16 }} />}
+                          <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ background: 'hsl(var(--brand))' }} />
+                          {i < selected.mitigationEvents!.length - 1 && <div className="w-px flex-1 mt-1" style={{ background: 'hsl(var(--border))', minHeight: 16 }} />}
                         </div>
                         <div className="flex-1">
                           <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-2))' }}>{ev.action}</p>
                           <p className="text-[11px] mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>{ev.date} · {ev.user}</p>
                         </div>
                       </div>
-                    );
-                  })}
+                    ))
+                  ) : (
+                    <div className="p-6 text-center" style={{ border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-2))' }}>No mitigation events recorded</p>
+                      <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>
+                        Events appear here when mitigation actions are recorded against this profile.
+                        Profile created {selected.created} by {selected.owner}.
+                      </p>
+                    </div>
+                  )}
                 </TabsContent>
               </Tabs>
             </>
@@ -524,15 +608,16 @@ export default function GenAIRisks() {
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent style={{ borderRadius: 0, maxWidth: 520 }}>
           <DialogHeader>
-            <DialogTitle>{editingId ? `Edit Risk Profile ${editingId}` : 'Create GenAI Risk Profile'}</DialogTitle>
+            <DialogTitle>{editingId ? `Edit Risk Profile ${displayId(editingId)}` : 'Create GenAI Risk Profile'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <div className="space-y-1">
               <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Linked Model *</label>
-              <Select value={wModel || undefined} onValueChange={setWModel}>
-                <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue placeholder="Select model..." /></SelectTrigger>
+              {/* Real registry select — stores ai_models.id (uuid) + a name snapshot */}
+              <Select value={wModelId || undefined} onValueChange={setWModelId}>
+                <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue placeholder="Select registry model..." /></SelectTrigger>
                 <SelectContent style={{ borderRadius: 0 }}>
-                  {['Loan Approval Assistant', 'Customer Service Chatbot', 'Credit Risk Scorer', 'Fraud Detection Engine', 'HR Screening System'].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                  {models.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

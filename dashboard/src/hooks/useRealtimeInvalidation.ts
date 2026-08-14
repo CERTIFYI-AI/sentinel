@@ -67,6 +67,9 @@ const REALTIME_TABLES = [
   { table: 'esg_reports', queryKey: ['esg-reports'] },
   { table: 'energy_metrics', queryKey: ['energy-metrics'] },
   { table: 'model_efficiency', queryKey: ['model-efficiency'] },
+  // Performance telemetry + GenAI risk profiles (added 2026-08-14)
+  { table: 'model_performance_metrics', queryKey: ['model-performance-metrics'] },
+  { table: 'genai_risk_profiles', queryKey: ['genai_risk_profiles'] },
   // Deduplication-safe aliases for already-listed tables
   // vendors, incidents, maturity_assessments already present above
   { table: 'transparency_reports', queryKey: ['transparency-reports'] },

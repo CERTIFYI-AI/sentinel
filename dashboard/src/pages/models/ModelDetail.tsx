@@ -458,6 +458,39 @@ function ModelDetailView({ model }: { model: Model }) {
                     <CaretRight size={12} style={{ color: 'hsl(var(--text-4))' }} />
                   </span>
                 </button>
+                {/* Performance telemetry */}
+                <button
+                  onClick={() => navigate(`/performance-monitoring?model=${model.id}`)}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '9px 11px', background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))', cursor: 'pointer', textAlign: 'left' }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Gauge size={14} style={{ color: 'hsl(var(--text-3))' }} />
+                    <span style={{ fontSize: 12, color: 'hsl(var(--text-2))' }}>Performance Monitoring</span>
+                  </span>
+                  <CaretRight size={12} style={{ color: 'hsl(var(--text-4))' }} />
+                </button>
+                {/* Efficiency benchmarks */}
+                <button
+                  onClick={() => navigate(`/model-efficiency?model=${model.id}`)}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '9px 11px', background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))', cursor: 'pointer', textAlign: 'left' }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <ChartLine size={14} style={{ color: 'hsl(var(--text-3))' }} />
+                    <span style={{ fontSize: 12, color: 'hsl(var(--text-2))' }}>Efficiency Benchmarks</span>
+                  </span>
+                  <CaretRight size={12} style={{ color: 'hsl(var(--text-4))' }} />
+                </button>
+                {/* GenAI risk profiles */}
+                <button
+                  onClick={() => navigate(`/genai-risks?model=${model.id}`)}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '9px 11px', background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))', cursor: 'pointer', textAlign: 'left' }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Sparkle size={14} style={{ color: 'hsl(var(--text-3))' }} />
+                    <span style={{ fontSize: 12, color: 'hsl(var(--text-2))' }}>GenAI Risk Profiles</span>
+                  </span>
+                  <CaretRight size={12} style={{ color: 'hsl(var(--text-4))' }} />
+                </button>
               </CardContent>
             </Card>
 

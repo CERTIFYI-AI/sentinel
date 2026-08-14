@@ -6,11 +6,12 @@
 
 import { makeCrud } from '../../services/evalsCrud'
 import { makeHooks } from './useEvalsCrud'
-import { GENAI_RISK_SEED } from '../../data/genaiRiskSeed'
 import type { GenAIRiskProfile } from '../../types/trustEngine'
 
+// No seed fallback: an empty org renders an honest empty state, and a failed
+// read renders a real error state (demo data lives in the database, org-scoped).
 export const genaiRiskCrud = makeCrud<GenAIRiskProfile>('genai_risk_profiles', 'genai-risks')
-export const genaiRiskHooks = makeHooks<GenAIRiskProfile>(genaiRiskCrud, GENAI_RISK_SEED)
+export const genaiRiskHooks = makeHooks<GenAIRiskProfile>(genaiRiskCrud)
 
 // Trust Engine configuration — a single settings document (id 'default').
 // TrustConfig manages its own local state, so it calls this CRUD directly

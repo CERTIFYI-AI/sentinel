@@ -16,6 +16,7 @@ export interface PerfPoint {
   errorRate: number
   driftScore: number
   requestCount: number
+  costPerInference: number
 }
 export interface BiasAuditView {
   id: string
@@ -66,7 +67,46 @@ export async function fetchPerformanceMetrics(modelId: string, modelName?: strin
     throughput: num(r.throughput), accuracy: num(r.accuracy),
     errorRate: num(r.error_rate), driftScore: num(r.drift_score),
     requestCount: num(r.request_count),
+    costPerInference: num(r.cost_per_inference),
   }))
+}
+
+/** Per-model telemetry series for the fleet-wide Performance Monitoring page. */
+export interface ModelPerfSeries {
+  /** ai_models.id (uuid, stored as text in model_performance_metrics). */
+  modelId: string
+  /** Name snapshot recorded with the telemetry row (display fallback only). */
+  modelName: string | null
+  points: PerfPoint[]
+}
+
+/** All performance telemetry for the org, grouped by model_id (recorded_at ascending). */
+export async function fetchAllPerformanceMetrics(): Promise<ModelPerfSeries[]> {
+  if (!isSupabaseConfigured() || !supabase) return []
+  const { data, error } = await supabase
+    .from('model_performance_metrics')
+    .select('*')
+    .order('recorded_at', { ascending: true })
+  if (error) { console.warn('[modelAnalytics] perf-all:', error.message); throw new Error(error.message) }
+  const byModel = new Map<string, ModelPerfSeries>()
+  for (const r of data ?? []) {
+    const key = String(r.model_id ?? r.model_name ?? 'unknown')
+    let series = byModel.get(key)
+    if (!series) {
+      series = { modelId: key, modelName: r.model_name ?? null, points: [] }
+      byModel.set(key, series)
+    }
+    if (!series.modelName && r.model_name) series.modelName = r.model_name
+    series.points.push({
+      recordedAt: r.recorded_at,
+      latencyP50: num(r.latency_p50), latencyP99: num(r.latency_p99),
+      throughput: num(r.throughput), accuracy: num(r.accuracy),
+      errorRate: num(r.error_rate), driftScore: num(r.drift_score),
+      requestCount: num(r.request_count),
+      costPerInference: num(r.cost_per_inference),
+    })
+  }
+  return [...byModel.values()]
 }
 
 export async function fetchBiasAudits(modelId: string): Promise<BiasAuditView[]> {

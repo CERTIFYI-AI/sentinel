@@ -1,473 +1,327 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI.
+//
+// Performance Monitoring — fleet-wide view over real telemetry in
+// model_performance_metrics, keyed by ai_models.id (uuid). One card per
+// registry model with its latest recorded metrics and real recorded_at trend
+// series. No fabricated endpoints, histories, or SLO numbers: a model without
+// telemetry renders an honest empty state.
+
+import { useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import {
-  Gauge, Warning, Siren, ArrowUp, ArrowDown, Minus, Plus,
-  MagnifyingGlass, Export, Eye, ArrowsClockwise, Check,
-  ChartLine, Database, Clock, Lightning, Cpu, ShieldCheck,
+  Gauge, Warning, ArrowsClockwise, ArrowSquareOut, X, ChartLine,
 } from '@phosphor-icons/react';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Badge } from '../../components/ui/badge';
-import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../components/ui/sheet';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
-import { Progress } from '../../components/ui/progress';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip,
-  ResponsiveContainer, BarChart, Bar, ReferenceLine, Legend, AreaChart, Area,
+  ResponsiveContainer, Legend,
 } from 'recharts';
+import { Card, CardContent } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { StatCardRow } from '@/components/ui/StatCardRow';
+import { FilterBar } from '@/components/ui/FilterBar';
+import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { useChartTheme } from '../../hooks/useChartTheme';
-import { MODELS } from '../../data/seed';
+import { useModelOptions } from '@/hooks/useAiiaData';
+import {
+  fetchAllPerformanceMetrics, type ModelPerfSeries, type PerfPoint,
+} from '@/services/modelAnalyticsService';
 
+const QUERY_KEY = ['model-performance-metrics'];
 
-type AlertSeverity = 'critical' | 'warning' | 'info';
+/* ── Honest formatting of recorded values ────────────────────────────────── */
+const fmtMs = (v: number) => `${Math.round(v)}ms`;
+// accuracy / error_rate are recorded as fractions (0..1); tolerate percent-scale rows.
+const fmtRate = (v: number) => (v <= 1 ? `${(v * 100).toFixed(2)}%` : `${v.toFixed(2)}%`);
+const fmtAcc = (v: number) => (v <= 1 ? `${(v * 100).toFixed(1)}%` : `${v.toFixed(1)}%`);
+const fmtCost = (v: number) => `$${v.toFixed(5)}`;
+const fmtDate = (iso: string) => new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+const fmtDateTime = (iso: string) => new Date(iso).toLocaleString();
 
-interface ModelEndpoint {
-  modelId: string; modelName: string; endpoint: string; status: 'healthy' | 'degraded' | 'down';
-  slo: number; sloActual: number;
-  latencyP50: number; latencyP95: number; latencyP99: number;
-  throughputRpm: number; throughputCapacity: number;
-  errorRate: number; errorThreshold: number;
-  costPerInference: number; dailyCost: number;
-  dataQualityScore: number; schemaDrifts: number; nullRateAvg: number;
-  latencyHistory: { time: string; p50: number; p99: number }[];
-  throughputHistory: { time: string; rpm: number }[];
-  alerts: { id: string; severity: AlertSeverity; message: string; time: string; correlated?: string }[];
+interface ModelRow {
+  id: string;
+  /** Registry display name; null when the id can't be resolved. */
+  registryName: string | null;
+  inRegistry: boolean;
+  series: ModelPerfSeries | null;
 }
-
-const generateHistory = (base: number, noise: number, periods = 24) =>
-  Array.from({ length: periods }, (_, i) => ({
-    time: `${String(i).padStart(2,'0')}:00`,
-    p50: Math.round(base + (Math.random() - 0.5) * noise),
-    p99: Math.round(base * 2.5 + (Math.random() - 0.5) * noise * 2),
-  }));
-
-const generateThroughput = (base: number, periods = 24) =>
-  Array.from({ length: periods }, (_, i) => ({
-    time: `${String(i).padStart(2,'0')}:00`,
-    rpm: Math.round(base + Math.sin(i / 4) * base * 0.3 + (Math.random() - 0.5) * base * 0.1),
-  }));
-
-const ENDPOINTS: ModelEndpoint[] = [
-  {
-    modelId: 'MDL-001', modelName: 'Credit Risk Scorer v3.2.1', endpoint: '/v1/credit/score',
-    status: 'degraded', slo: 99.9, sloActual: 99.6,
-    latencyP50: 45, latencyP95: 88, latencyP99: 142,
-    throughputRpm: 15200, throughputCapacity: 20000,
-    errorRate: 0.4, errorThreshold: 0.1,
-    costPerInference: 0.0012, dailyCost: 524,
-    dataQualityScore: 94, schemaDrifts: 0, nullRateAvg: 0.3,
-    latencyHistory: generateHistory(45, 20),
-    throughputHistory: generateThroughput(15000),
-    alerts: [
-      { id: 'ALT-001', severity: 'warning', message: 'p99 latency spike to 142ms (threshold: 120ms)', time: '09:14', correlated: 'Performance drop → Bias score at risk' },
-      { id: 'ALT-002', severity: 'warning', message: 'Error rate 0.4% exceeds threshold of 0.1%', time: '09:08' },
-    ],
-  },
-  {
-    modelId: 'MDL-002', modelName: 'Fraud Detection Engine v2.1.0', endpoint: '/v1/fraud/detect',
-    status: 'healthy', slo: 99.95, sloActual: 99.97,
-    latencyP50: 18, latencyP95: 42, latencyP99: 78,
-    throughputRpm: 42800, throughputCapacity: 60000,
-    errorRate: 0.02, errorThreshold: 0.1,
-    costPerInference: 0.0008, dailyCost: 981,
-    dataQualityScore: 99, schemaDrifts: 0, nullRateAvg: 0.1,
-    latencyHistory: generateHistory(18, 8),
-    throughputHistory: generateThroughput(42000),
-    alerts: [],
-  },
-  {
-    modelId: 'MDL-004', modelName: 'AML Transaction Monitor v3.0', endpoint: '/v1/aml/screen',
-    status: 'healthy', slo: 99.9, sloActual: 99.93,
-    latencyP50: 92, latencyP95: 210, latencyP99: 380,
-    throughputRpm: 8200, throughputCapacity: 15000,
-    errorRate: 0.05, errorThreshold: 0.1,
-    costPerInference: 0.0045, dailyCost: 1058,
-    dataQualityScore: 97, schemaDrifts: 1, nullRateAvg: 0.8,
-    latencyHistory: generateHistory(92, 40),
-    throughputHistory: generateThroughput(8000),
-    alerts: [
-      { id: 'ALT-010', severity: 'info', message: 'Schema drift detected on "customer_country" field', time: 'Yesterday 22:00' },
-    ],
-  },
-  {
-    modelId: 'MDL-005', modelName: 'Customer Churn Predictor v2.3', endpoint: '/v1/churn/predict',
-    status: 'down', slo: 99.5, sloActual: 97.8,
-    latencyP50: 0, latencyP95: 0, latencyP99: 0,
-    throughputRpm: 0, throughputCapacity: 5000,
-    errorRate: 100, errorThreshold: 0.1,
-    costPerInference: 0.0006, dailyCost: 0,
-    dataQualityScore: 0, schemaDrifts: 3, nullRateAvg: 0,
-    latencyHistory: generateHistory(0, 0),
-    throughputHistory: generateThroughput(0),
-    alerts: [
-      { id: 'ALT-020', severity: 'critical', message: 'Endpoint unreachable — 100% error rate', time: '07:32' },
-      { id: 'ALT-021', severity: 'critical', message: 'SLO breach: 97.8% vs 99.5% target', time: '07:32', correlated: 'SLO breach → Risk escalation required' },
-    ],
-  },
-];
-
-const STATUS_COLORS: Record<string, { bg: string; color: string; dot: string }> = {
-  healthy: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', dot: 'hsl(var(--s-ok-tx))' },
-  degraded: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', dot: 'hsl(var(--s-wn-tx))' },
-  down: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', dot: 'hsl(var(--s-er-tx))' },
-};
-const STATUS_COLOR_FALLBACK = { bg: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))', dot: 'hsl(var(--text-4))' };
-const statusColors = (k: string) => STATUS_COLORS[k] ?? STATUS_COLOR_FALLBACK;
-
-const ALERT_COLORS: Record<AlertSeverity, { bg: string; color: string }> = {
-  critical: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
-  warning: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
-  info: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
-};
-
-interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info' }
 
 export default function PerformanceMonitoring() {
   const navigate = useNavigate();
-  const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState<ModelEndpoint | null>(null);
-  const [tab, setTab] = useState('overview');
-  const [toasts, setToasts] = useState<ToastMsg[]>([]);
+  const qc = useQueryClient();
   const ct = useChartTheme();
-  const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [searchParams, setSearchParams] = useSearchParams();
+  const modelParam = searchParams.get('model');
+  const [search, setSearch] = useState('');
 
-  const addToast = (text: string, type: ToastMsg['type'] = 'info') => {
-    const id = Date.now();
-    setToasts(t => [...t, { id, text, type }]);
-    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3500);
-  };
+  const { models, loading: modelsLoading } = useModelOptions();
+  const perfQuery = useQuery({
+    queryKey: QUERY_KEY,
+    queryFn: fetchAllPerformanceMetrics,
+    staleTime: 15_000,
+  });
+  const series = useMemo(() => perfQuery.data ?? [], [perfQuery.data]);
 
-  useEffect(() => {
-    const interval = setInterval(() => setLastUpdated(new Date()), 30000);
-    return () => clearInterval(interval);
-  }, []);
+  // Resolve display names at render time from the registry — never a raw uuid.
+  const displayName = (row: ModelRow) =>
+    row.registryName ?? row.series?.modelName ?? 'Unavailable';
 
-  const filtered = ENDPOINTS.filter(e =>
-    e.modelName.toLowerCase().includes(search.toLowerCase()) ||
-    e.endpoint.toLowerCase().includes(search.toLowerCase())
-  );
+  // One row per registry model, plus any telemetry keyed to ids no longer in
+  // the registry (shown honestly as "Unavailable", never dropped silently).
+  const rows = useMemo<ModelRow[]>(() => {
+    const byId = new Map(series.map(s => [s.modelId, s]));
+    const out: ModelRow[] = models.map(m => ({
+      id: m.id, registryName: m.name, inRegistry: true, series: byId.get(m.id) ?? null,
+    }));
+    for (const s of series) {
+      if (!models.some(m => m.id === s.modelId)) {
+        out.push({ id: s.modelId, registryName: null, inRegistry: false, series: s });
+      }
+    }
+    return out;
+  }, [models, series]);
 
-  const healthy = ENDPOINTS.filter(e => e.status === 'healthy').length;
-  const degraded = ENDPOINTS.filter(e => e.status === 'degraded').length;
-  const down = ENDPOINTS.filter(e => e.status === 'down').length;
-  const totalAlerts = ENDPOINTS.flatMap(e => e.alerts).length;
-  const criticalAlerts = ENDPOINTS.flatMap(e => e.alerts).filter(a => a.severity === 'critical').length;
+  const filtered = useMemo(() => rows.filter(r => {
+    if (modelParam && r.id !== modelParam) return false;
+    if (!search) return true;
+    return displayName(r).toLowerCase().includes(search.toLowerCase());
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [rows, modelParam, search]);
+
+  const reporting = filtered.filter(r => r.series && r.series.points.length > 0);
+  const silent = filtered.filter(r => !r.series || r.series.points.length === 0);
+
+  const totalPoints = series.reduce((n, s) => n + s.points.length, 0);
+  const ingestTimes = series.flatMap(s => s.points.map(p => p.recordedAt)).sort();
+  const lastIngest = ingestTimes.length ? ingestTimes[ingestTimes.length - 1] : undefined;
+
+  const chipName = modelParam
+    ? (rows.find(r => r.id === modelParam) ? displayName(rows.find(r => r.id === modelParam)!) : 'Unavailable')
+    : null;
+
+  async function refresh() {
+    const res = await perfQuery.refetch();
+    if (res.error) toast.error(`Refresh failed: ${(res.error as Error).message}`);
+    else toast.success('Telemetry refreshed');
+    qc.invalidateQueries({ queryKey: ['model-options'] });
+  }
+
+  if (perfQuery.isLoading || modelsLoading) return <PageSkeleton title="Performance Monitoring" />;
 
   return (
     <div className="space-y-5">
-      {/* Toast */}
-      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
-        {toasts.map(t => (
-          <div key={t.id} className="px-4 py-2 rounded text-sm text-[hsl(var(--bg-surface))] shadow-lg"
-            style={{ background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--s-er-tx))' : '#3b82f6' }}>
-            {t.text}
+      <PageHeader
+        title="Performance Monitoring"
+        subtitle="Live model telemetry from model_performance_metrics — latency, throughput, accuracy, drift and cost per registry model"
+        breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Performance Monitoring' }]}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="gap-1.5 rounded-none" onClick={() => navigate('/trust-engine')}>
+              <Gauge size={14} /> Runtime Trust
+            </Button>
+            <Button variant="outline" size="sm" className="gap-1.5 rounded-none" onClick={refresh}>
+              <ArrowsClockwise size={14} /> Refresh
+            </Button>
+            <Button variant="outline" size="sm" className="gap-1.5 rounded-none" onClick={() => navigate('/trust-engine/config')}>
+              <Warning size={14} /> Configure Alerts
+            </Button>
           </div>
-        ))}
-      </div>
+        }
+      />
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-[hsl(var(--text-1))] flex items-center gap-2">
-            <Gauge size={20} weight="duotone" className="text-[hsl(var(--brand))]" />
-            Performance Monitoring & Observability
-          </h1>
-          <p className="text-sm text-[hsl(var(--text-3))] mt-0.5">
-            Real-time model endpoints · SLO tracking · data quality · alert correlation
-            <span className="ml-2 text-[hsl(var(--text-4))]">Last updated: {lastUpdated.toLocaleTimeString()}</span>
-          </p>
+      <StatCardRow
+        cards={[
+          { label: 'Registry Models', value: models.length, description: `${models.length} models in the AI registry` },
+          { label: 'Reporting Telemetry', value: series.filter(s => s.points.length > 0).length, description: `${series.filter(s => s.points.length > 0).length} models with recorded metrics` },
+          { label: 'Telemetry Points', value: totalPoints, description: `${totalPoints} recorded metric rows` },
+          { label: 'Last Ingest', value: lastIngest ? fmtDate(lastIngest) : '—', description: lastIngest ? `Last telemetry recorded ${fmtDateTime(lastIngest)}` : 'No telemetry recorded yet' },
+        ]}
+      />
+
+      {perfQuery.isError && (
+        <div className="border border-[hsl(var(--destructive)/0.4)] bg-[hsl(var(--destructive)/0.06)] p-4 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold text-[hsl(var(--destructive))]">Failed to load telemetry</p>
+            <p className="text-xs text-[hsl(var(--text-3))] mt-0.5">{(perfQuery.error as Error).message}</p>
+          </div>
+          <Button variant="outline" size="sm" className="rounded-none" onClick={refresh}>Retry</Button>
         </div>
+      )}
+
+      <FilterBar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search models…"
+        activeFilterCount={modelParam ? 1 : 0}
+        onClearAll={() => { setSearch(''); setSearchParams({}); }}
+        trailing={
+          <span className="text-xs text-[hsl(var(--text-4))]">
+            {reporting.length} reporting · {silent.length} without telemetry
+          </span>
+        }
+      />
+
+      {/* Model-scoped filter chip (deep-link from a model's Governance card) */}
+      {modelParam && (
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5 rounded-none" onClick={() => navigate('/trust-engine')}>
-            <Gauge size={14} /> Runtime Trust
-          </Button>
-          <Button variant="outline" size="sm" className="gap-1.5 rounded-none" onClick={() => { setLastUpdated(new Date()); addToast('Metrics refreshed'); }}>
-            <ArrowsClockwise size={14} /> Refresh
-          </Button>
-          <Button variant="outline" size="sm" className="gap-1.5 rounded-none" onClick={() => navigate('/trust-engine/config')}>
-            <Warning size={14} /> Configure Alerts
-          </Button>
+          <span className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-[hsl(var(--brand-subtle))] border border-[hsl(var(--brand))/30] text-[hsl(var(--brand))] rounded-none">
+            <span>Filtered to <strong>{chipName}</strong></span>
+            <button
+              aria-label="Clear model filter"
+              onClick={() => setSearchParams({})}
+              className="inline-flex items-center hover:text-[hsl(var(--text-1))] cursor-pointer"
+            >
+              <X size={14} />
+            </button>
+          </span>
         </div>
-      </div>
+      )}
 
-      {/* Status summary */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        {[
-          { label: 'Healthy', value: healthy, color: 'hsl(var(--s-ok-tx))' },
-          { label: 'Degraded', value: degraded, color: 'hsl(var(--s-wn-tx))' },
-          { label: 'Down', value: down, color: 'hsl(var(--s-er-tx))' },
-          { label: 'Active Alerts', value: totalAlerts, color: totalAlerts > 0 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))' },
-          { label: 'Critical', value: criticalAlerts, color: criticalAlerts > 0 ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-ok-tx))' },
-        ].map(s => (
-          <Card key={s.label} style={{ borderRadius: 0 }}>
-            <CardContent className="px-4 py-3">
-              <p className="text-xs text-[hsl(var(--text-4))] mb-1">{s.label}</p>
-              <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Active Alerts Ribbon */}
-      {criticalAlerts > 0 && (
-        <div className="border border-[hsl(var(--destructive)/0.4)] bg-[hsl(var(--destructive)/0.06)] p-3">
-          <div className="flex items-center gap-2 mb-2">
-            <Siren size={14} className="text-[hsl(var(--destructive))]" />
-            <p className="text-sm font-semibold text-[hsl(var(--destructive))]">{criticalAlerts} Critical Alert{criticalAlerts > 1 ? 's' : ''} — Immediate Attention Required</p>
-          </div>
-          {ENDPOINTS.flatMap(e => e.alerts.filter(a => a.severity === 'critical').map(a => ({ ...a, endpoint: e.endpoint }))).map(a => (
-            <div key={a.id} className="flex items-start gap-2 text-xs text-[hsl(var(--destructive))] py-0.5">
-              <span className="font-mono">{a.endpoint}</span>
-              <span>{a.message}</span>
-              {a.correlated && <span className="text-[hsl(var(--s-wn-tx))] italic">→ {a.correlated}</span>}
-            </div>
+      {/* Reporting models — one card each, real recorded series */}
+      {reporting.length > 0 && (
+        <div className="grid lg:grid-cols-2 gap-4">
+          {reporting.map(row => (
+            <ModelPerfCard key={row.id} row={row} name={displayName(row)} ct={ct}
+              onOpen={row.inRegistry ? () => navigate(`/models/inventory/${row.id}`) : undefined} />
           ))}
         </div>
       )}
 
-      {/* Search */}
-      <div className="relative max-w-sm">
-        <MagnifyingGlass size={14} className="absolute left-2.5 top-2.5 text-[hsl(var(--text-4))]" />
-        <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search endpoints..." className="pl-8 rounded-none h-8 text-sm" />
-      </div>
+      {/* Honest empty states */}
+      {reporting.length === 0 && !perfQuery.isError && (
+        <Card style={{ borderRadius: 0 }}>
+          <CardContent className="py-12 text-center">
+            <ChartLine size={32} className="mx-auto mb-3 text-[hsl(var(--text-4))]" />
+            <p className="text-sm font-medium text-[hsl(var(--text-2))]">No telemetry recorded yet</p>
+            <p className="text-xs text-[hsl(var(--text-4))] mt-1 max-w-md mx-auto">
+              Metrics appear here once the inference proxy or an ingestion job writes rows to
+              model_performance_metrics for {modelParam ? 'this model' : 'a registry model'} (latency, throughput, accuracy, error rate, drift, cost).
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Endpoint Grid */}
-      <div className="grid md:grid-cols-2 gap-4">
-        {filtered.map(ep => {
-          const sloOk = ep.sloActual >= ep.slo;
-          const sloColor = sloOk ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))';
-          return (
-            <Card key={ep.modelId} style={{ borderRadius: 0, cursor: 'pointer', borderLeft: `3px solid ${statusColors(ep.status).dot}` }}
-              onClick={() => { setSelected(ep); setTab('overview'); }}
-              className="hover:border-[hsl(var(--brand))] transition-colors">
-              <CardContent className="p-4 space-y-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="font-medium text-sm text-[hsl(var(--text-1))]">{ep.modelName}</p>
-                    <p className="text-xs font-mono text-[hsl(var(--text-4))] mt-0.5">{ep.endpoint}</p>
-                  </div>
-                  <Badge style={{ ...statusColors(ep.status), borderRadius: 0, fontSize: 10, textTransform: 'capitalize' }}>{ep.status}</Badge>
-                </div>
-
-                <div className="grid grid-cols-4 gap-2 text-center">
-                  {[
-                    { label: 'p50', value: ep.status === 'down' ? '—' : `${ep.latencyP50}ms`, ok: ep.latencyP50 < 100 },
-                    { label: 'p99', value: ep.status === 'down' ? '—' : `${ep.latencyP99}ms`, ok: ep.latencyP99 < 200 },
-                    { label: 'RPM', value: ep.status === 'down' ? '—' : `${(ep.throughputRpm / 1000).toFixed(1)}K`, ok: ep.throughputRpm < ep.throughputCapacity * 0.85 },
-                    { label: 'Error %', value: ep.status === 'down' ? '100%' : `${ep.errorRate}%`, ok: ep.errorRate <= ep.errorThreshold },
-                  ].map(m => (
-                    <div key={m.label} className="bg-surface p-2">
-                      <p className="text-xs text-[hsl(var(--text-4))]">{m.label}</p>
-                      <p className="text-sm font-semibold mt-0.5" style={{ color: m.ok ? 'hsl(var(--text-1))' : 'hsl(var(--s-er-tx))' }}>{m.value}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-[hsl(var(--text-4))]">SLO: {ep.sloActual}% / {ep.slo}%</span>
-                      <span className="text-xs font-semibold" style={{ color: sloColor }}>{sloOk ? '✓ On Target' : '✗ Breached'}</span>
-                    </div>
-                    <Progress value={ep.sloActual} className="h-1.5 rounded-none" />
-                  </div>
-                  <div className="text-right text-xs">
-                    <p className="text-[hsl(var(--text-4))]">Daily Cost</p>
-                    <p className="font-semibold text-[hsl(var(--text-1))]">${ep.dailyCost.toLocaleString()}</p>
-                  </div>
-                </div>
-
-                {ep.alerts.length > 0 && (
-                  <div className="flex items-center gap-2">
-                    <Warning size={12} className="text-[hsl(var(--destructive))]" />
-                    <p className="text-xs text-[hsl(var(--destructive))]">{ep.alerts.length} active alert{ep.alerts.length > 1 ? 's' : ''}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Cost Summary */}
-      <Card style={{ borderRadius: 0 }}>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Cost-per-Inference Tracking</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-[hsl(var(--border))]">
-                  {['Model', 'Endpoint', 'Cost/Inference', 'Daily Cost', 'Monthly Est.', 'RPM', 'Utilization'].map(h => (
-                    <th key={h} className="px-3 py-2 text-left text-[hsl(var(--text-4))] font-medium">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {ENDPOINTS.map((ep, i) => (
-                  <tr key={ep.modelId} className={`border-b border-[hsl(var(--border))] ${i % 2 === 0 ? '' : 'bg-surface'}`}>
-                    <td className="px-3 py-2 font-medium text-[hsl(var(--text-1))]">{ep.modelName.split(' ')[0]} {ep.modelName.split(' ')[1]}</td>
-                    <td className="px-3 py-2 font-mono text-[hsl(var(--text-3))]">{ep.endpoint}</td>
-                    <td className="px-3 py-2 text-[hsl(var(--text-2))]">${ep.costPerInference.toFixed(4)}</td>
-                    <td className="px-3 py-2 font-semibold text-[hsl(var(--text-1))]">${ep.dailyCost.toLocaleString()}</td>
-                    <td className="px-3 py-2 text-[hsl(var(--text-2))]">${(ep.dailyCost * 30).toLocaleString()}</td>
-                    <td className="px-3 py-2 text-[hsl(var(--text-2))]">{ep.throughputRpm.toLocaleString()}</td>
-                    <td className="px-3 py-2">
-                      <div className="flex items-center gap-2">
-                        <Progress value={(ep.throughputRpm / ep.throughputCapacity) * 100} className="h-1.5 w-16 rounded-none" />
-                        <span>{Math.round((ep.throughputRpm / ep.throughputCapacity) * 100)}%</span>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Detail Sheet */}
-      <Sheet open={!!selected} onOpenChange={v => !v && setSelected(null)}>
-        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto" style={{ borderRadius: 0 }}>
-          {selected && (
-            <>
-              <SheetHeader className="pb-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <SheetTitle className="text-base">{selected.modelName}</SheetTitle>
-                    <p className="text-xs font-mono text-[hsl(var(--text-3))] mt-1">{selected.endpoint}</p>
-                  </div>
-                  <Badge style={{ ...statusColors(selected.status), borderRadius: 0, textTransform: 'capitalize', fontSize: 10 }}>{selected.status}</Badge>
-                </div>
-              </SheetHeader>
-
-              <Tabs value={tab} onValueChange={setTab}>
-                <TabsList className="rounded-none w-full">
-                  <TabsTrigger value="overview" className="rounded-none flex-1 text-xs">Overview</TabsTrigger>
-                  <TabsTrigger value="latency" className="rounded-none flex-1 text-xs">Latency</TabsTrigger>
-                  <TabsTrigger value="throughput" className="rounded-none flex-1 text-xs">Throughput</TabsTrigger>
-                  <TabsTrigger value="quality" className="rounded-none flex-1 text-xs">Data Quality</TabsTrigger>
-                  <TabsTrigger value="alerts" className="rounded-none flex-1 text-xs">
-                    Alerts {selected.alerts.length > 0 && `(${selected.alerts.length})`}
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="overview" className="mt-4">
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    {[
-                      { label: 'SLO Target', value: `${selected.slo}%` },
-                      { label: 'SLO Actual', value: `${selected.sloActual}%`, ok: selected.sloActual >= selected.slo },
-                      { label: 'Error Rate', value: `${selected.errorRate}%`, ok: selected.errorRate <= selected.errorThreshold },
-                      { label: 'Daily Cost', value: `$${selected.dailyCost.toLocaleString()}` },
-                    ].map(m => (
-                      <div key={m.label} className="p-3 border border-[hsl(var(--border))]">
-                        <p className="text-xs text-[hsl(var(--text-4))]">{m.label}</p>
-                        <p className="text-xl font-bold mt-1" style={{ color: m.ok === false ? 'hsl(var(--s-er-tx))' : m.ok === true ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-1))' }}>{m.value}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="grid grid-cols-3 gap-3">
-                    {[
-                      { label: 'p50 Latency', value: `${selected.latencyP50}ms` },
-                      { label: 'p95 Latency', value: `${selected.latencyP95}ms` },
-                      { label: 'p99 Latency', value: `${selected.latencyP99}ms` },
-                    ].map(m => (
-                      <div key={m.label} className="p-3 border border-[hsl(var(--border))] text-center">
-                        <p className="text-xs text-[hsl(var(--text-4))]">{m.label}</p>
-                        <p className="text-lg font-bold text-[hsl(var(--text-1))] mt-1">{m.value}</p>
-                      </div>
-                    ))}
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="latency" className="mt-4">
-                  <p className="text-xs text-[hsl(var(--text-3))] mb-3">24-hour latency trend (p50 and p99)</p>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <LineChart data={selected.latencyHistory}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
-                      <XAxis dataKey="time" tick={{ fill: ct.text, fontSize: 9 }} interval={3} />
-                      <YAxis tick={{ fill: ct.text, fontSize: 10 }} unit="ms" />
-                      <RTooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.text, borderRadius: 0 }} />
-                      <Legend />
-                      <ReferenceLine y={120} stroke="#ef4444" strokeDasharray="4 2" label={{ value: 'SLA', fill: 'hsl(var(--s-er-tx))', fontSize: 10 }} />
-                      <Line type="monotone" dataKey="p50" stroke="#6366f1" strokeWidth={2} dot={false} name="p50" />
-                      <Line type="monotone" dataKey="p99" stroke="#ef4444" strokeWidth={2} dot={false} name="p99" />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </TabsContent>
-
-                <TabsContent value="throughput" className="mt-4">
-                  <p className="text-xs text-[hsl(var(--text-3))] mb-3">24-hour throughput trend (requests per minute)</p>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <AreaChart data={selected.throughputHistory}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
-                      <XAxis dataKey="time" tick={{ fill: ct.text, fontSize: 9 }} interval={3} />
-                      <YAxis tick={{ fill: ct.text, fontSize: 10 }} />
-                      <RTooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.text, borderRadius: 0 }} />
-                      <ReferenceLine y={selected.throughputCapacity} stroke="#f59e0b" strokeDasharray="4 2" label={{ value: 'Cap', fill: 'hsl(var(--s-wn-tx))', fontSize: 10 }} />
-                      <Area type="monotone" dataKey="rpm" stroke="#10b981" fill="#10b981" fillOpacity={0.15} strokeWidth={2} name="RPM" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </TabsContent>
-
-                <TabsContent value="quality" className="mt-4 space-y-4">
-                  <div className="grid grid-cols-3 gap-3">
-                    {[
-                      { label: 'Data Quality Score', value: `${selected.dataQualityScore}%`, ok: selected.dataQualityScore >= 95 },
-                      { label: 'Schema Drifts', value: selected.schemaDrifts, ok: selected.schemaDrifts === 0 },
-                      { label: 'Avg Null Rate', value: `${selected.nullRateAvg}%`, ok: selected.nullRateAvg < 1 },
-                    ].map(m => (
-                      <div key={m.label} className="p-3 border border-[hsl(var(--border))] text-center">
-                        <p className="text-xs text-[hsl(var(--text-4))]">{m.label}</p>
-                        <p className="text-xl font-bold mt-1" style={{ color: m.ok ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))' }}>{m.value}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="p-3 border border-[hsl(var(--border))] space-y-2">
-                    <p className="text-xs font-medium text-[hsl(var(--text-3))]">DATA QUALITY INDICATORS</p>
-                    {[
-                      { name: 'Schema conformance', value: 100 - selected.schemaDrifts * 15, threshold: 95 },
-                      { name: 'Feature completeness', value: 100 - selected.nullRateAvg * 10, threshold: 99 },
-                      { name: 'Distribution stability (PSI)', value: selected.dataQualityScore, threshold: 90 },
-                    ].map(q => (
-                      <div key={q.name}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs text-[hsl(var(--text-2))]">{q.name}</span>
-                          <span className="text-xs font-medium" style={{ color: q.value >= q.threshold ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))' }}>{q.value}%</span>
-                        </div>
-                        <Progress value={q.value} className="h-1.5 rounded-none" />
-                      </div>
-                    ))}
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="alerts" className="mt-4 space-y-3">
-                  {selected.alerts.length === 0 && (
-                    <div className="text-center py-8">
-                      <Check size={24} className="mx-auto text-[hsl(var(--s-ok-tx))] mb-2" />
-                      <p className="text-sm text-[hsl(var(--text-3))]">No active alerts — all systems nominal</p>
-                    </div>
-                  )}
-                  {selected.alerts.map(a => (
-                    <div key={a.id} className="border border-[hsl(var(--border))] p-3 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <Badge style={{ ...ALERT_COLORS[a.severity], borderRadius: 0, fontSize: 10, textTransform: 'capitalize' }}>{a.severity}</Badge>
-                        <span className="text-xs text-[hsl(var(--text-4))]">{a.time}</span>
-                      </div>
-                      <p className="text-sm text-[hsl(var(--text-1))]">{a.message}</p>
-                      {a.correlated && (
-                        <p className="text-xs text-[hsl(var(--s-wn-tx))] italic">Alert correlation: {a.correlated}</p>
-                      )}
-                    </div>
-                  ))}
-                </TabsContent>
-              </Tabs>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
+      {silent.length > 0 && reporting.length > 0 && (
+        <Card style={{ borderRadius: 0 }}>
+          <CardContent className="p-4">
+            <p className="text-xs font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">No telemetry recorded yet</p>
+            <p className="text-xs text-[hsl(var(--text-4))] mb-3">
+              These registry models have no rows in model_performance_metrics. Metrics appear once the
+              inference proxy or an ingestion job records telemetry for them.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {silent.map(row => (
+                <button
+                  key={row.id}
+                  onClick={() => row.inRegistry && navigate(`/models/inventory/${row.id}`)}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-none border border-[hsl(var(--brand))/30] bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))] cursor-pointer transition-colors hover:bg-[hsl(var(--brand))] hover:text-[hsl(var(--bg-surface))]"
+                >
+                  {displayName(row)} <ArrowSquareOut size={12} />
+                </button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
+  );
+}
+
+/* ── Per-model card: latest recorded values + real trend series ──────────── */
+function ModelPerfCard({ row, name, ct, onOpen }: {
+  row: ModelRow;
+  name: string;
+  ct: ReturnType<typeof useChartTheme>;
+  onOpen?: () => void;
+}) {
+  const points = row.series!.points; // recorded_at ascending
+  const latest: PerfPoint = points[points.length - 1];
+  const chartData = points.map(p => ({
+    t: fmtDate(p.recordedAt),
+    p50: p.latencyP50, p99: p.latencyP99, throughput: p.throughput,
+  }));
+
+  const tiles = [
+    { label: 'Latency p50', value: fmtMs(latest.latencyP50) },
+    { label: 'Latency p99', value: fmtMs(latest.latencyP99) },
+    { label: 'Throughput', value: `${Math.round(latest.throughput).toLocaleString()}/s` },
+    { label: 'Accuracy', value: fmtAcc(latest.accuracy) },
+    { label: 'Error Rate', value: fmtRate(latest.errorRate) },
+    { label: 'Drift Score', value: latest.driftScore.toFixed(2) },
+  ];
+
+  return (
+    <Card style={{ borderRadius: 0 }}>
+      <CardContent className="p-4 space-y-3">
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            {onOpen ? (
+              <button
+                onClick={onOpen}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 text-sm font-medium rounded-none border border-[hsl(var(--brand))/30] bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))] cursor-pointer transition-colors hover:bg-[hsl(var(--brand))] hover:text-[hsl(var(--bg-surface))]"
+              >
+                {name} <ArrowSquareOut size={13} />
+              </button>
+            ) : (
+              <p className="font-medium text-sm text-[hsl(var(--text-1))]">{name}</p>
+            )}
+            <p className="text-[11px] text-[hsl(var(--text-4))] mt-1">
+              {points.length} recorded point{points.length !== 1 ? 's' : ''} · latest {fmtDateTime(latest.recordedAt)}
+            </p>
+          </div>
+          <div className="text-right text-xs shrink-0">
+            <p className="text-[hsl(var(--text-4))]">Cost / Inference</p>
+            <p className="font-semibold text-[hsl(var(--text-1))]">{fmtCost(latest.costPerInference)}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2 text-center">
+          {tiles.map(m => (
+            <div key={m.label} className="bg-surface border border-[hsl(var(--border))] p-2">
+              <p className="text-[10px] text-[hsl(var(--text-4))] uppercase tracking-wide">{m.label}</p>
+              <p className="text-sm font-semibold mt-0.5 text-[hsl(var(--text-1))]">{m.value}</p>
+            </div>
+          ))}
+        </div>
+
+        {chartData.length > 1 ? (
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div>
+              <p className="text-[11px] text-[hsl(var(--text-4))] mb-1">Latency trend (recorded)</p>
+              <ResponsiveContainer width="100%" height={120}>
+                <LineChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: -18 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+                  <XAxis dataKey="t" tick={{ fill: ct.text, fontSize: 9 }} interval="preserveStartEnd" />
+                  <YAxis tick={{ fill: ct.text, fontSize: 9 }} unit="ms" width={52} />
+                  <RTooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.tooltipText, borderRadius: 0, fontSize: 11 }} />
+                  <Legend wrapperStyle={{ fontSize: 10 }} />
+                  <Line type="monotone" dataKey="p50" stroke={ct.brand} strokeWidth={2} dot={false} name="p50" />
+                  <Line type="monotone" dataKey="p99" stroke={ct.colors[3]} strokeWidth={2} dot={false} name="p99" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            <div>
+              <p className="text-[11px] text-[hsl(var(--text-4))] mb-1">Throughput trend (req/s, recorded)</p>
+              <ResponsiveContainer width="100%" height={120}>
+                <LineChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: -18 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+                  <XAxis dataKey="t" tick={{ fill: ct.text, fontSize: 9 }} interval="preserveStartEnd" />
+                  <YAxis tick={{ fill: ct.text, fontSize: 9 }} width={52} />
+                  <RTooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.tooltipText, borderRadius: 0, fontSize: 11 }} />
+                  <Line type="monotone" dataKey="throughput" stroke={ct.colors[1]} strokeWidth={2} dot={false} name="Throughput" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        ) : (
+          <p className="text-[11px] text-[hsl(var(--text-4))]">
+            Only one telemetry point recorded — trend lines appear once more points are ingested.
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 }

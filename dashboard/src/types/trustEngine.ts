@@ -9,9 +9,19 @@ export type GenAISeverity = 'Critical' | 'High' | 'Medium' | 'Low'
 export type GenAIMitigationStatus = 'Implemented' | 'Partial' | 'Under Review' | 'Not Addressed'
 export type GenAIGuardrailCoverage = 'None' | 'Partial' | 'Implemented'
 
+/** A real, recorded mitigation event (stored in the profile doc). */
+export interface GenAIMitigationEvent {
+  date: string
+  action: string
+  user: string
+}
+
 /** NIST AI 600-1 GenAI risk profile per model. */
 export interface GenAIRiskProfile {
   id: string
+  /** Canonical registry link — ai_models.id (uuid). Absent on legacy rows keyed by name only. */
+  modelId?: string
+  /** Display-name snapshot; resolve the live name from the registry when modelId is set. */
   model: string
   riskCategory: string
   riskNumber: number
@@ -21,4 +31,8 @@ export interface GenAIRiskProfile {
   mitigationStatus: GenAIMitigationStatus
   owner: string            // from central Users directory
   created: string
+  /** Real mitigation events only — no synthesized timeline. */
+  mitigationEvents?: GenAIMitigationEvent[]
+  /** Optimistic-concurrency counter maintained by the doc CRUD. */
+  version?: number
 }
