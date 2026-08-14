@@ -2,7 +2,6 @@
  * DataGovernanceAgent — cross-references datasets for PII/PHI/consent/cross-border.
  */
 import type { AgentContext, AgentResult, ModelRegisteredPayload } from '../lib/governance/types/events'
-import { safeInsert } from '../lib/governance/agentHelpers'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
 export async function dataGovernanceAgent(ctx: AgentContext): Promise<AgentResult> {
@@ -10,37 +9,40 @@ export async function dataGovernanceAgent(ctx: AgentContext): Promise<AgentResul
   const refs = p.trainingDataRefs ?? []
   if (!p?.modelId) return { status: 'skipped' }
 
-  // Link model → datasets
-  for (const datasetId of refs) {
-    await safeInsert('model_dataset_links', {
-      org_id: ctx.orgId, model_id: p.modelId, dataset_id: datasetId, link_type: 'training',
-    })
-  }
-
-  // Check consent status + PII flags
+  // Link model → datasets on the canonical table: append the model uuid to
+  // datasets.used_in_models (the link column the AI Assets pages read).
   let piiFound = false
   let consentOk = true
-  let crossBorder: string[] = []
+  const crossBorder: string[] = []
   if (isSupabaseConfigured() && refs.length > 0) {
-    const { data } = await supabase.from('dataset_registry').select('*').in('id', refs)
+    const { data } = await supabase.from('datasets')
+      .select('id, contains_pii, pii_types, used_in_models')
+      .in('id', refs)
     for (const d of data ?? []) {
-      if (d.contains_pii || d.contains_phi) piiFound = true
-      if (d.consent_status && d.consent_status !== 'VALID') consentOk = false
-      if (d.jurisdiction && d.jurisdiction !== 'EU') crossBorder.push(d.jurisdiction)
+      if (d.contains_pii || (d.pii_types ?? []).length > 0) piiFound = true
+      const linked: string[] = d.used_in_models ?? []
+      if (!linked.includes(p.modelId)) {
+        const { error } = await supabase.from('datasets')
+          .update({ used_in_models: [...linked, p.modelId] })
+          .eq('id', d.id)
+        if (error) ctx.log(`link ${d.id} → ${p.modelId} failed: ${error.message}`)
+      }
     }
   } else if (p.dataSensitivity === 'PII' || p.dataSensitivity === 'PHI') piiFound = true
 
+  // Consent is not tracked on the datasets table — report UNKNOWN rather than
+  // asserting validity the platform has not verified.
   await ctx.emit('DATA_GOVERNANCE_CHECK', 'data-governance', {
-    modelId: p.modelId, datasets: refs, piiFound, consentStatus: consentOk ? 'VALID' : 'MISSING',
+    modelId: p.modelId, datasets: refs, piiFound, consentStatus: 'UNKNOWN',
     crossBorderJurisdictions: crossBorder,
   })
 
-  if (!consentOk || piiFound) {
+  if (piiFound) {
     await ctx.emit('RISK_DETECTED', 'data-governance', {
-      source: 'DATA_QUALITY', severity: piiFound ? 'HIGH' : 'MEDIUM',
+      source: 'DATA_QUALITY', severity: 'HIGH',
       affectedModels: [p.modelId],
       title: `Data governance gap for ${p.modelName}`,
-      description: `PII=${piiFound}, consent=${consentOk}, cross-border=${crossBorder.join(',')}`,
+      description: `Model is linked to training data flagged as containing PII; consent status unverified.`,
       detectedAt: new Date().toISOString(),
     })
   }

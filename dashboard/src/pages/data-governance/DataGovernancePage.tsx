@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Eye, PencilSimple, Trash, Plus, MagnifyingGlass, Database,
   Warning, CheckCircle, Info, ArrowRight, ShieldCheck,
@@ -18,8 +19,7 @@ import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { formatDate } from '../../data/seed';
-import { useEffect } from 'react'
-import { useDsarRequests } from '../../hooks/queries/useDataGovernance'
+import { useDsarRequests, useUpsertDsarRequest } from '../../hooks/queries/useDataGovernance'
 import { useDatasets } from '../../hooks/useDatasetData'
 import { PageSkeleton } from '@/components/ui/PageSkeleton'
 
@@ -129,21 +129,42 @@ function LineageFlow({ lineage }: { lineage: string[] }) {
 
 // ── Main Component ───────────────────────────────────────────────────────────
 
+const DSAR_TYPE_TO_DB: Record<DSAR['type'], string> = { Access: 'access', Delete: 'deletion', Portability: 'portability' }
+const DSAR_TYPE_FROM_DB: Record<string, DSAR['type']> = { access: 'Access', deletion: 'Delete', portability: 'Portability' }
+
 export default function DataGovernancePage() {
-  const { data: datasetItems, isLoading: datasetsLoading } = useDatasets()
+  const nav = useNavigate()
+  const { data: datasetItems, isLoading: datasetsLoading, remove: removeDataset } = useDatasets()
   const { data: supabaseDsars = [] } = useDsarRequests()
-  const [dsars, setDsars] = useState<DSAR[]>([]);
-  useEffect(() => { if (supabaseDsars.length > 0) setDsars(supabaseDsars as any) }, [supabaseDsars]);
+  const upsertDsar = useUpsertDsarRequest()
   const [activeTab, setActiveTab] = useState('inventory');
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedDG, setSelectedDG] = useState<DG | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DG | null>(null);
   const [dsarFormOpen, setDsarFormOpen] = useState(false);
-  const [registerOpen, setRegisterOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
 
-  // DSAR form state
+  // DSAR form state — dataset holds the datasets.id, resolved to a name at render.
   const [newDSAR, setNewDSAR] = useState({ requester: '', dataset: '', type: 'Access' as DSAR['type'], description: '' });
+
+  // DSAR display rows mapped from real dsar_requests rows; overdue is derived
+  // from due_date, never stored.
+  const dsars: DSAR[] = useMemo(() => (supabaseDsars as any[]).map(r => {
+    const dueDate = r.due_date ?? ''
+    const done = r.status === 'completed' || !!r.completed_at
+    const overdue = !done && dueDate && new Date(dueDate).getTime() < Date.now()
+    return {
+      id: r.id,
+      requester: r.requester_email || r.requester_name || '—',
+      dataset: (datasetItems as any[]).find(d => d.id === r.dataset_id)?.name ?? (r.dataset_id ? 'Unavailable' : '—'),
+      datasetId: r.dataset_id ?? '',
+      type: DSAR_TYPE_FROM_DB[r.request_type] ?? 'Access',
+      received: r.created_at ?? '',
+      slaDeadline: dueDate,
+      status: overdue ? 'Overdue' : done ? 'Complete' : r.status === 'in_progress' ? 'In Progress' : 'Pending',
+      description: r.description ?? '',
+    }
+  }), [supabaseDsars, datasetItems]);
 
   const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
     const id = Date.now();
@@ -166,7 +187,7 @@ export default function DataGovernancePage() {
     crossBorder: d.crossBorder ?? false,
     countries: d.countries || [],
     consentStatus: d.consentStatus || 'Not Required',
-    dsarCount: d.dsarCount ?? 0,
+    dsarCount: dsars.filter(r => r.datasetId === d.id).length,
     lineage: d.upstreamSources || [],
     lawfulBasis: d.lawfulBasis || 'Legitimate Interest',
     lastReview: d.lastAuditDate || '',
@@ -181,25 +202,35 @@ export default function DataGovernancePage() {
   // Consent health score
   const consentHealth = Math.round((dataAssets.filter(d => d.consentStatus === 'Obtained' || d.consentStatus === 'Not Required').length / tracked) * 100);
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteTarget) return;
-    toast(`${deleteTarget.id} deleted`, 'info');
+    const target = deleteTarget;
     setDeleteTarget(null);
+    try {
+      await removeDataset.mutateAsync(target.datasetId);
+      toast(`${target.name} deleted`, 'info');
+    } catch (e: any) {
+      toast(e?.message ?? 'Delete failed', 'error');
+    }
   };
 
-  const handleCreateDSAR = () => {
-    const id = `DSAR-${String(dsars.length + 1).padStart(3, '0')}`;
-    const received = new Date().toISOString().split('T')[0];
+  const handleCreateDSAR = async () => {
     const deadline = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    const dsar: DSAR = {
-      id, requester: newDSAR.requester, dataset: newDSAR.dataset || 'Unknown',
-      datasetId: '', type: newDSAR.type, received, slaDeadline: deadline,
-      status: 'Pending', description: newDSAR.description,
-    };
-    setDsars(prev => [...prev, dsar]);
-    setDsarFormOpen(false);
-    setNewDSAR({ requester: '', dataset: '', type: 'Access', description: '' });
-    toast(`DSAR ${id} created — 30-day SLA starts now`);
+    try {
+      await upsertDsar.mutateAsync({
+        requester_email: newDSAR.requester,
+        request_type: DSAR_TYPE_TO_DB[newDSAR.type],
+        description: newDSAR.description || null,
+        dataset_id: newDSAR.dataset || null,
+        due_date: deadline,
+        status: 'pending',
+      });
+      setDsarFormOpen(false);
+      setNewDSAR({ requester: '', dataset: '', type: 'Access', description: '' });
+      toast('DSAR created — 30-day SLA starts now');
+    } catch (e: any) {
+      toast(e?.message ?? 'Failed to create DSAR', 'error');
+    }
   };
 
   return (
@@ -230,7 +261,7 @@ export default function DataGovernancePage() {
           <Button variant="outline" onClick={() => setDsarFormOpen(true)} style={{ borderRadius: 0 }}>
             <UserCircle size={14} />New DSAR
           </Button>
-          <Button onClick={() => setRegisterOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
+          <Button onClick={() => nav('/datasets')} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
             <Plus size={14} />Register Data Asset
           </Button>
         </div>
@@ -380,21 +411,9 @@ export default function DataGovernancePage() {
                         <td className="px-4 py-3"><ConsentBadge status={dg.consentStatus} /></td>
                         <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{dg.lawfulBasis}</td>
                         <td className="px-4 py-3">
-                          <div className="flex items-center gap-1">
-                            {dg.consentStatus === 'Missing' && (
-                              <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => toast('Consent request sent')} style={{ borderRadius: 0 }}>
-                                Request Consent
-                              </Button>
-                            )}
-                            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => toast('Consent record viewed')} style={{ borderRadius: 0 }}>
-                              View Record
-                            </Button>
-                            {dg.consentStatus === 'Obtained' && (
-                              <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive" onClick={() => toast('Consent revoked', 'info')} style={{ borderRadius: 0 }}>
-                                Revoke
-                              </Button>
-                            )}
-                          </div>
+                          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => nav(`/datasets/${dg.datasetId}`)} style={{ borderRadius: 0 }}>
+                            View Dataset
+                          </Button>
                         </td>
                       </tr>
                     ))}
@@ -527,7 +546,7 @@ export default function DataGovernancePage() {
               <Select value={newDSAR.dataset} onValueChange={v => setNewDSAR({ ...newDSAR, dataset: v })}>
                 <SelectTrigger style={{ borderRadius: 0 }}><SelectValue placeholder="Select dataset" /></SelectTrigger>
                 <SelectContent style={{ borderRadius: 0 }}>
-                  {dataAssets.map(d => <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>)}
+                  {dataAssets.map(d => <SelectItem key={d.id} value={d.datasetId}>{d.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -554,49 +573,6 @@ export default function DataGovernancePage() {
         </DialogContent>
       </Dialog>
 
-      {/* Register Data Asset Dialog */}
-      <Dialog open={registerOpen} onOpenChange={setRegisterOpen}>
-        <DialogContent style={{ borderRadius: 0, maxWidth: 480 }}>
-          <DialogHeader>
-            <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>Register Data Asset</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 mt-2">
-            <div>
-              <Label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Name *</Label>
-              <Input placeholder="e.g., Customer Transaction Logs" style={{ borderRadius: 0 }} />
-            </div>
-            <div>
-              <Label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Type</Label>
-              <Select defaultValue="Personal Data">
-                <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                <SelectContent style={{ borderRadius: 0 }}>
-                  <SelectItem value="Personal Data">Personal Data</SelectItem>
-                  <SelectItem value="Transaction Data">Transaction Data</SelectItem>
-                  <SelectItem value="Financial Data">Financial Data</SelectItem>
-                  <SelectItem value="Behavioral Data">Behavioral Data</SelectItem>
-                  <SelectItem value="Document Data">Document Data</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-4))' }}>Classification</Label>
-              <Select defaultValue="Internal">
-                <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                <SelectContent style={{ borderRadius: 0 }}>
-                  <SelectItem value="Restricted">Restricted</SelectItem>
-                  <SelectItem value="Confidential">Confidential</SelectItem>
-                  <SelectItem value="Internal">Internal</SelectItem>
-                  <SelectItem value="Public">Public</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setRegisterOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
-            <Button onClick={() => { setRegisterOpen(false); toast('Data asset registered'); }} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>Register</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

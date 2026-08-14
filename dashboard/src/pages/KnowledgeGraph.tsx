@@ -1,285 +1,358 @@
-import { useState } from 'react';
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI.
+//
+// KnowledgeGraph — governed-entity graph built from live platform data:
+// datasets → models (used_in_models), datasets → use cases (used_in_use_cases),
+// use cases → models (linked_model_ids), agents → models (model_id).
+// Nothing here is fabricated: nodes are real records (deep-linked to their
+// detail routes) and every edge derives from a stored link column.
+
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../components/ui/card';
 import { PageHeader } from '../components/ui/PageHeader';
-import { Badge } from '../components/ui/badge';
-import { Button } from '../components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Input } from '../components/ui/input';
-import { TooltipProvider } from '../components/ui/tooltip';
+import { EmptyState } from '../components/evals/states';
 import {
-  Brain, ShieldCheck, Warning, Users, Database, Globe,
-  ArrowRight, MagnifyingGlass, TreeStructure, Info, ChartBar,
+  Brain, Briefcase, Database, Robot, TreeStructure, ArrowRight, Warning,
 } from '@phosphor-icons/react';
-import { useSettingsStore } from '../stores/settingsStore';
+import { useModelOptions, useUseCases } from '../hooks/useAiiaData';
+import { useDatasets } from '../hooks/useDatasetData';
+import { agentRecordHooks } from '../hooks/queries/useAgentGovCrud';
 
+type EntityType = 'Model' | 'Use Case' | 'Dataset' | 'Agent';
 
-const ENTITY_COLORS: Record<string, string> = {
+const ENTITY_COLORS: Record<EntityType, string> = {
   Model: 'hsl(var(--brand))',
-  Regulation: 'hsl(var(--tag-purple))',
-  Control: 'hsl(var(--s-ok-tx))',
-  Incident: 'hsl(var(--s-er-tx))',
-  Vendor: 'hsl(var(--s-wn-tx))',
+  'Use Case': 'hsl(var(--tag-purple))',
   Dataset: 'hsl(var(--s-in-tx))',
-  Policy: '#ec4899',
+  Agent: 'hsl(var(--s-wn-tx))',
 };
 
-const NODES = [
-  { id: 'MDL-001', type: 'Model', label: 'CreditRisk-XGB', x: 400, y: 200 },
-  { id: 'MDL-002', type: 'Model', label: 'FraudDetect-LSTM', x: 400, y: 360 },
-  { id: 'REG-001', type: 'Regulation', label: 'EU AI Act', x: 160, y: 160 },
-  { id: 'REG-002', type: 'Regulation', label: 'ECOA', x: 160, y: 300 },
-  { id: 'REG-003', type: 'Regulation', label: 'NIST AI RMF', x: 160, y: 420 },
-  { id: 'CTL-012', type: 'Control', label: 'Bias Monitor', x: 620, y: 140 },
-  { id: 'CTL-047', type: 'Control', label: 'Data Access', x: 620, y: 260 },
-  { id: 'CTL-089', type: 'Control', label: 'Explainability', x: 620, y: 380 },
-  { id: 'INC-044', type: 'Incident', label: 'Fairness Drift', x: 800, y: 200 },
-  { id: 'VND-001', type: 'Vendor', label: 'OpenAI', x: 80, y: 60 },
-  { id: 'VND-002', type: 'Vendor', label: 'AWS SageMaker', x: 80, y: 500 },
-  { id: 'DAT-001', type: 'Dataset', label: 'LoanApps 2019-23', x: 550, y: 500 },
-  { id: 'POL-001', type: 'Policy', label: 'AI Use Policy', x: 800, y: 380 },
-];
+const ENTITY_ICONS: Record<EntityType, typeof Brain> = {
+  Model: Brain, 'Use Case': Briefcase, Dataset: Database, Agent: Robot,
+};
 
-const EDGES = [
-  { from: 'MDL-001', to: 'REG-001', label: 'governed by' },
-  { from: 'MDL-001', to: 'REG-002', label: 'governed by' },
-  { from: 'MDL-002', to: 'REG-002', label: 'governed by' },
-  { from: 'MDL-002', to: 'REG-003', label: 'governed by' },
-  { from: 'MDL-001', to: 'CTL-012', label: 'covered by' },
-  { from: 'MDL-001', to: 'CTL-047', label: 'covered by' },
-  { from: 'MDL-002', to: 'CTL-047', label: 'covered by' },
-  { from: 'MDL-001', to: 'CTL-089', label: 'covered by' },
-  { from: 'MDL-001', to: 'INC-044', label: 'caused' },
-  { from: 'INC-044', to: 'CTL-012', label: 'triggered update' },
-  { from: 'VND-001', to: 'MDL-002', label: 'powers' },
-  { from: 'VND-002', to: 'MDL-001', label: 'hosts' },
-  { from: 'DAT-001', to: 'MDL-001', label: 'trained on' },
-  { from: 'POL-001', to: 'MDL-001', label: 'applies to' },
-  { from: 'POL-001', to: 'MDL-002', label: 'applies to' },
-];
-
-const ENTITY_COUNTS = [
-  { type: 'Model', count: 6, icon: Brain },
-  { type: 'Regulation', count: 8, icon: Globe },
-  { type: 'Control', count: 847, icon: ShieldCheck },
-  { type: 'Incident', count: 44, icon: Warning },
-  { type: 'Vendor', count: 7, icon: Users },
-  { type: 'Dataset', count: 12, icon: Database },
-  { type: 'Policy', count: 23, icon: ChartBar },
-];
-
-const CROSS_ENTITY_PATHS = [
-  { path: 'EU AI Act → MDL-001 → INC-044 → CTL-012', insight: 'EU AI Act governs Credit Risk model which caused a fairness incident that triggered a control update', risk: 'High' },
-  { path: 'ECOA → MDL-001 → DAT-001', insight: 'ECOA regulation applies to model trained on LoanApps dataset — demographic fairness at risk', risk: 'Critical' },
-  { path: 'OpenAI (Vendor) → MDL-002 → REG-002', insight: 'Vendor dependency chain: OpenAI powers Fraud model covered by ECOA — third-party risk exposure', risk: 'High' },
-  { path: 'AI Use Policy → MDL-001 → CTL-089', insight: 'Policy mandates explainability control coverage — currently at 58% vs peer avg 71%', risk: 'Medium' },
-];
-
-function KGVisualization({ filter }: { filter: string }) {
-  const filteredNodes = filter === 'all' ? NODES : NODES.filter(n => n.type === filter);
-  const filteredIds = new Set(filteredNodes.map(n => n.id));
-  const filteredEdges = EDGES.filter(e => filteredIds.has(e.from) && filteredIds.has(e.to));
-
-  const nodeMap = Object.fromEntries(NODES.map(n => [n.id, n]));
-
-  return (
-    <svg width="100%" height="560" viewBox="0 0 900 560" style={{ background: 'hsl(var(--bg-raised))' }}>
-      <defs>
-        <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-          <polygon points="0 0, 8 3, 0 6" fill="hsl(var(--border))" />
-        </marker>
-      </defs>
-
-      {filteredEdges.map((edge, i) => {
-        const from = nodeMap[edge.from];
-        const to = nodeMap[edge.to];
-        if (!from || !to) return null;
-        const mx = (from.x + to.x) / 2;
-        const my = (from.y + to.y) / 2;
-        return (
-          <g key={i}>
-            <line
-              x1={from.x} y1={from.y} x2={to.x} y2={to.y}
-              stroke="hsl(var(--border))" strokeWidth={1.5}
-              markerEnd="url(#arrowhead)" strokeOpacity={0.7}
-            />
-            <text x={mx} y={my - 4} textAnchor="middle" fontSize={8} fill="hsl(var(--text-4))">{edge.label}</text>
-          </g>
-        );
-      })}
-
-      {filteredNodes.map(node => {
-        const color = ENTITY_COLORS[node.type] || 'hsl(var(--brand))';
-        return (
-          <g key={node.id}>
-            <circle cx={node.x} cy={node.y} r={28} fill={color} fillOpacity={0.12} stroke={color} strokeWidth={1.5} />
-            <text x={node.x} y={node.y - 2} textAnchor="middle" fontSize={9} fontWeight="600" fill={color}>{node.type}</text>
-            <text x={node.x} y={node.y + 11} textAnchor="middle" fontSize={8} fill="hsl(var(--text-2))">{node.label}</text>
-            <text x={node.x} y={node.y + 22} textAnchor="middle" fontSize={7} fill="hsl(var(--text-4))">{node.id}</text>
-          </g>
-        );
-      })}
-    </svg>
-  );
+interface GraphNode {
+  key: string          // type-qualified unique key
+  id: string           // record id (uuid / text pk)
+  type: EntityType
+  label: string
+  route: string
+  flag?: string        // factual annotation (e.g. "PII")
+  x: number
+  y: number
 }
 
-export default function KnowledgeGraph() {
-  const { orgName } = useSettingsStore();
-  const [tab, setTab] = useState('graph');
-  const [filter, setFilter] = useState('all');
-  const [search, setSearch] = useState('');
+interface GraphEdge { from: string; to: string; label: string }
 
-  const filteredPaths = CROSS_ENTITY_PATHS.filter(p =>
-    search === '' || p.path.toLowerCase().includes(search.toLowerCase()) || p.insight.toLowerCase().includes(search.toLowerCase())
-  );
+// Column x-positions per entity type; y is spread within the column.
+const COLUMN_X: Record<EntityType, number> = { Dataset: 120, Model: 400, 'Use Case': 690, Agent: 690 };
+const MAX_PER_COLUMN = 14;
+
+export default function KnowledgeGraph() {
+  const nav = useNavigate();
+  const { models } = useModelOptions();
+  const { data: useCases } = useUseCases();
+  const { data: datasets } = useDatasets();
+  const { data: agents = [] } = agentRecordHooks.useList();
+
+  const [tab, setTab] = useState('graph');
+  const [filter, setFilter] = useState<'all' | EntityType>('all');
+
+  const { allNodes, nodes, edges, truncated } = useMemo(() => {
+    const modelIds = new Set(models.map((m) => m.id));
+    const useCaseIds = new Set(useCases.map((u) => u.id));
+
+    const columns: { type: EntityType; items: Omit<GraphNode, 'x' | 'y'>[] }[] = [
+      {
+        type: 'Dataset',
+        items: datasets.map((d) => ({
+          key: `ds:${d.id}`, id: d.id, type: 'Dataset' as const, label: d.name,
+          route: `/datasets/${d.id}`, flag: d.containsPii ? 'PII' : undefined,
+        })),
+      },
+      {
+        type: 'Model',
+        items: models.map((m) => ({
+          key: `mdl:${m.id}`, id: m.id, type: 'Model' as const, label: m.name,
+          route: `/models/inventory/${m.id}`,
+        })),
+      },
+      {
+        type: 'Use Case',
+        items: useCases.map((u) => ({
+          key: `uc:${u.id}`, id: u.id, type: 'Use Case' as const, label: u.title,
+          route: `/use-cases/${u.id}`,
+        })),
+      },
+      {
+        type: 'Agent',
+        items: (agents as any[]).map((a) => ({
+          key: `agt:${a.id}`, id: a.id, type: 'Agent' as const, label: a.name,
+          route: `/agents/${a.id}`,
+        })),
+      },
+    ];
+    const allNodes = columns.flatMap((c) => c.items);
+
+    // Edges span the full entity set; the SVG below only draws the capped subset.
+    const edges: GraphEdge[] = [];
+    for (const d of datasets) {
+      for (const mid of d.usedInModels) if (modelIds.has(mid)) edges.push({ from: `ds:${d.id}`, to: `mdl:${mid}`, label: 'trains' });
+      for (const uid of d.usedInUseCases) if (useCaseIds.has(uid)) edges.push({ from: `ds:${d.id}`, to: `uc:${uid}`, label: 'supports' });
+    }
+    for (const u of useCases) {
+      for (const mid of u.linkedModelIds) if (modelIds.has(mid)) edges.push({ from: `uc:${u.id}`, to: `mdl:${mid}`, label: 'uses' });
+    }
+    for (const a of agents as any[]) {
+      if (a.modelId && modelIds.has(a.modelId)) edges.push({ from: `agt:${a.id}`, to: `mdl:${a.modelId}`, label: 'runs on' });
+    }
+
+    // Cap each drawn column so the SVG stays legible; report what was cut
+    // instead of hiding it. Use Cases stack above Agents in the shared column.
+    const truncated: string[] = [];
+    const placed: GraphNode[] = [];
+    const height = 620;
+    for (const col of columns) {
+      const items = col.items.slice(0, MAX_PER_COLUMN);
+      if (col.items.length > MAX_PER_COLUMN) truncated.push(`${col.items.length - MAX_PER_COLUMN} ${col.type.toLowerCase()}s`);
+      const isShared = col.type === 'Use Case' || col.type === 'Agent';
+      const bandTop = col.type === 'Agent' ? height / 2 : 40;
+      const bandHeight = isShared ? height / 2 - 60 : height - 80;
+      items.forEach((n, i) => {
+        placed.push({
+          ...n,
+          x: COLUMN_X[col.type],
+          y: bandTop + (items.length === 1 ? bandHeight / 2 : (i * bandHeight) / Math.max(items.length - 1, 1)),
+        });
+      });
+    }
+
+    return { allNodes, nodes: placed, edges, truncated };
+  }, [models, useCases, datasets, agents]);
+
+  // Derived, factual multi-hop chains: dataset → model → use case, plus PII
+  // datasets feeding models. No invented risk narratives.
+  const chains = useMemo(() => {
+    const out: { path: string; note: string; warn: boolean }[] = [];
+    const modelName = (id: string) => models.find((m) => m.id === id)?.name;
+    for (const d of datasets) {
+      for (const mid of d.usedInModels) {
+        const mName = modelName(mid);
+        if (!mName) continue;
+        const consumers = useCases.filter((u) => u.linkedModelIds.includes(mid));
+        if (consumers.length) {
+          for (const u of consumers) {
+            out.push({
+              path: `${d.name} → ${mName} → ${u.title}`,
+              note: `Dataset feeds a model used by the "${u.title}" use case${d.containsPii ? ' — dataset contains PII' : ''}.`,
+              warn: d.containsPii,
+            });
+          }
+        } else if (d.containsPii) {
+          out.push({
+            path: `${d.name} → ${mName}`,
+            note: 'PII dataset feeds this model; no approved use case is linked to the model yet.',
+            warn: true,
+          });
+        }
+      }
+    }
+    return out;
+  }, [datasets, models, useCases]);
+
+  const counts: { type: EntityType; count: number }[] = [
+    { type: 'Model', count: models.length },
+    { type: 'Use Case', count: useCases.length },
+    { type: 'Dataset', count: datasets.length },
+    { type: 'Agent', count: (agents as any[]).length },
+  ];
+
+  const visibleNodes = filter === 'all' ? nodes : nodes.filter((n) => n.type === filter);
+  const visibleKeys = new Set(visibleNodes.map((n) => n.key));
+  const visibleEdges = edges.filter((e) => visibleKeys.has(e.from) && visibleKeys.has(e.to));
+  const nodeMap = Object.fromEntries(nodes.map((n) => [n.key, n]));
+  const isEmpty = allNodes.length === 0;
 
   return (
-    <TooltipProvider>
-      <div className="space-y-6">
-        <PageHeader
-          title="Enterprise AI Knowledge Graph"
-          subtitle={`${orgName} · Semantic graph connecting all AI models, regulations, controls, incidents, vendors, and policies with causal inference`}
-          actions={
-            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-              <ChartBar size={13} />Export Graph
-            </Button>
-          }
-        />
+    <div className="space-y-6">
+      <PageHeader
+        title="Knowledge Graph"
+        subtitle="Live graph of governed entities — datasets, models, use cases and agents — built from their stored links"
+        icon={TreeStructure}
+      />
 
-        <div className="p-3 flex items-start gap-3" style={{ border: '1px solid hsl(var(--brand) / 0.3)', background: 'hsl(var(--brand) / 0.04)' }}>
-          <Info size={16} style={{ color: 'hsl(var(--brand))', flexShrink: 0, marginTop: 2 }} />
-          <div>
-            <p className="text-xs font-semibold" style={{ color: 'hsl(var(--brand))' }}>Irreplaceable Organizational Knowledge</p>
-            <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-3))' }}>
-              The Knowledge Graph accumulates every relationship your team has mapped between models, regulations, controls, incidents, vendors, and policies.
-              After 14 months of operation, this graph contains 1,200+ semantic relationships unique to your organization — a proprietary intelligence asset
-              that cannot be replicated or exported to any alternative platform.
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-7 gap-2">
-          {ENTITY_COUNTS.map(e => (
-            <div key={e.type}
-              className="p-3 cursor-pointer text-center"
+      <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+        {counts.map((e) => {
+          const Icon = ENTITY_ICONS[e.type];
+          const active = filter === e.type;
+          return (
+            <button
+              key={e.type}
+              className="p-3 text-center"
               style={{
-                border: `1px solid ${filter === e.type ? ENTITY_COLORS[e.type] : 'hsl(var(--border))'}`,
-                background: filter === e.type ? `${ENTITY_COLORS[e.type]}18` : 'hsl(var(--bg-surface))',
+                border: `1px solid ${active ? ENTITY_COLORS[e.type] : 'hsl(var(--border))'}`,
+                background: active ? 'hsl(var(--bg-raised))' : 'hsl(var(--bg-surface))',
               }}
-              onClick={() => setFilter(filter === e.type ? 'all' : e.type)}
+              onClick={() => setFilter(active ? 'all' : e.type)}
             >
-              <e.icon size={14} style={{ color: ENTITY_COLORS[e.type], margin: '0 auto 4px' }} />
+              <Icon size={14} style={{ color: ENTITY_COLORS[e.type], margin: '0 auto 4px' }} />
               <p className="text-lg font-bold" style={{ color: ENTITY_COLORS[e.type] }}>{e.count}</p>
               <p className="text-[9px]" style={{ color: 'hsl(var(--text-4))' }}>{e.type}s</p>
-            </div>
-          ))}
-        </div>
+            </button>
+          );
+        })}
+      </div>
 
-        <Tabs value={tab} onValueChange={setTab}>
-          <TabsList style={{ borderRadius: 0 }}>
-            <TabsTrigger value="graph" style={{ borderRadius: 0 }}>Visual Graph</TabsTrigger>
-            <TabsTrigger value="paths" style={{ borderRadius: 0 }}>Causal Paths & Insights</TabsTrigger>
-            <TabsTrigger value="entities" style={{ borderRadius: 0 }}>Entity Index</TabsTrigger>
-          </TabsList>
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList style={{ borderRadius: 0 }}>
+          <TabsTrigger value="graph" style={{ borderRadius: 0 }}>Visual Graph</TabsTrigger>
+          <TabsTrigger value="chains" style={{ borderRadius: 0 }}>Data-to-Use-Case Chains</TabsTrigger>
+          <TabsTrigger value="entities" style={{ borderRadius: 0 }}>Entity Index</TabsTrigger>
+        </TabsList>
 
-          <TabsContent value="graph" className="mt-4">
-            <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-              <CardContent className="p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
-                    Semantic Relationship Graph {filter !== 'all' && `— Filtered: ${filter}`}
-                  </p>
-                  <div className="flex gap-1 flex-wrap">
-                    {['all', ...Object.keys(ENTITY_COLORS)].map(f => (
-                      <button key={f} onClick={() => setFilter(f)}
-                        className="text-[9px] px-1.5 py-0.5"
-                        style={{
-                          background: filter === f ? 'hsl(var(--brand))' : 'hsl(var(--bg-raised))',
-                          color: filter === f ? 'hsl(var(--bg-surface))' : 'hsl(var(--text-4))',
-                          border: '1px solid hsl(var(--border))',
-                        }}
-                      >{f === 'all' ? 'All' : f}</button>
+        <TabsContent value="graph" className="mt-4">
+          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardContent className="p-3">
+              {isEmpty ? (
+                <EmptyState
+                  title="No governed entities yet"
+                  message="Register models, datasets, use cases or agents — their stored links appear here as a live graph." />
+              ) : (
+                <>
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+                      {visibleEdges.length} relationships across {visibleNodes.length} entities
+                      {filter !== 'all' && ` — filtered: ${filter}`}
+                    </p>
+                    {truncated.length > 0 && (
+                      <p className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>
+                        Graph shows the first {MAX_PER_COLUMN} per type ({truncated.join(', ')} not drawn — see Entity Index)
+                      </p>
+                    )}
+                  </div>
+                  <svg width="100%" height="620" viewBox="0 0 820 620" style={{ background: 'hsl(var(--bg-raised))' }}>
+                    <defs>
+                      <marker id="kg-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                        <polygon points="0 0, 8 3, 0 6" fill="hsl(var(--border))" />
+                      </marker>
+                    </defs>
+                    {visibleEdges.map((edge, i) => {
+                      const from = nodeMap[edge.from];
+                      const to = nodeMap[edge.to];
+                      if (!from || !to) return null;
+                      return (
+                        <g key={i}>
+                          <line x1={from.x} y1={from.y} x2={to.x} y2={to.y}
+                            stroke="hsl(var(--border))" strokeWidth={1.5}
+                            markerEnd="url(#kg-arrow)" strokeOpacity={0.7} />
+                          <text x={(from.x + to.x) / 2} y={(from.y + to.y) / 2 - 4}
+                            textAnchor="middle" fontSize={8} fill="hsl(var(--text-4))">{edge.label}</text>
+                        </g>
+                      );
+                    })}
+                    {visibleNodes.map((node) => {
+                      const color = ENTITY_COLORS[node.type];
+                      const label = node.label.length > 20 ? `${node.label.slice(0, 19)}…` : node.label;
+                      return (
+                        <g key={node.key} style={{ cursor: 'pointer' }} onClick={() => nav(node.route)}>
+                          <circle cx={node.x} cy={node.y} r={26} fill={color} fillOpacity={0.12} stroke={color} strokeWidth={1.5} />
+                          <text x={node.x} y={node.y - 2} textAnchor="middle" fontSize={8} fontWeight="600" fill={color}>{node.type}</text>
+                          <text x={node.x} y={node.y + 10} textAnchor="middle" fontSize={8} fill="hsl(var(--text-2))">{label}</text>
+                          {node.flag && (
+                            <text x={node.x} y={node.y + 20} textAnchor="middle" fontSize={7} fontWeight="700" fill="hsl(var(--s-er-tx))">{node.flag}</text>
+                          )}
+                        </g>
+                      );
+                    })}
+                  </svg>
+                  <div className="mt-2 flex flex-wrap gap-3">
+                    {(Object.entries(ENTITY_COLORS) as [EntityType, string][]).map(([type, color]) => (
+                      <div key={type} className="flex items-center gap-1">
+                        <div className="h-2 w-2 rounded-full" style={{ background: color }} />
+                        <span className="text-[9px]" style={{ color: 'hsl(var(--text-4))' }}>{type}</span>
+                      </div>
                     ))}
                   </div>
-                </div>
-                <KGVisualization filter={filter} />
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {Object.entries(ENTITY_COLORS).map(([type, color]) => (
-                    <div key={type} className="flex items-center gap-1">
-                      <div className="w-2 h-2 rounded-full" style={{ background: color }} />
-                      <span className="text-[9px]" style={{ color: 'hsl(var(--text-4))' }}>{type}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          <TabsContent value="paths" className="mt-4 space-y-3">
-            <div className="flex items-center gap-2">
-              <MagnifyingGlass size={14} style={{ color: 'hsl(var(--text-4))' }} />
-              <Input
-                placeholder="Search causal paths…"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="max-w-sm text-xs"
-                style={{ borderRadius: 0 }}
-              />
-            </div>
-            {filteredPaths.map((path, i) => (
+        <TabsContent value="chains" className="mt-4 space-y-3">
+          {chains.length === 0 ? (
+            <EmptyState
+              title="No complete chains yet"
+              message="Chains appear when a dataset is linked to a model that a use case (or nothing, for PII flags) consumes." />
+          ) : (
+            chains.map((c, i) => (
               <Card key={i} style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
                 <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <code className="text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{path.path}</code>
-                    <Badge style={{ borderRadius: 0, fontSize: 9, marginLeft: 8, flexShrink: 0,
-                      background: path.risk === 'Critical' ? 'hsl(var(--destructive) / 0.12)' : path.risk === 'High' ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-nt-bg))',
-                      color: path.risk === 'Critical' ? 'hsl(var(--destructive))' : path.risk === 'High' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-4))',
-                    }}>{path.risk} Risk</Badge>
+                  <div className="mb-2 flex items-start justify-between">
+                    <code className="text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{c.path}</code>
+                    {c.warn && (
+                      <span className="ml-2 inline-flex flex-shrink-0 items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium"
+                        style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))' }}>
+                        <Warning size={10} /> PII
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-start gap-2">
                     <ArrowRight size={12} style={{ color: 'hsl(var(--text-4))', marginTop: 1, flexShrink: 0 }} />
-                    <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{path.insight}</p>
+                    <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{c.note}</p>
                   </div>
                 </CardContent>
               </Card>
-            ))}
-          </TabsContent>
+            ))
+          )}
+        </TabsContent>
 
-          <TabsContent value="entities" className="mt-4">
-            <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-              <CardContent className="p-0">
+        <TabsContent value="entities" className="mt-4">
+          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardContent className="p-0">
+              {isEmpty ? (
+                <div className="p-6">
+                  <EmptyState title="No governed entities yet" message="Register entities to populate the index." />
+                </div>
+              ) : (
                 <table className="w-full text-xs">
                   <thead>
                     <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                      {['Entity ID', 'Type', 'Label', 'Connections', 'Last Updated'].map(h => (
+                      {['Type', 'Name', 'Connections', ''].map((h) => (
                         <th key={h} className="px-4 py-3 text-left font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {NODES.filter(n => filter === 'all' || n.type === filter).map((node, i) => {
-                      const connections = EDGES.filter(e => e.from === node.id || e.to === node.id).length;
+                    {allNodes.filter((n) => filter === 'all' || n.type === filter).map((node) => {
+                      const connections = edges.filter((e) => e.from === node.key || e.to === node.key).length;
                       return (
-                        <tr key={i} style={{ borderBottom: '1px solid hsl(var(--border))' }} className="hover:bg-muted/30">
-                          <td className="px-4 py-2.5 font-mono" style={{ color: 'hsl(var(--brand))' }}>{node.id}</td>
+                        <tr key={node.key} style={{ borderBottom: '1px solid hsl(var(--border))' }} className="hover:bg-muted/30">
                           <td className="px-4 py-2.5">
-                            <span className="text-[10px] px-1.5 py-0.5 font-medium" style={{
-                              background: `${ENTITY_COLORS[node.type]}18`,
-                              color: ENTITY_COLORS[node.type],
-                            }}>{node.type}</span>
+                            <span className="px-1.5 py-0.5 text-[10px] font-medium"
+                              style={{ background: 'hsl(var(--bg-raised))', color: ENTITY_COLORS[node.type] }}>{node.type}</span>
                           </td>
-                          <td className="px-4 py-2.5 font-medium" style={{ color: 'hsl(var(--text-1))' }}>{node.label}</td>
+                          <td className="px-4 py-2.5 font-medium" style={{ color: 'hsl(var(--text-1))' }}>
+                            {node.label}
+                            {node.flag && <span className="ml-2 text-[9px] font-bold" style={{ color: 'hsl(var(--s-er-tx))' }}>{node.flag}</span>}
+                          </td>
                           <td className="px-4 py-2.5 font-mono font-bold" style={{ color: 'hsl(var(--text-2))' }}>{connections}</td>
-                          <td className="px-4 py-2.5" style={{ color: 'hsl(var(--text-4))' }}>2026-04-10</td>
+                          <td className="px-4 py-2.5">
+                            <button className="text-[10px] font-medium hover:underline" style={{ color: 'hsl(var(--brand))' }}
+                              onClick={() => nav(node.route)}>Open</button>
+                          </td>
                         </tr>
                       );
                     })}
                   </tbody>
                 </table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </TooltipProvider>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }

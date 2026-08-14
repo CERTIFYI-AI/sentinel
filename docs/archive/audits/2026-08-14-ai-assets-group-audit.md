@@ -36,9 +36,9 @@ one id-space, real org-scoped backend, no fake success, no invented data.
 | **Dataset Detail** | `/datasets/:id` | was static seed only | 🔴 **was non-compliant — fixed this phase** |
 | **Data Lineage** | `/data-lineage` | was `datalineage_table` demo | 🔴 **was non-compliant — fixed this phase** |
 | **Data Quality** | `/data-quality` | was `dataquality_table` demo | 🔴 **was non-compliant — fixed this phase** |
-| Data Governance | `/data-governance` | `datasets` + `dsr_requests` | 🟡 partially compliant (see F-6) |
+| Data Governance | `/data-governance` | `datasets` + `dsar_requests` | ✅ compliant (F-6 fixed) |
 | Prompt Registry | `/prompt-registry` | `prompt_registry` (RLS, 5 policies) | ✅ compliant |
-| Knowledge Graph | `/knowledge-graph` | none — hardcoded | 🟡 static demo (see F-7) |
+| Knowledge Graph | `/knowledge-graph` | live entity tables | ✅ compliant (F-7 fixed) |
 
 ## Findings
 
@@ -89,27 +89,39 @@ rejected or mis-scoped. The migration sets the column default to
 (record_count, encryption, retention_policy, last_audit_date, pii_types,
 upstream_sources, ingestion_method, sla, schema_definition).
 
-### F-6 (P1, remaining) — Data Governance DSAR creation is local-state only
-`DataGovernancePage.tsx` reads datasets live (now via the new hook) and reads
-DSARs from `dsr_requests`, but `handleCreateDSAR` appends to React state with a
-success toast and never persists; its asset delete handler is likewise a no-op
-toast. Should write through `dsrRequestsService`.
+### F-6 (P1) — Data Governance DSAR creation was local-state only  **FIXED**
+`handleCreateDSAR` appended to React state with a success toast and never
+persisted; the asset delete handler and the "Register Data Asset" dialog were
+no-op toasts, and consent-tab actions faked success.
+**Fix:** DSARs persist to `dsar_requests` (migration
+`20260814_dsar_requests_org_default.sql`, applied live, gives the table its
+missing `org_id` DB default and a `dataset_id` FK to `datasets`); the DSAR
+list maps real rows with overdue derived from `due_date`; per-dataset DSAR
+counts are computed from the real link; asset delete soft-deletes the dataset;
+"Register Data Asset" routes to the real Dataset Registry; fake consent
+buttons are replaced by a link to the dataset record.
 
-### F-7 (P2, remaining) — Knowledge Graph is hardcoded
-`KnowledgeGraph.tsx` renders a fixed node/edge set with no backend read. As the
-"governed entity graph" it should be built from real entities (`ai_models`,
-`use_cases`, `datasets`, `agents`) and their link columns — all of which now
-exist — or be labeled as an illustration until it is.
+### F-7 (P2) — Knowledge Graph was hardcoded  **FIXED**
+`KnowledgeGraph.tsx` rendered a fixed node/edge set, fabricated entity counts
+(e.g. "847 controls"), invented causal-path "insights" and marketing copy
+("1,200+ semantic relationships").
+**Fix:** rebuilt from live entities — `ai_models`, `use_cases`, `datasets`,
+`agent_gov_registry` — with edges derived only from stored link columns
+(`used_in_models`, `used_in_use_cases`, `linked_model_ids`, `model_id`).
+Nodes deep-link to their detail routes; counts are real; the paths tab shows
+factual dataset→model→use-case chains with PII flags from `contains_pii`;
+drawn-graph truncation is disclosed; honest empty states throughout.
 
-### F-8 (P2, remaining) — Legacy dataset tables await consolidation
-`Dataset` (0 rows), `dataset_registry` (0), `dataset_catalog_entries` (4),
-`datasetregistry_table` (0), `datalineage_table` (5 seed), `dataquality_table`
-(6 seed), `data_assets` (0) remain in the schema. Frontend no longer references
-the demo tables; follow the drop procedure in
-`docs/architecture/db/schema_consolidation_plan.sql` (verify row counts +
-references, snapshot, then drop). `dashboard/src/agents/dataGovernanceAgent.ts`
-still reads `dataset_registry`/`model_dataset_links` and should be repointed to
-`datasets` when the mesh agents are next touched.
+### F-8 (P2, partially fixed) — Legacy dataset tables await consolidation
+`dashboard/src/agents/dataGovernanceAgent.ts` **has been repointed**: it now
+links models by appending to `datasets.used_in_models`, reads PII flags from
+canonical `datasets`, and reports consent as UNKNOWN instead of asserting
+validity the platform has not verified. Remaining (DB-side, gated on the
+review procedure in `docs/architecture/db/schema_consolidation_plan.sql`):
+dropping `Dataset` (0 rows), `dataset_registry` (0), `dataset_catalog_entries`
+(4 — still used by evals), `datasetregistry_table` (0), `datalineage_table`
+(5 seed), `dataquality_table` (6 seed), `data_assets` (0),
+`model_dataset_links` (0). No frontend references remain to the demo tables.
 
 ## Changes shipped this phase
 
