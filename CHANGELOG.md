@@ -1,3 +1,11 @@
+## 1.57.0 (2026-08-14)
+
+* Merge main ([10a79a0](https://github.com/CERTIFYI-AI/sentinel/commit/10a79a0))
+* feat(ia): 9-group navigation, 42 redirects, shims retired ([419d04c](https://github.com/CERTIFYI-AI/sentinel/commit/419d04c))
+* feat(ia): merge Agents inventory, fold Executive Center + ROI into CISO, retire legacy pages ([4723cc5](https://github.com/CERTIFYI-AI/sentinel/commit/4723cc5))
+* feat(ia): one Evidence surface, Frameworks 5-to-2, Conformity on real data ([ddf7ec9](https://github.com/CERTIFYI-AI/sentinel/commit/ddf7ec9))
+* feat(ia): one real Risk Register and one real Audit Trail ([2feb1d9](https://github.com/CERTIFYI-AI/sentinel/commit/2feb1d9))
+
 ## <small>1.56.2 (2026-08-14)</small>
 
 * Merge main ([c375d18](https://github.com/CERTIFYI-AI/sentinel/commit/c375d18))
